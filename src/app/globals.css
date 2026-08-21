@@ -34,6 +34,21 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ---------- 亮色主题 ---------- */
+:root[data-theme="light"] {
+  --background: #f7f8fa;
+  --foreground: #171b23;
+  --muted: rgba(23, 27, 35, 0.62);
+  --faint: rgba(23, 27, 35, 0.42);
+  --surface: #ffffff;
+  --surface-hover: #eef1f5;
+  --border: rgba(23, 27, 35, 0.1);
+  --border-strong: rgba(23, 27, 35, 0.18);
+  --accent: #059669;
+  --accent-strong: #047857;
+  --accent-dim: rgba(5, 150, 105, 0.08);
+}
+
 html {
   scroll-behavior: smooth;
 }
