@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/sync-knowledge-assets.mjs",
+    "prebuild": "node scripts/sync-knowledge-assets.mjs && node scripts/generate-search-index.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
