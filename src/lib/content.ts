@@ -285,9 +285,33 @@ function rewriteLinks(md: string, currentChapterNum: string): string {
   );
 }
 
+/**
+ * 过滤知识库中面向 VitePress 的生成内容：
+ * - 「篇目一览」节（内含 <DocCards> 组件，且与本站课程列表重复）
+ * - 其他未支持的 VitePress 组件标签行
+ */
+function stripVitePressArtifacts(md: string): string {
+  const out: string[] = [];
+  let skipping = false;
+  for (const line of md.split("\n")) {
+    if (/^#{2,3}\s*篇目一览\s*$/.test(line)) {
+      skipping = true;
+      continue;
+    }
+    if (skipping && /^#{2}\s/.test(line)) {
+      skipping = false;
+    }
+    if (!skipping && !/<DocCards[^>]*\/?>\s*$/.test(line)) {
+      out.push(line);
+    }
+  }
+  return out.join("\n").replace(/\n{3,}/g, "\n\n");
+}
+
 export function prepareForRender(md: string, chapterNum: string): string {
   const converted = convertContainers(md);
-  return rewriteLinks(converted, chapterNum);
+  const stripped = stripVitePressArtifacts(converted);
+  return rewriteLinks(stripped, chapterNum);
 }
 
 export function getAdjacentDocs(chapterNum: string, docSlug: string): {

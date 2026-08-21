@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 import "./globals.css";
+
+const themeInitScript = `(function(){try{var t=localStorage.getItem("tb-theme");if(t==="light"||t==="dark"){document.documentElement.dataset.theme=t;}}catch(e){}})();`;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,8 +40,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="zh-CN"
+      data-theme="dark"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
         <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md">
           <div className="mx-auto max-w-6xl px-5 h-16 flex items-center justify-between">
@@ -51,10 +58,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </Link>
             <nav className="text-sm flex items-center gap-1">
               <Link
-                href="/knowledge/01"
+                href="/path"
                 className="px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition"
               >
-                开始学习
+                学习路线
               </Link>
               <Link
                 href="/search"
@@ -62,11 +69,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               >
                 搜索
               </Link>
+              <ThemeToggle />
               <a
                 href="https://github.com/Sun1090/trade-buty"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-1 px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition"
+                className="px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition"
               >
                 GitHub
               </a>
@@ -92,8 +100,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-3">
                 导航
               </p>
-              <Link href="/knowledge/01" className="block text-muted hover:text-accent transition">
-                入门主线
+              <Link href="/path" className="block text-muted hover:text-accent transition">
+                学习路线
               </Link>
               <Link href="/search" className="block text-muted hover:text-accent transition">
                 搜索课程

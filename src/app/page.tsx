@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { getChapters } from "@/lib/content";
-import { getStageGroups } from "@/lib/path";
 import { HeroChart } from "@/components/hero-chart";
 
 export default function Home() {
   const chapters = getChapters();
   const totalDocs = chapters.reduce((s, c) => s + c.docCount, 0);
-  const [core, practice, deep] = getStageGroups();
 
   return (
     <div>
@@ -36,20 +34,20 @@ export default function Home() {
             </h1>
             <p className="mt-6 max-w-lg text-base sm:text-lg leading-relaxed text-muted">
               {chapters.length} 个篇章、{totalDocs} 篇课程的系统化中文交易教育。
-              从第一根 K 线到自己的交易系统，全程免费——只讲知识，不卖课，不带节奏。
+              只讲知识，不卖课，不带节奏。
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Link
                 href="/knowledge/01"
-                className="rounded-full bg-accent-strong hover:bg-accent text-[#06281c] font-semibold px-8 py-3.5 transition shadow-lg shadow-emerald-500/20"
+                className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-8 py-3.5 transition shadow-lg shadow-emerald-500/20"
               >
                 从第 01 课开始 →
               </Link>
               <Link
-                href="/search"
+                href="/path"
                 className="rounded-full border border-border-strong hover:border-[var(--accent)]/60 px-8 py-3.5 font-medium transition"
               >
-                搜索课程
+                查看学习路线
               </Link>
             </div>
           </div>
@@ -76,147 +74,71 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="mx-auto max-w-6xl px-5">
-        {/* ---------- 入门主线 ---------- */}
-        <section className="py-20">
-          <header className="max-w-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-              Learning Path · {core.stage.label}
-            </p>
-            <h2 className="text-3xl font-bold mt-3">{core.stage.title}</h2>
-            <p className="mt-3 text-muted">{core.stage.description}</p>
-          </header>
-          <ol className="relative mt-12 space-y-1 ml-2 border-l-2 border-dashed border-[var(--accent)]/25 pl-0">
-            {core.chapters.map((c, i) => (
-              <li key={c.num} className="relative pl-9">
-                <span
-                  className={`absolute -left-[15px] top-6 flex h-7 w-7 items-center justify-center rounded-full font-mono text-xs font-bold ${
-                    i === 0
-                      ? "bg-accent text-[#06281c]"
-                      : "bg-[var(--surface)] border border-[var(--accent)]/40 text-accent"
-                  }`}
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <Link
-                  href={`/knowledge/${c.num}`}
-                  className="group flex items-baseline justify-between gap-6 rounded-xl px-5 py-4 hover:bg-[var(--surface-hover)] transition"
-                >
-                  <span className="min-w-0">
-                    <span className="font-semibold text-[17px] group-hover:text-accent transition-colors">
-                      {c.title}
-                    </span>
-                    <span className="block mt-1 text-sm text-faint truncate">
-                      {c.tagline}
-                    </span>
-                  </span>
-                  <span className="shrink-0 font-mono text-xs text-faint">
-                    {String(c.docCount).padStart(2, "0")} 篇 →
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        {/* ---------- 进阶 / 深潜 ---------- */}
-        {[practice, deep].map((g) => (
-          <section key={g.stage.id} className="pb-20">
-            <header className="max-w-xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                {g.stage.label}
-              </p>
-              <h2 className="text-3xl font-bold mt-3">{g.stage.title}</h2>
-              <p className="mt-3 text-muted">{g.stage.description}</p>
-            </header>
-            <div className="grid gap-2.5 sm:grid-cols-2 mt-8">
-              {g.chapters.map((c) => (
-                <Link
-                  key={c.num}
-                  href={`/knowledge/${c.num}`}
-                  className="group flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] transition"
-                >
-                  <span className="flex items-baseline gap-3 min-w-0">
-                    <span className="font-mono text-xs text-accent/70">{c.num}</span>
-                    <span className="truncate font-medium group-hover:text-accent transition-colors">
-                      {c.title}
-                    </span>
-                  </span>
-                  <span className="shrink-0 font-mono text-xs text-faint">
-                    {c.docCount} 篇
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </section>
-        ))}
-
-        {/* ---------- 产品原则 ---------- */}
-        <section className="pb-24">
-          <header className="max-w-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-              Principles
-            </p>
-            <h2 className="text-3xl font-bold mt-3">为什么值得信任</h2>
-          </header>
-          <div className="grid gap-4 sm:grid-cols-3 mt-10">
-            {[
-              {
-                t: "中立，不带货",
-                d: "不推荐任何券商、基金、信号源。内容全部开源在 GitHub，每一篇都带定制化风险提示。",
-                icon: "⚖️",
-              },
-              {
-                t: "先教避坑",
-                d: "第 08 篇就是「入土篇」：骗局识别、爆仓的数学、退出机制。先学怎么不死，再学怎么赢。",
-                icon: "🛡️",
-              },
-              {
-                t: "边学边练（开发中）",
-                d: "路线图上：概念页内嵌真实行情 K 线与历史回放练习。读完就能上手验证，而不是纸上谈兵。",
-                icon: "📈",
-              },
-            ].map((f) => (
-              <div
-                key={f.t}
-                className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 hover:border-[var(--accent)]/40 transition"
-              >
-                <span className="text-2xl" aria-hidden>{f.icon}</span>
-                <h3 className="mt-4 font-semibold text-lg">{f.t}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted">{f.d}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ---------- CTA ---------- */}
-        <section className="pb-28">
-          <div className="relative overflow-hidden rounded-3xl border border-[var(--accent)]/30 px-8 py-14 sm:px-14 text-center">
+      {/* ---------- 产品原则 ---------- */}
+      <section className="mx-auto max-w-6xl px-5 py-20">
+        <header className="max-w-xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+            Principles
+          </p>
+          <h2 className="text-3xl font-bold mt-3">为什么值得信任</h2>
+        </header>
+        <div className="grid gap-4 sm:grid-cols-3 mt-10">
+          {[
+            {
+              t: "中立，不带货",
+              d: "不推荐任何券商、基金、信号源。内容全部开源在 GitHub，每一篇都带定制化风险提示。",
+              icon: "⚖️",
+            },
+            {
+              t: "先教避坑",
+              d: "第 08 篇就是「入土篇」：骗局识别、爆仓的数学、退出机制。先学怎么不死，再学怎么赢。",
+              icon: "🛡️",
+            },
+            {
+              t: "边学边练（开发中）",
+              d: "概念页内嵌真实行情 K 线与历史回放练习。读完就能上手验证，而不是纸上谈兵。",
+              icon: "📈",
+            },
+          ].map((f) => (
             <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background:
-                  "radial-gradient(80% 100% at 50% 100%, rgba(52,211,153,.12), transparent 70%)",
-              }}
-              aria-hidden
-            />
-            <h2 className="relative text-2xl sm:text-3xl font-bold">
-              市场永远都在，
-              <br className="sm:hidden" />
-              本金只有一次。
-            </h2>
-            <p className="relative mt-4 text-muted max-w-md mx-auto">
-              花两周把主线走完，再决定要不要开户。
-            </p>
-            <Link
-              href="/knowledge/01"
-              className="relative inline-block mt-8 rounded-full bg-accent-strong hover:bg-accent text-[#06281c] font-semibold px-10 py-3.5 transition shadow-lg shadow-emerald-500/25"
+              key={f.t}
+              className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 hover:border-[var(--accent)]/40 transition"
             >
-              现在开始，免费 →
-            </Link>
-          </div>
-        </section>
-      </div>
+              <span className="text-2xl" aria-hidden>{f.icon}</span>
+              <h3 className="mt-4 font-semibold text-lg">{f.t}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{f.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ---------- CTA ---------- */}
+      <section className="mx-auto max-w-6xl px-5 pb-28">
+        <div className="relative overflow-hidden rounded-3xl border border-[var(--accent)]/30 px-8 py-14 sm:px-14 text-center">
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(80% 100% at 50% 100%, rgba(52,211,153,.12), transparent 70%)",
+            }}
+            aria-hidden
+          />
+          <h2 className="relative text-2xl sm:text-3xl font-bold">
+            市场永远都在，
+            <br className="sm:hidden" />
+            本金只有一次。
+          </h2>
+          <p className="relative mt-4 text-muted max-w-md mx-auto">
+            花两周把主线走完，再决定要不要开户。
+          </p>
+          <Link
+            href="/knowledge/01"
+            className="relative inline-block mt-8 rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-10 py-3.5 transition shadow-lg shadow-emerald-500/25"
+          >
+            现在开始，免费 →
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }
