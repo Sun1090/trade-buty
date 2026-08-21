@@ -1,0 +1,3 @@
+[submodule "content/kline-buty"]
+	path = content/kline-buty
+	url = https://github.com/Sun1090/kline-buty.git
