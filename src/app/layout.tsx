@@ -41,6 +41,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/" className="opacity-80 hover:opacity-100">
                 学习路线
               </Link>
+              <Link href="/search" className="opacity-80 hover:opacity-100">
+                搜索
+              </Link>
             </nav>
           </div>
         </header>
