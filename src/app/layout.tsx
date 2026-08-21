@@ -17,12 +17,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://trade-buty.vercel.app"),
   title: {
     default: "Trade Buty · 免费中立交易教育",
     template: "%s · Trade Buty",
   },
   description:
     "面向全球中文用户的免费中立交易教育平台：分级课程（学）× 真实行情图表与回放（练）。不荐股、不导流、不承诺收益。",
+  openGraph: {
+    type: "website",
+    locale: "zh_CN",
+    siteName: "Trade Buty",
+    url: "https://trade-buty.vercel.app",
+  },
 };
 
 function CandleMark() {
