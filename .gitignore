@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 构建时生成的知识库资产（prebuild 脚本拷贝）
+public/knowledge-assets/

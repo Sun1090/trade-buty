@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // 知识库 submodule：内容只读，不参与 lint
+    "content/**",
   ]),
 ]);
 
