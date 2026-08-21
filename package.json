@@ -1,12 +1,15 @@
 {
-  "name": "trade-buty-scaffold",
+  "name": "trade-buty",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/sync-knowledge-assets.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",
