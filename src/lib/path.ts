@@ -23,11 +23,13 @@ export const STAGES: Stage[] = [
   },
 ];
 
-export function getStageGroups(): {
+export function getStageGroups(
+  locale: string
+): {
   stage: Stage;
   chapters: Chapter[];
 }[] {
-  const chapters = getChapters("zh");
+  const chapters = getChapters(locale);
   const bySlug = new Map(chapters.map((c) => [c.slug, c]));
   return STAGES.map((stage) => ({
     stage,
