@@ -42,27 +42,43 @@ export default async function LocaleLayout({
           <nav className="text-sm flex items-center gap-0.5 sm:gap-1">
             <Link
               href={p("/path")}
+              aria-label={t.nav.path}
               className="px-2 sm:px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition whitespace-nowrap"
             >
-              {t.nav.path}
+              <span className="min-[480px]:hidden" aria-hidden>📚</span>
+              <span className="hidden min-[480px]:inline">{t.nav.path}</span>
             </Link>
             <Link
               href={p("/chart")}
+              aria-label={t.nav.chart}
               className="px-2 sm:px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition whitespace-nowrap"
             >
-              {t.nav.chart}
+              <span className="min-[480px]:hidden" aria-hidden>📈</span>
+              <span className="hidden min-[480px]:inline">{t.nav.chart}</span>
             </Link>
             <Link
               href={p("/replay")}
+              aria-label={t.nav.replay}
               className="px-2 sm:px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition whitespace-nowrap"
             >
-              {t.nav.replay}
+              <span className="min-[480px]:hidden" aria-hidden>⏮</span>
+              <span className="hidden min-[480px]:inline">{t.nav.replay}</span>
+            </Link>
+            <Link
+              href={p("/review")}
+              aria-label={t.nav.review}
+              className="px-2 sm:px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition whitespace-nowrap"
+            >
+              <span className="min-[480px]:hidden" aria-hidden>✎</span>
+              <span className="hidden min-[480px]:inline">{t.nav.review}</span>
             </Link>
             <Link
               href={p("/search")}
+              aria-label={t.nav.search}
               className="px-2 sm:px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition whitespace-nowrap"
             >
-              {t.nav.search}
+              <span className="min-[480px]:hidden" aria-hidden>🔍</span>
+              <span className="hidden min-[480px]:inline">{t.nav.search}</span>
             </Link>
             <LanguageToggle />
             <ThemeToggle />
