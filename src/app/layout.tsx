@@ -71,6 +71,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 学习路线
               </Link>
               <Link
+                href="/chart"
+                className="px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition"
+              >
+                实时行情
+              </Link>
+              <Link
                 href="/search"
                 className="px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition"
               >
