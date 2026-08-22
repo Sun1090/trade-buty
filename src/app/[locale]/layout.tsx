@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getDict, isLocale } from "@/lib/i18n";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
+import { SearchHotkey } from "@/components/search-hotkey";
 
 function CandleMark() {
   return (
@@ -97,6 +98,7 @@ export default async function LocaleLayout({
         </div>
       </header>
       <main className="flex-1">{children}</main>
+      <SearchHotkey locale={locale} />
       <footer className="border-t border-[var(--border)] mt-24">
         <div className="mx-auto max-w-6xl px-5 py-10 grid gap-8 sm:grid-cols-[1fr_auto]">
           <div className="space-y-3 max-w-md">

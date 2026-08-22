@@ -23,11 +23,27 @@ function score(entry: Entry, q: string): number {
   return s;
 }
 
-function snippet(text: string, q: string): string {
-  const idx = text.toLowerCase().indexOf(q);
-  if (idx < 0) return text.slice(0, 80);
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function highlight(text: string, q: string): string {
+  const safe = escapeHtml(text);
+  if (!q) return safe;
+  return safe.replace(
+    new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+    (m) => `<mark>${m}</mark>`
+  );
+}
+
+function snippetHtml(text: string, q: string): string {
+  const lower = text.toLowerCase();
+  const idx = lower.indexOf(q);
+  if (idx < 0) return escapeHtml(text.slice(0, 80));
   const start = Math.max(0, idx - 30);
-  return (start > 0 ? "…" : "") + text.slice(start, idx + q.length + 60) + "…";
+  const raw =
+    (start > 0 ? "…" : "") + text.slice(start, idx + q.length + 60) + "…";
+  return highlight(raw, q);
 }
 
 export function SearchClient({
@@ -83,9 +99,12 @@ export function SearchClient({
             >
               <span className="font-medium">{r.title}</span>
               <span className="ml-2 text-xs text-faint">{r.chapter}</span>
-              <p className="mt-1 text-sm text-muted">
-                {snippet(r.text, query.trim().toLowerCase())}
-              </p>
+              <p
+                className="mt-1 text-sm text-muted [&>mark]:bg-accent/30 [&>mark]:text-accent [&>mark]:rounded-sm [&>mark]:px-0.5"
+                dangerouslySetInnerHTML={{
+                  __html: snippetHtml(r.text, query.trim().toLowerCase()),
+                }}
+              />
             </Link>
           </li>
         ))}
