@@ -49,7 +49,7 @@ export default async function PathPage({
         </header>
         <ol className="relative mt-8 space-y-1 ml-2 border-l-2 border-dashed border-[var(--accent)]/25 pl-0">
           {core.chapters.map((c, i) => (
-            <li key={c.num} className="relative pl-9">
+            <li key={c.slug} className="relative pl-9">
               <span
                 className={`absolute -left-[15px] top-6 flex h-7 w-7 items-center justify-center rounded-full font-mono text-xs font-bold ${
                   i === 0
@@ -60,7 +60,7 @@ export default async function PathPage({
                 {String(i + 1).padStart(2, "0")}
               </span>
               <Link
-                href={p(`/knowledge/${c.num}`)}
+                href={p(`/knowledge/${c.slug}`)}
                 className="group flex items-baseline justify-between gap-6 rounded-xl px-5 py-4 hover:bg-[var(--surface-hover)] transition"
               >
                 <span className="min-w-0">
@@ -93,12 +93,12 @@ export default async function PathPage({
           <div className="grid gap-2.5 sm:grid-cols-2 mt-8">
             {g.chapters.map((c) => (
               <Link
-                key={c.num}
-                href={p(`/knowledge/${c.num}`)}
+                key={c.slug}
+                href={p(`/knowledge/${c.slug}`)}
                 className="group flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] transition"
               >
                 <span className="flex items-baseline gap-3 min-w-0">
-                  <span className="font-mono text-xs text-accent/70">{c.num}</span>
+                  <span className="font-mono text-xs text-accent/70">{String(c.order).padStart(2, "0")}</span>
                   <span className="truncate font-medium group-hover:text-accent transition-colors">
                     {c.title}
                   </span>

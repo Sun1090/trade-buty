@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
   getAdjacentDocs,
   getChapter,
-  getChapterNums,
+  getChapterSlugs,
   getDoc,
   getDocMetas,
   prepareForRender,
@@ -17,11 +17,11 @@ import { MarkRead } from "@/components/mark-read";
 import { LazyChartEmbed } from "@/components/chart-embed";
 
 export function generateStaticParams() {
-  const params: { locale: string; num: string; doc: string }[] = [];
+  const params: { locale: string; chapter: string; doc: string }[] = [];
   for (const locale of ["zh", "en"]) {
-    for (const num of getChapterNums()) {
-      for (const doc of getDocMetas(num)) {
-        params.push({ locale, num, doc: doc.slug });
+    for (const chapter of getChapterSlugs(locale)) {
+      for (const doc of getDocMetas(locale, chapter)) {
+        params.push({ locale, chapter, doc: doc.slug });
       }
     }
   }
@@ -30,24 +30,29 @@ export function generateStaticParams() {
 
 export async function generateMetadata({
   params,
-}: PageProps<"/[locale]/knowledge/[num]/[doc]">): Promise<Metadata> {
-  const { num, doc: docSlug } = await params;
-  const doc = getDoc(num, docSlug);
+}: PageProps<"/[locale]/knowledge/[chapter]/[doc]">): Promise<Metadata> {
+  const { chapter, doc: docSlug } = await params;
+  const doc = getDoc("zh", chapter, docSlug);
   if (!doc) return {};
   return { title: doc.title, description: doc.description };
 }
 
 export default async function DocPage({
   params,
-}: PageProps<"/[locale]/knowledge/[num]/[doc]">) {
-  const { locale, num, doc: docSlug } = await params;
+}: PageProps<"/[locale]/knowledge/[chapter]/[doc]">) {
+  const raw = await params;
+  const { locale, chapter: chapterSlug, doc: docSlug } = raw as {
+    locale: string;
+    chapter: string;
+    doc: string;
+  };
   if (!isLocale(locale)) notFound();
   const t = getDict(locale);
   const p = (path: string) => `/${locale}${path}`;
-  const doc = getDoc(num, docSlug);
+  const doc = getDoc(locale, chapterSlug, docSlug);
   if (!doc) notFound();
-  const { prev, next } = getAdjacentDocs(num, docSlug);
-  const chapter = getChapter(num)?.chapter;
+  const { prev, next } = getAdjacentDocs(locale, chapterSlug, docSlug);
+  const chapter = getChapter(locale, chapterSlug)?.chapter;
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-5 py-10">
@@ -56,23 +61,23 @@ export default async function DocPage({
           {t.nav.path}
         </Link>
         <span className="mx-2">/</span>
-        <Link href={p(`/knowledge/${num}`)} className="hover:text-accent">
+        <Link href={p(`/knowledge/${chapterSlug}`)} className="hover:text-accent">
           {chapter?.title}
         </Link>
       </nav>
 
       <article>
-        <MarkRead chapterNum={num} docSlug={docSlug} />
+        <MarkRead chapterNum={chapterSlug} docSlug={docSlug} />
         <h1 className="text-2xl sm:text-3xl font-bold mb-8">{doc.title}</h1>
-        <Markdown content={prepareForRender(doc.content, num)} />
+        <Markdown content={prepareForRender(doc.content, locale, chapterSlug)} />
       </article>
 
-      {QUIZZES[num]?.docSlug === docSlug && (
-        <Quiz quiz={QUIZZES[num]} dict={t.quiz} />
+      {QUIZZES[chapterSlug]?.docSlug === docSlug && (
+        <Quiz quiz={QUIZZES[chapterSlug]} dict={t.quiz} />
       )}
 
       {/* 边学边练 */}
-      {num === "06" ? (
+      {chapterSlug === "technical-analysis" ? (
         <LazyChartEmbed
           dict={{
             heading: t.chart.embedHeading,
@@ -100,7 +105,7 @@ export default async function DocPage({
       <nav className="mt-16 pt-6 border-t border-[var(--border)] grid gap-3 sm:grid-cols-2 text-sm">
         {prev ? (
           <Link
-            href={p(`/knowledge/${num}/${prev.slug}`)}
+            href={p(`/knowledge/${chapterSlug}/${prev.slug}`)}
             className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 hover:border-[var(--accent)]/60 transition"
           >
             <span className="block text-xs text-faint">{t.doc.prev}</span>
@@ -111,7 +116,7 @@ export default async function DocPage({
         )}
         {next && (
           <Link
-            href={p(`/knowledge/${num}/${next.slug}`)}
+            href={p(`/knowledge/${chapterSlug}/${next.slug}`)}
             className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 hover:border-[var(--accent)]/60 transition sm:text-right"
           >
             <span className="block text-xs text-faint">{t.doc.next}</span>

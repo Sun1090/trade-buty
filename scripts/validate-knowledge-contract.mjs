@@ -4,13 +4,14 @@ import path from "node:path";
 /**
  * 知识库契约校验（宽容模式：只报警不失败）。
  * 契约见 AGENTS.md「知识库契约」：
- * 1. 篇章目录名以两位数字开头 NN-名称/
- * 2. 每个篇章目录内有 README.md
- * 3. 课程文件名以两位数字开头（章内序号，NN-标题.md）
- * 4. frontmatter 含 title 与 description
+ * 1. docs/knowledge/{zh,en}/ 双语根；zh 应完整 27 篇章，en 允许逐步补齐
+ * 2. 篇章为英文 slug 目录，内含 README.md（H1 标题格式 NN · 名称）
+ * 3. 课程文件名为英文 slug .md，frontmatter title 带前导序号
  */
-const root = process.cwd();
-const knowledgeRoot = path.join(root, "content/kline-buty/docs/knowledge");
+const knowledgeRoot = path.join(
+  process.cwd(),
+  "content/kline-buty/docs/knowledge"
+);
 
 let warnings = 0;
 function warn(msg) {
@@ -25,51 +26,57 @@ if (!fs.existsSync(knowledgeRoot)) {
   process.exit(1);
 }
 
-function frontmatterOf(raw) {
-  if (!raw.startsWith("---")) return null;
-  const end = raw.indexOf("\n---", 3);
-  if (end < 0) return null;
-  return raw.slice(4, end);
-}
-
-const entries = fs.readdirSync(knowledgeRoot, { withFileTypes: true });
-const chapterDirs = entries.filter(
-  (e) => e.isDirectory() && e.name !== "scripts" // 知识库自带维护脚本目录
-);
-const numbered = chapterDirs.filter((e) => /^\d{2}-/.test(e.name));
-
-if (numbered.length === 0) {
-  warn("没有任何以两位数字开头的篇章目录——结构可能已重构，站点将渲染为空");
-} else if (numbered.length < chapterDirs.length) {
-  for (const d of chapterDirs) {
-    if (!/^\d{2}-/.test(d.name)) warn(`篇章目录不符合 NN- 约定，将被跳过: ${d.name}`);
+for (const locale of ["zh", "en"]) {
+  const root = path.join(knowledgeRoot, locale);
+  if (!fs.existsSync(root)) {
+    warn(`${locale} 语言根目录缺失`);
+    continue;
   }
-}
-
-for (const dir of numbered) {
-  const full = path.join(knowledgeRoot, dir.name);
-  if (!fs.existsSync(path.join(full, "README.md"))) {
-    warn(`篇章缺少 README.md（导语将缺失）: ${dir.name}`);
+  const chapters = fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && e.name !== "scripts");
+  if (chapters.length === 0) {
+    warn(`${locale}: 没有任何篇章目录`);
+    continue;
   }
-  for (const f of fs.readdirSync(full)) {
-    if (!f.endsWith(".md") || f === "README.md") continue;
-    if (!/^\d{2}-/.test(f)) {
-      warn(`课程文件名未以两位数字开头（URL slug 将退化为 URL 编码）: ${dir.name}/${f}`);
-      continue;
+  if (locale === "zh" && chapters.length !== 27) {
+    warn(`zh 篇章数 ${chapters.length} ≠ 27`);
+  }
+  if (/[^a-z0-9-]/.test(chapters.map((c) => c.name).join(""))) {
+    for (const c of chapters) {
+      if (!/^[a-z0-9-]+$/.test(c.name))
+        warn(`篇章目录应为英文 slug: ${locale}/${c.name}`);
     }
-    const raw = fs.readFileSync(path.join(full, f), "utf8");
-    const fm = frontmatterOf(raw);
-    if (fm === null) {
-      warn(`缺 frontmatter（标题与描述已降级处理）: ${dir.name}/${f}`);
-      continue;
+  }
+  for (const c of chapters) {
+    const full = path.join(root, c.name);
+    const readme = path.join(full, "README.md");
+    if (fs.existsSync(readme)) {
+      const h1 = fs.readFileSync(readme, "utf8").match(/^#\s+(\d+)\s·/m);
+      if (!h1) warn(`README H1 缺少「NN · 名称」序号（影响排序）: ${locale}/${c.name}`);
+    } else {
+      warn(`篇章缺少 README.md: ${locale}/${c.name}`);
     }
-    if (!/^title:/m.test(fm)) warn(`frontmatter 缺 title: ${dir.name}/${f}`);
-    if (!/^description:/m.test(fm)) warn(`frontmatter 缺 description: ${dir.name}/${f}`);
+    for (const f of fs.readdirSync(full)) {
+      if (!f.endsWith(".md") || f === "README.md") continue;
+      if (!/^[a-z0-9-]+\.md$/.test(f)) {
+        warn(`课程文件名应为英文 slug: ${locale}/${c.name}/${f}`);
+        continue;
+      }
+      const raw = fs.readFileSync(path.join(full, f), "utf8");
+      if (!raw.startsWith("---")) {
+        warn(`缺 frontmatter（标题与描述已降级处理）: ${locale}/${c.name}/${f}`);
+        continue;
+      }
+      const fm = raw.slice(4, raw.indexOf("\n---", 3));
+      if (!/^title:/m.test(fm)) warn(`frontmatter 缺 title: ${locale}/${c.name}/${f}`);
+      if (!/^description:/m.test(fm)) warn(`frontmatter 缺 description: ${locale}/${c.name}/${f}`);
+    }
   }
 }
 
 console.log(
   warnings === 0
-    ? `[contract] ✓ 知识库契约校验通过（${numbered.length} 个篇章）`
+    ? "[contract] ✓ 知识库契约校验通过"
     : `[contract] 校验完成，${warnings} 条警告（宽容模式，构建继续）`
 );

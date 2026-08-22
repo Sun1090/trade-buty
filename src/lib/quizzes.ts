@@ -5,10 +5,10 @@ import type { ChapterQuiz } from "@/lib/quiz-types";
  * 出题纪律：只考概念理解，不出"该不该买"类的操作建议。
  */
 export const QUIZZES: Record<string, ChapterQuiz> = {
-  "01": {
-    chapterNum: "01",
+  "getting-started": {
+    chapterNum: "getting-started",
     title: "入门基础 · 随堂测",
-    docSlug: "07",
+    docSlug: "first-trade",
     questions: [
       {
         question: "K 线图中，一根阳线（收盘价高于开盘价）说明什么？",
@@ -48,10 +48,10 @@ export const QUIZZES: Record<string, ChapterQuiz> = {
       },
     ],
   },
-  "06": {
-    chapterNum: "06",
+  "technical-analysis": {
+    chapterNum: "technical-analysis",
     title: "技术分析篇 · 随堂测",
-    docSlug: "08",
+    docSlug: "gann-box-angles",
     questions: [
       {
         question: "头肩顶形态确认后，它通常意味着什么？",
@@ -94,10 +94,10 @@ export const QUIZZES: Record<string, ChapterQuiz> = {
 };
 
 // 以下为按节挂载的随堂测
-QUIZZES["02"] = {
-  chapterNum: "02",
+QUIZZES["spot"] = {
+  chapterNum: "spot",
   title: "现货篇 · 随堂测",
-  docSlug: "06",
+  docSlug: "spot-strategies",
   questions: [
     {
       question: "现货交易与合约交易最本质的区别是什么？",
@@ -138,10 +138,10 @@ QUIZZES["02"] = {
   ],
 };
 
-QUIZZES["03"] = {
-  chapterNum: "03",
+QUIZZES["futures"] = {
+  chapterNum: "futures",
   title: "期货篇 · 随堂测",
-  docSlug: "07",
+  docSlug: "commodity-options",
   questions: [
     {
       question: "10 倍杠杆下，价格反向波动约多少会爆仓（忽略手续费与维持保证金差异）？",
@@ -177,10 +177,10 @@ QUIZZES["03"] = {
   ],
 };
 
-QUIZZES["05"] = {
-  chapterNum: "05",
+QUIZZES["crypto-perpetuals"] = {
+  chapterNum: "crypto-perpetuals",
   title: "加密合约篇 · 随堂测",
-  docSlug: "06",
+  docSlug: "liquidation-cases",
   questions: [
     {
       question: "永续合约的「资金费率」是什么？",
@@ -218,10 +218,10 @@ QUIZZES["05"] = {
 
 // ===== 任务1 批量补充：04→27 全章节题库 =====
 
-QUIZZES["04"] = {
-  chapterNum: "04",
+QUIZZES["stocks"] = {
+  chapterNum: "stocks",
   title: "股票篇 · 随堂测",
-  docSlug: "07",
+  docSlug: "etf-portfolio",
   questions: [
     {
       question: "A 股实行的 T+1 制度意味着什么？",
@@ -262,10 +262,10 @@ QUIZZES["04"] = {
   ],
 };
 
-QUIZZES["07"] = {
-  chapterNum: "07",
+QUIZZES["trading-system"] = {
+  chapterNum: "trading-system",
   title: "交易系统篇 · 随堂测",
-  docSlug: "06",
+  docSlug: "journaling-checklists",
   questions: [
     {
       question: "一套完整的交易系统至少必须包含哪三件事？",
@@ -306,10 +306,10 @@ QUIZZES["07"] = {
   ],
 };
 
-QUIZZES["08"] = {
-  chapterNum: "08",
+QUIZZES["pitfalls"] = {
+  chapterNum: "pitfalls",
   title: "入土篇 · 随堂测",
-  docSlug: "03",
+  docSlug: "compliance-taxes",
   questions: [
     {
       question: "「保本高收益」「稳赚不赔」的宣传，正确的反应是？",
@@ -345,10 +345,10 @@ QUIZZES["08"] = {
   ],
 };
 
-QUIZZES["09"] = {
-  chapterNum: "09",
+QUIZZES["markets-instruments"] = {
+  chapterNum: "markets-instruments",
   title: "市场与品种专题篇 · 随堂测",
-  docSlug: "15",
+  docSlug: "defi-deep-dive",
   questions: [
     {
       question: "外汇市场的报价 EUR/USD = 1.08 表示什么？",
@@ -389,10 +389,10 @@ QUIZZES["09"] = {
   ],
 };
 
-QUIZZES["10"] = {
-  chapterNum: "10",
+QUIZZES["system-integration"] = {
+  chapterNum: "system-integration",
   title: "系统对接篇 · 随堂测",
-  docSlug: "11",
+  docSlug: "matching-engine",
   questions: [
     {
       question: "程序化交易中，API Key 的安全底线是什么？",
@@ -433,10 +433,10 @@ QUIZZES["10"] = {
   ],
 };
 
-QUIZZES["11"] = {
-  chapterNum: "11",
+QUIZZES["trading-practice"] = {
+  chapterNum: "trading-practice",
   title: "交易实战篇 · 随堂测",
-  docSlug: "08",
+  docSlug: "onchain-data-trading",
   questions: [
     {
       question: "网格策略在什么样的市场环境下最危险？",
@@ -477,10 +477,10 @@ QUIZZES["11"] = {
   ],
 };
 
-QUIZZES["12"] = {
-  chapterNum: "12",
+QUIZZES["market-ecosystem"] = {
+  chapterNum: "market-ecosystem",
   title: "市场生态篇 · 随堂测",
-  docSlug: "07",
+  docSlug: "dark-pools-otc",
   questions: [
     {
       question: "做市商的盈利模式主要是？",
@@ -521,10 +521,10 @@ QUIZZES["12"] = {
   ],
 };
 
-QUIZZES["13"] = {
-  chapterNum: "13",
+QUIZZES["financial-history"] = {
+  chapterNum: "financial-history",
   title: "金融历史篇 · 随堂测",
-  docSlug: "06",
+  docSlug: "crypto-history",
   questions: [
     {
       question: "17世纪荷兰郁金香狂热留给后世的核心教训是什么？",
@@ -565,10 +565,10 @@ QUIZZES["13"] = {
   ],
 };
 
-QUIZZES["14"] = {
-  chapterNum: "14",
+QUIZZES["wealth-allocation"] = {
+  chapterNum: "wealth-allocation",
   title: "理财配置篇 · 随堂测",
-  docSlug: "07",
+  docSlug: "tax-planning",
   questions: [
     {
       question: "应急备用金的标准做法是？",
@@ -609,10 +609,10 @@ QUIZZES["14"] = {
   ],
 };
 
-QUIZZES["15"] = {
-  chapterNum: "15",
+QUIZZES["quant-practice"] = {
+  chapterNum: "quant-practice",
   title: "量化实战篇 · 随堂测",
-  docSlug: "05",
+  docSlug: "strategy-coding",
   questions: [
     {
       question: "回测中「未来函数」指的是什么？",
@@ -653,10 +653,10 @@ QUIZZES["15"] = {
   ],
 };
 
-QUIZZES["16"] = {
-  chapterNum: "16",
+QUIZZES["regulation-compliance"] = {
+  chapterNum: "regulation-compliance",
   title: "监管与合规篇 · 随堂测",
-  docSlug: "08",
+  docSlug: "aml-compliance",
   questions: [
     {
       question: "「荐股荐基」为什么需要持牌？",
@@ -697,10 +697,10 @@ QUIZZES["16"] = {
   ],
 };
 
-QUIZZES["17"] = {
-  chapterNum: "17",
+QUIZZES["tools-platforms"] = {
+  chapterNum: "tools-platforms",
   title: "工具与平台篇 · 随堂测",
-  docSlug: "05",
+  docSlug: "automation-environment",
   questions: [
     {
       question: "选择行情数据源时，「数据质量」最重要的指标是？",
@@ -741,10 +741,10 @@ QUIZZES["17"] = {
   ],
 };
 
-QUIZZES["18"] = {
-  chapterNum: "18",
+QUIZZES["financial-statements"] = {
+  chapterNum: "financial-statements",
   title: "财务深读篇 · 随堂测",
-  docSlug: "05",
+  docSlug: "earnings-analysis",
   questions: [
     {
       question: "利润表显示盈利，现金流量表却持续为负，可能说明什么？",
@@ -785,10 +785,10 @@ QUIZZES["18"] = {
   ],
 };
 
-QUIZZES["19"] = {
-  chapterNum: "19",
+QUIZZES["industry-research"] = {
+  chapterNum: "industry-research",
   title: "行业研究篇 · 随堂测",
-  docSlug: "05",
+  docSlug: "new-themes-investing",
   questions: [
     {
       question: "分析一个行业的起点应该是？",
@@ -829,10 +829,10 @@ QUIZZES["19"] = {
   ],
 };
 
-QUIZZES["20"] = {
-  chapterNum: "20",
+QUIZZES["reading-list"] = {
+  chapterNum: "reading-list",
   title: "经典书单篇 · 随堂测",
-  docSlug: "05",
+  docSlug: "how-to-read",
   questions: [
     {
       question: "阅读经典投资书籍的正确姿势是什么？",
@@ -873,10 +873,10 @@ QUIZZES["20"] = {
   ],
 };
 
-QUIZZES["21"] = {
-  chapterNum: "21",
+QUIZZES["behavioral-finance"] = {
+  chapterNum: "behavioral-finance",
   title: "行为金融篇 · 随堂测",
-  docSlug: "05",
+  docSlug: "behavioral-playbook",
   questions: [
     {
       question: "「损失厌恶」描述的是哪种现象？",
@@ -917,10 +917,10 @@ QUIZZES["21"] = {
   ],
 };
 
-QUIZZES["22"] = {
-  chapterNum: "22",
+QUIZZES["bonds-rates"] = {
+  chapterNum: "bonds-rates",
   title: "债券与利率深潜篇 · 随堂测",
-  docSlug: "04",
+  docSlug: "credit-high-yield",
   questions: [
     {
       question: "市场利率上升时，存量债券的价格通常会？",
@@ -956,10 +956,10 @@ QUIZZES["22"] = {
   ],
 };
 
-QUIZZES["23"] = {
-  chapterNum: "23",
+QUIZZES["forex-trading"] = {
+  chapterNum: "forex-trading",
   title: "外汇交易实战篇 · 随堂测",
-  docSlug: "06",
+  docSlug: "forex-technicals",
   questions: [
     {
       question: "「套息交易」（Carry Trade）的核心逻辑和主要风险是什么？",
@@ -1000,10 +1000,10 @@ QUIZZES["23"] = {
   ],
 };
 
-QUIZZES["24"] = {
-  chapterNum: "24",
+QUIZZES["career"] = {
+  chapterNum: "career",
   title: "职业发展篇 · 随堂测",
-  docSlug: "05",
+  docSlug: "professional-trader-path",
   questions: [
     {
       question: "从「个人交易」到「职业交易」最大的差异是什么？",
@@ -1044,10 +1044,10 @@ QUIZZES["24"] = {
   ],
 };
 
-QUIZZES["25"] = {
-  chapterNum: "25",
+QUIZZES["global-markets"] = {
+  chapterNum: "global-markets",
   title: "全球市场地图篇 · 随堂测",
-  docSlug: "05",
+  docSlug: "cross-border-investing",
   questions: [
     {
       question: "跨境投资首先要想清楚的合规问题是？",
@@ -1088,10 +1088,10 @@ QUIZZES["25"] = {
   ],
 };
 
-QUIZZES["26"] = {
-  chapterNum: "26",
+QUIZZES["data-interpretation"] = {
+  chapterNum: "data-interpretation",
   title: "数据解读实战篇 · 随堂测",
-  docSlug: "05",
+  docSlug: "economic-calendar",
   questions: [
     {
       question: "解读 CPI 数据时，「同比」和「环比」的区别为什么重要？",
@@ -1132,10 +1132,10 @@ QUIZZES["26"] = {
   ],
 };
 
-QUIZZES["27"] = {
-  chapterNum: "27",
+QUIZZES["options-strategies"] = {
+  chapterNum: "options-strategies",
   title: "期权策略进阶篇 · 随堂测",
-  docSlug: "05",
+  docSlug: "options-tools-review",
   questions: [
     {
       question: "期权买方的最大损失和卖方的最大损失分别是？",

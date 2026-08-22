@@ -7,18 +7,21 @@ const KNOWLEDGE_ROOT = path.join(
   "content/kline-buty/docs/knowledge"
 );
 
+const LOCALES = ["zh", "en"] as const;
+type ContentLocale = (typeof LOCALES)[number];
+
 export interface Chapter {
-  num: string; // 对外路由：'01'
-  dirName: string; // 磁盘目录名：'01-入门基础'
-  title: string;
+  slug: string; // 英文 slug，如 'getting-started'
+  order: number; // 来自 README H1 的 NN 序号
+  title: string; // H1 原文（含序号），如 '01 · 入门基础篇'
   tagline: string;
   docCount: number;
 }
 
 export interface DocMeta {
-  slug: string; // 对外路由：'03'
-  fileName: string; // 磁盘文件名：'03-K线与图表入门.md'
-  chapterNum: string;
+  slug: string; // 文件名去 .md，如 'candlestick-basics'
+  fileName: string;
+  chapterSlug: string;
   title: string;
   description: string;
 }
@@ -35,31 +38,42 @@ function assertKnowledgeRoot() {
   }
 }
 
-/** 篇章号 -> 真实目录名 */
-export function chapterDir(num: string): string | null {
+function localeRoot(locale: string): string {
   assertKnowledgeRoot();
-  const hit = fs
-    .readdirSync(KNOWLEDGE_ROOT, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && /^\d{2}-/.test(e.name))
-    .map((e) => e.name)
-    .sort()
-    .find((name) => name.slice(0, 2) === num);
-  return hit ?? null;
+  const root = path.join(KNOWLEDGE_ROOT, locale);
+  if (!fs.existsSync(root)) {
+    throw new Error(`知识库语言根目录缺失：${locale}`);
+  }
+  return root;
 }
 
-export function getChapterNums(): string[] {
-  assertKnowledgeRoot();
-  return fs
-    .readdirSync(KNOWLEDGE_ROOT, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && /^\d{2}-/.test(e.name))
-    .map((e) => e.name.slice(0, 2))
-    .sort();
+/** 章节 README 的 H1 形如 `# NN · 名称`，取 NN 作为排序序号 */
+function chapterOrder(readmePath: string): number {
+  try {
+    const h1 = fs.readFileSync(readmePath, "utf8").match(/^#\s+(\d+)/m);
+    return h1 ? Number(h1[1]) : 999;
+  } catch {
+    return 999;
+  }
 }
 
-/** 文件名 -> 文档号（取前导数字；无数字则用 URL 编码兜底，宽容模式） */
-function fileToSlug(fileName: string): string {
-  const m = fileName.match(/^(\d{2})-/);
-  return m ? m[1] : encodeURIComponent(fileName.replace(/\.md$/, ""));
+export function isValidContentLocale(v: string): v is ContentLocale {
+  return (LOCALES as readonly string[]).includes(v);
+}
+
+export function getChapterSlugs(locale: string): string[] {
+  const root = localeRoot(locale);
+  const dirs = fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name);
+  const orderBy = new Map<string, number>();
+  for (const name of dirs) {
+    orderBy.set(name, chapterOrder(path.join(root, name, "README.md")));
+  }
+  return dirs.sort(
+    (a, b) => (orderBy.get(a) ?? 999) - (orderBy.get(b) ?? 999) || a.localeCompare(b)
+  );
 }
 
 function readFirstParagraph(md: string): string {
@@ -89,8 +103,7 @@ function parseFrontmatter(
     const fmTitle = parsed.data.title;
     const fmDesc = parsed.data.description;
     if (typeof fmTitle === "string" && fmTitle.trim()) title = fmTitle.trim();
-    if (typeof fmDesc === "string" && fmDesc.trim())
-      description = fmDesc.trim();
+    if (typeof fmDesc === "string" && fmDesc.trim()) description = fmDesc.trim();
   } catch {
     console.warn(`[content] frontmatter 解析失败，降级处理: ${fallbackTitle}`);
   }
@@ -98,88 +111,100 @@ function parseFrontmatter(
   return { title, description, content };
 }
 
-export function getChapters(): Chapter[] {
-  assertKnowledgeRoot();
-  const nums = getChapterNums();
-  return nums.map((num) => {
-    const dirName = chapterDir(num)!;
+/** frontmatter title 的前导数字（章内排序） */
+function titleOrder(title: string): number {
+  const m = title.match(/^(\d+)/);
+  return m ? Number(m[1]) : 999;
+}
+
+export function getChapters(locale: string): Chapter[] {
+  const root = localeRoot(locale);
+  return getChapterSlugs(locale).map((slug) => {
     let tagline = "";
     let docCount = 0;
+    let title = slug;
     try {
-      const raw = fs.readFileSync(
-        path.join(KNOWLEDGE_ROOT, dirName, "README.md"),
-        "utf8"
-      );
-      tagline = readFirstParagraph(parseFrontmatter(raw, dirName).content);
+      const raw = fs.readFileSync(path.join(root, slug, "README.md"), "utf8");
+      title = extractH1(raw) || slug;
+      tagline = readFirstParagraph(parseFrontmatter(raw, slug).content);
     } catch {
-      console.warn(`[content] 篇章导语缺失，跳过 tagline: ${dirName}`);
+      console.warn(`[content] 篇章导语缺失: ${locale}/${slug}`);
     }
     try {
       docCount = fs
-        .readdirSync(path.join(KNOWLEDGE_ROOT, dirName))
+        .readdirSync(path.join(root, slug))
         .filter((f) => f.endsWith(".md") && f !== "README.md").length;
     } catch {
-      console.warn(`[content] 篇章目录读取失败: ${dirName}`);
+      console.warn(`[content] 篇章目录读取失败: ${slug}`);
     }
     return {
-      num,
-      dirName,
-      title: dirName.replace(/^\d{2}-/, ""),
+      slug,
+      order: chapterOrder(path.join(root, slug, "README.md")),
+      title,
       tagline,
       docCount,
     };
   });
 }
 
-export function getChapter(num: string): { chapter: Chapter; introContent: string } | null {
-  const dirName = chapterDir(num);
-  if (!dirName) return null;
+export function getChapter(
+  locale: string,
+  slug: string
+): { chapter: Chapter; introContent: string } | null {
+  if (!getChapterSlugs(locale).includes(slug)) return null;
   let introContent = "";
   try {
-    const raw = fs.readFileSync(
-      path.join(KNOWLEDGE_ROOT, dirName, "README.md"),
+    introContent = fs.readFileSync(
+      path.join(localeRoot(locale), slug, "README.md"),
       "utf8"
     );
-    introContent = parseFrontmatter(raw, dirName).content;
   } catch {
-    console.warn(`[content] 篇章导语缺失: ${dirName}`);
+    console.warn(`[content] 篇章导语缺失: ${locale}/${slug}`);
   }
-  const chapter = getChapters().find((c) => c.num === num)!;
+  const chapter = getChapters(locale).find((c) => c.slug === slug)!;
   return { chapter, introContent };
 }
 
-export function getDocMetas(chapterNum: string): DocMeta[] {
-  const dirName = chapterDir(chapterNum);
-  if (!dirName) return [];
-  const files = fs
-    .readdirSync(path.join(KNOWLEDGE_ROOT, dirName))
-    .filter((f) => f.endsWith(".md") && f !== "README.md")
-    .sort();
-  const metas: DocMeta[] = [];
-  for (const file of files) {
+export function getDocMetas(locale: string, chapterSlug: string): DocMeta[] {
+  const dir = path.join(localeRoot(locale), chapterSlug);
+  let metas: DocMeta[] = [];
+  const metasWithOrder: { meta: DocMeta; order: number }[] = [];
+  for (const f of fs.readdirSync(dir)) {
+    if (!f.endsWith(".md") || f === "README.md") continue;
     try {
-      const raw = fs.readFileSync(path.join(KNOWLEDGE_ROOT, dirName, file), "utf8");
-      const fallback = extractH1(raw) || file.replace(/\.md$/, "");
+      const raw = fs.readFileSync(path.join(dir, f), "utf8");
+      const fallback = extractH1(raw) || f.replace(/\.md$/, "");
       const { title, description } = parseFrontmatter(raw, fallback);
-      metas.push({
-        slug: fileToSlug(file),
-        fileName: file,
-        chapterNum,
-        title,
-        description,
+      metasWithOrder.push({
+        meta: {
+          slug: f.replace(/\.md$/, ""),
+          fileName: f,
+          chapterSlug,
+          title,
+          description,
+        },
+        order: titleOrder(title),
       });
     } catch {
-      console.warn(`[content] 文档解析失败，告警跳过（宽容模式）: ${file}`);
+      console.warn(`[content] 文档解析失败，告警跳过（宽容模式）: ${f}`);
     }
   }
+  metasWithOrder.sort(
+    (a, b) => a.order - b.order || a.meta.slug.localeCompare(b.meta.slug)
+  );
+  metas = metasWithOrder.map((m) => m.meta);
   return metas;
 }
 
-export function getDoc(chapterNum: string, docSlug: string): Doc | null {
-  const metas = getDocMetas(chapterNum);
+export function getDoc(
+  locale: string,
+  chapterSlug: string,
+  docSlug: string
+): Doc | null {
+  const metas = getDocMetas(locale, chapterSlug);
   const meta = metas.find((m) => m.slug === docSlug);
   if (!meta) return null;
-  const filePath = path.join(KNOWLEDGE_ROOT, chapterDir(chapterNum)!, meta.fileName);
+  const filePath = path.join(localeRoot(locale), chapterSlug, meta.fileName);
   try {
     const raw = fs.readFileSync(filePath, "utf8");
     const fallback = extractH1(raw) || meta.fileName.replace(/\.md$/, "");
@@ -226,64 +251,6 @@ export function convertContainers(md: string): string {
 }
 
 /**
- * 重写知识库内部相对链接与资产路径。
- * currentChapterNum: 当前文档所属篇章号；根 README 场景传 ""。
- */
-export function rewriteLinks(md: string, currentChapterNum: string): string {
-  return md.replace(
-    /(\]\()([^)\s]+)([^)]*\))/g,
-    (full, open: string, href: string, rest: string) => {
-      if (/^(https?:|mailto:)/.test(href)) return full;
-      const [rawPath, hash = ""] = href.split(/(#.*)$/);
-      let depth = 0;
-      let p = rawPath;
-      while (p.startsWith("../")) {
-        depth++;
-        p = p.slice(3);
-      }
-      p = p.replace(/^\.\//, "");
-      const parts = p.split("/").filter(Boolean);
-
-      // 资产引用 .../_assets/file.ext → /knowledge-assets/{篇章目录}/{file}
-      const ai = parts.indexOf("_assets");
-      if (ai >= 0) {
-        // 跨篇章引用时 parts[0] 是目标篇章目录名；同篇章时用当前篇章目录名
-        const ownerDir =
-          depth > 0 ? parts[0] : (chapterDir(currentChapterNum) ?? currentChapterNum);
-        const fileName = parts.slice(ai + 1).join("/");
-        return `${open}/knowledge-assets/${ownerDir}/${fileName}${hash}${rest}`;
-      }
-
-      if (!p) {
-        // 如 ../NN-篇/ 指向篇章
-        return `${open}/knowledge/${currentChapterNum || ""}${hash}${rest}`;
-      }
-
-      const isMd = path.extname(p) === ".md";
-
-      if (!isMd) {
-        // 篇章目录链接（可能带 NN- 前缀）；无法识别时宽容保持原样
-        const chNum = (parts[0] ?? "").slice(0, 2);
-        return /^\d{2}$/.test(chNum)
-          ? `${open}/knowledge/${chNum}${hash}${rest}`
-          : full;
-      }
-
-      // .md 文件链接：doc.md 或 ch/doc.md → 数字路由
-      const [maybeCh, maybeDoc] =
-        parts.length >= 2 ? [parts[0], parts[parts.length - 1]] : ["", parts[0]];
-      const chNum = maybeCh.slice(0, 2);
-      const targetChapter = /^\d{2}$/.test(chNum) ? chNum : currentChapterNum;
-      const docSlug = fileToSlug(maybeDoc);
-      if (/^readme$/i.test(docSlug)) {
-        return `${open}/knowledge/${targetChapter}${hash}${rest}`;
-      }
-      return `${open}/knowledge/${targetChapter}/${docSlug}${hash}${rest}`;
-    }
-  );
-}
-
-/**
  * 过滤知识库中面向 VitePress 的生成内容：
  * - 「篇目一览」节（内含 <DocCards> 组件，且与本站课程列表重复）
  * - 其他未支持的 VitePress 组件标签行
@@ -315,17 +282,79 @@ export function stripLeadingH1(md: string): string {
   return md;
 }
 
-export function prepareForRender(md: string, chapterNum: string): string {
-  const converted = convertContainers(md);
-  const stripped = stripVitePressArtifacts(converted);
-  return rewriteLinks(stripLeadingH1(stripped), chapterNum);
+/**
+ * 重写知识库内部相对链接与资产路径为站内路由。
+ * 新契约：篇章间用英文 slug 相对链接（../futures/、../futures/margin.md）。
+ */
+export function rewriteLinks(
+  md: string,
+  locale: string,
+  currentChapter: string
+): string {
+  return md.replace(
+    /(\]\()([^)\s]+)([^)]*\))/g,
+    (full, open: string, href: string, rest: string) => {
+      if (/^(https?:|mailto:|#)/.test(href)) return full;
+      const [rawPath, hash = ""] = href.split(/(#.*)$/);
+      let depth = 0;
+      let p = rawPath;
+      while (p.startsWith("../")) {
+        depth++;
+        p = p.slice(3);
+      }
+      p = p.replace(/^\.\//, "");
+      const parts = p.split("/").filter(Boolean);
+
+      // 资产引用 .../_assets/file.ext → /knowledge-assets/{locale}/{章节}/{file}
+      const ai = parts.indexOf("_assets");
+      if (ai >= 0) {
+        const owner = depth > 0 ? parts[0] : currentChapter;
+        const fileName = parts.slice(ai + 1).join("/");
+        return `${open}/knowledge-assets/${locale}/${owner}/${fileName}${hash}${rest}`;
+      }
+
+      if (!p) {
+        return `${open}/${locale}/knowledge/${currentChapter}${hash}${rest}`;
+      }
+
+      const isMd = path.extname(p) === ".md";
+
+      if (!isMd) {
+        // 篇章目录链接
+        return `${open}/${locale}/knowledge/${parts[0]}${hash}${rest}`;
+      }
+
+      // .md 文件链接：doc.md 或 other-ch/doc.md
+      const [targetChapter, docFile] =
+        parts.length >= 2 ? [parts[0], parts[parts.length - 1]] : [currentChapter, parts[0]];
+      const docSlug = docFile.replace(/\.md$/, "");
+      if (/^readme$/i.test(docSlug)) {
+        return `${open}/${locale}/knowledge/${targetChapter}${hash}${rest}`;
+      }
+      return `${open}/${locale}/knowledge/${targetChapter}/${docSlug}${hash}${rest}`;
+    }
+  );
 }
 
-export function getAdjacentDocs(chapterNum: string, docSlug: string): {
+export function prepareForRender(
+  md: string,
+  locale: string,
+  chapterSlug: string
+): string {
+  const converted = convertContainers(md);
+  const stripped = stripVitePressArtifacts(converted);
+  return rewriteLinks(stripLeadingH1(stripped), locale, chapterSlug);
+}
+
+export function getAdjacentDocs(
+  locale: string,
+  chapterSlug: string,
+  docSlug: string
+): {
   prev: DocMeta | null;
   next: DocMeta | null;
 } {
-  const metas = getDocMetas(chapterNum);
+  const metas = getDocMetas(locale, chapterSlug);
   const idx = metas.findIndex((m) => m.slug === docSlug);
   return {
     prev: idx > 0 ? metas[idx - 1] : null,

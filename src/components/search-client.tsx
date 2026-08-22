@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 interface Entry {
@@ -53,8 +52,7 @@ export function SearchClient({
 }) {
   const [query, setQuery] = useState("");
   const [entries, setEntries] = useState<Entry[] | null>(null);
-  const pathname = usePathname() ?? "";
-  const locale = pathname.split("/")[1] || "zh";
+
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -93,8 +91,8 @@ export function SearchClient({
       <ul className="mt-4 space-y-3">
         {results.map((r) => (
           <li key={r.url}>
-            <Link
-              href={`/${locale}${r.url}`}
+            <a
+              href={r.url}
               className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/60 transition"
             >
               <span className="font-medium">{r.title}</span>
@@ -105,7 +103,7 @@ export function SearchClient({
                   __html: snippetHtml(r.text, query.trim().toLowerCase()),
                 }}
               />
-            </Link>
+            </a>
           </li>
         ))}
       </ul>

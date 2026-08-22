@@ -11,15 +11,15 @@ export interface Stage {
 export const STAGES: Stage[] = [
   {
     id: "core",
-    chapterNums: ["01", "02", "04", "03", "05", "09", "06", "07", "08"],
+    chapterNums: ["getting-started", "spot", "stocks", "futures", "crypto-perpetuals", "markets-instruments", "technical-analysis", "trading-system", "pitfalls"],
   },
   {
     id: "practice",
-    chapterNums: ["11", "10", "12", "13", "14", "15", "26", "25"],
+    chapterNums: ["trading-practice", "system-integration", "market-ecosystem", "financial-history", "wealth-allocation", "quant-practice", "data-interpretation", "global-markets"],
   },
   {
     id: "deep",
-    chapterNums: ["16", "17", "18", "19", "20", "21", "22", "23", "24", "27"],
+    chapterNums: ["regulation-compliance", "tools-platforms", "financial-statements", "industry-research", "reading-list", "behavioral-finance", "bonds-rates", "forex-trading", "career", "options-strategies"],
   },
 ];
 
@@ -27,12 +27,12 @@ export function getStageGroups(): {
   stage: Stage;
   chapters: Chapter[];
 }[] {
-  const chapters = getChapters();
-  const byNum = new Map(chapters.map((c) => [c.num, c]));
+  const chapters = getChapters("zh");
+  const bySlug = new Map(chapters.map((c) => [c.slug, c]));
   return STAGES.map((stage) => ({
     stage,
     chapters: stage.chapterNums
-      .map((n) => byNum.get(n))
+      .map((n) => bySlug.get(n))
       .filter((c): c is Chapter => !!c),
   }));
 }
