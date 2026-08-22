@@ -17,7 +17,7 @@ export default async function Home({
   const t = getDict(locale);
   const p = (path: string) => `/${locale}${path}`;
 
-  const chapters = getChapters();
+  const chapters = getChapters(locale);
   const totalDocs = chapters.reduce((s, c) => s + c.docCount, 0);
 
   return (

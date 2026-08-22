@@ -6,15 +6,15 @@ import { useLocalProgress } from "@/components/use-local-progress";
 
 export function DocList({
   metas,
-  num,
+  chapterSlug,
   locale,
 }: {
   metas: DocMeta[];
-  num: string;
+  chapterSlug: string;
   locale: string;
 }) {
   const progress = useLocalProgress();
-  const readSet = new Set(progress?.[num] ?? []);
+  const readSet = new Set(progress?.[chapterSlug] ?? []);
   const pct = Math.round((readSet.size / metas.length) * 100);
 
   return (
@@ -36,7 +36,7 @@ export function DocList({
           return (
             <li key={d.slug}>
               <Link
-                href={`/${locale}/knowledge/${num}/${d.slug}`}
+                href={`/${locale}/knowledge/${chapterSlug}/${d.slug}`}
                 className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/50 transition"
               >
                 <span className="flex items-center gap-2.5">

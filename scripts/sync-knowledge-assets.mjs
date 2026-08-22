@@ -27,16 +27,14 @@ function main() {
     fs.rmSync(publicAssets, { recursive: true, force: true });
   }
   let count = 0;
-  for (const chapter of fs.readdirSync(knowledgeRoot, { withFileTypes: true })) {
-    if (!chapter.isDirectory() || !/^\d{2}-/.test(chapter.name)) continue;
-    for (const doc of fs.readdirSync(path.join(knowledgeRoot, chapter.name), {
-      withFileTypes: true,
-    })) {
-      if (doc.isDirectory() && doc.name === "_assets") {
-        copyDir(
-          path.join(knowledgeRoot, chapter.name, doc.name),
-          path.join(publicAssets, chapter.name)
-        );
+  for (const locale of ["zh", "en"]) {
+    const localeRoot = path.join(knowledgeRoot, locale);
+    if (!fs.existsSync(localeRoot)) continue;
+    for (const chapter of fs.readdirSync(localeRoot, { withFileTypes: true })) {
+      if (!chapter.isDirectory()) continue;
+      const assetsDir = path.join(localeRoot, chapter.name, "_assets");
+      if (fs.existsSync(assetsDir)) {
+        copyDir(assetsDir, path.join(publicAssets, locale, chapter.name));
         count++;
       }
     }

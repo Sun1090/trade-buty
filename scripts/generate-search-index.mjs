@@ -16,10 +16,10 @@ function assertKnowledgeRoot() {
 
 function stripMarkdown(md) {
   return md
-    .replace(/^---[\s\S]*?---/, "") // frontmatter
-    .replace(/```[\s\S]*?```/g, " ") // 代码块
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // 图片
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // 链接保留文字
+    .replace(/^---[\s\S]*?---/, "")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/[#>*`~|_-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -35,47 +35,64 @@ function parseTitle(raw, fallback) {
   return h1 ? h1[1].trim() : fallback;
 }
 
+/** frontmatter title 的前导序号，用于章内排序 */
+function orderOf(raw) {
+  const t = parseTitle(raw, "");
+  const m = t.match(/^(\d+)/);
+  const idx = raw.search(/^title:/m);
+  return m ? Number(m[1]) : 999;
+}
+
 function main() {
   assertKnowledgeRoot();
-  const chapters = fs
-    .readdirSync(knowledgeRoot, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && /^\d{2}-/.test(e.name))
-    .map((e) => e.name)
-    .sort();
-
   const entries = [];
-  for (const dir of chapters) {
-    const num = dir.slice(0, 2);
-    const chapterTitle = dir.replace(/^\d{2}-/, "");
-    // 篇章导语本身也可搜
-    try {
-      const raw = fs.readFileSync(
-        path.join(knowledgeRoot, dir, "README.md"),
-        "utf8"
-      );
-      entries.push({
-        url: `/knowledge/${num}`,
-        title: `${num} ${chapterTitle}（篇章导语）`,
-        chapter: chapterTitle,
-        text: stripMarkdown(raw.replace(/^---[\s\S]*?---/, "")).slice(0, 2500),
-      });
-    } catch {
-      // 导语缺失，宽容跳过
-    }
-    const files = fs
-      .readdirSync(path.join(knowledgeRoot, dir))
-      .filter((f) => f.endsWith(".md") && f !== "README.md")
+
+  for (const locale of ["zh", "en"]) {
+    const localeRoot = path.join(knowledgeRoot, locale);
+    if (!fs.existsSync(localeRoot)) continue;
+    const chapters = fs
+      .readdirSync(localeRoot, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
       .sort();
-    for (const file of files) {
-      const raw = fs.readFileSync(path.join(knowledgeRoot, dir, file), "utf8");
-      const slugMatch = file.match(/^(\d{2})-/);
-      const docSlug = slugMatch ? slugMatch[1] : encodeURIComponent(file.replace(/\.md$/, ""));
-      entries.push({
-        url: `/knowledge/${num}/${docSlug}`,
-        title: parseTitle(raw, file.replace(/\.md$/, "")),
-        chapter: chapterTitle,
-        text: stripMarkdown(raw.replace(/^---[\s\S]*?---/, "")).slice(0, 2500),
+
+    for (const chapterSlug of chapters) {
+      const dir = path.join(localeRoot, chapterSlug);
+      // 篇章导语（标题取 README H1）
+      let chapterTitle = chapterSlug;
+      try {
+        const raw = fs.readFileSync(path.join(dir, "README.md"), "utf8");
+        const h1 = raw.match(/^#\s+(.+)$/m);
+        if (h1) chapterTitle = h1[1].trim();
+        entries.push({
+          url: `/${locale}/knowledge/${chapterSlug}`,
+          title: chapterTitle,
+          chapter: chapterTitle,
+          text: stripMarkdown(raw).slice(0, 2500),
+        });
+      } catch {
+        // 导语缺失，宽容跳过
+      }
+
+      const files = fs
+        .readdirSync(dir)
+        .filter((f) => f.endsWith(".md") && f !== "README.md");
+      // 按 frontmatter title 前导序号排序
+      const withOrder = files.map((file) => {
+        const raw = fs.readFileSync(path.join(dir, file), "utf8");
+        return { file, raw, order: orderOf(raw) };
       });
+      withOrder.sort((a, b) => a.order - b.order);
+
+      for (const { file, raw } of withOrder) {
+        const docSlug = file.replace(/\.md$/, "");
+        entries.push({
+          url: `/${locale}/knowledge/${chapterSlug}/${docSlug}`,
+          title: parseTitle(raw, file.replace(/\.md$/, "")),
+          chapter: chapterTitle,
+          text: stripMarkdown(raw).slice(0, 2500),
+        });
+      }
     }
   }
 

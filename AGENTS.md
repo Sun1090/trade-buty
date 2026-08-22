@@ -37,14 +37,17 @@ npm run typecheck    # 类型检查（tsc --noEmit）
 
 ## 知识库契约（构建依赖，改动需同步）
 
-本站解析依赖 kline-buty 的以下结构，kline-buty 侧重构时必须评估影响：
+本站解析依赖 kline-buty 的以下结构（2026-08 双语重构版），kline-buty 侧重构时必须评估影响：
 
-1. 篇章目录名以两位数字开头：`NN-名称/`
-2. 每个篇章目录内有 `README.md`（篇章导语）
-3. 课程文件名以两位数字开头：`NN-标题.md`（URL slug 取自该数字）
+1. 根目录按语言分根：`docs/knowledge/{zh,en}/`；zh 应完整 27 篇章，en 允许逐步补齐
+2. 每个篇章为英文 slug 目录（如 `getting-started/`），内含 `README.md`（篇章导语，标题在 H1，格式 `NN · 名称`）
+3. 课程文件名为英文 slug（如 `candlestick-basics.md`），排序依据 frontmatter `title` 的前导数字
 4. frontmatter 字段：`title`、`description`
+5. 篇章间相对链接使用 slug：`(../futures/)`、`(../futures/margin.md)`
+6. 资产在各篇章 `_assets/` 下
+7. VitePress 遗留：`## 篇目一览` + `<DocCards/>` 由本站渲染管线过滤
 
-`npm run prebuild` 中的契约校验脚本会在结构漂移时于构建日志报警。
+站点 URL 直接使用 slug：`/[locale]/knowledge/{chapter}/{doc}`。旧数字路由已废弃。
 
 ## Submodule 操作规范
 

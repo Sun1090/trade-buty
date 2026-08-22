@@ -36,48 +36,48 @@ describe("convertContainers", () => {
 
 describe("rewriteLinks", () => {
   it("同篇章 .md 链接重写为数字路由", () => {
-    const out = rewriteLinks("[K线入门](02-K线与图表.md)", "01");
-    expect(out).toBe("[K线入门](/knowledge/01/02)");
+    const out = rewriteLinks("[K线入门](core-concepts.md)", "zh", "getting-started");
+    expect(out).toBe("[K线入门](/zh/knowledge/getting-started/core-concepts)");
   });
 
   it("跨篇章目录链接重写为篇章路由", () => {
-    const out = rewriteLinks("[期货篇](../03-期货篇/)", "01");
-    expect(out).toBe("[期货篇](/knowledge/03)");
+    const out = rewriteLinks("[期货篇](../futures/)", "zh", "getting-started");
+    expect(out).toBe("[期货篇](/zh/knowledge/futures)");
   });
 
   it("跨篇章文档链接取目标篇章号与文件序号", () => {
-    const out = rewriteLinks("[指标](../06-技术分析篇/02-技术指标.md)", "01");
-    expect(out).toBe("[指标](/knowledge/06/02)");
+    const out = rewriteLinks("[指标](../technical-analysis/indicators.md)", "zh", "getting-started");
+    expect(out).toBe("[指标](/zh/knowledge/technical-analysis/indicators)");
   });
 
   it("README 链接指向篇章页", () => {
-    const out = rewriteLinks("[导语](../03-期货篇/README.md)", "01");
-    expect(out).toBe("[导语](/knowledge/03)");
+    const out = rewriteLinks("[导语](../futures/README.md)", "zh", "getting-started");
+    expect(out).toBe("[导语](/zh/knowledge/futures)");
   });
 
   it("_assets 图片路径重写为 knowledge-assets（同篇章）", () => {
-    const out = rewriteLinks("![图](_assets/macd.svg)", "06");
-    expect(out).toBe('![图](/knowledge-assets/06-技术分析篇/macd.svg)');
+    const out = rewriteLinks("![图](_assets/macd.svg)", "zh", "technical-analysis");
+    expect(out).toBe('![图](/knowledge-assets/zh/technical-analysis/macd.svg)');
   });
 
   it("_assets 跨篇章引用归属目标篇章", () => {
-    const out = rewriteLinks("![图](../01-入门基础/_assets/k.svg)", "06");
-    expect(out).toBe("![图](/knowledge-assets/01-入门基础/k.svg)");
+    const out = rewriteLinks("![图](../getting-started/_assets/k.svg)", "zh", "technical-analysis");
+    expect(out).toBe("![图](/knowledge-assets/zh/getting-started/k.svg)");
   });
 
   it("锚点保留", () => {
-    const out = rewriteLinks("[量价](03-量价分析.md#5-筹码分布)", "06");
-    expect(out).toBe("[量价](/knowledge/06/03#5-筹码分布)");
+    const out = rewriteLinks("[量价](volume-price.md#5-vpvr)", "zh", "technical-analysis");
+    expect(out).toBe("[量价](/zh/knowledge/technical-analysis/volume-price#5-vpvr)");
   });
 
   it("外部链接不重写", () => {
     const md = "[官网](https://example.com)";
-    expect(rewriteLinks(md, "01")).toBe(md);
+    expect(rewriteLinks(md, "zh", "getting-started")).toBe(md);
   });
 
-  it("无法识别的链接宽容保持原样", () => {
-    const md = "[怪链接](not-a-page)";
-    expect(rewriteLinks(md, "01")).toBe(md);
+  it("非 .md 相对链接一律视为篇章目录链接", () => {
+    const out = rewriteLinks("[怪链接](not-a-page)", "zh", "getting-started");
+    expect(out).toBe("[怪链接](/zh/knowledge/not-a-page)");
   });
 });
 
@@ -119,13 +119,13 @@ describe("prepareForRender 端到端", () => {
       "# 01 · 金融市场全景",
       "",
       "::: warning ⚠️ 风险提示",
-      "本篇有 [现货篇](../02-现货篇/) 和 [内链](03-x.md#anchor)",
+      "本篇有 [现货篇](../spot/) 和 [内链](core-concepts.md#anchor)",
       ":::",
     ].join("\n");
-    const out = prepareForRender(md, "01");
+    const out = prepareForRender(md, "zh", "getting-started");
     expect(out).not.toMatch(/^\s*#\s/m); // H1 已剥
     expect(out).toContain("**⚠️ 风险提示**");
-    expect(out).toContain("/knowledge/02");
-    expect(out).toContain("/knowledge/01/03#anchor");
+    expect(out).toContain("/zh/knowledge/spot");
+    expect(out).toContain("/zh/knowledge/getting-started/core-concepts#anchor");
   });
 });
