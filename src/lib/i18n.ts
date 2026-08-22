@@ -74,6 +74,7 @@ const zh = {
   chart: {
     label: "Practice",
     title: "真实行情图表",
+    embedHeading: "边学边练 · 真实行情",
     intro: "学完概念，来这里看真盘。对照「06 · 技术分析篇」练习识别 K 线形态与指标——先看懂，再谈操作。",
     loading: "加载行情中…",
     error: "行情加载失败，币安 API 可能不可达",
@@ -188,6 +189,7 @@ const en: Dict = {
   chart: {
     label: "Practice",
     title: "Live Market Charts",
+    embedHeading: "Practice · Live market",
     intro: "Real crypto charts to pair with your lessons — practice spotting candlestick patterns and indicators from Chapter 06.",
     loading: "Loading market data…",
     error: "Failed to load market data — Binance API may be unreachable",

@@ -14,6 +14,7 @@ import { QUIZZES } from "@/lib/quizzes";
 import { Markdown } from "@/components/markdown";
 import { Quiz } from "@/components/quiz";
 import { MarkRead } from "@/components/mark-read";
+import { LazyChartEmbed } from "@/components/chart-embed";
 
 export function generateStaticParams() {
   const params: { locale: string; num: string; doc: string }[] = [];
@@ -71,20 +72,30 @@ export default async function DocPage({
       )}
 
       {/* 边学边练 */}
-      <aside className="mt-12 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent-dim)] p-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="font-semibold">{t.doc.practiceTitle}</p>
-          <p className="mt-1 text-sm text-muted">
-            {num === "06" ? t.doc.practiceBodyTech : t.doc.practiceBody}
-          </p>
-        </div>
-        <Link
-          href={p("/chart")}
-          className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2.5 transition shrink-0"
-        >
-          {t.doc.practiceCta}
-        </Link>
-      </aside>
+      {num === "06" ? (
+        <LazyChartEmbed
+          dict={{
+            heading: t.chart.embedHeading,
+            loading: t.chart.loading,
+            error: t.chart.error,
+            retry: t.chart.retry,
+            disclaimer: t.chart.disclaimer,
+          }}
+        />
+      ) : (
+        <aside className="mt-12 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent-dim)] p-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="font-semibold">{t.doc.practiceTitle}</p>
+            <p className="mt-1 text-sm text-muted">{t.doc.practiceBody}</p>
+          </div>
+          <Link
+            href={p("/chart")}
+            className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2.5 transition shrink-0"
+          >
+            {t.doc.practiceCta}
+          </Link>
+        </aside>
+      )}
 
       <nav className="mt-16 pt-6 border-t border-[var(--border)] grid gap-3 sm:grid-cols-2 text-sm">
         {prev ? (
