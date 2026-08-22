@@ -1,0 +1,196 @@
+export type Locale = "zh" | "en";
+export const LOCALES: Locale[] = ["zh", "en"];
+export const DEFAULT_LOCALE: Locale = "zh";
+
+const zh = {
+  nav: { path: "学习路线", chart: "行情", search: "搜索", github: "GitHub 仓库" },
+  brand: { name: "Trade Buty", badge: "免费 · 中立" },
+  home: {
+    badge: "免费开源 · 不荐股 · 不导流 · 不承诺收益",
+    title1: "先学会不亏大钱，",
+    title2Pre: "再谈",
+    title2Accent: "赚钱",
+    subtitle: (chapters: number, docs: number) =>
+      `${chapters} 个篇章、${docs} 篇课程的系统化中文交易教育。只讲知识，不卖课，不带节奏。`,
+    ctaStart: "从第 01 课开始 →",
+    ctaPath: "查看学习路线",
+    readTpl: "📖 你已完成 {r} / {t} 篇",
+    readKeepGoing: "继续加油",
+    stats: [
+      ["27", "篇章体系"],
+      ["173", "篇深度课程"],
+      ["4.2万+", "行原创内容"],
+      ["¥0", "永久免费"],
+    ] as [string, string][],
+    principlesTitle: "为什么值得信任",
+    principlesLabel: "Principles",
+    principles: [
+      { icon: "⚖️", t: "中立，不带货", d: "不推荐任何券商、基金、信号源。内容全部开源在 GitHub，每一篇都带定制化风险提示。" },
+      { icon: "🛡️", t: "先教避坑", d: "第 08 篇就是「入土篇」：骗局识别、爆仓的数学、退出机制。先学怎么不死，再学怎么赢。" },
+      { icon: "📈", t: "边学边练（开发中）", d: "概念页内嵌真实行情 K 线与历史回放练习。读完就能上手验证，而不是纸上谈兵。" },
+    ],
+    ctaTitle1: "市场永远都在，",
+    ctaTitle2: "本金只有一次。",
+    ctaBody: "花两周把主线走完，再决定要不要开户。",
+    ctaButton: "现在开始，免费 →",
+  },
+  path: {
+    label: "Learning Path",
+    title: "学习路线",
+    intro: "三站式路径：先走完「入门主线」建立完整认知，再按方向选学进阶与深潜专题。建议顺序学习，不要跳读——第 08 篇会教你为什么。",
+    stages: {
+      core: { label: "第一站", title: "入门主线", description: "零基础到建立交易系统，按顺序走完这条线" },
+      practice: { label: "第二站", title: "实战进阶", description: "把知识变成操作：实战、生态、量化与数据解读" },
+      deep: { label: "第三站", title: "深水区专题", description: "监管、财务、行为金融等硬核专题，按需选学" },
+    },
+    readyCta: "准备好了？从第一课开始。",
+    lesson1: "第 01 课 →",
+    lessonsUnit: "篇",
+  },
+  chapter: {
+    introHeading: "篇章导语",
+    coursesHeading: "本篇课程",
+    readCount: (a: number, b: number) => `${a}/${b}`,
+  },
+  doc: {
+    practiceTitle: "📖 学完这篇，去看真盘",
+    practiceBody: "在真实行情图表里找找这篇内容提到的概念，看懂了再继续。",
+    practiceBodyTech: "技术分析最好的老师是真实行情——对照刚学的形态和指标，去图上找一找。",
+    practiceCta: "打开实时行情 →",
+    prev: "上一篇",
+    next: "下一篇",
+  },
+  quiz: {
+    questionsUnit: "道概念题 · 即时判分",
+    bestTpl: "历史最佳 {n}/{total}",
+    start: "开始测验",
+    retry: "再测一次",
+    progressTpl: "第 {i} / {n} 题 · 已答对",
+    correct: "✅ 答对了",
+    wrong: "❌ 不对，看解析",
+    nextQ: "下一题 →",
+    finish: "完成",
+  },
+  chart: {
+    label: "Practice",
+    title: "真实行情图表",
+    intro: "学完概念，来这里看真盘。对照「06 · 技术分析篇」练习识别 K 线形态与指标——先看懂，再谈操作。",
+    loading: "加载行情中…",
+    error: "行情加载失败，币安 API 可能不可达",
+    retry: "重试",
+    disclaimer: "⚠️ 行情数据来自币安公开 API，仅用于学习研究，不构成任何投资建议。",
+  },
+  search: {
+    title: "搜索课程",
+    placeholder: "输入关键词，如：止损、保证金、K 线…",
+    resultsTpl: "{n} 条结果",
+    noResults: "没有匹配的结果",
+  },
+  footer: {
+    tagline: "面向全球中文用户的免费中立交易教育平台。分级课程（学）× 真实行情图表与回放（练）。",
+    disclaimer: "⚠️ 风险提示：本站全部内容仅用于学习与研究，不构成任何投资建议。市场有风险，投资需谨慎。",
+    navHeading: "导航",
+    source: "内容来源 kline-buty",
+    copyright: "© 2026 sun1090 · MIT License",
+  },
+};
+
+type Dict = typeof zh;
+
+const en: Dict = {
+  nav: { path: "Learn", chart: "Markets", search: "Search", github: "GitHub repo" },
+  brand: { name: "Trade Buty", badge: "Free · Neutral" },
+  home: {
+    badge: "Free & open source · No stock picks · No broker referrals · No profit promises",
+    title1: "Learn not to lose big first.",
+    title2Pre: "Then talk about ",
+    title2Accent: "profits.",
+    subtitle: (c: number, d: number) =>
+      `A systematic trading education in Chinese: ${c} chapters, ${d} lessons. Knowledge only — no courses for sale, no hype.`,
+    ctaStart: "Start Lesson 01 →",
+    ctaPath: "View learning path",
+    readTpl: "📖 Completed {r} / {t} lessons",
+    readKeepGoing: "keep going",
+    stats: [["27", "Chapters"], ["173", "In-depth lessons"], ["42k+", "Lines of content"], ["$0", "Free forever"]] as [string, string][],
+    principlesTitle: "Why trust us",
+    principlesLabel: "Principles",
+    principles: [
+      { icon: "⚖️", t: "Neutral, nothing to sell", d: "No broker/fund/signal recommendations. Everything is open source on GitHub, every lesson carries a custom risk notice." },
+      { icon: "🛡️", t: "Survival first", d: "Lesson 08 is literally called \"The Graveyard\": scam recognition, liquidation math, exit plans. Learn not to die before learning to win." },
+      { icon: "📈", t: "Learn by doing (in progress)", d: "Live charts and historical replay embedded with lessons. Verify what you read on real markets instead of paper." },
+    ],
+    ctaTitle1: "Markets are forever.",
+    ctaTitle2: "Your capital isn't.",
+    ctaBody: "Spend two weeks finishing the core path before opening any account.",
+    ctaButton: "Start now, free →",
+  },
+  path: {
+    label: "Learning Path",
+    title: "Learning Path",
+    intro: "Three stages: finish the core path for a complete foundation, then pick advanced and deep-dive topics by direction. Study in order — Lesson 08 will show you why.",
+    stages: {
+      core: { label: "Stage 1", title: "Core Path", description: "From zero to a full trading system, in order" },
+      practice: { label: "Stage 2", title: "Advanced Practice", description: "Turning knowledge into action: tactics, ecosystem, quant, data" },
+      deep: { label: "Stage 3", title: "Deep Waters", description: "Hard topics: regulation, financials, behavioral finance — à la carte" },
+    },
+    readyCta: "Ready? Start from lesson one.",
+    lesson1: "Lesson 01 →",
+    lessonsUnit: "",
+  },
+  chapter: {
+    introHeading: "Chapter Intro",
+    coursesHeading: "Lessons",
+    readCount: (a: number, b: number) => `${a}/${b}`,
+  },
+  doc: {
+    practiceTitle: "📖 Done reading? See the real market",
+    practiceBody: "Find the concepts from this lesson on the live chart — understand before you continue.",
+    practiceBodyTech: "The best teacher of technical analysis is the real market — spot the patterns and indicators you just learned.",
+    practiceCta: "Open live chart →",
+    prev: "Previous",
+    next: "Next",
+  },
+  quiz: {
+    questionsUnit: "concept questions · instant grading",
+    bestTpl: "Best {n}/{total}",
+    start: "Start quiz",
+    retry: "Try again",
+    progressTpl: "Question {i} / {n} · Correct: ",
+    correct: "✅ Correct",
+    wrong: "❌ Not quite — see explanation",
+    nextQ: "Next →",
+    finish: "Finish",
+  },
+  chart: {
+    label: "Practice",
+    title: "Live Market Charts",
+    intro: "Real crypto charts to pair with your lessons — practice spotting candlestick patterns and indicators from Chapter 06.",
+    loading: "Loading market data…",
+    error: "Failed to load market data — Binance API may be unreachable",
+    retry: "Retry",
+    disclaimer: "⚠️ Market data from Binance public API, for study and research only. Not investment advice.",
+  },
+  search: {
+    title: "Search Lessons",
+    placeholder: "Type keywords, e.g. stop loss, margin…",
+    resultsTpl: "{n} result(s)",
+    noResults: "No matches",
+  },
+  footer: {
+    tagline: "A free & neutral trading education platform for Chinese speakers worldwide. Structured courses (learn) × live charts & replay (practice).",
+    disclaimer: "⚠️ Risk notice: All content is for study and research only and does not constitute investment advice. Markets are risky.",
+    navHeading: "Navigate",
+    source: "Content from kline-buty",
+    copyright: "© 2026 sun1090 · MIT License",
+  },
+};
+
+const DICTS: Record<Locale, Dict> = { zh, en };
+
+export function getDict(locale: string | undefined): Dict {
+  return DICTS[(locale as Locale) ?? DEFAULT_LOCALE] ?? DICTS[DEFAULT_LOCALE];
+}
+
+export function isLocale(v: string): v is Locale {
+  return (LOCALES as string[]).includes(v);
+}
