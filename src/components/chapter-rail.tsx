@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import type { DocMeta } from "@/lib/content";
 import { useLocalProgress } from "@/components/use-local-progress";
 
 interface RailDict {
-  coursesHeading: string;
   nextChapter: string;
   progressLabel: string;
   lessonsUnit: string;
@@ -18,15 +16,14 @@ interface NextChapter {
 }
 
 /**
- * 单课页左侧栏：篇章标题 + 进度条 + 本篇课程精简列表 + 下一篇章 CTA。
- * 桌面 xl+ 显示（sticky），移动端隐藏。
+ * 单课页左侧栏：篇章进度 + 下一篇章 CTA。
+ * 不重复课程列表（那是篇章页的事），保持精简。
  */
 export function ChapterRail({
   chapterSlug,
   chapterTitle,
   chapterTagline,
-  docMetas,
-  currentDocSlug,
+  docCount,
   nextChapter,
   locale,
   dict,
@@ -34,83 +31,64 @@ export function ChapterRail({
   chapterSlug: string;
   chapterTitle: string;
   chapterTagline: string;
-  docMetas: DocMeta[];
-  currentDocSlug: string;
+  docCount: number;
   nextChapter: NextChapter | null;
   locale: string;
   dict: RailDict;
 }) {
   const progress = useLocalProgress();
-  const readSet = new Set(progress?.[chapterSlug] ?? []);
-  const readCount = readSet.size;
-  const total = docMetas.length;
-  const pct = total > 0 ? Math.round((readCount / total) * 100) : 0;
+  const readCount = progress?.[chapterSlug]?.length ?? 0;
+  const pct = docCount > 0 ? Math.round((readCount / docCount) * 100) : 0;
+  const done = readCount >= docCount && docCount > 0;
 
   return (
     <aside className="hidden xl:block">
       <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-2 space-y-6">
-        {/* 篇章信息 + 进度 */}
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-2">
-            {dict.progressLabel}
-          </p>
-          <h2 className="font-bold text-sm leading-snug">{chapterTitle}</h2>
-          <p className="mt-1 text-xs text-faint line-clamp-2 leading-relaxed">
+        {/* 篇章进度卡片 */}
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
+          <Link
+            href={`/${locale}/knowledge/${chapterSlug}`}
+            className="block hover:text-accent transition-colors"
+          >
+            <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-2">
+              {dict.progressLabel}
+            </p>
+            <h2 className="font-bold text-sm leading-snug">
+              {chapterTitle}
+            </h2>
+          </Link>
+          <p className="mt-1.5 text-xs text-faint line-clamp-2 leading-relaxed">
             {chapterTagline}
           </p>
-          <div className="mt-3 flex items-center gap-2">
-            <div className="h-1.5 flex-1 rounded-full bg-white/10 overflow-hidden">
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs text-faint">
+                {readCount}/{docCount} {dict.lessonsUnit}
+              </span>
+              <span className="text-xs font-mono text-accent">{pct}%</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
               <div
-                className="h-full rounded-full bg-accent transition-all duration-500"
+                className="h-full rounded-full bg-gradient-to-r from-accent-strong to-accent transition-all duration-500"
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <span className="text-xs font-mono text-accent shrink-0">
-              {readCount}/{total}
-            </span>
           </div>
-        </div>
-
-        {/* 本篇课程列表 */}
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-3">
-            {dict.coursesHeading}
-          </p>
-          <ol className="space-y-0.5 border-l border-[var(--border)]">
-            {docMetas.map((d, i) => {
-              const read = readSet.has(d.slug);
-              const current = d.slug === currentDocSlug;
-              return (
-                <li key={d.slug}>
-                  <Link
-                    href={`/${locale}/knowledge/${chapterSlug}/${d.slug}`}
-                    className={`block pl-3 py-1.5 text-xs leading-snug rounded-r transition-colors ${
-                      current
-                        ? "text-accent font-medium bg-[var(--accent-dim)]"
-                        : read
-                          ? "text-muted hover:text-foreground hover:bg-white/5"
-                          : "text-faint hover:text-foreground hover:bg-white/5"
-                    }`}
-                  >
-                    <span className="font-mono mr-1.5 text-[10px]">
-                      {read ? "✓" : String(i + 1).padStart(2, "0")}
-                    </span>
-                    {d.title.replace(/^\d+\s*·\s*/, "")}
-                  </Link>
-                </li>
-              );
-            })}
-          </ol>
+          {done && (
+            <p className="mt-3 text-xs text-accent font-medium">
+              ✓ {dict.progressLabel} 100%
+            </p>
+          )}
         </div>
 
         {/* 下一篇章 */}
         {nextChapter && (
           <Link
             href={`/${locale}/knowledge/${nextChapter.slug}`}
-            className="block rounded-xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-4 hover:border-[var(--accent)]/60 transition group"
+            className="block rounded-2xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-5 hover:border-[var(--accent)]/60 transition group"
           >
             <p className="text-xs font-semibold uppercase tracking-widest text-accent">
-              {dict.nextChapter}
+              {dict.nextChapter} →
             </p>
             <p className="mt-1.5 font-semibold text-sm group-hover:text-accent transition-colors">
               {nextChapter.title}

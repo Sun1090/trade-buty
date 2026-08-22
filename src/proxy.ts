@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const LOCALES = ["zh", "en"];
+const DEFAULT_LOCALE = "en";
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const first = pathname.split("/")[1];
   if (LOCALES.includes(first)) return;
 
+  // 优先 cookie，其次 accept-language，默认 en
   const cookie = req.cookies.get("tb-lang")?.value;
-  const accept = req.headers.get("accept-language") ?? "";
-  const locale =
-    cookie === "en" || (cookie !== "zh" && !accept.toLowerCase().startsWith("zh"))
-      ? "en"
-      : "zh";
+  let locale = DEFAULT_LOCALE;
+  if (cookie && LOCALES.includes(cookie)) {
+    locale = cookie;
+  } else {
+    const accept = req.headers.get("accept-language") ?? "";
+    locale = accept.toLowerCase().startsWith("zh") ? "zh" : DEFAULT_LOCALE;
+  }
 
   const url = req.nextUrl.clone();
   url.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;
