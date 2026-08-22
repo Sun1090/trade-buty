@@ -308,10 +308,19 @@ function stripVitePressArtifacts(md: string): string {
   return out.join("\n").replace(/\n{3,}/g, "\n\n");
 }
 
+/** 页面已渲染 frontmatter title 作为 H1，正文首个 H1 与之重复，剥离 */
+function stripLeadingH1(md: string): string {
+  const m = md.match(/^\s*#\s+.*\n/);
+  if (m && m.index !== undefined && m.index < 200) {
+    return md.slice(0, m.index) + md.slice(m.index + m[0].length);
+  }
+  return md;
+}
+
 export function prepareForRender(md: string, chapterNum: string): string {
   const converted = convertContainers(md);
   const stripped = stripVitePressArtifacts(converted);
-  return rewriteLinks(stripped, chapterNum);
+  return rewriteLinks(stripLeadingH1(stripped), chapterNum);
 }
 
 export function getAdjacentDocs(chapterNum: string, docSlug: string): {
