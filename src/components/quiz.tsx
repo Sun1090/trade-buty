@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ChapterQuiz } from "@/lib/quiz-types";
 import { recordWrong, resolveWrong } from "@/lib/wrongbook";
+import { readQuizProgress, saveQuizProgress, type QuizProgress } from "@/lib/quiz-store";
 
 interface QuizDict {
   questionsUnit: string;
@@ -19,42 +20,26 @@ interface QuizDict {
 const tpl = (s: string, vars: Record<string, string | number>) =>
   s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k]));
 
-const key = (ch: string) => `tb-quiz-${ch}`;
-
-interface Progress {
-  best: number;
-  done: boolean;
-}
-
 export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
   const [started, setStarted] = useState(false);
   const [current, setCurrent] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [correct, setCorrect] = useState(0);
-  const [progress, setProgress] = useState<Progress | null>(null);
+  const [progress, setProgress] = useState<QuizProgress | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(key(quiz.chapterNum));
-      // 从外部存储同步一次性快照，非级联渲染场景
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (raw) setProgress(JSON.parse(raw) as Progress);
-    } catch {
-      // 忽略损坏的存档
-    }
+    // 从本地存储同步一次性快照，非级联渲染场景
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setProgress(readQuizProgress(quiz.chapterNum));
   }, [quiz.chapterNum]);
 
   function save(finalScore: number) {
-    const p: Progress = {
+    const p: QuizProgress = {
       best: Math.max(progress?.best ?? 0, finalScore),
       done: true,
     };
     setProgress(p);
-    try {
-      localStorage.setItem(key(quiz.chapterNum), JSON.stringify(p));
-    } catch {
-      // 存储不可用时仅内存保留
-    }
+    saveQuizProgress(quiz.chapterNum, p, quiz.questions.length);
   }
 
   function pick(i: number) {

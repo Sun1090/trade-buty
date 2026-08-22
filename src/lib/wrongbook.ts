@@ -1,4 +1,7 @@
-/** 本地错题本：key = `${chapterNum}:${questionIdx}`，答对后移出 */
+/** 本地错题本 + 云端双写：key = `${chapterNum}:${questionIdx}`，答对后移出 */
+
+import { syncWrongbookWrite, syncWrongbookDelete } from "./sync-layer";
+
 const KEY = "tb-wrong";
 
 export interface WrongEntry {
@@ -32,6 +35,7 @@ export function recordWrong(chapterNum: string, questionIdx: number, picked: num
   } catch {
     // ignore
   }
+  syncWrongbookWrite(chapterNum, questionIdx, picked);
 }
 
 export function resolveWrong(chapterNum: string, questionIdx: number) {
@@ -47,4 +51,5 @@ export function resolveWrong(chapterNum: string, questionIdx: number) {
   } catch {
     // ignore
   }
+  syncWrongbookDelete(chapterNum, questionIdx);
 }

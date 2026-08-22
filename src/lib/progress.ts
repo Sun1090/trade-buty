@@ -1,6 +1,8 @@
 "use client";
 
-/** 学习进度：localStorage 记录已读的 {章节号: [文档号]}，纯本地无账号 */
+/** 学习进度：localStorage 记录已读的 {章节号: [文档号]}，登录后双写云端 */
+
+import { syncProgressWrite } from "./sync-layer";
 
 const KEY = "tb-progress";
 
@@ -20,6 +22,7 @@ export function markRead(chapterNum: string, docSlug: string) {
   list.add(docSlug);
   p[chapterNum] = [...list];
   write(p);
+  syncProgressWrite(chapterNum, docSlug);
 }
 
 export function clearProgress() {

@@ -4,6 +4,25 @@ export const DEFAULT_LOCALE: Locale = "zh";
 
 const zh = {
   nav: { path: "学习路线", chart: "行情", replay: "回放", review: "复习", search: "搜索", github: "GitHub 仓库" },
+  auth: {
+    login: "登录",
+    logout: "退出",
+    title: "登录",
+    subtitle: "输入邮箱，我们发送登录链接。登录后进度自动云端存档，换设备不丢。",
+    emailPlaceholder: "邮箱地址",
+    sendLink: "发送登录链接",
+    sending: "发送中…",
+    sent: "✓ 登录链接已发送，请查收邮箱（含垃圾邮件夹）",
+    sentHint: "点击邮件中的按钮即可完成登录。",
+    error: "发送失败，请稍后重试或更换邮箱",
+    back: "返回",
+    backToHome: "返回首页",
+    guestHint: "不想登录？继续以游客身份浏览，数据仅存本地浏览器。",
+    continueGuest: "继续游客浏览 →",
+    callbackProcessing: "正在完成登录…",
+    callbackSuccess: "登录成功，正在同步进度…",
+    callbackError: "登录失败，链接可能已过期，请重新发送",
+  },
   brand: { name: "Trade Buty", badge: "免费 · 中立" },
   home: {
     badge: "免费开源 · 不荐股 · 不导流 · 不承诺收益",
@@ -154,6 +173,25 @@ type Dict = typeof zh;
 
 const en: Dict = {
   nav: { path: "Learn", chart: "Markets", replay: "Replay", review: "Review", search: "Search", github: "GitHub repo" },
+  auth: {
+    login: "Log in",
+    logout: "Log out",
+    title: "Log in",
+    subtitle: "Enter your email and we'll send a login link. Your progress syncs to the cloud after login — never lose it across devices.",
+    emailPlaceholder: "Email address",
+    sendLink: "Send login link",
+    sending: "Sending…",
+    sent: "✓ Login link sent — check your inbox (and spam folder)",
+    sentHint: "Click the button in the email to finish logging in.",
+    error: "Failed to send. Try again or use a different email",
+    back: "Back",
+    backToHome: "Back to home",
+    guestHint: "Don't want to log in? Browse as a guest — data stays in this browser only.",
+    continueGuest: "Continue as guest →",
+    callbackProcessing: "Finishing login…",
+    callbackSuccess: "Logged in — syncing progress…",
+    callbackError: "Login failed — the link may have expired. Please resend",
+  },
   brand: { name: "Trade Buty", badge: "Free · Neutral" },
   home: {
     badge: "Free & open source · No stock picks · No broker referrals · No profit promises",
