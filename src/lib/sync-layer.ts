@@ -108,6 +108,73 @@ interface CloudQuiz { chapter_num: string; best: number; total: number; done: bo
 interface CloudReplay { symbol: string; interval: string; total: number; correct: number; best_streak: number; recorded_at: string }
 interface CloudReplayBest { best_streak: number }
 
+// ---- 合并纯函数（可独立测试，不依赖 localStorage / Supabase）----
+
+/** 进度合并：并集（local ∪ cloud，按 chapter 分组） */
+export function mergeProgress(local: ProgressMap, cloud: CloudProgress[]): ProgressMap {
+  const merged: ProgressMap = { ...local };
+  for (const row of cloud) {
+    const set = new Set(merged[row.chapter_num] ?? []);
+    set.add(row.doc_slug);
+    merged[row.chapter_num] = [...set];
+  }
+  return merged;
+}
+
+/** 错题本合并：并集，冲突取较新 at */
+export function mergeWrongbook(local: Record<string, WrongEntry>, cloud: CloudWrong[]): Record<string, WrongEntry> {
+  const merged = { ...local };
+  for (const row of cloud) {
+    const key = `${row.chapter_num}:${row.question_idx}`;
+    const cloudAt = new Date(row.answered_at).getTime();
+    const localEntry = merged[key];
+    if (!localEntry || cloudAt > localEntry.at) {
+      merged[key] = {
+        chapterNum: row.chapter_num,
+        questionIdx: row.question_idx,
+        picked: row.picked,
+        at: cloudAt,
+      };
+    }
+  }
+  return merged;
+}
+
+/** 测验成绩合并：取 max best，返回合并后的记录 */
+export function mergeQuizScore(local: { best: number; done: boolean } | null, cloud: CloudQuiz): { best: number; done: boolean } {
+  return { best: Math.max(local?.best ?? 0, cloud.best), done: true };
+}
+
+/** 回放记录合并：并集去重（按 at+symbol+interval+total+correct），取最近 100 */
+export function mergeReplayHistory(local: ReplayRecord[], cloud: CloudReplay[]): ReplayRecord[] {
+  const seen = new Set<string>();
+  const merged: ReplayRecord[] = [];
+  const add = (r: ReplayRecord) => {
+    const sig = `${r.at}|${r.symbol}|${r.interval}|${r.total}|${r.correct}`;
+    if (seen.has(sig)) return;
+    seen.add(sig);
+    merged.push(r);
+  };
+  local.forEach(add);
+  cloud.forEach((row) =>
+    add({
+      at: new Date(row.recorded_at).getTime(),
+      symbol: row.symbol,
+      interval: row.interval,
+      total: row.total,
+      correct: row.correct,
+      bestStreak: row.best_streak,
+    }),
+  );
+  merged.sort((a, b) => a.at - b.at);
+  return merged.slice(-100);
+}
+
+/** 回放最佳合并：取 max */
+export function mergeReplayBest(local: number, cloudBest: number): number {
+  return Math.max(local, cloudBest);
+}
+
 /**
  * 登录后调用：从云端拉取全部数据，与 localStorage 取并集后覆盖写回，
  * 最后 dispatch 一次 tb-progress 让所有消费组件刷新。
@@ -124,81 +191,30 @@ export async function hydrateFromCloud(id: string) {
     getSupabaseBrowser().from("replay_best").select("best_streak").eq("user_id", id),
   ]);
 
-  // 进度：并集
   if (progressRes.data) {
-    const local = readLocalJson<ProgressMap>("tb-progress", {});
-    const merged: ProgressMap = { ...local };
-    for (const row of progressRes.data as CloudProgress[]) {
-      const set = new Set(merged[row.chapter_num] ?? []);
-      set.add(row.doc_slug);
-      merged[row.chapter_num] = [...set];
-    }
-    writeLocalJson("tb-progress", merged);
+    writeLocalJson("tb-progress", mergeProgress(readLocalJson<ProgressMap>("tb-progress", {}), progressRes.data as CloudProgress[]));
   }
 
-  // 错题本：并集（冲突取较新 at）
   if (wrongRes.data) {
-    const local = readLocalJson<Record<string, WrongEntry>>("tb-wrong", {});
-    const merged = { ...local };
-    for (const row of wrongRes.data as CloudWrong[]) {
-      const key = `${row.chapter_num}:${row.question_idx}`;
-      const cloudAt = new Date(row.answered_at).getTime();
-      const localEntry = merged[key];
-      if (!localEntry || cloudAt > localEntry.at) {
-        merged[key] = {
-          chapterNum: row.chapter_num,
-          questionIdx: row.question_idx,
-          picked: row.picked,
-          at: cloudAt,
-        };
-      }
-    }
-    writeLocalJson("tb-wrong", merged);
+    writeLocalJson("tb-wrong", mergeWrongbook(readLocalJson<Record<string, WrongEntry>>("tb-wrong", {}), wrongRes.data as CloudWrong[]));
   }
 
-  // 测验：取 max best
   if (quizRes.data) {
     for (const row of quizRes.data as CloudQuiz[]) {
       const key = `tb-quiz-${row.chapter_num}`;
-      const local = readLocalJson<{ best: number; done: boolean } | null>(key, null);
-      const best = Math.max(local?.best ?? 0, row.best);
-      writeLocalJson(key, { best, done: true });
+      writeLocalJson(key, mergeQuizScore(readLocalJson(key, null), row));
     }
   }
 
-  // 回放记录：并集去重，取最近 100
   if (replayRes.data) {
-    const local = readLocalJson<ReplayRecord[]>("tb-replay-history", []);
-    const seen = new Set<string>();
-    const merged: ReplayRecord[] = [];
-    const add = (r: ReplayRecord) => {
-      const sig = `${r.at}|${r.symbol}|${r.interval}|${r.total}|${r.correct}`;
-      if (seen.has(sig)) return;
-      seen.add(sig);
-      merged.push(r);
-    };
-    local.forEach(add);
-    (replayRes.data as CloudReplay[]).forEach((row) =>
-      add({
-        at: new Date(row.recorded_at).getTime(),
-        symbol: row.symbol,
-        interval: row.interval,
-        total: row.total,
-        correct: row.correct,
-        bestStreak: row.best_streak,
-      }),
-    );
-    merged.sort((a, b) => a.at - b.at);
-    writeLocalJson("tb-replay-history", merged.slice(-100));
+    writeLocalJson("tb-replay-history", mergeReplayHistory(readLocalJson<ReplayRecord[]>("tb-replay-history", []), replayRes.data as CloudReplay[]));
   }
 
-  // 回放最佳：取 max
   if (bestRes.data && bestRes.data.length > 0) {
     const cloudBest = (bestRes.data[0] as CloudReplayBest).best_streak;
     const local = parseInt(localStorage.getItem("tb-replay-best") ?? "0", 10) || 0;
-    const best = Math.max(local, cloudBest);
     try {
-      localStorage.setItem("tb-replay-best", String(best));
+      localStorage.setItem("tb-replay-best", String(mergeReplayBest(local, cloudBest)));
     } catch {
       // ignore
     }
