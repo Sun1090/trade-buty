@@ -192,7 +192,7 @@ export function getDoc(chapterNum: string, docSlug: string): Doc | null {
 }
 
 /** 把 VitePress 容器语法 ::: type 标题 ... ::: 转换为 callout 引用块 */
-function convertContainers(md: string): string {
+export function convertContainers(md: string): string {
   const out: string[] = [];
   let inContainer = false;
   for (const line of md.split("\n")) {
@@ -229,7 +229,7 @@ function convertContainers(md: string): string {
  * 重写知识库内部相对链接与资产路径。
  * currentChapterNum: 当前文档所属篇章号；根 README 场景传 ""。
  */
-function rewriteLinks(md: string, currentChapterNum: string): string {
+export function rewriteLinks(md: string, currentChapterNum: string): string {
   return md.replace(
     /(\]\()([^)\s]+)([^)]*\))/g,
     (full, open: string, href: string, rest: string) => {
@@ -259,23 +259,21 @@ function rewriteLinks(md: string, currentChapterNum: string): string {
         return `${open}/knowledge/${currentChapterNum || ""}${hash}${rest}`;
       }
 
-      const isDir = rawPath.endsWith("/") || !path.extname(p);
+      const isMd = path.extname(p) === ".md";
 
-      if (isDir || parts.length === 1) {
-        // 篇章链接（可能带篇章号前缀）
-        const chNum = parts[0].slice(0, 2);
+      if (!isMd) {
+        // 篇章目录链接（可能带 NN- 前缀）；无法识别时宽容保持原样
+        const chNum = (parts[0] ?? "").slice(0, 2);
         return /^\d{2}$/.test(chNum)
           ? `${open}/knowledge/${chNum}${hash}${rest}`
-          : full; // 无法识别的链接保持原样（宽容模式）
+          : full;
       }
 
-      // .md 文件链接：[ch/]doc.md → 数字路由
+      // .md 文件链接：doc.md 或 ch/doc.md → 数字路由
       const [maybeCh, maybeDoc] =
         parts.length >= 2 ? [parts[0], parts[parts.length - 1]] : ["", parts[0]];
       const chNum = maybeCh.slice(0, 2);
-      const targetChapter = /^\d{2}$/.test(chNum)
-        ? chNum
-        : currentChapterNum;
+      const targetChapter = /^\d{2}$/.test(chNum) ? chNum : currentChapterNum;
       const docSlug = fileToSlug(maybeDoc);
       if (/^readme$/i.test(docSlug)) {
         return `${open}/knowledge/${targetChapter}${hash}${rest}`;
@@ -290,7 +288,7 @@ function rewriteLinks(md: string, currentChapterNum: string): string {
  * - 「篇目一览」节（内含 <DocCards> 组件，且与本站课程列表重复）
  * - 其他未支持的 VitePress 组件标签行
  */
-function stripVitePressArtifacts(md: string): string {
+export function stripVitePressArtifacts(md: string): string {
   const out: string[] = [];
   let skipping = false;
   for (const line of md.split("\n")) {
@@ -309,7 +307,7 @@ function stripVitePressArtifacts(md: string): string {
 }
 
 /** 页面已渲染 frontmatter title 作为 H1，正文首个 H1 与之重复，剥离 */
-function stripLeadingH1(md: string): string {
+export function stripLeadingH1(md: string): string {
   const m = md.match(/^\s*#\s+.*\n/);
   if (m && m.index !== undefined && m.index < 200) {
     return md.slice(0, m.index) + md.slice(m.index + m[0].length);
