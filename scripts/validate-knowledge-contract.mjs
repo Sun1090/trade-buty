@@ -33,7 +33,9 @@ function frontmatterOf(raw) {
 }
 
 const entries = fs.readdirSync(knowledgeRoot, { withFileTypes: true });
-const chapterDirs = entries.filter((e) => e.isDirectory());
+const chapterDirs = entries.filter(
+  (e) => e.isDirectory() && e.name !== "scripts" // 知识库自带维护脚本目录
+);
 const numbered = chapterDirs.filter((e) => /^\d{2}-/.test(e.name));
 
 if (numbered.length === 0) {
