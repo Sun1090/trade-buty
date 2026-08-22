@@ -275,6 +275,18 @@ export function convertContainers(md: string): string {
  * - 「篇目一览」节（内含 <DocCards> 组件，且与本站课程列表重复）
  * - 其他未支持的 VitePress 组件标签行
  */
+/** KbBadge 组件转为可见文字（保留"最基础/需杠杆"等提示），其余大写组件标签整段移除 */
+function convertComponents(md: string): string {
+  return md
+    .replace(/<KbBadge\b([\s\S]*?)\/>/g, (_m, attrs: string) => {
+      const t = attrs.match(/t="([^"]*)"/);
+      if (!t) return "";
+      const label = t[1].replace(/<\/?mark>/g, "");
+      return label ? `【${label}】` : "";
+    })
+    .replace(/<\/?[A-Z][A-Za-z]*\b[^>]*>/g, "");
+}
+
 export function stripVitePressArtifacts(md: string): string {
   const out: string[] = [];
   let skipping = false;
@@ -362,7 +374,8 @@ export function prepareForRender(
   chapterSlug: string
 ): string {
   const converted = convertContainers(md);
-  const stripped = stripVitePressArtifacts(converted);
+  const convertedComponents = convertComponents(converted);
+  const stripped = stripVitePressArtifacts(convertedComponents);
   return rewriteLinks(stripLeadingH1(stripped), locale, chapterSlug);
 }
 
