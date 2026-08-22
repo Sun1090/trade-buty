@@ -115,12 +115,10 @@ export default async function DocPage({
             chapterSlug={chapterSlug}
             chapterTitle={chapter.title}
             chapterTagline={chapter.tagline}
-            docMetas={docMetas}
-            currentDocSlug={docSlug}
+            docCount={docMetas.length}
             nextChapter={nextChapterMeta}
             locale={locale}
             dict={{
-              coursesHeading: t.chapter.coursesHeading,
               nextChapter: t.chapter.nextChapter,
               progressLabel: t.chapter.progressLabel,
               lessonsUnit: t.chapter.lessonsUnit,
@@ -138,43 +136,53 @@ export default async function DocPage({
         </Link>
       </nav>
 
-      <article>
+      {/* 课程标题 hero 区 */}
+      <header className="mb-8 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-6 sm:p-8">
         <MarkRead chapterNum={chapterSlug} docSlug={docSlug} />
-        <h1 className="text-2xl sm:text-3xl font-bold mb-8">{doc.title}</h1>
+        <h1 className="mt-4 text-2xl sm:text-3xl font-bold">{doc.title}</h1>
+        {doc.description && (
+          <p className="mt-2 text-sm text-muted leading-relaxed">
+            {doc.description}
+          </p>
+        )}
+      </header>
+
+      <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
         <Markdown content={prepareForRender(doc.content, locale, chapterSlug)} />
       </article>
 
-      {QUIZZES[chapterSlug] && (
-        <ChapterExamCard quiz={QUIZZES[chapterSlug]} dict={t.quiz} />
-      )}
+      {/* 测验 + 边学边练 双栏 */}
+      <div className="mt-8 grid gap-4 lg:grid-cols-2">
+        {QUIZZES[chapterSlug] && (
+          <ChapterExamCard quiz={QUIZZES[chapterSlug]} dict={t.quiz} />
+        )}
+        {chapterSlug === "technical-analysis" ? (
+          <LazyChartEmbed
+            dict={{
+              heading: t.chart.embedHeading,
+              loading: t.chart.loading,
+              error: t.chart.error,
+              retry: t.chart.retry,
+              disclaimer: t.chart.disclaimer,
+            }}
+          />
+        ) : (
+          <aside className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="font-semibold">{t.doc.practiceTitle}</p>
+              <p className="mt-1 text-sm text-muted">{t.doc.practiceBody}</p>
+            </div>
+            <Link
+              href={p("/chart")}
+              className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-5 py-2.5 transition shrink-0 text-sm"
+            >
+              {t.doc.practiceCta}
+            </Link>
+          </aside>
+        )}
+      </div>
 
-      {/* 边学边练 */}
-      {chapterSlug === "technical-analysis" ? (
-        <LazyChartEmbed
-          dict={{
-            heading: t.chart.embedHeading,
-            loading: t.chart.loading,
-            error: t.chart.error,
-            retry: t.chart.retry,
-            disclaimer: t.chart.disclaimer,
-          }}
-        />
-      ) : (
-        <aside className="mt-12 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent-dim)] p-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="font-semibold">{t.doc.practiceTitle}</p>
-            <p className="mt-1 text-sm text-muted">{t.doc.practiceBody}</p>
-          </div>
-          <Link
-            href={p("/chart")}
-            className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2.5 transition shrink-0"
-          >
-            {t.doc.practiceCta}
-          </Link>
-        </aside>
-      )}
-
-      <nav className="mt-16 pt-6 border-t border-[var(--border)] grid gap-3 sm:grid-cols-2 text-sm">
+      <nav className="mt-8 pt-6 border-t border-[var(--border)] grid gap-3 sm:grid-cols-2 text-sm">
         {prev ? (
           <Link
             href={p(`/knowledge/${chapterSlug}/${prev.slug}`)}

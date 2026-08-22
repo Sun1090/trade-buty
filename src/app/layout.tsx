@@ -27,7 +27,7 @@ const themeInitScript = `(function(){try{var t=localStorage.getItem("tb-theme");
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="zh-CN"
+      lang="en"
       data-theme="dark"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >

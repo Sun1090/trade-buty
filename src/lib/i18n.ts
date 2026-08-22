@@ -1,6 +1,6 @@
 export type Locale = "zh" | "en";
 export const LOCALES: Locale[] = ["zh", "en"];
-export const DEFAULT_LOCALE: Locale = "zh";
+export const DEFAULT_LOCALE: Locale = "en";
 
 const zh = {
   nav: { path: "学习路线", chart: "行情", replay: "回放", review: "复习", search: "搜索", github: "GitHub 仓库" },
