@@ -26,20 +26,18 @@ export function AuthHeader({ locale, dict }: {
   const initial = email.charAt(0).toUpperCase() || "U";
 
   return (
-    <div className="flex items-center gap-2">
+    <button
+      onClick={() => getSupabaseBrowser().auth.signOut()}
+      title={`${email} · ${dict.logout}`}
+      aria-label={`${dict.logout} (${email})`}
+      className="px-2 sm:px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition whitespace-nowrap text-sm flex items-center gap-1.5"
+    >
       <span
-        className="hidden sm:flex items-center justify-center h-7 w-7 rounded-full bg-accent/20 text-accent text-xs font-bold"
-        title={email}
+        className="flex items-center justify-center h-6 w-6 rounded-full bg-accent/20 text-accent text-xs font-bold"
       >
         {initial}
       </span>
-      <button
-        onClick={() => getSupabaseBrowser().auth.signOut()}
-        className="px-2 sm:px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition whitespace-nowrap text-sm"
-      >
-        <span aria-hidden>↩</span>{" "}
-        <span className="hidden min-[480px]:inline">{dict.logout}</span>
-      </button>
-    </div>
+      <span className="hidden min-[480px]:inline">{dict.logout}</span>
+    </button>
   );
 }
