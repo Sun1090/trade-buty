@@ -29,6 +29,7 @@ export interface ReplayDict {
   feedbackUp: string;
   feedbackDown: string;
   youGot: string;
+  summaryTitle: string;
   streak: string;
   best: string;
   accuracy: string;
@@ -45,6 +46,15 @@ interface GuessState {
   /** 当前待预测：null 表示已预测等待揭晓 */
   pending: "up" | "down" | null;
   lastFeedback: string | null;
+}
+
+function gradeOf(total: number, correct: number): string {
+  if (total === 0) return "-";
+  const acc = correct / total;
+  if (acc >= 0.7) return "S";
+  if (acc >= 0.6) return "A";
+  if (acc >= 0.5) return "B";
+  return "C";
 }
 
 const BEST_KEY = "tb-replay-best";
@@ -281,14 +291,25 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
               <p className="text-sm font-mono text-accent">{guess.lastFeedback}</p>
             )}
             {finished ? (
-              <p className="text-sm text-muted">
-                {dict.rounds}: {guess.correct}/{guess.total} ·{" "}
-                {dict.accuracy}:{" "}
-                {guess.total > 0
-                  ? Math.round((guess.correct / guess.total) * 100)
-                  : 0}
-                %
-              </p>
+              <div className="rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-dim)] p-5 text-center">
+                <p className="text-sm text-faint">{dict.summaryTitle}</p>
+                <p className="mt-2 font-mono text-4xl font-bold text-accent">
+                  {gradeOf(guess.total, guess.correct)}
+                </p>
+                <p className="mt-3 text-sm text-muted">
+                  {guess.correct}/{guess.total} · {dict.accuracy}:{" "}
+                  {guess.total > 0
+                    ? Math.round((guess.correct / guess.total) * 100)
+                    : 0}
+                  % · {dict.streak} {guess.streak} · {dict.best} {guess.best}
+                </p>
+                <button
+                  onClick={() => setRound((r) => r + 1)}
+                  className="mt-4 rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2 transition"
+                >
+                  {dict.newRound}
+                </button>
+              </div>
             ) : guess.pending === null ? (
               <>
                 <p className="font-medium">{dict.guessPrompt}</p>
