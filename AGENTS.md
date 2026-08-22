@@ -49,7 +49,7 @@ npm run typecheck    # 类型检查（tsc --noEmit）
 ## Submodule 操作规范
 
 - 首次 clone 后需要 `git submodule update --init` 才有内容
-- 更新知识库：`git submodule update --remote content/kline-buty`
+- 更新知识库：`npm run kb:update`（拉取 + 契约校验 + 资产/索引同步 + 构建回归，一条龙）
 - 提交包含 submodule 指针变更时，commit message 说明同步到了哪个知识库版本
 - 构建前确认 `content/kline-buty/docs/knowledge/` 存在，缺失时给出明确报错而不是空页面
 

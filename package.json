@@ -9,7 +9,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "kb:update": "bash scripts/update-knowledge.sh"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",

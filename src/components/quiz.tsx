@@ -112,6 +112,14 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
       <p className="text-xs text-faint">
         {tpl(dict.progressTpl, { i: current + 1, n: quiz.questions.length })}{correct}
       </p>
+      <div className="mt-2 h-1 rounded-full bg-white/10 overflow-hidden">
+        <div
+          className="h-full bg-accent transition-all duration-300"
+          style={{
+            width: `${((current + (picked !== null ? 1 : 0)) / quiz.questions.length) * 100}%`,
+          }}
+        />
+      </div>
       <p className="mt-3 font-medium leading-relaxed">{q.question}</p>
       <ul className="mt-5 space-y-2.5">
         {q.options.map((opt, i) => {
