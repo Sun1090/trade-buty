@@ -37,9 +37,13 @@
 
 ### P2 账号与进度
 
-- Clerk 注册登录
-- Supabase + Drizzle：云端学习进度存档、错题本、学习统计
-- 章节解锁机制（闯关式路径）
+- ~~Clerk 注册登录~~ → 改用 Supabase Auth（邮箱魔法链接），砍掉 Clerk 依赖
+- ~~Supabase + Drizzle~~：云端学习进度存档、错题本、学习统计 ✓
+  - 5 张表（progress / wrongbook / quiz_scores / replay_history / replay_best）+ RLS
+  - 双写同步层：localStorage 仍为即时真相，登录后 fire-and-forget 写云端
+  - 登录时合并：云端拉取 + 本地取并集（进度并集、错题并集、测验取最高分、回放记录并集去重）
+  - 12 个合并算法单元测试
+- 章节解锁机制（闯关式路径）——待定，需先定义「完成标准」
 
 前置条件：P1 上线后有一定留存数据再动工。
 
@@ -79,7 +83,7 @@
 | 测试 | Vitest + Playwright | P0 |
 | CI/CD | GitHub Actions + Vercel | P0 |
 | 行情数据 | 币安公开 API（复用 kline-buty 封装） | P1 |
-| 认证 | Clerk | P2 |
+| 认证 | Supabase Auth（邮箱魔法链接） | P2（砍掉 Clerk，少一个服务） |
 | 数据库 | Supabase PostgreSQL + Drizzle ORM | P2 |
 | LLM | Claude API + pgvector | P3 |
 
