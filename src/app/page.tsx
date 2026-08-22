@@ -25,7 +25,7 @@ export default function Home() {
               <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
               免费开源 · 不荐股 · 不导流 · 不承诺收益
             </p>
-            <h1 className="mt-7 text-4xl sm:text-5xl xl:text-6xl font-bold tracking-tight leading-[1.15]">
+            <h1 className="mt-7 text-3xl min-[420px]:text-4xl sm:text-5xl xl:text-6xl font-bold tracking-tight leading-[1.15]">
               先学会不亏大钱，
               <br />
               再谈
