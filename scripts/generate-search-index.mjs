@@ -39,7 +39,6 @@ function parseTitle(raw, fallback) {
 function orderOf(raw) {
   const t = parseTitle(raw, "");
   const m = t.match(/^(\d+)/);
-  const idx = raw.search(/^title:/m);
   return m ? Number(m[1]) : 999;
 }
 

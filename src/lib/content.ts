@@ -48,16 +48,6 @@ function localeRoot(locale: string): string {
   return root;
 }
 
-/** 章节 README 的 H1 形如 `# NN · 名称`，取 NN 作为排序序号 */
-function chapterOrder(readmePath: string): number {
-  try {
-    const h1 = fs.readFileSync(readmePath, "utf8").match(/^#\s+(\d+)/m);
-    return h1 ? Number(h1[1]) : 999;
-  } catch {
-    return 999;
-  }
-}
-
 export function isValidContentLocale(v: string): v is ContentLocale {
   return (LOCALES as readonly string[]).includes(v);
 }
