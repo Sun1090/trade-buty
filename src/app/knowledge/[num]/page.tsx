@@ -5,6 +5,7 @@ import { getChapter, getChapterNums, getDocMetas, prepareForRender } from "@/lib
 import { QUIZZES } from "@/lib/quizzes";
 import { Markdown } from "@/components/markdown";
 import { Quiz } from "@/components/quiz";
+import { DocList } from "@/components/doc-list";
 
 export function generateStaticParams() {
   return getChapterNums().map((num) => ({ num }));
@@ -62,24 +63,7 @@ export default async function ChapterPage({
       )}
 
       <section className="mt-10">
-        <h2 className="text-sm font-semibold uppercase tracking-wide opacity-50 mb-4">
-          本篇课程（{docs.length} 篇）
-        </h2>
-        <ol className="space-y-3">
-          {docs.map((d) => (
-            <li key={d.slug}>
-              <Link
-                href={`/knowledge/${num}/${d.slug}`}
-                className="block rounded-lg border border-black/10 dark:border-white/15 px-5 py-4 hover:border-blue-500/60 transition"
-              >
-                <span className="font-medium">{d.title}</span>
-                {d.description && (
-                  <p className="mt-1 text-sm opacity-60 line-clamp-2">{d.description}</p>
-                )}
-              </Link>
-            </li>
-          ))}
-        </ol>
+        <DocList metas={docs} num={num} />
       </section>
     </div>
   );

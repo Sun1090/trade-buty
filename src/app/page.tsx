@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getChapters } from "@/lib/content";
 import { HeroChart } from "@/components/hero-chart";
+import { GlobalReadStat } from "@/components/global-read-stat";
 
 export default function Home() {
   const chapters = getChapters();
@@ -50,6 +51,7 @@ export default function Home() {
                 查看学习路线
               </Link>
             </div>
+            <GlobalReadStat totalDocs={totalDocs} />
           </div>
           <div className="hidden lg:block">
             <HeroChart />
