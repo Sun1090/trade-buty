@@ -150,6 +150,20 @@ export function getChapter(
   return { chapter, introContent };
 }
 
+/** 篇章的前后邻居（按章节排序），用于"下一篇章"CTA */
+export function getAdjacentChapters(
+  locale: string,
+  chapterSlug: string,
+): { prev: Chapter | null; next: Chapter | null } {
+  const chapters = getChapters(locale);
+  const idx = chapters.findIndex((c) => c.slug === chapterSlug);
+  if (idx === -1) return { prev: null, next: null };
+  return {
+    prev: idx > 0 ? chapters[idx - 1] : null,
+    next: idx < chapters.length - 1 ? chapters[idx + 1] : null,
+  };
+}
+
 /** zh 版文档顺序作为跨语言基准（en 已无序号） */
 function docOrderMap(chapterSlug: string): Map<string, number> {
   try {
@@ -234,6 +248,7 @@ export function convertContainers(md: string): string {
     const open = line.match(/^:{3,}\s*([a-zA-Z]+)\s*(.*)$/);
     if (!inContainer && open && !line.startsWith(":::/")) {
       inContainer = true;
+      const type = open[1].toLowerCase();
       const label =
         open[2].trim() ||
         {
@@ -242,21 +257,30 @@ export function convertContainers(md: string): string {
           danger: "🚨 危险",
           warning: "⚠️ 注意",
           details: "详情",
-        }[open[1].toLowerCase()] ||
+        }[type] ||
         "⚠️ 注意";
-      out.push(`> **${label}**`, ">");
+      // 输出 HTML callout 容器（rehypeRaw 已启用，可渲染原始 HTML）
+      // 后续行作为 markdown 内容渲染，包在 div 里
+      out.push(
+        `<div class="callout callout-${type}">`,
+        `<p class="callout-title">${label}</p>`,
+        "",
+      );
       continue;
     }
     if (inContainer && /^:{3,}\s*$/.test(line)) {
       inContainer = false;
+      out.push("", "</div>", "");
       continue;
     }
     if (inContainer) {
-      out.push(line.trim() ? `> ${line}` : ">");
+      out.push(line);
     } else {
       out.push(line);
     }
   }
+  // 未闭合的容器兜底关 div
+  if (inContainer) out.push("", "</div>", "");
   return out.join("\n");
 }
 

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  getAdjacentChapters,
   getAdjacentDocs,
   getChapter,
   getChapterSlugs,
@@ -12,7 +13,8 @@ import {
 import { getDict, isLocale } from "@/lib/i18n";
 import { QUIZZES } from "@/lib/quizzes";
 import { Markdown } from "@/components/markdown";
-import { Quiz } from "@/components/quiz";
+import { ChapterExamCard } from "@/components/chapter-exam-card";
+import { ChapterRail } from "@/components/chapter-rail";
 import { MarkRead } from "@/components/mark-read";
 import { LazyChartEmbed } from "@/components/chart-embed";
 import { Toc } from "@/components/toc";
@@ -81,7 +83,17 @@ export default async function DocPage({
     );
   }
   const { prev, next } = getAdjacentDocs(locale, chapterSlug, docSlug);
-  const chapter = getChapter(locale, chapterSlug)?.chapter;
+  const chapterData = getChapter(locale, chapterSlug);
+  const chapter = chapterData?.chapter;
+  const docMetas = getDocMetas(locale, chapterSlug);
+  const { next: nextChapter } = getAdjacentChapters(locale, chapterSlug);
+  const nextChapterMeta = nextChapter
+    ? {
+        slug: nextChapter.slug,
+        title: nextChapter.title,
+        tagline: nextChapter.tagline,
+      }
+    : null;
 
   const headings = extractHeadings(doc.content);
   const tools = t.docTools;
@@ -96,7 +108,26 @@ export default async function DocPage({
         copyLabel={tools.copyCode}
       />
       <ImageLightbox containerSelector="article" closeLabel={tools.lightboxClose} />
-    <div className="mx-auto max-w-3xl px-4 sm:px-5 py-10">
+    <div className="mx-auto max-w-[1400px] px-4 sm:px-6 py-10">
+      <div className="grid xl:grid-cols-[260px_1fr] gap-8">
+        {chapter && (
+          <ChapterRail
+            chapterSlug={chapterSlug}
+            chapterTitle={chapter.title}
+            chapterTagline={chapter.tagline}
+            docMetas={docMetas}
+            currentDocSlug={docSlug}
+            nextChapter={nextChapterMeta}
+            locale={locale}
+            dict={{
+              coursesHeading: t.chapter.coursesHeading,
+              nextChapter: t.chapter.nextChapter,
+              progressLabel: t.chapter.progressLabel,
+              lessonsUnit: t.chapter.lessonsUnit,
+            }}
+          />
+        )}
+        <div className="min-w-0 max-w-3xl">
       <nav className="text-sm text-muted mb-6">
         <Link href={p("/")} className="hover:text-accent">
           {t.nav.path}
@@ -113,8 +144,8 @@ export default async function DocPage({
         <Markdown content={prepareForRender(doc.content, locale, chapterSlug)} />
       </article>
 
-      {QUIZZES[chapterSlug]?.docSlug === docSlug && (
-        <Quiz quiz={QUIZZES[chapterSlug]} dict={t.quiz} />
+      {QUIZZES[chapterSlug] && (
+        <ChapterExamCard quiz={QUIZZES[chapterSlug]} dict={t.quiz} />
       )}
 
       {/* 边学边练 */}
@@ -165,6 +196,8 @@ export default async function DocPage({
           </Link>
         )}
       </nav>
+        </div>
+      </div>
     </div>
     </div>
   );

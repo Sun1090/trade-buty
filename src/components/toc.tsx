@@ -32,7 +32,7 @@ export function Toc({ items, heading }: { items: TocItem[]; heading: string }) {
   return (
     <nav
       aria-label={heading}
-      className="hidden xl:block fixed right-6 top-24 w-52 max-h-[calc(100vh-8rem)] overflow-y-auto"
+      className="hidden 2xl:block fixed right-6 top-24 w-52 max-h-[calc(100vh-8rem)] overflow-y-auto"
     >
       <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-3">
         {heading}
