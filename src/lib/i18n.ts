@@ -87,6 +87,12 @@ const zh = {
     backToTop: "回到顶部",
     copyCode: "复制",
     copied: "已复制 ✓",
+    lightboxClose: "关闭大图",
+  },
+  notFound: {
+    docMissing: "这一节不存在",
+    docHint: "可能尚未翻译或链接有误——本章现有课程如下：",
+    chapterMissing: "这个篇章不存在",
   },
   review: {
     title: "错题本",
@@ -132,6 +138,8 @@ const zh = {
     placeholder: "输入关键词，如：止损、保证金、K 线…",
     resultsTpl: "{n} 条结果",
     noResults: "没有匹配的结果",
+    emptyHint: "换个关键词试试，或者",
+    browseCta: "去学习路线逛逛 →",
   },
   footer: {
     tagline: "面向全球中文用户的免费中立交易教育平台。分级课程（学）× 真实行情图表与回放（练）。",
@@ -224,6 +232,12 @@ const en: Dict = {
     backToTop: "Back to top",
     copyCode: "Copy",
     copied: "Copied ✓",
+    lightboxClose: "Close image",
+  },
+  notFound: {
+    docMissing: "This lesson doesn't exist",
+    docHint: "It may not be translated yet, or the link is off — available lessons in this chapter:",
+    chapterMissing: "This chapter doesn't exist",
   },
   review: {
     title: "Wrong Answer Book",
@@ -269,6 +283,8 @@ const en: Dict = {
     placeholder: "Type keywords, e.g. stop loss, margin…",
     resultsTpl: "{n} result(s)",
     noResults: "No matches",
+    emptyHint: "Try another keyword, or",
+    browseCta: "browse the learning path →",
   },
   footer: {
     tagline: "A free & neutral trading education platform for Chinese speakers worldwide. Structured courses (learn) × live charts & replay (practice).",
