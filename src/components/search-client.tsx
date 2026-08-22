@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface Entry {
   url: string;
@@ -29,9 +30,15 @@ function snippet(text: string, q: string): string {
   return (start > 0 ? "…" : "") + text.slice(start, idx + q.length + 60) + "…";
 }
 
-export default function SearchPage() {
+export function SearchClient({
+  dict,
+}: {
+  dict: { placeholder: string; resultsTpl: string; noResults: string };
+}) {
   const [query, setQuery] = useState("");
   const [entries, setEntries] = useState<Entry[] | null>(null);
+  const pathname = usePathname() ?? "";
+  const locale = pathname.split("/")[1] || "zh";
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -53,31 +60,32 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-2xl font-bold mb-6">搜索课程</h1>
+    <div>
       <input
         type="search"
         value={query}
         onChange={(e) => onInput(e.target.value)}
-        placeholder="输入关键词，如：止损、保证金、K 线…"
+        placeholder={dict.placeholder}
         autoFocus
-        className="w-full rounded-lg border border-black/15 dark:border-white/20 bg-transparent px-4 py-3 outline-none focus:border-blue-500"
+        className="w-full rounded-lg border border-[var(--border-strong)] bg-transparent px-4 py-3 outline-none focus:border-accent"
       />
       {query.trim() && (
-        <p className="mt-4 text-sm opacity-60">
-          {results.length > 0 ? `${results.length} 条结果` : "没有匹配的结果"}
+        <p className="mt-4 text-sm text-muted">
+          {results.length > 0 ? dict.resultsTpl.replace("{n}", String(results.length)) : dict.noResults}
         </p>
       )}
       <ul className="mt-4 space-y-3">
         {results.map((r) => (
           <li key={r.url}>
             <Link
-              href={r.url}
-              className="block rounded-lg border border-black/10 dark:border-white/15 px-5 py-4 hover:border-blue-500/60 transition"
+              href={`/${locale}${r.url}`}
+              className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/60 transition"
             >
               <span className="font-medium">{r.title}</span>
-              <span className="ml-2 text-xs opacity-40">{r.chapter}</span>
-              <p className="mt-1 text-sm opacity-60">{snippet(r.text, query.trim().toLowerCase())}</p>
+              <span className="ml-2 text-xs text-faint">{r.chapter}</span>
+              <p className="mt-1 text-sm text-muted">
+                {snippet(r.text, query.trim().toLowerCase())}
+              </p>
             </Link>
           </li>
         ))}

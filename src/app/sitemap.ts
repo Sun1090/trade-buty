@@ -2,28 +2,31 @@ import type { MetadataRoute } from "next";
 import { getChapterNums, getDocMetas } from "@/lib/content";
 
 const BASE = "https://trade-buty.vercel.app";
+const LOCALES = ["zh", "en"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const staticPages: MetadataRoute.Sitemap = [
-    { url: BASE, changeFrequency: "weekly", priority: 1 },
-    { url: `${BASE}/path`, changeFrequency: "monthly", priority: 0.9 },
-    { url: `${BASE}/search`, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${BASE}/chart`, changeFrequency: "daily", priority: 0.6 },
+  const paths: { path: string; priority: number; freq: "daily" | "weekly" | "monthly" }[] = [
+    { path: "", priority: 1, freq: "weekly" },
+    { path: "/path", priority: 0.9, freq: "monthly" },
+    { path: "/chart", priority: 0.6, freq: "daily" },
+    { path: "/search", priority: 0.4, freq: "monthly" },
+    { path: "/knowledge/01", priority: 0.7, freq: "monthly" },
   ];
-  const docs: MetadataRoute.Sitemap = [];
   for (const num of getChapterNums()) {
-    docs.push({
-      url: `${BASE}/knowledge/${num}`,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    });
+    paths.push({ path: `/knowledge/${num}`, priority: 0.7, freq: "monthly" });
     for (const doc of getDocMetas(num)) {
-      docs.push({
-        url: `${BASE}/knowledge/${num}/${doc.slug}`,
-        changeFrequency: "monthly",
+      paths.push({
+        path: `/knowledge/${num}/${doc.slug}`,
         priority: 0.8,
+        freq: "monthly",
       });
     }
   }
-  return [...staticPages, ...docs];
+  return LOCALES.flatMap((locale) =>
+    paths.map(({ path, priority, freq }) => ({
+      url: `${BASE}/${locale}${path}`,
+      changeFrequency: freq,
+      priority,
+    }))
+  );
 }

@@ -1,9 +1,22 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { getChapters } from "@/lib/content";
+import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { HeroChart } from "@/components/hero-chart";
 import { GlobalReadStat } from "@/components/global-read-stat";
 
-export default function Home() {
+export function generateStaticParams() {
+  return LOCALES.map((locale) => ({ locale }));
+}
+
+export default async function Home({
+  params,
+}: PageProps<"/[locale]">) {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+  const t = getDict(locale);
+  const p = (path: string) => `/${locale}${path}`;
+
   const chapters = getChapters();
   const totalDocs = chapters.reduce((s, c) => s + c.docCount, 0);
 
@@ -23,35 +36,38 @@ export default function Home() {
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-[var(--accent)]/30 bg-[var(--accent-dim)] px-4 py-1.5 text-xs font-medium text-accent">
               <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-              免费开源 · 不荐股 · 不导流 · 不承诺收益
+              {t.home.badge}
             </p>
             <h1 className="mt-7 text-3xl min-[420px]:text-4xl sm:text-5xl xl:text-6xl font-bold tracking-tight leading-[1.15]">
-              先学会不亏大钱，
+              {t.home.title1}
               <br />
-              再谈
+              {t.home.title2Pre}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-indigo-400">
-                {" "}赚钱
+                {t.home.title2Accent}
               </span>
             </h1>
             <p className="mt-6 max-w-lg text-base sm:text-lg leading-relaxed text-muted">
-              {chapters.length} 个篇章、{totalDocs} 篇课程的系统化中文交易教育。
-              只讲知识，不卖课，不带节奏。
+              {t.home.subtitle(chapters.length, totalDocs)}
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Link
-                href="/knowledge/01"
+                href={p("/knowledge/01")}
                 className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-8 py-3.5 transition shadow-lg shadow-emerald-500/20"
               >
-                从第 01 课开始 →
+                {t.home.ctaStart}
               </Link>
               <Link
-                href="/path"
+                href={p("/path")}
                 className="rounded-full border border-border-strong hover:border-[var(--accent)]/60 px-8 py-3.5 font-medium transition"
               >
-                查看学习路线
+                {t.home.ctaPath}
               </Link>
             </div>
-            <GlobalReadStat totalDocs={totalDocs} />
+            <GlobalReadStat
+              totalDocs={totalDocs}
+              textTpl={t.home.readTpl}
+              keepGoing={t.home.readKeepGoing}
+            />
           </div>
           <div className="hidden lg:block">
             <HeroChart />
@@ -61,12 +77,7 @@ export default function Home() {
         {/* 数据条 */}
         <div className="relative border-t border-[var(--border)]">
           <dl className="mx-auto max-w-6xl px-5 grid grid-cols-2 sm:grid-cols-4 divide-x divide-[var(--border)]">
-            {[
-              ["27", "篇章体系"],
-              [String(totalDocs), "篇深度课程"],
-              ["4.2万+", "行原创内容"],
-              ["¥0", "永久免费"],
-            ].map(([v, k]) => (
+            {t.home.stats.map(([v, k]) => (
               <div key={k} className="py-6 text-center">
                 <dt className="text-2xl sm:text-3xl font-bold text-accent">{v}</dt>
                 <dd className="mt-1 text-xs text-faint">{k}</dd>
@@ -80,28 +91,12 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-5 py-20">
         <header className="max-w-xl">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-            Principles
+            {t.home.principlesLabel}
           </p>
-          <h2 className="text-3xl font-bold mt-3">为什么值得信任</h2>
+          <h2 className="text-3xl font-bold mt-3">{t.home.principlesTitle}</h2>
         </header>
         <div className="grid gap-4 sm:grid-cols-3 mt-10">
-          {[
-            {
-              t: "中立，不带货",
-              d: "不推荐任何券商、基金、信号源。内容全部开源在 GitHub，每一篇都带定制化风险提示。",
-              icon: "⚖️",
-            },
-            {
-              t: "先教避坑",
-              d: "第 08 篇就是「入土篇」：骗局识别、爆仓的数学、退出机制。先学怎么不死，再学怎么赢。",
-              icon: "🛡️",
-            },
-            {
-              t: "边学边练（开发中）",
-              d: "概念页内嵌真实行情 K 线与历史回放练习。读完就能上手验证，而不是纸上谈兵。",
-              icon: "📈",
-            },
-          ].map((f) => (
+          {t.home.principles.map((f) => (
             <div
               key={f.t}
               className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 hover:border-[var(--accent)]/40 transition"
@@ -126,18 +121,16 @@ export default function Home() {
             aria-hidden
           />
           <h2 className="relative text-2xl sm:text-3xl font-bold">
-            市场永远都在，
+            {t.home.ctaTitle1}
             <br className="sm:hidden" />
-            本金只有一次。
+            {t.home.ctaTitle2}
           </h2>
-          <p className="relative mt-4 text-muted max-w-md mx-auto">
-            花两周把主线走完，再决定要不要开户。
-          </p>
+          <p className="relative mt-4 text-muted max-w-md mx-auto">{t.home.ctaBody}</p>
           <Link
-            href="/knowledge/01"
+            href={p("/knowledge/01")}
             className="relative inline-block mt-8 rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-10 py-3.5 transition shadow-lg shadow-emerald-500/25"
           >
-            现在开始，免费 →
+            {t.home.ctaButton}
           </Link>
         </div>
       </section>

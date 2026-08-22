@@ -3,6 +3,21 @@
 import { useEffect, useState } from "react";
 import type { ChapterQuiz } from "@/lib/quiz-types";
 
+interface QuizDict {
+  questionsUnit: string;
+  bestTpl: string;
+  start: string;
+  retry: string;
+  progressTpl: string;
+  correct: string;
+  wrong: string;
+  nextQ: string;
+  finish: string;
+}
+
+const tpl = (s: string, vars: Record<string, string | number>) =>
+  s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k]));
+
 const key = (ch: string) => `tb-quiz-${ch}`;
 
 interface Progress {
@@ -10,7 +25,7 @@ interface Progress {
   done: boolean;
 }
 
-export function Quiz({ quiz }: { quiz: ChapterQuiz }) {
+export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
   const [started, setStarted] = useState(false);
   const [current, setCurrent] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
@@ -68,9 +83,9 @@ export function Quiz({ quiz }: { quiz: ChapterQuiz }) {
           <div>
             <p className="font-semibold">✏️ {quiz.title}</p>
             <p className="mt-1 text-sm text-muted">
-              {quiz.questions.length} 道概念题 · 即时判分
+              {dict.questionsUnit}
               {progress?.done && (
-                <span className="ml-2 text-accent">历史最佳 {progress.best}/{quiz.questions.length}</span>
+                <span className="ml-2 text-accent">{tpl(dict.bestTpl, { n: progress.best, total: quiz.questions.length })}</span>
               )}
             </p>
           </div>
@@ -78,7 +93,7 @@ export function Quiz({ quiz }: { quiz: ChapterQuiz }) {
             onClick={() => setStarted(true)}
             className="rounded-full border border-accent/50 bg-accent-dim text-accent font-semibold px-6 py-2.5 hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition shrink-0"
           >
-            {progress?.done ? "再测一次" : "开始测验"}
+            {progress?.done ? dict.retry : dict.start}
           </button>
         </div>
       </div>
@@ -89,7 +104,7 @@ export function Quiz({ quiz }: { quiz: ChapterQuiz }) {
   return (
     <div className="mt-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
       <p className="text-xs text-faint">
-        第 {current + 1} / {quiz.questions.length} 题 · 已答对 {correct}
+        {tpl(dict.progressTpl, { i: current + 1, n: quiz.questions.length })}{correct}
       </p>
       <p className="mt-3 font-medium leading-relaxed">{q.question}</p>
       <ul className="mt-5 space-y-2.5">
@@ -121,14 +136,14 @@ export function Quiz({ quiz }: { quiz: ChapterQuiz }) {
       {picked !== null && (
         <div className="mt-5 rounded-xl bg-black/20 dark:bg-white/5 p-4 text-sm space-y-3">
           <p className="font-semibold">
-            {picked === q.answer ? "✅ 答对了" : "❌ 不对，看解析"}
+            {picked === q.answer ? dict.correct : dict.wrong}
           </p>
           <p className="text-muted leading-relaxed">{q.explain}</p>
           <button
             onClick={next}
             className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2 transition"
           >
-            {current === quiz.questions.length - 1 ? "完成" : "下一题 →"}
+            {current === quiz.questions.length - 1 ? dict.finish : dict.nextQ}
           </button>
         </div>
       )}
