@@ -126,6 +126,61 @@ export function KlineChart() {
     };
   }, [symbol, interval_]);
 
+  // WS 实时更新最后一根 K 线（指数退避重连）
+  useEffect(() => {
+    const stream = `${symbol.toLowerCase()}@kline_${interval_}`;
+    let ws: WebSocket | null = null;
+    let retry = 0;
+    let closed = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    function connect() {
+      if (closed) return;
+      ws = new WebSocket(`wss://stream.binance.com:9443/ws/${stream}`);
+      ws.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data as string) as {
+            k?: Record<string, string | number>;
+          };
+          const k = msg.k;
+          if (!k || !candleRef.current) return;
+          const bar = {
+            time: (Math.floor(Number(k.t) / 1000) - 8 * 3600) as UTCTimestamp,
+            open: Number(k.o),
+            high: Number(k.h),
+            low: Number(k.l),
+            close: Number(k.c),
+          };
+          candleRef.current.update(bar);
+          volumeRef.current?.update({
+            time: bar.time,
+            value: Number(k.v),
+            color:
+              bar.close >= bar.open
+                ? "rgba(52,211,153,.4)"
+                : "rgba(248,113,113,.4)",
+          });
+          setLastPrice(bar.close);
+        } catch {
+          // 单帧异常忽略，不打断连接
+        }
+      };
+      ws.onclose = () => {
+        if (closed) return;
+        const delay = Math.min(1000 * 2 ** retry++, 30000);
+        timer = setTimeout(connect, delay);
+      };
+    }
+    connect();
+
+    return () => {
+      closed = true;
+      if (timer) clearTimeout(timer);
+      ws?.close();
+      retry = 0;
+    };
+  }, [symbol, interval_]);
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
