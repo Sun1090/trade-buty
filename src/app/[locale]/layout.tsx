@@ -53,6 +53,12 @@ export default async function LocaleLayout({
               {t.nav.chart}
             </Link>
             <Link
+              href={p("/replay")}
+              className="px-2 sm:px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition whitespace-nowrap"
+            >
+              {t.nav.replay}
+            </Link>
+            <Link
               href={p("/search")}
               className="px-2 sm:px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition whitespace-nowrap"
             >
@@ -94,6 +100,9 @@ export default async function LocaleLayout({
             </Link>
             <Link href={p("/chart")} className="block text-muted hover:text-accent transition">
               {t.nav.chart}
+            </Link>
+            <Link href={p("/replay")} className="block text-muted hover:text-accent transition">
+              {t.nav.replay}
             </Link>
             <Link href={p("/search")} className="block text-muted hover:text-accent transition">
               {t.nav.search}

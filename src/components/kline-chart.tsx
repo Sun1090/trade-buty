@@ -10,6 +10,7 @@ import {
   type ISeriesApi,
   type UTCTimestamp,
 } from "lightweight-charts";
+import { fetchKlines } from "@/lib/binance";
 
 const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] as const;
 const INTERVALS = ["15m", "1h", "4h", "1d"] as const;
@@ -19,32 +20,6 @@ interface ChartDict {
   error: string;
   retry: string;
   disclaimer: string;
-}
-
-interface Kline {
-  time: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-}
-
-async function fetchKlines(symbol: string, interval: string): Promise<Kline[]> {
-  const res = await fetch(
-    `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=500`
-  );
-  if (!res.ok) throw new Error(`行情请求失败 (${res.status})`);
-  const raw = (await res.json()) as unknown[][];
-  return raw.map((k) => ({
-    // 币安开盘时间 ms → 秒；对齐到 UTC 避免时区偏移
-    time: (Math.floor(Number(k[0]) / 1000) - 8 * 3600) as UTCTimestamp,
-    open: Number(k[1]),
-    high: Number(k[2]),
-    low: Number(k[3]),
-    close: Number(k[4]),
-    volume: Number(k[5]),
-  }));
 }
 
 export function KlineChart({ dict }: { dict: ChartDict }) {
