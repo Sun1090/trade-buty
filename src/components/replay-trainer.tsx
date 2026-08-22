@@ -9,6 +9,7 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 import { fetchRandomHistoryWindow, type Kline } from "@/lib/binance";
+import { saveReplayRecord } from "@/lib/replay-store";
 
 const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] as const;
 const INTERVALS = ["15m", "1h", "4h", "1d"] as const;
@@ -80,6 +81,26 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
     lastFeedback: null,
   });
   const [error, setError] = useState(false);
+  const savedRoundRef = useRef(0);
+
+  useEffect(() => {
+    if (
+      guessMode &&
+      klines &&
+      idx >= klines.length &&
+      guess.total > 0 &&
+      savedRoundRef.current !== round
+    ) {
+      savedRoundRef.current = round;
+      saveReplayRecord({
+        symbol,
+        interval: interval_,
+        total: guess.total,
+        correct: guess.correct,
+        bestStreak: guess.best,
+      });
+    }
+  }, [guessMode, klines, idx, guess.total, guess.correct, guess.best, round, symbol, interval_]);
 
   // 载入随机历史窗口
   useEffect(() => {

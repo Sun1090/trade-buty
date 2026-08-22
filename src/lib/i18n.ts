@@ -114,6 +114,11 @@ const zh = {
     summaryTitle: "本轮小结",
     contextNote: "前 30 根为背景走势，从第 31 根开始回放。",
     disclaimer: "⚠️ 历史数据仅用于学习研究。历史走势不代表未来，猜对也不构成任何投资建议。",
+    histTitle: "训练记录",
+    histRounds: "累计轮次",
+    histAccuracy: "总正确率",
+    histEmpty: "完成一轮猜涨跌后，这里会出现你的训练记录。",
+    histRecent: "最近记录",
   },
   search: {
     title: "搜索课程",
@@ -239,6 +244,11 @@ const en: Dict = {
     summaryTitle: "Round Summary",
     contextNote: "First 30 candles are context; replay starts from #31.",
     disclaimer: "⚠️ Historical data is for study only. Past performance does not represent the future.",
+    histTitle: "Training Log",
+    histRounds: "Total rounds",
+    histAccuracy: "Overall accuracy",
+    histEmpty: "Finish a guess round and your training log will appear here.",
+    histRecent: "Recent rounds",
   },
   search: {
     title: "Search Lessons",
