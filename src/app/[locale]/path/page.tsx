@@ -22,7 +22,7 @@ export default async function PathPage({
   if (!isLocale(locale)) notFound();
   const t = getDict(locale);
   const p = (path: string) => `/${locale}${path}`;
-  const groups = getStageGroups().map((g) => ({
+  const groups = getStageGroups(locale).map((g) => ({
     ...g,
     stageText: t.path.stages[g.stage.id],
   }));
@@ -36,6 +36,14 @@ export default async function PathPage({
         </p>
         <h1 className="text-3xl sm:text-4xl font-bold mt-3">{t.path.title}</h1>
         <p className="mt-4 text-muted leading-relaxed">{t.path.intro}</p>
+        {t.path.translationNote && (
+          <p className="mt-4 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-dim)] px-4 py-3 text-sm text-accent">
+            {t.path.translationNote.replace(
+              "{done}",
+              String(groups.reduce((s, g) => s + g.chapters.length, 0))
+            )}
+          </p>
+        )}
       </header>
 
       {/* 入门主线 */}
@@ -115,7 +123,7 @@ export default async function PathPage({
       <div className="mt-16 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent-dim)] px-6 py-5 flex flex-wrap items-center justify-between gap-4">
         <p className="font-medium">{t.path.readyCta}</p>
         <Link
-          href={p("/knowledge/01")}
+          href={p("/knowledge/getting-started")}
           className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2.5 transition"
         >
           {t.path.lesson1}

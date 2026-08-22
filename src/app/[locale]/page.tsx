@@ -51,7 +51,7 @@ export default async function Home({
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Link
-                href={p("/knowledge/01")}
+                href={p("/knowledge/getting-started")}
                 className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-8 py-3.5 transition shadow-lg shadow-emerald-500/20"
               >
                 {t.home.ctaStart}
@@ -127,7 +127,7 @@ export default async function Home({
           </h2>
           <p className="relative mt-4 text-muted max-w-md mx-auto">{t.home.ctaBody}</p>
           <Link
-            href={p("/knowledge/01")}
+            href={p("/knowledge/getting-started")}
             className="relative inline-block mt-8 rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-10 py-3.5 transition shadow-lg shadow-emerald-500/25"
           >
             {t.home.ctaButton}
