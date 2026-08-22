@@ -113,6 +113,25 @@ describe("stripLeadingH1", () => {
   });
 });
 
+describe("convertComponents", () => {
+  it("KbBadge 转为【】提示并剥离内层 mark", () => {
+    const out = prepareForRender(
+      "空头（Short） <KbBadge t=\"需<mark>杠杆</mark>/融券\" c=\"c-amber\" />",
+      "zh",
+      "getting-started"
+    );
+    expect(out).toContain("【需杠杆/融券】");
+    expect(out).not.toContain("<KbBadge");
+  });
+
+  it("未知大写组件标签整段移除", () => {
+    const out = prepareForRender("前文 <FooBar x=\"1\">内容</FooBar> 后文", "zh", "01");
+    expect(out).toContain("前文");
+    expect(out).toContain("后文");
+    expect(out).not.toContain("FooBar");
+  });
+});
+
 describe("prepareForRender 端到端", () => {
   it("容器 + 链接 + H1 剥离一次完成", () => {
     const md = [

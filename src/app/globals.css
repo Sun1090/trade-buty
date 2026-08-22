@@ -49,6 +49,13 @@
   --accent-dim: rgba(5, 150, 105, 0.08);
 }
 
+.kb-prose mark {
+  background: rgba(52, 211, 153, 0.25);
+  color: inherit;
+  padding: 0.05em 0.2em;
+  border-radius: 0.25em;
+}
+
 html {
   scroll-behavior: smooth;
 }
