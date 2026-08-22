@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ChapterQuiz } from "@/lib/quiz-types";
+import { recordWrong, resolveWrong } from "@/lib/wrongbook";
 
 interface QuizDict {
   questionsUnit: string;
@@ -59,7 +60,12 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
   function pick(i: number) {
     if (picked !== null) return;
     setPicked(i);
-    if (i === quiz.questions[current].answer) setCorrect((c) => c + 1);
+    if (i === quiz.questions[current].answer) {
+      setCorrect((c) => c + 1);
+      resolveWrong(quiz.chapterNum, current);
+    } else {
+      recordWrong(quiz.chapterNum, current, i);
+    }
   }
 
   function next() {

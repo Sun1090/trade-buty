@@ -3,7 +3,7 @@ export const LOCALES: Locale[] = ["zh", "en"];
 export const DEFAULT_LOCALE: Locale = "zh";
 
 const zh = {
-  nav: { path: "学习路线", chart: "行情", replay: "回放", search: "搜索", github: "GitHub 仓库" },
+  nav: { path: "学习路线", chart: "行情", replay: "回放", review: "复习", search: "搜索", github: "GitHub 仓库" },
   brand: { name: "Trade Buty", badge: "免费 · 中立" },
   home: {
     badge: "免费开源 · 不荐股 · 不导流 · 不承诺收益",
@@ -81,6 +81,15 @@ const zh = {
     retry: "重试",
     disclaimer: "⚠️ 行情数据来自币安公开 API，仅用于学习研究，不构成任何投资建议。",
   },
+  review: {
+    title: "错题本",
+    intro: "测验里答错的题会自动收进这里。看懂解析后点「已掌握」移出；重做同章测验答对也会自动出库。",
+    empty: "错题本空空如也",
+    showAnswer: "看答案与解析",
+    yourPick: "你的选择",
+    correctPick: "正确答案",
+    resolved: "✓ 已掌握，移出错题本",
+  },
   replay: {
     label: "Practice",
     title: "历史回放训练",
@@ -124,7 +133,7 @@ const zh = {
 type Dict = typeof zh;
 
 const en: Dict = {
-  nav: { path: "Learn", chart: "Markets", replay: "Replay", search: "Search", github: "GitHub repo" },
+  nav: { path: "Learn", chart: "Markets", replay: "Replay", review: "Review", search: "Search", github: "GitHub repo" },
   brand: { name: "Trade Buty", badge: "Free · Neutral" },
   home: {
     badge: "Free & open source · No stock picks · No broker referrals · No profit promises",
@@ -196,6 +205,15 @@ const en: Dict = {
     error: "Failed to load market data — Binance API may be unreachable",
     retry: "Retry",
     disclaimer: "⚠️ Market data from Binance public API, for study and research only. Not investment advice.",
+  },
+  review: {
+    title: "Wrong Answer Book",
+    intro: "Questions you missed are collected here automatically. Read the explanation and mark as mastered; answering correctly on a retake also removes them.",
+    empty: "Nothing here yet",
+    showAnswer: "Show answer & explanation",
+    yourPick: "Your pick",
+    correctPick: "Correct answer",
+    resolved: "✓ Mastered, remove",
   },
   replay: {
     label: "Practice",
