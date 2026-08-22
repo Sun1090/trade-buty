@@ -56,6 +56,24 @@ export default async function DocPage({
         <Markdown content={prepareForRender(doc.content, num)} />
       </article>
 
+      {/* 边学边练 */}
+      <aside className="mt-12 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent-dim)] p-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="font-semibold">📖 学完这篇，去看真盘</p>
+          <p className="mt-1 text-sm text-muted">
+            {num === "06"
+              ? "技术分析最好的老师是真实行情——对照刚学的形态和指标，去图上找一找。"
+              : "在真实行情图表里找找这篇内容提到的概念，看懂了再继续。"}
+          </p>
+        </div>
+        <Link
+          href="/chart"
+          className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2.5 transition shrink-0"
+        >
+          打开实时行情 →
+        </Link>
+      </aside>
+
       <nav className="mt-16 pt-6 border-t border-black/10 dark:border-white/15 grid gap-3 sm:grid-cols-2 text-sm">
         {prev ? (
           <Link

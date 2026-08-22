@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getChapter, getChapterNums, getDocMetas, prepareForRender } from "@/lib/content";
+import { QUIZZES } from "@/lib/quizzes";
 import { Markdown } from "@/components/markdown";
+import { Quiz } from "@/components/quiz";
 
 export function generateStaticParams() {
   return getChapterNums().map((num) => ({ num }));
@@ -50,6 +52,12 @@ export default async function ChapterPage({
             篇章导语
           </h2>
           <Markdown content={prepareForRender(introContent, num)} />
+        </section>
+      )}
+
+      {QUIZZES[num] && (
+        <section className="mt-12">
+          <Quiz quiz={QUIZZES[num]} />
         </section>
       )}
 
