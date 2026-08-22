@@ -35,6 +35,7 @@ const zh = {
     ctaPath: "查看学习路线",
     readTpl: "📖 你已完成 {r} / {t} 篇",
     readKeepGoing: "继续加油",
+    syncedLabel: "已云端存档，换设备不丢",
     stats: [
       ["27", "篇章体系"],
       ["173", "篇深度课程"],
@@ -204,6 +205,7 @@ const en: Dict = {
     ctaPath: "View learning path",
     readTpl: "📖 Completed {r} / {t} lessons",
     readKeepGoing: "keep going",
+    syncedLabel: "Synced to cloud",
     stats: [["27", "Chapters"], ["173", "In-depth lessons"], ["42k+", "Lines of content"], ["$0", "Free forever"]] as [string, string][],
     principlesTitle: "Why trust us",
     principlesLabel: "Principles",

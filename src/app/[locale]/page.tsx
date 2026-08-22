@@ -67,6 +67,7 @@ export default async function Home({
               totalDocs={totalDocs}
               textTpl={t.home.readTpl}
               keepGoing={t.home.readKeepGoing}
+              syncedLabel={t.home.syncedLabel}
             />
           </div>
           <div className="hidden lg:block">

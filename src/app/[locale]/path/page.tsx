@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getStageGroups } from "@/lib/path";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { PathProgress } from "@/components/path-progress";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -79,8 +80,11 @@ export default async function PathPage({
                     {c.tagline}
                   </span>
                 </span>
-                <span className="shrink-0 font-mono text-xs text-faint">
-                  {String(c.docCount).padStart(2, "0")} {t.path.lessonsUnit} →
+                <span className="shrink-0 flex items-center gap-3">
+                  <PathProgress chapterSlug={c.slug} docCount={c.docCount} />
+                  <span className="font-mono text-xs text-faint">
+                    {String(c.docCount).padStart(2, "0")} {t.path.lessonsUnit} →
+                  </span>
                 </span>
               </Link>
             </li>
@@ -111,8 +115,11 @@ export default async function PathPage({
                     {c.title}
                   </span>
                 </span>
-                <span className="shrink-0 font-mono text-xs text-faint">
-                  {c.docCount}
+                <span className="shrink-0 flex items-center gap-2">
+                  <PathProgress chapterSlug={c.slug} docCount={c.docCount} />
+                  <span className="font-mono text-xs text-faint">
+                    {c.docCount}
+                  </span>
                 </span>
               </Link>
             ))}
