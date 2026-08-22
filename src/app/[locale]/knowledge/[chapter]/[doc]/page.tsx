@@ -18,6 +18,7 @@ import { LazyChartEmbed } from "@/components/chart-embed";
 import { Toc } from "@/components/toc";
 import { ReadingProgress } from "@/components/reading-progress";
 import { CodeCopy } from "@/components/code-copy";
+import { ImageLightbox } from "@/components/image-lightbox";
 import { extractHeadings } from "@/lib/toc";
 
 export function generateStaticParams() {
@@ -54,7 +55,31 @@ export default async function DocPage({
   const t = getDict(locale);
   const p = (path: string) => `/${locale}${path}`;
   const doc = getDoc(locale, chapterSlug, docSlug);
-  if (!doc) notFound();
+  if (!doc) {
+    const chapterData = getChapter(locale, chapterSlug);
+    if (!chapterData) notFound();
+    const available = getDocMetas(locale, chapterSlug);
+    const tc = getDict(locale);
+    return (
+      <div className="mx-auto max-w-3xl px-4 sm:px-5 py-16">
+        <p className="font-mono text-4xl text-accent">404</p>
+        <h1 className="mt-4 text-2xl font-bold">{tc.notFound.docMissing}</h1>
+        <p className="mt-2 text-sm text-muted">{tc.notFound.docHint}</p>
+        <ol className="mt-8 space-y-2.5">
+          {available.map((d) => (
+            <li key={d.slug}>
+              <Link
+                href={`/${locale}/knowledge/${chapterSlug}/${d.slug}`}
+                className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-3 hover:border-[var(--accent)]/60 transition"
+              >
+                {d.title}
+              </Link>
+            </li>
+          ))}
+        </ol>
+      </div>
+    );
+  }
   const { prev, next } = getAdjacentDocs(locale, chapterSlug, docSlug);
   const chapter = getChapter(locale, chapterSlug)?.chapter;
 
@@ -70,6 +95,7 @@ export default async function DocPage({
         copiedLabel={tools.copied}
         copyLabel={tools.copyCode}
       />
+      <ImageLightbox containerSelector="article" closeLabel={tools.lightboxClose} />
     <div className="mx-auto max-w-3xl px-4 sm:px-5 py-10">
       <nav className="text-sm text-muted mb-6">
         <Link href={p("/")} className="hover:text-accent">

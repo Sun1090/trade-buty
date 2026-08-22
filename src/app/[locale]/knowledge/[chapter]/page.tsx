@@ -41,7 +41,31 @@ export default async function ChapterPage({
   const t = getDict(locale);
   const p = (path: string) => `/${locale}${path}`;
   const data = getChapter(locale, slug);
-  if (!data) notFound();
+  if (!data) {
+    const slugs = getChapterSlugs(locale);
+    if (!slugs.includes(slug)) {
+      const tc = getDict(locale);
+      return (
+        <div className="mx-auto max-w-3xl px-4 sm:px-5 py-16">
+          <p className="font-mono text-4xl text-accent">404</p>
+          <h1 className="mt-4 text-2xl font-bold">{tc.notFound.chapterMissing}</h1>
+          <ul className="mt-8 grid gap-2.5 sm:grid-cols-2">
+            {slugs.map((s) => (
+              <li key={s}>
+                <Link
+                  href={`/${locale}/knowledge/${s}`}
+                  className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-3 font-mono text-sm hover:border-[var(--accent)]/60 transition"
+                >
+                  {s}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+    notFound();
+  }
   const docs = getDocMetas(locale, slug);
   const { chapter, introContent } = data;
 

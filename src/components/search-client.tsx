@@ -48,7 +48,13 @@ function snippetHtml(text: string, q: string): string {
 export function SearchClient({
   dict,
 }: {
-  dict: { placeholder: string; resultsTpl: string; noResults: string };
+  dict: {
+    placeholder: string;
+    resultsTpl: string;
+    noResults: string;
+    emptyHint: string;
+    browseCta: string;
+  };
 }) {
   const [query, setQuery] = useState("");
   const [entries, setEntries] = useState<Entry[] | null>(null);
@@ -64,6 +70,17 @@ export function SearchClient({
       .slice(0, 20)
       .map(({ e }) => e);
   }, [query, entries]);
+
+  const locale = usePathname()?.split("/")[1] || "zh";
+
+  const groups = useMemo(() => {
+    const map = new Map<string, Entry[]>();
+    for (const r of results) {
+      if (!map.has(r.chapter)) map.set(r.chapter, []);
+      map.get(r.chapter)!.push(r);
+    }
+    return [...map.entries()];
+  }, [results]);
 
   async function onInput(value: string) {
     setQuery(value);
@@ -88,25 +105,48 @@ export function SearchClient({
           {results.length > 0 ? dict.resultsTpl.replace("{n}", String(results.length)) : dict.noResults}
         </p>
       )}
-      <ul className="mt-4 space-y-3">
-        {results.map((r) => (
-          <li key={r.url}>
-            <a
-              href={r.url}
-              className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/60 transition"
-            >
-              <span className="font-medium">{r.title}</span>
-              <span className="ml-2 text-xs text-faint">{r.chapter}</span>
-              <p
-                className="mt-1 text-sm text-muted [&>mark]:bg-accent/30 [&>mark]:text-accent [&>mark]:rounded-sm [&>mark]:px-0.5"
-                dangerouslySetInnerHTML={{
-                  __html: snippetHtml(r.text, query.trim().toLowerCase()),
-                }}
-              />
+      {query.trim() && results.length === 0 && (
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 text-sm">
+          <p className="font-medium">{dict.noResults}</p>
+          <p className="mt-2 text-muted">
+            {dict.emptyHint}{" "}
+            <a href={`/${locale}/path`} className="text-accent underline underline-offset-4">
+              {dict.browseCta}
             </a>
-          </li>
-        ))}
-      </ul>
+          </p>
+        </div>
+      )}
+      {groups.map(([chapter, items]) => (
+        <div key={chapter} className="mb-8">
+          <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-3 mt-6 first:mt-0">
+            {chapter}
+          </p>
+          <ul className="space-y-2.5">
+            {items.map((r) => (
+              <li key={r.url}>
+                <a
+                  href={r.url}
+                  className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/60 transition"
+                >
+                  <span className="font-medium [&>mark]:bg-accent/30 [&>mark]:text-accent [&>mark]:rounded-sm [&>mark]:px-0.5">
+                    <span
+                      dangerouslySetInnerHTML={{
+                        __html: highlight(r.title, query.trim().toLowerCase()),
+                      }}
+                    />
+                  </span>
+                  <p
+                    className="mt-1 text-sm text-muted [&>mark]:bg-accent/30 [&>mark]:text-accent [&>mark]:rounded-sm [&>mark]:px-0.5"
+                    dangerouslySetInnerHTML={{
+                      __html: snippetHtml(r.text, query.trim().toLowerCase()),
+                    }}
+                  />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }
