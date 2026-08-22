@@ -82,6 +82,12 @@ const zh = {
     retry: "重试",
     disclaimer: "⚠️ 行情数据来自币安公开 API，仅用于学习研究，不构成任何投资建议。",
   },
+  docTools: {
+    toc: "本页目录",
+    backToTop: "回到顶部",
+    copyCode: "复制",
+    copied: "已复制 ✓",
+  },
   review: {
     title: "错题本",
     intro: "测验里答错的题会自动收进这里。看懂解析后点「已掌握」移出；重做同章测验答对也会自动出库。",
@@ -212,6 +218,12 @@ const en: Dict = {
     error: "Failed to load market data — Binance API may be unreachable",
     retry: "Retry",
     disclaimer: "⚠️ Market data from Binance public API, for study and research only. Not investment advice.",
+  },
+  docTools: {
+    toc: "On this page",
+    backToTop: "Back to top",
+    copyCode: "Copy",
+    copied: "Copied ✓",
   },
   review: {
     title: "Wrong Answer Book",

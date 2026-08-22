@@ -15,6 +15,10 @@ import { Markdown } from "@/components/markdown";
 import { Quiz } from "@/components/quiz";
 import { MarkRead } from "@/components/mark-read";
 import { LazyChartEmbed } from "@/components/chart-embed";
+import { Toc } from "@/components/toc";
+import { ReadingProgress } from "@/components/reading-progress";
+import { CodeCopy } from "@/components/code-copy";
+import { extractHeadings } from "@/lib/toc";
 
 export function generateStaticParams() {
   const params: { locale: string; chapter: string; doc: string }[] = [];
@@ -54,7 +58,18 @@ export default async function DocPage({
   const { prev, next } = getAdjacentDocs(locale, chapterSlug, docSlug);
   const chapter = getChapter(locale, chapterSlug)?.chapter;
 
+  const headings = extractHeadings(doc.content);
+  const tools = t.docTools;
+
   return (
+    <div className="relative">
+      <ReadingProgress label={tools.backToTop} />
+      <Toc items={headings} heading={tools.toc} />
+      <CodeCopy
+        containerSelector="article"
+        copiedLabel={tools.copied}
+        copyLabel={tools.copyCode}
+      />
     <div className="mx-auto max-w-3xl px-4 sm:px-5 py-10">
       <nav className="text-sm text-muted mb-6">
         <Link href={p("/")} className="hover:text-accent">
@@ -124,6 +139,7 @@ export default async function DocPage({
           </Link>
         )}
       </nav>
+    </div>
     </div>
   );
 }
