@@ -1,0 +1,64 @@
+"use client";
+
+import Link from "next/link";
+import type { DocMeta } from "@/lib/content";
+import { useLocalProgress } from "@/components/use-local-progress";
+
+export function DocList({ metas, num }: { metas: DocMeta[]; num: string }) {
+  const progress = useLocalProgress();
+  const readSet = new Set(progress?.[num] ?? []);
+  const pct = Math.round((readSet.size / metas.length) * 100);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
+          本篇课程（{metas.length} 篇）
+        </h2>
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs font-mono text-accent">
+            {readSet.size}/{metas.length}
+          </span>
+          <div className="h-1.5 w-24 rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-accent transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+      </div>
+      <ol className="space-y-3">
+        {metas.map((d) => {
+          const read = readSet.has(d.slug);
+          return (
+            <li key={d.slug}>
+              <Link
+                href={`/knowledge/${num}/${d.slug}`}
+                className="block rounded-lg border border-[var(--border)] px-5 py-4 hover:border-[var(--accent)]/50 transition bg-[var(--surface)]"
+              >
+                <span className="flex items-center gap-2.5">
+                  <span
+                    aria-hidden
+                    className={`shrink-0 flex h-5 w-5 items-center justify-center rounded-full text-[11px] border ${
+                      read
+                        ? "bg-accent border-accent text-[#06281c] dark:text-[#06281c]"
+                        : "border-[var(--border-strong)] text-transparent"
+                    }`}
+                  >
+                    ✓
+                  </span>
+                  <span className="font-medium">{d.title}</span>
+                </span>
+                {d.description && (
+                  <p className="mt-1 pl-[30px] text-sm text-faint line-clamp-2">
+                    {d.description}
+                  </p>
+                )}
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}

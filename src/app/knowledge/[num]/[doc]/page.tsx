@@ -11,6 +11,7 @@ import {
 } from "@/lib/content";
 import { Markdown } from "@/components/markdown";
 import { Quiz } from "@/components/quiz";
+import { MarkRead } from "@/components/mark-read";
 import { QUIZZES } from "@/lib/quizzes";
 
 export function generateStaticParams() {
@@ -54,6 +55,7 @@ export default async function DocPage({
       </nav>
 
       <article>
+        <MarkRead chapterNum={num} docSlug={docSlug} />
         <h1 className="text-3xl font-bold mb-8">{doc.title}</h1>
         <Markdown content={prepareForRender(doc.content, num)} />
       </article>
