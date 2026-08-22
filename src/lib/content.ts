@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
+import { chapterRank } from "./kb-order";
 
 const KNOWLEDGE_ROOT = path.join(
   process.cwd(),
@@ -63,17 +64,11 @@ export function isValidContentLocale(v: string): v is ContentLocale {
 
 export function getChapterSlugs(locale: string): string[] {
   const root = localeRoot(locale);
-  const dirs = fs
+  return fs
     .readdirSync(root, { withFileTypes: true })
     .filter((e) => e.isDirectory())
-    .map((e) => e.name);
-  const orderBy = new Map<string, number>();
-  for (const name of dirs) {
-    orderBy.set(name, chapterOrder(path.join(root, name, "README.md")));
-  }
-  return dirs.sort(
-    (a, b) => (orderBy.get(a) ?? 999) - (orderBy.get(b) ?? 999) || a.localeCompare(b)
-  );
+    .map((e) => e.name)
+    .sort((a, b) => chapterRank(a) - chapterRank(b) || a.localeCompare(b));
 }
 
 function readFirstParagraph(md: string): string {
@@ -139,7 +134,7 @@ export function getChapters(locale: string): Chapter[] {
     }
     return {
       slug,
-      order: chapterOrder(path.join(root, slug, "README.md")),
+      order: chapterRank(slug),
       title,
       tagline,
       docCount,
@@ -163,6 +158,27 @@ export function getChapter(
   }
   const chapter = getChapters(locale).find((c) => c.slug === slug)!;
   return { chapter, introContent };
+}
+
+/** zh 版文档顺序作为跨语言基准（en 已无序号） */
+function docOrderMap(chapterSlug: string): Map<string, number> {
+  try {
+    const dir = path.join(KNOWLEDGE_ROOT, "zh", chapterSlug);
+    const files = fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith(".md") && f !== "README.md");
+    const withOrder = files.map((f) => {
+      const raw = fs.readFileSync(path.join(dir, f), "utf8");
+      const t = parseFrontmatter(raw, f).title;
+      return { slug: f.replace(/\.md$/, ""), order: titleOrder(t) };
+    });
+    withOrder.sort(
+      (a, b) => a.order - b.order || a.slug.localeCompare(b.slug)
+    );
+    return new Map(withOrder.map((d, i) => [d.slug, i]));
+  } catch {
+    return new Map();
+  }
 }
 
 export function getDocMetas(locale: string, chapterSlug: string): DocMeta[] {
@@ -189,8 +205,12 @@ export function getDocMetas(locale: string, chapterSlug: string): DocMeta[] {
       console.warn(`[content] 文档解析失败，告警跳过（宽容模式）: ${f}`);
     }
   }
+  const zhOrder = docOrderMap(chapterSlug);
   metasWithOrder.sort(
-    (a, b) => a.order - b.order || a.meta.slug.localeCompare(b.meta.slug)
+    (a, b) =>
+      (zhOrder.get(a.meta.slug) ?? 9999) - (zhOrder.get(b.meta.slug) ?? 9999) ||
+      a.order - b.order ||
+      a.meta.slug.localeCompare(b.meta.slug)
   );
   metas = metasWithOrder.map((m) => m.meta);
   return metas;

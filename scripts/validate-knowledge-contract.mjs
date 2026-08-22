@@ -51,10 +51,7 @@ for (const locale of ["zh", "en"]) {
   for (const c of chapters) {
     const full = path.join(root, c.name);
     const readme = path.join(full, "README.md");
-    if (fs.existsSync(readme)) {
-      const h1 = fs.readFileSync(readme, "utf8").match(/^#\s+(\d+)\s·/m);
-      if (!h1) warn(`README H1 缺少「NN · 名称」序号（影响排序）: ${locale}/${c.name}`);
-    } else {
+    if (!fs.existsSync(path.join(full, "README.md"))) {
       warn(`篇章缺少 README.md: ${locale}/${c.name}`);
     }
     for (const f of fs.readdirSync(full)) {
