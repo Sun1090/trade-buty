@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  getAdjacentChapters,
   getChapter,
   getChapterSlugs,
   getDocMetas,
@@ -67,9 +68,10 @@ export default async function ChapterPage({
   }
   const docs = getDocMetas(locale, slug);
   const { chapter, introContent } = data;
+  const { next: nextChapter } = getAdjacentChapters(locale, slug);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-5 py-10">
+    <div className="mx-auto max-w-4xl px-4 sm:px-5 py-10">
       <nav className="text-sm text-muted mb-6">
         <Link href={p("/")} className="hover:text-accent">
           {t.nav.path}
@@ -78,7 +80,21 @@ export default async function ChapterPage({
         <span>{chapter.title}</span>
       </nav>
 
-      <h1 className="text-2xl sm:text-3xl font-bold">{chapter.title}</h1>
+      {/* Hero */}
+      <section className="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-8">
+        <p className="text-xs font-mono text-accent uppercase tracking-widest">
+          {t.chapter.progressLabel}
+        </p>
+        <h1 className="mt-2 text-2xl sm:text-3xl font-bold">{chapter.title}</h1>
+        <p className="mt-2 text-sm text-muted leading-relaxed">
+          {chapter.tagline}
+        </p>
+        <div className="mt-4 flex items-center gap-3">
+          <span className="text-xs text-faint">
+            {docs.length} {t.chapter.lessonsUnit}
+          </span>
+        </div>
+      </section>
 
       {introContent && (
         <section className="mt-8 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
@@ -96,8 +112,31 @@ export default async function ChapterPage({
       )}
 
       <section className="mt-10">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-faint mb-4">
+          {t.chapter.coursesHeading}
+        </h2>
         <DocList metas={docs} chapterSlug={slug} locale={locale} />
       </section>
+
+      {/* 下一篇章 CTA */}
+      {nextChapter && (
+        <section className="mt-12">
+          <Link
+            href={p(`/knowledge/${nextChapter.slug}`)}
+            className="group block rounded-2xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-6 hover:border-[var(--accent)]/60 transition"
+          >
+            <p className="text-xs font-semibold uppercase tracking-widest text-accent">
+              {t.chapter.nextChapter} →
+            </p>
+            <p className="mt-2 text-lg font-bold group-hover:text-accent transition-colors">
+              {nextChapter.title}
+            </p>
+            <p className="mt-1 text-sm text-muted line-clamp-2">
+              {nextChapter.tagline}
+            </p>
+          </Link>
+        </section>
+      )}
     </div>
   );
 }

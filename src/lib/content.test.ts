@@ -11,21 +11,25 @@ describe("convertContainers", () => {
   it("warning 容器转换为 callout 引用块（带标题）", () => {
     const md = "正文\n\n::: warning ⚠️ 风险提示\n小心爆仓\n\n第二段\n:::\n\n结尾";
     const out = convertContainers(md);
-    expect(out).toContain("> **⚠️ 风险提示**");
-    expect(out).toContain("> 小心爆仓");
-    expect(out).toContain("> 第二段");
+    expect(out).toContain('<div class="callout callout-warning">');
+    expect(out).toContain("⚠️ 风险提示");
+    expect(out).toContain("小心爆仓");
+    expect(out).toContain("第二段");
+    expect(out).toContain("</div>");
     expect(out).not.toContain(":::");
   });
 
   it("无标题的 tip 容器使用默认图标标题", () => {
     const out = convertContainers("::: tip\n提示内容\n:::");
-    expect(out).toContain("> **💡 提示**");
-    expect(out).toContain("> 提示内容");
+    expect(out).toContain('<div class="callout callout-tip">');
+    expect(out).toContain("💡 提示");
+    expect(out).toContain("提示内容");
   });
 
   it("danger 容器使用 🚨 危险 默认标题", () => {
     const out = convertContainers("::: danger\n危险内容\n:::");
-    expect(out).toContain("> **🚨 危险**");
+    expect(out).toContain('<div class="callout callout-danger">');
+    expect(out).toContain("🚨 危险");
   });
 
   it("无容器时原样返回", () => {
@@ -143,7 +147,8 @@ describe("prepareForRender 端到端", () => {
     ].join("\n");
     const out = prepareForRender(md, "zh", "getting-started");
     expect(out).not.toMatch(/^\s*#\s/m); // H1 已剥
-    expect(out).toContain("**⚠️ 风险提示**");
+    expect(out).toContain('<div class="callout callout-warning">');
+    expect(out).toContain("⚠️ 风险提示");
     expect(out).toContain("/zh/knowledge/spot");
     expect(out).toContain("/zh/knowledge/getting-started/core-concepts#anchor");
   });
