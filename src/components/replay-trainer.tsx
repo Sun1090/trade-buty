@@ -9,7 +9,7 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 import { fetchRandomHistoryWindow, type Kline } from "@/lib/binance";
-import { saveReplayRecord } from "@/lib/replay-store";
+import { saveReplayRecord, saveReplayBest } from "@/lib/replay-store";
 
 const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] as const;
 const INTERVALS = ["15m", "1h", "4h", "1d"] as const;
@@ -57,8 +57,6 @@ function gradeOf(total: number, correct: number): string {
   if (acc >= 0.5) return "B";
   return "C";
 }
-
-const BEST_KEY = "tb-replay-best";
 
 export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -195,11 +193,7 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
           const right = wentUp === pickedUp;
           const streak = right ? g.streak + 1 : 0;
           const best = Math.max(g.best, streak);
-          try {
-            localStorage.setItem(BEST_KEY, String(best));
-          } catch {
-            // ignore
-          }
+          saveReplayBest(best);
           return {
             ...g,
             streak,

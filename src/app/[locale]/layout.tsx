@@ -4,6 +4,8 @@ import { getDict, isLocale } from "@/lib/i18n";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { SearchHotkey } from "@/components/search-hotkey";
+import { AuthHeader } from "@/components/auth-header";
+import { AuthProvider } from "@/components/auth-provider";
 
 function CandleMark() {
   return (
@@ -81,6 +83,7 @@ export default async function LocaleLayout({
               <span className="min-[480px]:hidden" aria-hidden>🔍</span>
               <span className="hidden min-[480px]:inline">{t.nav.search}</span>
             </Link>
+            <AuthHeader locale={locale} dict={t.auth} />
             <LanguageToggle />
             <ThemeToggle />
             <a
@@ -97,7 +100,7 @@ export default async function LocaleLayout({
           </nav>
         </div>
       </header>
-      <main className="flex-1">{children}</main>
+      <main className="flex-1"><AuthProvider>{children}</AuthProvider></main>
       <SearchHotkey locale={locale} />
       <footer className="border-t border-[var(--border)] mt-24">
         <div className="mx-auto max-w-6xl px-5 py-10 grid gap-8 sm:grid-cols-[1fr_auto]">

@@ -1,7 +1,9 @@
-/** 回放训练历史：每轮猜涨跌成绩存 localStorage，最多保留 100 条 */
+/** 回放训练历史 + 最佳连击：localStorage + 云端双写 */
 import { tryDispatchProgressEvent } from "./progress-helpers";
+import { syncReplayHistoryWrite, syncReplayBestUpsert } from "./sync-layer";
 
 const KEY = "tb-replay-history";
+const BEST_KEY = "tb-replay-best";
 
 export interface ReplayRecord {
   at: number;
@@ -30,4 +32,25 @@ export function saveReplayRecord(rec: Omit<ReplayRecord, "at">) {
   } catch {
     // ignore
   }
+  syncReplayHistoryWrite(rec);
+}
+
+/** 读取历史最佳连击 */
+export function readReplayBest(): number {
+  try {
+    return parseInt(localStorage.getItem(BEST_KEY) ?? "0", 10);
+  } catch {
+    return 0;
+  }
+}
+
+/** 保存历史最佳连击（仅当超过当前记录时调用） */
+export function saveReplayBest(best: number) {
+  try {
+    localStorage.setItem(BEST_KEY, String(best));
+  } catch {
+    // ignore
+  }
+  syncReplayBestUpsert(best);
+  tryDispatchProgressEvent();
 }
