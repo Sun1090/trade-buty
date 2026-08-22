@@ -30,6 +30,22 @@ npm run lint         # ESLint
 npm run typecheck    # 类型检查（tsc --noEmit）
 ```
 
+## 命名约定（本仓库）
+
+- 本仓库自建文件（组件、脚本、文档、题库等）一律**英文命名，不加序号前缀**
+- 知识库 submodule 内容不适用本条（其命名由 kline-buty 仓库决定）
+
+## 知识库契约（构建依赖，改动需同步）
+
+本站解析依赖 kline-buty 的以下结构，kline-buty 侧重构时必须评估影响：
+
+1. 篇章目录名以两位数字开头：`NN-名称/`
+2. 每个篇章目录内有 `README.md`（篇章导语）
+3. 课程文件名以两位数字开头：`NN-标题.md`（URL slug 取自该数字）
+4. frontmatter 字段：`title`、`description`
+
+`npm run prebuild` 中的契约校验脚本会在结构漂移时于构建日志报警。
+
 ## Submodule 操作规范
 
 - 首次 clone 后需要 `git submodule update --init` 才有内容
