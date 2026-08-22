@@ -55,7 +55,7 @@ export default async function ChapterPage({
         </section>
       )}
 
-      {QUIZZES[num] && (
+      {QUIZZES[num] && !QUIZZES[num].docSlug && (
         <section className="mt-12">
           <Quiz quiz={QUIZZES[num]} />
         </section>

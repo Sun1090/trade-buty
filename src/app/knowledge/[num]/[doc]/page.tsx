@@ -10,6 +10,8 @@ import {
   prepareForRender,
 } from "@/lib/content";
 import { Markdown } from "@/components/markdown";
+import { Quiz } from "@/components/quiz";
+import { QUIZZES } from "@/lib/quizzes";
 
 export function generateStaticParams() {
   const params: { num: string; doc: string }[] = [];
@@ -55,6 +57,10 @@ export default async function DocPage({
         <h1 className="text-3xl font-bold mb-8">{doc.title}</h1>
         <Markdown content={prepareForRender(doc.content, num)} />
       </article>
+
+      {QUIZZES[num]?.docSlug === docSlug && (
+        <Quiz quiz={QUIZZES[num]} />
+      )}
 
       {/* 边学边练 */}
       <aside className="mt-12 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent-dim)] p-6 flex flex-wrap items-center justify-between gap-4">

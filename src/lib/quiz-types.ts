@@ -10,5 +10,7 @@ export interface QuizQuestion {
 export interface ChapterQuiz {
   chapterNum: string;
   title: string;
+  /** 挂载到该节的末尾；缺省则挂在篇章页 */
+  docSlug?: string;
   questions: QuizQuestion[];
 }
