@@ -184,7 +184,7 @@ export function KlineChart() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {SYMBOLS.map((s) => (
             <button
               key={s}
@@ -199,13 +199,13 @@ export function KlineChart() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
-          {lastPrice !== null && (
-            <span className="font-mono text-sm text-accent">
-              {lastPrice.toLocaleString()}
-            </span>
-          )}
-          <div className="flex gap-1.5">
+          <div className="flex flex-wrap items-center gap-3">
+            {lastPrice !== null && (
+              <span className="font-mono text-sm text-accent">
+                {lastPrice.toLocaleString()}
+              </span>
+            )}
+            <div className="flex flex-wrap gap-1.5">
             {INTERVALS.map((i) => (
               <button
                 key={i}
