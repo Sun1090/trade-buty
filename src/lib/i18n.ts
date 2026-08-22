@@ -3,7 +3,7 @@ export const LOCALES: Locale[] = ["zh", "en"];
 export const DEFAULT_LOCALE: Locale = "zh";
 
 const zh = {
-  nav: { path: "学习路线", chart: "行情", search: "搜索", github: "GitHub 仓库" },
+  nav: { path: "学习路线", chart: "行情", replay: "回放", search: "搜索", github: "GitHub 仓库" },
   brand: { name: "Trade Buty", badge: "免费 · 中立" },
   home: {
     badge: "免费开源 · 不荐股 · 不导流 · 不承诺收益",
@@ -80,6 +80,30 @@ const zh = {
     retry: "重试",
     disclaimer: "⚠️ 行情数据来自币安公开 API，仅用于学习研究，不构成任何投资建议。",
   },
+  replay: {
+    label: "Practice",
+    title: "历史回放训练",
+    intro: "随机抽取一段过去的历史行情（盲盒），逐根 K 线回放。开「猜涨跌」模式：先预测下一根，再揭晓答案——练的是盘感，不是后视镜。",
+    newRound: "新一轮 ↻",
+    play: "▶ 播放",
+    pause: "⏸ 暂停",
+    step: "单步 →",
+    speed: "速度",
+    modeFree: "自由观看",
+    modeGuess: "猜涨跌",
+    guessPrompt: "下一根 K 线是涨还是跌？",
+    up: "📈 涨",
+    down: "📉 跌",
+    feedbackUp: "涨了",
+    feedbackDown: "跌了",
+    youGot: "你猜",
+    streak: "连胜",
+    best: "最佳连胜",
+    accuracy: "正确率",
+    rounds: "已回放",
+    contextNote: "前 30 根为背景走势，从第 31 根开始回放。",
+    disclaimer: "⚠️ 历史数据仅用于学习研究。历史走势不代表未来，猜对也不构成任何投资建议。",
+  },
   search: {
     title: "搜索课程",
     placeholder: "输入关键词，如：止损、保证金、K 线…",
@@ -98,7 +122,7 @@ const zh = {
 type Dict = typeof zh;
 
 const en: Dict = {
-  nav: { path: "Learn", chart: "Markets", search: "Search", github: "GitHub repo" },
+  nav: { path: "Learn", chart: "Markets", replay: "Replay", search: "Search", github: "GitHub repo" },
   brand: { name: "Trade Buty", badge: "Free · Neutral" },
   home: {
     badge: "Free & open source · No stock picks · No broker referrals · No profit promises",
@@ -169,6 +193,30 @@ const en: Dict = {
     error: "Failed to load market data — Binance API may be unreachable",
     retry: "Retry",
     disclaimer: "⚠️ Market data from Binance public API, for study and research only. Not investment advice.",
+  },
+  replay: {
+    label: "Practice",
+    title: "Historical Replay Trainer",
+    intro: "A random past market window (blind box), replayed candle by candle. Turn on Guess Mode: predict the next candle before it reveals — train your instincts, not hindsight.",
+    newRound: "New round ↻",
+    play: "▶ Play",
+    pause: "⏸ Pause",
+    step: "Step →",
+    speed: "Speed",
+    modeFree: "Free view",
+    modeGuess: "Guess up/down",
+    guessPrompt: "Will the next candle close up or down?",
+    up: "📈 Up",
+    down: "📉 Down",
+    feedbackUp: "Went up",
+    feedbackDown: "Went down",
+    youGot: "You picked",
+    streak: "Streak",
+    best: "Best streak",
+    accuracy: "Accuracy",
+    rounds: "Replayed",
+    contextNote: "First 30 candles are context; replay starts from #31.",
+    disclaimer: "⚠️ Historical data is for study only. Past performance does not represent the future.",
   },
   search: {
     title: "Search Lessons",
