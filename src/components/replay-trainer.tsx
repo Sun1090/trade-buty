@@ -105,7 +105,7 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(false);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setPlaying(false);
     fetchRandomHistoryWindow(symbol, interval_)
       .then((data) => {
@@ -220,7 +220,7 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
       return;
     }
     if (guessMode && guess.pending === null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setPlaying(false);
       return;
     }

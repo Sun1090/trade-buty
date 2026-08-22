@@ -5,6 +5,9 @@ const BASE = "https://trade-buty.vercel.app";
 const LOCALES = ["zh", "en"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  // 构建时间作为 lastModified——每次部署 sitemap 会更新，
+  // 搜索引擎据此判断内容新鲜度
+  const lastModified = new Date();
   const staticPaths: { path: string; priority: number }[] = [
     { path: "", priority: 1 },
     { path: "/path", priority: 0.9 },
@@ -27,6 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }
   return [...staticPaths, ...docPaths].map(({ path, priority }) => ({
     url: `${BASE}${path}`,
+    lastModified,
     changeFrequency: "weekly" as const,
     priority,
   }));

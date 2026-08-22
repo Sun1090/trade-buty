@@ -30,6 +30,8 @@ export function Markdown({ content }: { content: string }) {
             );
           },
           img({ src, alt }) {
+            // 知识库图片来自 submodule 静态资产，用原生 img 避免 next/image 路径处理开销
+            // eslint-disable-next-line @next/next/no-img-element
             return <img src={src} alt={alt ?? ""} loading="lazy" />;
           },
         }}

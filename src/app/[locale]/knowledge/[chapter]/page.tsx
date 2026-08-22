@@ -23,7 +23,6 @@ export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/knowledge/[chapter]">): Promise<Metadata> {
   const { chapter: slug } = await params;
-  const data = isLocale(slug) ? null : null; // slug 不是 locale，仅取内容
   const resolved = getChapter("zh", slug);
   if (!resolved) return {};
   return {

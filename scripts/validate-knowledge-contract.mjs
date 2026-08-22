@@ -51,7 +51,7 @@ for (const locale of ["zh", "en"]) {
   for (const c of chapters) {
     const full = path.join(root, c.name);
     const readme = path.join(full, "README.md");
-    if (!fs.existsSync(path.join(full, "README.md"))) {
+    if (!fs.existsSync(readme)) {
       warn(`篇章缺少 README.md: ${locale}/${c.name}`);
     }
     for (const f of fs.readdirSync(full)) {

@@ -10,7 +10,11 @@ export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/auth">) {
   const { locale } = await params;
-  return { title: getDict(locale).auth.title };
+  return {
+    title: getDict(locale).auth.title,
+    // 功能页不应被搜索引擎收录
+    robots: { index: false, follow: false },
+  };
 }
 
 export default async function AuthPage({
