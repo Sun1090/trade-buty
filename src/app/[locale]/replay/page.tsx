@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { ReplayTrainer } from "@/components/replay-trainer";
+import { ReplayHistory } from "@/components/replay-history";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -32,6 +33,15 @@ export default async function ReplayPage({
         <p className="mt-3 text-muted leading-relaxed">{dict.replay.intro}</p>
       </header>
       <ReplayTrainer dict={dict.replay} />
+      <ReplayHistory
+        dict={{
+          histTitle: dict.replay.histTitle,
+          histRounds: dict.replay.histRounds,
+          histAccuracy: dict.replay.histAccuracy,
+          histEmpty: dict.replay.histEmpty,
+          histRecent: dict.replay.histRecent,
+        }}
+      />
     </div>
   );
 }
