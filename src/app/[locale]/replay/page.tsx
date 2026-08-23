@@ -38,6 +38,7 @@ export default async function ReplayPage({
           histTitle: dict.replay.histTitle,
           histRounds: dict.replay.histRounds,
           histAccuracy: dict.replay.histAccuracy,
+          histBest: dict.replay.histBest,
           histEmpty: dict.replay.histEmpty,
           histRecent: dict.replay.histRecent,
         }}

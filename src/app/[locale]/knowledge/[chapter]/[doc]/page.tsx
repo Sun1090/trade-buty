@@ -82,7 +82,7 @@ export default async function DocPage({
       </div>
     );
   }
-  const { prev, next } = getAdjacentDocs(locale, chapterSlug, docSlug);
+  const { next } = getAdjacentDocs(locale, chapterSlug, docSlug);
   const chapterData = getChapter(locale, chapterSlug);
   const chapter = chapterData?.chapter;
   const docMetas = getDocMetas(locale, chapterSlug);
@@ -182,28 +182,61 @@ export default async function DocPage({
         )}
       </div>
 
-      <nav className="mt-8 pt-6 border-t border-[var(--border)] grid gap-3 sm:grid-cols-2 text-sm">
-        {prev ? (
-          <Link
-            href={p(`/knowledge/${chapterSlug}/${prev.slug}`)}
-            className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 hover:border-[var(--accent)]/60 transition"
-          >
-            <span className="block text-xs text-faint">{t.doc.prev}</span>
-            {prev.title}
-          </Link>
-        ) : (
-          <span />
-        )}
-        {next && (
+      {/* 主 CTA：下一篇 / 回篇章 / 下一篇章 */}
+      <div className="mt-8">
+        {next ? (
           <Link
             href={p(`/knowledge/${chapterSlug}/${next.slug}`)}
-            className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 hover:border-[var(--accent)]/60 transition sm:text-right"
+            className="group flex items-center justify-between gap-4 rounded-2xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-5 hover:border-[var(--accent)]/60 transition"
           >
-            <span className="block text-xs text-faint">{t.doc.next}</span>
-            {next.title}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-accent">
+                {t.doc.next}
+              </p>
+              <p className="mt-1 font-semibold group-hover:text-accent transition-colors">
+                {next.title}
+              </p>
+            </div>
+            <span className="text-2xl text-accent group-hover:translate-x-1 transition-transform shrink-0">
+              →
+            </span>
+          </Link>
+        ) : nextChapterMeta ? (
+          <Link
+            href={p(`/knowledge/${nextChapterMeta.slug}`)}
+            className="group flex items-center justify-between gap-4 rounded-2xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-5 hover:border-[var(--accent)]/60 transition"
+          >
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-accent">
+                {t.chapter.nextChapter}
+              </p>
+              <p className="mt-1 font-semibold group-hover:text-accent transition-colors">
+                {nextChapterMeta.title}
+              </p>
+            </div>
+            <span className="text-2xl text-accent group-hover:translate-x-1 transition-transform shrink-0">
+              →
+            </span>
+          </Link>
+        ) : (
+          <Link
+            href={p(`/knowledge/${chapterSlug}`)}
+            className="group flex items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 hover:border-[var(--accent)]/40 transition"
+          >
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-faint">
+                {t.nav.path}
+              </p>
+              <p className="mt-1 font-semibold group-hover:text-accent transition-colors">
+                {chapter?.title}
+              </p>
+            </div>
+            <span className="text-2xl text-faint group-hover:translate-x-1 transition-transform shrink-0">
+              →
+            </span>
           </Link>
         )}
-      </nav>
+      </div>
         </div>
       </div>
     </div>

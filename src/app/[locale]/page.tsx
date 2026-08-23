@@ -100,9 +100,14 @@ export default async function Home({
           {t.home.principles.map((f) => (
             <div
               key={f.t}
-              className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 hover:border-[var(--accent)]/40 transition"
+              className="group rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] hover:-translate-y-1 transition-all duration-200"
             >
-              <span className="text-2xl" aria-hidden>{f.icon}</span>
+              <span
+                className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-dim)] text-2xl group-hover:scale-110 transition-transform"
+                aria-hidden
+              >
+                {f.icon}
+              </span>
               <h3 className="mt-4 font-semibold text-lg">{f.t}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted">{f.d}</p>
             </div>
