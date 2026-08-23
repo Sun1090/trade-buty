@@ -140,7 +140,7 @@ export default async function LocaleLayout({
         </div>
         <div className="border-t border-[var(--border)]">
           <div className="mx-auto max-w-6xl px-5 py-4 text-xs text-faint flex flex-wrap justify-between gap-2">
-            <span>{t.footer.copyright.replace("{year}", String(new Date().getFullYear()))}</span>
+            <span>{t.footer.copyright}</span>
             <span>{t.footer.source}</span>
           </div>
         </div>

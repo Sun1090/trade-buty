@@ -178,7 +178,7 @@ const zh = {
     disclaimer: "⚠️ 风险提示：本站全部内容仅用于学习与研究，不构成任何投资建议。市场有风险，投资需谨慎。",
     navHeading: "导航",
     source: "内容来源 kline-buty",
-    copyright: "© {year} sun1090 · MIT License",
+    copyright: "© 2026 sun1090 · MIT License",
   },
 };
 
@@ -355,7 +355,7 @@ const en: Dict = {
     disclaimer: "⚠️ Risk notice: All content is for study and research only and does not constitute investment advice. Markets are risky.",
     navHeading: "Navigate",
     source: "Content from kline-buty",
-    copyright: "© {year} sun1090 · MIT License",
+    copyright: "© 2026 sun1090 · MIT License",
   },
 };
 
