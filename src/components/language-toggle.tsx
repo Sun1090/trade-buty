@@ -24,7 +24,7 @@ export function LanguageToggle() {
       onClick={toggle}
       aria-label="切换语言 / Switch language"
       title="中文 / EN"
-      className="px-2 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition text-xs font-mono"
+      className="px-2 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 active:scale-90 transition text-xs font-mono"
     >
       {pathname.startsWith("/en") ? "中" : "EN"}
     </button>

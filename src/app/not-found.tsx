@@ -7,8 +7,17 @@ export default function NotFound() {
   const chapters = getChapters(DEFAULT_LOCALE).slice(0, 3);
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-20 text-center">
-      <p className="font-mono text-6xl font-bold text-accent">404</p>
+    <div className="relative mx-auto max-w-3xl px-5 py-20 text-center overflow-hidden">
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+        aria-hidden
+      />
+      <p className="relative font-mono text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-accent to-[var(--info)]">404</p>
       <h1 className="mt-6 text-2xl font-bold">
         Page not found
         <span className="block mt-2 text-sm font-normal text-muted">

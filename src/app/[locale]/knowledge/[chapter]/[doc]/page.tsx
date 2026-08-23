@@ -147,7 +147,7 @@ export default async function DocPage({
         )}
       </header>
 
-      <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
+      <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
         <Markdown content={prepareForRender(doc.content, locale, chapterSlug)} />
       </article>
 

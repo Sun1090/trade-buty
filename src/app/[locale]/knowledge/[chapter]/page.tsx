@@ -81,18 +81,29 @@ export default async function ChapterPage({
       </nav>
 
       {/* Hero */}
-      <section className="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-8">
-        <p className="text-xs font-mono text-accent uppercase tracking-widest">
-          {t.chapter.progressLabel}
-        </p>
-        <h1 className="mt-2 text-2xl sm:text-3xl font-bold">{chapter.title}</h1>
-        <p className="mt-2 text-sm text-muted leading-relaxed">
-          {chapter.tagline}
-        </p>
-        <div className="mt-4 flex items-center gap-3">
-          <span className="text-xs text-faint">
-            {docs.length} {t.chapter.lessonsUnit}
-          </span>
+      <section className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-8">
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+          aria-hidden
+        />
+        <div className="relative">
+          <p className="text-xs font-mono text-accent uppercase tracking-widest">
+            {t.chapter.progressLabel}
+          </p>
+          <h1 className="mt-2 text-2xl sm:text-3xl font-bold">{chapter.title}</h1>
+          <p className="mt-2 text-sm text-muted leading-relaxed">
+            {chapter.tagline}
+          </p>
+          <div className="mt-4 flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dim)] border border-[var(--accent)]/30 px-3 py-1 text-xs font-medium text-accent">
+              📚 {docs.length} {t.chapter.lessonsUnit}
+            </span>
+          </div>
         </div>
       </section>
 

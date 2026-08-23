@@ -44,10 +44,10 @@ export function DocList({
             <li key={d.slug}>
               <Link
                 href={`/${locale}/knowledge/${chapterSlug}/${d.slug}`}
-                className={`group block rounded-xl border bg-[var(--surface)] px-5 py-4 hover:bg-[var(--surface-hover)] hover:border-[var(--accent)]/50 transition ${
+                className={`group block rounded-xl border px-5 py-4 hover:bg-[var(--surface-hover)] hover:border-[var(--accent)]/50 hover:-translate-y-0.5 transition-all ${
                   read
-                    ? "border-[var(--accent)]/40 border-l-2 border-l-accent"
-                    : "border-[var(--border)]"
+                    ? "border-[var(--accent)]/40 border-l-2 border-l-accent bg-gradient-to-r from-[var(--accent-dim)] to-transparent"
+                    : "border-[var(--border)] bg-[var(--surface)]"
                 }`}
               >
                 <span className="flex items-center gap-3">

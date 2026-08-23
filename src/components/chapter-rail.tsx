@@ -90,8 +90,9 @@ export function ChapterRail({
             <p className="text-xs font-semibold uppercase tracking-widest text-accent">
               {dict.nextChapter} →
             </p>
-            <p className="mt-1.5 font-semibold text-sm group-hover:text-accent transition-colors">
+            <p className="mt-1.5 font-semibold text-sm group-hover:text-accent transition-colors flex items-center gap-1">
               {nextChapter.title}
+              <span className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">→</span>
             </p>
             <p className="mt-1 text-xs text-faint line-clamp-2 leading-relaxed">
               {nextChapter.tagline}

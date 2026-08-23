@@ -46,7 +46,7 @@ export function ChapterExamCard({
     .replace("{total}", String(total));
 
   return (
-    <section className="mt-12 rounded-2xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-6">
+    <section className="mt-12 rounded-2xl border border-[var(--accent)]/30 border-l-4 border-l-[var(--accent)] bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="font-semibold">

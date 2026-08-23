@@ -15,6 +15,15 @@
   --accent-strong: #10b981;
   --accent-dim: rgba(52, 211, 153, 0.12);
   --down: #f87171;
+  /* 辅助色：用于 callout、徽章、分类区分 */
+  --info: #60a5fa;
+  --info-dim: rgba(96, 165, 250, 0.1);
+  --warn: #fbbf24;
+  --warn-dim: rgba(251, 191, 36, 0.1);
+  --purple: #a78bfa;
+  --purple-dim: rgba(167, 139, 250, 0.1);
+  --pink: #f472b6;
+  --pink-dim: rgba(244, 114, 182, 0.1);
 }
 
 @theme inline {
@@ -30,6 +39,14 @@
   --color-accent-strong: var(--accent-strong);
   --color-accent-dim: var(--accent-dim);
   --color-down: var(--down);
+  --color-info: var(--info);
+  --color-info-dim: var(--info-dim);
+  --color-warn: var(--warn);
+  --color-warn-dim: var(--warn-dim);
+  --color-purple: var(--purple);
+  --color-purple-dim: var(--purple-dim);
+  --color-pink: var(--pink);
+  --color-pink-dim: var(--pink-dim);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -47,6 +64,14 @@
   --accent: #059669;
   --accent-strong: #047857;
   --accent-dim: rgba(5, 150, 105, 0.08);
+  --info: #2563eb;
+  --info-dim: rgba(37, 99, 235, 0.06);
+  --warn: #d97706;
+  --warn-dim: rgba(217, 119, 6, 0.06);
+  --purple: #7c3aed;
+  --purple-dim: rgba(124, 58, 237, 0.06);
+  --pink: #db2777;
+  --pink-dim: rgba(219, 39, 119, 0.06);
 }
 
 .kb-prose mark {
@@ -287,4 +312,232 @@ body {
   color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 3px;
+  text-decoration-color: var(--accent-dim);
+  transition: text-decoration-color 0.2s;
+}
+.kb-prose a:hover {
+  text-decoration-color: var(--accent);
+}
+
+/* ---------- kb-prose 深度美化 ---------- */
+.kb-prose h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1.4rem 0 0.6rem;
+  color: var(--foreground);
+  scroll-margin-top: 5rem;
+}
+.kb-prose h5,
+.kb-prose h6 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 1.2rem 0 0.5rem;
+  color: var(--muted);
+  scroll-margin-top: 5rem;
+}
+.kb-prose ul {
+  list-style: none;
+  padding-left: 1.4rem;
+}
+.kb-prose ul li {
+  position: relative;
+}
+.kb-prose ul li::before {
+  content: "";
+  position: absolute;
+  left: -0.9rem;
+  top: 0.75rem;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.kb-prose ol {
+  counter-reset: item;
+  list-style: none;
+  padding-left: 1.6rem;
+}
+.kb-prose ol li {
+  counter-increment: item;
+  position: relative;
+}
+.kb-prose ol li::before {
+  content: counter(item);
+  position: absolute;
+  left: -1.6rem;
+  top: 0.1rem;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-geist-mono), monospace;
+}
+.kb-prose blockquote {
+  position: relative;
+  margin: 1.2rem 0;
+  padding: 0.9rem 1.1rem 0.9rem 2.2rem;
+  border-left: 4px solid var(--accent);
+  border-radius: 0 0.6rem 0.6rem 0;
+  background: var(--accent-dim);
+}
+.kb-prose blockquote::before {
+  content: "\201C";
+  position: absolute;
+  left: 0.5rem;
+  top: -0.2rem;
+  font-size: 2.5rem;
+  color: var(--accent);
+  opacity: 0.3;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.kb-prose code {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.85em;
+  background: rgba(233, 237, 245, 0.08);
+  border: 1px solid var(--border);
+  padding: 0.1em 0.35em;
+  border-radius: 0.35em;
+  color: var(--accent);
+}
+.kb-prose pre {
+  margin: 1.2rem 0;
+  padding: 1rem 1.2rem;
+  border-radius: 0.6rem;
+  overflow-x: auto;
+  background: #0d1119;
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.kb-prose pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #cdd6f4;
+  font-size: 0.86rem;
+}
+.kb-prose table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1.2rem 0;
+  font-size: 0.92rem;
+  display: block;
+  overflow-x: auto;
+  border-radius: 0.6rem;
+  border: 1px solid var(--border);
+}
+.kb-prose th {
+  background: linear-gradient(to bottom, var(--accent-dim), rgba(233, 237, 245, 0.03));
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.kb-prose th,
+.kb-prose td {
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+}
+.kb-prose tbody tr:nth-child(even) {
+  background: rgba(233, 237, 245, 0.02);
+}
+.kb-prose tbody tr:last-child td {
+  border-bottom: none;
+}
+.kb-prose tbody tr:hover {
+  background: var(--accent-dim);
+}
+.kb-prose mark {
+  background: linear-gradient(to bottom, transparent 55%, var(--accent-dim) 55%);
+  color: inherit;
+  padding: 0 0.1em;
+  border-radius: 0.15em;
+}
+.kb-prose hr {
+  margin: 2.5rem 0;
+  border: none;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--border-strong),
+    transparent
+  );
+}
+.kb-prose img {
+  max-width: 100%;
+  height: auto;
+  margin: 1.2rem auto;
+  display: block;
+  border-radius: 0.6rem;
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 0.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* ---------- 全局卡片 / 渐变 / 进度条工具类 ---------- */
+.card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 1rem;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.card-hover:hover {
+  border-color: rgba(52, 211, 153, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+.card-accent {
+  border-color: rgba(52, 211, 153, 0.25);
+  background: linear-gradient(
+    135deg,
+    var(--accent-dim),
+    var(--surface) 70%
+  );
+}
+
+/* 渐变文字 */
+.text-gradient {
+  background: linear-gradient(135deg, var(--accent), var(--info));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 统一进度条 */
+.progress-track {
+  height: 1.5px;
+  border-radius: 999px;
+  background: rgba(233, 237, 245, 0.08);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--accent-strong), var(--accent));
+  transition: width 0.5s ease;
+}
+
+/* 滚动淡入动画 */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out both;
 }

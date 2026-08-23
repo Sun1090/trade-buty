@@ -52,7 +52,7 @@ export default async function Home({
         />
         <div className="relative mx-auto max-w-6xl px-5 py-20 sm:py-28 grid lg:grid-cols-[1.1fr_1fr] gap-14 items-center">
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-[var(--accent)]/30 bg-[var(--accent-dim)] px-4 py-1.5 text-xs font-medium text-accent">
+            <p className="inline-flex items-center gap-2 rounded-full border border-[var(--accent)]/30 bg-[var(--accent-dim)] px-4 py-1.5 text-xs font-medium text-accent shadow-[0_0_12px_rgba(52,211,153,0.15)]">
               <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
               {t.home.badge}
             </p>
@@ -60,7 +60,7 @@ export default async function Home({
               {t.home.title1}
               <br />
               {t.home.title2Pre}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-indigo-400">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent via-accent to-[var(--info)]">
                 {t.home.title2Accent}
               </span>
             </h1>
@@ -70,7 +70,7 @@ export default async function Home({
             <div className="mt-9 flex flex-wrap gap-3">
               <Link
                 href={p("/knowledge/getting-started")}
-                className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-8 py-3.5 transition shadow-lg shadow-emerald-500/20"
+                className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-8 py-3.5 transition shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5"
               >
                 {t.home.ctaStart}
               </Link>
@@ -98,7 +98,7 @@ export default async function Home({
           <dl className="mx-auto max-w-6xl px-5 grid grid-cols-2 sm:grid-cols-4 gap-px">
             {t.home.stats.map(([v, k]) => (
               <div key={k} className="py-6 px-4 text-center bg-[var(--surface)]/40 hover:bg-[var(--accent-dim)] transition-colors">
-                <dt className="text-2xl sm:text-3xl font-bold text-accent">{v}</dt>
+                <dt className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-accent to-[var(--info)]">{v}</dt>
                 <dd className="mt-1 text-xs text-faint">{k}</dd>
               </div>
             ))}
@@ -118,8 +118,9 @@ export default async function Home({
           {t.home.principles.map((f) => (
             <div
               key={f.t}
-              className="group rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] hover:-translate-y-1 transition-all duration-200"
+              className="group relative rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 overflow-hidden hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] hover:-translate-y-1 transition-all duration-200"
             >
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent to-[var(--info)] opacity-0 group-hover:opacity-100 transition-opacity" />
               <span
                 className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-dim)] text-2xl group-hover:scale-110 transition-transform"
                 aria-hidden
@@ -141,6 +142,15 @@ export default async function Home({
             style={{
               background:
                 "radial-gradient(80% 100% at 50% 100%, rgba(52,211,153,.12), transparent 70%)",
+            }}
+            aria-hidden
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-[0.02]"
+            style={{
+              backgroundImage:
+                "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)",
+              backgroundSize: "32px 32px",
             }}
             aria-hidden
           />

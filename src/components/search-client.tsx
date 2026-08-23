@@ -126,7 +126,7 @@ export function SearchClient({
           onChange={(e) => onInput(e.target.value)}
           placeholder={dict.placeholder}
           autoFocus
-          className="w-full rounded-lg border border-[var(--border-strong)] bg-transparent px-4 py-3 pr-16 outline-none focus:border-accent"
+          className="w-full rounded-xl border border-[var(--border-strong)] bg-transparent px-4 py-3 pr-16 outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-dim)] transition-shadow"
         />
         {!query && (
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 rounded border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-xs text-faint font-mono">
