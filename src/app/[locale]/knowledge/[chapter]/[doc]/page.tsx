@@ -184,7 +184,7 @@ export default async function DocPage({
 
       {/* 问 AI */}
       <Link
-        href={`${p("/ai")}?q=${encodeURIComponent(doc.title)}`}
+        href={`${p("/ai")}?q=${encodeURIComponent(locale === "en" ? `Summarize the key points of "${doc.title}"` : `帮我总结《${doc.title}》的要点`)}`}
         className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 hover:border-[var(--accent)]/50 transition group"
       >
         <div className="flex items-center gap-3">

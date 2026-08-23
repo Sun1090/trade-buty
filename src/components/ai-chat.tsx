@@ -35,7 +35,11 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const initRef = useRef(false);
 
-  const suggestions = locale === "en" ? SUGGESTED_QUESTIONS_EN : SUGGESTED_QUESTIONS_ZH;
+  // 初始化时从问题池随机取 5 个（每次进入页面看到不同推荐）
+  const [suggestions] = useState(() => {
+    const pool = locale === "en" ? SUGGESTED_QUESTIONS_EN : SUGGESTED_QUESTIONS_ZH;
+    return [...pool].sort(() => Math.random() - 0.5).slice(0, 5);
+  });
 
   // 自动滚到底
   useEffect(() => {
