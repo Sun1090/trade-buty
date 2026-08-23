@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { KlineChart } from "@/components/kline-chart";
+import { HeroCard } from "@/components/hero-card";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -25,14 +26,9 @@ export default async function ChartPage({
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-12">
-      <header className="relative overflow-hidden mb-8 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-6 sm:p-8">
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)", backgroundSize: "40px 40px" }} aria-hidden />
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-          {t.chart.label}
-        </p>
-        <h1 className="text-3xl font-bold mt-3">{t.chart.title}</h1>
-        <p className="mt-3 text-muted leading-relaxed">{t.chart.intro}</p>
-      </header>
+      <HeroCard label={t.chart.label} title={t.chart.title}>
+        {t.chart.intro}
+      </HeroCard>
       <KlineChart dict={t.chart} />
       <Link
         href={`/${locale}/path`}
