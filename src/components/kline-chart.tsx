@@ -166,11 +166,13 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Symbol">
           {SYMBOLS.map((s) => (
             <button
               key={s}
               onClick={() => setSymbol(s)}
+              aria-label={`Symbol ${s}`}
+              aria-pressed={s === symbol}
               className={`px-3 py-1.5 rounded-lg font-mono text-xs transition ${
                 s === symbol
                   ? "bg-accent-dim text-accent border border-accent/40"
@@ -187,11 +189,13 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
                 {lastPrice.toLocaleString()}
               </span>
             )}
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Interval">
             {INTERVALS.map((i) => (
               <button
                 key={i}
                 onClick={() => setInterval_(i)}
+                aria-label={`Interval ${i}`}
+                aria-pressed={i === interval_}
                 className={`px-2.5 py-1.5 rounded-lg font-mono text-xs transition ${
                   i === interval_
                     ? "bg-accent-dim text-accent border border-accent/40"
@@ -204,7 +208,7 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
           </div>
         </div>
       </div>
-      <div className="relative rounded-2xl border border-[var(--border-strong)] bg-[var(--surface)] overflow-hidden">
+      <div className="relative rounded-2xl border border-[var(--border-strong)] bg-[var(--surface)] overflow-hidden" role="img" aria-label={`${symbol} chart`}>
         <div ref={containerRef} className="h-[420px]" />
         {status === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-faint">
