@@ -23,12 +23,15 @@ export function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/knowledge/[chapter]">): Promise<Metadata> {
-  const { chapter: slug } = await params;
+  const { locale, chapter: slug } = await params;
   const resolved = getChapter("zh", slug);
   if (!resolved) return {};
   return {
     title: resolved.chapter.title,
     description: resolved.chapter.tagline,
+    alternates: {
+      canonical: `/${locale}/knowledge/${slug}`,
+    },
   };
 }
 
