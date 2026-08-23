@@ -247,6 +247,14 @@ body {
   font-size: 0.92rem;
   display: block;
   overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.kb-prose th {
+  background: rgba(233, 237, 245, 0.05);
+  font-weight: 600;
+  position: sticky;
+  left: 0;
 }
 .kb-prose th,
 .kb-prose td {
