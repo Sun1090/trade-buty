@@ -26,6 +26,7 @@ export default async function SearchPage({
     resultsTpl: search.resultsTpl,
     emptyHint: search.emptyHint,
     browseCta: search.browseCta,
+    recentLabel: search.recentLabel,
   };
 
   return (
