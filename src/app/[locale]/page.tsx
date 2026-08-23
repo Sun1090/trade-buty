@@ -89,7 +89,7 @@ export default async function Home({
             />
           </div>
           <div className="hidden lg:block">
-            <HeroChart />
+            <HeroChart locale={locale} />
           </div>
         </div>
 

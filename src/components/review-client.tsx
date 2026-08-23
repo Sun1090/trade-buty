@@ -145,7 +145,7 @@ export function ReviewClient({
                           href={`/${locale}/ai?q=${encodeURIComponent(item.question.question)}`}
                           className="rounded-full border border-[var(--accent)]/40 bg-[var(--accent-dim)] hover:border-accent/60 text-accent text-xs font-medium px-5 py-2 transition"
                         >
-                          🤖 问 AI 深入理解
+                          <span aria-hidden>🤖 </span>问 AI 深入理解
                         </Link>
                       </div>
                     </div>

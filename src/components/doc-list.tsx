@@ -13,12 +13,13 @@ export function DocList({
   chapterSlug: string;
   locale: string;
 }) {
+  const emptyLabel = locale === "en" ? "No lessons yet." : "暂无课程。";
   const progress = useLocalProgress();
   const readSet = new Set(progress?.[chapterSlug] ?? []);
 
   if (metas.length === 0) {
     return (
-      <p className="text-sm text-faint py-4">No lessons yet.</p>
+      <p className="text-sm text-faint py-4">{emptyLabel}</p>
     );
   }
 

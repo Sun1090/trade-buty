@@ -50,7 +50,7 @@ export function ChapterExamCard({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="font-semibold">
-            📝 {quiz.title}
+            <span aria-hidden>📝 </span>{quiz.title}
           </p>
           <p className="mt-1 text-sm text-muted">
             {total} {dict.questionsUnit}

@@ -125,6 +125,7 @@ export function SearchClient({
           value={query}
           onChange={(e) => onInput(e.target.value)}
           placeholder={dict.placeholder}
+          aria-label={dict.placeholder}
           autoFocus
           className="w-full rounded-xl border border-[var(--border-strong)] bg-transparent px-4 py-3 pr-16 outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-dim)] transition-shadow"
         />

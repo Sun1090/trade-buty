@@ -22,8 +22,11 @@ function y(v: number) {
   return H - ((v - MIN) / (MAX - MIN)) * (H - 16) - 8;
 }
 
-export function HeroChart() {
+export function HeroChart({ locale = "en" }: { locale?: string }) {
   const step = W / CANDLES.length;
+  const hint = locale === "en"
+    ? "Your first lesson starts with reading this candle"
+    : "你的第一课，从看懂这根 K 线开始";
   const maPoints = CANDLES.map(
     (k, i) => `${i * step + step / 2},${y((k.o + k.c) / 2)}`
   ).join(" ");
@@ -78,7 +81,7 @@ export function HeroChart() {
         </svg>
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--border)] font-mono text-xs">
           <span className="text-accent">+12.6%</span>
-          <span className="text-faint">你的第一课，从看懂这根 K 线开始</span>
+          <span className="text-faint">{hint}</span>
         </div>
       </div>
     </div>
