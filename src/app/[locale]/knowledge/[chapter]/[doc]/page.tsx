@@ -38,10 +38,16 @@ export function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/knowledge/[chapter]/[doc]">): Promise<Metadata> {
-  const { chapter, doc: docSlug } = await params;
+  const { locale, chapter, doc: docSlug } = await params;
   const doc = getDoc("zh", chapter, docSlug);
   if (!doc) return {};
-  return { title: doc.title, description: doc.description };
+  return {
+    title: doc.title,
+    description: doc.description,
+    alternates: {
+      canonical: `/${locale}/knowledge/${chapter}/${docSlug}`,
+    },
+  };
 }
 
 export default async function DocPage({
