@@ -3,10 +3,10 @@ import type { Chapter } from "./content";
 
 // Mock content 模块
 const mockChapters: Chapter[] = [
-  { slug: "getting-started", title: "入门", tagline: "t", docCount: 7 },
-  { slug: "spot", title: "现货", tagline: "t", docCount: 5 },
-  { slug: "options-strategies", title: "期权", tagline: "t", docCount: 3 },
-  { slug: "unknown-slug", title: "未知", tagline: "t", docCount: 1 },
+  { slug: "getting-started", title: "入门", tagline: "t", docCount: 7, order: 0 },
+  { slug: "spot", title: "现货", tagline: "t", docCount: 5, order: 1 },
+  { slug: "options-strategies", title: "期权", tagline: "t", docCount: 3, order: 26 },
+  { slug: "unknown-slug", title: "未知", tagline: "t", docCount: 1, order: 999 },
 ];
 
 vi.mock("./content", () => ({
