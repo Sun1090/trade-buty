@@ -13,7 +13,7 @@ export async function generateMetadata({
 }: PageProps<"/[locale]/path">) {
   const { locale } = await params;
   const t = getDict(locale);
-  return { title: t.path.title, description: t.path.intro };
+  return { title: t.path.title, description: t.path.intro, alternates: { canonical: `/${locale}/path` } };
 }
 
 export default async function PathPage({

@@ -49,7 +49,7 @@ export function Toc({ items, heading }: { items: TocItem[]; heading: string }) {
                 });
                 setActive(item.id);
               }}
-              className={`block text-xs leading-snug transition-all border-l-2 -ml-px ${
+              className={`block text-xs leading-snug transition-all duration-300 border-l-2 -ml-px ${
                 item.depth === 3 ? "pl-5" : "pl-3"
               } ${
                 active === item.id

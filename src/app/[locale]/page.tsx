@@ -168,7 +168,7 @@ export default async function Home({
           </Link>
           <Link
             href={p("/ai")}
-            className="relative ml-3 inline-block mt-8 rounded-full border border-[var(--accent)]/40 bg-[var(--accent-dim)] hover:border-accent/60 text-accent font-medium px-8 py-3.5 transition"
+            className="relative sm:ml-3 inline-block mt-2 sm:mt-8 rounded-full border border-[var(--accent)]/40 bg-[var(--accent-dim)] hover:border-accent/60 text-accent font-medium px-8 py-3.5 transition"
           >
             <span aria-hidden>🤖 </span>{t.ai.nav} · {t.ai.title}
           </Link>

@@ -14,7 +14,7 @@ export async function generateMetadata({
 }: PageProps<"/[locale]/replay">): Promise<Metadata> {
   const { locale } = await params;
   const t = getDict(locale).replay;
-  return { title: t.title, description: t.intro };
+  return { title: t.title, description: t.intro, alternates: { canonical: `/${locale}/replay` } };
 }
 
 export default async function ReplayPage({
