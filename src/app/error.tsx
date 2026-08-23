@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { DEFAULT_LOCALE } from "@/lib/i18n";
 
 export default function ErrorPage({
   error,
@@ -13,9 +14,9 @@ export default function ErrorPage({
     <div className="mx-auto max-w-3xl px-5 py-28 text-center">
       <p className="font-mono text-6xl font-bold text-down">:(</p>
       <h1 className="mt-6 text-2xl font-bold">
-        页面出错了
+        Something went wrong
         <span className="block mt-2 text-sm font-normal text-muted">
-          Something went wrong. 止损要快，重试要果断。
+          止损要快，重试要果断。
         </span>
       </h1>
       {error.digest && (
@@ -26,13 +27,13 @@ export default function ErrorPage({
           onClick={reset}
           className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-7 py-3 transition"
         >
-          重试 ↻
+          Retry ↻
         </button>
         <Link
-          href="/zh"
+          href={`/${DEFAULT_LOCALE}`}
           className="rounded-full border border-border-strong px-7 py-3 font-medium hover:border-accent/60 transition"
         >
-          回首页
+          Home
         </Link>
       </div>
     </div>

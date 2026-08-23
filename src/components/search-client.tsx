@@ -92,23 +92,31 @@ export function SearchClient({
 
   return (
     <div>
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => onInput(e.target.value)}
-        placeholder={dict.placeholder}
-        autoFocus
-        className="w-full rounded-lg border border-[var(--border-strong)] bg-transparent px-4 py-3 outline-none focus:border-accent"
-      />
+      <div className="relative">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => onInput(e.target.value)}
+          placeholder={dict.placeholder}
+          autoFocus
+          className="w-full rounded-lg border border-[var(--border-strong)] bg-transparent px-4 py-3 pr-16 outline-none focus:border-accent"
+        />
+        {!query && (
+          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 rounded border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-xs text-faint font-mono">
+            ⌘K
+          </kbd>
+        )}
+      </div>
       {query.trim() && (
         <p className="mt-4 text-sm text-muted">
           {results.length > 0 ? dict.resultsTpl.replace("{n}", String(results.length)) : dict.noResults}
         </p>
       )}
       {query.trim() && results.length === 0 && (
-        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 text-sm">
-          <p className="font-medium">{dict.noResults}</p>
-          <p className="mt-2 text-muted">
+        <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center">
+          <p className="text-3xl" aria-hidden>🔍</p>
+          <p className="mt-3 font-medium">{dict.noResults}</p>
+          <p className="mt-2 text-sm text-muted">
             {dict.emptyHint}{" "}
             <a href={`/${locale}/path`} className="text-accent underline underline-offset-4">
               {dict.browseCta}

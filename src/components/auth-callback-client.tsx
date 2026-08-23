@@ -70,9 +70,14 @@ export function AuthCallbackClient({
       {state === "error" ? (
         <p className="text-down text-sm">{dict.callbackError}</p>
       ) : (
-        <p className="text-sm text-muted">
-          {state === "success" ? dict.callbackSuccess : dict.callbackProcessing}
-        </p>
+        <div className="flex flex-col items-center gap-4">
+          {state === "processing" && (
+            <span className="h-2 w-2 rounded-full bg-accent animate-ping" />
+          )}
+          <p className="text-sm text-muted">
+            {state === "success" ? dict.callbackSuccess : dict.callbackProcessing}
+          </p>
+        </div>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getChapters } from "@/lib/content";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
@@ -7,6 +8,14 @@ import { GlobalReadStat } from "@/components/global-read-stat";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps<"/[locale]">): Promise<Metadata> {
+  const { locale } = await params;
+  const t = getDict(locale).home;
+  return { description: t.metaDesc };
 }
 
 export default async function Home({
@@ -29,6 +38,15 @@ export default async function Home({
           style={{
             background:
               "radial-gradient(60% 50% at 70% 10%, rgba(52,211,153,.08), transparent 70%)",
+          }}
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
           }}
           aria-hidden
         />

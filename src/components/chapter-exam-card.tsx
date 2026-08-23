@@ -15,6 +15,7 @@ type QuizDict = {
   wrong: string;
   nextQ: string;
   finish: string;
+  perfect: string;
 };
 
 /**

@@ -15,6 +15,13 @@ export function DocList({
 }) {
   const progress = useLocalProgress();
   const readSet = new Set(progress?.[chapterSlug] ?? []);
+
+  if (metas.length === 0) {
+    return (
+      <p className="text-sm text-faint py-4">No lessons yet.</p>
+    );
+  }
+
   const pct = Math.round((readSet.size / metas.length) * 100);
 
   return (

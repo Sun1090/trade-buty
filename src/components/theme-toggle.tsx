@@ -15,8 +15,8 @@ export function ThemeToggle() {
   return (
     <button
       onClick={toggle}
-      aria-label="切换亮暗主题"
-      title="切换主题"
+      aria-label="Toggle theme / 切换主题"
+      title="Theme / 主题"
       className="px-2.5 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition text-sm"
     >
       <span

@@ -15,6 +15,7 @@ interface QuizDict {
   wrong: string;
   nextQ: string;
   finish: string;
+  perfect: string;
 }
 
 const tpl = (s: string, vars: Record<string, string | number>) =>
@@ -68,16 +69,22 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
   }
 
   if (!started) {
+    const perfect = progress?.done && progress.best === quiz.questions.length;
     return (
-      <div className="mt-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+      <div className={`mt-12 rounded-2xl border p-6 ${
+        perfect
+          ? "border-[var(--accent)]/50 bg-gradient-to-br from-[var(--accent-dim)] to-transparent"
+          : "border-[var(--border)] bg-[var(--surface)]"
+      }`}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="font-semibold">✏️ {quiz.title}</p>
+            <p className="font-semibold">{perfect ? "🏆" : "✏️"} {quiz.title}</p>
             <p className="mt-1 text-sm text-muted">
               {dict.questionsUnit}
               {progress?.done && (
                 <span className="ml-2 text-accent">{tpl(dict.bestTpl, { n: progress.best, total: quiz.questions.length })}</span>
               )}
+              {perfect && <span className="ml-2 text-accent font-medium">· {dict.perfect}</span>}
             </p>
           </div>
           <button
@@ -94,12 +101,15 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
   const q = quiz.questions[current];
   return (
     <div className="mt-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
-      <p className="text-xs text-faint">
-        {tpl(dict.progressTpl, { i: current + 1, n: quiz.questions.length })}{correct}
-      </p>
-      <div className="mt-2 h-1 rounded-full bg-white/10 overflow-hidden">
+      <div className="flex items-center justify-between text-xs text-faint">
+        <p>{tpl(dict.progressTpl, { i: current + 1, n: quiz.questions.length })}{correct}</p>
+        <span className="font-mono text-accent">
+          {Math.round(((current + (picked !== null ? 1 : 0)) / quiz.questions.length) * 100)}%
+        </span>
+      </div>
+      <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
         <div
-          className="h-full bg-accent transition-all duration-300"
+          className="h-full rounded-full bg-gradient-to-r from-accent-strong to-accent transition-all duration-300"
           style={{
             width: `${((current + (picked !== null ? 1 : 0)) / quiz.questions.length) * 100}%`,
           }}

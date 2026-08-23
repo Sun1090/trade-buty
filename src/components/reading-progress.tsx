@@ -22,7 +22,7 @@ export function ReadingProgress({ label }: { label: string }) {
     <>
       <div
         aria-hidden
-        className="fixed top-0 left-0 h-0.5 z-[60] bg-accent transition-[width] duration-150"
+        className="fixed top-0 left-0 h-0.5 z-[60] bg-gradient-to-r from-accent-strong to-accent transition-[width] duration-150"
         style={{ width: `${pct}%` }}
       />
       {showTop && (

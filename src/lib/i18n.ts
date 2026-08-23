@@ -53,6 +53,7 @@ const zh = {
     ctaTitle2: "本金只有一次。",
     ctaBody: "花两周把主线走完，再决定要不要开户。",
     ctaButton: "现在开始，免费 →",
+    metaDesc: "面向全球中文用户的免费中立交易教育：27 篇章分级课程 + 真实行情图表与回放训练。不荐股、不导流、不承诺收益。",
   },
   path: {
     label: "Learning Path",
@@ -94,6 +95,7 @@ const zh = {
     wrong: "❌ 不对，看解析",
     nextQ: "下一题 →",
     finish: "完成",
+    perfect: "全对！",
   },
   chart: {
     label: "Practice",
@@ -175,7 +177,7 @@ const zh = {
     disclaimer: "⚠️ 风险提示：本站全部内容仅用于学习与研究，不构成任何投资建议。市场有风险，投资需谨慎。",
     navHeading: "导航",
     source: "内容来源 kline-buty",
-    copyright: "© 2026 sun1090 · MIT License",
+    copyright: "© {year} sun1090 · MIT License",
   },
 };
 
@@ -227,6 +229,7 @@ const en: Dict = {
     ctaTitle2: "Your capital isn't.",
     ctaBody: "Spend two weeks finishing the core path before opening any account.",
     ctaButton: "Start now, free →",
+    metaDesc: "Free neutral trading education for global learners: 27 structured chapters + live charts and replay training. No stock picks, no referrals, no profit promises.",
   },
   path: {
     label: "Learning Path",
@@ -268,6 +271,7 @@ const en: Dict = {
     wrong: "❌ Not quite — see explanation",
     nextQ: "Next →",
     finish: "Finish",
+    perfect: "Perfect score!",
   },
   chart: {
     label: "Practice",
@@ -349,7 +353,7 @@ const en: Dict = {
     disclaimer: "⚠️ Risk notice: All content is for study and research only and does not constitute investment advice. Markets are risky.",
     navHeading: "Navigate",
     source: "Content from kline-buty",
-    copyright: "© 2026 sun1090 · MIT License",
+    copyright: "© {year} sun1090 · MIT License",
   },
 };
 
