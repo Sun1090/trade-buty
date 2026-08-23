@@ -36,6 +36,30 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
     }
   }, [picked]);
 
+  // 键盘快捷：1-4/A-D 选答案，Enter 下一题
+  useEffect(() => {
+    if (!started) return;
+    function onKey(e: KeyboardEvent) {
+      const q = quiz.questions[current];
+      if (picked === null) {
+        // 选答案：1-4 或 A-D
+        const idx = "1234".indexOf(e.key);
+        const idxAlpha = "abcdABCD".indexOf(e.key.toUpperCase() !== e.key ? e.key : e.key.toUpperCase());
+        const map = { "1": 0, "2": 1, "3": 2, "4": 3, a: 0, b: 1, c: 2, d: 3, A: 0, B: 1, C: 2, D: 3 } as Record<string, number>;
+        const i = map[e.key];
+        if (i !== undefined && i < q.options.length) {
+          pick(i);
+        }
+      } else if (e.key === "Enter" || e.key === " ") {
+        // 下一题
+        next();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [started, picked, current]);
+
   useEffect(() => {
     // 从本地存储同步一次性快照，非级联渲染场景
     // eslint-disable-next-line react-hooks/set-state-in-effect
