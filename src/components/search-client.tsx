@@ -118,7 +118,7 @@ export function SearchClient({
       )}
       {groups.map(([chapter, items]) => (
         <div key={chapter} className="mb-8">
-          <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-3 mt-6 first:mt-0">
+          <p className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dim)] border border-[var(--accent)]/30 px-3 py-1 text-xs font-medium text-accent mb-3 mt-6 first:mt-0">
             {chapter}
           </p>
           <ul className="space-y-2.5">
@@ -126,9 +126,9 @@ export function SearchClient({
               <li key={r.url}>
                 <a
                   href={r.url}
-                  className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/60 transition"
+                  className="group block rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] hover:-translate-y-0.5 transition-all"
                 >
-                  <span className="font-medium [&>mark]:bg-accent/30 [&>mark]:text-accent [&>mark]:rounded-sm [&>mark]:px-0.5">
+                  <span className="font-medium group-hover:text-accent transition-colors [&>mark]:bg-accent/30 [&>mark]:text-accent [&>mark]:rounded-sm [&>mark]:px-0.5">
                     <span
                       dangerouslySetInnerHTML={{
                         __html: highlight(r.title, query.trim().toLowerCase()),
