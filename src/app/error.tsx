@@ -11,9 +11,17 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   return (
-    <div className="mx-auto max-w-3xl px-5 py-28 text-center">
-      <p className="font-mono text-6xl font-bold text-down">:(</p>
-      <h1 className="mt-6 text-2xl font-bold">
+    <div className="relative mx-auto max-w-3xl px-5 py-28 text-center overflow-hidden">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(60% 50% at 50% 30%, rgba(248,113,113,.08), transparent 70%)",
+        }}
+        aria-hidden
+      />
+      <p className="relative font-mono text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-[var(--down)] to-accent">:(</p>
+      <h1 className="relative mt-6 text-2xl font-bold">
         Something went wrong
         <span className="block mt-2 text-sm font-normal text-muted">
           止损要快，重试要果断。
