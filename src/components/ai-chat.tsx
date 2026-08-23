@@ -32,6 +32,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Record<number, "helpful" | "unhelpful">>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const initRef = useRef(false);
 
@@ -46,13 +47,32 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
-  // 处理 ?q= 参数自动发送
+  // 进入时拉云端历史（登录用户恢复上次对话）
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
-    const params = new URLSearchParams(window.location.search);
-    const q = params.get("q");
-    if (q) send(q);
+    (async () => {
+      try {
+        const res = await fetch("/api/ai/conversations");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.messages?.length > 0) {
+            setMessages(data.messages.map((m: { role: string; content: string; sources?: string | { chapter: string; doc: string }[] }) => ({
+              role: m.role as "user" | "assistant",
+              content: m.content,
+              sources: m.sources ? (typeof m.sources === "string" ? JSON.parse(m.sources) : m.sources) : undefined,
+            })));
+            return; // 有历史就不走 ?q= 自动发送
+          }
+        }
+      } catch {
+        // 拉历史失败不阻断
+      }
+      // 无历史时处理 ?q= 参数
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get("q");
+      if (q) send(q);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -68,6 +88,9 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
 
     // 追加一个空的 assistant 消息用于流式填充
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+    let fullResponse = "";
+    let sourcesArr: { chapter: string; doc: string }[] | undefined;
 
     try {
       const res = await fetch("/api/ai/chat", {
@@ -88,7 +111,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       }
 
       const sources = res.headers.get("X-Sources");
-      const sourcesArr = sources ? JSON.parse(sources) : undefined;
+      sourcesArr = sources ? JSON.parse(sources) : undefined;
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
@@ -113,6 +136,19 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       }
 
       if (parts.length === 0) throw new Error(dict.error);
+
+      fullResponse = parts.join("");
+
+      // 存对话到云端（登录用户，fire-and-forget）
+      void fetch("/api/ai/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userMessage: trimmed,
+          assistantMessage: fullResponse,
+          sources: sourcesArr,
+        }),
+      }).catch(() => {});
     } catch (e) {
       const msg = e instanceof Error ? e.message : dict.error;
       setError(msg);
@@ -130,6 +166,27 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   function clear() {
     setMessages([]);
     setError(null);
+    setFeedback({});
+  }
+
+  async function sendFeedback(
+    msgIdx: number,
+    rating: "helpful" | "unhelpful",
+    msg: ChatMessage,
+  ) {
+    if (feedback[msgIdx]) return; // 已反馈过
+    setFeedback((prev) => ({ ...prev, [msgIdx]: rating }));
+    // 找对应的用户问题
+    const userQ = [...messages.slice(0, msgIdx)].reverse().find((m) => m.role === "user");
+    void fetch("/api/ai/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rating,
+        question: userQ?.content ?? "",
+        answer: msg.content,
+      }),
+    }).catch(() => {});
   }
 
   async function copyMsg(text: string, e: React.MouseEvent) {
@@ -218,10 +275,26 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                     )}
                     <button
                       onClick={(e) => copyMsg(msg.content, e)}
-                      className="text-xs text-faint hover:text-accent transition ml-auto"
+                      className="text-xs text-faint hover:text-accent transition"
                     >
                       {dict.copy}
                     </button>
+                    <span className="ml-auto flex items-center gap-1">
+                      <button
+                        onClick={() => sendFeedback(i, "helpful", msg)}
+                        className={`text-xs transition ${feedback[i] === "helpful" ? "text-accent font-medium" : "text-faint hover:text-accent"}`}
+                        aria-label={dict.helpful}
+                      >
+                        👍
+                      </button>
+                      <button
+                        onClick={() => sendFeedback(i, "unhelpful", msg)}
+                        className={`text-xs transition ${feedback[i] === "unhelpful" ? "text-down font-medium" : "text-faint hover:text-down"}`}
+                        aria-label={dict.unhelpful}
+                      >
+                        👎
+                      </button>
+                    </span>
                   </div>
                 )}
               </div>
