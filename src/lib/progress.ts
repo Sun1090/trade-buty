@@ -25,14 +25,6 @@ export function markRead(chapterNum: string, docSlug: string) {
   syncProgressWrite(chapterNum, docSlug);
 }
 
-export function clearProgress() {
-  try {
-    localStorage.removeItem(KEY);
-  } catch {
-    // ignore
-  }
-}
-
 function write(p: ProgressMap) {
   try {
     localStorage.setItem(KEY, JSON.stringify(p));

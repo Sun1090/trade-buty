@@ -20,10 +20,6 @@ export function setAuthState(isAuth: boolean, id?: string) {
   userId = isAuth && id ? id : null;
 }
 
-export function isAuthed() {
-  return authenticated;
-}
-
 // ---- 进度 ----
 export function syncProgressWrite(chapterNum: string, docSlug: string) {
   if (!authenticated || !userId) return;

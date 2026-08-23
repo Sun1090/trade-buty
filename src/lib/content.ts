@@ -48,10 +48,6 @@ function localeRoot(locale: string): string {
   return root;
 }
 
-export function isValidContentLocale(v: string): v is ContentLocale {
-  return (LOCALES as readonly string[]).includes(v);
-}
-
 export function getChapterSlugs(locale: string): string[] {
   const root = localeRoot(locale);
   return fs
