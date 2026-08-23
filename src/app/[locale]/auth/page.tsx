@@ -26,7 +26,16 @@ export default async function AuthPage({
   const p = (path: string) => `/${locale}${path}`;
 
   return (
-    <div className="mx-auto max-w-md px-5 py-20">
+    <div className="relative mx-auto max-w-md px-5 py-20">
+      <div
+        className="absolute inset-0 -z-10 pointer-events-none opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)",
+          backgroundSize: "36px 36px",
+        }}
+        aria-hidden
+      />
       <header className="mb-8 text-center">
         <div className="inline-flex items-center justify-center gap-2 mb-4">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>

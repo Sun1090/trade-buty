@@ -121,7 +121,7 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
           const isAnswer = i === q.answer;
           const isPicked = i === picked;
           let cls =
-            "border-[var(--border)] hover:border-[var(--accent)]/50 cursor-pointer";
+            "border-[var(--border)] hover:border-[var(--accent)]/50 hover:-translate-y-0.5 hover:bg-[var(--accent-dim)] cursor-pointer";
           if (picked !== null) {
             if (isAnswer) cls = "border-accent bg-accent-dim";
             else if (isPicked) cls = "border-down/60 bg-down/10";

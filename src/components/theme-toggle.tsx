@@ -17,7 +17,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label="Toggle theme / 切换主题"
       title="Theme / 主题"
-      className="px-2.5 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition text-sm"
+      className="px-2.5 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 active:scale-90 transition text-sm"
     >
       <span
         className="hidden [html[data-theme=dark]_&]:inline"

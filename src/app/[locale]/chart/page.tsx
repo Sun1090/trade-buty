@@ -25,7 +25,8 @@ export default async function ChartPage({
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-12">
-      <header className="mb-8 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-6 sm:p-8">
+      <header className="relative overflow-hidden mb-8 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-6 sm:p-8">
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)", backgroundSize: "40px 40px" }} aria-hidden />
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
           {t.chart.label}
         </p>

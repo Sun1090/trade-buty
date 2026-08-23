@@ -20,7 +20,7 @@ function acc(r: ReplayRecord): number {
 function StatCard({ value, label }: { value: string; label: string }) {
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-center">
-      <p className="font-mono text-2xl font-bold text-accent">{value}</p>
+      <p className="font-mono text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-accent to-[var(--info)]">{value}</p>
       <p className="mt-1 text-xs text-faint">{label}</p>
     </div>
   );

@@ -110,7 +110,7 @@ export function ReviewClient({
               return (
                 <div
                   key={key}
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5"
+                  className="rounded-2xl border border-[var(--border)] border-l-2 border-l-[var(--down)] bg-[var(--surface)] p-5"
                 >
                   <p className="text-xs text-faint">Q{item.questionIdx + 1}</p>
                   <p className="mt-2 font-medium leading-relaxed">{item.question.question}</p>
