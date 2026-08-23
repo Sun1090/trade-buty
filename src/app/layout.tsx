@@ -21,6 +21,19 @@ export const metadata: Metadata = {
   },
   description:
     "面向全球中文用户的免费中立交易教育平台：分级课程（学）× 真实行情图表与回放（练）。不荐股、不导流、不承诺收益。",
+  openGraph: {
+    type: "website",
+    siteName: "Trade Buty",
+    title: "Trade Buty · 免费中立交易教育",
+    description:
+      "分级课程（学）× 真实行情图表与回放（练）。不荐股、不导流、不承诺收益。",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Trade Buty · 免费中立交易教育",
+    description:
+      "分级课程（学）× 真实行情图表与回放（练）。不荐股、不导流、不承诺收益。",
+  },
 };
 
 export const viewport: Viewport = {
