@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 
 interface Entry {
@@ -54,10 +54,31 @@ export function SearchClient({
     noResults: string;
     emptyHint: string;
     browseCta: string;
+    recentLabel: string;
   };
 }) {
   const [query, setQuery] = useState("");
   const [entries, setEntries] = useState<Entry[] | null>(null);
+  const [recent, setRecent] = useState<string[]>([]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRecent(JSON.parse(localStorage.getItem("tb-recent-search") ?? "[]"));
+  }, []);
+
+  function saveRecent(q: string) {
+    const trimmed = q.trim();
+    if (!trimmed) return;
+    setRecent((prev) => {
+      const next = [trimmed, ...prev.filter((s) => s !== trimmed)].slice(0, 5);
+      try {
+        localStorage.setItem("tb-recent-search", JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }
 
 
   const results = useMemo(() => {
@@ -71,7 +92,13 @@ export function SearchClient({
       .map(({ e }) => e);
   }, [query, entries]);
 
-  const locale = usePathname()?.split("/")[1] || "zh";
+  // 有结果时存为最近搜索（故意只依赖 results.length，不依赖 query）
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (query.trim() && results.length > 0) saveRecent(query);
+  }, [results.length]);
+
+  const locale = usePathname()?.split("/")[1] || "en";
 
   const groups = useMemo(() => {
     const map = new Map<string, Entry[]>();
@@ -107,6 +134,25 @@ export function SearchClient({
           </kbd>
         )}
       </div>
+      {!query.trim() && recent.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs text-faint mb-2">{dict.recentLabel}</p>
+          <div className="flex flex-wrap gap-2">
+            {recent.map((term) => (
+              <button
+                key={term}
+                onClick={() => {
+                  setQuery(term);
+                  onInput(term);
+                }}
+                className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs text-muted hover:text-accent hover:border-accent/50 transition"
+              >
+                {term}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {query.trim() && (
         <p className="mt-4 text-sm text-muted">
           {results.length > 0 ? dict.resultsTpl.replace("{n}", String(results.length)) : dict.noResults}
