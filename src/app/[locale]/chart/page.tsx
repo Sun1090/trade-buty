@@ -14,7 +14,7 @@ export async function generateMetadata({
 }: PageProps<"/[locale]/chart">): Promise<Metadata> {
   const { locale } = await params;
   const t = getDict(locale).chart;
-  return { title: t.title, description: t.intro };
+  return { title: t.title, description: t.intro, alternates: { canonical: `/${locale}/chart` } };
 }
 
 export default async function ChartPage({
