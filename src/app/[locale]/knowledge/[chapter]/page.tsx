@@ -122,6 +122,27 @@ export default async function ChapterPage({
         </section>
       )}
 
+      {/* 整章测验入口：测验挂在某一节末尾，这里给入口 */}
+      {QUIZZES[slug]?.docSlug && (
+        <Link
+          href={p(`/knowledge/${slug}/${QUIZZES[slug].docSlug}`)}
+          className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 hover:border-[var(--accent)]/50 transition group"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl" aria-hidden>📝</span>
+            <div>
+              <p className="font-semibold text-sm group-hover:text-accent transition-colors">
+                {QUIZZES[slug].title}
+              </p>
+              <p className="text-xs text-faint">
+                {QUIZZES[slug].questions.length} {t.quiz.questionsUnit}
+              </p>
+            </div>
+          </div>
+          <span className="text-accent group-hover:translate-x-1 transition-transform shrink-0">→</span>
+        </Link>
+      )}
+
       <section className="mt-10">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-faint mb-4">
           {t.chapter.coursesHeading}
