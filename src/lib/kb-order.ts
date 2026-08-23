@@ -35,5 +35,7 @@ export const CHAPTER_ORDER: string[] = [
 
 export function chapterRank(slug: string): number {
   const idx = CHAPTER_ORDER.indexOf(slug);
-  return idx === -1 ? 1000 + slug.localeCompare("") : idx;
+  if (idx !== -1) return idx;
+  // 未知篇章排到末尾（1000+），按首字符 ASCII 区分字母序
+  return 1000 + slug.charCodeAt(0);
 }
