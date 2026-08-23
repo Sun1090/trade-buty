@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getStageGroups } from "@/lib/path";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { PathProgress } from "@/components/path-progress";
+import { PathGlobalProgress } from "@/components/path-global-progress";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -28,6 +29,9 @@ export default async function PathPage({
     stageText: t.path.stages[g.stage.id],
   }));
   const [core, practice, deep] = groups;
+  const chapters = groups.flatMap((g) =>
+    g.chapters.map((c) => ({ slug: c.slug, docCount: c.docCount }))
+  );
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-14">
@@ -46,6 +50,11 @@ export default async function PathPage({
           </p>
         )}
       </header>
+
+      {/* 全局进度 */}
+      <div className="mt-8">
+        <PathGlobalProgress chapters={chapters} />
+      </div>
 
       {/* 入门主线 */}
       <section className="mt-16">

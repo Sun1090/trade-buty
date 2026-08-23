@@ -134,6 +134,36 @@ export default async function Home({
         </div>
       </section>
 
+      {/* ---------- 精选篇章 ---------- */}
+      <section className="mx-auto max-w-6xl px-5 pb-20">
+        <header className="max-w-xl mb-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+            {t.home.principlesLabel}
+          </p>
+          <h2 className="text-3xl font-bold mt-3">{t.home.ctaPath}</h2>
+        </header>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {chapters.slice(0, 6).map((c) => (
+            <Link
+              key={c.slug}
+              href={p(`/knowledge/${c.slug}`)}
+              className="group rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] hover:-translate-y-1 transition-all duration-200"
+            >
+              <p className="font-mono text-xs text-faint">
+                {String(c.order + 1).padStart(2, "0")}
+              </p>
+              <h3 className="mt-2 font-semibold group-hover:text-accent transition-colors">
+                {c.title}
+              </h3>
+              <p className="mt-1.5 text-sm text-muted line-clamp-2">{c.tagline}</p>
+              <p className="mt-3 text-xs text-faint">
+                📚 {c.docCount} {locale === "en" ? "lessons" : "篇"}
+              </p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* ---------- CTA ---------- */}
       <section className="mx-auto max-w-6xl px-5 pb-28">
         <div className="relative overflow-hidden rounded-3xl border border-[var(--accent)]/30 px-8 py-14 sm:px-14 text-center">
