@@ -12,10 +12,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticPaths: { path: string; priority: number }[] = [
     { path: "", priority: 1 },
     { path: "/path", priority: 0.9 },
-    { path: "/chart", priority: 0.6 },
-    { path: "/replay", priority: 0.6 },
-    { path: "/review", priority: 0.4 },
-    { path: "/search", priority: 0.4 },
+    { path: "/chart", priority: 0.5 },
+    { path: "/replay", priority: 0.5 },
+    { path: "/review", priority: 0.3 },
+    { path: "/search", priority: 0.3 },
   ];
   const docPaths: { path: string; priority: number }[] = [];
   for (const locale of LOCALES) {
