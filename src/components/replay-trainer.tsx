@@ -12,6 +12,12 @@ import { fetchRandomHistoryWindow, type Kline } from "@/lib/binance";
 import { saveReplayRecord, saveReplayBest } from "@/lib/replay-store";
 
 const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] as const;
+const SYMBOL_NAMES: Record<string, string> = {
+  BTCUSDT: "Bitcoin",
+  ETHUSDT: "Ethereum",
+  BNBUSDT: "BNB",
+  SOLUSDT: "Solana",
+};
 const INTERVALS = ["15m", "1h", "4h", "1d"] as const;
 const SPEEDS = [1, 2, 4] as const;
 const CONTEXT = 30;
@@ -247,7 +253,7 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
         >
           {SYMBOLS.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {SYMBOL_NAMES[s] ?? s} ({s})
             </option>
           ))}
         </select>

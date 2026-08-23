@@ -27,7 +27,10 @@ export function AuthHeader({ locale, dict }: {
 
   return (
     <button
-      onClick={() => getSupabaseBrowser().auth.signOut()}
+      onClick={() => {
+        if (!window.confirm(`${email}\n\n${dict.logout}?`)) return;
+        getSupabaseBrowser().auth.signOut();
+      }}
       title={`${email} · ${dict.logout}`}
       aria-label={`${dict.logout} (${email})`}
       className="px-2 sm:px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition whitespace-nowrap text-sm flex items-center gap-1.5"

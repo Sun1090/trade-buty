@@ -98,11 +98,22 @@ export function ReviewClient({
   return (
     <div className="space-y-8">
       <p className="text-sm text-muted">{items.length}</p>
-      {[...groups.entries()].map(([chapterTitle, groupItems]) => (
+      {[...groups.entries()].map(([chapterTitle, groupItems]) => {
+        const chapterSlug = groupItems[0].chapterNum;
+        const quizDocSlug = groupItems[0].quiz.docSlug;
+        return (
         <div key={chapterTitle}>
-          <p className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dim)] border border-[var(--accent)]/30 px-3 py-1 text-xs font-medium text-accent mb-3">
-            {chapterTitle} · {groupItems.length}
-          </p>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dim)] border border-[var(--accent)]/30 px-3 py-1 text-xs font-medium text-accent">
+              {chapterTitle} · {groupItems.length}
+            </p>
+            <Link
+              href={`/${locale}/knowledge/${chapterSlug}/${quizDocSlug}`}
+              className="text-xs text-faint hover:text-accent transition underline underline-offset-4"
+            >
+              重做本章测验 →
+            </Link>
+          </div>
           <div className="space-y-3">
             {groupItems.map((item) => {
               const key = `${item.chapterNum}:${item.questionIdx}`;
@@ -155,7 +166,8 @@ export function ReviewClient({
             })}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

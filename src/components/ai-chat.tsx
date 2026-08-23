@@ -103,7 +103,11 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       });
 
       if (res.status === 429) {
-        throw new Error(dict.guestLimit);
+        const retryAfter = res.headers.get("retry-after");
+        const hint = retryAfter
+          ? ` (${Math.ceil(parseInt(retryAfter) / 60)}min)`
+          : "";
+        throw new Error(dict.guestLimit + hint);
       }
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
@@ -204,7 +208,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   const p = (path: string) => `/${locale}${path}`;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)]">
       {/* 消息区 */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
         <div className="mx-auto max-w-3xl space-y-6">
