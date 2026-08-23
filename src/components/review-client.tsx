@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ChapterQuiz, QuizQuestion } from "@/lib/quiz-types";
 import { readWrong, resolveWrong, type WrongEntry } from "@/lib/wrongbook";
@@ -8,10 +9,12 @@ export interface ReviewDict {
   title: string;
   intro: string;
   empty: string;
+  emptyHint: string;
   showAnswer: string;
   yourPick: string;
   correctPick: string;
   resolved: string;
+  browseCta: string;
 }
 
 interface Item extends WrongEntry {
@@ -22,9 +25,11 @@ interface Item extends WrongEntry {
 export function ReviewClient({
   quizzes,
   dict,
+  locale,
 }: {
   quizzes: ChapterQuiz[];
   dict: ReviewDict;
+  locale: string;
 }) {
   const [wrong, setWrong] = useState<Record<string, WrongEntry> | null>(null);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
@@ -71,7 +76,13 @@ export function ReviewClient({
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-10 text-center">
         <p className="text-4xl" aria-hidden>🎯</p>
         <p className="mt-4 font-semibold">{dict.empty}</p>
-        <p className="mt-2 text-sm text-muted">{dict.intro}</p>
+        <p className="mt-2 text-sm text-muted">{dict.emptyHint}</p>
+        <Link
+          href={`/${locale}/path`}
+          className="inline-block mt-4 rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2.5 text-sm transition"
+        >
+          {dict.browseCta}
+        </Link>
       </div>
     );
   }

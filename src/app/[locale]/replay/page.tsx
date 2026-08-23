@@ -25,7 +25,7 @@ export default async function ReplayPage({
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-12">
-      <header className="max-w-xl mb-8">
+      <header className="mb-8 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-6 sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
           {dict.replay.label}
         </p>
