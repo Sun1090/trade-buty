@@ -104,6 +104,7 @@ const zh = {
     error: "行情加载失败，币安 API 可能不可达",
     retry: "重试",
     disclaimer: "⚠️ 行情数据来自币安公开 API，仅用于学习研究，不构成任何投资建议。",
+    continueLearning: "学完看图，回到课程继续 →",
   },
   docTools: {
     toc: "本页目录",
@@ -118,9 +119,12 @@ const zh = {
     chapterMissing: "这个篇章不存在",
   },
   review: {
+    label: "复习",
     title: "错题本",
     intro: "测验里答错的题会自动收进这里。看懂解析后点「已掌握」移出；重做同章测验答对也会自动出库。",
     empty: "错题本空空如也",
+    emptyHint: "去做几道测验题，答错的会自动收进这里。",
+    browseCta: "去学习路线 →",
     showAnswer: "看答案与解析",
     yourPick: "你的选择",
     correctPick: "正确答案",
@@ -157,6 +161,7 @@ const zh = {
     histRecent: "最近记录",
   },
   search: {
+    label: "搜索",
     title: "搜索课程",
     placeholder: "输入关键词，如：止损、保证金、K 线…",
     resultsTpl: "{n} 条结果",
@@ -272,6 +277,7 @@ const en: Dict = {
     error: "Failed to load market data — Binance API may be unreachable",
     retry: "Retry",
     disclaimer: "⚠️ Market data from Binance public API, for study and research only. Not investment advice.",
+    continueLearning: "Done charting? Back to lessons →",
   },
   docTools: {
     toc: "On this page",
@@ -286,9 +292,12 @@ const en: Dict = {
     chapterMissing: "This chapter doesn't exist",
   },
   review: {
+    label: "Review",
     title: "Wrong Answer Book",
     intro: "Questions you missed are collected here automatically. Read the explanation and mark as mastered; answering correctly on a retake also removes them.",
     empty: "Nothing here yet",
+    emptyHint: "Take some quizzes — wrong answers land here automatically.",
+    browseCta: "Browse learning path →",
     showAnswer: "Show answer & explanation",
     yourPick: "Your pick",
     correctPick: "Correct answer",
@@ -325,6 +334,7 @@ const en: Dict = {
     histRecent: "Recent rounds",
   },
   search: {
+    label: "Search",
     title: "Search Lessons",
     placeholder: "Type keywords, e.g. stop loss, margin…",
     resultsTpl: "{n} result(s)",
