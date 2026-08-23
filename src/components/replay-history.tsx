@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { readReplayHistory, type ReplayRecord } from "@/lib/replay-store";
+import { readReplayHistory, readReplayBest, type ReplayRecord } from "@/lib/replay-store";
 import { useLocalProgress } from "@/components/use-local-progress";
 
 export interface HistoryDict {
   histTitle: string;
   histRounds: string;
   histAccuracy: string;
+  histBest: string;
   histEmpty: string;
   histRecent: string;
 }
@@ -16,16 +17,30 @@ function acc(r: ReplayRecord): number {
   return r.total > 0 ? Math.round((r.correct / r.total) * 100) : 0;
 }
 
+function StatCard({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-center">
+      <p className="font-mono text-2xl font-bold text-accent">{value}</p>
+      <p className="mt-1 text-xs text-faint">{label}</p>
+    </div>
+  );
+}
+
 /** 训练记录面板：监听 tb-progress 事件实时刷新 */
 export function ReplayHistory({ dict }: { dict: HistoryDict }) {
-  const progress = useLocalProgress(); // 仅用于触发重渲染（错题/进度共用事件）
+  const progress = useLocalProgress(); // 仅用于触发重渲染
   void progress;
   const [history, setHistory] = useState<ReplayRecord[]>([]);
+  const [best, setBest] = useState(0);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setHistory(readReplayHistory());
-    const onChange = () => setHistory(readReplayHistory());
+    setBest(readReplayBest());
+    const onChange = () => {
+      setHistory(readReplayHistory());
+      setBest(readReplayBest());
+    };
     window.addEventListener("tb-progress", onChange);
     return () => window.removeEventListener("tb-progress", onChange);
   }, []);
@@ -37,7 +52,10 @@ export function ReplayHistory({ dict }: { dict: HistoryDict }) {
 
   if (rounds === 0) {
     return (
-      <p className="mt-8 text-sm text-faint">{dict.histEmpty}</p>
+      <div className="mt-10 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center">
+        <p className="text-3xl" aria-hidden>📊</p>
+        <p className="mt-3 text-sm text-muted">{dict.histEmpty}</p>
+      </div>
     );
   }
 
@@ -46,16 +64,12 @@ export function ReplayHistory({ dict }: { dict: HistoryDict }) {
       <h2 className="text-sm font-semibold uppercase tracking-wide text-faint mb-4">
         {dict.histTitle}
       </h2>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 mb-4">
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-center">
-          <p className="font-mono text-2xl font-bold text-accent">{rounds}</p>
-          <p className="mt-1 text-xs text-faint">{dict.histRounds}</p>
-        </div>
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-center">
-          <p className="font-mono text-2xl font-bold text-accent">{overall}%</p>
-          <p className="mt-1 text-xs text-faint">{dict.histAccuracy}</p>
-        </div>
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <StatCard value={String(rounds)} label={dict.histRounds} />
+        <StatCard value={`${overall ?? 0}%`} label={dict.histAccuracy} />
+        <StatCard value={String(best)} label={dict.histBest} />
       </div>
+      <p className="text-xs text-faint mb-2">{dict.histRecent}</p>
       <ul className="space-y-1.5">
         {[...history].reverse().slice(0, 10).map((r) => (
           <li
