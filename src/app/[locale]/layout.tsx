@@ -83,6 +83,14 @@ export default async function LocaleLayout({
               <span className="min-[480px]:hidden" aria-hidden>🔍</span>
               <span className="hidden min-[480px]:inline">{t.nav.search}</span>
             </Link>
+            <Link
+              href={p("/ai")}
+              aria-label={t.ai.label}
+              className="px-2 sm:px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition whitespace-nowrap text-sm flex items-center gap-1"
+            >
+              <span aria-hidden>🤖</span>
+              <span className="hidden min-[420px]:inline text-accent font-medium">{t.ai.nav}</span>
+            </Link>
             <AuthHeader locale={locale} dict={t.auth} />
             <LanguageToggle />
             <ThemeToggle />

@@ -182,6 +182,23 @@ export default async function DocPage({
         )}
       </div>
 
+      {/* 问 AI */}
+      <Link
+        href={`${p("/ai")}?q=${encodeURIComponent(doc.title)}`}
+        className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 hover:border-[var(--accent)]/50 transition group"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-2xl" aria-hidden>🤖</span>
+          <div>
+            <p className="font-semibold text-sm group-hover:text-accent transition-colors">
+              {t.ai.askAbout} {doc.title}
+            </p>
+            <p className="text-xs text-faint">{t.ai.subtitle}</p>
+          </div>
+        </div>
+        <span className="text-accent group-hover:translate-x-1 transition-transform shrink-0">→</span>
+      </Link>
+
       {/* 主 CTA：下一篇 / 回篇章 / 下一篇章 */}
       <div className="mt-8">
         {next ? (
