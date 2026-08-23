@@ -29,10 +29,10 @@ export function ReadingProgress({ label }: { label: string }) {
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           aria-label={label}
-          title={label}
-          className="fixed bottom-6 right-6 z-50 h-10 w-10 rounded-full border border-border-strong bg-surface text-muted hover:text-accent hover:border-accent/60 shadow-lg transition"
+          title={`${label} · ${Math.round(pct)}%`}
+          className="fixed bottom-6 right-6 z-50 h-10 w-10 rounded-full border border-border-strong bg-surface text-muted hover:text-accent hover:border-accent/60 shadow-lg transition text-xs font-mono"
         >
-          ↑
+          {Math.round(pct)}%
         </button>
       )}
     </>
