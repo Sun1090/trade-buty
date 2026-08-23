@@ -263,7 +263,7 @@ const en: Dict = {
     readyCta: "Ready? Start from lesson one.",
     translationNote: "🚧 English translation in progress — {done}/27 chapters available so far. The complete Chinese originals are always free.",
     lesson1: "Lesson 01 →",
-    lessonsUnit: "",
+    lessonsUnit: "chapters",
   },
   chapter: {
     introHeading: "Chapter Intro",
