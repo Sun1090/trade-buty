@@ -95,9 +95,9 @@ export default async function Home({
 
         {/* 数据条 */}
         <div className="relative border-t border-[var(--border)]">
-          <dl className="mx-auto max-w-6xl px-5 grid grid-cols-2 sm:grid-cols-4 divide-x divide-[var(--border)]">
+          <dl className="mx-auto max-w-6xl px-5 grid grid-cols-2 sm:grid-cols-4 gap-px">
             {t.home.stats.map(([v, k]) => (
-              <div key={k} className="py-6 text-center">
+              <div key={k} className="py-6 px-4 text-center bg-[var(--surface)]/40 hover:bg-[var(--accent-dim)] transition-colors">
                 <dt className="text-2xl sm:text-3xl font-bold text-accent">{v}</dt>
                 <dd className="mt-1 text-xs text-faint">{k}</dd>
               </div>

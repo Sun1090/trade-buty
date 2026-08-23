@@ -17,10 +17,16 @@ export default function NotFound() {
       </h1>
       <div className="mt-10 flex flex-wrap justify-center gap-3">
         <Link
-          href={`/${DEFAULT_LOCALE}`}
+          href={`/${DEFAULT_LOCALE}/search`}
           className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-7 py-3 transition"
         >
-          Home →
+          🔍 Search →
+        </Link>
+        <Link
+          href={`/${DEFAULT_LOCALE}`}
+          className="rounded-full border border-border-strong px-7 py-3 font-medium hover:border-accent/60 transition"
+        >
+          Home
         </Link>
         <Link
           href={`/${DEFAULT_LOCALE}/path`}
