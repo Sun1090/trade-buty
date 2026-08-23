@@ -87,54 +87,67 @@ export function ReviewClient({
     );
   }
 
+  // 按篇章分组
+  const groups = new Map<string, Item[]>();
+  for (const item of items) {
+    const title = item.quiz.title;
+    if (!groups.has(title)) groups.set(title, []);
+    groups.get(title)!.push(item);
+  }
+
   return (
-    <div className="space-y-6">
-      <p className="text-sm text-muted">
-        {items.length}
-      </p>
-      {items.map((item) => {
-        const key = `${item.chapterNum}:${item.questionIdx}`;
-        const open = revealed.has(key);
-        return (
-          <div
-            key={key}
-            className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5"
-          >
-            <p className="text-xs text-faint">
-              {item.quiz.title} · Q{item.questionIdx + 1}
-            </p>
-            <p className="mt-2 font-medium leading-relaxed">{item.question.question}</p>
-            {!open ? (
-              <button
-                onClick={() => toggle(key)}
-                className="mt-3 text-sm text-accent underline underline-offset-4"
-              >
-                {dict.showAnswer}
-              </button>
-            ) : (
-              <div className="mt-4 space-y-2 text-sm">
-                <p className="text-down">
-                  {dict.yourPick}:{" "}
-                  {String.fromCharCode(65 + item.picked)}{" "}
-                  {item.question.options[item.picked]}
-                </p>
-                <p className="text-accent">
-                  {dict.correctPick}:{" "}
-                  {String.fromCharCode(65 + item.question.answer)}{" "}
-                  {item.question.options[item.question.answer]}
-                </p>
-                <p className="text-muted leading-relaxed">{item.question.explain}</p>
-                <button
-                  onClick={() => resolve(item)}
-                  className="mt-2 rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] text-xs font-semibold px-5 py-2 transition"
+    <div className="space-y-8">
+      <p className="text-sm text-muted">{items.length}</p>
+      {[...groups.entries()].map(([chapterTitle, groupItems]) => (
+        <div key={chapterTitle}>
+          <p className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dim)] border border-[var(--accent)]/30 px-3 py-1 text-xs font-medium text-accent mb-3">
+            {chapterTitle} · {groupItems.length}
+          </p>
+          <div className="space-y-3">
+            {groupItems.map((item) => {
+              const key = `${item.chapterNum}:${item.questionIdx}`;
+              const open = revealed.has(key);
+              return (
+                <div
+                  key={key}
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5"
                 >
-                  {dict.resolved}
-                </button>
-              </div>
-            )}
+                  <p className="text-xs text-faint">Q{item.questionIdx + 1}</p>
+                  <p className="mt-2 font-medium leading-relaxed">{item.question.question}</p>
+                  {!open ? (
+                    <button
+                      onClick={() => toggle(key)}
+                      className="mt-3 text-sm text-accent underline underline-offset-4"
+                    >
+                      {dict.showAnswer}
+                    </button>
+                  ) : (
+                    <div className="mt-4 space-y-2 text-sm">
+                      <p className="text-down">
+                        {dict.yourPick}:{" "}
+                        {String.fromCharCode(65 + item.picked)}{" "}
+                        {item.question.options[item.picked]}
+                      </p>
+                      <p className="text-accent">
+                        {dict.correctPick}:{" "}
+                        {String.fromCharCode(65 + item.question.answer)}{" "}
+                        {item.question.options[item.question.answer]}
+                      </p>
+                      <p className="text-muted leading-relaxed">{item.question.explain}</p>
+                      <button
+                        onClick={() => resolve(item)}
+                        className="mt-2 rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] text-xs font-semibold px-5 py-2 transition"
+                      >
+                        {dict.resolved}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }
