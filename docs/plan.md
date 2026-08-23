@@ -49,9 +49,10 @@
 
 ### P3 AI 陪学
 
-- RAG 检索知识库（Supabase pgvector）
-- 错题驱动的自适应出题（针对薄弱概念生成变体题）
-- Claude API 判答与讲解
+- ~~RAG 检索知识库~~ Supabase pgvector ✓
+- AI 对话：流式 + RAG context + 来源引用 ✓
+- 错题驱动的自适应出题（针对薄弱概念生成变体题）——进行中
+- 通用 LLM 客户端：原生 fetch，兼容任何 OpenAI 格式端点（不锁厂商）✓
 
 设计原则：AI 出题判答，不是通用聊天机器人。
 

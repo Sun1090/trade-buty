@@ -31,7 +31,7 @@ export interface Doc extends DocMeta {
   content: string;
 }
 
-function assertKnowledgeRoot() {
+export function assertKnowledgeRoot() {
   if (!fs.existsSync(KNOWLEDGE_ROOT)) {
     throw new Error(
       "知识库缺失：content/kline-buty/docs/knowledge 不存在。请执行 git submodule update --init"
