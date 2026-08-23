@@ -38,7 +38,8 @@ export function saveReplayRecord(rec: Omit<ReplayRecord, "at">) {
 /** 读取历史最佳连击 */
 export function readReplayBest(): number {
   try {
-    return parseInt(localStorage.getItem(BEST_KEY) ?? "0", 10);
+    const n = parseInt(localStorage.getItem(BEST_KEY) ?? "0", 10);
+    return Number.isNaN(n) ? 0 : n;
   } catch {
     return 0;
   }
