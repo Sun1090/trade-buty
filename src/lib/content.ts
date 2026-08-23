@@ -8,8 +8,6 @@ const KNOWLEDGE_ROOT = path.join(
   "content/kline-buty/docs/knowledge"
 );
 
-const LOCALES = ["zh", "en"] as const;
-type ContentLocale = (typeof LOCALES)[number];
 
 export interface Chapter {
   slug: string; // 英文 slug，如 'getting-started'
