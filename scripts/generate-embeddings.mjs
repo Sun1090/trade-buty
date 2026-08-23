@@ -4,15 +4,28 @@
  * 遍历知识库 → 分块 → 调 embedding API → 写入 Supabase pgvector。
  * 幂等：每次运行先清旧再写新（避免重复）。
  *
- * 用法：node scripts/generate-embeddings.mjs
- * 需要：AI_API_KEY + SUPABASE_SERVICE_ROLE_KEY 环境变量
+ * 用法：node --import tsx scripts/generate-embeddings.mjs
+ * 需要：AI_EMBEDDING_* + SUPABASE_SERVICE_ROLE_KEY 环境变量
  */
-import { getAllChunks } from "../src/lib/ai/chunk.ts";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+// 手动加载 .env.local（不引 dotenv 依赖）
+const __root = join(dirname(fileURLToPath(import.meta.url)), "..");
+try {
+  for (const line of readFileSync(join(__root, ".env.local"), "utf8").split("\n")) {
+    const m = line.match(/^([A-Z_]+)=(.*)$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
+  }
+} catch {
+  // .env.local 不存在则依赖已有环境变量
+}
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const AI_URL = process.env.AI_EMBEDDING_URL || process.env.AI_API_URL;
-const AI_KEY = process.env.AI_API_KEY;
+const AI_KEY = process.env.AI_EMBEDDING_KEY || process.env.AI_API_KEY;
 const EMBED_MODEL = process.env.AI_EMBEDDING_MODEL || "text-embedding-3-small";
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
@@ -20,11 +33,10 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
   process.exit(1);
 }
 if (!AI_URL || !AI_KEY) {
-  console.error("❌ 缺少 AI_API_URL / AI_API_KEY 环境变量");
+  console.error("❌ 缺少 AI_EMBEDDING_URL / AI_EMBEDDING_KEY 环境变量");
   process.exit(1);
 }
 
-// 动态 import chunk 模块（ESM）
 async function main() {
   const { getAllChunks } = await import("../src/lib/ai/chunk.ts");
   const locales = ["zh"]; // en 待内容补齐后再生成
@@ -51,7 +63,7 @@ async function main() {
           const emb = await embed(c.chunk);
           rows.push({ ...c, embedding: emb });
         } catch (e) {
-          console.error(`  ⚠ 块 ${c.chapter}/${c.doc} embed 失败:`, e.message);
+          console.error(`\n  ⚠ 块 ${c.chapter}/${c.doc} embed 失败:`, e.message);
         }
       }
       // 批量插入
@@ -67,7 +79,7 @@ async function main() {
           body: JSON.stringify(rows),
         });
         if (!res.ok) {
-          console.error(`  ⚠ 批 ${i} 插入失败: ${res.status}`);
+          console.error(`\n  ⚠ 批 ${i} 插入失败: ${res.status} ${await res.text()}`);
         }
       }
       total += rows.length;
