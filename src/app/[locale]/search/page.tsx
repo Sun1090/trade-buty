@@ -10,7 +10,8 @@ export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/search">) {
   const { locale } = await params;
-  return { title: getDict(locale).search.title };
+  const s = getDict(locale).search;
+  return { title: s.title, description: s.placeholder };
 }
 
 export default async function SearchPage({

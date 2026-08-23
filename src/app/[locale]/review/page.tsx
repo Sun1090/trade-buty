@@ -12,7 +12,8 @@ export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/review">) {
   const { locale } = await params;
-  return { title: getDict(locale).review.title };
+  const t = getDict(locale).review;
+  return { title: t.title, description: t.intro };
 }
 
 export default async function ReviewPage({
