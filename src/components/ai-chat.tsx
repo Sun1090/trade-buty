@@ -323,7 +323,10 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         <div className="mx-auto max-w-3xl">
           {messages.length > 0 && (
             <button
-              onClick={clear}
+              onClick={() => {
+                if (messages.length > 0 && !window.confirm(locale === "en" ? "Clear all messages?" : "清空所有对话？")) return;
+                clear();
+              }}
               className="mb-2 text-xs text-faint hover:text-accent transition"
             >
               {dict.clear}

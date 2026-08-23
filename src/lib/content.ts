@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 import { chapterRank } from "./kb-order";
+import { readFirstParagraph, extractH1, titleOrder } from "./md-utils";
 
 const KNOWLEDGE_ROOT = path.join(
   process.cwd(),
@@ -55,20 +56,6 @@ export function getChapterSlugs(locale: string): string[] {
     .sort((a, b) => chapterRank(a) - chapterRank(b) || a.localeCompare(b));
 }
 
-function readFirstParagraph(md: string): string {
-  for (const line of md.split("\n")) {
-    const t = line.trim();
-    if (!t || t.startsWith("#") || t.startsWith("---")) continue;
-    return t.replace(/^>\s*/, "").replace(/\*\*/g, "").slice(0, 120);
-  }
-  return "";
-}
-
-function extractH1(md: string): string {
-  const m = md.match(/^#\s+(.+)$/m);
-  return m ? m[1].trim() : "";
-}
-
 function parseFrontmatter(
   raw: string,
   fallbackTitle: string
@@ -90,11 +77,6 @@ function parseFrontmatter(
   return { title, description, content };
 }
 
-/** frontmatter title 的前导数字（章内排序） */
-function titleOrder(title: string): number {
-  const m = title.match(/^(\d+)/);
-  return m ? Number(m[1]) : 999;
-}
 
 export function getChapters(locale: string): Chapter[] {
   const root = localeRoot(locale);
