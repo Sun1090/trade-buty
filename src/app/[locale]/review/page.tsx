@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { QUIZZES } from "@/lib/quizzes";
 import { ReviewClient } from "@/components/review-client";
+import { HeroCard } from "@/components/hero-card";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -25,13 +26,9 @@ export default async function ReviewPage({
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-5 py-10">
-      <header className="mb-8 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-6 sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-          {t.review.label}
-        </p>
-        <h1 className="text-3xl font-bold mt-3">{t.review.title}</h1>
-        <p className="mt-3 text-sm text-muted leading-relaxed">{t.review.intro}</p>
-      </header>
+      <HeroCard label={t.review.label} title={t.review.title}>
+        {t.review.intro}
+      </HeroCard>
       <ReviewClient
         quizzes={Object.values(QUIZZES)}
         dict={t.review}
