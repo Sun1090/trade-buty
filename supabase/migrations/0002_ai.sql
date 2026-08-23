@@ -17,7 +17,7 @@ create table if not exists kb_embeddings (
   chapter     text not null,
   doc         text not null,
   locale      text not null default 'zh',
-  embedding   vector(1536) not null,
+  embedding   vector(1024) not null,
   created_at  timestamptz not null default now()
 );
 
@@ -30,7 +30,7 @@ create index if not exists idx_kb_embeddings_locale_chapter
 
 -- RAG 检索函数：余弦相似度 + locale 过滤 + 阈值
 create or replace function match_kb_embeddings(
-  query_embedding vector(1536),
+  query_embedding vector(1024),
   match_locale text default 'zh',
   match_count int default 4,
   threshold float default 0.3

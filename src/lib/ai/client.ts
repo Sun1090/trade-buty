@@ -2,12 +2,12 @@
  * P3 AI 陪学：通用 LLM / Embedding 客户端
  *
  * 用原生 fetch，不锁死任何厂商 SDK。
- * 兼容任何 OpenAI Chat Completions / Embeddings 格式的端点：
- * - OpenAI 官方：https://api.openai.com/v1
- * - OpenRouter：https://openrouter.ai/api/v1（可调 Claude/GPT/Llama 等任意模型）
- * - DeepSeek / Moonshot / 本地 Ollama 等
+ * 兼容任何 OpenAI Chat Completions / Embeddings 格式的端点。
  *
- * 只需配 AI_API_URL + AI_API_KEY + AI_MODEL。
+ * 三模型 fallback 链：glm-5.2 → deepseek-v4-flash → sensenova-6.8-flash-lite
+ * 第一个失败（超时/5xx/429）自动降级到下一个，全部失败才抛错。
+ * 所有 SenseNova 模型默认开启思考模式，这里统一 reasoning_effort: "none"
+ * 关掉，流式直接出 content（否则先吐一长串 reasoning，max_tokens 不够时 content 不出来）。
  */
 
 interface ChatMessage {
@@ -17,23 +17,28 @@ interface ChatMessage {
 
 interface ChatOptions {
   messages: ChatMessage[];
-  /** 是否流式（SSE） */
-  stream?: boolean;
-  /** 温度 0-1，教育场景建议低 */
   temperature?: number;
-  /** 单次回复 token 上限 */
   maxTokens?: number;
 }
 
 const API_URL = process.env.AI_API_URL || "";
 const API_KEY = process.env.AI_API_KEY || "";
-const MODEL = process.env.AI_MODEL || "gpt-4o-mini";
+
+/** fallback 链：优先用 env 配的，其后按固定顺序兜底 */
+function getModelChain(): string[] {
+  const primary = process.env.AI_MODEL;
+  const chain = ["glm-5.2", "deepseek-v4-flash", "sensenova-6.8-flash-lite"];
+  if (primary && !chain.includes(primary)) return [primary, ...chain];
+  // 把 primary 放链首（去重）
+  return primary ? [primary, ...chain.filter((m) => m !== primary)] : chain;
+}
 
 /**
- * 调用 Chat Completions，返回流式 ReadableStream（SSE 解析后逐 token yield）。
- * 兼容 OpenAI 格式的 data: {json}\n\n 流。
+ * 尝试单个模型，返回流式 ReadableStream。
+ * 失败时抛错，由上层 catch 后尝试下一个模型。
  */
-export async function streamChat(
+async function tryModel(
+  model: string,
   opts: ChatOptions,
 ): Promise<ReadableStream<Uint8Array>> {
   const encoder = new TextEncoder();
@@ -45,22 +50,24 @@ export async function streamChat(
       Authorization: `Bearer ${API_KEY}`,
     },
     body: JSON.stringify({
-      model: MODEL,
+      model,
       messages: opts.messages,
       stream: true,
       temperature: opts.temperature ?? 0.3,
       max_tokens: opts.maxTokens ?? 1500,
+      reasoning_effort: "none",
     }),
   });
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`AI API ${res.status}: ${err.substring(0, 200)}`);
+    throw new Error(`AI ${model} ${res.status}: ${err.substring(0, 100)}`);
   }
-  if (!res.body) throw new Error("AI API 无响应流");
+  if (!res.body) throw new Error(`AI ${model} 无响应流`);
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
+  let buffer = ""; // SSE 可能跨 chunk，保留未完成的行
 
   return new ReadableStream({
     async pull(controller) {
@@ -69,9 +76,11 @@ export async function streamChat(
         controller.close();
         return;
       }
-      const text = decoder.decode(value, { stream: true });
-      // 解析 SSE：多行 data: {json}
-      for (const line of text.split("\n")) {
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      // 最后一段可能不完整，留到下次
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed || !trimmed.startsWith("data:")) continue;
         const data = trimmed.slice(5).trim();
@@ -81,7 +90,9 @@ export async function streamChat(
         }
         try {
           const json = JSON.parse(data);
-          const token = json.choices?.[0]?.delta?.content;
+          const delta = json.choices?.[0]?.delta;
+          // 只取正式回答 content；reasoning / reasoning_content 是思维链，不发给前端
+          const token = delta?.content;
           if (token) controller.enqueue(encoder.encode(token));
         } catch {
           // 跳过不完整的 JSON
@@ -95,18 +106,40 @@ export async function streamChat(
 }
 
 /**
+ * 三模型 fallback 流式对话。
+ * 按链顺序尝试，第一个成功返回流；全部失败抛最后一个错误。
+ */
+export async function streamChat(
+  opts: ChatOptions,
+): Promise<ReadableStream<Uint8Array>> {
+  const chain = getModelChain();
+  let lastErr: Error | null = null;
+  for (const model of chain) {
+    try {
+      return await tryModel(model, opts);
+    } catch (e) {
+      lastErr = e instanceof Error ? e : new Error(String(e));
+      // 429/5xx/超时 → 降级；400 类参数错误也降级（不同模型参数可能不同）
+      console.error(`[ai] ${model} 失败，降级下一个:`, lastErr.message);
+    }
+  }
+  throw lastErr ?? new Error("所有 AI 模型均不可用");
+}
+
+/**
  * 生成 embedding 向量（用于 RAG 检索和查询向量化）。
  * 返回 number[]（1536 维，text-embedding-3-small）。
  */
 export async function embed(text: string): Promise<number[]> {
   const embedUrl = process.env.AI_EMBEDDING_URL || API_URL;
   const embedModel = process.env.AI_EMBEDDING_MODEL || "text-embedding-3-small";
+  const embedKey = process.env.AI_EMBEDDING_KEY || API_KEY;
 
   const res = await fetch(`${embedUrl}/embeddings`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${API_KEY}`,
+      Authorization: `Bearer ${embedKey}`,
     },
     body: JSON.stringify({
       model: embedModel,
