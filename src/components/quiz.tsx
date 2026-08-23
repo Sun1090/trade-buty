@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ChapterQuiz } from "@/lib/quiz-types";
 import { recordWrong, resolveWrong } from "@/lib/wrongbook";
 import { readQuizProgress, saveQuizProgress, type QuizProgress } from "@/lib/quiz-store";
@@ -27,6 +27,14 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
   const [picked, setPicked] = useState<number | null>(null);
   const [correct, setCorrect] = useState(0);
   const [progress, setProgress] = useState<QuizProgress | null>(null);
+  const explainRef = useRef<HTMLDivElement>(null);
+
+  // 答题后自动滚到解析区（小屏体验）
+  useEffect(() => {
+    if (picked !== null) {
+      explainRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [picked]);
 
   useEffect(() => {
     // 从本地存储同步一次性快照，非级联渲染场景
@@ -143,7 +151,7 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
         })}
       </ul>
       {picked !== null && (
-        <div className="mt-5 rounded-xl bg-black/20 dark:bg-white/5 p-4 text-sm space-y-3">
+        <div ref={explainRef} className="mt-5 rounded-xl bg-black/20 dark:bg-white/5 p-4 text-sm space-y-3">
           <p className="font-semibold">
             {picked === q.answer ? dict.correct : dict.wrong}
           </p>
