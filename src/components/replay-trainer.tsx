@@ -331,12 +331,16 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
                 <div className="flex gap-3">
                   <button
                     onClick={() => pick("up")}
+                    aria-label={dict.up}
+                    aria-pressed={guess.pending === "up"}
                     className="flex-1 rounded-xl border border-accent/50 bg-accent-dim text-accent font-semibold py-3 hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition"
                   >
                     {dict.up}
                   </button>
                   <button
                     onClick={() => pick("down")}
+                    aria-label={dict.down}
+                    aria-pressed={guess.pending === "down"}
                     className="flex-1 rounded-xl border border-down/50 bg-down/10 text-down font-semibold py-3 hover:bg-down hover:text-white transition"
                   >
                     {dict.down}
