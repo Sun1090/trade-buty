@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 import { getChapterSlugs, getDocMetas } from "@/lib/content";
+import { SITE_URL } from "@/lib/site";
 
-const BASE = "https://trade-buty.vercel.app";
+const BASE = SITE_URL;
 const LOCALES = ["zh", "en"];
 
 export default function sitemap(): MetadataRoute.Sitemap {

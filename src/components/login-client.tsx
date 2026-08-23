@@ -27,6 +27,8 @@ export function LoginClient({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email || status === "sending") return;
+    // 基础邮箱格式校验
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
     setStatus("sending");
     const { error } = await getSupabaseBrowser().auth.signInWithOtp({
       email,

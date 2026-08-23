@@ -24,6 +24,16 @@ export function CodeCopy({
       if (pre.dataset.copyAttached) return;
       pre.dataset.copyAttached = "1";
       pre.style.position = "relative";
+      // 语言标签：从 code class="language-xxx" 提取
+      const codeEl = pre.querySelector("code");
+      const langMatch = codeEl?.className.match(/language-([\w-]+)/);
+      if (langMatch) {
+        const tag = document.createElement("span");
+        tag.textContent = langMatch[1];
+        tag.className =
+          "absolute left-3 top-2 text-[10px] font-mono uppercase text-white/30 pointer-events-none";
+        pre.appendChild(tag);
+      }
       const btn = document.createElement("button");
       btn.textContent = copyLabel;
       btn.className =

@@ -18,7 +18,7 @@ export function MarkRead({
       if (fired.current) return;
       const total = document.documentElement.scrollHeight - window.innerHeight;
       // 内容不足一屏（total<=0）视为已读
-      if (total <= 0 || window.scrollY / total > 0.65) {
+      if (total <= 0 || window.scrollY / total > 0.5) {
         markRead(chapterNum, docSlug);
         fired.current = true;
         window.removeEventListener("scroll", onScroll);

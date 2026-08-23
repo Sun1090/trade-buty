@@ -10,7 +10,7 @@ export function ImageLightbox({
   containerSelector: string;
   closeLabel: string;
 }) {
-  const [src, setSrc] = useState<string | null>(null);
+  const [img, setImg] = useState<{ src: string; alt: string } | null>(null);
 
   useEffect(() => {
     const root = document.querySelector(containerSelector);
@@ -19,7 +19,7 @@ export function ImageLightbox({
       const t = e.target as HTMLElement;
       if (t.tagName === "IMG") {
         e.preventDefault();
-        setSrc((t as HTMLImageElement).src);
+        setImg({ src: (t as HTMLImageElement).src, alt: (t as HTMLImageElement).alt });
       }
     };
     root.addEventListener("click", onClick);
@@ -27,9 +27,9 @@ export function ImageLightbox({
   }, [containerSelector]);
 
   useEffect(() => {
-    if (!src) return;
+    if (!img) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSrc(null);
+      if (e.key === "Escape") setImg(null);
     };
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
@@ -37,20 +37,20 @@ export function ImageLightbox({
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [src]);
+  }, [img]);
 
-  if (!src) return null;
+  if (!img) return null;
 
   return (
     <div
-      onClick={() => setSrc(null)}
-      className="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-4 cursor-zoom-out"
+      onClick={() => setImg(null)}
+      className="fixed inset-0 z-[70] bg-black/85 flex flex-col items-center justify-center p-4 cursor-zoom-out"
       role="dialog"
       aria-modal="true"
       aria-label={closeLabel}
     >
       <button
-        onClick={() => setSrc(null)}
+        onClick={() => setImg(null)}
         aria-label={closeLabel}
         className="absolute right-4 top-4 h-10 w-10 rounded-full border border-white/30 text-white/80 hover:text-white hover:border-white text-lg"
       >
@@ -58,11 +58,16 @@ export function ImageLightbox({
       </button>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={src}
-        alt=""
-        className="max-h-[90vh] max-w-full object-contain rounded-lg bg-white p-2 shadow-2xl"
+        src={img.src}
+        alt={img.alt}
+        className="max-h-[80vh] max-w-full object-contain rounded-lg bg-white p-2 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       />
+      {img.alt && (
+        <p className="mt-4 max-w-lg text-center text-sm text-white/60 leading-relaxed">
+          {img.alt}
+        </p>
+      )}
     </div>
   );
 }
