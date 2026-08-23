@@ -23,7 +23,7 @@ export default async function ReviewPage({
   const t = getDict(locale);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-5 py-10">
+    <div className="mx-auto max-w-4xl px-4 sm:px-5 py-10">
       <header className="mb-8 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-6 sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
           {t.review.label}

@@ -17,6 +17,14 @@ export default function NotFound() {
         }}
         aria-hidden
       />
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(60% 50% at 50% 30%, rgba(52,211,153,.08), transparent 70%)",
+        }}
+        aria-hidden
+      />
       <p className="relative font-mono text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-accent to-[var(--info)]">404</p>
       <h1 className="mt-6 text-2xl font-bold">
         Page not found

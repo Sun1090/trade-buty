@@ -134,12 +134,20 @@ export function ReviewClient({
                         {item.question.options[item.question.answer]}
                       </p>
                       <p className="text-muted leading-relaxed">{item.question.explain}</p>
-                      <button
-                        onClick={() => resolve(item)}
-                        className="mt-2 rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] text-xs font-semibold px-5 py-2 transition"
-                      >
-                        {dict.resolved}
-                      </button>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button
+                          onClick={() => resolve(item)}
+                          className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] text-xs font-semibold px-5 py-2 transition"
+                        >
+                          {dict.resolved}
+                        </button>
+                        <Link
+                          href={`/${locale}/ai?q=${encodeURIComponent(item.question.question)}`}
+                          className="rounded-full border border-[var(--accent)]/40 bg-[var(--accent-dim)] hover:border-accent/60 text-accent text-xs font-medium px-5 py-2 transition"
+                        >
+                          🤖 问 AI 深入理解
+                        </Link>
+                      </div>
                     </div>
                   )}
                 </div>
