@@ -4,7 +4,7 @@ import { DEFAULT_LOCALE } from "@/lib/i18n";
 
 // 根级 404：无 locale 上下文，用默认语言
 export default function NotFound() {
-  const chapters = getChapters(DEFAULT_LOCALE).slice(0, 3);
+  const chapters = getChapters(DEFAULT_LOCALE).slice(0, 6);
 
   return (
     <div className="relative mx-auto max-w-3xl px-5 py-20 text-center overflow-hidden">
@@ -58,7 +58,7 @@ export default function NotFound() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-faint mb-6">
             Popular starters
           </p>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {chapters.map((c) => (
               <Link
                 key={c.slug}

@@ -65,6 +65,9 @@ export function SearchClient({
   }, [results.length]);
 
   const locale = usePathname()?.split("/")[1] || "en";
+  const hotTerms = locale === "en"
+    ? ["stop loss", "candlestick", "leverage", "margin", "trend"]
+    : ["止损", "K线", "杠杆", "保证金", "趋势"];
 
   const groups = useMemo(() => {
     const map = new Map<string, Entry[]>();
@@ -136,6 +139,17 @@ export function SearchClient({
               {dict.browseCta}
             </a>
           </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            {hotTerms.map((term) => (
+              <button
+                key={term}
+                onClick={() => onInput(term)}
+                className="rounded-full border border-[var(--border)] bg-[var(--surface-hover)] px-3 py-1 text-xs text-muted hover:text-accent hover:border-[var(--accent)]/40 transition"
+              >
+                {term}
+              </button>
+            ))}
+          </div>
         </div>
       )}
       {groups.map(([chapter, items]) => (

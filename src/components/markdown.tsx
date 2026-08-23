@@ -26,6 +26,7 @@ export function Markdown({ content }: { content: string }) {
             return (
               <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
                 {children}
+                <span className="ml-0.5 text-faint text-[0.85em]" aria-hidden>↗</span>
               </a>
             );
           },
