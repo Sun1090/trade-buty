@@ -30,13 +30,23 @@ export function buildRagContext(chunks: { chapter: string; doc: string; chunk: s
   return `## 检索到的知识库内容（供参考，不要原文复制，要消化后用自己的话回答）\n\n${refs}`;
 }
 
-/** 推荐快捷问题（基于热门章节） */
+/** 推荐快捷问题池（基于热门章节核心概念） */
 export const SUGGESTED_QUESTIONS_ZH = [
   "什么是止损？怎么设止损位？",
   "K 线的阳线和阴线代表什么？",
   "杠杆是怎么放大盈亏的？",
   "保证金和爆仓是什么关系？",
   "新手应该从哪个市场开始？",
+  "什么是市价单和限价单？有什么区别？",
+  "技术分析和基本面分析哪个更重要？",
+  "如何判断支撑位和阻力位？",
+  "什么是止损止盈比例（盈亏比）？",
+  "趋势线怎么画才有效？",
+  "什么是仓位管理？为什么重要？",
+  "什么是合约的资金费率？",
+  "移动平均线（MA）怎么用？",
+  "如何识别趋势反转的信号？",
+  "新手最容易犯的交易错误有哪些？",
 ];
 
 export const SUGGESTED_QUESTIONS_EN = [
@@ -45,4 +55,14 @@ export const SUGGESTED_QUESTIONS_EN = [
   "How does leverage amplify P&L?",
   "What's the relationship between margin and liquidation?",
   "Which market should a beginner start with?",
+  "What's the difference between market and limit orders?",
+  "Technical vs fundamental analysis — which matters more?",
+  "How to identify support and resistance levels?",
+  "What is risk-reward ratio and why does it matter?",
+  "How do you draw a valid trendline?",
+  "What is position sizing and why is it important?",
+  "What is the funding rate in futures contracts?",
+  "How to use moving averages (MA)?",
+  "How to spot trend reversal signals?",
+  "What are the most common beginner trading mistakes?",
 ];
