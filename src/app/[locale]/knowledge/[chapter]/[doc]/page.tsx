@@ -24,6 +24,7 @@ import { CodeCopy } from "@/components/code-copy";
 import { ImageLightbox } from "@/components/image-lightbox";
 import { FontSizeControl } from "@/components/font-size-control";
 import { BookmarkButton } from "@/components/bookmark-button";
+import { RelatedCourses } from "@/components/related-courses";
 import { ReadingTimeTracker } from "@/components/reading-time-tracker";
 import { ReadingTimeDisplay } from "@/components/reading-time-display";
 import { extractHeadings } from "@/lib/toc";
@@ -246,6 +247,14 @@ export default async function DocPage({
         </div>
         <span className="text-accent group-hover:translate-x-1 transition-transform shrink-0">→</span>
       </Link>
+
+      <RelatedCourses
+        locale={locale}
+        chapterSlug={chapterSlug}
+        currentDoc={docSlug}
+        exclude={chapterSlug === "technical-analysis" ? docSlug : ""}
+        label={t.doc.relatedCourses}
+      />
 
       {/* 上一篇章（如果当前是第一章首篇，无） */}
       {prevChapter && !prev && (
