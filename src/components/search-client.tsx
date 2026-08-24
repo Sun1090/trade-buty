@@ -26,6 +26,7 @@ export function SearchClient({
   const [query, setQuery] = useState("");
   const [entries, setEntries] = useState<Entry[] | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
+  const [filterChapter, setFilterChapter] = useState<string>("");
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -58,6 +59,18 @@ export function SearchClient({
       .map(({ e }) => e);
   }, [query, entries]);
 
+  // 所有篇章（用于筛选 dropdown）
+  const allChapters = useMemo(() => {
+    if (!entries) return [];
+    return [...new Set(entries.map((e) => e.chapter))].sort();
+  }, [entries]);
+
+  // 按篇章筛选后的结果
+  const filtered = useMemo(() => {
+    if (!filterChapter) return results;
+    return results.filter((r) => r.chapter === filterChapter);
+  }, [results, filterChapter]);
+
   // 有结果时存为最近搜索（故意只依赖 results.length，不依赖 query）
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -71,12 +84,12 @@ export function SearchClient({
 
   const groups = useMemo(() => {
     const map = new Map<string, Entry[]>();
-    for (const r of results) {
+    for (const r of filtered) {
       if (!map.has(r.chapter)) map.set(r.chapter, []);
       map.get(r.chapter)!.push(r);
     }
     return [...map.entries()];
-  }, [results]);
+  }, [filtered]);
 
   async function onInput(value: string) {
     setQuery(value);
@@ -124,10 +137,25 @@ export function SearchClient({
           </div>
         </div>
       )}
-      {query.trim() && (
-        <p className="mt-4 text-sm text-muted">
-          {results.length > 0 ? dict.resultsTpl.replace("{n}", String(results.length)) : dict.noResults}
-        </p>
+      {query.trim() && filtered.length > 0 && allChapters.length > 1 && (
+        <div className="mt-4 flex items-center gap-2">
+          <p className="text-sm text-muted">
+            {dict.resultsTpl.replace("{n}", String(filtered.length))}
+          </p>
+          <select
+            value={filterChapter}
+            onChange={(e) => setFilterChapter(e.target.value)}
+            className="ml-auto rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+          >
+            <option value="">{locale === "en" ? "All chapters" : "全部篇章"}</option>
+            {allChapters.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      {query.trim() && filtered.length === 0 && (
+        <p className="mt-4 text-sm text-muted">{dict.noResults}</p>
       )}
       {query.trim() && results.length === 0 && (
         <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center">

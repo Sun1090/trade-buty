@@ -13,6 +13,7 @@ import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { Markdown } from "@/components/markdown";
 import { Quiz } from "@/components/quiz";
 import { DocList } from "@/components/doc-list";
+import { ChapterCompleteCelebration } from "@/components/chapter-complete-celebration";
 
 export function generateStaticParams() {
   return LOCALES.flatMap((locale) =>
@@ -109,6 +110,8 @@ export default async function ChapterPage({
           </div>
         </div>
       </section>
+
+      <ChapterCompleteCelebration chapterSlug={slug} docCount={docs.length} />
 
       {introContent && (
         <section className="mt-8 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
