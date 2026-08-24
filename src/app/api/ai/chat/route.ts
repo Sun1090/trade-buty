@@ -16,6 +16,10 @@ const ipHits = new Map<string, { count: number; reset: number }>();
 const GUEST_LIMIT = 10; // 游客每小时 10 次
 const AUTHED_LIMIT = 50; // 登录每小时 50 次
 
+// 相同问题缓存（10 分钟 TTL，降低 AI API 消耗）
+const answerCache = new Map<string, { text: string; at: number }>();
+const CACHE_TTL = 10 * 60 * 1000;
+
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as ChatBody;
   const lastUserMsg = [...body.messages].reverse().find((m) => m.role === "user");
@@ -67,13 +71,41 @@ export async function POST(req: NextRequest) {
     ...recent,
   ];
 
+  // 相同问题缓存（去掉 RAG context 变体，只用用户问题 + locale）
+  const cacheKey = `${locale}::${lastUserMsg.content.trim().toLowerCase()}`;
+  const cached = answerCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < CACHE_TTL) {
+    const headers = new Headers();
+    headers.set("Content-Type", "text/plain; charset=utf-8");
+    headers.set("X-Cache", "HIT");
+    if (sources.length > 0) headers.set("X-Sources", JSON.stringify(sources));
+    return new Response(cached.text, { headers });
+  }
+
   // 流式返回
   try {
-    const stream = await streamChat({
+    const rawStream = await streamChat({
       messages,
       temperature: 0.3,
       maxTokens: 1500,
     });
+
+    // 包装流：传输同时累计文本，完成后写入缓存
+    const encoder = new TextEncoder();
+    let acc = "";
+    const cachedStream = rawStream.pipeThrough(
+      new TransformStream<Uint8Array, Uint8Array>({
+        transform(chunk, controller) {
+          acc += new TextDecoder().decode(chunk);
+          controller.enqueue(chunk);
+        },
+        flush() {
+          if (acc.trim()) {
+            answerCache.set(cacheKey, { text: acc, at: Date.now() });
+          }
+        },
+      }),
+    );
 
     // 把 sources 放在 response header，前端读取后展示引用
     const headers = new Headers();
@@ -83,9 +115,10 @@ export async function POST(req: NextRequest) {
       headers.set("X-Sources", JSON.stringify(sources));
     }
 
-    return new Response(stream, { headers });
+    return new Response(cachedStream, { headers });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "AI API error";
-    return NextResponse.json({ error: msg }, { status: 502 });
+    return new Response(e instanceof Error ? e.message : "AI API error", {
+      status: 502,
+    });
   }
 }
