@@ -52,6 +52,7 @@ export default async function LocaleLayout({
               { href: "/review", label: t.nav.review, icon: "✎" },
               { href: "/search", label: t.nav.search, icon: "🔍" },
               { href: "/ai", label: t.ai.nav, icon: "🤖" },
+              { href: "/stats", label: t.stats.nav, icon: "📊" },
             ]}
           />
           <nav className="hidden sm:flex text-sm items-center gap-0.5 sm:gap-1">
