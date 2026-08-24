@@ -154,6 +154,8 @@ const zh = {
     lightboxClose: "关闭大图",
     fontSmaller: "缩小字号",
     fontLarger: "放大字号",
+    bookmark: "收藏",
+    bookmarked: "已收藏",
   },
   notFound: {
     docMissing: "这一节不存在",
@@ -371,6 +373,8 @@ const en: Dict = {
     lightboxClose: "Close image",
     fontSmaller: "Smaller text",
     fontLarger: "Larger text",
+    bookmark: "Bookmark",
+    bookmarked: "Bookmarked",
   },
   notFound: {
     docMissing: "This lesson doesn't exist",
