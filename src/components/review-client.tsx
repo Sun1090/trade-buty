@@ -73,16 +73,18 @@ export function ReviewClient({
 
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-10 text-center">
+      <div className="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] to-[var(--surface)] p-10 text-center">
         <p className="text-4xl" aria-hidden>🎯</p>
         <p className="mt-4 font-semibold">{dict.empty}</p>
         <p className="mt-2 text-sm text-muted">{dict.emptyHint}</p>
-        <Link
-          href={`/${locale}/path`}
-          className="inline-block mt-4 rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2.5 text-sm transition"
-        >
-          {dict.browseCta}
-        </Link>
+        <div className="mt-5 flex flex-wrap justify-center gap-3">
+          <Link
+            href={`/${locale}/path`}
+            className="inline-block rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2.5 text-sm transition"
+          >
+            {dict.browseCta}
+          </Link>
+        </div>
       </div>
     );
   }

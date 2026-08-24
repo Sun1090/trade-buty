@@ -358,7 +358,12 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
               {loading ? "…" : "→"}
             </button>
           </form>
-          <p className="mt-2 text-[10px] text-faint text-center">{dict.disclaimer}</p>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className="text-[10px] text-faint">{dict.disclaimer}</p>
+            <span className={`text-[10px] font-mono ${input.length > 450 ? "text-down" : "text-faint"}`}>
+              {input.length}/500
+            </span>
+          </div>
         </div>
       </div>
     </div>
