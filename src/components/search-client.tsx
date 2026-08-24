@@ -55,9 +55,14 @@ export function SearchClient({
       .map((e) => ({ e, s: score(e, q) }))
       .filter(({ s }) => s > 0)
       .sort((a, b) => b.s - a.s)
-      .slice(0, 20)
       .map(({ e }) => e);
   }, [query, entries]);
+
+  // 分页：前 20 条 + 加载更多
+  const PAGE_SIZE = 20;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const visibleResults = results.slice(0, visibleCount);
+  useEffect(() => setVisibleCount(PAGE_SIZE), [query]);
 
   // 所有篇章（用于筛选 dropdown）
   const allChapters = useMemo(() => {
@@ -67,9 +72,9 @@ export function SearchClient({
 
   // 按篇章筛选后的结果
   const filtered = useMemo(() => {
-    if (!filterChapter) return results;
-    return results.filter((r) => r.chapter === filterChapter);
-  }, [results, filterChapter]);
+    if (!filterChapter) return visibleResults;
+    return visibleResults.filter((r) => r.chapter === filterChapter);
+  }, [visibleResults, filterChapter]);
 
   // 有结果时存为最近搜索（故意只依赖 results.length，不依赖 query）
   useEffect(() => {
@@ -211,6 +216,14 @@ export function SearchClient({
           </ul>
         </div>
       ))}
+      {visibleCount < results.length && (
+        <button
+          onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+          className="mt-6 w-full rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-dim)] hover:border-accent/60 text-accent font-medium py-3 text-sm transition"
+        >
+          {locale === "en" ? "Load more" : "加载更多"}
+        </button>
+      )}
     </div>
   );
 }
