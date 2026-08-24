@@ -152,6 +152,9 @@ export default async function LocaleLayout({
             <Link href={p("/ai")} className="block text-muted hover:text-accent transition">
               {t.ai.nav}
             </Link>
+            <Link href={p("/stats")} className="block text-muted hover:text-accent transition">
+              {t.stats.nav}
+            </Link>
             <a
               href="https://github.com/sun1090/kline-buty"
               target="_blank"
@@ -159,6 +162,14 @@ export default async function LocaleLayout({
               className="block text-muted hover:text-accent transition"
             >
               {t.footer.source}
+            </a>
+            <a
+              href="https://github.com/Sun1090/trade-buty/issues/new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-muted hover:text-accent transition"
+            >
+              {t.footer.feedback ?? "Feedback"}
             </a>
           </div>
         </div>
