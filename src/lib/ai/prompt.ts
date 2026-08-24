@@ -30,6 +30,44 @@ export function buildRagContext(chunks: { chapter: string; doc: string; chunk: s
   return `## 检索到的知识库内容（供参考，不要原文复制，要消化后用自己的话回答）\n\n${refs}`;
 }
 
+export interface ChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+/** 自适应出题 prompt：根据错题主题生成变体题 */
+export function buildQuizPrompt(
+  wrongQuestions: { question: string; explain: string }[],
+  ragContext: string,
+): ChatMessage[] {
+  const examples = wrongQuestions
+    .map((q, i) => `错题${i + 1}：${q.question}\n解析：${q.explain}`)
+    .join("\n\n");
+
+  return [
+    {
+      role: "system",
+      content: `你是 Trade Buty 的交易教育出题专家。根据用户的错题和知识库内容，生成 3 道同主题的变体选择题。
+
+## 约束
+1. 不荐股、不承诺收益、中性教育
+2. 题目必须和错题同主题，但换个角度或场景
+3. 每题 4 个选项，1 个正确
+4. 必须附答案解析
+
+## 输出格式（严格 JSON）
+{"questions":[{"question":"题目","options":["A","B","C","D"],"answer":0,"explain":"解析"}]}
+
+## 知识库参考
+${ragContext}
+
+## 用户错题（针对这些主题生成变体题）
+${examples}`,
+    },
+    { role: "user", content: "请生成 3 道变体题，严格按 JSON 格式输出。" },
+  ];
+}
+
 /** 推荐快捷问题池（基于热门章节核心概念） */
 export const SUGGESTED_QUESTIONS_ZH = [
   "什么是止损？怎么设止损位？",

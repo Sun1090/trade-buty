@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ChapterQuiz, QuizQuestion } from "@/lib/quiz-types";
 import { readWrong, resolveWrong, type WrongEntry } from "@/lib/wrongbook";
+import { AiQuiz } from "@/components/ai-quiz";
 
 export interface ReviewDict {
   title: string;
@@ -170,6 +171,17 @@ export function ReviewClient({
         </div>
         );
       })}
+
+      {/* AI 自适应出题：根据错题生成变体题 */}
+      {items.length > 0 && (
+        <div className="mt-8">
+          <AiQuiz
+            wrongItems={items.map((i) => ({ chapterNum: i.chapterNum, questionIdx: i.questionIdx }))}
+            quizzes={quizzes}
+            dict={{ generate: "AI 针对错题出变体题", generating: "正在生成…", error: "生成失败，请重试", question: "题目", explain: "解析" }}
+          />
+        </div>
+      )}
     </div>
   );
 }
