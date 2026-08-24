@@ -21,6 +21,7 @@ import { Toc } from "@/components/toc";
 import { ReadingProgress } from "@/components/reading-progress";
 import { CodeCopy } from "@/components/code-copy";
 import { ImageLightbox } from "@/components/image-lightbox";
+import { FontSizeControl } from "@/components/font-size-control";
 import { extractHeadings } from "@/lib/toc";
 
 export function generateStaticParams() {
@@ -151,6 +152,9 @@ export default async function DocPage({
             {doc.description}
           </p>
         )}
+        <div className="mt-4 flex items-center gap-3">
+          <FontSizeControl labels={{ smaller: tools.fontSmaller, larger: tools.fontLarger }} />
+        </div>
       </header>
 
       <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">

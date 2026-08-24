@@ -133,6 +133,8 @@ const zh = {
     copyCode: "复制",
     copied: "已复制 ✓",
     lightboxClose: "关闭大图",
+    fontSmaller: "缩小字号",
+    fontLarger: "放大字号",
   },
   notFound: {
     docMissing: "这一节不存在",
@@ -329,6 +331,8 @@ const en: Dict = {
     copyCode: "Copy",
     copied: "Copied ✓",
     lightboxClose: "Close image",
+    fontSmaller: "Smaller text",
+    fontLarger: "Larger text",
   },
   notFound: {
     docMissing: "This lesson doesn't exist",
