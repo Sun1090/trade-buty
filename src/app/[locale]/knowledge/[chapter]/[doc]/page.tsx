@@ -23,6 +23,7 @@ import { ReadingProgress } from "@/components/reading-progress";
 import { CodeCopy } from "@/components/code-copy";
 import { ImageLightbox } from "@/components/image-lightbox";
 import { FontSizeControl } from "@/components/font-size-control";
+import { BookmarkButton } from "@/components/bookmark-button";
 import { extractHeadings } from "@/lib/toc";
 
 export function generateStaticParams() {
@@ -155,6 +156,13 @@ export default async function DocPage({
         )}
         <div className="mt-4 flex items-center gap-3">
           <FontSizeControl labels={{ smaller: tools.fontSmaller, larger: tools.fontLarger }} />
+          <BookmarkButton
+            chapter={chapterSlug}
+            doc={docSlug}
+            title={doc.title}
+            label={{ bookmark: tools.bookmark, bookmarked: tools.bookmarked }}
+            labeled
+          />
         </div>
       </header>
 
