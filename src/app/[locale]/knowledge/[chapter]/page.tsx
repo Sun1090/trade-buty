@@ -15,6 +15,7 @@ import { Quiz } from "@/components/quiz";
 import { DocList } from "@/components/doc-list";
 import { ChapterCompleteCelebration } from "@/components/chapter-complete-celebration";
 import { Collapsible } from "@/components/collapsible";
+import { ChapterSummaryAi } from "@/components/chapter-summary-ai";
 
 export function generateStaticParams() {
   return LOCALES.flatMap((locale) =>
@@ -162,6 +163,18 @@ export default async function ChapterPage({
         </h2>
         <DocList metas={docs} chapterSlug={slug} locale={locale} />
       </section>
+
+      <ChapterSummaryAi
+        chapter={slug}
+        title={chapter.title}
+        locale={locale}
+        dict={{
+          title: t.chapter.aiSummaryTitle,
+          generate: t.chapter.aiSummaryGenerate,
+          generating: t.chapter.aiSummaryGenerating,
+          error: t.chapter.aiSummaryError,
+        }}
+      />
 
       {/* 下一篇章 CTA */}
       {nextChapter && (
