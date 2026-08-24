@@ -6,6 +6,7 @@ import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { HeroChart } from "@/components/hero-chart";
 import { GlobalReadStat } from "@/components/global-read-stat";
 import { StreakBadge } from "@/components/streak-badge";
+import { MarketTicker } from "@/components/market-ticker";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -92,8 +93,11 @@ export default async function Home({
               <StreakBadge labels={{ current: "current", longest: t.home.streakLongest, days: t.home.streakDays }} />
             </div>
           </div>
-          <div className="hidden lg:block">
+          <div>
             <HeroChart locale={locale} />
+            <div className="mt-4">
+              <MarketTicker />
+            </div>
           </div>
         </div>
 
