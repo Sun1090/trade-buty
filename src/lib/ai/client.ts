@@ -127,8 +127,49 @@ export async function streamChat(
 }
 
 /**
+ * 非流式对话（用于 AI 出题等需要完整 JSON 的场景）。
+ * 同样走三模型 fallback。
+ */
+export async function chat(opts: ChatOptions): Promise<string> {
+  const chain = getModelChain();
+  let lastErr: Error | null = null;
+  for (const model of chain) {
+    try {
+      const res = await fetch(`${API_URL}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${API_KEY}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: opts.messages,
+          stream: false,
+          temperature: opts.temperature ?? 0.5,
+          max_tokens: opts.maxTokens ?? 1500,
+          reasoning_effort: "none",
+          response_format: { type: "json_object" },
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`AI ${model} ${res.status}: ${err.substring(0, 100)}`);
+      }
+      const json = await res.json();
+      const content = json.choices?.[0]?.message?.content;
+      if (content) return content;
+      throw new Error(`AI ${model} 返回空`);
+    } catch (e) {
+      lastErr = e instanceof Error ? e : new Error(String(e));
+      console.error(`[ai] ${model} 非流式失败，降级:`, lastErr.message);
+    }
+  }
+  throw lastErr ?? new Error("所有 AI 模型均不可用");
+}
+
+/**
  * 生成 embedding 向量（用于 RAG 检索和查询向量化）。
- * 返回 number[]（1536 维，text-embedding-3-small）。
+ * 返回 number[]（bge-m3，1024 维）。
  */
 export async function embed(text: string): Promise<number[]> {
   const embedUrl = process.env.AI_EMBEDDING_URL || API_URL;
