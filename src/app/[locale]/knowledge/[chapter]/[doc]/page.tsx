@@ -25,6 +25,7 @@ import { ImageLightbox } from "@/components/image-lightbox";
 import { FontSizeControl } from "@/components/font-size-control";
 import { BookmarkButton } from "@/components/bookmark-button";
 import { ReadingTimeTracker } from "@/components/reading-time-tracker";
+import { ReadingTimeDisplay } from "@/components/reading-time-display";
 import { extractHeadings } from "@/lib/toc";
 
 export function generateStaticParams() {
@@ -164,6 +165,9 @@ export default async function DocPage({
             label={{ bookmark: tools.bookmark, bookmarked: tools.bookmarked }}
             labeled
           />
+          <span className="ml-auto">
+            <ReadingTimeDisplay chapter={chapterSlug} doc={docSlug} label={locale === "en" ? "read" : "已读"} />
+          </span>
         </div>
       </header>
 
