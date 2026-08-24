@@ -2,7 +2,7 @@ export default function Loading() {
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-5 py-10">
       {/* hero 骨架 */}
-      <div className="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 animate-pulse">
+      <div className="mb-8 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-6 sm:p-8 animate-pulse">
         <div className="h-3 w-20 rounded bg-[var(--border-strong)]" />
         <div className="mt-3 h-8 w-3/4 rounded bg-[var(--border-strong)]" />
         <div className="mt-4 h-4 w-1/2 rounded bg-[var(--border)]" />

@@ -115,14 +115,20 @@ export default async function Home({
           <h2 className="text-3xl font-bold mt-3">{t.home.principlesTitle}</h2>
         </header>
         <div className="grid gap-4 sm:grid-cols-3 mt-10">
-          {t.home.principles.map((f) => (
+          {t.home.principles.map((f, idx) => (
             <div
               key={f.t}
               className="group relative rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 overflow-hidden hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] hover:-translate-y-1 transition-all duration-200"
             >
               <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent to-[var(--info)] opacity-0 group-hover:opacity-100 transition-opacity" />
               <span
-                className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-dim)] text-2xl group-hover:scale-110 transition-transform"
+                className={`inline-flex h-12 w-12 items-center justify-center rounded-xl text-2xl group-hover:scale-110 transition-transform ${
+                  idx === 0
+                    ? "bg-[var(--accent-dim)]"
+                    : idx === 1
+                      ? "bg-[var(--info-dim)]"
+                      : "bg-[var(--warn-dim)]"
+                }`}
                 aria-hidden
               >
                 {f.icon}
@@ -194,7 +200,7 @@ export default async function Home({
             href={p("/knowledge/getting-started")}
             className="relative inline-block mt-8 rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-10 py-3.5 transition shadow-lg shadow-emerald-500/25"
           >
-            {t.home.ctaButton}
+            {t.home.ctaButton} <span aria-hidden>→</span>
           </Link>
           <Link
             href={p("/ai")}
