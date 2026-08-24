@@ -1,6 +1,7 @@
 /** 本地错题本 + 云端双写：key = `${chapterNum}:${questionIdx}`，答对后移出 */
 
 import { syncWrongbookWrite, syncWrongbookDelete } from "./sync-layer";
+import { touchStreak } from "./streak";
 
 const KEY = "tb-wrong";
 
@@ -31,6 +32,7 @@ export function recordWrong(chapterNum: string, questionIdx: number, picked: num
     // ignore
   }
   try {
+    touchStreak();
     window.dispatchEvent(new Event("tb-progress"));
   } catch {
     // ignore
@@ -47,6 +49,7 @@ export function resolveWrong(chapterNum: string, questionIdx: number) {
     // ignore
   }
   try {
+    touchStreak();
     window.dispatchEvent(new Event("tb-progress"));
   } catch {
     // ignore
