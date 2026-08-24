@@ -149,6 +149,13 @@ const zh = {
     goalUnit: "篇",
     goalSet: "设置",
   },
+  bookmarks: {
+    nav: "收藏",
+    label: "我的收藏",
+    title: "收藏课程",
+    subtitle: "你收藏的课程，快速回访。",
+    empty: "还没有收藏课程，去浏览课程时点击 ★ 收藏",
+  },
   docTools: {
     toc: "本页目录",
     backToTop: "回到顶部",
@@ -371,6 +378,13 @@ const en: Dict = {
     goalLabel: "Today's goal",
     goalUnit: "lessons",
     goalSet: "Set",
+  },
+  bookmarks: {
+    nav: "Bookmarks",
+    label: "My Bookmarks",
+    title: "Bookmarked Courses",
+    subtitle: "Quick access to your saved courses.",
+    empty: "No bookmarks yet — click ★ on any course to save it",
   },
   docTools: {
     toc: "On this page",

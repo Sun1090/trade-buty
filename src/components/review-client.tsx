@@ -98,9 +98,53 @@ export function ReviewClient({
     groups.get(title)!.push(item);
   }
 
+  const [redo, setRedo] = useState<{ item: Item; picked: number | null } | null>(null);
+
+  function startRedo() {
+    const random = items[Math.floor(Math.random() * items.length)];
+    setRedo({ item: random, picked: null });
+  }
+
+  function pickRedo(i: number) {
+    if (redo?.picked !== null) return;
+    setRedo((r) => r ? { ...r, picked: i } : null);
+  }
+
+  if (redo) {
+    const q = redo.item.question;
+    return (
+      <div className="rounded-2xl border border-[var(--accent)]/30 border-l-4 border-l-[var(--accent)] bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-6">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs font-mono text-faint">随机抽题重答</p>
+          <button onClick={() => setRedo(null)} className="text-xs text-faint hover:text-accent transition">返回</button>
+        </div>
+        <p className="font-medium leading-relaxed">{q.question}</p>
+        <ul className="mt-5 space-y-2.5">{q.options.map((opt, i) => {
+          let cls = "border-[var(--border)] hover:border-[var(--accent)]/50 cursor-pointer";
+          if (redo.picked !== null) {
+            if (i === q.answer) cls = "border-accent bg-[var(--accent-dim)]";
+            else if (i === redo.picked) cls = "border-down/60 bg-down/10";
+            else cls = "border-[var(--border)] opacity-50";
+          }
+          return (<li key={i} onClick={() => pickRedo(i)} className={`rounded-xl border px-4 py-3 text-sm transition ${cls} ${redo.picked === null ? "cursor-pointer" : ""}`}><span className="font-mono text-xs text-faint mr-2">{String.fromCharCode(65 + i)}</span>{opt}</li>);
+        })}</ul>
+        {redo.picked !== null && (
+          <div className="mt-5 rounded-xl bg-black/20 dark:bg-white/5 p-4 text-sm space-y-3">
+            <p className="font-semibold">{redo.picked === q.answer ? "✅ 正确" : "❌ 错误，正确答案是 " + q.options[q.answer]}</p>
+            <p className="text-muted leading-relaxed">{q.explain}</p>
+            <button onClick={startRedo} className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2 text-sm transition">下一道随机题</button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
-      <p className="text-sm text-muted">{items.length}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted">{items.length}</p>
+        <button onClick={startRedo} className="text-xs rounded-full border border-[var(--accent)]/40 bg-[var(--accent-dim)] hover:border-accent/60 text-accent font-medium px-4 py-1.5 transition">随机抽题重答</button>
+      </div>
       {[...groups.entries()].map(([chapterTitle, groupItems]) => {
         const chapterSlug = groupItems[0].chapterNum;
         const quizDocSlug = groupItems[0].quiz.docSlug;

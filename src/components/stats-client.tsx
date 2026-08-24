@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { aggregateStats, getUnlockedBadges, BADGES, type LearnStats, type Badge } from "@/lib/learn-stats";
 import { formatDuration } from "@/lib/reading-time";
 import { DailyGoal } from "@/components/daily-goal";
+import { StudyPlan } from "@/components/study-plan";
+import { useLocalProgress } from "@/components/use-local-progress";
 
 interface StatsDict {
   title: string;
@@ -35,11 +37,14 @@ function StatCard({ value, label, accent }: { value: string | number; label: str
 export function StatsClient({
   chapters,
   dict,
+  locale = "en",
 }: {
   chapters: { slug: string; docCount: number }[];
   dict: StatsDict;
+  locale?: string;
 }) {
   const [stats, setStats] = useState<LearnStats | null>(null);
+  const progress = useLocalProgress();
 
   useEffect(() => {
     setStats(aggregateStats(chapters));
@@ -82,6 +87,14 @@ export function StatsClient({
         <StatCard value={stats.replayAccuracy !== null ? `${stats.replayAccuracy}%` : "—"} label={`${dict.replay} ${dict.accuracy}`} />
         <StatCard value={formatDuration(stats.totalReadingTime)} label={dict.readDocs} />
       </div>
+
+      {/* 学习计划 */}
+      <StudyPlan
+        doneChapters={stats.readDocs > 0 ? chapters.filter((c) => (progress?.[c.slug]?.length ?? 0) >= c.docCount).map((c) => c.slug).slice(0, 5) : []}
+        wrongChapters={[]}
+        currentChapter=""
+        dict={{ generate: locale === "en" ? "Generate plan" : "生成学习计划", generating: locale === "en" ? "Generating..." : "生成中…", title: locale === "en" ? "AI Study Plan" : "AI 学习计划" }}
+      />
 
       {/* 成就徽章 */}
       <section>
