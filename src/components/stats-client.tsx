@@ -6,6 +6,8 @@ import { formatDuration } from "@/lib/reading-time";
 import { DailyGoal } from "@/components/daily-goal";
 import { StudyPlan } from "@/components/study-plan";
 import { useLocalProgress } from "@/components/use-local-progress";
+import { ActivityHeatmap } from "@/components/activity-heatmap";
+import { RadarChart } from "@/components/radar-chart";
 
 interface StatsDict {
   title: string;
@@ -95,6 +97,18 @@ export function StatsClient({
         currentChapter=""
         dict={{ generate: locale === "en" ? "Generate plan" : "生成学习计划", generating: locale === "en" ? "Generating..." : "生成中…", title: locale === "en" ? "AI Study Plan" : "AI 学习计划" }}
       />
+
+      {/* 热力图 + 雷达图 */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ActivityHeatmap
+          label={locale === "en" ? "Activity calendar" : "学习日历"}
+          emptyLabel={locale === "en" ? "No activity yet" : "还没有学习记录"}
+        />
+        <RadarChart
+          label={locale === "en" ? "Mastery radar" : "掌握度雷达"}
+          emptyLabel={locale === "en" ? "Finish quizzes to see radar" : "完成测验后查看掌握度"}
+        />
+      </div>
 
       {/* 成就徽章 */}
       <section>

@@ -4,6 +4,7 @@
  * 记录每天的学习活动（标记已读/做测验/做回放），
  * 计算当前连续学习天数和历史最长记录。
  */
+import { recordActivity } from "./activity-calendar";
 
 const KEY = "tb-streak";
 
@@ -61,6 +62,7 @@ export function touchStreak(): void {
     data.lastDate = today;
     data.longest = Math.max(data.longest, data.current);
     localStorage.setItem(KEY, JSON.stringify(data));
+    recordActivity(); // 记录到活动日历
 
     // 广播让消费方刷新
     window.dispatchEvent(new Event("tb-streak"));

@@ -4,6 +4,7 @@ import { getStageGroups } from "@/lib/path";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { PathProgress } from "@/components/path-progress";
 import { PathGlobalProgress } from "@/components/path-global-progress";
+import { KnowledgeGraph } from "@/components/knowledge-graph";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -145,6 +146,17 @@ export default async function PathPage({
           {t.path.lesson1}
         </Link>
       </div>
+
+      {/* 知识点图谱 */}
+      <section className="mt-16">
+        <h2 className="text-2xl font-bold">{t.path.label} · Map</h2>
+        <p className="mt-2 text-sm text-muted">
+          {locale === "en" ? "27 chapters across 3 stages" : "27 篇章 × 3 阶段"}
+        </p>
+        <div className="mt-6">
+          <KnowledgeGraph locale={locale} />
+        </div>
+      </section>
     </div>
   );
 }
