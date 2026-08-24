@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SITE_URL } from "@/lib/site";
 import {
   getAdjacentChapters,
   getAdjacentDocs,
@@ -156,6 +157,29 @@ export default async function DocPage({
           <FontSizeControl labels={{ smaller: tools.fontSmaller, larger: tools.fontLarger }} />
         </div>
       </header>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: doc.title,
+            description: doc.description,
+            author: { "@type": "Organization", name: "Trade Buty" },
+            publisher: {
+              "@type": "Organization",
+              name: "Trade Buty",
+              logo: { "@type": "ImageObject", url: `${SITE_URL}/icon` },
+            },
+            inLanguage: locale === "zh" ? "zh-CN" : "en",
+            isPartOf: {
+              "@type": "Course",
+              name: chapter?.title,
+            },
+          }),
+        }}
+      />
 
       <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
         <Markdown content={prepareForRender(doc.content, locale, chapterSlug)} />
