@@ -20,7 +20,11 @@ const SYMBOL_NAMES: Record<string, string> = {
 };
 const INTERVALS = ["15m", "1h", "4h", "1d"] as const;
 const SPEEDS = [1, 2, 4] as const;
-const CONTEXT = 30;
+const DIFFICULTIES = [
+  { label: "新手", context: 50 },
+  { label: "进阶", context: 30 },
+  { label: "挑战", context: 15 },
+] as const;
 
 export interface ReplayDict {
   newRound: string;
@@ -72,7 +76,9 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
   const [interval_, setInterval_] = useState<string>("1h");
   const [round, setRound] = useState(0);
   const [klines, setKlines] = useState<Kline[] | null>(null);
-  const [idx, setIdx] = useState(CONTEXT);
+  const [difficultyIdx, setDifficultyIdx] = useState(1); // 默认进阶
+  const context = DIFFICULTIES[difficultyIdx].context;
+  const [idx, setIdx] = useState<number>(context);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<number>(1);
   const [guessMode, setGuessMode] = useState(false);
@@ -117,7 +123,7 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
       .then((data) => {
         if (cancelled) return;
         setKlines(data);
-        setIdx(CONTEXT);
+        setIdx(context);
         setGuess((g) => ({ ...g, pending: null, lastFeedback: null }));
       })
       .catch(() => {
@@ -268,6 +274,21 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
             </option>
           ))}
         </select>
+        <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border)] p-0.5">
+          {DIFFICULTIES.map((d, i) => (
+            <button
+              key={d.label}
+              onClick={() => setDifficultyIdx(i)}
+              className={`px-2 py-1 rounded text-[10px] font-medium transition ${
+                i === difficultyIdx
+                  ? "bg-[var(--accent-dim)] text-accent"
+                  : "text-faint hover:text-foreground"
+              }`}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
         <button
           onClick={() => setRound((r) => r + 1)}
           className="px-3 py-1.5 rounded-lg text-xs border border-accent/40 bg-accent-dim text-accent hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition"
@@ -285,7 +306,7 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
           {guessMode ? dict.modeGuess : dict.modeFree}
         </button>
         <span className="ml-auto font-mono text-xs text-faint">
-          {dict.rounds}: {klines ? `${Math.max(idx - CONTEXT, 0)}/${klines.length - CONTEXT}` : "-"}
+          {dict.rounds}: {klines ? `${Math.max(idx - context, 0)}/${klines.length - context}` : "-"}
         </span>
       </div>
 
