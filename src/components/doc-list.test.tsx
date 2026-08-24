@@ -10,8 +10,8 @@ vi.mock("@/components/use-local-progress", () => ({
 }));
 
 const metas: DocMeta[] = [
-  { slug: "doc-a", title: "文档A", description: "描述A", order: 0 },
-  { slug: "doc-b", title: "文档B", description: "描述B", order: 1 },
+  { slug: "doc-a", fileName: "doc-a.md", chapterSlug: "spot", title: "文档A", description: "描述A" },
+  { slug: "doc-b", fileName: "doc-b.md", chapterSlug: "spot", title: "文档B", description: "描述B" },
 ];
 
 describe("DocList", () => {

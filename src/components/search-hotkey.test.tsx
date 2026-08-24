@@ -14,7 +14,7 @@ vi.mock("@/lib/storage-migrate", () => ({
 
 describe("SearchHotkey", () => {
   it("渲染（不可见但挂载）", () => {
-    const { container } = render(<SearchHotkey />);
+    const { container } = render(<SearchHotkey locale="en" />);
     // SearchHotkey 渲染一个 hidden span 或 null
     expect(container).toBeTruthy();
   });
