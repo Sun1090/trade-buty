@@ -145,6 +145,9 @@ const zh = {
     accuracy: "准确率",
     badges: "成就徽章",
     noBadges: "还没有成就，去学习解锁吧",
+    goalLabel: "今日目标",
+    goalUnit: "篇",
+    goalSet: "设置",
   },
   docTools: {
     toc: "本页目录",
@@ -365,6 +368,9 @@ const en: Dict = {
     accuracy: "Accuracy",
     badges: "Achievements",
     noBadges: "No badges yet — start learning to unlock",
+    goalLabel: "Today's goal",
+    goalUnit: "lessons",
+    goalSet: "Set",
   },
   docTools: {
     toc: "On this page",

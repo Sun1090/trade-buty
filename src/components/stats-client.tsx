@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { aggregateStats, getUnlockedBadges, BADGES, type LearnStats, type Badge } from "@/lib/learn-stats";
 import { formatDuration } from "@/lib/reading-time";
+import { DailyGoal } from "@/components/daily-goal";
 
 interface StatsDict {
   title: string;
@@ -17,6 +18,9 @@ interface StatsDict {
   badges: string;
   noBadges: string;
   overall: string;
+  goalLabel: string;
+  goalUnit: string;
+  goalSet: string;
 }
 
 function StatCard({ value, label, accent }: { value: string | number; label: string; accent?: boolean }) {
@@ -64,6 +68,12 @@ export function StatsClient({
         <StatCard value={`${stats.quizzesDone}/${stats.totalQuizzes}`} label={dict.quizzes} />
         <StatCard value={stats.replayRounds} label={dict.replay} />
       </div>
+
+      {/* 每日目标 */}
+      <DailyGoal
+        todayRead={stats.readDocs}
+        dict={{ label: dict.goalLabel, unit: dict.goalUnit, set: dict.goalSet }}
+      />
 
       {/* 连续学习 + 准确率 + 阅读时长 */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
