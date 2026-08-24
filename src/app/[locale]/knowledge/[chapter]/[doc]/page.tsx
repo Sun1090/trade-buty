@@ -24,6 +24,7 @@ import { CodeCopy } from "@/components/code-copy";
 import { ImageLightbox } from "@/components/image-lightbox";
 import { FontSizeControl } from "@/components/font-size-control";
 import { BookmarkButton } from "@/components/bookmark-button";
+import { ReadingTimeTracker } from "@/components/reading-time-tracker";
 import { extractHeadings } from "@/lib/toc";
 
 export function generateStaticParams() {
@@ -189,6 +190,7 @@ export default async function DocPage({
         }}
       />
 
+      <ReadingTimeTracker chapter={chapterSlug} doc={docSlug} />
       <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
         <Markdown content={prepareForRender(doc.content, locale, chapterSlug)} />
       </article>
