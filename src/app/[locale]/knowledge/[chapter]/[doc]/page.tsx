@@ -89,11 +89,11 @@ export default async function DocPage({
       </div>
     );
   }
-  const { next } = getAdjacentDocs(locale, chapterSlug, docSlug);
+  const { prev, next } = getAdjacentDocs(locale, chapterSlug, docSlug);
   const chapterData = getChapter(locale, chapterSlug);
   const chapter = chapterData?.chapter;
   const docMetas = getDocMetas(locale, chapterSlug);
-  const { next: nextChapter } = getAdjacentChapters(locale, chapterSlug);
+  const { prev: prevChapter, next: nextChapter } = getAdjacentChapters(locale, chapterSlug);
   const nextChapterMeta = nextChapter
     ? {
         slug: nextChapter.slug,
@@ -208,6 +208,26 @@ export default async function DocPage({
         </div>
         <span className="text-accent group-hover:translate-x-1 transition-transform shrink-0">→</span>
       </Link>
+
+      {/* 上一篇章（如果当前是第一章首篇，无） */}
+      {prevChapter && !prev && (
+        <Link
+          href={p(`/knowledge/${prevChapter.slug}`)}
+          className="group flex items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 hover:border-[var(--accent)]/40 transition mb-4"
+        >
+          <span className="text-2xl text-faint group-hover:-translate-x-1 transition-transform shrink-0">
+            ←
+          </span>
+          <div className="text-right">
+            <p className="text-xs font-semibold uppercase tracking-widest text-faint">
+              {t.chapter.prevChapter ?? "Previous chapter"}
+            </p>
+            <p className="mt-1 font-semibold group-hover:text-accent transition-colors">
+              {prevChapter.title}
+            </p>
+          </div>
+        </Link>
+      )}
 
       {/* 主 CTA：下一篇 / 回篇章 / 下一篇章 */}
       <div className="mt-8">

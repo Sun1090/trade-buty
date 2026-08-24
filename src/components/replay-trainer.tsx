@@ -324,12 +324,27 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
                     : 0}
                   % · {dict.streak} {guess.streak} · {dict.best} {guess.best}
                 </p>
-                <button
-                  onClick={() => setRound((r) => r + 1)}
-                  className="mt-4 rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2 transition"
-                >
-                  {dict.newRound}
-                </button>
+                <div className="mt-4 flex flex-wrap justify-center gap-3">
+                  <button
+                    onClick={() => setRound((r) => r + 1)}
+                    className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2 transition"
+                  >
+                    {dict.newRound}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const text = `Trade Buty 回放训练：${gradeOf(guess.total, guess.correct)} · ${guess.correct}/${guess.total} · 连击 ${guess.streak} · 最佳 ${guess.best}`;
+                      try {
+                        await navigator.clipboard.writeText(text);
+                      } catch {
+                        // ignore
+                      }
+                    }}
+                    className="rounded-full border border-[var(--accent)]/40 bg-[var(--surface)] hover:border-accent/60 text-accent font-medium px-5 py-2 text-sm transition"
+                  >
+                    📋 复制成绩
+                  </button>
+                </div>
               </div>
             ) : guess.pending === null ? (
               <>
