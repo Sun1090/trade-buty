@@ -81,6 +81,10 @@ const zh = {
     prevChapter: "上一篇章",
     progressLabel: "篇章进度",
     lessonsUnit: "课",
+    aiSummaryTitle: "AI 章节摘要",
+    aiSummaryGenerate: "生成摘要",
+    aiSummaryGenerating: "生成中…",
+    aiSummaryError: "生成失败，请重试",
   },
   doc: {
     practiceTitle: "📖 学完这篇，去看真盘",
@@ -314,6 +318,10 @@ const en: Dict = {
     lessonsUnit: "lessons",
     expandIntro: "Expand intro",
     collapseIntro: "Collapse",
+    aiSummaryTitle: "AI Chapter Summary",
+    aiSummaryGenerate: "Summarize",
+    aiSummaryGenerating: "Generating…",
+    aiSummaryError: "Failed — please retry",
   },
   doc: {
     practiceTitle: "📖 Done reading? See the real market",
