@@ -14,6 +14,7 @@ import { Markdown } from "@/components/markdown";
 import { Quiz } from "@/components/quiz";
 import { DocList } from "@/components/doc-list";
 import { ChapterCompleteCelebration } from "@/components/chapter-complete-celebration";
+import { Collapsible } from "@/components/collapsible";
 
 export function generateStaticParams() {
   return LOCALES.flatMap((locale) =>
@@ -118,7 +119,13 @@ export default async function ChapterPage({
           <h2 className="text-sm font-semibold uppercase tracking-wide text-faint mb-3">
             {t.chapter.introHeading}
           </h2>
-          <Markdown content={prepareForRender(introContent, locale, slug)} />
+          <Collapsible
+            preview={<Markdown content={prepareForRender(introContent, locale, slug)} />}
+            expandLabel={t.chapter.expandIntro}
+            collapseLabel={t.chapter.collapseIntro}
+          >
+            <div />
+          </Collapsible>
         </section>
       )}
 
