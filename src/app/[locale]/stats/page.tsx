@@ -30,7 +30,7 @@ export default async function StatsPage({
       <HeroCard label={t.stats.label} title={t.stats.title}>
         {t.stats.subtitle}
       </HeroCard>
-      <StatsClient chapters={chapters} dict={t.stats} />
+      <StatsClient chapters={chapters} dict={t.stats} locale={locale} />
     </div>
   );
 }
