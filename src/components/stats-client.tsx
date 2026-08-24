@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { aggregateStats, getUnlockedBadges, BADGES, type LearnStats, type Badge } from "@/lib/learn-stats";
+import { formatDuration } from "@/lib/reading-time";
 
 interface StatsDict {
   title: string;
@@ -64,11 +65,12 @@ export function StatsClient({
         <StatCard value={stats.replayRounds} label={dict.replay} />
       </div>
 
-      {/* 连续学习 + 准确率 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* 连续学习 + 准确率 + 阅读时长 */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <StatCard value={`🔥 ${stats.currentStreak}`} label={dict.streak} accent />
         <StatCard value={stats.avgQuizScore !== null ? `${stats.avgQuizScore}%` : "—"} label={dict.accuracy} />
         <StatCard value={stats.replayAccuracy !== null ? `${stats.replayAccuracy}%` : "—"} label={`${dict.replay} ${dict.accuracy}`} />
+        <StatCard value={formatDuration(stats.totalReadingTime)} label={dict.readDocs} />
       </div>
 
       {/* 成就徽章 */}

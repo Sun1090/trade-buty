@@ -8,6 +8,7 @@ import { readReplayHistory, readReplayBest } from "./replay-store";
 import { readStreak, getCurrentStreak } from "./streak";
 import { QUIZZES } from "./quizzes";
 import { readQuizProgress } from "./quiz-store";
+import { getTotalReadingTime } from "./reading-time";
 
 export interface LearnStats {
   /** 已读课程数 */
@@ -38,6 +39,8 @@ export interface LearnStats {
   currentStreak: number;
   /** 历史最长连续天数 */
   longestStreak: number;
+  /** 总阅读时长（秒） */
+  totalReadingTime: number;
   /** 总体完成度百分比 */
   overallPct: number;
 }
@@ -101,6 +104,7 @@ export function aggregateStats(chapters: { slug: string; docCount: number }[]): 
     replayAccuracy,
     currentStreak: getCurrentStreak(),
     longestStreak: streak.longest,
+    totalReadingTime: getTotalReadingTime(),
     overallPct,
   };
 }
