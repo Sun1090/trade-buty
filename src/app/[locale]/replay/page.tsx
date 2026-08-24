@@ -4,6 +4,7 @@ import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { ReplayTrainer } from "@/components/replay-trainer";
 import { ReplayHistory } from "@/components/replay-history";
 import { HeroCard } from "@/components/hero-card";
+import { ReplayTrend } from "@/components/replay-trend";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -40,6 +41,12 @@ export default async function ReplayPage({
           histRecent: dict.replay.histRecent,
         }}
       />
+      <div className="mt-8">
+        <ReplayTrend
+          label={dict.replay.histTitle}
+          emptyLabel={dict.replay.histEmpty}
+        />
+      </div>
     </div>
   );
 }
