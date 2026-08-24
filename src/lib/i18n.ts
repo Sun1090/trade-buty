@@ -72,6 +72,8 @@ const zh = {
     lessonsUnit: "篇",
   },
   chapter: {
+    expandIntro: "展开章节导语",
+    collapseIntro: "收起",
     introHeading: "篇章导语",
     coursesHeading: "本篇课程",
     readCount: (a: number, b: number) => `${a}/${b}`,
@@ -309,6 +311,8 @@ const en: Dict = {
     prevChapter: "Previous chapter",
     progressLabel: "Chapter progress",
     lessonsUnit: "lessons",
+    expandIntro: "Expand intro",
+    collapseIntro: "Collapse",
   },
   doc: {
     practiceTitle: "📖 Done reading? See the real market",
