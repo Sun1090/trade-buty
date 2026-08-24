@@ -6,6 +6,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { SearchHotkey } from "@/components/search-hotkey";
 import { AuthHeader } from "@/components/auth-header";
 import { AuthProvider } from "@/components/auth-provider";
+import { MobileNav } from "@/components/mobile-nav";
 
 function CandleMark() {
   return (
@@ -42,7 +43,18 @@ export default async function LocaleLayout({
               {t.brand.badge}
             </span>
           </Link>
-          <nav className="text-sm flex items-center gap-0.5 sm:gap-1">
+          <MobileNav
+            locale={locale}
+            items={[
+              { href: "/path", label: t.nav.path, icon: "📚" },
+              { href: "/chart", label: t.nav.chart, icon: "📈" },
+              { href: "/replay", label: t.nav.replay, icon: "⏮" },
+              { href: "/review", label: t.nav.review, icon: "✎" },
+              { href: "/search", label: t.nav.search, icon: "🔍" },
+              { href: "/ai", label: t.ai.nav, icon: "🤖" },
+            ]}
+          />
+          <nav className="hidden sm:flex text-sm items-center gap-0.5 sm:gap-1">
             <Link
               href={p("/path")}
               aria-label={t.nav.path}
