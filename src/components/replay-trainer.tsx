@@ -76,7 +76,18 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
   const [interval_, setInterval_] = useState<string>("1h");
   const [round, setRound] = useState(0);
   const [klines, setKlines] = useState<Kline[] | null>(null);
-  const [difficultyIdx, setDifficultyIdx] = useState(1); // 默认进阶
+  const [difficultyIdx, setDifficultyIdx] = useState(() => {
+    try {
+      const saved = localStorage.getItem("tb-replay-difficulty");
+      return saved ? parseInt(saved, 10) : 1;
+    } catch {
+      return 1;
+    }
+  });
+  // 记忆难度选择
+  useEffect(() => {
+    try { localStorage.setItem("tb-replay-difficulty", String(difficultyIdx)); } catch { }
+  }, [difficultyIdx]);
   const context = DIFFICULTIES[difficultyIdx].context;
   const [idx, setIdx] = useState<number>(context);
   const [playing, setPlaying] = useState(false);
@@ -429,6 +440,14 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
               className="rounded-full border border-border-strong px-5 py-2.5 text-sm font-medium disabled:opacity-40 hover:border-accent/60 transition"
             >
               {dict.step}
+            </button>
+            <button
+              onClick={() => klines && setIdx(klines.length)}
+              disabled={!klines || finished}
+              className="rounded-full border border-border-strong px-5 py-2.5 text-sm font-medium disabled:opacity-40 hover:border-accent/60 transition"
+              title={dict.rounds}
+            >
+              ⏭
             </button>
             <div className="flex items-center gap-1.5 ml-auto">
               <span className="text-xs text-faint mr-1">{dict.speed}</span>
