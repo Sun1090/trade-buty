@@ -27,6 +27,9 @@ import { BookmarkButton } from "@/components/bookmark-button";
 import { RelatedCourses } from "@/components/related-courses";
 import { ReadingTimeTracker } from "@/components/reading-time-tracker";
 import { ReadingTimeDisplay } from "@/components/reading-time-display";
+import { CopyLinkButton } from "@/components/copy-link-button";
+import { ReadAloud } from "@/components/read-aloud";
+import { FocusMode } from "@/components/focus-mode";
 import { extractHeadings } from "@/lib/toc";
 
 export function generateStaticParams() {
@@ -157,7 +160,7 @@ export default async function DocPage({
             {doc.description}
           </p>
         )}
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-4 flex items-center gap-3 flex-wrap">
           <FontSizeControl labels={{ smaller: tools.fontSmaller, larger: tools.fontLarger }} />
           <BookmarkButton
             chapter={chapterSlug}
@@ -166,6 +169,9 @@ export default async function DocPage({
             label={{ bookmark: tools.bookmark, bookmarked: tools.bookmarked }}
             labeled
           />
+          <CopyLinkButton label={locale === "en" ? "Copy link" : "复制链接"} copiedLabel={locale === "en" ? "Copied ✓" : "已复制 ✓"} />
+          <ReadAloud text={doc.content} label={locale === "en" ? "Read aloud" : "朗读"} playingLabel={locale === "en" ? "Stop" : "停止"} locale={locale} />
+          <FocusMode label={locale === "en" ? "Focus" : "专注"} activeLabel={locale === "en" ? "Exit focus" : "退出专注"} />
           <span className="ml-auto">
             <ReadingTimeDisplay chapter={chapterSlug} doc={docSlug} label={locale === "en" ? "read" : "已读"} />
           </span>

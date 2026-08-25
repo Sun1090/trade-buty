@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { KlineChart } from "@/components/kline-chart";
 import { HeroCard } from "@/components/hero-card";
+import { FullscreenToggle } from "@/components/fullscreen-toggle";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -29,7 +30,13 @@ export default async function ChartPage({
       <HeroCard label={t.chart.label} title={t.chart.title}>
         {t.chart.intro}
       </HeroCard>
-      <KlineChart dict={t.chart} />
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-mono text-faint">BTCUSDT · 4H</p>
+        <FullscreenToggle targetId="chart-container" label={{ enter: "全屏", exit: "退出" }} />
+      </div>
+      <div id="chart-container">
+        <KlineChart dict={t.chart} />
+      </div>
       <Link
         href={`/${locale}/path`}
         className="mt-8 block rounded-2xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-5 hover:border-[var(--accent)]/60 transition group"
