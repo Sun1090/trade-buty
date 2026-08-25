@@ -5,6 +5,7 @@ import type { TocItem } from "@/lib/toc";
 
 export function Toc({ items, heading }: { items: TocItem[]; heading: string }) {
   const [active, setActive] = useState<string>("");
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -15,7 +16,6 @@ export function Toc({ items, heading }: { items: TocItem[]; heading: string }) {
 
     const ob = new IntersectionObserver(
       (entries) => {
-        // 取视口最上方的可见标题
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
@@ -29,39 +29,72 @@ export function Toc({ items, heading }: { items: TocItem[]; heading: string }) {
 
   if (items.length < 3) return null;
 
+  const tocList = (
+    <ul className="space-y-1.5 border-l border-[var(--border)]">
+      {items.map((item) => (
+        <li key={item.id}>
+          <a
+            href={`#${item.id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById(item.id)?.scrollIntoView({
+                behavior: "smooth",
+              });
+              setActive(item.id);
+              setOpen(false);
+            }}
+            className={`block text-xs leading-snug transition-all duration-300 border-l-2 -ml-px ${
+              item.depth === 3 ? "pl-5" : "pl-3"
+            } ${
+              active === item.id
+                ? "text-accent font-medium border-accent bg-[var(--accent-dim)] rounded-r"
+                : "text-muted hover:text-foreground border-transparent"
+            }`}
+          >
+            {item.text}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
-    <nav
-      aria-label={heading}
-      className="hidden 2xl:block fixed right-6 top-24 w-52 max-h-[calc(100vh-8rem)] overflow-y-auto"
-    >
-      <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-3">
-        {heading}
-      </p>
-      <ul className="space-y-1.5 border-l border-[var(--border)]">
-        {items.map((item) => (
-          <li key={item.id}>
-            <a
-              href={`#${item.id}`}
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById(item.id)?.scrollIntoView({
-                  behavior: "smooth",
-                });
-                setActive(item.id);
-              }}
-              className={`block text-xs leading-snug transition-all duration-300 border-l-2 -ml-px ${
-                item.depth === 3 ? "pl-5" : "pl-3"
-              } ${
-                active === item.id
-                  ? "text-accent font-medium border-accent bg-[var(--accent-dim)] rounded-r"
-                  : "text-muted hover:text-foreground border-transparent"
-              }`}
-            >
-              {item.text}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <>
+      {/* 桌面端固定侧栏 */}
+      <nav
+        aria-label={heading}
+        className="hidden 2xl:block fixed right-6 top-24 w-52 max-h-[calc(100vh-8rem)] overflow-y-auto"
+      >
+        <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-3">
+          {heading}
+        </p>
+        {tocList}
+      </nav>
+
+      {/* 移动端浮动按钮 + 抽屉 */}
+      <div className="2xl:hidden fixed right-4 bottom-20 z-40">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="h-10 w-10 rounded-full bg-accent-strong text-white dark:text-[#06281c] shadow-lg flex items-center justify-center text-sm font-bold hover:bg-accent transition"
+          aria-label={heading}
+        >
+          ☰
+        </button>
+        {open && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/30 z-30"
+              onClick={() => setOpen(false)}
+            />
+            <div className="absolute right-0 bottom-12 w-60 max-h-[60vh] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xl z-40">
+              <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-3">
+                {heading}
+              </p>
+              {tocList}
+            </div>
+          </>
+        )}
+      </div>
+    </>
   );
 }
