@@ -170,7 +170,15 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
           {SYMBOLS.map((s) => (
             <button
               key={s}
-              onClick={() => setSymbol(s)}
+              onClick={() => {
+                setSymbol(s);
+                // 收藏最近使用的币对
+                try {
+                  const favs = JSON.parse(localStorage.getItem("tb-chart-favs") || "[]");
+                  const next = [s, ...favs.filter((f: string) => f !== s)].slice(0, 6);
+                  localStorage.setItem("tb-chart-favs", JSON.stringify(next));
+                } catch {}
+              }}
               aria-label={`Symbol ${s}`}
               aria-pressed={s === symbol}
               className={`px-3 py-1.5 rounded-lg font-mono text-xs transition ${

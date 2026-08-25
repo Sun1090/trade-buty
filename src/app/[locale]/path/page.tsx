@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getStageGroups } from "@/lib/path";
+import { getChapters, getDocMetas } from "@/lib/content";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { PathProgress } from "@/components/path-progress";
 import { PathGlobalProgress } from "@/components/path-global-progress";
 import { KnowledgeGraph } from "@/components/knowledge-graph";
+import { TodayPick } from "@/components/today-pick";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -33,6 +35,12 @@ export default async function PathPage({
   const chapters = groups.flatMap((g) =>
     g.chapters.map((c) => ({ slug: c.slug, docCount: c.docCount }))
   );
+  // 今日推荐需要：篇章 + 课程标题
+  const allChapters = getChapters(locale).map((c) => ({
+    slug: c.slug,
+    title: c.title,
+    docs: getDocMetas(locale, c.slug).map((d) => ({ slug: d.slug, title: d.title })),
+  }));
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-14">
@@ -56,6 +64,15 @@ export default async function PathPage({
       <div className="mt-8">
         <PathGlobalProgress chapters={chapters} />
       </div>
+
+      {/* 今日推荐 */}
+      <TodayPick
+        chapters={allChapters}
+        locale={locale}
+        label={locale === "en" ? "Continue learning" : "继续学习"}
+        hint={locale === "en" ? "Your next lesson" : "下一篇课程"}
+        done={locale === "en" ? "All done!" : "全部读完！"}
+      />
 
       {/* 入门主线 */}
       <section className="mt-16">
