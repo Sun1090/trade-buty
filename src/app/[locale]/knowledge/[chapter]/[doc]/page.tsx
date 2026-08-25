@@ -131,12 +131,15 @@ export default async function DocPage({
             chapterTitle={chapter.title}
             chapterTagline={chapter.tagline}
             docCount={docMetas.length}
+            docs={docMetas.map((d) => ({ slug: d.slug, title: d.title }))}
+            currentDoc={docSlug}
             nextChapter={nextChapterMeta}
             locale={locale}
             dict={{
               nextChapter: t.chapter.nextChapter,
               progressLabel: t.chapter.progressLabel,
               lessonsUnit: t.chapter.lessonsUnit,
+              unreadLabel: locale === "en" ? "Unread" : "未读",
             }}
           />
         )}

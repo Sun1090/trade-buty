@@ -211,6 +211,21 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
               {s}
             </button>
           ))}
+          <input
+            type="text"
+            placeholder="自定义"
+            defaultValue={symbol}
+            onBlur={(e) => {
+              const v = e.target.value.trim().toUpperCase();
+              if (v && v !== symbol && /^[A-Z]+USDT$/.test(v)) {
+                setSymbol(v);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            }}
+            className="w-24 px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-muted text-xs font-mono outline-none focus:border-accent transition"
+          />
         </div>
           <div className="flex flex-wrap items-center gap-3">
             {lastPrice !== null && (
