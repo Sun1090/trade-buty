@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ChapterQuiz } from "@/lib/quiz-types";
 import { recordWrong, resolveWrong } from "@/lib/wrongbook";
 import { readQuizProgress, saveQuizProgress, type QuizProgress } from "@/lib/quiz-store";
+import { QuizTimer } from "@/components/quiz-timer";
 
 interface QuizDict {
   questionsUnit: string;
@@ -134,10 +135,13 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
   return (
     <div className="mt-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
       <div className="flex items-center justify-between text-xs text-faint">
-        <p>{tpl(dict.progressTpl, { i: current + 1, n: quiz.questions.length })}{correct}</p>
-        <span className="font-mono text-accent">
-          {Math.round(((current + (picked !== null ? 1 : 0)) / quiz.questions.length) * 100)}%
-        </span>
+        <p>{tpl(dict.progressTpl, { i: current + 1, n: quiz.questions.length })}</p>
+        <div className="flex items-center gap-3">
+          <QuizTimer running={picked === null} />
+          <span className="font-mono text-accent">
+            {Math.round(((current + (picked !== null ? 1 : 0)) / quiz.questions.length) * 100)}%
+          </span>
+        </div>
       </div>
       <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
         <div

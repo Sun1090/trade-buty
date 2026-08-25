@@ -7,6 +7,7 @@ import { HeroChart } from "@/components/hero-chart";
 import { GlobalReadStat } from "@/components/global-read-stat";
 import { StreakBadge } from "@/components/streak-badge";
 import { MarketTicker } from "@/components/market-ticker";
+import { DailyTip } from "@/components/daily-tip";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -83,6 +84,7 @@ export default async function Home({
                 {t.home.ctaPath}
               </Link>
             </div>
+            <DailyTip locale={locale} />
             <GlobalReadStat
               totalDocs={totalDocs}
               textTpl={t.home.readTpl}
