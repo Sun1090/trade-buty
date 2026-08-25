@@ -7,6 +7,7 @@ import { SearchHotkey } from "@/components/search-hotkey";
 import { AuthHeader } from "@/components/auth-header";
 import { AuthProvider } from "@/components/auth-provider";
 import { MobileNav } from "@/components/mobile-nav";
+import { BookmarkCount } from "@/components/bookmark-count";
 
 function CandleMark() {
   return (
@@ -120,6 +121,9 @@ export default async function LocaleLayout({
               </svg>
             </a>
           </nav>
+        </div>
+        <div className="hidden sm:flex items-center">
+          <BookmarkCount label={t.bookmarks.nav} />
         </div>
       </header>
       <main className="flex-1"><AuthProvider>{children}</AuthProvider></main>

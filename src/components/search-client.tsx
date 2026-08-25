@@ -27,6 +27,7 @@ export function SearchClient({
   const [entries, setEntries] = useState<Entry[] | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
   const [filterChapter, setFilterChapter] = useState<string>("");
+  const [focusIdx, setFocusIdx] = useState(-1);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -112,6 +113,20 @@ export function SearchClient({
           maxLength={100}
           value={query}
           onChange={(e) => onInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setFocusIdx((i) => Math.min(i + 1, results.length - 1));
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setFocusIdx((i) => Math.max(i - 1, -1));
+            } else if (e.key === "Enter" && focusIdx >= 0) {
+              const entry = results[focusIdx];
+              if (entry) window.location.href = entry.url;
+            } else if (e.key === "Enter" && !focusIdx && results.length > 0) {
+              window.location.href = results[0].url;
+            }
+          }}
           placeholder={dict.placeholder}
           aria-label={dict.placeholder}
           autoFocus

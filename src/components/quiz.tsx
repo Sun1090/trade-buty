@@ -101,6 +101,11 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
     setPicked(null);
   }
 
+  function skipQ() {
+    if (picked !== null) return;
+    next();
+  }
+
   if (!started) {
     const perfect = progress?.done && progress.best === quiz.questions.length;
     return (
@@ -138,6 +143,11 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
         <p>{tpl(dict.progressTpl, { i: current + 1, n: quiz.questions.length })}</p>
         <div className="flex items-center gap-3">
           <QuizTimer running={picked === null} />
+          {picked === null && (
+            <button onClick={skipQ} className="text-xs text-faint hover:text-accent transition underline underline-offset-4">
+              跳过
+            </button>
+          )}
           <span className="font-mono text-accent">
             {Math.round(((current + (picked !== null ? 1 : 0)) / quiz.questions.length) * 100)}%
           </span>
