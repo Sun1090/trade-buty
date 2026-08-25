@@ -91,6 +91,26 @@ export function ReviewClient({
   }
 
   // 按篇章分组
+  function exportText() {
+    const lines: string[] = ["Trade Buty 错题本导出", `导出时间：${new Date().toLocaleString()}`, ""];
+    for (const [title, group] of groups) {
+      lines.push(`## ${title}`);
+      for (const item of group) {
+        const q = item.quiz.questions[item.questionIdx];
+        lines.push(`- ${q.question}`);
+        lines.push(`  你的选择：${String.fromCharCode(65 + item.picked)}`);
+        lines.push(`  正确答案：${String.fromCharCode(65 + q.answer)}`);
+      }
+      lines.push("");
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "trade-buty-wrongbook.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
   const groups = new Map<string, Item[]>();
   for (const item of items) {
     const title = item.quiz.title;
@@ -141,9 +161,16 @@ export function ReviewClient({
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-muted">{items.length}</p>
-        <button onClick={startRedo} className="text-xs rounded-full border border-[var(--accent)]/40 bg-[var(--accent-dim)] hover:border-accent/60 text-accent font-medium px-4 py-1.5 transition">随机抽题重答</button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportText} className="text-xs text-faint hover:text-accent transition border border-[var(--border)] rounded-full px-3 py-1.5">
+            {locale === "en" ? "Export" : "导出"}
+          </button>
+          <button onClick={startRedo} className="text-xs rounded-full border border-[var(--accent)]/40 bg-[var(--accent-dim)] hover:border-accent/60 text-accent font-medium px-4 py-1.5 transition">
+            {locale === "en" ? "Random redo" : "随机抽题重答"}
+          </button>
+        </div>
       </div>
       {[...groups.entries()].map(([chapterTitle, groupItems]) => {
         const chapterSlug = groupItems[0].chapterNum;

@@ -316,7 +316,12 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
         >
           {guessMode ? dict.modeGuess : dict.modeFree}
         </button>
-        <span className="ml-auto font-mono text-xs text-faint">
+        <span className="ml-auto font-mono text-xs text-faint flex items-center gap-3">
+          {klines && idx > 0 && klines[idx - 1] && (
+            <span className="text-accent">
+              {Number(klines[idx - 1].close).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            </span>
+          )}
           {dict.rounds}: {klines ? `${Math.max(idx - context, 0)}/${klines.length - context}` : "-"}
         </span>
       </div>
