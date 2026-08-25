@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 
 const KEY = "tb-font-scale";
+const LH_KEY = "tb-line-height";
 const MIN = 0.9;
 const MAX = 1.2;
 const STEP = 0.05;
 
-/** 正文字号调节：A- / A+ 按钮，记忆到 localStorage */
+/** 正文字号 + 行距调节，记忆到 localStorage */
 export function FontSizeControl({ labels }: { labels: { smaller: string; larger: string } }) {
   const [scale, setScale] = useState(1);
+  const [lh, setLh] = useState(1.85);
 
   useEffect(() => {
     try {
@@ -18,6 +20,11 @@ export function FontSizeControl({ labels }: { labels: { smaller: string; larger:
         setScale(v);
         applyScale(v);
       }
+      const lhv = parseFloat(localStorage.getItem(LH_KEY) ?? "1.85");
+      if (!isNaN(lhv)) {
+        setLh(lhv);
+        applyLh(lhv);
+      }
     } catch {
       // ignore
     }
@@ -25,6 +32,9 @@ export function FontSizeControl({ labels }: { labels: { smaller: string; larger:
 
   function applyScale(v: number) {
     document.documentElement.style.setProperty("--kb-scale", String(v));
+  }
+  function applyLh(v: number) {
+    document.documentElement.style.setProperty("--kb-line-height", String(v));
   }
 
   function change(delta: number) {
@@ -36,6 +46,19 @@ export function FontSizeControl({ labels }: { labels: { smaller: string; larger:
         // ignore
       }
       applyScale(next);
+      return next;
+    });
+  }
+
+  function changeLh(delta: number) {
+    setLh((prev) => {
+      const next = Math.min(2.2, Math.max(1.5, +(prev + delta).toFixed(2)));
+      try {
+        localStorage.setItem(LH_KEY, String(next));
+      } catch {
+        // ignore
+      }
+      applyLh(next);
       return next;
     });
   }
@@ -57,6 +80,24 @@ export function FontSizeControl({ labels }: { labels: { smaller: string; larger:
         className="h-7 w-7 rounded-lg border border-[var(--border)] text-faint hover:text-accent hover:border-accent/40 transition disabled:opacity-30"
       >
         A+
+      </button>
+      <button
+        onClick={() => changeLh(0.1)}
+        disabled={lh >= 2.2}
+        aria-label="Line height +"
+        className="h-7 px-2 rounded-lg border border-[var(--border)] text-faint hover:text-accent hover:border-accent/40 transition disabled:opacity-30 font-mono"
+        title="行距+"
+      >
+        ☰+
+      </button>
+      <button
+        onClick={() => changeLh(-0.1)}
+        disabled={lh <= 1.5}
+        aria-label="Line height -"
+        className="h-7 px-2 rounded-lg border border-[var(--border)] text-faint hover:text-accent hover:border-accent/40 transition disabled:opacity-30 font-mono"
+        title="行距-"
+      >
+        ☰-
       </button>
     </div>
   );

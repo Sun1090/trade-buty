@@ -178,7 +178,7 @@ body {
 
 /* ---------- 知识库正文排版 ---------- */
 .kb-prose {
-  line-height: 1.85;
+  line-height: var(--kb-line-height, 1.85);
   font-size: calc(1rem * var(--kb-scale));
   color: rgba(233, 237, 245, 0.88);
 }

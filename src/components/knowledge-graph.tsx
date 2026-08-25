@@ -11,6 +11,15 @@ export function KnowledgeGraph({ locale }: { locale: string }) {
 
   return (
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-xs text-faint">
+          {locale === "en" ? "Knowledge map · bars show lesson count" : "知识图谱 · 条长表示课程数"}
+        </p>
+        <div className="flex items-center gap-3 text-[10px] text-faint">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full border border-[var(--accent)]/40 inline-block" />{locale === "en" ? "Chapter" : "篇章"}</span>
+          <span className="flex items-center gap-1"><span className="w-6 h-1 rounded-full bg-accent inline-block" />{locale === "en" ? "Lessons" : "课程"}</span>
+        </div>
+      </div>
       <div className="grid gap-4 lg:grid-cols-3">
         {groups.map(({ stage, chapters }) => (
           <div key={stage.id}>
