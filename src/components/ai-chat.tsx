@@ -299,6 +299,21 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                         👎
                       </button>
                     </span>
+                    {/* 追问按钮 */}
+                    <span className="flex items-center gap-1 ml-2">
+                      <button
+                        onClick={() => send(locale === "en" ? "Simplify this" : "简化解释")}
+                        className="text-[10px] text-faint hover:text-accent transition border border-[var(--border)] rounded px-1.5 py-0.5"
+                      >
+                        {locale === "en" ? "Simplify" : "简化"}
+                      </button>
+                      <button
+                        onClick={() => send(locale === "en" ? "Give an example" : "举个例子")}
+                        className="text-[10px] text-faint hover:text-accent transition border border-[var(--border)] rounded px-1.5 py-0.5"
+                      >
+                        {locale === "en" ? "Example" : "例子"}
+                      </button>
+                    </span>
                   </div>
                 )}
               </div>

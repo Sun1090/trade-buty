@@ -427,6 +427,26 @@ body {
 :root[data-theme="light"] .kb-prose pre code {
   color: #1e293b;
 }
+
+/* ---------- 护眼（sepia）主题 ---------- */
+:root[data-theme="sepia"] {
+  --background: #f4ebd9;
+  --foreground: #3c2f1f;
+  --muted: rgba(60, 47, 31, 0.65);
+  --faint: rgba(60, 47, 31, 0.45);
+  --surface: #e8dcc8;
+  --surface-hover: #ddd1bd;
+  --border: rgba(60, 47, 31, 0.12);
+  --border-strong: rgba(60, 47, 31, 0.2);
+  --accent: #059669;
+  --accent-strong: #047857;
+  --accent-dim: rgba(5, 150, 105, 0.12);
+  --info: #2563eb;
+  --info-dim: rgba(37, 99, 235, 0.08);
+  --warn: #d97706;
+  --warn-dim: rgba(217, 119, 6, 0.08);
+  --down: #dc2626;
+}
 .kb-prose table {
   width: 100%;
   border-collapse: separate;
