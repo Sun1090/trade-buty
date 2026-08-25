@@ -85,3 +85,14 @@ content/kline-buty/        # 知识库 submodule（只读）
 ## 许可
 
 MIT © sun1090（知识库内容版权归 kline-buty 项目所有）
+
+## 赞助
+
+如果这个项目对你有帮助，可以请作者喝杯咖啡，支持持续更新 ☕
+
+<table>
+  <tr>
+    <td align="center"><img src="public/donate-alipay.jpg" width="200" alt="支付宝赞赏码" /><br/>支付宝</td>
+    <td align="center"><img src="public/donate-wechat.jpg" width="200" alt="微信赞赏码" /><br/>微信</td>
+  </tr>
+</table>
