@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getChapters } from "@/lib/content";
+import { getChapters, getDocMetas } from "@/lib/content";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { HeroChart } from "@/components/hero-chart";
 import { GlobalReadStat } from "@/components/global-read-stat";
@@ -177,6 +177,30 @@ export default async function Home({
               </p>
             </Link>
           ))}
+        </div>
+      </section>
+
+      {/* ---------- 精选课程（具体篇目） ---------- */}
+      <section className="mx-auto max-w-6xl px-5 pb-20">
+        <h2 className="text-2xl font-bold mb-6">
+          {locale === "en" ? "Start here" : "从这几篇开始"}
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {chapters.slice(0, 3).map((c) => {
+            const doc = getDocMetas(locale, c.slug)[0];
+            if (!doc) return null;
+            return (
+              <Link
+                key={`${c.slug}-${doc.slug}`}
+                href={p(`/knowledge/${c.slug}/${doc.slug}`)}
+                className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] transition"
+              >
+                <p className="text-xs text-faint font-mono">{c.title}</p>
+                <p className="mt-1.5 font-medium text-sm group-hover:text-accent transition-colors">{doc.title}</p>
+                <p className="mt-2 text-xs text-muted line-clamp-2">{doc.description}</p>
+              </Link>
+            );
+          })}
         </div>
       </section>
 

@@ -8,6 +8,7 @@ import { StudyPlan } from "@/components/study-plan";
 import { useLocalProgress } from "@/components/use-local-progress";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { RadarChart } from "@/components/radar-chart";
+import { WeekMiniBar } from "@/components/week-mini-bar";
 
 interface StatsDict {
   title: string;
@@ -97,6 +98,14 @@ export function StatsClient({
         currentChapter=""
         dict={{ generate: locale === "en" ? "Generate plan" : "生成学习计划", generating: locale === "en" ? "Generating..." : "生成中…", title: locale === "en" ? "AI Study Plan" : "AI 学习计划" }}
       />
+
+      {/* 近 7 天迷你条 */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-faint mb-3">
+          {locale === "en" ? "Last 7 days" : "近 7 天"}
+        </p>
+        <WeekMiniBar locale={locale} />
+      </div>
 
       {/* 热力图 + 雷达图 */}
       <div className="grid gap-4 lg:grid-cols-2">

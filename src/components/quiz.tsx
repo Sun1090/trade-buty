@@ -124,6 +124,17 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
               )}
               {perfect && <span className="ml-2 text-accent font-medium">· {dict.perfect}</span>}
             </p>
+            {/* 成绩分析条 */}
+            {progress?.done && (
+              <div className="mt-3 flex items-center gap-2">
+                <div className="flex h-2 rounded-full overflow-hidden bg-down/20" style={{ width: `${quiz.questions.length * 12}px` }}>
+                  <div className="bg-accent" style={{ width: `${(progress.best / quiz.questions.length) * 100}%` }} />
+                </div>
+                <span className="text-xs text-faint font-mono">
+                  {progress.best}/{quiz.questions.length} · {Math.round((progress.best / quiz.questions.length) * 100)}%
+                </span>
+              </div>
+            )}
           </div>
           <button
             onClick={() => setStarted(true)}
