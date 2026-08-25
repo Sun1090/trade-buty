@@ -259,6 +259,15 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
 
   const finished = !!klines && idx >= klines.length;
 
+  // 页面隐藏时自动暂停
+  useEffect(() => {
+    function onVis() {
+      if (document.hidden && playing) setPlaying(false);
+    }
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [playing]);
+
   return (
     <div>
       {/* 控制条 */}

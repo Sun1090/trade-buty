@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import type { DocMeta } from "@/lib/content";
 import { useLocalProgress } from "@/components/use-local-progress";
@@ -16,6 +17,7 @@ export function DocList({
   const emptyLabel = locale === "en" ? "No lessons yet." : "暂无课程。";
   const progress = useLocalProgress();
   const readSet = new Set(progress?.[chapterSlug] ?? []);
+  const [unreadFirst, setUnreadFirst] = useState(false);
 
   if (metas.length === 0) {
     return (
@@ -24,6 +26,13 @@ export function DocList({
   }
 
   const pct = Math.round((readSet.size / metas.length) * 100);
+  const sorted = unreadFirst
+    ? [...metas].sort((a, b) => {
+        const ar = readSet.has(a.slug) ? 1 : 0;
+        const br = readSet.has(b.slug) ? 1 : 0;
+        return ar - br;
+      })
+    : metas;
 
   return (
     <div>
@@ -34,12 +43,24 @@ export function DocList({
             style={{ width: `${pct}%` }}
           />
         </div>
-        <span className="text-xs font-mono text-accent">
-          {readSet.size}/{metas.length}
-        </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setUnreadFirst((v) => !v)}
+            className={`text-xs transition border rounded-full px-3 py-1 ${
+              unreadFirst
+                ? "border-accent/40 bg-[var(--accent-dim)] text-accent"
+                : "border-[var(--border)] text-faint hover:text-accent"
+            }`}
+          >
+            {locale === "en" ? "Unread first" : "未读优先"}
+          </button>
+          <span className="text-xs font-mono text-accent">
+            {readSet.size}/{metas.length}
+          </span>
+        </div>
       </div>
       <ol className="space-y-2.5">
-        {metas.map((d, i) => {
+        {sorted.map((d, i) => {
           const read = readSet.has(d.slug);
           return (
             <li key={d.slug}>
