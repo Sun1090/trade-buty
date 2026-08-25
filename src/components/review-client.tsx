@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ChapterQuiz, QuizQuestion } from "@/lib/quiz-types";
-import { readWrong, resolveWrong, type WrongEntry } from "@/lib/wrongbook";
+import { readWrong, resolveWrong, clearAllWrong, type WrongEntry } from "@/lib/wrongbook";
 import { AiQuiz } from "@/components/ai-quiz";
 
 export interface ReviewDict {
@@ -166,6 +166,16 @@ export function ReviewClient({
         <div className="flex items-center gap-2">
           <button onClick={exportText} className="text-xs text-faint hover:text-accent transition border border-[var(--border)] rounded-full px-3 py-1.5">
             {locale === "en" ? "Export" : "导出"}
+          </button>
+          <button
+            onClick={() => {
+              if (confirm(locale === "en" ? "Clear all wrong answers?" : "清空所有错题？")) {
+                clearAllWrong();
+              }
+            }}
+            className="text-xs text-faint hover:text-down transition border border-[var(--border)] rounded-full px-3 py-1.5"
+          >
+            {locale === "en" ? "Clear" : "清空"}
           </button>
           <button onClick={startRedo} className="text-xs rounded-full border border-[var(--accent)]/40 bg-[var(--accent-dim)] hover:border-accent/60 text-accent font-medium px-4 py-1.5 transition">
             {locale === "en" ? "Random redo" : "随机抽题重答"}

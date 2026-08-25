@@ -28,6 +28,12 @@ export function SearchClient({
   const [recent, setRecent] = useState<string[]>([]);
   const [filterChapter, setFilterChapter] = useState<string>("");
   const [focusIdx, setFocusIdx] = useState(-1);
+  const [debouncedQ, setDebouncedQ] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(query), 200);
+    return () => clearTimeout(t);
+  }, [query]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -50,7 +56,7 @@ export function SearchClient({
 
 
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = debouncedQ.trim().toLowerCase();
     if (!q || !entries) return [];
     return entries
       .map((e) => ({ e, s: score(e, q) }))
