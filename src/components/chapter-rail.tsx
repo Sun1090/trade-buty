@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useLocalProgress } from "@/components/use-local-progress";
 
@@ -7,6 +8,7 @@ interface RailDict {
   nextChapter: string;
   progressLabel: string;
   lessonsUnit: string;
+  unreadLabel: string;
 }
 
 interface NextChapter {
@@ -24,6 +26,8 @@ export function ChapterRail({
   chapterTitle,
   chapterTagline,
   docCount,
+  docs,
+  currentDoc,
   nextChapter,
   locale,
   dict,
@@ -32,6 +36,8 @@ export function ChapterRail({
   chapterTitle: string;
   chapterTagline: string;
   docCount: number;
+  docs: { slug: string; title: string }[];
+  currentDoc: string;
   nextChapter: NextChapter | null;
   locale: string;
   dict: RailDict;
@@ -40,6 +46,9 @@ export function ChapterRail({
   const readCount = progress?.[chapterSlug]?.length ?? 0;
   const pct = docCount > 0 ? Math.round((readCount / docCount) * 100) : 0;
   const done = readCount >= docCount && docCount > 0;
+  const [showUnread, setShowUnread] = useState(false);
+  const readSet = new Set(progress?.[chapterSlug] ?? []);
+  const unread = docs.filter((d) => !readSet.has(d.slug));
 
   return (
     <aside className="hidden xl:block">
@@ -80,6 +89,37 @@ export function ChapterRail({
             </p>
           )}
         </div>
+
+        {/* 未读课程折叠列表 */}
+        {unread.length > 0 && (
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+            <button
+              onClick={() => setShowUnread((v) => !v)}
+              className="flex items-center justify-between w-full text-xs font-semibold uppercase tracking-widest text-faint hover:text-accent transition"
+            >
+              <span>{dict.unreadLabel} ({unread.length})</span>
+              <span className={`transition-transform ${showUnread ? "rotate-90" : ""}`}>▸</span>
+            </button>
+            {showUnread && (
+              <ul className="mt-3 space-y-1">
+                {unread.map((d) => (
+                  <li key={d.slug}>
+                    <Link
+                      href={`/${locale}/knowledge/${chapterSlug}/${d.slug}`}
+                      className={`block text-xs py-1 px-2 rounded transition ${
+                        d.slug === currentDoc
+                          ? "text-accent bg-[var(--accent-dim)]"
+                          : "text-muted hover:text-foreground hover:bg-[var(--surface-hover)]"
+                      }`}
+                    >
+                      {d.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* 下一篇章 */}
         {nextChapter && (
