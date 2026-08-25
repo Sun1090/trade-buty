@@ -5,10 +5,12 @@ import {
   createChart,
   CandlestickSeries,
   HistogramSeries,
+  LineSeries,
   type CandlestickData,
   type IChartApi,
   type ISeriesApi,
   type UTCTimestamp,
+  type LineData,
 } from "lightweight-charts";
 import { fetchKlines } from "@/lib/binance";
 
@@ -31,6 +33,8 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
   const [interval_, setInterval_] = useState<string>("1h");
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [lastPrice, setLastPrice] = useState<number | null>(null);
+  const [showMA, setShowMA] = useState(false);
+  const maRef = useRef<ISeriesApi<"Line"> | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -97,6 +101,23 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
         );
         setLastPrice(klines[klines.length - 1]?.close ?? null);
         chartRef.current?.timeScale().fitContent();
+
+        // MA(7) 移动平均线
+        if (showMA && candleRef.current && chartRef.current) {
+          if (!maRef.current) {
+            maRef.current = chartRef.current.addSeries(LineSeries, {
+              color: "rgba(96,165,250,0.7)",
+              lineWidth: 1,
+            });
+          }
+          const maData: LineData[] = [];
+          for (let i = 6; i < candles.length; i++) {
+            const sum = candles.slice(i - 6, i + 1).reduce((s, c) => s + c.close, 0);
+            maData.push({ time: candles[i].time, value: sum / 7 });
+          }
+          maRef.current?.setData(maData);
+        }
+
         setStatus("ready");
       } catch {
         if (!cancelled) setStatus("error");
@@ -214,6 +235,18 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
               </button>
             ))}
           </div>
+          <button
+            onClick={() => setShowMA((v) => !v)}
+            aria-pressed={showMA}
+            className={`px-2.5 py-1.5 rounded-lg font-mono text-xs transition ${
+              showMA
+                ? "bg-accent-dim text-accent border border-accent/40"
+                : "border border-[var(--border)] text-muted hover:text-foreground"
+            }`}
+            title="MA(7)"
+          >
+            MA7
+          </button>
         </div>
       </div>
       <div className="relative rounded-2xl border border-[var(--border-strong)] bg-[var(--surface)] overflow-hidden" role="img" aria-label={`${symbol} chart`}>
