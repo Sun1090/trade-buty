@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-/** 课文朗读（speechSynthesis） */
+/** 课文朗读（speechSynthesis），带语速切换 */
 export function ReadAloud({
   text,
   label,
@@ -15,6 +15,7 @@ export function ReadAloud({
   locale: string;
 }) {
   const [speaking, setSpeaking] = useState(false);
+  const [rate, setRate] = useState(0.9);
 
   function toggle() {
     if (speaking) {
@@ -22,7 +23,6 @@ export function ReadAloud({
       setSpeaking(false);
       return;
     }
-    // 清理可见文本（去掉 frontmatter, markdown 标记）
     const clean = text
       .replace(/^---[\s\S]*?---\n?/, "")
       .replace(/[#*`~\[\]()>|]/g, "")
@@ -30,20 +30,35 @@ export function ReadAloud({
       .slice(0, 3000);
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = locale === "zh" ? "zh-CN" : "en-US";
-    utterance.rate = 0.9;
+    utterance.rate = rate;
     utterance.onend = () => setSpeaking(false);
     utterance.onerror = () => setSpeaking(false);
     speechSynthesis.speak(utterance);
     setSpeaking(true);
   }
 
+  function cycleRate() {
+    const rates = [0.8, 0.9, 1.0, 1.2];
+    const idx = rates.indexOf(rate);
+    setRate(rates[(idx + 1) % rates.length]);
+  }
+
   return (
-    <button
-      onClick={toggle}
-      className="text-xs text-faint hover:text-accent transition px-2 py-1 rounded-lg border border-[var(--border)] hover:border-accent/40"
-      aria-label={speaking ? playingLabel : label}
-    >
-      {speaking ? "🔊 " + playingLabel : "🔈 " + label}
-    </button>
+    <div className="flex items-center gap-1">
+      <button
+        onClick={toggle}
+        className="text-xs text-faint hover:text-accent transition px-2 py-1 rounded-lg border border-[var(--border)] hover:border-accent/40"
+        aria-label={speaking ? playingLabel : label}
+      >
+        {speaking ? "🔊 " + playingLabel : "🔈 " + label}
+      </button>
+      <button
+        onClick={cycleRate}
+        className="text-[10px] text-faint hover:text-accent transition px-1.5 py-1 rounded-lg border border-[var(--border)]"
+        title="语速"
+      >
+        {rate}×
+      </button>
+    </div>
   );
 }

@@ -56,3 +56,14 @@ export function resolveWrong(chapterNum: string, questionIdx: number) {
   }
   syncWrongbookDelete(chapterNum, questionIdx);
 }
+
+/** 清空所有错题 */
+export function clearAllWrong() {
+  try {
+    localStorage.removeItem(KEY);
+    window.dispatchEvent(new Event("tb-progress"));
+  } catch {
+    // ignore
+  }
+  // 云端清空由 sync-layer 统一处理
+}
