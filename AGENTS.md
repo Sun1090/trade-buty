@@ -1,74 +1,74 @@
 # AGENTS.md
 
-本文件是 Agent 工作入口，负责路由到具体规则；不要把所有细则堆在这里。
+This file is the agent entry point: it routes to concrete rules. Don't pile every detail here; keep it scannable.
 
-## 项目一句话
+## Project
 
-Trade Buty 是面向全球中文用户的免费中立交易教育平台：分级课程（学）× 真实行情图表与回放（练）。内容源复用 [kline-buty](https://github.com/sun1090/kline-buty) 的交易知识库。
+Trade Buty is a free, neutral trading-education platform for Chinese-speaking users worldwide: graded courses (Learn) × real market charts and replay (Practice). Content is sourced from the [kline-buty](https://github.com/sun1090/kline-buty) trading knowledge base.
 
-## 必读顺序
+## Required Reading
 
-1. [`docs/plan.md`](docs/plan.md)：产品定位、分期路线、内容宪法红线
-2. [`docs/research.md`](docs/research.md)：六轮市场调研结论
-3. 改代码前：读本页全部小节；Next.js 相关见下方自动生成块
+1. [`docs/plan.md`](docs/plan.md) — product positioning, roadmap, content-constitution red lines.
+2. [`docs/research.md`](docs/research.md) — six rounds of market research conclusions.
+3. Before writing code: read every section on this page; Next.js-specific notes are in the auto-generated block at the bottom.
 
-## 当前不可回退的产品决策
+## Non-reversible Product Decisions
 
-- **内容宪法**：不承诺收益、不荐股荐基、不做券商导流；每篇内容必须有「⚠️ 风险提示」块
-- P0–P3 全程免费；基础课程永远免费
-- 面向全球中文用户，Vercel 免备案部署；不做大陆 ICP 备案路线
-- 知识库是 submodule 引用（`content/kline-buty`），**禁止在站内修改其内容**；改动一律去 kline-buty 仓库
-- Markdown 渲染必须宽容模式：缺 frontmatter / 缺资产的文档告警跳过，不允许打挂构建
-- 框架定为 Next.js（App Router），不再讨论 Astro / VitePress 迁移
+- **Content constitution**: no return promises, no stock/fund recommendations, no broker referrals; every piece of content must have a "⚠️ Risk Warning" block.
+- P0–P3 are entirely free; core courses are free forever.
+- Targeted at Chinese-speaking users worldwide, deployed on Vercel without ICP filing; no mainland-ICP route.
+- The knowledge base is a submodule reference (`content/kline-buty`); **never edit its content in-place from this site**. Changes go to the kline-buty repo.
+- Markdown rendering must be lenient: documents missing frontmatter or assets should warn and skip, never break the build.
+- The framework is Next.js (App Router); do not revisit Astro / VitePress migration.
 
-## 常用命令
+## Commands
 
 ```bash
-npm run dev          # 开发服务器（localhost:3000）
-npm run build        # 生产构建（必须在仓库根目录跑）
+npm run dev          # dev server (localhost:3000)
+npm run build        # production build (must run at repo root)
 npm run lint         # ESLint
-npm run typecheck    # 类型检查（tsc --noEmit）
+npm run typecheck    # tsc --noEmit
 ```
 
-## 命名约定（本仓库）
+## Naming Conventions
 
-- 本仓库自建文件（组件、脚本、文档、题库等）一律**英文命名，不加序号前缀**
-- 知识库 submodule 内容不适用本条（其命名由 kline-buty 仓库决定）
+- Files created in this repo (components, scripts, docs, quiz banks, etc.) use **English names, no numeric prefixes**.
+- Knowledge-base submodule content is exempt (its naming is governed by the kline-buty repo).
 
-## 知识库契约（构建依赖，改动需同步）
+## Knowledge-Base Contract (build dependency; changes need sync)
 
-本站解析依赖 kline-buty 的以下结构（2026-08 双语重构版），kline-buty 侧重构时必须评估影响：
+This site's parsing depends on the following kline-buty structures (2026-08 bilingual restructure). Evaluate the impact whenever the kline-buty repo is restructured:
 
-1. 根目录按语言分根：`docs/knowledge/{zh,en}/`；zh 应完整 27 篇章，en 允许逐步补齐
-2. 每个篇章为英文 slug 目录（如 `getting-started/`），内含 `README.md`（篇章导语，标题在 H1，格式 `NN · 名称`）
-3. 课程文件名为英文 slug（如 `candlestick-basics.md`），排序依据 frontmatter `title` 的前导数字
-4. frontmatter 字段：`title`、`description`
-5. 篇章间相对链接使用 slug：`(../futures/)`、`(../futures/margin.md)`
-6. 资产在各篇章 `_assets/` 下
-7. VitePress 遗留：`## 篇目一览` + `<DocCards/>` 由本站渲染管线过滤
+1. Language-rooted directories: `docs/knowledge/{zh,en}/`; zh must have all 27 chapters, en may fill in gradually.
+2. Each chapter is an English-slug directory (e.g. `getting-started/`) containing a `README.md` (chapter intro; H1 titled `NN · Name`).
+3. Lesson filenames are English slugs (e.g. `candlestick-basics.md`), ordered by the leading number of the frontmatter `title`.
+4. Frontmatter fields: `title`, `description`.
+5. Cross-chapter relative links use slugs: `(../futures/)`、`(../futures/margin.md)`.
+6. Assets live under each chapter's `_assets/`.
+7. VitePress legacy: `## 篇目一览` + `<DocCards/>` are filtered out by this site's render pipeline.
 
-站点 URL 直接使用 slug：`/[locale]/knowledge/{chapter}/{doc}`。旧数字路由已废弃。
+Site URLs use the slug directly: `/[locale]/knowledge/{chapter}/{doc}`. Legacy numeric routes are deprecated.
 
-## Submodule 操作规范
+## Submodule Operations
 
-- 首次 clone 后需要 `git submodule update --init` 才有内容
-- 更新知识库：`npm run kb:update`（拉取 + 契约校验 + 资产/索引同步 + 构建回归，一条龙）
-- 提交包含 submodule 指针变更时，commit message 说明同步到了哪个知识库版本
-- 构建前确认 `content/kline-buty/docs/knowledge/` 存在，缺失时给出明确报错而不是空页面
+- After the first clone, run `git submodule update --init` to get the content.
+- Update the knowledge base with `npm run kb:update` (pull + contract check + asset/index sync + build regression, all-in-one).
+- When a commit includes a submodule-pointer change, the commit message must state which knowledge-base version it synced to.
+- Before building, confirm `content/kline-buty/docs/knowledge/` exists; if missing, raise a clear error rather than serving an empty page.
 
-## 内容渲染约定（与知识库的契约）
+## Content Rendering Contract (with the knowledge base)
 
-- 篇章目录：`docs/knowledge/NN-*/`，篇章导语为目录内 `README.md`，正文为编号 `.md` 文件
-- frontmatter 契约字段：`title`（`NN · 标题`）、`description`；缺字段降级用文件名/首行标题
-- VitePress 容器语法（`::: warning 标题 ... :::`）在渲染管线中转换为 callout 块
-- 相对链接与 `_assets/` 图片路径需重写为站内路由；资产由 prebuild 脚本拷贝到 `public/knowledge-assets/`
-- 锚点链接必须让页面真实滚动到目标标题
+- Chapter directories: `docs/knowledge/NN-*/`; the chapter intro is the directory's `README.md`, body lessons are numbered `.md` files.
+- Frontmatter contract fields: `title` (`NN · 标题`), `description`; missing fields degrade to filename / first H1.
+- VitePress container syntax (`::: warning 标题 ... :::`) is converted to callout blocks in the render pipeline.
+- Relative links and `_assets/` image paths are rewritten to in-site routes; assets are copied to `public/knowledge-assets/` by a prebuild script.
+- Anchor links must scroll the page to the real target heading.
 
-## 提交规范
+## Commit Convention
 
-- Angular Convention（`feat(scope): ...`）
-- 不加 `Co-Authored-By` 等任何 AI 署名
-- 提交只含一个逻辑主题
+- Angular Convention (`feat(scope): ...`).
+- No `Co-Authored-By` or any AI sign-off.
+- One commit = one logical topic.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
