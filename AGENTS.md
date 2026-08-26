@@ -35,6 +35,10 @@ npm run typecheck    # tsc --noEmit
 - Files created in this repo (components, scripts, docs, quiz banks, etc.) use **English names, no numeric prefixes**.
 - Knowledge-base submodule content is exempt (its naming is governed by the kline-buty repo).
 
+## Reuse First
+
+Prefer what's already installed over hand-rolled code: check `package.json` for a dependency that covers the need before writing your own, and grep `src/lib/` + `src/components/` for an existing util/component before creating a new one. Add a new dependency only when nothing installed or built-in fits, and state why in the PR.
+
 ## Knowledge-Base Contract (build dependency; changes need sync)
 
 This site's parsing depends on the following kline-buty structures (2026-08 bilingual restructure). Evaluate the impact whenever the kline-buty repo is restructured:
