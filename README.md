@@ -1,98 +1,100 @@
 # Trade Buty
 
-面向全球中文用户的**免费中立交易教育平台**：分级课程（学）× 真实行情图表与历史回放（练）。
+**English** | [中文](README.zh-CN.md)
 
-> 不荐股 · 不导流 · 不承诺收益 · 基础课程永久免费
+A free, neutral trading-education platform for Chinese-speaking users worldwide: graded courses (Learn) × real market charts and historical replay (Practice).
 
-**在线访问**：<https://trade-buty.vercel.app>
+> No stock picks · No broker referrals · No return promises · Core courses free forever
 
-## 产品形态
+**Live**: <https://trade-buty.vercel.app>
 
-- **学**：27 篇章 / 173 篇课程的系统化交易知识库（源自开源项目 [kline-buty](https://github.com/sun1090/kline-buty)），三站式学习路线
-- **练**：真实行情 K 线图（币安 REST + WebSocket）、盲盒式历史回放训练、猜涨跌考核
-- **测**：27 章随堂测验（81 题全解析）、阅读进度追踪
-- **双语**：中英 UI 全覆盖（`/zh` `/en`），移动端 320px 适配
+## Product
 
-## 技术栈
+- **Learn**: 27 chapters / 173 lessons in a systematic trading knowledge base (sourced from the open-source [kline-buty](https://github.com/sun1090/kline-buty)), with a three-stage learning path.
+- **Practice**: real market K-line charts (Binance REST + WebSocket), blind-box historical replay training, up/down quizzes.
+- **Test**: 27 chapter quizzes (81 questions, all explained), reading-progress tracking.
+- **Bilingual**: full Chinese/English UI (`/zh` `/en`), mobile 320px-adapted.
 
-| 层 | 选择 |
+## Tech Stack
+
+| Layer | Choice |
 |---|---|
-| 框架 | Next.js 16 (App Router, SSG) · TypeScript · React 19 |
-| 样式 | Tailwind CSS v4（CSS-first 主题 token，暗色终端风） |
-| 图表 | lightweight-charts v5 |
-| 内容 | kline-buty 知识库以 git submodule 引用，宽容模式渲染管线 |
-| 搜索 | 构建时 JSON 索引 + 客户端检索 |
-| 质量 | ESLint · tsc · Vitest-ready · Playwright 视觉审计 · GitHub Actions CI |
+| Framework | Next.js 16 (App Router, SSG) · TypeScript · React 19 |
+| Styling | Tailwind CSS v4 (CSS-first theme tokens, dark terminal style) |
+| Charts | lightweight-charts v5 |
+| Content | kline-buty knowledge base as a git submodule, lenient rendering pipeline |
+| Search | build-time JSON index + client-side retrieval |
+| Quality | ESLint · tsc · Vitest-ready · Playwright visual audit · GitHub Actions CI |
 
-## 快速开始
+## Quick Start
 
 ```bash
 git clone https://github.com/Sun1090/trade-buty.git
 cd trade-buty
-git submodule update --init   # 拉取知识库内容
+git submodule update --init   # pull the knowledge base content
 npm install
 npm run dev                   # http://localhost:3000
 ```
 
-## 常用命令
+## Commands
 
 ```bash
-npm run dev         # 开发服务器
-npm run build       # 生产构建（prebuild 会同步资产/索引/契约校验）
+npm run dev         # dev server
+npm run build       # production build (prebuild syncs assets/index/contract checks)
 npm run lint        # ESLint
 npm run typecheck   # next typegen + tsc --noEmit
 ```
 
-## 项目结构
+## Project Structure
 
 ```
 src/
 ├── app/
-│   ├── [locale]/          # zh/en 双语路由（页面全部 SSG）
-│   │   ├── knowledge/     # 课程页：/[locale]/knowledge/{篇}/{节}
-│   │   ├── chart/         # 实时行情
-│   │   ├── replay/        # 回放训练器
-│   │   ├── path/          # 学习路线
-│   │   └── search/        # 站内搜索
+│   ├── [locale]/          # zh/en bilingual routes (all SSG)
+│   │   ├── knowledge/     # lesson pages: /[locale]/knowledge/{chapter}/{doc}
+│   │   ├── chart/         # live market
+│   │   ├── replay/        # replay trainer
+│   │   ├── path/          # learning path
+│   │   └── search/        # in-site search
 │   └── sitemap.ts robots.ts
-├── components/            # 图表 / 测验 / 进度等组件
-├── lib/                   # content(渲染管线) i18n quizzes progress binance
-├── middleware.ts          # 语言重定向
-scripts/                   # 资产同步 / 搜索索引 / 契约校验
+├── components/            # chart / quiz / progress components
+├── lib/                   # content (rendering pipeline) i18n quizzes progress binance
+├── middleware.ts          # locale redirect
+scripts/                   # asset sync / search index / contract checks
 docs/                      # plan.md research.md p2-research.md
-content/kline-buty/        # 知识库 submodule（只读）
+content/kline-buty/        # knowledge base submodule (read-only)
 ```
 
-## 文档
+## Docs
 
-- [`docs/plan.md`](docs/plan.md)：产品定位、内容宪法、分期路线（P0–P4）
-- [`docs/research.md`](docs/research.md)：六轮市场调研
-- [`docs/p2-research.md`](docs/p2-research.md)：账号与云端进度预研
-- [`AGENTS.md`](AGENTS.md)：Agent 工作规范与知识库契约
+- [`docs/plan.md`](docs/plan.md) — product positioning, content constitution, roadmap (P0–P4)
+- [`docs/research.md`](docs/research.md) — six rounds of market research
+- [`docs/p2-research.md`](docs/p2-research.md) — account & cloud progress pre-research
+- [`AGENTS.md`](AGENTS.md) — agent guidelines and knowledge-base contract
 
-## 路线图
+## Roadmap
 
-- ✅ P0 骨架：站点上线、搜索、SEO、CI/CD
-- ✅ P1 边学边练：行情图表、回放训练、测验体系、双语
-- ⬜ P2 账号与云端进度（见 `docs/p2-research.md`）
-- ⬜ P3 AI 陪学（错题驱动出题 + RAG）
-- ⬜ P4 打磨与增长
+- ✅ P0 Skeleton: site launch, search, SEO, CI/CD
+- ✅ P1 Learn + Practice: market charts, replay training, quiz system, bilingual
+- ⬜ P2 Account & cloud progress (see `docs/p2-research.md`)
+- ⬜ P3 AI study companion (wrong-question-driven quizzing + RAG)
+- ⬜ P4 Polish & growth
 
-## 免责声明
+## Disclaimer
 
-本站全部内容仅用于学习与研究，不构成任何投资建议。加密货币及金融衍生品交易风险极高，据此操作风险自负。行情数据来自[币安公开 API](https://binance.com)，使用时请遵守其服务条款。
+All content on this site is for learning and research only and does not constitute any investment advice. Cryptocurrency and financial-derivative trading carry extreme risk; you are responsible for your own actions. Market data comes from the [Binance public API](https://binance.com); comply with its terms of service when using it.
 
-## 许可
+## License
 
-MIT © sun1090（知识库内容版权归 kline-buty 项目所有）
+MIT © sun1090 (knowledge-base content is copyrighted by the kline-buty project)
 
-## 赞助
+## Sponsor
 
-如果这个项目对你有帮助，可以请作者喝杯咖啡，支持持续更新 ☕
+If you find this project helpful, consider buying the author a coffee to support ongoing development ☕
 
 <table>
   <tr>
-    <td align="center"><img src="public/donate-alipay.jpg" width="200" alt="支付宝赞赏码" /><br/>支付宝</td>
-    <td align="center"><img src="public/donate-wechat.jpg" width="200" alt="微信赞赏码" /><br/>微信</td>
+    <td align="center"><img src="public/donate-alipay.jpg" width="200" alt="Alipay QR" /><br/>Alipay</td>
+    <td align="center"><img src="public/donate-wechat.jpg" width="200" alt="WeChat QR" /><br/>WeChat</td>
   </tr>
 </table>
