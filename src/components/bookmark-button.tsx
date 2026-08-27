@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { isBookmarked, toggleBookmark } from "@/lib/bookmarks";
+
+function subscribeBookmarks(callback: () => void) {
+  window.addEventListener("tb-bookmarks", callback);
+  return () => window.removeEventListener("tb-bookmarks", callback);
+}
 
 export function BookmarkButton({
   chapter,
@@ -16,14 +21,11 @@ export function BookmarkButton({
   label: { bookmark: string; bookmarked: string };
   labeled?: boolean;
 }) {
-  const [active, setActive] = useState(false);
-
-  useEffect(() => {
-    setActive(isBookmarked(chapter, doc));
-    const onChange = () => setActive(isBookmarked(chapter, doc));
-    window.addEventListener("tb-bookmarks", onChange);
-    return () => window.removeEventListener("tb-bookmarks", onChange);
-  }, [chapter, doc]);
+  const active = useSyncExternalStore(
+    subscribeBookmarks,
+    () => isBookmarked(chapter, doc),
+    () => false, // SSR/SSG snapshot: assume not bookmarked until hydrated on the client.
+  );
 
   return (
     <button

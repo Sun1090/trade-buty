@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { getTheme, setTheme, type ThemeMode } from "@/lib/theme";
 
 const MODES: { key: ThemeMode; label: string; icon: string }[] = [
@@ -9,16 +9,18 @@ const MODES: { key: ThemeMode; label: string; icon: string }[] = [
   { key: "sepia", label: "Sepia", icon: "📜" },
 ];
 
+function subscribeTheme(callback: () => void) {
+  window.addEventListener("tb-theme", callback);
+  return () => window.removeEventListener("tb-theme", callback);
+}
+
 /** 三模式主题选择器 */
 export function ThemeSelector({ labels }: { labels: { dark: string; light: string; sepia: string } }) {
-  const [mode, setMode] = useState<ThemeMode>("dark");
-
-  useEffect(() => {
-    setMode(getTheme());
-    const onChange = () => setMode(getTheme());
-    window.addEventListener("tb-theme", onChange);
-    return () => window.removeEventListener("tb-theme", onChange);
-  }, []);
+  const mode = useSyncExternalStore(
+    subscribeTheme,
+    getTheme,
+    () => "dark" as ThemeMode, // SSR/SSG snapshot before client hydration.
+  );
 
   return (
     <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border)] p-0.5">

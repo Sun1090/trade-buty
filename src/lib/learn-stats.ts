@@ -70,7 +70,7 @@ export function aggregateStats(chapters: { slug: string; docCount: number }[]): 
 
   const chapterSlugs = Object.keys(QUIZZES);
   let quizzesDone = 0;
-  let scores: number[] = [];
+  const scores: number[] = [];
   for (const slug of chapterSlugs) {
     const p = readQuizProgress(slug);
     if (p?.done) {

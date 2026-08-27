@@ -20,6 +20,7 @@ export function ReplayTrend({
         acc: r.total > 0 ? Math.round((r.correct / r.total) * 100) : 0,
       }))
       .slice(-20); // 最近 20 轮
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPoints(h);
     const onChange = () => {
       const h2 = readReplayHistory()

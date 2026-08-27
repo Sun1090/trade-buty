@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { readActivityDates } from "@/lib/activity-calendar";
 
 const DAYS_ZH = ["日", "一", "二", "三", "四", "五", "六"];
@@ -8,9 +8,7 @@ const DAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 /** 近 7 天活动迷你条形图 */
 export function WeekMiniBar({ locale }: { locale: string }) {
-  const [bars, setBars] = useState<{ label: string; active: boolean }[]>([]);
-
-  useEffect(() => {
+  const bars = useMemo(() => {
     const dates = new Set(readActivityDates());
     const today = new Date();
     const days: { label: string; active: boolean }[] = [];
@@ -24,7 +22,7 @@ export function WeekMiniBar({ locale }: { locale: string }) {
         active: dates.has(dStr),
       });
     }
-    setBars(days);
+    return days;
   }, [locale]);
 
   return (

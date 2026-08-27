@@ -16,8 +16,11 @@ export function ReadingTimeTracker({
 }) {
   const chapterRef = useRef(chapter);
   const docRef = useRef(doc);
-  chapterRef.current = chapter;
-  docRef.current = doc;
+
+  useEffect(() => {
+    chapterRef.current = chapter;
+    docRef.current = doc;
+  }, [chapter, doc]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
