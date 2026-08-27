@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { getDailyGoal, setDailyGoal } from "@/lib/daily-goal";
+
+function subscribeGoal(callback: () => void) {
+  window.addEventListener("tb-goal", callback);
+  return () => window.removeEventListener("tb-goal", callback);
+}
 
 interface GoalDict {
   label: string;
@@ -17,15 +22,12 @@ export function DailyGoal({
   todayRead: number;
   dict: GoalDict;
 }) {
-  const [goal, setGoal] = useState(3);
+  const goal = useSyncExternalStore(
+    subscribeGoal,
+    getDailyGoal,
+    () => 3, // SSR/SSG snapshot before client hydration.
+  );
   const [editing, setEditing] = useState(false);
-
-  useEffect(() => {
-    setGoal(getDailyGoal());
-    const onChange = () => setGoal(getDailyGoal());
-    window.addEventListener("tb-goal", onChange);
-    return () => window.removeEventListener("tb-goal", onChange);
-  }, []);
 
   const pct = goal > 0 ? Math.min(100, Math.round((todayRead / goal) * 100)) : 0;
   const done = todayRead >= goal;
@@ -53,7 +55,7 @@ export function DailyGoal({
             defaultValue={goal}
             onChange={(e) => {
               const v = parseInt(e.target.value, 10);
-              if (!Number.isNaN(v)) setGoal(v);
+              if (!Number.isNaN(v)) setDailyGoal(v);
             }}
             className="w-16 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm text-center outline-none focus:border-accent/50"
           />

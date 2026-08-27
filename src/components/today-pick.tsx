@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLocalProgress } from "@/components/use-local-progress";
 
@@ -22,23 +21,24 @@ export function TodayPick({
   done: string;
 }) {
   const progress = useLocalProgress();
-  const [pick, setPick] = useState<{ chapter: string; doc: string; title: string; chapterTitle: string } | null>(null);
 
-  useEffect(() => {
-    for (const ch of chapters) {
-      const read = new Set(progress?.[ch.slug] ?? []);
-      const unread = ch.docs.find((d) => !read.has(d.slug));
-      if (unread) {
-        setPick({ chapter: ch.slug, doc: unread.slug, title: unread.title, chapterTitle: ch.title });
-        return;
-      }
+  // 渲染期直接派生：逻辑轻量（遍历找第一篇未读），无需 memo。
+  let pick: { chapter: string; doc: string; title: string; chapterTitle: string } | null = null;
+  for (const ch of chapters) {
+    const read = new Set(progress?.[ch.slug] ?? []);
+    const unread = ch.docs.find((d) => !read.has(d.slug));
+    if (unread) {
+      pick = { chapter: ch.slug, doc: unread.slug, title: unread.title, chapterTitle: ch.title };
+      break;
     }
-    // 全部已读，推荐第一章第一篇
+  }
+  // 全部已读，推荐第一章第一篇
+  if (!pick) {
     const first = chapters[0]?.docs[0];
     if (first) {
-      setPick({ chapter: chapters[0].slug, doc: first.slug, title: first.title, chapterTitle: chapters[0].title });
+      pick = { chapter: chapters[0].slug, doc: first.slug, title: first.title, chapterTitle: chapters[0].title };
     }
-  }, [progress, chapters]);
+  }
 
   if (!pick) return null;
 

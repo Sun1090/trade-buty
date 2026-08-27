@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { execSync } from "child_process";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -13,7 +14,6 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/changelo
 /** 从 git log 获取最近变更 */
 function getRecentChanges(): { hash: string; date: string; message: string }[] {
   try {
-    const { execSync } = require("child_process");
     const output = execSync("git log --oneline --date=short --format='%h|%ad|%s' -15", {
       cwd: process.cwd(),
       encoding: "utf-8",

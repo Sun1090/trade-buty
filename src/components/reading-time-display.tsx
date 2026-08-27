@@ -15,6 +15,7 @@ export function ReadingTimeDisplay({
   const [time, setTime] = useState(0);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTime(getReadingTime(chapter, doc));
     // 页面停留时每 5 秒刷新显示
     const t = setInterval(() => setTime(getReadingTime(chapter, doc)), 5000);

@@ -17,11 +17,13 @@ export function FontSizeControl({ labels }: { labels: { smaller: string; larger:
     try {
       const v = parseFloat(localStorage.getItem(KEY) ?? "1");
       if (!isNaN(v) && v >= MIN && v <= MAX) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setScale(v);
         applyScale(v);
       }
       const lhv = parseFloat(localStorage.getItem(LH_KEY) ?? "1.85");
       if (!isNaN(lhv)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLh(lhv);
         applyLh(lhv);
       }

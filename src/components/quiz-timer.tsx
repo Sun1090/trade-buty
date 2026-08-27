@@ -8,6 +8,7 @@ export function QuizTimer({ running }: { running: boolean }) {
 
   useEffect(() => {
     if (!running) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setElapsed(0);
       return;
     }

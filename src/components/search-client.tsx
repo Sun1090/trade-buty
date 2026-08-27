@@ -69,6 +69,7 @@ export function SearchClient({
   const PAGE_SIZE = 20;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const visibleResults = results.slice(0, visibleCount);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setVisibleCount(PAGE_SIZE), [query]);
 
   // 所有篇章（用于筛选 dropdown）

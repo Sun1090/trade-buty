@@ -34,6 +34,7 @@ export function ReviewClient({
 }) {
   const [wrong, setWrong] = useState<Record<string, WrongEntry> | null>(null);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
+  const [redo, setRedo] = useState<{ item: Item; picked: number | null } | null>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -90,6 +91,13 @@ export function ReviewClient({
     );
   }
 
+  const groups = new Map<string, Item[]>();
+  for (const item of items) {
+    const title = item.quiz.title;
+    if (!groups.has(title)) groups.set(title, []);
+    groups.get(title)!.push(item);
+  }
+
   // 按篇章分组
   function exportText() {
     const lines: string[] = ["Trade Buty 错题本导出", `导出时间：${new Date().toLocaleString()}`, ""];
@@ -111,14 +119,6 @@ export function ReviewClient({
     a.click();
     URL.revokeObjectURL(url);
   }
-  const groups = new Map<string, Item[]>();
-  for (const item of items) {
-    const title = item.quiz.title;
-    if (!groups.has(title)) groups.set(title, []);
-    groups.get(title)!.push(item);
-  }
-
-  const [redo, setRedo] = useState<{ item: Item; picked: number | null } | null>(null);
 
   function startRedo() {
     const random = items[Math.floor(Math.random() * items.length)];

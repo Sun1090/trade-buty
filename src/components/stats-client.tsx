@@ -50,6 +50,7 @@ export function StatsClient({
   const progress = useLocalProgress();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStats(aggregateStats(chapters));
     const onChange = () => setStats(aggregateStats(chapters));
     window.addEventListener("tb-progress", onChange);

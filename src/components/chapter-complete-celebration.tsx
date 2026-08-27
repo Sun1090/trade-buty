@@ -24,6 +24,7 @@ export function ChapterCompleteCelebration({
       const done = read >= docCount;
 
       if (done && !prevDoneRef.current) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setShow(true);
         const t = setTimeout(() => setShow(false), 3000);
         prevDoneRef.current = true;
