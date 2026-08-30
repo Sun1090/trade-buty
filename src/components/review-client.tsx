@@ -161,6 +161,18 @@ export function ReviewClient({
 
   return (
     <div className="space-y-8">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent-dim)] p-4 sm:col-span-2">
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent">{locale === "en" ? "Today’s review" : "今天的复习任务"}</p>
+          <p className="mt-2 text-lg font-bold">{locale === "en" ? `${items.length} questions waiting` : `还有 ${items.length} 道题等你掌握`}</p>
+          <p className="mt-1 text-sm text-muted">{locale === "en" ? "Reveal the answer, explain it in your own words, then mark it resolved." : "先看答案，再用自己的话解释，最后标记为已掌握。"}</p>
+        </div>
+        <button onClick={startRedo} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-left transition hover:border-accent/50 hover:bg-[var(--surface-hover)]">
+          <span className="text-2xl" aria-hidden>🎯</span>
+          <span className="mt-2 block text-sm font-semibold">{locale === "en" ? "Start a quick redo" : "开始快速重答"}</span>
+          <span className="mt-1 block text-xs text-faint">{locale === "en" ? "Random question" : "随机抽一题"} →</span>
+        </button>
+      </div>
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-muted">{items.length}</p>
         <div className="flex items-center gap-2">
