@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, LOCALES } from "@/lib/i18n";
+import { HeroCard } from "@/components/hero-card";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -44,11 +45,8 @@ export default async function FaqPage({ params }: PageProps<"/[locale]/faq">) {
     : FAQ_ZH;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-5 py-10">
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">FAQ</p>
-        <h1 className="text-2xl font-bold mt-3">{en ? "Frequently Asked Questions" : "常见问题"}</h1>
-      </div>
+    <div className="mx-auto max-w-5xl px-4 sm:px-5 py-10 sm:py-14">
+      <HeroCard label="FAQ" title={en ? "Frequently Asked Questions" : "常见问题"} />
       <ul className="space-y-6">
         {faqs.map((item, i) => (
           <li key={i} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
