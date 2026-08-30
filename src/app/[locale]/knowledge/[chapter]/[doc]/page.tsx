@@ -101,6 +101,7 @@ export default async function DocPage({
   const chapterData = getChapter(locale, chapterSlug);
   const chapter = chapterData?.chapter;
   const docMetas = getDocMetas(locale, chapterSlug);
+  const lessonIndex = Math.max(0, docMetas.findIndex((meta) => meta.slug === docSlug));
   const { prev: prevChapter, next: nextChapter } = getAdjacentChapters(locale, chapterSlug);
   const nextChapterMeta = nextChapter
     ? {
@@ -157,6 +158,15 @@ export default async function DocPage({
       {/* 课程标题 hero 区 */}
       <header className="mb-8 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-6 sm:p-8">
         <MarkRead chapterNum={chapterSlug} docSlug={docSlug} />
+        <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-accent">
+          <span className="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1">
+            {locale === "zh" ? "课程单元" : "Lesson"} {String(lessonIndex + 1).padStart(2, "0")}
+          </span>
+          <span className="text-faint">/</span>
+          <span className="text-faint">
+            {lessonIndex + 1} / {docMetas.length} {locale === "zh" ? "节" : "lessons"}
+          </span>
+        </div>
         <h1 className="mt-4 text-2xl sm:text-3xl font-bold">{doc.title}</h1>
         {doc.description && (
           <p className="mt-2 text-sm text-muted leading-relaxed">
