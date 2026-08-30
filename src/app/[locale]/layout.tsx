@@ -44,19 +44,22 @@ export default async function LocaleLayout({
               {t.brand.badge}
             </span>
           </Link>
-          <MobileNav
-            locale={locale}
-            items={[
-              { href: "/path", label: t.nav.path, icon: "📚" },
-              { href: "/chart", label: t.nav.chart, icon: "📈" },
-              { href: "/replay", label: t.nav.replay, icon: "⏮" },
-              { href: "/review", label: t.nav.review, icon: "✎" },
-              { href: "/search", label: t.nav.search, icon: "🔍" },
-              { href: "/ai", label: t.ai.nav, icon: "🤖" },
-              { href: "/stats", label: t.stats.nav, icon: "📊" },
-              { href: "/bookmarks", label: t.bookmarks.nav, icon: "★" },
-            ]}
-          />
+          <div className="sm:hidden flex items-center gap-1">
+            <MobileNav
+              locale={locale}
+              items={[
+                { href: "/path", label: t.nav.path, icon: "📚" },
+                { href: "/chart", label: t.nav.chart, icon: "📈" },
+                { href: "/replay", label: t.nav.replay, icon: "⏮" },
+                { href: "/review", label: t.nav.review, icon: "✎" },
+                { href: "/search", label: t.nav.search, icon: "🔍" },
+                { href: "/ai", label: t.ai.nav, icon: "🤖" },
+                { href: "/stats", label: t.stats.nav, icon: "📊" },
+                { href: "/bookmarks", label: t.bookmarks.nav, icon: "★" },
+              ]}
+            />
+            <AuthHeader locale={locale} dict={t.auth} />
+          </div>
           <nav className="hidden sm:flex text-sm items-center gap-0.5 sm:gap-1">
             <Link
               href={p("/path")}
