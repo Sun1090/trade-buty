@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { execSync } from "child_process";
-import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { isLocale, LOCALES } from "@/lib/i18n";
+import { HeroCard } from "@/components/hero-card";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -37,15 +38,8 @@ export default async function ChangelogPage({ params }: PageProps<"/[locale]/cha
   const changes = getRecentChanges();
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-5 py-10">
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-          {locale === "en" ? "Changelog" : "更新日志"}
-        </p>
-        <h1 className="text-2xl font-bold mt-3">
-          {locale === "en" ? "What's new" : "最近更新"}
-        </h1>
-      </div>
+    <div className="mx-auto max-w-4xl px-4 sm:px-5 py-10 sm:py-14">
+      <HeroCard label={locale === "en" ? "Changelog" : "更新日志"} title={locale === "en" ? "What's new" : "最近更新"} />
       {changes.length === 0 ? (
         <p className="text-sm text-muted">{locale === "en" ? "No changelog data available." : "暂无更新日志。"}</p>
       ) : (
