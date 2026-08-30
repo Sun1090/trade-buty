@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { HeroCard } from "@/components/hero-card";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -15,9 +16,10 @@ export default async function PrivacyPage({ params }: PageProps<"/[locale]/priva
   if (!isLocale(locale)) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-5 py-10 space-y-6 text-sm text-muted leading-relaxed">
-      <h1 className="text-2xl font-bold">{locale === "en" ? "Privacy Policy" : "隐私政策"}</h1>
-      <p>{locale === "en" ? "Last updated: 2026" : "更新日期：2026 年"}</p>
+    <div className="mx-auto max-w-4xl px-4 sm:px-5 py-10 sm:py-14 space-y-6 text-sm text-muted leading-relaxed">
+      <HeroCard label={locale === "en" ? "Your data" : "你的数据"} title={locale === "en" ? "Privacy Policy" : "隐私政策"}>
+        {locale === "en" ? "Last updated: 2026" : "更新日期：2026 年"}
+      </HeroCard>
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{locale === "en" ? "Data We Collect" : "我们收集的数据"}</h2>
         <p>{locale === "en" ? "Trade Buty does not collect personal data. All learning progress (read status, quiz results, replay history) is stored locally in your browser's localStorage. No data is sent to our servers unless you choose to log in with email." : "Trade Buty 不收集个人数据。所有学习进度（已读状态、测验成绩、回放记录）仅存储在浏览器的 localStorage 中。除非你选择登录，否则不会向服务器发送任何数据。"}</p>
