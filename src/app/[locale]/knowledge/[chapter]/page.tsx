@@ -16,6 +16,7 @@ import { DocList } from "@/components/doc-list";
 import { ChapterCompleteCelebration } from "@/components/chapter-complete-celebration";
 import { Collapsible } from "@/components/collapsible";
 import { ChapterSummaryAi } from "@/components/chapter-summary-ai";
+import { TodayPick } from "@/components/today-pick";
 
 export function generateStaticParams() {
   return LOCALES.flatMap((locale) =>
@@ -114,6 +115,14 @@ export default async function ChapterPage({
       </section>
 
       <ChapterCompleteCelebration chapterSlug={slug} docCount={docs.length} />
+
+      <TodayPick
+        chapters={[{ slug, title: chapter.title, docs: docs.map((d) => ({ slug: d.slug, title: d.title })) }]}
+        locale={locale}
+        label={locale === "en" ? "Continue this course" : "继续本章学习"}
+        hint={locale === "en" ? "Next lesson" : "下一节课程"}
+        done={locale === "en" ? "Course complete" : "本章已完成"}
+      />
 
       {introContent && (
         <section className="mt-8 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">

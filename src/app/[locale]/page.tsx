@@ -8,6 +8,7 @@ import { GlobalReadStat } from "@/components/global-read-stat";
 import { StreakBadge } from "@/components/streak-badge";
 import { MarketTicker } from "@/components/market-ticker";
 import { DailyTip } from "@/components/daily-tip";
+import { TodayPick } from "@/components/today-pick";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -31,6 +32,11 @@ export default async function Home({
 
   const chapters = getChapters(locale);
   const totalDocs = chapters.reduce((s, c) => s + c.docCount, 0);
+  const learningChapters = chapters.map((c) => ({
+    slug: c.slug,
+    title: c.title,
+    docs: getDocMetas(locale, c.slug).map((d) => ({ slug: d.slug, title: d.title })),
+  }));
 
   return (
     <div>
@@ -90,6 +96,13 @@ export default async function Home({
               textTpl={t.home.readTpl}
               keepGoing={t.home.readKeepGoing}
               syncedLabel={t.home.syncedLabel}
+            />
+            <TodayPick
+              chapters={learningChapters}
+              locale={locale}
+              label={locale === "en" ? "Continue learning" : "继续学习"}
+              hint={locale === "en" ? "Your next lesson" : "下一节课程"}
+              done={locale === "en" ? "All lessons complete" : "全部课程已完成"}
             />
             <div className="mt-3">
               <StreakBadge labels={{ current: "current", longest: t.home.streakLongest, days: t.home.streakDays }} />

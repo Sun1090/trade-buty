@@ -32,8 +32,8 @@ export function TodayPick({
       break;
     }
   }
-  // 全部已读，推荐第一章第一篇
-  if (!pick) {
+  const allDone = !pick;
+  if (allDone) {
     const first = chapters[0]?.docs[0];
     if (first) {
       pick = { chapter: chapters[0].slug, doc: first.slug, title: first.title, chapterTitle: chapters[0].title };
@@ -51,7 +51,7 @@ export function TodayPick({
         {label}
       </p>
       <p className="mt-2 font-semibold">{pick.title}</p>
-      <p className="mt-1 text-sm text-muted">{hint} · {pick.chapterTitle}</p>
+      <p className="mt-1 text-sm text-muted">{allDone ? done : `${hint} · ${pick.chapterTitle}`}</p>
     </Link>
   );
 }
