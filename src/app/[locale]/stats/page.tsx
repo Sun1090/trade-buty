@@ -26,7 +26,7 @@ export default async function StatsPage({
   const chapters = getChapters(locale).map((c) => ({ slug: c.slug, docCount: c.docCount }));
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-5 py-10">
+    <div className="mx-auto max-w-6xl px-4 sm:px-5 py-10 sm:py-14">
       <HeroCard label={t.stats.label} title={t.stats.title}>
         {t.stats.subtitle}
       </HeroCard>

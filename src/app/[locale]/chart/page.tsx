@@ -26,7 +26,7 @@ export default async function ChartPage({
   const t = getDict(locale);
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-12">
+    <div className="mx-auto max-w-6xl px-5 py-10 sm:py-14">
       <HeroCard label={t.chart.label} title={t.chart.title}>
         {t.chart.intro}
       </HeroCard>

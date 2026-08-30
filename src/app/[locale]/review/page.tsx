@@ -25,7 +25,7 @@ export default async function ReviewPage({
   const t = getDict(locale);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 sm:px-5 py-10">
+    <div className="mx-auto max-w-5xl px-4 sm:px-5 py-10 sm:py-14">
       <HeroCard label={t.review.label} title={t.review.title}>
         {t.review.intro}
       </HeroCard>
