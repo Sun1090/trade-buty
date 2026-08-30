@@ -30,6 +30,19 @@ export default async function ReplayPage({
       <HeroCard label={dict.replay.label} title={dict.replay.title}>
         {dict.replay.intro}
       </HeroCard>
+      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        {[
+          ["01", locale === "zh" ? "观察" : "Observe", locale === "zh" ? "先看走势，不急着猜。" : "Read the move before guessing."],
+          ["02", locale === "zh" ? "决策" : "Decide", locale === "zh" ? "选择上涨或下跌，记录判断。" : "Choose up or down and commit."],
+          ["03", locale === "zh" ? "复盘" : "Review", locale === "zh" ? "看准确率和连击，找到模式。" : "Use accuracy and streaks to improve."],
+        ].map(([number, title, body]) => (
+          <div key={number} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+            <span className="font-mono text-xs text-accent">{number}</span>
+            <p className="mt-3 text-sm font-semibold">{title}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted">{body}</p>
+          </div>
+        ))}
+      </div>
       <ReplayTrainer dict={dict.replay} />
       <ReplayHistory
         dict={{
