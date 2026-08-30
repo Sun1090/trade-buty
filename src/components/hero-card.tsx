@@ -15,7 +15,7 @@ export function HeroCard({
 }) {
   return (
     <header
-      className={`relative overflow-hidden mb-8 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-6 sm:p-8 ${className}`}
+      className={`relative isolate overflow-hidden mb-8 rounded-3xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-6 shadow-[0_20px_60px_-35px_rgba(52,211,153,.35)] sm:p-9 ${className}`}
     >
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.03]"
@@ -26,13 +26,15 @@ export function HeroCard({
         }}
         aria-hidden
       />
+      <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-accent/10 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute bottom-0 left-0 h-px w-2/3 bg-gradient-to-r from-accent/60 to-transparent" aria-hidden />
       <div className="relative">
         {label && (
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
             {label}
           </p>
         )}
-        <h1 className="text-2xl sm:text-3xl font-bold mt-3">{title}</h1>
+        <h1 className="mt-3 max-w-2xl text-2xl font-bold tracking-tight sm:text-4xl">{title}</h1>
         {children && (
           <div className="mt-3 text-sm text-muted leading-relaxed">
             {children}

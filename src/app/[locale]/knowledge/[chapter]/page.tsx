@@ -78,7 +78,7 @@ export default async function ChapterPage({
   const { next: nextChapter } = getAdjacentChapters(locale, slug);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 sm:px-5 py-10">
+    <div className="mx-auto max-w-5xl px-4 sm:px-5 py-10 sm:py-14">
       <nav className="text-sm text-muted mb-6">
         <Link href={p("/")} className="hover:text-accent">
           {t.nav.path}

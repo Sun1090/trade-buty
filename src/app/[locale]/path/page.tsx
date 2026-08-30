@@ -43,7 +43,7 @@ export default async function PathPage({
   }));
 
   return (
-    <div className="mx-auto max-w-4xl px-5 py-14">
+    <div className="mx-auto max-w-6xl px-5 py-10 sm:py-14">
       <header className="max-w-xl">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
           {t.path.label}
@@ -75,7 +75,7 @@ export default async function PathPage({
       />
 
       {/* 入门主线 */}
-      <section className="mt-16">
+      <section className="mt-14 rounded-3xl border border-[var(--border)] bg-[var(--surface)]/50 p-5 sm:p-8">
         <header>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
             {core.stageText.label}
@@ -121,7 +121,7 @@ export default async function PathPage({
 
       {/* 进阶 / 深潜 */}
       {[practice, deep].map((g) => (
-        <section key={g.stage.id} className="mt-20">
+        <section key={g.stage.id} className="mt-14 rounded-3xl border border-[var(--border)] bg-[var(--surface)]/30 p-5 sm:p-8">
           <header>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
               {g.stageText.label}
