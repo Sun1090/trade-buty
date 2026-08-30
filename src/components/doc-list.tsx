@@ -60,8 +60,9 @@ export function DocList({
         </div>
       </div>
       <ol className="space-y-2.5">
-        {sorted.map((d, i) => {
+        {sorted.map((d) => {
           const read = readSet.has(d.slug);
+          const lessonNumber = metas.findIndex((meta) => meta.slug === d.slug) + 1;
           return (
             <li key={d.slug}>
               <Link
@@ -81,7 +82,7 @@ export function DocList({
                         : "border-[var(--border-strong)] text-faint"
                     }`}
                   >
-                    {read ? "✓" : String(i + 1).padStart(2, "0")}
+                    {read ? "✓" : String(lessonNumber).padStart(2, "0")}
                   </span>
                   <span className="font-medium group-hover:text-accent transition-colors">
                     {d.title}
