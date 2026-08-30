@@ -34,7 +34,7 @@ export default async function LocaleLayout({
   const p = (path: string) => `/${locale}${path}`;
 
   return (
-    <>
+    <AuthProvider>
       <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md" style={{ boxShadow: "inset 0 -1px 0 rgba(52,211,153,0.08)" }}>
         <div className="mx-auto max-w-6xl px-4 sm:px-5 h-14 sm:h-16 flex items-center justify-between">
           <Link href={p("/")} className="flex items-center gap-2 font-bold tracking-tight">
@@ -126,7 +126,7 @@ export default async function LocaleLayout({
           <BookmarkCount label={t.bookmarks.nav} />
         </div>
       </header>
-      <main className="flex-1"><AuthProvider>{children}</AuthProvider></main>
+      <main className="flex-1">{children}</main>
       <SearchHotkey locale={locale} />
       <footer className="border-t border-[var(--border)] mt-24" style={{ boxShadow: "inset 0 1px 0 rgba(52,211,153,0.06)" }}>
         <div className="mx-auto max-w-6xl px-5 py-10 grid gap-8 sm:grid-cols-[1fr_auto]">
@@ -185,6 +185,6 @@ export default async function LocaleLayout({
           </div>
         </div>
       </footer>
-    </>
+    </AuthProvider>
   );
 }
