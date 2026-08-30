@@ -30,6 +30,10 @@ export default async function ChartPage({
       <HeroCard label={t.chart.label} title={t.chart.title}>
         {t.chart.intro}
       </HeroCard>
+      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-accent/20 bg-accent/5 p-4 text-sm">
+        <span className="text-xl" aria-hidden>🧭</span>
+        <p className="text-muted">{locale === "zh" ? "练习方法：先描述趋势，再标出关键位置，最后回到课程验证你的判断。" : "Practice loop: describe the trend, mark key levels, then return to the lesson to verify your reasoning."}</p>
+      </div>
       <div className="flex items-center justify-between mb-3">
         <p className="text-xs font-mono text-faint">BTCUSDT · 4H</p>
         <FullscreenToggle targetId="chart-container" label={{ enter: "全屏", exit: "退出" }} />
