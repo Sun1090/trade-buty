@@ -63,7 +63,7 @@ export function SearchClient({
       .filter(({ s }) => s > 0)
       .sort((a, b) => b.s - a.s)
       .map(({ e }) => e);
-  }, [query, entries]);
+  }, [debouncedQ, entries]);
 
   // 分页：前 20 条 + 加载更多
   const PAGE_SIZE = 20;
