@@ -188,7 +188,27 @@ export async function hydrateFromCloud(id: string) {
   ]);
 
   if (progressRes.data) {
-    writeLocalJson("tb-progress", mergeProgress(readLocalJson<ProgressMap>("tb-progress", {}), progressRes.data as CloudProgress[]));
+    const merged = mergeProgress(
+      readLocalJson<ProgressMap>("tb-progress", {}),
+      progressRes.data as CloudProgress[],
+    );
+    writeLocalJson("tb-progress", merged);
+
+    // 首次登录时，把登录前仅存在 localStorage 的进度补写到云端，
+    // 否则合并结果只停留在当前设备，换设备仍会丢失。
+    const localRows = Object.entries(merged).flatMap(([chapterNum, docs]) =>
+      docs.map((docSlug) => ({
+        user_id: id,
+        chapter_num: chapterNum,
+        doc_slug: docSlug,
+      })),
+    );
+    if (localRows.length > 0) {
+      await getSupabaseBrowser().from("progress").upsert(localRows, {
+        onConflict: "user_id,chapter_num,doc_slug",
+        ignoreDuplicates: true,
+      });
+    }
   }
 
   if (wrongRes.data) {
