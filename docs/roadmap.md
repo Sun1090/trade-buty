@@ -24,7 +24,7 @@
 - [x] Q2.2 Bundle 体积预算（`npm run check:bundle`，内容页 280KB/chart 360KB，CI 阻断；基线 217KB 为框架固定成本）
 - [x] Q2.3 Lighthouse CI（三页门禁：a11y/bp/seo≥90 error，性能≥70 warn；实测首页87/课程95/图表65）
 - [ ] Q2.4 a11y 抽查：键盘全程可操作（测验答题、回放控制、灯箱 ESC）、焦点可见、表单 label
-- [ ] Q2.5 320px 回归：新增页面必须过 Playwright 溢出检查（沿用既有脚本模式）
+- [x] Q2.5 320px 回归（`npm run check:mobile`，12 关键页，CI 阻断；修掉 path/knowledge-graph 两处 grid truncate 溢出）
 - [ ] Q2.6 错误边界覆盖率：图表/搜索/AI 三个外部依赖入口都有降级 UI
 - [ ] Q2.7 [手动] Sentry（或同类）错误监控接入 + 告警通道
 - [ ] Q2.8 [手动] RLS/越权/双设备同步线上联调（需 Supabase keys）
