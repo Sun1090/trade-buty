@@ -134,7 +134,7 @@ export default async function PathPage({
               <Link
                 key={c.slug}
                 href={p(`/knowledge/${c.slug}`)}
-                className="group flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] transition"
+                className="group min-w-0 flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] transition"
               >
                 <span className="flex items-baseline gap-3 min-w-0">
                   <span className="font-mono text-xs text-accent/70">{String(c.order).padStart(2, "0")}</span>
