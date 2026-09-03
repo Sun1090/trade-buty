@@ -13,7 +13,8 @@
     "kb:update": "bash scripts/update-knowledge.sh",
     "test": "vitest run",
     "analyze": "ANALYZE=true next build",
-    "kb:parity": "node scripts/check-locale-parity.mjs"
+    "kb:parity": "node scripts/check-locale-parity.mjs",
+    "check:links": "node scripts/check-links.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
