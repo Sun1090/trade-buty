@@ -15,7 +15,8 @@
     "analyze": "ANALYZE=true next build",
     "kb:parity": "node scripts/check-locale-parity.mjs",
     "check:links": "node scripts/check-links.mjs",
-    "check:search-index": "node scripts/check-search-index.mjs"
+    "check:search-index": "node scripts/check-search-index.mjs",
+    "check:bundle": "node scripts/check-bundle.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
