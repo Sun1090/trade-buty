@@ -11,7 +11,7 @@
 
 - [x] Q1.1 `kb:update` 一条龙（拉取 + 契约校验 + 索引/资产同步 + 构建回归）
 - [x] Q1.2 en 中英 parity 跟踪脚本（`npm run kb:parity`，--strict 可做门禁；当前 27/27 全齐）
-- [ ] Q1.3 死链检查脚本：全站内部链接 vs 构建产物交叉验证，CI 失败阻断
+- [x] Q1.3 死链检查脚本（`npm run check:links`，436 页/8052 链接零死链，CI 阻断；2 处 en 锚点告警已定位为上游翻译遗留）
 - [ ] Q1.4 搜索索引质量检查：索引条目与实际页面 1:1 对账（孤儿条目报警）
 - [ ] Q1.5 frontmatter 质量门禁已在 prebuild（缺 title/description 报警）——确认 CI 日志可见
 - [ ] Q1.6 KB 更新演练月度化：每月跑一次 kb:update 并记录变更（docs 下 changelog 片段）
