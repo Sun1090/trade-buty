@@ -44,4 +44,23 @@ describe("i18n", () => {
     const enKeys = Object.keys(getDict("en").nav);
     expect(zhKeys).toEqual(enKeys);
   });
+
+  it("zh 和 en 全字典深层键一致（含嵌套）", () => {
+    function keysOf(obj: unknown, prefix = ""): string[] {
+      if (typeof obj === "function") return [prefix];
+      if (obj === null || typeof obj !== "object") return [prefix];
+      if (Array.isArray(obj)) return [prefix];
+      return Object.entries(obj as Record<string, unknown>).flatMap(([k, v]) =>
+        keysOf(v, prefix ? `${prefix}.${k}` : k)
+      );
+    }
+    const zhKeys = keysOf(getDict("zh")).sort();
+    const enKeys = keysOf(getDict("en")).sort();
+    const missingInEn = zhKeys.filter((k) => !enKeys.includes(k));
+    const missingInZh = enKeys.filter((k) => !zhKeys.includes(k));
+    expect({ missingInEn, missingInZh }).toEqual({
+      missingInEn: [],
+      missingInZh: [],
+    });
+  });
 });
