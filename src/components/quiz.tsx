@@ -185,16 +185,18 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
             else cls = "border-[var(--border)] opacity-50";
           }
           return (
-            <li
-              key={i}
-              onClick={() => pick(i)}
-              className={`rounded-xl border px-4 py-3 text-sm transition ${cls} ${picked !== null ? "" : "cursor-pointer"}`}
-              role={picked === null ? "button" : undefined}
-            >
-              <span className="font-mono text-xs text-faint mr-2">
-                {String.fromCharCode(65 + i)}
-              </span>
-              {opt}
+            <li key={i}>
+              <button
+                onClick={() => pick(i)}
+                disabled={picked !== null}
+                aria-label={`${String.fromCharCode(65 + i)}. ${opt}`}
+                className={`w-full text-left rounded-xl border px-4 py-3 text-sm transition focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:cursor-default ${cls}`}
+              >
+                <span className="font-mono text-xs text-faint mr-2" aria-hidden>
+                  {String.fromCharCode(65 + i)}
+                </span>
+                {opt}
+              </button>
             </li>
           );
         })}

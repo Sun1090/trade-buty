@@ -45,9 +45,19 @@ describe("Quiz", () => {
     const { container } = render(<Quiz quiz={quiz} dict={dict} />);
     fireEvent.click(container.querySelector("button")!);
     // 选第二个选项（正确答案 answer=1）
-    const opts = container.querySelectorAll("ul li");
+    const opts = container.querySelectorAll("ul li button");
     expect(opts.length).toBe(3);
     fireEvent.click(opts[1]);
     expect(container.textContent).toContain("对");
+  });
+
+  it("选项是原生 button：键盘可聚焦并回车作答", () => {
+    const { container } = render(<Quiz quiz={quiz} dict={dict} />);
+    fireEvent.click(container.querySelector("button")!);
+    const first = container.querySelector("ul li button") as HTMLElement;
+    expect(first.tagName).toBe("BUTTON");
+    expect(first.hasAttribute("disabled")).toBe(false);
+    first.focus();
+    expect(document.activeElement).toBe(first);
   });
 });
