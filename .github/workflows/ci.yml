@@ -30,3 +30,4 @@ jobs:
       - run: npm run build
       - run: npm run check:links
       - run: npm run check:search-index
+      - run: npm run check:bundle

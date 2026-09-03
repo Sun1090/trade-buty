@@ -21,7 +21,7 @@
 ## Q2 质量门禁（Q2.1–Q2.8）
 
 - [x] Q2.1 i18n 深层 parity 测试（全字典递归比对，CI 常驻）
-- [ ] Q2.2 Bundle 体积预算：CI 检查首屏 JS 上限（如 >350KB 失败），防图表库泄漏回内容页
+- [x] Q2.2 Bundle 体积预算（`npm run check:bundle`，内容页 280KB/chart 360KB，CI 阻断；基线 217KB 为框架固定成本）
 - [ ] Q2.3 Lighthouse CI：首页 + 典型课程页 + 图表页三阈值（性能/可访问性/SEO）
 - [ ] Q2.4 a11y 抽查：键盘全程可操作（测验答题、回放控制、灯箱 ESC）、焦点可见、表单 label
 - [ ] Q2.5 320px 回归：新增页面必须过 Playwright 溢出检查（沿用既有脚本模式）
