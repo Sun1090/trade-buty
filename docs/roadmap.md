@@ -22,7 +22,7 @@
 
 - [x] Q2.1 i18n 深层 parity 测试（全字典递归比对，CI 常驻）
 - [x] Q2.2 Bundle 体积预算（`npm run check:bundle`，内容页 280KB/chart 360KB，CI 阻断；基线 217KB 为框架固定成本）
-- [ ] Q2.3 Lighthouse CI：首页 + 典型课程页 + 图表页三阈值（性能/可访问性/SEO）
+- [x] Q2.3 Lighthouse CI（三页门禁：a11y/bp/seo≥90 error，性能≥70 warn；实测首页87/课程95/图表65）
 - [ ] Q2.4 a11y 抽查：键盘全程可操作（测验答题、回放控制、灯箱 ESC）、焦点可见、表单 label
 - [ ] Q2.5 320px 回归：新增页面必须过 Playwright 溢出检查（沿用既有脚本模式）
 - [ ] Q2.6 错误边界覆盖率：图表/搜索/AI 三个外部依赖入口都有降级 UI
