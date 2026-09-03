@@ -12,7 +12,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "kb:update": "bash scripts/update-knowledge.sh",
     "test": "vitest run",
-    "analyze": "ANALYZE=true next build"
+    "analyze": "ANALYZE=true next build",
+    "kb:parity": "node scripts/check-locale-parity.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
