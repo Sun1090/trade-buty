@@ -8,7 +8,7 @@ import {
   type ISeriesApi,
   type UTCTimestamp,
 } from "lightweight-charts";
-import { fetchRandomHistoryWindow, type Kline } from "@/lib/binance";
+import { fetchKlines, fetchRandomHistoryWindow, type Kline } from "@/lib/binance";
 import { saveReplayRecord, saveReplayBest } from "@/lib/replay-store";
 
 const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] as const;
@@ -47,6 +47,10 @@ export interface ReplayDict {
   rounds: string;
   contextNote: string;
   disclaimer: string;
+  modeBlind: string;
+  modeCustom: string;
+  endDateLabel: string;
+  startCustom: string;
 }
 
 interface GuessState {
@@ -75,6 +79,12 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
   const [symbol, setSymbol] = useState<string>("BTCUSDT");
   const [interval_, setInterval_] = useState<string>("1h");
   const [round, setRound] = useState(0);
+  const [customMode, setCustomMode] = useState(false);
+  const [endDateInput, setEndDateInput] = useState(() => {
+    const d = new Date(Date.now() - 30 * 86400_000);
+    return d.toISOString().slice(0, 10);
+  });
+  const [customEnd, setCustomEnd] = useState<number | null>(null);
   const [klines, setKlines] = useState<Kline[] | null>(null);
   const [difficultyIdx, setDifficultyIdx] = useState(() => {
     try {
@@ -130,7 +140,11 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
     setError(false);
      
     setPlaying(false);
-    fetchRandomHistoryWindow(symbol, interval_)
+    const loader =
+      customMode && customEnd
+        ? fetchKlines(symbol, interval_, { endTime: customEnd, limit: 300 })
+        : fetchRandomHistoryWindow(symbol, interval_);
+    loader
       .then((data) => {
         if (cancelled) return;
         setKlines(data);
@@ -143,7 +157,7 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
     return () => {
       cancelled = true;
     };
-  }, [symbol, interval_, round]);
+  }, [symbol, interval_, round, customMode, customEnd]);
 
   // 图表初始化
   useEffect(() => {
@@ -309,6 +323,50 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
             </button>
           ))}
         </div>
+        <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border)] p-0.5">
+          {[
+            { on: !customMode, label: dict.modeBlind, set: () => setCustomMode(false) },
+            { on: customMode, label: dict.modeCustom, set: () => setCustomMode(true) },
+          ].map((m) => (
+            <button
+              key={m.label}
+              onClick={m.set}
+              className={`px-2 py-1 rounded text-[10px] font-medium transition ${
+                m.on
+                  ? "bg-[var(--accent-dim)] text-accent"
+                  : "text-faint hover:text-foreground"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        {customMode && (
+          <>
+            <label className="flex items-center gap-1.5 text-[11px] text-faint">
+              {dict.endDateLabel}
+              <input
+                type="date"
+                value={endDateInput}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setEndDateInput(e.target.value)}
+                className="rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1.5 font-mono text-xs text-foreground outline-none focus:border-accent [color-scheme:dark]"
+              />
+            </label>
+            <button
+              onClick={() => {
+                const ms = Date.parse(endDateInput + "T00:00:00Z");
+                if (!Number.isNaN(ms)) {
+                  setCustomEnd(ms);
+                  setRound((r) => r + 1);
+                }
+              }}
+              className="px-3 py-1.5 rounded-lg text-xs border border-accent/40 bg-accent-dim text-accent hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition"
+            >
+              {dict.startCustom}
+            </button>
+          </>
+        )}
         <button
           onClick={() => setRound((r) => r + 1)}
           className="px-3 py-1.5 rounded-lg text-xs border border-accent/40 bg-accent-dim text-accent hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition"
