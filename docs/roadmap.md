@@ -71,7 +71,7 @@
 
 - [x] R1.1 prompt 版本化（PROMPT_VERSION + 注册表 + 变更日志，SYSTEM_PROMPT 保留兼容别名）
 - [x] R1.2 引用展示课程标题（sources 富化 helper + 3 单测，缺失回退 slug）
-- [ ] R1.3 无相关 chunk 时的兜底话术（明确说“知识库没有”，不编造）
+- [x] R1.3 无检索兜底（放宽二次检索取章节推荐 + 坦诚话术指引 + X-Suggested pills，前端无 sources 时展示；另修 edge 构建：kb-titles 静态映射替代 fs 直读）
 - [ ] R1.4 相似度阈值可配置化（当前 0.3 硬编码 → 环境变量 + 后台可调）
 - [ ] R1.5 超长回答截断与“继续生成”按钮
 - [ ] R1.6 对话历史长度上限 + 超限自动摘要（调 conversations API）
