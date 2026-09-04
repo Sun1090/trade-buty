@@ -1,5 +1,8 @@
-import { getChapters, getDocMetas } from "@/lib/content";
+import titlesData from "../kb-titles.json";
 import type { RagResult } from "./rag";
+
+type TitlesMap = Record<string, Record<string, { title?: string; docs?: Record<string, string> }>>;
+const titles = titlesData as TitlesMap;
 
 export interface SourceLink {
   chapter: string;
@@ -13,13 +16,9 @@ export function enrichSourcesWithTitles(
   locale: string
 ): SourceLink[] {
   return results.map((r) => {
-    let title = `${r.chapter}/${r.doc}`;
-    try {
-      const found = getDocMetas(locale, r.chapter).find((d) => d.slug === r.doc);
-      if (found?.title) title = found.title;
-    } catch {
-      // 知识库缺失时回退 slug，保证引用不断链
-    }
+    // 静态标题映射（edge 安全）；缺失回退 slug，保证引用不断链
+    const title =
+      titles[locale]?.[r.chapter]?.docs?.[r.doc] ?? `${r.chapter}/${r.doc}`;
     return { chapter: r.chapter, doc: r.doc, title };
   });
 }
@@ -40,13 +39,7 @@ export function suggestChaptersFromResults(
   for (const r of results) {
     if (seen.has(r.chapter)) continue;
     seen.add(r.chapter);
-    let title = r.chapter;
-    try {
-      const found = getChapters(locale).find((c) => c.slug === r.chapter);
-      if (found?.title) title = found.title;
-    } catch {
-      // 知识库缺失时回退 slug
-    }
+    const title = titles[locale]?.[r.chapter]?.title ?? r.chapter;
     out.push({ chapter: r.chapter, title });
     if (out.length >= maxChapters) break;
   }

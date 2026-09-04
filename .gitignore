@@ -46,3 +46,6 @@ public/search-index.json
 
 # Lighthouse CI 产物
 .lighthouseci/
+
+# 构建期生成的知识库标题映射
+src/lib/kb-titles.json

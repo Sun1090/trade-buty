@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { getChapter } from "@/lib/content";
+import titlesData from "@/lib/kb-titles.json";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 
 export const size = { width: 1200, height: 630 };
@@ -7,9 +7,12 @@ export const contentType = "image/png";
 
 export default async function Image({ params }: { params: { locale: string; chapter: string } }) {
   const { locale, chapter: slug } = params;
-  const data = getChapter(locale || DEFAULT_LOCALE, slug);
-  const title = data?.chapter.title ?? "Trade Buty";
-  const tagline = data?.chapter.tagline ?? "";
+  const loc = locale || DEFAULT_LOCALE;
+  const data: { title?: string; docs?: Record<string, string> } | undefined =
+    (titlesData as Record<string, Record<string, { title?: string; docs?: Record<string, string> }>>)[loc]?.[slug];
+  const title = data?.title ?? "Trade Buty";
+  const tagline = "";
+  const docCount = data?.docs ? Object.keys(data.docs).length : "";
 
   return new ImageResponse(
     (
@@ -42,7 +45,7 @@ export default async function Image({ params }: { params: { locale: string; chap
         {/* 标题 */}
         <div style={{ marginTop: 40, display: "flex", flexDirection: "column", flex: 1, justifyContent: "center" }}>
           <span style={{ color: "#34d399", fontSize: 24, fontWeight: 500, marginBottom: 16 }}>
-            📖 {data ? `${data.chapter.docCount ?? ""} 篇课程` : ""}
+            📖 {data ? `${docCount} 篇课程` : ""}
           </span>
           <span style={{ color: "#e9edf5", fontSize: 56, fontWeight: 700, lineHeight: 1.2, maxWidth: 900 }}>
             {title}
