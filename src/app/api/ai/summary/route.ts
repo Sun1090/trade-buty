@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chat } from "@/lib/ai/client";
 import { retrieve } from "@/lib/ai/rag";
+import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "edge";
@@ -25,7 +26,8 @@ export async function POST(req: NextRequest) {
     // RAG 用章节标题检索该章内容
     let ragContext = "";
     try {
-      const results = await retrieve(body.title, body.locale || "zh", 6);
+const profile = getRetrievalProfile('summary');
+      const results = await retrieve(body.title, body.locale || "zh", profile.topK, profile.threshold);
       if (results.length > 0) {
         ragContext = results
           .map((r) => `[${r.chapter}/${r.doc}] ${r.chunk}`)

@@ -3,6 +3,7 @@ import { streamChat } from "@/lib/ai/client";
 import { retrieve } from "@/lib/ai/rag";
 import { buildRagContext, SYSTEM_PROMPT } from "@/lib/ai/prompt";
 import { buildNoContextGuidance } from "@/lib/ai/prompt";
+import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
 import {
   enrichSourcesWithTitles,
   suggestChaptersFromResults,
@@ -57,19 +58,20 @@ export async function POST(req: NextRequest) {
 
   const locale = body.locale || "zh";
 
-  // RAG 检索
+  // RAG 检索（配置中心统一 topK/阈值）
+  const profile = getRetrievalProfile('chat');
   let ragContext = "";
   let sources: SourceLink[] = [];
   let suggested: ChapterSuggestion[] = [];
   let noContextGuidance = "";
   try {
-    const results = await retrieve(lastUserMsg.content, locale, 4);
+    const results = await retrieve(lastUserMsg.content, locale, profile.topK, profile.threshold);
     if (results.length > 0) {
       ragContext = buildRagContext(results);
       sources = enrichSourcesWithTitles(results, locale);
-    } else {
+    } else if (profile.relaxedTopK > 0) {
       // 兜底：放宽阈值二次检索，只取章节做推荐
-      const relaxed = await retrieve(lastUserMsg.content, locale, 6, 0);
+      const relaxed = await retrieve(lastUserMsg.content, locale, profile.relaxedTopK, 0);
       suggested = suggestChaptersFromResults(relaxed, locale);
       noContextGuidance = buildNoContextGuidance(suggested);
     }

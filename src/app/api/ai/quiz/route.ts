@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { chat } from "@/lib/ai/client";
 import { retrieve } from "@/lib/ai/rag";
 import { buildRagContext, buildQuizPrompt } from "@/lib/ai/prompt";
+import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { QUIZZES } from "@/lib/quizzes";
 
@@ -50,7 +51,8 @@ export async function POST(req: NextRequest) {
   // RAG：用第一道错题做检索
   let ragContext = "";
   try {
-    const results = await retrieve(wrongQuestions[0].question, "zh", 3);
+const profile = getRetrievalProfile('quiz');
+    const results = await retrieve(wrongQuestions[0].question, "zh", profile.topK, profile.threshold);
     if (results.length > 0) {
       ragContext = buildRagContext(results);
     }
