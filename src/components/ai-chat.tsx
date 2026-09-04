@@ -7,7 +7,7 @@ import { SUGGESTED_QUESTIONS_ZH, SUGGESTED_QUESTIONS_EN } from "@/lib/ai/prompt"
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
-  sources?: { chapter: string; doc: string }[];
+  sources?: { chapter: string; doc: string; title?: string }[];
 }
 
 interface AiDict {
@@ -57,7 +57,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         if (res.ok) {
           const data = await res.json();
           if (data.messages?.length > 0) {
-            setMessages(data.messages.map((m: { role: string; content: string; sources?: string | { chapter: string; doc: string }[] }) => ({
+            setMessages(data.messages.map((m: { role: string; content: string; sources?: string | { chapter: string; doc: string; title?: string }[] }) => ({
               role: m.role as "user" | "assistant",
               content: m.content,
               sources: m.sources ? (typeof m.sources === "string" ? JSON.parse(m.sources) : m.sources) : undefined,
@@ -270,9 +270,10 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                           <a
                             key={j}
                             href={p(`/knowledge/${s.chapter}/${s.doc}`)}
+                            title={`${s.chapter}/${s.doc}`}
                             className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-dim)] border border-[var(--accent)]/30 px-2.5 py-0.5 text-xs text-accent hover:border-accent/60 transition"
                           >
-                            📖 {s.chapter}/{s.doc}
+                            📖 {s.title ?? `${s.chapter}/${s.doc}`}
                           </a>
                         ))}
                       </>

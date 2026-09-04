@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/ai/client";
 import { retrieve } from "@/lib/ai/rag";
 import { buildRagContext, SYSTEM_PROMPT } from "@/lib/ai/prompt";
+import { enrichSourcesWithTitles, type SourceLink } from "@/lib/ai/sources";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "edge";
@@ -52,12 +53,12 @@ export async function POST(req: NextRequest) {
 
   // RAG 检索
   let ragContext = "";
-  let sources: { chapter: string; doc: string }[] = [];
+  let sources: SourceLink[] = [];
   try {
     const results = await retrieve(lastUserMsg.content, locale, 4);
     if (results.length > 0) {
       ragContext = buildRagContext(results);
-      sources = results.map((r) => ({ chapter: r.chapter, doc: r.doc }));
+      sources = enrichSourcesWithTitles(results, locale);
     }
   } catch (e) {
     // RAG 失败不阻断，退化为无上下文对话
