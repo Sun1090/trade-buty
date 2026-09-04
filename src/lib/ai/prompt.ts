@@ -88,6 +88,27 @@ ${examples}`,
   ];
 }
 
+/** 历史摘要 prompt（v1.0.0 随 R1.6 引入）：超长对话时压缩早期轮次 */
+export function buildHistorySummaryPrompt(
+  messages: { role: string; content: string }[],
+  locale: string
+): ChatMessage[] {
+  const lines = messages
+    .map((m) => `${m.role === 'user' ? '用户' : '助手'}：${m.content}`)
+    .join('\n');
+  const instruction =
+    locale === 'en'
+      ? 'You are a conversation summarizer. Compress the earlier part of this trading-study dialogue into key points within 200 words. Keep only facts (what was asked, key conclusions). Do not judge, do not invent.'
+      : '你是对话摘要器。把以下交易学习对话的早期部分压缩成 200 字以内的中文要点摘要，只保留事实（问过什么、关键结论），不要评价，不要编造没有的内容。';
+  return [
+    {
+      role: 'system',
+      content: instruction,
+    },
+    { role: 'user', content: lines },
+  ];
+}
+
 /** 推荐快捷问题池（基于热门章节核心概念） */
 export const SUGGESTED_QUESTIONS_ZH = [
   "什么是止损？怎么设止损位？",

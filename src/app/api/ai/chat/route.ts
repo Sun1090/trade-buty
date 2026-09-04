@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { streamChat } from "@/lib/ai/client";
+import { streamChat, chat } from "@/lib/ai/client";
 import { retrieve } from "@/lib/ai/rag";
 import { buildRagContext, SYSTEM_PROMPT } from "@/lib/ai/prompt";
-import { buildNoContextGuidance } from "@/lib/ai/prompt";
+import { buildHistorySummaryPrompt, buildNoContextGuidance } from "@/lib/ai/prompt";
 import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
 import { TRUNCATED_MARKER } from "@/lib/ai/streaming";
 import {
@@ -87,9 +87,26 @@ export async function POST(req: NextRequest) {
     console.error("[ai/chat] RAG failed:", e instanceof Error ? e.message : e);
   }
 
-  // 构造消息：system + rag context + 历史（保留最近 5 轮）+ 最新用户消息
+  // 构造消息：system + rag context + 历史摘要 + 历史（保留最近 5 轮）+ 最新用户消息
   // 续写：在已有回答后追加“请继续”，不重复 RAG、不走缓存
-  const recent = body.messages.slice(-10);
+  // 超长历史（>14 条）时把早期轮次压缩成摘要，避免上下文丢失
+  const HISTORY_KEEP = 10;
+  const HISTORY_SUMMARIZE_AT = 14;
+  let historySummary = "";
+  const recent = body.messages.slice(-HISTORY_KEEP);
+  if (!isContinue && body.messages.length > HISTORY_SUMMARIZE_AT) {
+    try {
+      const overflow = body.messages.slice(0, -HISTORY_KEEP);
+      historySummary = await chat({
+        messages: buildHistorySummaryPrompt(overflow, locale),
+        temperature: 0.2,
+        maxTokens: 300,
+      });
+    } catch (e) {
+      // 摘要失败不阻断，直接截断
+      console.error("[ai/chat] history summary failed:", e instanceof Error ? e.message : e);
+    }
+  }
   const continuePrompt = locale === "en" ? "Continue." : "请继续。";
   const messages = [
     {
@@ -97,7 +114,8 @@ export async function POST(req: NextRequest) {
       content:
         SYSTEM_PROMPT +
         (ragContext ? "\n\n" + ragContext : "") +
-        (noContextGuidance ? "\n\n" + noContextGuidance : ""),
+        (noContextGuidance ? "\n\n" + noContextGuidance : "") +
+        (historySummary ? "\n\n## 早期对话摘要\n" + historySummary : ""),
     },
     ...recent,
     ...(isContinue ? [{ role: "user" as const, content: continuePrompt }] : []),

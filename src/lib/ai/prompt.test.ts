@@ -67,3 +67,25 @@ describe("buildNoContextGuidance", () => {
     expect(out).toContain("期货篇");
   });
 });
+
+describe("buildHistorySummaryPrompt", () => {
+  it("中文场景生成中文摘要指令", async () => {
+    const { buildHistorySummaryPrompt } = await import("./prompt");
+    const msgs = buildHistorySummaryPrompt(
+      [{ role: "user", content: "什么是止损？" }],
+      "zh"
+    );
+    expect(msgs).toHaveLength(2);
+    expect(msgs[0].role).toBe("system");
+    expect(msgs[1].content).toContain("什么是止损？");
+  });
+
+  it("英文场景生成英文摘要指令", async () => {
+    const { buildHistorySummaryPrompt } = await import("./prompt");
+    const msgs = buildHistorySummaryPrompt(
+      [{ role: "assistant", content: "Stop loss is..." }],
+      "en"
+    );
+    expect(msgs[0].content).toContain("summarizer");
+  });
+});
