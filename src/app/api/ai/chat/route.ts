@@ -3,6 +3,9 @@ import { streamChat, chat } from "@/lib/ai/client";
 import { retrieve } from "@/lib/ai/rag";
 import { buildRagContext, SYSTEM_PROMPT } from "@/lib/ai/prompt";
 import { buildHistorySummaryPrompt, buildNoContextGuidance } from "@/lib/ai/prompt";
+import { getRefusalMessage } from "@/lib/ai/prompt";
+import { matchSensitiveRequest } from "@/lib/ai/guardrail";
+import { looksLikeRecommendation } from "@/lib/ai/guardrail";
 import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
 import { TRUNCATED_MARKER } from "@/lib/ai/streaming";
 import {
@@ -60,6 +63,15 @@ export async function POST(req: NextRequest) {
   }
 
   const locale = body.locale || "zh";
+
+  // 输入侧护栏（R1.8）：荐股/收益承诺直接拒绝，不调模型
+  const guardHit = matchSensitiveRequest(lastUserMsg.content);
+  if (guardHit) {
+    const headers = new Headers();
+    headers.set('Content-Type', 'text/plain; charset=utf-8');
+    headers.set('X-Refused', guardHit);
+    return new Response(getRefusalMessage(guardHit, locale), { headers, status: 200 });
+  }
   const isContinue =
     typeof body.continueFrom === "string" && body.continueFrom.trim().length > 0;
 
@@ -157,6 +169,9 @@ export async function POST(req: NextRequest) {
         flush() {
           if (acc.trim() && !isContinue) {
             answerCache.set(cacheKey, { text: acc, at: Date.now() });
+          }
+          if (looksLikeRecommendation(acc)) {
+            console.warn('[ai/guardrail] 输出疑似荐股，人工抽查', acc.slice(0, 160));
           }
         },
       }),

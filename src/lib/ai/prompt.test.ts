@@ -89,3 +89,15 @@ describe("buildHistorySummaryPrompt", () => {
     expect(msgs[0].content).toContain("summarizer");
   });
 });
+
+describe("getRefusalMessage", () => {
+  it("中英文与分类返回不同话术且可读", async () => {
+    const { getRefusalMessage } = await import("./prompt");
+    const zhPick = getRefusalMessage("stock-pick", "zh");
+    const zhProfit = getRefusalMessage("profit-promise", "zh");
+    const enPick = getRefusalMessage("stock-pick", "en");
+    expect(zhPick).not.toBe(zhProfit);
+    expect(zhProfit).toContain("收益");
+    expect(enPick).toContain("recommend");
+  });
+});
