@@ -4,6 +4,7 @@ import { retrieve } from "@/lib/ai/rag";
 import { buildRagContext, SYSTEM_PROMPT } from "@/lib/ai/prompt";
 import { buildNoContextGuidance } from "@/lib/ai/prompt";
 import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
+import { TRUNCATED_MARKER } from "@/lib/ai/streaming";
 import {
   enrichSourcesWithTitles,
   suggestChaptersFromResults,
@@ -17,6 +18,8 @@ export const runtime = "edge";
 interface ChatBody {
   messages: { role: "user" | "assistant"; content: string }[];
   locale?: string;
+  /** 续写：已有回答全文，服务端在其后继续生成（不再重复 RAG） */
+  continueFrom?: string;
 }
 
 // 简易内存 rate limit（edge runtime 每实例独立，够用于防基础滥用）
@@ -57,23 +60,27 @@ export async function POST(req: NextRequest) {
   }
 
   const locale = body.locale || "zh";
+  const isContinue =
+    typeof body.continueFrom === "string" && body.continueFrom.trim().length > 0;
 
-  // RAG 检索（配置中心统一 topK/阈值）
+  // RAG 检索（配置中心统一 topK/阈值；续写不再重复检索）
   const profile = getRetrievalProfile('chat');
   let ragContext = "";
   let sources: SourceLink[] = [];
   let suggested: ChapterSuggestion[] = [];
   let noContextGuidance = "";
   try {
-    const results = await retrieve(lastUserMsg.content, locale, profile.topK, profile.threshold);
-    if (results.length > 0) {
-      ragContext = buildRagContext(results);
-      sources = enrichSourcesWithTitles(results, locale);
-    } else if (profile.relaxedTopK > 0) {
-      // 兜底：放宽阈值二次检索，只取章节做推荐
-      const relaxed = await retrieve(lastUserMsg.content, locale, profile.relaxedTopK, 0);
-      suggested = suggestChaptersFromResults(relaxed, locale);
-      noContextGuidance = buildNoContextGuidance(suggested);
+    if (!isContinue) {
+      const results = await retrieve(lastUserMsg.content, locale, profile.topK, profile.threshold);
+      if (results.length > 0) {
+        ragContext = buildRagContext(results);
+        sources = enrichSourcesWithTitles(results, locale);
+      } else if (profile.relaxedTopK > 0) {
+        // 兜底：放宽阈值二次检索，只取章节做推荐
+        const relaxed = await retrieve(lastUserMsg.content, locale, profile.relaxedTopK, 0);
+        suggested = suggestChaptersFromResults(relaxed, locale);
+        noContextGuidance = buildNoContextGuidance(suggested);
+      }
     }
   } catch (e) {
     // RAG 失败不阻断，退化为无上下文对话
@@ -81,7 +88,9 @@ export async function POST(req: NextRequest) {
   }
 
   // 构造消息：system + rag context + 历史（保留最近 5 轮）+ 最新用户消息
+  // 续写：在已有回答后追加“请继续”，不重复 RAG、不走缓存
   const recent = body.messages.slice(-10);
+  const continuePrompt = locale === "en" ? "Continue." : "请继续。";
   const messages = [
     {
       role: "system" as const,
@@ -91,29 +100,34 @@ export async function POST(req: NextRequest) {
         (noContextGuidance ? "\n\n" + noContextGuidance : ""),
     },
     ...recent,
+    ...(isContinue ? [{ role: "user" as const, content: continuePrompt }] : []),
   ];
 
-  // 相同问题缓存（去掉 RAG context 变体，只用用户问题 + locale）
+  // 相同问题缓存（去掉 RAG context 变体，只用用户问题 + locale；续写不读不写）
   const cacheKey = `${locale}::${lastUserMsg.content.trim().toLowerCase()}`;
-  const cached = answerCache.get(cacheKey);
+  const cached = !isContinue ? answerCache.get(cacheKey) : undefined;
   if (cached && Date.now() - cached.at < CACHE_TTL) {
     const headers = new Headers();
     headers.set("Content-Type", "text/plain; charset=utf-8");
     headers.set("X-Cache", "HIT");
-    if (sources.length > 0) headers.set("X-Sources", JSON.stringify(sources));
-    if (suggested.length > 0) headers.set("X-Suggested", JSON.stringify(suggested));
+    if (sources.length > 0) headers.set("X-Sources", encodeURIComponent(JSON.stringify(sources)));
+    if (suggested.length > 0) headers.set("X-Suggested", encodeURIComponent(JSON.stringify(suggested)));
     return new Response(cached.text, { headers });
   }
 
   // 流式返回
   try {
+    let finishReason: string | null = null;
     const rawStream = await streamChat({
       messages,
       temperature: 0.3,
       maxTokens: 1500,
+      onFinish: (r) => {
+        finishReason = r;
+      },
     });
 
-    // 包装流：传输同时累计文本，完成后写入缓存
+    // 包装流：传输同时累计文本，完成后写入缓存（续写不写缓存，避免污染原问题缓存）
     const encoder = new TextEncoder();
     let acc = "";
     const cachedStream = rawStream.pipeThrough(
@@ -123,8 +137,19 @@ export async function POST(req: NextRequest) {
           controller.enqueue(chunk);
         },
         flush() {
-          if (acc.trim()) {
+          if (acc.trim() && !isContinue) {
             answerCache.set(cacheKey, { text: acc, at: Date.now() });
+          }
+        },
+      }),
+    );
+
+    // 截断标记：finish_reason=length 时追加（Markdown 不可见），前端据此展示“继续生成”
+    const markedStream = cachedStream.pipeThrough(
+      new TransformStream<Uint8Array, Uint8Array>({
+        flush(controller) {
+          if (finishReason === "length") {
+            controller.enqueue(encoder.encode(TRUNCATED_MARKER));
           }
         },
       }),
@@ -135,13 +160,13 @@ export async function POST(req: NextRequest) {
     headers.set("Content-Type", "text/event-stream");
     headers.set("Cache-Control", "no-cache");
     if (sources.length > 0) {
-      headers.set("X-Sources", JSON.stringify(sources));
+      headers.set("X-Sources", encodeURIComponent(JSON.stringify(sources)));
     }
     if (suggested.length > 0) {
-      headers.set("X-Suggested", JSON.stringify(suggested));
+      headers.set("X-Suggested", encodeURIComponent(JSON.stringify(suggested)));
     }
 
-    return new Response(cachedStream, { headers });
+    return new Response(markedStream, { headers });
   } catch (e) {
     return new Response(e instanceof Error ? e.message : "AI API error", {
       status: 502,

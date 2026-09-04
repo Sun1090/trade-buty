@@ -19,6 +19,8 @@ interface ChatOptions {
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
+  /** 流结束时回调 finish_reason（length 表示被截断） */
+  onFinish?: (reason: string | null) => void;
 }
 
 const API_URL = process.env.AI_API_URL || "";
@@ -68,11 +70,20 @@ async function tryModel(
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = ""; // SSE 可能跨 chunk，保留未完成的行
+  let finishReason: string | null = null;
+  const notifyFinish = () => {
+    try {
+      opts.onFinish?.(finishReason);
+    } catch {
+      // 回调异常不影响主流程
+    }
+  };
 
   return new ReadableStream({
     async pull(controller) {
       const { done, value } = await reader.read();
       if (done) {
+        notifyFinish();
         controller.close();
         return;
       }
@@ -85,6 +96,7 @@ async function tryModel(
         if (!trimmed || !trimmed.startsWith("data:")) continue;
         const data = trimmed.slice(5).trim();
         if (data === "[DONE]") {
+          notifyFinish();
           controller.close();
           return;
         }
@@ -94,6 +106,8 @@ async function tryModel(
           // 只取正式回答 content；reasoning / reasoning_content 是思维链，不发给前端
           const token = delta?.content;
           if (token) controller.enqueue(encoder.encode(token));
+          const fr = json.choices?.[0]?.finish_reason;
+          if (typeof fr === 'string' && fr) finishReason = fr;
         } catch {
           // 跳过不完整的 JSON
         }
