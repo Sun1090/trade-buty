@@ -6,9 +6,10 @@
 /**
  * Prompt 版本历史（改 prompt 先加版本、写 changelog，不直接改线上版本）：
  * - v1.0.0 (2026-08)：初版——中立教育五约束 + 回答风格 + 免责
- * - v1.1.0 (当前)：v1.0 全文保留；问答逻辑未动，仅接入版本管理
+ * - v1.1.0：v1.0 全文保留；问答逻辑未动，仅接入版本管理
+ * - v1.2.0 (当前)：输入侧护栏（R1.8）将荐股/收益承诺在路由层直接拒绝，减少模型浪费
  */
-export const PROMPT_VERSION = "v1.1.0" as const;
+export const PROMPT_VERSION = "v1.2.0" as const;
 
 const SYSTEM_PROMPT_V1 = `你是 Trade Buty 的交易学习助手，帮助用户理解交易知识。
 
@@ -28,10 +29,23 @@ const SYSTEM_PROMPT_V1 = `你是 Trade Buty 的交易学习助手，帮助用户
 ## 免责
 每个涉及具体交易决策的回答末尾附："⚠️ 以上仅为学习内容，不构成投资建议。"`;
 
+export function getRefusalMessage(category: string, locale: string): string {
+  const zh =
+    category === "profit-promise"
+      ? "抱歉，我不能承诺任何收益。市场有风险，没有稳赚的路径。如果你愿意，我们可以一起看风险管理的课程。"
+      : "抱歉，我不能推荐具体的股票/基金/币种。基于内容宪法，我只讲知识与方法。我们可以从风险管理或交易系统那章开始。";
+  const en =
+    category === "profit-promise"
+      ? "I can't promise any returns — markets carry risk and there is no sure-win path. Happy to walk through risk management instead."
+      : "I can't recommend specific stocks, funds, or coins. Per our content constitution, I only teach knowledge and methods — we can start from risk management or trading systems.";
+  return locale === "en" ? en : zh;
+}
+
 /** 版本化 prompt 注册表：新版本在此追加，调用方用 getSystemPrompt 取当前版 */
 const PROMPT_REGISTRY: Record<string, string> = {
   "v1.0.0": SYSTEM_PROMPT_V1,
   "v1.1.0": SYSTEM_PROMPT_V1,
+  "v1.2.0": SYSTEM_PROMPT_V1,
 };
 
 export function getSystemPrompt(version: string = PROMPT_VERSION): string {
