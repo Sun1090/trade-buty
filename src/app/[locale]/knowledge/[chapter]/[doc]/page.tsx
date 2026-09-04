@@ -113,6 +113,7 @@ export default async function DocPage({
 
   const headings = extractHeadings(doc.content);
   const tools = t.docTools;
+  const tocLabel = locale === "en" ? "On this page" : "本页目录";
 
   return (
     <div className="relative">
@@ -215,6 +216,26 @@ export default async function DocPage({
       />
 
       <ReadingTimeTracker chapter={chapterSlug} doc={docSlug} />
+      {headings.length >= 3 && (
+        <details className="xl:hidden mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-3">
+          <summary className="cursor-pointer text-sm font-medium list-none flex items-center justify-between [&::-webkit-details-marker]:hidden">
+            {tocLabel}
+            <span aria-hidden className="text-faint text-xs">▾</span>
+          </summary>
+          <ul className="mt-3 space-y-1.5 pb-1">
+            {headings.map((h) => (
+              <li key={h.id}>
+                <a
+                  href={`#${h.id}`}
+                  className={`block text-sm text-muted hover:text-accent transition ${h.depth === 3 ? "pl-4" : ""}`}
+                >
+                  {h.text}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
         <Markdown content={prepareForRender(doc.content, locale, chapterSlug)} />
       </article>
