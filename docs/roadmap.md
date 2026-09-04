@@ -69,7 +69,7 @@
 
 ## R1 AI 问答质量与可信度（R1.1–R1.15）
 
-- [ ] R1.1 prompt 模板版本化（`lib/ai/prompt.ts` 拆版本 + 变更日志注释）
+- [x] R1.1 prompt 版本化（PROMPT_VERSION + 注册表 + 变更日志，SYSTEM_PROMPT 保留兼容别名）
 - [ ] R1.2 回答引用来源展示（RagResult chapter/doc → 可点击课程链接）
 - [ ] R1.3 无相关 chunk 时的兜底话术（明确说“知识库没有”，不编造）
 - [ ] R1.4 相似度阈值可配置化（当前 0.3 硬编码 → 环境变量 + 后台可调）

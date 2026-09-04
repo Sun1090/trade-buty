@@ -3,7 +3,14 @@
  * 约束：中立教育、不荐股、不承诺收益、用检索到的知识库内容回答
  */
 
-export const SYSTEM_PROMPT = `你是 Trade Buty 的交易学习助手，帮助用户理解交易知识。
+/**
+ * Prompt 版本历史（改 prompt 先加版本、写 changelog，不直接改线上版本）：
+ * - v1.0.0 (2026-08)：初版——中立教育五约束 + 回答风格 + 免责
+ * - v1.1.0 (当前)：v1.0 全文保留；问答逻辑未动，仅接入版本管理
+ */
+export const PROMPT_VERSION = "v1.1.0" as const;
+
+const SYSTEM_PROMPT_V1 = `你是 Trade Buty 的交易学习助手，帮助用户理解交易知识。
 
 ## 你的身份与约束
 1. 你是教育者，不是投顾。绝不推荐具体股票、基金、币种或任何标的。
@@ -20,6 +27,19 @@ export const SYSTEM_PROMPT = `你是 Trade Buty 的交易学习助手，帮助�
 
 ## 免责
 每个涉及具体交易决策的回答末尾附："⚠️ 以上仅为学习内容，不构成投资建议。"`;
+
+/** 版本化 prompt 注册表：新版本在此追加，调用方用 getSystemPrompt 取当前版 */
+const PROMPT_REGISTRY: Record<string, string> = {
+  "v1.0.0": SYSTEM_PROMPT_V1,
+  "v1.1.0": SYSTEM_PROMPT_V1,
+};
+
+export function getSystemPrompt(version: string = PROMPT_VERSION): string {
+  return PROMPT_REGISTRY[version] ?? PROMPT_REGISTRY[PROMPT_VERSION];
+}
+
+/** 历史兼容别名（新代码请用 getSystemPrompt） */
+export const SYSTEM_PROMPT: string = getSystemPrompt();
 
 /** RAG 上下文注入模板 */
 export function buildRagContext(chunks: { chapter: string; doc: string; chunk: string }[]): string {
