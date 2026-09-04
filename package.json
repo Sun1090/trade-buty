@@ -18,7 +18,8 @@
     "check:search-index": "node scripts/check-search-index.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
     "lhci": "lhci autorun",
-    "check:mobile": "node scripts/check-mobile.mjs"
+    "check:mobile": "node scripts/check-mobile.mjs",
+    "pretest": "node scripts/generate-kb-titles.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
