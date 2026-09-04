@@ -1,4 +1,4 @@
-import { getDocMetas } from "@/lib/content";
+import { getChapters, getDocMetas } from "@/lib/content";
 import type { RagResult } from "./rag";
 
 export interface SourceLink {
@@ -22,4 +22,33 @@ export function enrichSourcesWithTitles(
     }
     return { chapter: r.chapter, doc: r.doc, title };
   });
+}
+
+export interface ChapterSuggestion {
+  chapter: string;
+  title: string;
+}
+
+/** 放宽检索结果按章节去重，取前 3 个作推荐（兜底场景用） */
+export function suggestChaptersFromResults(
+  results: RagResult[],
+  locale: string,
+  maxChapters = 3
+): ChapterSuggestion[] {
+  const seen = new Set<string>();
+  const out: ChapterSuggestion[] = [];
+  for (const r of results) {
+    if (seen.has(r.chapter)) continue;
+    seen.add(r.chapter);
+    let title = r.chapter;
+    try {
+      const found = getChapters(locale).find((c) => c.slug === r.chapter);
+      if (found?.title) title = found.title;
+    } catch {
+      // 知识库缺失时回退 slug
+    }
+    out.push({ chapter: r.chapter, title });
+    if (out.length >= maxChapters) break;
+  }
+  return out;
 }

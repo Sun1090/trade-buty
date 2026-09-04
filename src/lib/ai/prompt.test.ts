@@ -48,3 +48,22 @@ describe("SYSTEM_PROMPT", () => {
     expect(SYSTEM_PROMPT).toContain("用用户提问的语言");
   });
 });
+
+describe("buildNoContextGuidance", () => {
+  it("要求坦诚说明且不编造", async () => {
+    const { buildNoContextGuidance } = await import("./prompt");
+    const out = buildNoContextGuidance([]);
+    expect(out).toContain("坦诚");
+    expect(out).toContain("编造");
+  });
+
+  it("有推荐章节时列出章节", async () => {
+    const { buildNoContextGuidance } = await import("./prompt");
+    const out = buildNoContextGuidance([
+      { chapter: "spot", title: "现货篇" },
+      { chapter: "futures", title: "期货篇" },
+    ]);
+    expect(out).toContain("现货篇");
+    expect(out).toContain("期货篇");
+  });
+});

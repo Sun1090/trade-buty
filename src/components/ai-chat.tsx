@@ -8,6 +8,7 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   sources?: { chapter: string; doc: string; title?: string }[];
+  suggested?: { chapter: string; title: string }[];
 }
 
 interface AiDict {
@@ -21,6 +22,7 @@ interface AiDict {
   copy: string;
   copied: string;
   sourcesLabel: string;
+  suggestedLabel: string;
   disclaimer: string;
   guestLimit: string;
   helpful: string;
@@ -57,10 +59,11 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         if (res.ok) {
           const data = await res.json();
           if (data.messages?.length > 0) {
-            setMessages(data.messages.map((m: { role: string; content: string; sources?: string | { chapter: string; doc: string; title?: string }[] }) => ({
+            setMessages(data.messages.map((m: { role: string; content: string; sources?: string | { chapter: string; doc: string; title?: string }[]; suggested?: string | { chapter: string; title: string }[] }) => ({
               role: m.role as "user" | "assistant",
               content: m.content,
               sources: m.sources ? (typeof m.sources === "string" ? JSON.parse(m.sources) : m.sources) : undefined,
+              suggested: m.suggested ? (typeof m.suggested === "string" ? JSON.parse(m.suggested) : m.suggested) : undefined,
             })));
             return; // 有历史就不走 ?q= 自动发送
           }
@@ -90,7 +93,8 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
     let fullResponse = "";
-    let sourcesArr: { chapter: string; doc: string }[] | undefined;
+    let sourcesArr: { chapter: string; doc: string; title?: string }[] | undefined;
+    let suggestedArr: { chapter: string; title: string }[] | undefined;
 
     try {
       const res = await fetch("/api/ai/chat", {
@@ -116,6 +120,8 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
 
       const sources = res.headers.get("X-Sources");
       sourcesArr = sources ? JSON.parse(sources) : undefined;
+      const suggested = res.headers.get("X-Suggested");
+      suggestedArr = suggested ? JSON.parse(suggested) : undefined;
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
@@ -133,6 +139,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
               role: "assistant",
               content: acc,
               sources: sourcesArr,
+              suggested: suggestedArr,
             };
             return next;
           });
@@ -263,6 +270,21 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                 {/* 来源引用 + 操作 */}
                 {msg.role === "assistant" && msg.content && (
                   <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {msg.suggested && msg.suggested.length > 0 && (!msg.sources || msg.sources.length === 0) && (
+                      <>
+                        <span className="text-xs text-faint">{dict.suggestedLabel}:</span>
+                        {msg.suggested.map((s, j) => (
+                          <a
+                            key={j}
+                            href={p(`/knowledge/${s.chapter}`)}
+                            title={s.chapter}
+                            className="inline-flex items-center gap-1 rounded-full border border-[var(--border-strong)] px-2.5 py-0.5 text-xs text-muted hover:text-accent hover:border-accent/60 transition"
+                          >
+                            📚 {s.title}
+                          </a>
+                        ))}
+                      </>
+                    )}
                     {msg.sources && msg.sources.length > 0 && (
                       <>
                         <span className="text-xs text-faint">{dict.sourcesLabel}:</span>

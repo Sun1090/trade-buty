@@ -25,3 +25,25 @@ describe("enrichSourcesWithTitles", () => {
     expect(enrichSourcesWithTitles([], "zh")).toEqual([]);
   });
 });
+
+describe("suggestChaptersFromResults", () => {
+  it("按章节去重取前三并带标题", async () => {
+    const { suggestChaptersFromResults } = await import("./sources");
+    const out = suggestChaptersFromResults(
+      [
+        { chapter: "spot", doc: "a", chunk: "x", similarity: 0.2 },
+        { chapter: "spot", doc: "b", chunk: "y", similarity: 0.1 },
+        { chapter: "futures", doc: "c", chunk: "z", similarity: 0.05 },
+      ],
+      "zh"
+    );
+    expect(out).toHaveLength(2);
+    expect(out[0].chapter).toBe("spot");
+    expect(out[0].title.length).toBeGreaterThan(0);
+  });
+
+  it("空输入返回空数组", async () => {
+    const { suggestChaptersFromResults } = await import("./sources");
+    expect(suggestChaptersFromResults([], "zh")).toEqual([]);
+  });
+});
