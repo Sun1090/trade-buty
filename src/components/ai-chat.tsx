@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Markdown } from "@/components/markdown";
 import { SUGGESTED_QUESTIONS_ZH, SUGGESTED_QUESTIONS_EN } from "@/lib/ai/prompt";
+import { hasTruncatedMarker, stripTruncatedMarker } from "@/lib/ai/streaming";
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   sources?: { chapter: string; doc: string; title?: string }[];
   suggested?: { chapter: string; title: string }[];
+  truncated?: boolean;
 }
 
 interface AiDict {
@@ -21,6 +23,7 @@ interface AiDict {
   clear: string;
   copy: string;
   copied: string;
+  continueLabel: string;
   sourcesLabel: string;
   suggestedLabel: string;
   disclaimer: string;
@@ -92,7 +95,42 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     // 追加一个空的 assistant 消息用于流式填充
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
-    let fullResponse = "";
+    await runStream(
+      [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
+      messages.length + 1,
+      { userMessage: trimmed }
+    );
+  }
+
+  /** 续写被截断的回答：在同一条消息上追加 */
+  async function continueGeneration(idx: number) {
+    const target = messages[idx];
+    if (!target || loading || target.role !== "assistant") return;
+    setError(null);
+    setLoading(true);
+    await runStream(
+      messages.slice(0, idx + 1).map((m) => ({ role: m.role, content: m.content })),
+      idx,
+      { baseText: target.content, userMessage: "", extraBody: { continueFrom: target.content } }
+    );
+  }
+
+  /**
+   * 流式请求并把文本填充到指定下标的 assistant 消息。
+   * @param history 发给服务端的历史（含续写所需的已有回答）
+   * @param targetIdx 填充目标下标
+   * @param opts.baseText 续写时的已有内容（追加基底）；userMessage 存档用问题；extraBody 额外 body 字段
+   */
+  async function runStream(
+    history: { role: string; content: string }[],
+    targetIdx: number,
+    opts: {
+      baseText?: string;
+      userMessage?: string;
+      extraBody?: Record<string, unknown>;
+    } = {}
+  ) {
+    const baseText = opts.baseText ?? "";
     let sourcesArr: { chapter: string; doc: string; title?: string }[] | undefined;
     let suggestedArr: { chapter: string; title: string }[] | undefined;
 
@@ -100,10 +138,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
-          locale,
-        }),
+        body: JSON.stringify({ messages: history, locale, ...opts.extraBody }),
       });
 
       if (res.status === 429) {
@@ -119,9 +154,9 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       }
 
       const sources = res.headers.get("X-Sources");
-      sourcesArr = sources ? JSON.parse(sources) : undefined;
+      sourcesArr = sources ? JSON.parse(decodeURIComponent(sources)) : undefined;
       const suggested = res.headers.get("X-Suggested");
-      suggestedArr = suggested ? JSON.parse(suggested) : undefined;
+      suggestedArr = suggested ? JSON.parse(decodeURIComponent(suggested)) : undefined;
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
@@ -132,14 +167,15 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
           const { done, value } = await reader.read();
           if (done) break;
           parts.push(decoder.decode(value, { stream: true }));
-          const acc = parts.join("");
+          const acc = baseText + parts.join("");
           setMessages((prev) => {
             const next = [...prev];
-            next[next.length - 1] = {
+            next[targetIdx] = {
               role: "assistant",
               content: acc,
               sources: sourcesArr,
               suggested: suggestedArr,
+              truncated: false,
             };
             return next;
           });
@@ -148,14 +184,31 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
 
       if (parts.length === 0) throw new Error(dict.error);
 
-      fullResponse = parts.join("");
+      const rawFull = baseText + parts.join("");
+      const truncated = hasTruncatedMarker(rawFull);
+      const fullResponse = stripTruncatedMarker(rawFull);
+      // 落盘干净文本 + 截断标记
+      setMessages((prev) => {
+        const next = [...prev];
+        const cur = next[targetIdx];
+        if (cur) {
+          next[targetIdx] = {
+            ...cur,
+            content: fullResponse,
+            truncated,
+            sources: sourcesArr ?? cur.sources,
+            suggested: suggestedArr ?? cur.suggested,
+          };
+        }
+        return next;
+      });
 
       // 存对话到云端（登录用户，fire-and-forget）
       void fetch("/api/ai/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userMessage: trimmed,
+          userMessage: opts.userMessage ?? "",
           assistantMessage: fullResponse,
           sources: sourcesArr,
         }),
@@ -306,6 +359,14 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                     >
                       {dict.copy}
                     </button>
+                    {msg.truncated && !loading && (
+                      <button
+                        onClick={() => continueGeneration(i)}
+                        className="text-xs text-accent hover:underline underline-offset-4 transition"
+                      >
+                        {dict.continueLabel} →
+                      </button>
+                    )}
                     <span className="ml-auto flex items-center gap-1">
                       <button
                         onClick={() => sendFeedback(i, "helpful", msg)}
