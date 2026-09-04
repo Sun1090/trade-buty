@@ -21,6 +21,7 @@ export function SearchClient({
     emptyHint: string;
     browseCta: string;
     recentLabel: string;
+    suggestTitle: string;
   };
 }) {
   const [query, setQuery] = useState("");
@@ -29,6 +30,8 @@ export function SearchClient({
   const [filterChapter, setFilterChapter] = useState<string>("");
   const [focusIdx, setFocusIdx] = useState(-1);
   const [debouncedQ, setDebouncedQ] = useState("");
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestIdx, setSuggestIdx] = useState(-1);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(query), 200);
@@ -104,8 +107,24 @@ export function SearchClient({
     return [...map.entries()];
   }, [filtered]);
 
+  // 输入联想：标题命中优先，其次综合分 Top 6
+  const suggestions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q || !entries) return [];
+    const titleHits = entries.filter((e) => e.title.toLowerCase().includes(q));
+    if (titleHits.length > 0) return titleHits.slice(0, 6);
+    return entries
+      .map((e) => ({ e, s: score(e, q) }))
+      .filter(({ s }) => s > 0)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 6)
+      .map(({ e }) => e);
+  }, [query, entries]);
+
   async function onInput(value: string) {
     setQuery(value);
+    setSuggestOpen(value.trim().length > 0);
+    setSuggestIdx(-1);
     if (!entries) {
       const res = await fetch("/search-index.json");
       setEntries(await res.json());
@@ -121,7 +140,19 @@ export function SearchClient({
           value={query}
           onChange={(e) => onInput(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "ArrowDown") {
+            if (suggestOpen && suggestions.length > 0 && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+              e.preventDefault();
+              setSuggestIdx((i) =>
+                e.key === "ArrowDown"
+                  ? Math.min(i + 1, suggestions.length - 1)
+                  : Math.max(i - 1, -1)
+              );
+            } else if (e.key === "Enter" && suggestOpen && suggestIdx >= 0) {
+              const entry = suggestions[suggestIdx];
+              if (entry) window.location.href = entry.url;
+            } else if (e.key === "Escape") {
+              setSuggestOpen(false);
+            } else if (e.key === "ArrowDown") {
               e.preventDefault();
               setFocusIdx((i) => Math.min(i + 1, results.length - 1));
             } else if (e.key === "ArrowUp") {
@@ -137,12 +168,51 @@ export function SearchClient({
           placeholder={dict.placeholder}
           aria-label={dict.placeholder}
           autoFocus
+          onFocus={() => {
+            if (query.trim() && suggestions.length > 0) setSuggestOpen(true);
+          }}
+          onBlur={() => {
+            setTimeout(() => setSuggestOpen(false), 150);
+          }}
           className="w-full rounded-xl border border-[var(--border-strong)] bg-transparent px-4 py-3 pr-16 outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-dim)] transition-shadow"
         />
         {!query && (
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 rounded border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-xs text-faint font-mono">
             ⌘K
           </kbd>
+        )}
+        {suggestOpen && suggestions.length > 0 && (
+          <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-[var(--border-strong)] bg-[var(--surface)] shadow-2xl shadow-black/30">
+            <p className="px-4 pt-2.5 text-[11px] uppercase tracking-widest text-faint">
+              {dict.suggestTitle}
+            </p>
+            <ul className="py-1.5">
+              {suggestions.map((s, i) => (
+                <li key={s.url}>
+                  <a
+                    href={s.url}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => setSuggestOpen(false)}
+                    onMouseEnter={() => setSuggestIdx(i)}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm transition ${
+                      i === suggestIdx
+                        ? "bg-[var(--accent-dim)] text-accent"
+                        : "text-foreground hover:bg-white/5"
+                    }`}
+                  >
+                    <span aria-hidden className="text-faint">⌕</span>
+                    <span
+                      className="truncate [&>mark]:bg-accent/30 [&>mark]:text-accent [&>mark]:rounded-sm [&>mark]:px-0.5"
+                      dangerouslySetInnerHTML={{
+                        __html: highlight(s.title, query.trim().toLowerCase()),
+                      }}
+                    />
+                    <span className="ml-auto shrink-0 text-[11px] text-faint">{s.chapter}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
       {!query.trim() && recent.length > 0 && (

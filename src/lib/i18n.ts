@@ -235,6 +235,7 @@ const zh = {
     emptyHint: "换个关键词试试，或者",
     browseCta: "去学习路线逛逛 →",
     recentLabel: "最近搜索",
+    suggestTitle: "相关课程",
   },
   footer: {
     tagline: "面向全球中文用户的免费中立交易教育平台。分级课程（学）× 真实行情图表与回放（练）。",
@@ -476,6 +477,7 @@ const en: Dict = {
     emptyHint: "Try another keyword, or",
     browseCta: "browse the learning path →",
     recentLabel: "Recent",
+    suggestTitle: "Suggestions",
   },
   footer: {
     tagline: "A free & neutral trading education platform for Chinese speakers worldwide. Structured courses (learn) × live charts & replay (practice).",
