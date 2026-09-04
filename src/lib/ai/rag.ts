@@ -23,6 +23,7 @@ export async function retrieve(
   query: string,
   locale: string = "zh",
   topK: number = 4,
+  threshold: number = 0.3,
 ): Promise<RagResult[]> {
   const queryEmbedding = await embed(query);
   if (queryEmbedding.length === 0) return [];
@@ -35,7 +36,7 @@ export async function retrieve(
     query_embedding: queryEmbedding,
     match_locale: locale,
     match_count: topK,
-    threshold: 0.3,
+    threshold,
   });
 
   if (error) {

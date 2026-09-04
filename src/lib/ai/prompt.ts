@@ -124,3 +124,20 @@ export const SUGGESTED_QUESTIONS_EN = [
   "How to spot trend reversal signals?",
   "What are the most common beginner trading mistakes?",
 ];
+
+/** 无相关 chunk 时的兜底指引：坦诚说明 + 推荐最接近章节，绝不编造 */
+export function buildNoContextGuidance(
+  suggestions: { chapter: string; title: string }[]
+): string {
+  const list =
+    suggestions.length > 0
+      ? suggestions.map((s, i) => `${i + 1}. ${s.title}`).join("\n")
+      : "";
+  return `## 重要：本次检索没有找到与用户问题直接相关的内容
+1. 必须坦诚告知用户"知识库暂时没有这方面的直接内容"，绝不编造答案。
+2. 可以基于通用交易常识给出方向性建议，但要明确标注这是通用知识而非本站课程内容。${
+    list
+      ? `\n3. 主动推荐以下最接近的章节供用户深入学习：\n${list}`
+      : ""
+  }`;
+}

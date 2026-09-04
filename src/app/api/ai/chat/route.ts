@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/ai/client";
 import { retrieve } from "@/lib/ai/rag";
 import { buildRagContext, SYSTEM_PROMPT } from "@/lib/ai/prompt";
-import { enrichSourcesWithTitles, type SourceLink } from "@/lib/ai/sources";
+import { buildNoContextGuidance } from "@/lib/ai/prompt";
+import {
+  enrichSourcesWithTitles,
+  suggestChaptersFromResults,
+  type ChapterSuggestion,
+  type SourceLink,
+} from "@/lib/ai/sources";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "edge";
@@ -54,11 +60,18 @@ export async function POST(req: NextRequest) {
   // RAG 检索
   let ragContext = "";
   let sources: SourceLink[] = [];
+  let suggested: ChapterSuggestion[] = [];
+  let noContextGuidance = "";
   try {
     const results = await retrieve(lastUserMsg.content, locale, 4);
     if (results.length > 0) {
       ragContext = buildRagContext(results);
       sources = enrichSourcesWithTitles(results, locale);
+    } else {
+      // 兜底：放宽阈值二次检索，只取章节做推荐
+      const relaxed = await retrieve(lastUserMsg.content, locale, 6, 0);
+      suggested = suggestChaptersFromResults(relaxed, locale);
+      noContextGuidance = buildNoContextGuidance(suggested);
     }
   } catch (e) {
     // RAG 失败不阻断，退化为无上下文对话
@@ -68,7 +81,13 @@ export async function POST(req: NextRequest) {
   // 构造消息：system + rag context + 历史（保留最近 5 轮）+ 最新用户消息
   const recent = body.messages.slice(-10);
   const messages = [
-    { role: "system" as const, content: SYSTEM_PROMPT + (ragContext ? "\n\n" + ragContext : "") },
+    {
+      role: "system" as const,
+      content:
+        SYSTEM_PROMPT +
+        (ragContext ? "\n\n" + ragContext : "") +
+        (noContextGuidance ? "\n\n" + noContextGuidance : ""),
+    },
     ...recent,
   ];
 
@@ -80,6 +99,7 @@ export async function POST(req: NextRequest) {
     headers.set("Content-Type", "text/plain; charset=utf-8");
     headers.set("X-Cache", "HIT");
     if (sources.length > 0) headers.set("X-Sources", JSON.stringify(sources));
+    if (suggested.length > 0) headers.set("X-Suggested", JSON.stringify(suggested));
     return new Response(cached.text, { headers });
   }
 
@@ -114,6 +134,9 @@ export async function POST(req: NextRequest) {
     headers.set("Cache-Control", "no-cache");
     if (sources.length > 0) {
       headers.set("X-Sources", JSON.stringify(sources));
+    }
+    if (suggested.length > 0) {
+      headers.set("X-Suggested", JSON.stringify(suggested));
     }
 
     return new Response(cachedStream, { headers });
