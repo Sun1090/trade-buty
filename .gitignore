@@ -49,3 +49,7 @@ public/search-index.json
 
 # 构建期生成的知识库标题映射
 src/lib/kb-titles.json
+
+# playwright
+test-results/
+playwright-report/

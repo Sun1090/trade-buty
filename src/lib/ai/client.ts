@@ -2,6 +2,7 @@
  * P3 AI 陪学：通用 LLM / Embedding 客户端
  *
  * 用原生 fetch，不锁死任何厂商 SDK。
+ * 上游请求统一走 R7.5 的 fetchWithTimeoutRetry（超时 + 幂等重试）。
  * 兼容任何 OpenAI Chat Completions / Embeddings 格式的端点。
  *
  * 三模型 fallback 链：glm-5.2 → deepseek-v4-flash → sensenova-6.8-flash-lite
@@ -22,6 +23,8 @@ interface ChatOptions {
   /** 流结束时回调 finish_reason（length 表示被截断） */
   onFinish?: (reason: string | null) => void;
 }
+
+import { fetchWithTimeoutRetry } from "./http";
 
 const API_URL = process.env.AI_API_URL || "";
 const API_KEY = process.env.AI_API_KEY || "";
@@ -45,7 +48,7 @@ async function tryModel(
 ): Promise<ReadableStream<Uint8Array>> {
   const encoder = new TextEncoder();
 
-  const res = await fetch(`${API_URL}/chat/completions`, {
+  const res = await fetchWithTimeoutRetry(`${API_URL}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -149,7 +152,7 @@ export async function chat(opts: ChatOptions): Promise<string> {
   let lastErr: Error | null = null;
   for (const model of chain) {
     try {
-      const res = await fetch(`${API_URL}/chat/completions`, {
+      const res = await fetchWithTimeoutRetry(`${API_URL}/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -190,7 +193,7 @@ export async function embed(text: string): Promise<number[]> {
   const embedModel = process.env.AI_EMBEDDING_MODEL || "text-embedding-3-small";
   const embedKey = process.env.AI_EMBEDDING_KEY || API_KEY;
 
-  const res = await fetch(`${embedUrl}/embeddings`, {
+  const res = await fetchWithTimeoutRetry(`${embedUrl}/embeddings`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
