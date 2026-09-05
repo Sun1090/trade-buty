@@ -291,6 +291,18 @@ const zh = {
     recentLabel: "最近搜索",
     suggestTitle: "相关课程",
   },
+  newsletter: {
+    title: "邮件订阅（占位）",
+    desc: "邮件订阅功能开发中。当前邮箱仅保存在本机浏览器，不会上传。",
+    placeholder: "your@example.com",
+    submit: "保存邮箱（本地）",
+    saved: "已保存到本机 ✓ · ",
+    change: "修改",
+    clear: "清除",
+    copy: "复制 JSON",
+    copied: "已复制",
+    exportLabel: "导出我的订阅记录",
+  },
   onboarding: {
     title: "三步认识 Trade Buty",
     steps: {
@@ -635,6 +647,18 @@ const en: Dict = {
     browseCta: "browse the learning path →",
     recentLabel: "Recent",
     suggestTitle: "Suggestions",
+  },
+  newsletter: {
+    title: "Newsletter (placeholder)",
+    desc: "Email subscription is under construction. For now, your email stays in this browser only — nothing is uploaded.",
+    placeholder: "your@example.com",
+    submit: "Save email (local)",
+    saved: "Saved locally ✓ · ",
+    change: "Change",
+    clear: "Clear",
+    copy: "Copy JSON",
+    copied: "Copied",
+    exportLabel: "Export my subscription record",
   },
   onboarding: {
     title: "Three steps to know Trade Buty",
