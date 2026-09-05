@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { KlineChart } from "@/components/kline-chart";
 import { HeroCard } from "@/components/hero-card";
 import { FullscreenToggle } from "@/components/fullscreen-toggle";
@@ -12,10 +12,16 @@ export function generateStaticParams() {
 
 export async function generateMetadata({
   params,
-}: PageProps<"/[locale]/chart">): Promise<Metadata> {
+}: PageProps<"/[locale]/chart">) {
   const { locale } = await params;
+  if (!isLocale(locale)) return {};
   const t = getDict(locale).chart;
-  return { title: t.title, description: t.intro, alternates: { canonical: `/${locale}/chart` } };
+  return buildPageMetadata({
+    locale,
+    title: t.title,
+    description: t.intro,
+    path: `/${locale}/chart`,
+  });
 }
 
 export default async function ChartPage({

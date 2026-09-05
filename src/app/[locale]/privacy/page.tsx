@@ -1,14 +1,23 @@
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { HeroCard } from "@/components/hero-card";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/[locale]/privacy">): Promise<Metadata> {
-  return { title: "Privacy Policy", robots: { index: false, follow: false } };
+export async function generateMetadata({ params }: PageProps<"/[locale]/privacy">) {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const m = getDict(locale).pageMeta;
+  return buildPageMetadata({
+    locale,
+    title: m.privacyTitle,
+    description: m.privacyDesc,
+    path: `/${locale}/privacy`,
+    noindex: true,
+  });
 }
 
 export default async function PrivacyPage({ params }: PageProps<"/[locale]/privacy">) {

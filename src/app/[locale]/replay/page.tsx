@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { ReplayTrainer } from "@/components/replay-trainer";
 import { ReplayHistory } from "@/components/replay-history";
 import { HeroCard } from "@/components/hero-card";
@@ -12,10 +12,16 @@ export function generateStaticParams() {
 
 export async function generateMetadata({
   params,
-}: PageProps<"/[locale]/replay">): Promise<Metadata> {
+}: PageProps<"/[locale]/replay">) {
   const { locale } = await params;
+  if (!isLocale(locale)) return {};
   const t = getDict(locale).replay;
-  return { title: t.title, description: t.intro, alternates: { canonical: `/${locale}/replay` } };
+  return buildPageMetadata({
+    locale,
+    title: t.title,
+    description: t.intro,
+    path: `/${locale}/replay`,
+  });
 }
 
 export default async function ReplayPage({

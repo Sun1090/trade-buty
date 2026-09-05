@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { QUIZZES } from "@/lib/quizzes";
 import { ReviewClient } from "@/components/review-client";
 import { aiEnabledForPage } from "@/lib/ai-toggle";
@@ -14,8 +15,14 @@ export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/review">) {
   const { locale } = await params;
+  if (!isLocale(locale)) return {};
   const t = getDict(locale).review;
-  return { title: t.title, description: t.intro, alternates: { canonical: `/${locale}/review` } };
+  return buildPageMetadata({
+    locale,
+    title: t.title,
+    description: t.intro,
+    path: `/${locale}/review`,
+  });
 }
 
 export default async function ReviewPage({

@@ -1,14 +1,23 @@
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { isLocale, LOCALES } from "@/lib/i18n";
+import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { HeroCard } from "@/components/hero-card";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/[locale]/about">): Promise<Metadata> {
-  return { title: "About", robots: { index: false, follow: false } };
+export async function generateMetadata({ params }: PageProps<"/[locale]/about">) {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const m = getDict(locale).pageMeta;
+  return buildPageMetadata({
+    locale,
+    title: m.aboutTitle,
+    description: m.aboutDesc,
+    path: `/${locale}/about`,
+    noindex: true,
+  });
 }
 
 export default async function AboutPage({ params }: PageProps<"/[locale]/about">) {

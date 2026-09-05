@@ -1,14 +1,23 @@
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { isLocale, LOCALES } from "@/lib/i18n";
+import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { HeroCard } from "@/components/hero-card";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
 }
 
-export async function generateMetadata(): Promise<Metadata> {
-  return { title: "FAQ", robots: { index: false, follow: false } };
+export async function generateMetadata({ params }: PageProps<"/[locale]/faq">) {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const m = getDict(locale).pageMeta;
+  return buildPageMetadata({
+    locale,
+    title: m.faqTitle,
+    description: m.faqDesc,
+    path: `/${locale}/faq`,
+    noindex: true,
+  });
 }
 
 const FAQ_ZH = [

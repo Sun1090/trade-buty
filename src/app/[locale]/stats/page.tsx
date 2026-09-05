@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getChapters } from "@/lib/content";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { StatsClient } from "@/components/stats-client";
 import { HeroCard } from "@/components/hero-card";
 
@@ -11,10 +11,16 @@ export function generateStaticParams() {
 
 export async function generateMetadata({
   params,
-}: PageProps<"/[locale]/stats">): Promise<Metadata> {
+}: PageProps<"/[locale]/stats">) {
   const { locale } = await params;
+  if (!isLocale(locale)) return {};
   const t = getDict(locale).stats;
-  return { title: t.title, description: t.subtitle, alternates: { canonical: `/${locale}/stats` } };
+  return buildPageMetadata({
+    locale,
+    title: t.title,
+    description: t.subtitle,
+    path: `/${locale}/stats`,
+  });
 }
 
 export default async function StatsPage({
