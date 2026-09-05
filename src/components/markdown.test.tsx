@@ -31,3 +31,12 @@ describe("Markdown", () => {
     expect(link?.getAttribute("target")).toBeNull();
   });
 });
+
+describe("R7.2 图片懒加载", () => {
+  it("img 渲染带 loading=lazy 与 decoding=async", () => {
+    const { container } = render(<Markdown content="![示例](/knowledge-assets/x.png)" />);
+    const img = container.querySelector("img");
+    expect(img?.getAttribute("loading")).toBe("lazy");
+    expect(img?.getAttribute("alt")).toBe("示例");
+  });
+});
