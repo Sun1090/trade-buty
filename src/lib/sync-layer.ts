@@ -1,6 +1,7 @@
 "use client";
 
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { enqueueWrite } from "./sync-queue-store";
 import type { ProgressMap } from "./progress";
 import type { WrongEntry } from "./wrongbook";
 import type { ReplayRecord } from "./replay-store";
@@ -23,11 +24,16 @@ export function setAuthState(isAuth: boolean, id?: string) {
 // ---- 进度 ----
 export function syncProgressWrite(chapterNum: string, docSlug: string) {
   if (!authenticated || !userId) return;
+  // R9.5：失败入队而非丢弃；flushPersistedQueue 在 hydrateFromCloud / online 时重放
   void getSupabaseBrowser()
     .from("progress")
     .insert({ user_id: userId, chapter_num: chapterNum, doc_slug: docSlug })
-    .then(undefined, () => {
-      // 静默降级：unique 冲突或网络失败都不影响本地体验
+    .then(undefined, (err) => {
+      enqueueWrite("progress", `${chapterNum}:${docSlug}`, {
+        chapter_num: chapterNum,
+        doc_slug: docSlug,
+      });
+      if (process.env.NODE_ENV !== "production") console.warn("[sync] progress write failed → queued", err);
     });
 }
 
@@ -52,7 +58,17 @@ export function syncWrongbookWrite(
         srs_due: srsDue ?? null,
       },
       { onConflict: "user_id,chapter_num,question_idx" },
-    );
+    )
+    .then(undefined, (err) => {
+      enqueueWrite("wrongbook-upsert", `${chapterNum}:${questionIdx}`, {
+        chapter_num: chapterNum,
+        question_idx: questionIdx,
+        picked,
+        srs_stage: srsStage ?? null,
+        srs_due: srsDue ?? null,
+      });
+      if (process.env.NODE_ENV !== "production") console.warn("[sync] wrongbook upsert failed → queued", err);
+    });
 }
 
 export function syncWrongbookDelete(chapterNum: string, questionIdx: number) {
@@ -62,7 +78,14 @@ export function syncWrongbookDelete(chapterNum: string, questionIdx: number) {
     .delete()
     .eq("user_id", userId)
     .eq("chapter_num", chapterNum)
-    .eq("question_idx", questionIdx);
+    .eq("question_idx", questionIdx)
+    .then(undefined, (err) => {
+      enqueueWrite("wrongbook-delete", `${chapterNum}:${questionIdx}`, {
+        chapter_num: chapterNum,
+        question_idx: questionIdx,
+      });
+      if (process.env.NODE_ENV !== "production") console.warn("[sync] wrongbook delete failed → queued", err);
+    });
 }
 
 // ---- 测验成绩 ----
@@ -73,7 +96,15 @@ export function syncQuizUpsert(chapterNum: string, best: number, total: number) 
     .upsert(
       { user_id: userId, chapter_num: chapterNum, best, total, done: true },
       { onConflict: "user_id,chapter_num" },
-    );
+    )
+    .then(undefined, (err) => {
+      enqueueWrite("quiz", chapterNum, {
+        chapter_num: chapterNum,
+        best,
+        total,
+      });
+      if (process.env.NODE_ENV !== "production") console.warn("[sync] quiz upsert failed → queued", err);
+    });
 }
 
 // ---- 回放记录 ----
@@ -94,6 +125,16 @@ export function syncReplayHistoryWrite(rec: {
       total: rec.total,
       correct: rec.correct,
       best_streak: rec.bestStreak,
+    })
+    .then(undefined, (err) => {
+      enqueueWrite("replay-history", `${rec.symbol}:${rec.interval}:${Date.now()}`, {
+        symbol: rec.symbol,
+        interval: rec.interval,
+        total: rec.total,
+        correct: rec.correct,
+        best_streak: rec.bestStreak,
+      });
+      if (process.env.NODE_ENV !== "production") console.warn("[sync] replay history failed → queued", err);
     });
 }
 
@@ -102,7 +143,11 @@ export function syncReplayBestUpsert(best: number) {
   if (!authenticated || !userId) return;
   void getSupabaseBrowser()
     .from("replay_best")
-    .upsert({ user_id: userId, best_streak: best }, { onConflict: "user_id" });
+    .upsert({ user_id: userId, best_streak: best }, { onConflict: "user_id" })
+    .then(undefined, (err) => {
+      enqueueWrite("replay-best", "global", { best_streak: best });
+      if (process.env.NODE_ENV !== "production") console.warn("[sync] replay best failed → queued", err);
+    });
 }
 
 /** R4.7：每日目标档位云端同步（登录后多设备一致） */
@@ -110,7 +155,11 @@ export function syncGoalUpsert(goalMin: number) {
   if (!authenticated || !userId) return;
   void getSupabaseBrowser()
     .from("user_settings")
-    .upsert({ user_id: userId, daily_goal_min: goalMin }, { onConflict: "user_id" });
+    .upsert({ user_id: userId, daily_goal_min: goalMin }, { onConflict: "user_id" })
+    .then(undefined, (err) => {
+      enqueueWrite("goal", "daily-goal", { daily_goal_min: goalMin });
+      if (process.env.NODE_ENV !== "production") console.warn("[sync] goal upsert failed → queued", err);
+    });
 }
 
 // ---- 登录时从云端拉取并合并到本地 ----
@@ -216,7 +265,7 @@ export async function hydrateFromCloud(id: string) {
       getSupabaseBrowser().from("user_settings").select("daily_goal_min").eq("user_id", id),
     ]);
     [progressRes, wrongRes, quizRes, replayRes, bestRes, settingsRes] = results as [typeof progressRes, typeof wrongRes, typeof quizRes, typeof replayRes, typeof bestRes, typeof settingsRes];
-  } catch (e) {
+  } catch {
     // 网络/RLS/任意失败：保留本地数据，dispatch 通知后直接返回
     if (typeof window !== "undefined") {
       try {
