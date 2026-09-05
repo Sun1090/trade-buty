@@ -36,8 +36,9 @@ jobs:
       - run: npm run check:quiz-coverage
       - run: npm run check:links
       - run: npm run check:sitemap
-      - run: npx playwright install --with-deps chromium
-      - run: npm run e2e
       - run: npm run check:search-index
       - run: npm run check:bundle
+      # E2E 放最后：运行时会向 .next 写入动态 fallback 页，避免污染产物校验
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
       - run: npm run lhci
