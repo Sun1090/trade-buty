@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { AiChat } from "./ai-chat";
 import { SUGGESTED_QUESTIONS_ZH, SUGGESTED_QUESTIONS_EN } from "@/lib/ai/prompt";
@@ -48,6 +48,8 @@ const dict = {
   subtitle: "基于 27 篇章知识库回答你的交易问题。",
   thinking: "思考中…",
   error: "出错了",
+  errorServer: "服务暂时不可用，请稍后再试",
+  errorTimeout: "请求超时，请检查网络后重试",
   retry: "重试",
   clear: "清空对话",
   copy: "复制",
@@ -191,5 +193,71 @@ describe("AiChat 加载态（R1.10）", () => {
     fireEvent.click(rendered[0]);
     await screen.findByText("非流式全文");
     expect(container.querySelector('[data-testid="chat-skeleton"]')).toBeNull();
+  });
+});
+
+describe("AiChat 错误态分级（R1.11）", () => {
+  function setupAndAsk() {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/api/ai/conversations") {
+          return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+        }
+        if (url === "/api/ai/chat") return chatResponsePromise;
+        throw new Error(`unexpected fetch: ${url}`);
+      })
+    );
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    const rendered = [...container.querySelectorAll("button")].filter((b) =>
+      SUGGESTED_QUESTIONS_ZH.includes(b.textContent ?? "")
+    );
+    fireEvent.click(rendered[0]);
+    return container;
+  }
+
+  let resolveChat!: (r: Response) => void;
+  let chatResponsePromise!: Promise<Response>;
+
+  beforeEach(() => {
+    chatResponsePromise = new Promise<Response>((res) => { resolveChat = res; });
+  });
+
+  afterEach(() => {
+    // 每个用例结束时释放挂起的请求，避免泄漏
+    resolveChat({
+      ok: false,
+      status: 500,
+      headers: { get: () => null },
+      json: async () => ({}),
+    } as unknown as Response);
+  });
+
+  it("429 限流展示配额文案", async () => {
+    setupAndAsk();
+    resolveChat({
+      ok: false,
+      status: 429,
+      headers: { get: () => null },
+      json: async () => ({}),
+    } as unknown as Response);
+    expect(await screen.findByText(dict.guestLimit)).toBeInTheDocument();
+  });
+
+  it("5xx 展示服务不可用文案（而非笼统错误）", async () => {
+    setupAndAsk();
+    resolveChat({
+      ok: false,
+      status: 503,
+      headers: { get: () => null },
+      json: async () => ({ error: "upstream" }),
+    } as unknown as Response);
+    expect(await screen.findByText(dict.errorServer)).toBeInTheDocument();
+  });
+
+  it("请求超时（AbortError）展示超时文案", async () => {
+    setupAndAsk();
+    resolveChat(Promise.reject(new DOMException("aborted", "AbortError")) as unknown as Response);
+    expect(await screen.findByText(dict.errorTimeout)).toBeInTheDocument();
   });
 });
