@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { ChapterQuiz } from "@/lib/quiz-types";
-import { recordWrong, resolveWrong } from "@/lib/wrongbook";
+import { applySrsResult } from "@/lib/wrongbook";
+import { addStudyTime } from "@/lib/study-time";
 import { isAiGloballyDisabled } from "@/lib/ai-toggle";
 
 interface AiQuizProps {
@@ -64,9 +65,9 @@ export function AiQuiz({ wrongItems, quizzes, dict, aiEnabled = true }: AiQuizPr
   }
 
   /**
-   * R2.6/R2.8：变体题与错题本打通。
-   * 变体题 i 对应来源错题 wrongItems[i % n]；recordWrong 同 key 覆盖（幂等），
-   * 答对视为掌握该来源错题，移出错题本。
+   * R2.6/R2.8/R5.5：变体题与错题本打通，走 SRS 状态机。
+   * 变体题 i 对应来源错题 wrongItems[i % n]；答对推进间隔、答错重置（幂等）。
+   * R5.8：每次复习应答计入每日目标（1 题记 1 分钟）。
    */
   function pick(i: number) {
     if (picked !== null) return;
@@ -74,8 +75,8 @@ export function AiQuiz({ wrongItems, quizzes, dict, aiEnabled = true }: AiQuizPr
     const q = questions[current];
     const src = wrongItems[current % wrongItems.length];
     if (!q || !src) return;
-    if (i === q.answer) resolveWrong(src.chapterNum, src.questionIdx);
-    else recordWrong(src.chapterNum, src.questionIdx, i);
+    addStudyTime("quiz", 60);
+    applySrsResult(src.chapterNum, src.questionIdx, i === q.answer, i);
   }
 
   /** R2.11：题目质量举报（fire-and-forget） */

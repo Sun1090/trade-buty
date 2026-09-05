@@ -36,12 +36,21 @@ export function syncWrongbookWrite(
   chapterNum: string,
   questionIdx: number,
   picked: number,
+  srsStage?: number,
+  srsDue?: string,
 ) {
   if (!authenticated || !userId) return;
   void getSupabaseBrowser()
     .from("wrongbook")
     .upsert(
-      { user_id: userId, chapter_num: chapterNum, question_idx: questionIdx, picked },
+      {
+        user_id: userId,
+        chapter_num: chapterNum,
+        question_idx: questionIdx,
+        picked,
+        srs_stage: srsStage ?? null,
+        srs_due: srsDue ?? null,
+      },
       { onConflict: "user_id,chapter_num,question_idx" },
     );
 }
@@ -107,7 +116,7 @@ export function syncGoalUpsert(goalMin: number) {
 // ---- 登录时从云端拉取并合并到本地 ----
 
 interface CloudProgress { chapter_num: string; doc_slug: string }
-interface CloudWrong { chapter_num: string; question_idx: number; picked: number; answered_at: string }
+interface CloudWrong { chapter_num: string; question_idx: number; picked: number; answered_at: string; srs_stage?: number | null; srs_due?: string | null }
 interface CloudQuiz { chapter_num: string; best: number; total: number; done: boolean }
 interface CloudReplay { symbol: string; interval: string; total: number; correct: number; best_streak: number; recorded_at: string }
 interface CloudReplayBest { best_streak: number }
@@ -138,6 +147,9 @@ export function mergeWrongbook(local: Record<string, WrongEntry>, cloud: CloudWr
         questionIdx: row.question_idx,
         picked: row.picked,
         at: cloudAt,
+        // R5.7：SRS 字段随云端合并（空值不覆盖本地已有计划）
+        srsStage: row.srs_stage ?? localEntry?.srsStage,
+        srsDue: row.srs_due ?? localEntry?.srsDue,
       };
     }
   }
@@ -189,7 +201,7 @@ export async function hydrateFromCloud(id: string) {
 
   const [progressRes, wrongRes, quizRes, replayRes, bestRes, settingsRes] = await Promise.all([
     getSupabaseBrowser().from("progress").select("chapter_num, doc_slug").eq("user_id", id),
-    getSupabaseBrowser().from("wrongbook").select("chapter_num, question_idx, picked, answered_at").eq("user_id", id),
+    getSupabaseBrowser().from("wrongbook").select("chapter_num, question_idx, picked, answered_at, srs_stage, srs_due").eq("user_id", id),
     getSupabaseBrowser().from("quiz_scores").select("chapter_num, best, total, done").eq("user_id", id),
     getSupabaseBrowser().from("replay_history").select("symbol, interval, total, correct, best_streak, recorded_at").eq("user_id", id).order("recorded_at", { ascending: false }).limit(100),
     getSupabaseBrowser().from("replay_best").select("best_streak").eq("user_id", id),
