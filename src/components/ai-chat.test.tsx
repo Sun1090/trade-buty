@@ -331,3 +331,53 @@ describe("AiChat 配额提示（R1.12）", () => {
     expect(container).toBeDefined();
   });
 });
+
+describe("AiChat 引用点击统计（R1.13）", () => {
+  it("点击来源引用上报 citation-click，携带章节与问题", async () => {
+    const sources = [{ chapter: "spot", doc: "order-types", title: "订单类型" }];
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/ai/conversations") {
+        return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+      }
+      if (url === "/api/ai/citation-click") {
+        return { ok: true, status: 200, json: async () => ({ ok: true }) } as Response;
+      }
+      if (url === "/api/ai/chat") {
+        return {
+          ok: true,
+          status: 200,
+          headers: {
+            get: (k: string) =>
+              k === "X-Sources"
+                ? encodeURIComponent(JSON.stringify(sources))
+                : null,
+          },
+          body: makeStreamBody("回答正文"),
+        } as unknown as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    const rendered = [...container.querySelectorAll("button")].filter((b) =>
+      SUGGESTED_QUESTIONS_ZH.includes(b.textContent ?? "")
+    );
+    const question = rendered[0].textContent as string;
+    fireEvent.click(rendered[0]);
+
+    // 等回答渲染出来源 pill
+    const pill = await screen.findByText("📖 订单类型");
+    fireEvent.click(pill);
+
+    const call = fetchMock.mock.calls.find(([u]) => u === "/api/ai/citation-click");
+    expect(call).toBeDefined();
+    const body = JSON.parse((call?.[1] as RequestInit).body as string);
+    expect(body).toEqual({
+      kind: "source",
+      chapter: "spot",
+      doc: "order-types",
+      question,
+    });
+    expect(container).toBeDefined();
+  });
+});
