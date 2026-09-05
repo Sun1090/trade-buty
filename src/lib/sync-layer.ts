@@ -1,7 +1,9 @@
 "use client";
 
 import { getSupabaseBrowser } from "@/lib/supabase/client";
-import { enqueueWrite } from "./sync-queue-store";
+// R9.6：sync-layer 仅在登录后才需要 enqueueWrite；改为通过独立模块动态 import
+// 避免 sync-queue-store 被打进 layout 的共享 chunk（每个内容页 -12KB gzip）。
+import { lazyEnqueueWrite as enqueueWriteLazy } from "./sync-layer-queue-fallback";
 import type { ProgressMap } from "./progress";
 import type { WrongEntry } from "./wrongbook";
 import type { ReplayRecord } from "./replay-store";
@@ -29,7 +31,7 @@ export function syncProgressWrite(chapterNum: string, docSlug: string) {
     .from("progress")
     .insert({ user_id: userId, chapter_num: chapterNum, doc_slug: docSlug })
     .then(undefined, (err) => {
-      enqueueWrite("progress", `${chapterNum}:${docSlug}`, {
+      enqueueWriteLazy("progress", `${chapterNum}:${docSlug}`, {
         chapter_num: chapterNum,
         doc_slug: docSlug,
       });
@@ -60,7 +62,7 @@ export function syncWrongbookWrite(
       { onConflict: "user_id,chapter_num,question_idx" },
     )
     .then(undefined, (err) => {
-      enqueueWrite("wrongbook-upsert", `${chapterNum}:${questionIdx}`, {
+      enqueueWriteLazy("wrongbook-upsert", `${chapterNum}:${questionIdx}`, {
         chapter_num: chapterNum,
         question_idx: questionIdx,
         picked,
@@ -80,7 +82,7 @@ export function syncWrongbookDelete(chapterNum: string, questionIdx: number) {
     .eq("chapter_num", chapterNum)
     .eq("question_idx", questionIdx)
     .then(undefined, (err) => {
-      enqueueWrite("wrongbook-delete", `${chapterNum}:${questionIdx}`, {
+      enqueueWriteLazy("wrongbook-delete", `${chapterNum}:${questionIdx}`, {
         chapter_num: chapterNum,
         question_idx: questionIdx,
       });
@@ -98,7 +100,7 @@ export function syncQuizUpsert(chapterNum: string, best: number, total: number) 
       { onConflict: "user_id,chapter_num" },
     )
     .then(undefined, (err) => {
-      enqueueWrite("quiz", chapterNum, {
+      enqueueWriteLazy("quiz", chapterNum, {
         chapter_num: chapterNum,
         best,
         total,
@@ -127,7 +129,7 @@ export function syncReplayHistoryWrite(rec: {
       best_streak: rec.bestStreak,
     })
     .then(undefined, (err) => {
-      enqueueWrite("replay-history", `${rec.symbol}:${rec.interval}:${Date.now()}`, {
+      enqueueWriteLazy("replay-history", `${rec.symbol}:${rec.interval}:${Date.now()}`, {
         symbol: rec.symbol,
         interval: rec.interval,
         total: rec.total,
@@ -145,7 +147,7 @@ export function syncReplayBestUpsert(best: number) {
     .from("replay_best")
     .upsert({ user_id: userId, best_streak: best }, { onConflict: "user_id" })
     .then(undefined, (err) => {
-      enqueueWrite("replay-best", "global", { best_streak: best });
+      enqueueWriteLazy("replay-best", "global", { best_streak: best });
       if (process.env.NODE_ENV !== "production") console.warn("[sync] replay best failed → queued", err);
     });
 }
@@ -157,7 +159,7 @@ export function syncGoalUpsert(goalMin: number) {
     .from("user_settings")
     .upsert({ user_id: userId, daily_goal_min: goalMin }, { onConflict: "user_id" })
     .then(undefined, (err) => {
-      enqueueWrite("goal", "daily-goal", { daily_goal_min: goalMin });
+      enqueueWriteLazy("goal", "daily-goal", { daily_goal_min: goalMin });
       if (process.env.NODE_ENV !== "production") console.warn("[sync] goal upsert failed → queued", err);
     });
 }
