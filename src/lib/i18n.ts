@@ -291,6 +291,18 @@ const zh = {
     recentLabel: "最近搜索",
     suggestTitle: "相关课程",
   },
+  onboarding: {
+    title: "三步认识 Trade Buty",
+    steps: {
+      path: { title: "第一步：学习路线", body: "按章节系统学习 K 线、形态、指标与风控。", cta: "去看路线" },
+      replay: { title: "第二步：回放训练", body: "用历史行情练手——预测下一根 K 线方向，看准确率。", cta: "开始回放" },
+      review: { title: "第三步：错题复习", body: "测验答错的题会进错题本，SRS 调度复习，长期不遗忘。", cta: "去复习" },
+    },
+    next: "下一步",
+    skip: "跳过",
+    finish: "开始学习",
+    restart: "再看一次",
+  },
   invite: {
     titleTpl: "来自朋友邀请 🎉 · ref {ref}",
     bodyTpl: "你通过邀请链接进入 Trade Buty。一起学起来吧。",
@@ -623,6 +635,18 @@ const en: Dict = {
     browseCta: "browse the learning path →",
     recentLabel: "Recent",
     suggestTitle: "Suggestions",
+  },
+  onboarding: {
+    title: "Three steps to know Trade Buty",
+    steps: {
+      path: { title: "Step 1: Learning path", body: "Step through chapters: candles, patterns, indicators, and risk control.", cta: "See the path" },
+      replay: { title: "Step 2: Replay training", body: "Predict the next candle on historical charts — train your read of the tape.", cta: "Start replay" },
+      review: { title: "Step 3: Review wrong answers", body: "Quiz misses go to a wrong-answer notebook; SRS schedules your reviews.", cta: "Go review" },
+    },
+    next: "Next",
+    skip: "Skip",
+    finish: "Start learning",
+    restart: "Show again",
   },
   invite: {
     titleTpl: "Invited by a friend 🎉 · ref {ref}",

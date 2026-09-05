@@ -7,6 +7,7 @@ import { SearchHotkey } from "@/components/search-hotkey";
 import { AuthHeader } from "@/components/auth-header";
 import { AuthProvider } from "@/components/auth-provider";
 import { InviteBanner } from "@/components/invite-banner";
+import { OnboardingTour } from "@/components/onboarding-tour";
 import { MobileNav } from "@/components/mobile-nav";
 import { BookmarkCount } from "@/components/bookmark-count";
 import { LearningSidebar } from "@/components/learning-sidebar";
@@ -191,6 +192,10 @@ export default async function LocaleLayout({
           </div>
         </div>
       </footer>
+      <OnboardingTour
+        labels={t.onboarding}
+        locale={locale === "en" ? "en" : "zh"}
+      />
       <InviteBanner
         labels={{
           titleTpl: t.invite.titleTpl,
