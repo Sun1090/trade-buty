@@ -1,16 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chat } from "@/lib/ai/client";
 import { retrieve } from "@/lib/ai/rag";
-import { buildRagContext, buildQuizPrompt } from "@/lib/ai/prompt";
+import { buildRagContext, buildQuizPrompt, buildChapterQuizPrompt } from "@/lib/ai/prompt";
 import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
+import { validateAiQuestions, filterDuplicateQuestions } from "@/lib/ai/quiz-gen";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { QUIZZES } from "@/lib/quizzes";
+import titlesData from "@/lib/kb-titles.json";
 
 export const runtime = "edge";
 
+type TitlesMap = Record<string, Record<string, { title?: string }>>;
+const TITLES = titlesData as TitlesMap;
+
 interface GenerateBody {
-  /** 错题的篇章+题号列表，用于取原题 + RAG */
-  items: { chapterNum: string; questionIdx: number }[];
+  /** 错题的篇章+题号列表，用于取原题 + RAG（变体模式） */
+  items?: { chapterNum: string; questionIdx: number }[];
+  /** R2.1 章节出题模式：直接按章节 slug 出新题 */
+  chapter?: string;
+  locale?: string;
+  difficulty?: "basic" | "advanced";
+}
+
+// R2.10 成本控制：同章节+语言+难度的题目缓存 24h（edge 实例级）
+const quizCache = new Map<string, { questions: unknown; at: number }>();
+const QUIZ_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+/** 章节标题（去掉 "NN · " 前缀），未知章节返回 null */
+export function getChapterTitle(locale: string, chapter: string): string | null {
+  const entry = TITLES[locale]?.[chapter]?.title;
+  if (!entry) return null;
+  return entry.replace(/^\d+\s*·\s*/, "");
 }
 
 /**
@@ -30,6 +50,12 @@ export async function POST(req: NextRequest) {
   }
 
   const body = (await req.json()) as GenerateBody;
+
+  // R2.1 章节出题模式：按章节 slug 基于知识库上下文出 5 道新题
+  if (body.chapter) {
+    return handleChapterQuiz(body, user.id);
+  }
+
   if (!body.items?.length) {
     return NextResponse.json({ error: "No items" }, { status: 400 });
   }
@@ -86,6 +112,67 @@ const profile = getRetrievalProfile('quiz');
 
     return NextResponse.json({ questions: valid });
   } catch (e) {
+    const msg = e instanceof Error ? e.message : "AI quiz error";
+    return NextResponse.json({ error: msg }, { status: 502 });
+  }
+}
+
+/**
+ * R2.1：章节出题。RAG 限定该章内容 → AI 生成 5 道题 → 与固定题库去重。
+ * 失败降级（R2.5）：AI 出题失败时回退本章固定题（若有），绝不白屏。
+ */
+async function handleChapterQuiz(
+  body: GenerateBody,
+  userId: string,
+): Promise<NextResponse> {
+  const locale = body.locale === "en" ? "en" : "zh";
+  const difficulty = body.difficulty === "advanced" ? "advanced" : "basic";
+  const chapter = body.chapter as string;
+  const chapterTitle = getChapterTitle(locale, chapter);
+  if (!chapterTitle) {
+    return NextResponse.json({ error: "Unknown chapter" }, { status: 400 });
+  }
+
+  // R2.10 缓存命中直接返回
+  const cacheKey = `${chapter}::${locale}::${difficulty}`;
+  const cached = quizCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < QUIZ_CACHE_TTL) {
+    return NextResponse.json({ questions: cached.questions, source: "ai", cached: true });
+  }
+
+  const fixedQuiz = QUIZZES[chapter];
+  const existingQuestions = fixedQuiz?.questions.map((q) => q.question) ?? [];
+
+  try {
+    // 章节出题的检索 query 用章节标题本身
+    let ragContext = "";
+    try {
+      const profile = getRetrievalProfile("quiz");
+      const query = locale === "en" ? `${chapterTitle} core concepts` : `${chapterTitle} 核心概念`;
+      const results = await retrieve(query, locale, profile.topK, profile.threshold, chapter);
+      if (results.length > 0) ragContext = buildRagContext(results);
+    } catch {
+      // RAG 失败不阻断，AI 在无上下文时会按约束拒绝编造
+    }
+
+    const raw = await chat({
+      messages: buildChapterQuizPrompt(chapterTitle, ragContext, locale, difficulty),
+      temperature: 0.7,
+      maxTokens: 3000,
+    });
+    const valid = filterDuplicateQuestions(
+      validateAiQuestions(JSON.parse(raw)),
+      existingQuestions,
+    );
+    if (valid.length === 0) throw new Error("No valid questions generated");
+
+    quizCache.set(cacheKey, { questions: valid, at: Date.now() });
+    return NextResponse.json({ questions: valid, source: "ai" });
+  } catch (e) {
+    // R2.5 降级：有固定题回退固定题，否则报错由前端提示
+    if (fixedQuiz) {
+      return NextResponse.json({ questions: fixedQuiz.questions, source: "fallback" });
+    }
     const msg = e instanceof Error ? e.message : "AI quiz error";
     return NextResponse.json({ error: msg }, { status: 502 });
   }

@@ -15,6 +15,7 @@ import { getDict, isLocale } from "@/lib/i18n";
 import { QUIZZES } from "@/lib/quizzes";
 import { Markdown } from "@/components/markdown";
 import { ChapterExamCard } from "@/components/chapter-exam-card";
+import { AiChapterQuizCard } from "@/components/ai-chapter-quiz";
 import { ChapterRail } from "@/components/chapter-rail";
 import { MarkRead } from "@/components/mark-read";
 import { LazyChartEmbed } from "@/components/chart-embed";
@@ -242,8 +243,26 @@ export default async function DocPage({
 
       {/* 测验 + 边学边练 双栏 */}
       <div className="mt-8 grid gap-4 lg:grid-cols-2">
-        {QUIZZES[chapterSlug] && (
+        {QUIZZES[chapterSlug] ? (
           <ChapterExamCard quiz={QUIZZES[chapterSlug]} dict={t.quiz} />
+        ) : (
+          <AiChapterQuizCard
+            chapter={chapterSlug}
+            locale={locale}
+            dict={{
+              start: t.ai.aiQuizStart,
+              generating: t.ai.aiQuizGenerating,
+              badge: t.ai.aiQuizBadge,
+              loginRequired: t.ai.aiQuizLogin,
+              error: t.ai.aiQuizError,
+              fallback: t.ai.aiQuizFallback,
+              correct: t.quiz.correct,
+              wrong: t.quiz.wrong,
+              next: t.quiz.nextQ,
+              done: t.quiz.finish,
+              disclaimer: t.ai.disclaimer,
+            }}
+          />
         )}
         {chapterSlug === "technical-analysis" ? (
           <LazyChartEmbed
