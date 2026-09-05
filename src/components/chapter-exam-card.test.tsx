@@ -22,7 +22,7 @@ describe("ChapterExamCard", () => {
       questionsUnit: "题", bestTpl: "最佳 {n}/{total}",
       start: "开始", retry: "重试", progressTpl: "{i}/{n}",
       correct: "对", wrong: "错", nextQ: "下一题", finish: "完成", perfect: "满分",
-      shareQuiz: "分享", previewQuiz: "预览", download: "下载", previewAlt: "预览",
+      shareQuiz: "分享", previewQuiz: "预览", download: "下载", previewAlt: "预览", copyLink: "复制链接", copiedLink: "已复制",
     }} locale="zh" />);
     expect(screen.getByText(/现货测验/)).toBeInTheDocument();
   });
@@ -32,7 +32,7 @@ describe("ChapterExamCard", () => {
       questionsUnit: "题", bestTpl: "最佳 {n}/{total}",
       start: "开始", retry: "重试", progressTpl: "{i}/{n}",
       correct: "对", wrong: "错", nextQ: "下一题", finish: "完成", perfect: "满分",
-      shareQuiz: "分享", previewQuiz: "预览", download: "下载", previewAlt: "预览",
+      shareQuiz: "分享", previewQuiz: "预览", download: "下载", previewAlt: "预览", copyLink: "复制链接", copiedLink: "已复制",
     }} locale="zh" />);
     expect(container.textContent).toContain("1");
     expect(container.textContent).toContain("题");
@@ -43,7 +43,7 @@ describe("ChapterExamCard", () => {
       questionsUnit: "题", bestTpl: "最佳 {n}/{total}",
       start: "开始", retry: "重试", progressTpl: "{i}/{n}",
       correct: "对", wrong: "错", nextQ: "下一题", finish: "完成", perfect: "满分",
-      shareQuiz: "分享", previewQuiz: "预览", download: "下载", previewAlt: "预览",
+      shareQuiz: "分享", previewQuiz: "预览", download: "下载", previewAlt: "预览", copyLink: "复制链接", copiedLink: "已复制",
     }} locale="zh" />);
     const btn = container.querySelector("button");
     expect(btn).toBeTruthy();

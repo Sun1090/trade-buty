@@ -13,6 +13,7 @@ import { saveReplayRecord, saveReplayBest } from "@/lib/replay-store";
 import { addStudyTime } from "@/lib/study-time";
 import { measureFps, LOW_END_FPS_THRESHOLD, REPLAY_REDUCED_CANDLES } from "@/lib/perf";
 import { ReplayShareCard } from "@/components/replay-share-card";
+import { encodeReplay } from "@/lib/share-decode";
 
 const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] as const;
 const SYMBOL_NAMES: Record<string, string> = {
@@ -58,6 +59,8 @@ export interface ReplayDict {
   previewReplay: string;
   download: string;
   previewAlt: string;
+  copyLink: string;
+  copiedLink: string;
 }
 
 interface GuessState {
@@ -79,9 +82,18 @@ function gradeOf(total: number, correct: number): string {
   return "C";
 }
 
+
 export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh" | "en" }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  // R8.4 分享链接 URL（client-only）——origin 在 hydration 后才稳定
+  const [origin, setOrigin] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOrigin(window.location.origin);
+    }
+  }, []);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const [symbol, setSymbol] = useState<string>("BTCUSDT");
   const [interval_, setInterval_] = useState<string>("1h");
@@ -479,7 +491,25 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
                       share: dict.shareReplay,
                       previewAlt: dict.previewAlt,
                       download: dict.download,
+                      copyLink: dict.copyLink,
+                      copiedLink: dict.copiedLink,
                     }}
+                    shareUrl={
+                      !origin || guess.total <= 0
+                        ? undefined
+                        : `${origin}/share/replay/${encodeReplay({
+                            symbol,
+                            interval: interval_,
+                            correct: guess.correct,
+                            total: guess.total,
+                            accuracyBps: Math.round(
+                              guess.total > 0 ? (guess.correct / guess.total) * 10000 : 0,
+                            ),
+                            bestStreak: guess.best,
+                            currentStreak: guess.streak,
+                            locale,
+                          })}`
+                    }
                   />
                 </div>
               </div>

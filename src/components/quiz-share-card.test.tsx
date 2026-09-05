@@ -109,7 +109,7 @@ describe("QuizShareCard", () => {
         score={4}
         total={5}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载" }}
+        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制" }}
       />,
     );
     expect(screen.getByTestId("quiz-share-btn")).toBeInTheDocument();
@@ -123,7 +123,7 @@ describe("QuizShareCard", () => {
         score={5}
         total={5}
         locale="zh"
-        labels={{ share: "分享我的成绩", previewAlt: "预览", download: "下载" }}
+        labels={{ share: "分享我的成绩", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制" }}
       />,
     );
     // canvas 存在但隐藏
@@ -146,7 +146,7 @@ describe("QuizShareCard", () => {
         score={3}
         total={5}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览卡", download: "下载" }}
+        labels={{ share: "分享", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制" }}
       />,
     );
     fireEvent.click(screen.getByTestId("quiz-share-preview-btn"));

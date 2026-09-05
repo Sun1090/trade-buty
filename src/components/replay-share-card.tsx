@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CARD_SIZE, drawReplayCard, type ShareLocale } from "@/lib/share-card";
 import { downloadCanvasAsPng } from "@/lib/download";
+import { CopyLinkButton } from "@/components/copy-link-button";
 
 interface Props {
   symbol: string;
@@ -14,10 +15,14 @@ interface Props {
   currentStreak: number;
   locale: ShareLocale;
   siteName?: string;
+  /** R8.4 分享链接 URL（含 origin） */
+  shareUrl?: string;
   labels: {
     share: string;
     previewAlt: string;
     download: string;
+    copyLink: string;
+    copiedLink: string;
   };
 }
 
@@ -34,6 +39,7 @@ export function ReplayShareCard({
   currentStreak,
   locale,
   siteName = "Trade Buty",
+  shareUrl,
   labels,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -119,6 +125,14 @@ export function ReplayShareCard({
       >
         👁 Preview
       </button>
+      {shareUrl && (
+        <CopyLinkButton
+          url={shareUrl}
+          label={labels.copyLink}
+          copiedLabel={labels.copiedLink}
+          testId="replay-share-link-btn"
+        />
+      )}
       {previewUrl && (
         <div className="basis-full mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <p className="text-xs text-faint mb-2 font-mono">{labels.previewAlt}</p>

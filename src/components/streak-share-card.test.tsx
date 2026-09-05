@@ -83,7 +83,7 @@ describe("StreakShareCard", () => {
         longestStreak={14}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享我的连续打卡", previewAlt: "预览", download: "下载" }}
+        labels={{ share: "分享我的连续打卡", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制" }}
       />,
     );
     expect(screen.getByTestId("streak-share-btn")).toBeInTheDocument();
@@ -97,7 +97,7 @@ describe("StreakShareCard", () => {
         longestStreak={3}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载" }}
+        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制" }}
       />,
     );
     expect(screen.getByTestId("streak-share-btn")).toBeDisabled();
@@ -111,7 +111,7 @@ describe("StreakShareCard", () => {
         longestStreak={20}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载" }}
+        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制" }}
       />,
     );
     expect(container.querySelector("canvas")).toBeTruthy();
@@ -131,7 +131,7 @@ describe("StreakShareCard", () => {
         longestStreak={12}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "连续打卡卡预览", download: "下载" }}
+        labels={{ share: "分享", previewAlt: "连续打卡卡预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制" }}
       />,
     );
     fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
