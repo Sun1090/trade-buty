@@ -81,7 +81,10 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
   const [interval_, setInterval_] = useState<string>("1h");
   const [round, setRound] = useState(0);
   // R4.2：本轮回放开始时刻（round 变化即新一轮），结束时上报耗时
-  const roundStartRef = useRef<number>(Date.now());
+  const roundStartRef = useRef<number>(0);
+  useEffect(() => {
+    roundStartRef.current = Date.now();
+  }, [round]);
   const [customMode, setCustomMode] = useState(false);
   const [endDateInput, setEndDateInput] = useState(() => {
     const d = new Date(Date.now() - 30 * 86400_000);
@@ -126,7 +129,9 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
       savedRoundRef.current !== round
     ) {
       savedRoundRef.current = round;
-      const elapsed = Math.min(Math.round((Date.now() - roundStartRef.current) / 1000), 8 * 3600);
+      const elapsed = roundStartRef.current > 0
+        ? Math.min(Math.round((Date.now() - roundStartRef.current) / 1000), 8 * 3600)
+        : 0;
       if (elapsed > 0) addStudyTime("replay", elapsed);
       roundStartRef.current = Date.now();
       saveReplayRecord({
