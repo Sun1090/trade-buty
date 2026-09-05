@@ -6,6 +6,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { SearchHotkey } from "@/components/search-hotkey";
 import { AuthHeader } from "@/components/auth-header";
 import { AuthProvider } from "@/components/auth-provider";
+import { InviteBanner } from "@/components/invite-banner";
 import { MobileNav } from "@/components/mobile-nav";
 import { BookmarkCount } from "@/components/bookmark-count";
 import { LearningSidebar } from "@/components/learning-sidebar";
@@ -190,6 +191,14 @@ export default async function LocaleLayout({
           </div>
         </div>
       </footer>
+      <InviteBanner
+        labels={{
+          titleTpl: t.invite.titleTpl,
+          bodyTpl: t.invite.bodyTpl,
+          dismiss: t.invite.dismiss,
+        }}
+        locale={locale === "en" ? "en" : "zh"}
+      />
     </AuthProvider>
   );
 }

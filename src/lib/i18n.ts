@@ -291,6 +291,11 @@ const zh = {
     recentLabel: "最近搜索",
     suggestTitle: "相关课程",
   },
+  invite: {
+    titleTpl: "来自朋友邀请 🎉 · ref {ref}",
+    bodyTpl: "你通过邀请链接进入 Trade Buty。一起学起来吧。",
+    dismiss: "知道了",
+  },
   share: {
     quizTitleTpl: "{chapter} · {grade} 评级 · {score}/{total}",
     quizDescTpl: "我刚在 Trade Buty 完成「{chapter}」随堂测，{score}/{total}（{percent}%）。你也来试试？",
@@ -618,6 +623,11 @@ const en: Dict = {
     browseCta: "browse the learning path →",
     recentLabel: "Recent",
     suggestTitle: "Suggestions",
+  },
+  invite: {
+    titleTpl: "Invited by a friend 🎉 · ref {ref}",
+    bodyTpl: "You arrived via a referral link. Welcome!",
+    dismiss: "Got it",
   },
   share: {
     quizTitleTpl: "{chapter} · Grade {grade} · {score}/{total}",
