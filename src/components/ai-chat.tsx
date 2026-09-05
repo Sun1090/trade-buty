@@ -31,6 +31,8 @@ interface AiDict {
   examplesLabel: string;
   disclaimer: string;
   guestLimit: string;
+  quotaRemaining: string;
+  quotaLoginHint: string;
   helpful: string;
   unhelpful: string;
 }
@@ -40,6 +42,8 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 游客配额（服务端仅对未登录请求返回 X-Quota-* 头；登录用户为 null 不展示）
+  const [quota, setQuota] = useState<{ remaining: number; limit: number } | null>(null);
   const [feedback, setFeedback] = useState<Record<number, "helpful" | "unhelpful">>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const initRef = useRef(false);
@@ -149,6 +153,12 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         signal: controller.signal,
       });
       clearTimeout(timer);
+
+      const qLimit = res.headers.get("X-Quota-Limit");
+      const qRemaining = res.headers.get("X-Quota-Remaining");
+      if (qLimit && qRemaining) {
+        setQuota({ limit: parseInt(qLimit), remaining: parseInt(qRemaining) });
+      }
 
       if (res.status === 429) {
         const retryAfter = res.headers.get("retry-after");
@@ -487,6 +497,18 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
               {loading ? "…" : "→"}
             </button>
           </form>
+          {/* 游客配额提示：有剩余展示次数，用尽引导登录 */}
+          {quota && (
+            <p className="mt-1 text-[10px] text-faint">
+              {quota.remaining > 0 ? (
+                dict.quotaRemaining.replace("{n}", String(quota.remaining))
+              ) : (
+                <a href={`/${locale}/auth`} className="text-accent underline underline-offset-4">
+                  {dict.quotaLoginHint}
+                </a>
+              )}
+            </p>
+          )}
           <div className="mt-2 flex items-center justify-between gap-2">
             <p className="text-[10px] text-faint">{dict.disclaimer}</p>
             <span className={`text-[10px] font-mono ${input.length > 450 ? "text-down" : "text-faint"}`}>
