@@ -1,9 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Markdown } from "@/components/markdown";
+import dynamic from "next/dynamic";
+// R7.1：Markdown 渲染链（react-markdown+rehype）按需加载——回答到达前不需要
+const Markdown = dynamic(() => import("@/components/markdown").then((m) => m.Markdown), {
+  ssr: false,
+  loading: () => (
+    <div className="space-y-2 py-1" aria-busy="true">
+      <div className="h-3 rounded bg-[var(--border)] w-full animate-pulse" />
+      <div className="h-3 rounded bg-[var(--border)] w-[85%] animate-pulse" />
+    </div>
+  ),
+});
 import { SUGGESTED_QUESTIONS_ZH, SUGGESTED_QUESTIONS_EN, pickRandomQuestions } from "@/lib/ai/prompt";
 import { hasTruncatedMarker, stripTruncatedMarker } from "@/lib/ai/streaming";
+import { reportError } from "@/lib/error-report";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -268,6 +279,8 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       }).catch(() => {});
     } catch (e) {
       clearTimeout(timer);
+      // R7.6：单次请求失败 = 可恢复错误（用户已见错误框，可重试）
+      reportError("recoverable", "ai-chat", e);
       // 错误分级：超时 / 网络或服务不可用 / 服务端业务文案 / 兜底
       const msg =
         e instanceof DOMException && e.name === "AbortError"

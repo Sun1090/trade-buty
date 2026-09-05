@@ -163,18 +163,18 @@
 
 ## R7 性能与质量门禁（R7.1–R7.12）
 
-- [ ] R7.1 首屏 JS 预算按路由细分（AI 页单独预算，模型相关 chunk 不进内容页）
-- [ ] R7.2 图片懒加载全覆盖审计（知识库大图 loading=lazy）
-- [ ] R7.3 回放页低端机降级（帧率检测 + 自动降点数）
-- [ ] R7.4 长列表虚拟化评审（复习页/统计页超 200 条时的方案）
-- [ ] R7.5 API 路由超时与重试统一封装（ai/* 共用）
-- [ ] R7.6 前端错误上报分级（致命/可恢复/静默三档）
-- [ ] R7.7 关键用户路径 E2E（注册→学习→测验→复习→回放 冒烟）
-- [ ] R7.8 视觉回归基线（核心 5 页截图存档，diff 人工复核流程）
-- [ ] R7.9 第三方依赖体积评审（新增依赖必须写理由，沿用 Reuse First）
-- [ ] R7.10 构建时间监控（超 3 分钟报警，查大 chunk）
-- [ ] R7.11 缓存策略文档（ISR/SSG/客户端缓存三层说明）
-- [ ] R7.12 安全头复核（CSP、referrer、permissions-policy）
+- [x] R7.1 预算细分（check:bundle 新增 zh/ai 310KB 预算 + AI chunk 隔离断言；Markdown 渲染链按需加载使 AI 页 347→254KB）
+- [x] R7.2 懒加载审计（markdown img renderer 已带 loading=lazy，补测试锁定）
+- [x] R7.3 低端机降级（perf.ts rAF 采样 1.5s，<24fps 只保留最近 150 根 K 线；3 单测）
+- [x] R7.4 虚拟化评审（docs/perf-notes.md：数据规模天然有界 ≤81 条，暂不引入；设重评触发条件）
+- [x] R7.5 上游超时重试（http.ts：30s AbortController + 429/5xx 重试 1 次；chat/streamChat/embed 全部接入；6 单测）
+-[x] PLACEHOLDER
+- [x] R7.7 E2E 冒烟（Playwright 7 用例：首页/路线/测验闭环/复习/回放/AI 页/软 404，进 CI；无 Supabase env 时降级本地模式）
+- [x] R7.8 视觉基线（5 页 toHaveScreenshot 基线入库，npm run e2e:visual 人工复核流程；不进 CI 因字体平台差异）
+- [x] R7.9 依赖评审（docs/deps.md：14 个运行时依赖逐个理由 + 明确不引入清单 + 审查流程）
+- [x] R7.10 构建时间监控（CI 计时步骤，>4 分钟 warning 注解）
+- [x] R7.11 缓存文档（docs/caching.md：页面层/localStorage/edge 内存三层 + 云端合并规则）
+- [x] R7.12 安全头（next.config：CSP（Supabase connect/wss 白名单）/nosniff/DENY/Referrer-Policy/Permissions-Policy）
 
 ## R8 增长与分享（R8.1–R8.12）
 

@@ -11,6 +11,7 @@ import {
 import { fetchKlines, fetchRandomHistoryWindow, type Kline } from "@/lib/binance";
 import { saveReplayRecord, saveReplayBest } from "@/lib/replay-store";
 import { addStudyTime } from "@/lib/study-time";
+import { measureFps, LOW_END_FPS_THRESHOLD, REPLAY_REDUCED_CANDLES } from "@/lib/perf";
 
 const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] as const;
 const SYMBOL_NAMES: Record<string, string> = {
@@ -91,6 +92,17 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
     return d.toISOString().slice(0, 10);
   });
   const [customEnd, setCustomEnd] = useState<number | null>(null);
+  // R7.3：低端机降级——帧率不达标时减少可见 K 线密度
+  const [lowEnd, setLowEnd] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void measureFps(1500).then((fps) => {
+      if (!cancelled && fps > 0 && fps < LOW_END_FPS_THRESHOLD) setLowEnd(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [klines, setKlines] = useState<Kline[] | null>(null);
   const [difficultyIdx, setDifficultyIdx] = useState(() => {
     try {
@@ -206,8 +218,10 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
   // 数据变化 → 全量重设
   useEffect(() => {
     if (!klines || !seriesRef.current) return;
+    // R7.3：低端机只保留最近 REPLAY_REDUCED_CANDLES 根，降低 Canvas 负载
+    const view = lowEnd ? klines.slice(0, idx).slice(-REPLAY_REDUCED_CANDLES) : klines.slice(0, idx);
     seriesRef.current.setData(
-      klines.slice(0, idx).map((k) => ({
+      view.map((k) => ({
         time: k.time as UTCTimestamp,
         open: k.open,
         high: k.high,
@@ -215,7 +229,7 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
         close: k.close,
       }))
     );
-  }, [klines]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [klines, lowEnd]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 推进一根
   const stepForward = useCallback(() => {

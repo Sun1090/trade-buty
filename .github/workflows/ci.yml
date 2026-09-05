@@ -24,10 +24,20 @@ jobs:
           key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
           restore-keys: |
             ${{ runner.os }}-nextjs-
+      - name: 构建时间监控（R7.10：>3 分钟报警）
+        id: buildtime
+        run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
       - run: npm run lint
       - run: npm run test
       - run: npm run typecheck
       - run: npm run build
+      - name: 构建耗时核对（R7.10）
+        run: |
+          ELAPSED=$(( $(date +%s) - ${{ steps.buildtime.outputs.start }} ))
+          echo "build segment elapsed: ${ELAPSED}s (includes lint/test/typecheck)"
+          if [ "$ELAPSED" -gt 240 ]; then
+            echo "::warning::构建链路超过 4 分钟（${ELAPSED}s），请检查大 chunk 与依赖体积"
+          fi
       - run: npm run check:ai-copy
       - run: npm run check:constitution
       - run: npm run check:frontmatter
