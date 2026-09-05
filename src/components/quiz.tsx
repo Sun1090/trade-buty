@@ -6,6 +6,8 @@ import { recordWrong, resolveWrong } from "@/lib/wrongbook";
 import { readQuizProgress, saveQuizProgress, type QuizProgress } from "@/lib/quiz-store";
 import { QuizTimer } from "@/components/quiz-timer";
 import { addStudyTime } from "@/lib/study-time";
+import { QuizShareCard } from "@/components/quiz-share-card";
+import type { ShareLocale } from "@/lib/share-card";
 
 interface QuizDict {
   questionsUnit: string;
@@ -18,12 +20,16 @@ interface QuizDict {
   nextQ: string;
   finish: string;
   perfect: string;
+  shareQuiz: string;
+  previewQuiz: string;
+  download: string;
+  previewAlt: string;
 }
 
 const tpl = (s: string, vars: Record<string, string | number>) =>
   s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k]));
 
-export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
+export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; dict: QuizDict; locale: ShareLocale; chapterTitle?: string }) {
   const [started, setStarted] = useState(false);
   const [current, setCurrent] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
@@ -144,15 +150,31 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
               </div>
             )}
           </div>
-          <button
-            onClick={() => {
-                startedAtRef.current = Date.now();
-                setStarted(true);
-              }}
-            className="rounded-full border border-accent/50 bg-accent-dim text-accent font-semibold px-6 py-2.5 hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition shrink-0"
-          >
-            {progress?.done ? dict.retry : dict.start}
-          </button>
+          <div className="flex flex-col items-end gap-3 shrink-0">
+            <button
+              onClick={() => {
+                  startedAtRef.current = Date.now();
+                  setStarted(true);
+                }}
+              className="rounded-full border border-accent/50 bg-accent-dim text-accent font-semibold px-6 py-2.5 hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition"
+            >
+              {progress?.done ? dict.retry : dict.start}
+            </button>
+            {/* R8.1 分享卡：仅当已作答过一次且有成绩时显示 */}
+            {progress?.done && (
+              <QuizShareCard
+                chapterTitle={chapterTitle ?? quiz.title}
+                score={progress.best}
+                total={quiz.questions.length}
+                locale={locale}
+                labels={{
+                  share: dict.shareQuiz,
+                  previewAlt: dict.previewAlt,
+                  download: dict.download,
+                }}
+              />
+            )}
+          </div>
         </div>
       </div>
     );

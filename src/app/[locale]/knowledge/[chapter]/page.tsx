@@ -188,7 +188,7 @@ export default async function ChapterPage({
 
       {QUIZZES[slug] && !QUIZZES[slug].docSlug && (
         <section className="mt-12">
-          <Quiz quiz={QUIZZES[slug]} dict={t.quiz} />
+          <Quiz quiz={QUIZZES[slug]} dict={t.quiz} locale={locale} chapterTitle={chapter.title} />
         </section>
       )}
 
