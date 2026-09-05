@@ -21,6 +21,8 @@
     "check:quiz-mounts": "node scripts/check-quiz-mounts.mjs",
     "check:quiz-coverage": "node scripts/check-quiz-coverage.mjs",
     "check:sitemap": "node scripts/check-sitemap.mjs",
+    "kb:diff": "node scripts/kb-diff.mjs --update --changelog docs/kb-changelog-draft.md",
+    "kb:translation-status": "node scripts/translation-status.mjs",
     "analyze": "ANALYZE=true next build",
     "kb:parity": "node scripts/check-locale-parity.mjs",
     "check:links": "node scripts/check-links.mjs",
