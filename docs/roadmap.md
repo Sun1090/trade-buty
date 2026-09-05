@@ -92,13 +92,13 @@
 - [x] R2.3 生成题去重（bigram Jaccard 与固定题库及同批新题互去重，阈值 0.6，3 单测）
 - [x] R2.4 解析质量写入章节出题 prompt（须引用章节概念、禁止空话、无依据不编造）
 - [x] R2.5 出题失败降级（服务端 AI 失败回退本章固定题带 fallback 标识；前端错误文案兜底不白屏；2 单测）
-- [ ] R2.6 AI 题答错自动入本地错题本（与现有 wrongbook 打通）
+- [x] R2.6 AI 变体题与错题本打通（答错刷新来源错题条目、答对移出；4 组件单测含错题本读写）
 - [x] R2.7 AI 题标注来源（🤖 AI 生成徽标 + fallback 标识 + 卡片底部免责一行；5 组件单测）
-- [ ] R2.8 同题重做不重复扣分（review 页 AI 题幂等）
+- [x] R2.8 review 页 AI 题幂等（作答一次锁定、recordWrong 同 key 覆盖不重复、举报去重；单测覆盖）
 - [x] R2.9 出题语言跟随 locale（buildChapterQuizPrompt 双语指令，en 出英文题；2 单测）
 - [x] R2.10 成本控制（maxTokens 3000 + 同章/语言/难度 24h 内存缓存；edge 实例级，跨实例去重靠 R2.3）
-- [ ] R2.11 题目举报入口（质量差一键反馈到 feedback API）
-- [ ] R2.12 AI 出题覆盖率看板（哪章可出/不可出，运营可见的脚本输出）
+- [x] R2.11 题目举报入口（review 变体题与章节 AI 题均有一键举报 → /api/ai/feedback unhelpful，单次去重）
+- [x] R2.12 覆盖率看板（scripts/quiz-coverage.mjs：27/27 可 AI 出题、固定题 2/27、en 元数据 27/27；npm run quiz:coverage）
 
 ## R3 课程内 AI 入口（R3.1–R3.12）
 
