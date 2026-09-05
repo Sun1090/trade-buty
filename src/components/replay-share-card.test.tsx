@@ -79,7 +79,7 @@ describe("ReplayShareCard", () => {
         bestStreak={4}
         currentStreak={2}
         locale="zh"
-        labels={{ share: "分享战绩", previewAlt: "预览", download: "下载" }}
+        labels={{ share: "分享战绩", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制" }}
       />,
     );
     expect(screen.getByTestId("replay-share-btn")).toBeInTheDocument();
@@ -97,7 +97,7 @@ describe("ReplayShareCard", () => {
         bestStreak={5}
         currentStreak={3}
         locale="zh"
-        labels={{ share: "分享我的回放战绩", previewAlt: "预览", download: "下载" }}
+        labels={{ share: "分享我的回放战绩", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制" }}
       />,
     );
     expect(container.querySelector("canvas")).toBeTruthy();
@@ -121,7 +121,7 @@ describe("ReplayShareCard", () => {
         bestStreak={2}
         currentStreak={1}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "回放卡预览", download: "下载" }}
+        labels={{ share: "分享", previewAlt: "回放卡预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制" }}
       />,
     );
     fireEvent.click(screen.getByTestId("replay-share-preview-btn"));

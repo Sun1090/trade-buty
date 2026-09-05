@@ -8,6 +8,7 @@ import { QuizTimer } from "@/components/quiz-timer";
 import { addStudyTime } from "@/lib/study-time";
 import { QuizShareCard } from "@/components/quiz-share-card";
 import type { ShareLocale } from "@/lib/share-card";
+import { encodeQuiz } from "@/lib/share-decode";
 
 interface QuizDict {
   questionsUnit: string;
@@ -24,10 +25,29 @@ interface QuizDict {
   previewQuiz: string;
   download: string;
   previewAlt: string;
+  copyLink: string;
+  copiedLink: string;
 }
 
 const tpl = (s: string, vars: Record<string, string | number>) =>
   s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k]));
+
+
+function useShareUrl(
+  payload:
+    | { chapterTitle: string; score: number; total: number; percent: number; locale: ShareLocale }
+    | null,
+): string | null {
+  const [origin, setOrigin] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOrigin(window.location.origin);
+    }
+  }, []);
+  if (!payload || !origin) return null;
+  return `${origin}/share/quiz/${encodeQuiz(payload)}`;
+}
 
 export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; dict: QuizDict; locale: ShareLocale; chapterTitle?: string }) {
   const [started, setStarted] = useState(false);
@@ -37,6 +57,22 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
   const [progress, setProgress] = useState<QuizProgress | null>(null);
   const explainRef = useRef<HTMLDivElement>(null);
   const startedAtRef = useRef<number>(0);
+
+  // R8.4 分享链接（用 progress 计算 payload；progress null 时为 null）
+  const shareUrl = useShareUrl(
+    progress && progress.done
+      ? {
+          chapterTitle: chapterTitle ?? quiz.title,
+          score: progress.best,
+          total: quiz.questions.length,
+          percent:
+            progress.best > 0 && quiz.questions.length > 0
+              ? (progress.best / quiz.questions.length) * 100
+              : 0,
+          locale,
+        }
+      : null,
+  );
 
   // 答题后自动滚到解析区（小屏体验）
   useEffect(() => {
@@ -171,7 +207,10 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
                   share: dict.shareQuiz,
                   previewAlt: dict.previewAlt,
                   download: dict.download,
+                  copyLink: dict.copyLink,
+                  copiedLink: dict.copiedLink,
                 }}
+                shareUrl={shareUrl ?? undefined}
               />
             )}
           </div>

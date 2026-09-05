@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CARD_SIZE, drawStreakCard, type ShareLocale } from "@/lib/share-card";
 import { downloadCanvasAsPng } from "@/lib/download";
+import { CopyLinkButton } from "@/components/copy-link-button";
 
 interface Props {
   currentStreak: number;
@@ -11,10 +12,14 @@ interface Props {
   recentDays: { date: string; active: boolean }[];
   locale: ShareLocale;
   siteName?: string;
+  /** R8.4 分享链接 URL（含 origin）；提供时显示「复制链接」按钮 */
+  shareUrl?: string;
   labels: {
     share: string;
     previewAlt: string;
     download: string;
+    copyLink: string;
+    copiedLink: string;
   };
 }
 
@@ -28,6 +33,7 @@ export function StreakShareCard({
   recentDays,
   locale,
   siteName = "Trade Buty",
+  shareUrl,
   labels,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -116,6 +122,14 @@ export function StreakShareCard({
       >
         👁 Preview
       </button>
+      {shareUrl && (
+        <CopyLinkButton
+          url={shareUrl}
+          label={labels.copyLink}
+          copiedLabel={labels.copiedLink}
+          testId="streak-share-link-btn"
+        />
+      )}
       {previewUrl && (
         <div className="basis-full mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <p className="text-xs text-faint mb-2 font-mono">{labels.previewAlt}</p>

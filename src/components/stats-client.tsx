@@ -1,6 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
+function useStreakShareUrl(
+  payload: { currentStreak: number; longestStreak: number; locale: "zh" | "en" } | null,
+): string | null {
+  const [origin, setOrigin] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOrigin(window.location.origin);
+    }
+  }, []);
+  if (!payload || !origin) return null;
+  return `${origin}/share/streak/${encodeStreak(payload)}`;
+}
+
+
 import { aggregateStats, getUnlockedBadges, BADGES, type LearnStats, type Badge } from "@/lib/learn-stats";
 import { formatDuration } from "@/lib/reading-time";
 import { DailyGoal } from "@/components/daily-goal";
@@ -11,6 +27,7 @@ import { RadarChart } from "@/components/radar-chart";
 import { WeekMiniBar } from "@/components/week-mini-bar";
 import { WeeklyReport } from "@/components/weekly-report";
 import { StreakShareCard } from "@/components/streak-share-card";
+import { encodeStreak } from "@/lib/share-decode";
 import { getRecentDays } from "@/lib/streak";
 
 interface StatsDict {
@@ -35,6 +52,8 @@ interface StatsDict {
   previewStreak: string;
   download: string;
   previewAlt: string;
+  copyLink: string;
+  copiedLink: string;
   totalStudyTime: string;
   weeklyTitle: string;
   weeklySummaryTpl: string;
@@ -77,6 +96,17 @@ export function StatsClient({
       window.removeEventListener("tb-study-time", onChange);
     };
   }, [chapters]);
+
+  // R8.4 分享链接 URL（client-only）
+  const streakShareUrl = useStreakShareUrl(
+    stats && stats.currentStreak > 0
+      ? {
+          currentStreak: stats.currentStreak,
+          longestStreak: stats.longestStreak,
+          locale: locale === "en" ? "en" : "zh",
+        }
+      : null,
+  );
 
   if (!stats) return null;
 
@@ -140,7 +170,10 @@ export function StatsClient({
                 share: dict.shareStreak,
                 previewAlt: dict.previewAlt,
                 download: dict.download,
+                copyLink: dict.copyLink,
+                copiedLink: dict.copiedLink,
               }}
+              shareUrl={streakShareUrl ?? undefined}
             />
           </div>
         </div>
