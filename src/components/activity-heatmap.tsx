@@ -1,13 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { readActivityDates } from "@/lib/activity-calendar";
 
 const WEEKS = 26; // 最近半年
 const DAYS = 7;
 
-/** 学习活动热力图：GitHub 贡献图风格（SVG） */
-export function ActivityHeatmap({ label, emptyLabel }: { label: string; emptyLabel: string }) {
+interface HeatmapProps {
+  label: string;
+  emptyLabel: string;
+  locale: "zh" | "en";
+}
+
+/** 学习活动热力图：GitHub 贡献图风格（SVG）。R8.7 空态补 CTA。 */
+export function ActivityHeatmap({ label, emptyLabel, locale }: HeatmapProps) {
   const [dates, setDates] = useState<string[]>([]);
 
   useEffect(() => {
@@ -18,7 +25,6 @@ export function ActivityHeatmap({ label, emptyLabel }: { label: string; emptyLab
   }, []);
 
   const activeSet = new Set(dates);
-  // 计算最近 N 周的日期网格
   const cellMap: Map<string, number> = new Map();
   const today = new Date();
   for (let week = WEEKS - 1; week >= 0; week--) {
@@ -33,6 +39,8 @@ export function ActivityHeatmap({ label, emptyLabel }: { label: string; emptyLab
   const W = WEEKS * 12;
   const H = DAYS * 12;
   const activeCount = activeSet.size;
+  const pathHref = `/${locale}/path`;
+  const ctaText = locale === "en" ? "Start a lesson →" : "去学第一课 →";
 
   return (
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
@@ -40,7 +48,16 @@ export function ActivityHeatmap({ label, emptyLabel }: { label: string; emptyLab
         {label} · {activeCount} {activeCount <= 1 ? "day" : "days"}
       </p>
       {activeCount === 0 ? (
-        <p className="text-sm text-faint">{emptyLabel}</p>
+        <div data-testid="activity-heatmap-empty" className="space-y-3">
+          <p className="text-sm text-faint">{emptyLabel}</p>
+          <Link
+            href={pathHref}
+            data-testid="activity-heatmap-cta"
+            className="inline-block rounded-full border border-[var(--accent)]/40 hover:border-accent/60 px-4 py-1.5 text-xs font-medium text-accent transition"
+          >
+            {ctaText}
+          </Link>
+        </div>
       ) : (
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-md" role="img" aria-label={label}>
           {[...cellMap.entries()].map(([key, v], i) => {
@@ -53,9 +70,8 @@ export function ActivityHeatmap({ label, emptyLabel }: { label: string; emptyLab
                 y={day * 12}
                 width={9}
                 height={9}
-                rx={1.5}
-                fill={v === 1 ? "var(--accent)" : "rgba(233,237,245,0.08)"}
-                opacity={v === 1 ? 0.85 : 1}
+                rx={2}
+                fill={v ? "var(--accent)" : "var(--border)"}
               >
                 <title>{key}</title>
               </rect>

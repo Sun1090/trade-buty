@@ -25,6 +25,15 @@ export function BookmarksClient({
       <div className="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] to-[var(--surface)] p-10 text-center">
         <p className="text-4xl" aria-hidden>☆</p>
         <p className="mt-4 font-semibold">{emptyLabel}</p>
+        <div className="mt-5 flex flex-wrap justify-center gap-3">
+          <Link
+            href={`/${locale}/path`}
+            data-testid="bookmarks-empty-cta"
+            className="inline-block rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2.5 text-sm transition"
+          >
+            {locale === "en" ? "Browse the learning path →" : "去看学习路线 →"}
+          </Link>
+        </div>
       </div>
     );
   }
