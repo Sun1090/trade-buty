@@ -275,7 +275,20 @@ export function ReviewClient({
             aiEnabled={aiEnabled}
             wrongItems={items.map((i) => ({ chapterNum: i.chapterNum, questionIdx: i.questionIdx }))}
             quizzes={quizzes}
-            dict={{ generate: "AI 针对错题出变体题", generating: "正在生成…", error: "生成失败，请重试", question: "题目", explain: "解析", report: "举报题目", reported: "已举报" }}
+            dict={{
+              generate: locale === "en" ? "AI quiz from your wrong answers" : "AI 针对错题出变体题",
+              generating: locale === "en" ? "Generating…" : "正在生成…",
+              error: locale === "en" ? "Generation failed, retry" : "生成失败，请重试",
+              question: locale === "en" ? "Question" : "题目",
+              explain: locale === "en" ? "Explanation" : "解析",
+              report: locale === "en" ? "Report question" : "举报题目",
+              reported: locale === "en" ? "Reported" : "已举报",
+              badge: locale === "en" ? "AI variant" : "AI 变体题",
+              correct: locale === "en" ? "Correct" : "正确",
+              wrong: locale === "en" ? "Wrong" : "错误",
+              next: locale === "en" ? "Next →" : "下一题 →",
+              done: locale === "en" ? "Done" : "完成",
+            }}
           />
         </div>
       )}

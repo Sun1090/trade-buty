@@ -28,6 +28,7 @@ jobs:
       - run: npm run test
       - run: npm run typecheck
       - run: npm run build
+      - run: npm run check:ai-copy
       - run: npm run check:links
       - run: npm run check:search-index
       - run: npm run check:bundle

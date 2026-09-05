@@ -104,7 +104,7 @@
 
 - [x] R3.1 课末「问 AI」按钮升级（LessonAskAi 组件：预填问题 + ctx/ct 上下文参数 + 点击埋点 + 开关控制；3 单测）
 - [x] R3.2 导读覆盖检查（scripts/summary-coverage.mjs：zh 27/27、en 27/27；npm run summary:coverage）
-- [ ] R3.3 术语划词解释（选中正文术语 → 小浮层给定义，RAG 查）
+- [x] R3.3 划词解释（TermExplainer：选中正文 2–30 字术语弹浮层，复用 /api/ai/chat RAG 管线 + contextChapter 限定本章；shouldExplain 纯函数 + 5 单测）
 - [x] R3.4 追问链（回答底部按引用/推荐标题生成 3 个关联问题 chips，点击即发；单测覆盖）
 - [x] R3.5 导读缓存 7 天 TTL（localStorage {text,at} 结构 + 过期重出按钮；2 单测）
 - [x] R3.6 导读失败降级（失败整个卡片隐藏，不展示错误文案；单测覆盖）
@@ -113,7 +113,7 @@
 - [x] R3.9 统一开关（ai-toggle：hasAiServerEnv 读 AI_API_KEY，服务端页 aiEnabledForPage 判断，/ai 禁用态 + 各卡片 aiEnabled prop；单测覆盖）
 - [x] R3.10 总开关（NEXT_PUBLIC_AI_ENABLED=false 一键隐藏所有入口；单测覆盖）
 - [x] R3.11 点击埋点（src/lib/analytics.ts console 通道先行：lesson-ask-ai / ai-quiz-start / chapter-summary；单测覆盖）
-- [ ] R3.12 双语话术复核（en 下所有 AI 文案无中文残留）
+- [x] R3.12 双语复核（修复 ai-quiz/review 变体题硬编码中文；scripts/check-ai-copy.mjs 扫 en 字典 CJK 残留并入 CI 门禁；当前 0 残留）
 
 ## R4 每日目标与连续性（R4.1–R4.12）
 

@@ -9,7 +9,10 @@ interface AiQuizProps {
   /** 用户错题列表（篇章+题号） */
   wrongItems: { chapterNum: string; questionIdx: number }[];
   quizzes: ChapterQuiz[];
-  dict: { generate: string; generating: string; error: string; question: string; explain: string; report: string; reported: string };
+  dict: {
+    generate: string; generating: string; error: string; question: string; explain: string;
+    report: string; reported: string; badge: string; correct: string; wrong: string; next: string; done: string;
+  };
 }
 
 interface AiQuestion {
@@ -121,7 +124,7 @@ export function AiQuiz({ wrongItems, quizzes, dict, aiEnabled = true }: AiQuizPr
   return (
     <div className="rounded-2xl border border-[var(--accent)]/30 border-l-4 border-l-[var(--accent)] bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-6">
       <p className="text-xs font-mono text-faint mb-2">
-        AI 变体题 {current + 1}/{questions.length}
+        {dict.badge} {current + 1}/{questions.length}
       </p>
       <p className="font-medium leading-relaxed">{q.question}</p>
       <ul className="mt-5 space-y-2.5">
@@ -149,7 +152,7 @@ export function AiQuiz({ wrongItems, quizzes, dict, aiEnabled = true }: AiQuizPr
       {picked !== null && (
         <div className="mt-5 rounded-xl bg-black/20 dark:bg-white/5 p-4 text-sm space-y-3">
           <p className="font-semibold">
-            {picked === q.answer ? "✅ 正确" : "❌ 错误"}
+            {picked === q.answer ? `✅ ${dict.correct}` : `❌ ${dict.wrong}`}
           </p>
           <p className="text-muted leading-relaxed">{q.explain}</p>
           <div className="flex items-center gap-4">
@@ -157,7 +160,7 @@ export function AiQuiz({ wrongItems, quizzes, dict, aiEnabled = true }: AiQuizPr
               onClick={next}
               className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2 text-sm transition"
             >
-              {current < questions.length - 1 ? "下一题 →" : "完成"}
+              {current < questions.length - 1 ? dict.next : dict.done}
             </button>
             <button
               onClick={() => report(current)}

@@ -14,6 +14,7 @@
     "test": "vitest run",
     "quiz:coverage": "node scripts/quiz-coverage.mjs",
     "summary:coverage": "node scripts/summary-coverage.mjs",
+    "check:ai-copy": "node scripts/check-ai-copy.mjs",
     "analyze": "ANALYZE=true next build",
     "kb:parity": "node scripts/check-locale-parity.mjs",
     "check:links": "node scripts/check-links.mjs",

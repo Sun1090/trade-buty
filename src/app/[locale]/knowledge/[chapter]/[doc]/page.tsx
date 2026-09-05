@@ -17,6 +17,7 @@ import { Markdown } from "@/components/markdown";
 import { ChapterExamCard } from "@/components/chapter-exam-card";
 import { AiChapterQuizCard } from "@/components/ai-chapter-quiz";
 import { LessonAskAi } from "@/components/lesson-ask-ai";
+import { TermExplainer } from "@/components/term-explainer";
 import { getChapterTitle } from "@/lib/ai/chapters";
 import { aiEnabledForPage } from "@/lib/ai-toggle";
 import { ChapterRail } from "@/components/chapter-rail";
@@ -245,6 +246,19 @@ export default async function DocPage({
       <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
         <Markdown content={prepareForRender(doc.content, locale, chapterSlug)} />
       </article>
+
+      {/* R3.3：划词解释（挂载于正文容器，AI 开关控制） */}
+      <TermExplainer
+        locale={locale}
+        chapterSlug={chapterSlug}
+        aiEnabled={aiEnabled}
+        dict={{
+          hint: t.ai.termExplain,
+          loading: t.ai.termLoading,
+          error: t.ai.termError,
+          disclaimer: t.ai.termDisclaimer,
+        }}
+      />
 
       {/* 测验 + 边学边练 双栏 */}
       <div className="mt-8 grid gap-4 lg:grid-cols-2">

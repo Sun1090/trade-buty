@@ -8,7 +8,8 @@ export type AiEntry =
   | "ai-quiz-start" // 章节 AI 出题
   | "ai-variant-quiz" // review 错题变体题
   | "chapter-summary" // 章节 AI 导读
-  | "followup-question"; // 回答追问链
+  | "followup-question" // 回答追问链
+  | "term-explainer"; // 划词解释
 
 export function trackAiClick(entry: AiEntry, meta?: Record<string, string | number>) {
   try {
