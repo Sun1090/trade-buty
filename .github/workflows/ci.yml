@@ -36,6 +36,8 @@ jobs:
       - run: npm run check:quiz-coverage
       - run: npm run check:links
       - run: npm run check:sitemap
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
       - run: npm run check:search-index
       - run: npm run check:bundle
       - run: npm run lhci

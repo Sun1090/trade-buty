@@ -31,6 +31,8 @@
     "check:links": "node scripts/check-links.mjs",
     "check:search-index": "node scripts/check-search-index.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
+    "e2e": "playwright test e2e/smoke.spec.ts",
+    "e2e:visual": "playwright test e2e/visual.spec.ts",
     "lhci": "lhci autorun",
     "check:mobile": "node scripts/check-mobile.mjs",
     "pretest": "node scripts/generate-kb-titles.mjs"
