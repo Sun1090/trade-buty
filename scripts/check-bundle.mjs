@@ -13,11 +13,13 @@ const staticDir = path.join(root, ".next/static");
 // 代表页面 → gzip 上限（KB）。chart/replay 含 lightweight-charts，预算放宽。
 // 基线说明（2026-09 实测）：Next/React 框架 chunk 约 217KB gzip，内容页 ~250KB。
 // 预算 = 实测 + 余量，目标是拦截"误把重库打进内容页"类回归，而非压基线。
+// R9.6：auth-provider 引入了 sync-layer + flushPersistedQueue 等登录态代码，
+// 即使按需 dynamic import，Next/React 框架 chunk 也会被带入；实测内容页 +12KB。
 const BUDGETS = [
-  { page: "zh", budgetKB: 280 },
-  { page: "en", budgetKB: 280 },
-  { page: "zh/knowledge/getting-started/market-overview", budgetKB: 290 },
-  { page: "zh/search", budgetKB: 280 },
+  { page: "zh", budgetKB: 295 },
+  { page: "en", budgetKB: 295 },
+  { page: "zh/knowledge/getting-started/market-overview", budgetKB: 305 },
+  { page: "zh/search", budgetKB: 295 },
   { page: "zh/ai", budgetKB: 310 }, // R7.1：AI 页单独预算（问答 UI，无模型 SDK）
   { page: "zh/chart", budgetKB: 360 },
   { page: "zh/replay", budgetKB: 360 },
