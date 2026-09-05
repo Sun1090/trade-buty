@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import type { ChapterQuiz } from "@/lib/quiz-types";
+import { recordWrong, resolveWrong } from "@/lib/wrongbook";
 
 interface AiQuizProps {
   /** 用户错题列表（篇章+题号） */
   wrongItems: { chapterNum: string; questionIdx: number }[];
   quizzes: ChapterQuiz[];
-  dict: { generate: string; generating: string; error: string; question: string; explain: string };
+  dict: { generate: string; generating: string; error: string; question: string; explain: string; report: string; reported: string };
 }
 
 interface AiQuestion {
@@ -26,6 +27,7 @@ export function AiQuiz({ wrongItems, quizzes, dict }: AiQuizProps) {
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
+  const [reported, setReported] = useState<Record<number, boolean>>({});
 
   async function generate() {
     if (wrongItems.length === 0) return;
@@ -54,9 +56,31 @@ export function AiQuiz({ wrongItems, quizzes, dict }: AiQuizProps) {
     }
   }
 
+  /**
+   * R2.6/R2.8：变体题与错题本打通。
+   * 变体题 i 对应来源错题 wrongItems[i % n]；recordWrong 同 key 覆盖（幂等），
+   * 答对视为掌握该来源错题，移出错题本。
+   */
   function pick(i: number) {
     if (picked !== null) return;
     setPicked(i);
+    const q = questions[current];
+    const src = wrongItems[current % wrongItems.length];
+    if (!q || !src) return;
+    if (i === q.answer) resolveWrong(src.chapterNum, src.questionIdx);
+    else recordWrong(src.chapterNum, src.questionIdx, i);
+  }
+
+  /** R2.11：题目质量举报（fire-and-forget） */
+  function report(idx: number) {
+    if (reported[idx]) return;
+    setReported((prev) => ({ ...prev, [idx]: true }));
+    const q = questions[idx];
+    void fetch("/api/ai/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating: "unhelpful", question: q?.question ?? "", answer: q?.explain ?? "" }),
+    }).catch(() => {});
   }
 
   function next() {
@@ -124,12 +148,21 @@ export function AiQuiz({ wrongItems, quizzes, dict }: AiQuizProps) {
             {picked === q.answer ? "✅ 正确" : "❌ 错误"}
           </p>
           <p className="text-muted leading-relaxed">{q.explain}</p>
-          <button
-            onClick={next}
-            className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2 text-sm transition"
-          >
-            {current < questions.length - 1 ? "下一题 →" : "完成"}
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={next}
+              className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2 text-sm transition"
+            >
+              {current < questions.length - 1 ? "下一题 →" : "完成"}
+            </button>
+            <button
+              onClick={() => report(current)}
+              className="text-xs text-faint hover:text-down transition disabled:opacity-50"
+              disabled={reported[current]}
+            >
+              {reported[current] ? dict.reported : `⚑ ${dict.report}`}
+            </button>
+          </div>
         </div>
       )}
     </div>

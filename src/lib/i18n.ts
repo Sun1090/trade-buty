@@ -149,6 +149,10 @@ const zh = {
     aiQuizLogin: "登录后可用 AI 出题",
     aiQuizError: "AI 出题暂时不可用，请稍后再试",
     aiQuizFallback: "已回退站方题库",
+    aiQuizBasic: "入门",
+    aiQuizAdvanced: "进阶",
+    aiQuizReport: "举报题目",
+    aiQuizReported: "已举报",
 
   },
   stats: {
@@ -405,6 +409,10 @@ const en: Dict = {
     aiQuizLogin: "Log in to use AI quiz",
     aiQuizError: "AI quiz temporarily unavailable, try again later",
     aiQuizFallback: "fell back to site question bank",
+    aiQuizBasic: "Basic",
+    aiQuizAdvanced: "Advanced",
+    aiQuizReport: "Report question",
+    aiQuizReported: "Reported",
 
   },
   stats: {

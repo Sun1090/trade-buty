@@ -261,6 +261,10 @@ export default async function DocPage({
               next: t.quiz.nextQ,
               done: t.quiz.finish,
               disclaimer: t.ai.disclaimer,
+              basic: t.ai.aiQuizBasic,
+              advanced: t.ai.aiQuizAdvanced,
+              report: t.ai.aiQuizReport,
+              reported: t.ai.aiQuizReported,
             }}
           />
         )}

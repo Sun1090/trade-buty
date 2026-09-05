@@ -17,6 +17,10 @@ const dict = {
   next: "下一题 →",
   done: "完成",
   disclaimer: "⚠️ 仅用于学习",
+  basic: "入门",
+  advanced: "进阶",
+  report: "举报题目",
+  reported: "已举报",
 };
 
 const questions = [
