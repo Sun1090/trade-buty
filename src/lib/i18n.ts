@@ -157,6 +157,10 @@ const zh = {
     contextBannerTpl: "正在基于《{title}》篇章回答",
     followups: ["展开讲讲「{t}」", "「{t}」在实际交易中怎么用？", "学习「{t}」最常见的误区是什么？"],
     lessonAskAi: "问 AI：梳理本课要点",
+    termExplain: "AI 解释这个术语",
+    termLoading: "查阅知识库中…",
+    termError: "解释暂时不可用",
+    termDisclaimer: "⚠️ 仅供学习，不构成投资建议",
 
   },
   stats: {
@@ -421,6 +425,10 @@ const en: Dict = {
     contextBannerTpl: "Answering based on the \"{title}\" chapter",
     followups: ['Tell me more about "{t}"', 'How to apply "{t}" in practice?', 'Common misconceptions about "{t}"?'],
     lessonAskAi: "Ask AI: recap this lesson",
+    termExplain: "Explain this term with AI",
+    termLoading: "Checking the knowledge base…",
+    termError: "Explanation temporarily unavailable",
+    termDisclaimer: "⚠️ For learning only, not investment advice",
 
   },
   stats: {

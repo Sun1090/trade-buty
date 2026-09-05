@@ -29,6 +29,11 @@ const dict = {
   explain: "解析",
   report: "举报题目",
   reported: "已举报",
+  badge: "AI 变体题",
+  correct: "正确",
+  wrong: "错误",
+  next: "下一题 →",
+  done: "完成",
 };
 
 const wrongItems = [{ chapterNum: "getting-started", questionIdx: 2 }];
