@@ -7,6 +7,12 @@ import type { ChapterQuiz } from "@/lib/quiz-types";
 vi.mock("@/lib/wrongbook", () => ({
   readWrong: () => ({}),
   resolveWrong: vi.fn(),
+  clearAllWrong: vi.fn(),
+  applySrsResult: vi.fn(),
+  pruneOrphanWrong: vi.fn(),
+}));
+vi.mock("@/lib/study-time", () => ({
+  addStudyTime: vi.fn(),
 }));
 vi.mock("@/components/use-local-progress", () => ({
   useLocalProgress: () => null,
