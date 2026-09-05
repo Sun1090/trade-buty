@@ -7,6 +7,7 @@ import { SUGGESTED_QUESTIONS_ZH, SUGGESTED_QUESTIONS_EN } from "@/lib/ai/prompt"
 // jsdom 没有 scrollTo，AiChat 挂载后会自动滚到底
 beforeAll(() => {
   Element.prototype.scrollTo = vi.fn();
+  Element.prototype.scrollIntoView = vi.fn();
 });
 
 afterEach(cleanup);
@@ -379,5 +380,20 @@ describe("AiChat 引用点击统计（R1.13）", () => {
       question,
     });
     expect(container).toBeDefined();
+  });
+});
+
+describe("AiChat 移动端键盘遮挡（R1.15）", () => {
+  it("输入框聚焦后延迟滚动到可见", async () => {
+    vi.useFakeTimers();
+    render(<AiChat locale="zh" dict={dict} />);
+    const input = screen.getByPlaceholderText(dict.placeholder);
+    fireEvent.focus(input);
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(350);
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith(
+      expect.objectContaining({ block: "end" })
+    );
+    vi.useRealTimers();
   });
 });

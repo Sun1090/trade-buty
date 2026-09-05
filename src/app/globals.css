@@ -428,6 +428,26 @@ body {
   color: #1e293b;
 }
 
+/* 护眼（sepia）主题代码块适配：暖色浅底 + 深色字（R1.14） */
+:root[data-theme="sepia"] .kb-prose pre {
+  background: #efe3cb;
+  border-color: var(--border-strong);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+:root[data-theme="sepia"] .kb-prose pre code {
+  color: #3c2f1f;
+}
+
+/* 浅色/护眼下行内 code 背景改深色 alpha，浅底上可见（R1.14） */
+:root[data-theme="light"] .kb-prose code,
+:root[data-theme="sepia"] .kb-prose code {
+  background: rgba(0, 0, 0, 0.055);
+}
+:root[data-theme="light"] .kb-prose pre code,
+:root[data-theme="sepia"] .kb-prose pre code {
+  background: transparent;
+}
+
 /* ---------- 护眼（sepia）主题 ---------- */
 :root[data-theme="sepia"] {
   --background: #f4ebd9;
