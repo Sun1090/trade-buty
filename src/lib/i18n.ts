@@ -40,6 +40,10 @@ const zh = {
     syncSummaryQuizTpl: "🏆 {n} 个章节测验分数提升",
     syncSummaryReplayTpl: "📈 {n} 条回放战绩",
     syncSummaryDismiss: "好的",
+    returnNudgeTitleTpl: "已 {days} 天没来 Trade Buty",
+    returnNudgeBodyTpl: "继续学习路线，或做一节回放训练找回手感。",
+    returnNudgeDismiss: "继续学习",
+    returnNudgeLater: "稍后再说",
   },
   brand: { name: "Trade Buty", badge: "免费 · 中立" },
   home: {
@@ -420,6 +424,10 @@ const en: Dict = {
     syncSummaryQuizTpl: "🏆 {n} chapter scores improved",
     syncSummaryReplayTpl: "📈 {n} replay records",
     syncSummaryDismiss: "Got it",
+    returnNudgeTitleTpl: "It’s been {days} days since your last visit",
+    returnNudgeBodyTpl: "Pick up where you left off, or run a quick replay drill.",
+    returnNudgeDismiss: "Continue",
+    returnNudgeLater: "Maybe later",
   },
   brand: { name: "Trade Buty", badge: "Free · Neutral" },
   home: {

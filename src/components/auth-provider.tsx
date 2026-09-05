@@ -25,6 +25,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+
+    // R9.8：记录当前访问 + 检测 7 天未访是否需要温和提示
+    // 同步逻辑纯函数 + sessionStorage 去重（toast 内已处理），不会每次都弹
+    void import("@/lib/last-visit").then(({ touchLastVisit, getLastVisitAt, shouldShowReturnNudge }) => {
+      const now = Date.now();
+      const hadBefore = getLastVisitAt() !== null;
+      touchLastVisit(now);
+      if (hadBefore && shouldShowReturnNudge(now)) {
+        window.dispatchEvent(new CustomEvent("tb-return-nudge"));
+      }
+    });
+
     // R7.7：无 Supabase env（CI E2E / 预览环境）时降级为纯本地模式，不初始化客户端
     if (!hasSupabaseEnv()) {
       setAuthState(false);

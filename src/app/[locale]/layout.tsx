@@ -7,6 +7,7 @@ import { SearchHotkey } from "@/components/search-hotkey";
 import { AuthHeader } from "@/components/auth-header";
 import { AuthProvider } from "@/components/auth-provider";
 import { SyncSummaryToastLazy } from "@/components/sync-summary-toast-lazy";
+import { ReturnNudgeToastLazy } from "@/components/return-nudge-toast-lazy";
 import { InviteBanner } from "@/components/invite-banner";
 import { OnboardingTour } from "@/components/onboarding-tour";
 import { MobileNav } from "@/components/mobile-nav";
@@ -206,6 +207,7 @@ export default async function LocaleLayout({
         locale={locale === "en" ? "en" : "zh"}
       />
       <SyncSummaryToastLazy />
+      <ReturnNudgeToastLazy />
     </AuthProvider>
   );
 }
