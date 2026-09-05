@@ -29,7 +29,13 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm run check:ai-copy
+      - run: npm run check:constitution
+      - run: npm run check:frontmatter
+      - run: npm run check:image-alt
+      - run: npm run check:quiz-mounts
+      - run: npm run check:quiz-coverage
       - run: npm run check:links
+      - run: npm run check:sitemap
       - run: npm run check:search-index
       - run: npm run check:bundle
       - run: npm run lhci
