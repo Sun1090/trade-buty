@@ -19,6 +19,8 @@ interface AiDict {
   subtitle: string;
   thinking: string;
   error: string;
+  errorServer: string;
+  errorTimeout: string;
   retry: string;
   clear: string;
   copy: string;
@@ -135,12 +137,18 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     let sourcesArr: { chapter: string; doc: string; title?: string }[] | undefined;
     let suggestedArr: { chapter: string; title: string }[] | undefined;
 
+    // 连接超时（只约束到响应头到达，正文流式期不计入）
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+
     try {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: history, locale, ...opts.extraBody }),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (res.status === 429) {
         const retryAfter = res.headers.get("retry-after");
@@ -151,6 +159,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       }
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
+        if (res.status >= 500) throw new Error(dict.errorServer);
         throw new Error(errBody.error || dict.error);
       }
 
@@ -219,7 +228,16 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         }),
       }).catch(() => {});
     } catch (e) {
-      const msg = e instanceof Error ? e.message : dict.error;
+      clearTimeout(timer);
+      // 错误分级：超时 / 网络或服务不可用 / 服务端业务文案 / 兜底
+      const msg =
+        e instanceof DOMException && e.name === "AbortError"
+          ? dict.errorTimeout
+          : e instanceof TypeError
+            ? dict.errorServer
+            : e instanceof Error
+              ? e.message
+              : dict.error;
       setError(msg);
       // 移除空的 assistant 消息
       setMessages((prev) => {
