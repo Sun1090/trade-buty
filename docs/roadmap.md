@@ -154,12 +154,12 @@
 - [ ] R6.5 frontmatter 描述长度检查（过短影响 SEO 报警）
 - [ ] R6.6 图片 alt 缺失检查（知识库图片批量扫描）
 - [ ] R6.7 中英标题对照表生成（翻译进度可视化数据源）
-- [ ] R6.8 术语表（glossary）与正文术语交叉覆盖检查
-- [ ] R6.9 FAQ 与 AI 高频问题联动（feedback 高频 → FAQ 候选清单脚本）
+- [x] R6.8 术语交叉覆盖（check:glossary：20 术语/孤儿 0 个 → docs/glossary-coverage.md）
+- [x] R6.9 FAQ 候选（ops:faq-candidates：近 30 天 unhelpful 聚类 → docs/faq-candidates.md；无 key 友好跳过）
 - [ ] R6.10 changelog 自动片段（kb:update 产物变更写入 changelog 草稿）
 - [ ] R6.11 内容宪法扫描（“保证收益/稳赚”等违禁表述正则巡检）
-- [ ] R6.12 外链健康检查（知识库外链月度 HEAD 巡检，CI 定时）
-- [ ] R6.13 运营手册更新（以上脚本用法写入 docs/ops.md）
+- [x] R6.12 外链巡检（ops:link-patrol：HEAD 降级 GET + 超时重试；.github/workflows/link-patrol.yml 每月定时 + 手动触发）
+- [x] R6.13 运营手册（docs/ops.md：门禁/流水线/运营工具/迁移清单全覆盖）
 
 ## R7 性能与质量门禁（R7.1–R7.12）
 
