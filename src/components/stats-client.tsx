@@ -203,6 +203,7 @@ export function StatsClient({
         <ActivityHeatmap
           label={locale === "en" ? "Activity calendar" : "学习日历"}
           emptyLabel={locale === "en" ? "No activity yet" : "还没有学习记录"}
+          locale={locale === "en" ? "en" : "zh"}
         />
         <RadarChart
           label={locale === "en" ? "Mastery radar" : "掌握度雷达"}
