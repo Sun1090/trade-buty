@@ -37,6 +37,10 @@ export function setDailyGoalMin(n: number): void {
   } catch {
     // ignore
   }
+  // R4.7：登录用户双写云端（fire-and-forget）
+  import("./sync-layer")
+    .then(({ syncGoalUpsert }) => syncGoalUpsert(clamped))
+    .catch(() => {});
 }
 
 /** 今日已学分钟数（向下取整，来自学习时长台账） */

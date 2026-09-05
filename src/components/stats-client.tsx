@@ -9,6 +9,7 @@ import { useLocalProgress } from "@/components/use-local-progress";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { RadarChart } from "@/components/radar-chart";
 import { WeekMiniBar } from "@/components/week-mini-bar";
+import { WeeklyReport } from "@/components/weekly-report";
 
 interface StatsDict {
   title: string;
@@ -28,6 +29,12 @@ interface StatsDict {
   goalMinUnit: string;
   goalSet: string;
   streakReassureTpl: string;
+  totalStudyTime: string;
+  weeklyTitle: string;
+  weeklySummaryTpl: string;
+  emptyTitle: string;
+  emptyBody: string;
+  emptyCta: string;
 }
 
 function StatCard({ value, label, accent }: { value: string | number; label: string; accent?: boolean }) {
@@ -57,9 +64,11 @@ export function StatsClient({
     const onChange = () => setStats(aggregateStats(chapters));
     window.addEventListener("tb-progress", onChange);
     window.addEventListener("tb-streak", onChange);
+    window.addEventListener("tb-study-time", onChange);
     return () => {
       window.removeEventListener("tb-progress", onChange);
       window.removeEventListener("tb-streak", onChange);
+      window.removeEventListener("tb-study-time", onChange);
     };
   }, [chapters]);
 
@@ -67,6 +76,23 @@ export function StatsClient({
 
   const unlocked = getUnlockedBadges(stats);
   const locked = BADGES.filter((b) => !b.check(stats));
+
+  // R4.5：新用户空态——不给一片 0，给行动建议
+  if (stats.overallPct === 0 && stats.totalStudySeconds === 0 && stats.currentStreak === 0) {
+    return (
+      <div className="rounded-2xl border border-[var(--accent)]/30 border-l-4 border-l-[var(--accent)] bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-8 text-center">
+        <p className="text-2xl" aria-hidden>🚀</p>
+        <p className="mt-2 font-semibold">{dict.emptyTitle}</p>
+        <p className="mt-2 text-sm text-muted leading-relaxed max-w-md mx-auto">{dict.emptyBody}</p>
+        <a
+          href={`/${locale}/path`}
+          className="mt-5 inline-block rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2.5 text-sm transition"
+        >
+          {dict.emptyCta} →
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10">
@@ -90,12 +116,15 @@ export function StatsClient({
         }}
       />
 
-      {/* 连续学习 + 准确率 + 阅读时长 */}
+      {/* R4.6：近 7 天周报 */}
+      <WeeklyReport dict={{ title: dict.weeklyTitle, unit: dict.goalMinUnit, summaryTpl: dict.weeklySummaryTpl }} />
+
+      {/* 连续学习 + 准确率 + 学习时长 */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <StatCard value={`🔥 ${stats.currentStreak}`} label={dict.streak} accent />
         <StatCard value={stats.avgQuizScore !== null ? `${stats.avgQuizScore}%` : "—"} label={dict.accuracy} />
         <StatCard value={stats.replayAccuracy !== null ? `${stats.replayAccuracy}%` : "—"} label={`${dict.replay} ${dict.accuracy}`} />
-        <StatCard value={formatDuration(stats.totalReadingTime)} label={dict.readDocs} />
+        <StatCard value={formatDuration(stats.totalStudySeconds)} label={dict.totalStudyTime} />
       </div>
 
       {/* 学习计划 */}

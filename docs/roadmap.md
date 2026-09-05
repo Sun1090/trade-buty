@@ -121,14 +121,14 @@
 - [x] R4.2 学习时长台账（study-time.ts 按日期×来源记录；去重口径 total=max(read,quiz+replay) 防同页双计；阅读 5s tick / 测验会话耗时 / 回放每轮耗时三源接通；7 单测）
 - [x] R4.3 断签挽回提示（getStreakBreak：事实说明 + 历史最长展示，不伪造连续天数；单测覆盖）
 - [x] R4.4 完成庆祝（🎉 脉冲徽标 + 进度条变色，纯 Tailwind CSS 无动画库）
-- [ ] R4.5 统计页空态引导（新用户 0 数据时的行动建议）
-- [ ] R4.6 周报视图（近 7 天柱状，纯 SVG）
-- [ ] R4.7 目标与云端同步（登录后多设备一致，复用 sync-layer）
+- [x] R4.5 统计页空态引导（全 0 时展示 🚀 行动卡 + 学习路线 CTA，替代一片零数据）
+- [x] R4.6 周报视图（WeeklyReport：getStudySeries(7) 柱状，纯 CSS 柱 + useSyncExternalStore 值稳定快照；3 单测含口径对账）
+- [x] R4.7 目标云端同步（0005 user_settings 迁移 + syncGoalUpsert 随写随推 + hydrateFromCloud 登录拉取、本地意图优先）
 - [x] R4.8 时区宽限（date-utils 统一日期口径 + streak lastTs 36h 宽限窗：跨时区/夏令时跳天不误判断签；date-utils 3 + streak 4 单测）
 - [x] R4.9 最低门槛文档化（阅读计时 5s tick、打开课程页停留 ≥5s 计入当日；口径写入 study-time.ts/daily-goal.ts 模块注释与 roadmap）
-- [ ] R4.10 统计数字与进度页口径对账（两处“已读”一致）
-- [ ] R4.11 移动端统计页布局（柱状图不溢出 320px）
-- [ ] R4.12 无障碍：图表配文字摘要（读屏可读）
+- [x] R4.10 口径对账（readSummary 抽为唯一实现，统计页与学习路线页共用；总时长切换账去重口径 totalStudySeconds；单测对账 Σ各日 max=read,quiz+replay）
+- [x] R4.11 移动端布局（周报 flex 均分 + min-w-0 + 相对高度柱，320px 不溢出）
+- [x] R4.12 无障碍（周报 role=img + aria-label 同步摘要文字 + 图下文字摘要；DailyGoal 进度条 progressbar aria 值）
 
 ## R5 间隔重复复习 SRS（R5.1–R5.12）
 
