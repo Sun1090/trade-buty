@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { getDailyGoalMin, setDailyGoalMin, getTodayStudyMinutes, GOAL_TIERS } from "@/lib/daily-goal";
 import { getStreakBreak } from "@/lib/streak";
 
 function subscribeGoal(callback: () => void) {
-  window.addEventListener("tb-goal", callback);
-  return () => window.removeEventListener("tb-goal", callback);
+  const events = ["tb-goal", "tb-study-time", "tb-progress"] as const;
+  events.forEach((e) => window.addEventListener(e, callback));
+  return () => events.forEach((e) => window.removeEventListener(e, callback));
 }
 
 interface GoalDict {
@@ -23,21 +24,22 @@ export function DailyGoal({ dict }: { dict: GoalDict }) {
     getDailyGoalMin,
     () => 15, // SSR/SSG snapshot before client hydration.
   );
-  const [todayMinutes, setTodayMinutes] = useState(0);
-  const [breakInfo, setBreakInfo] = useState<{ broken: boolean; longest: number } | null>(null);
-
-  // 台账每次写入都会派发 tb-study-time（阅读计时 5s 一个 tick）
-  useEffect(() => {
-    const refresh = () => setTodayMinutes(getTodayStudyMinutes());
-    refresh();
-    setBreakInfo(getStreakBreak());
-    window.addEventListener("tb-study-time", refresh);
-    window.addEventListener("tb-progress", refresh);
-    return () => {
-      window.removeEventListener("tb-study-time", refresh);
-      window.removeEventListener("tb-progress", refresh);
-    };
-  }, []);
+  // 台账每次写入都会派发 tb-study-time（阅读计时 5s 一个 tick）——外部订阅，非 effect setState
+  const todayMinutes = useSyncExternalStore(
+    subscribeGoal,
+    getTodayStudyMinutes,
+    () => 0, // SSR/SSG snapshot before client hydration.
+  );
+  const broken = useSyncExternalStore(
+    subscribeGoal,
+    () => getStreakBreak().broken,
+    () => false,
+  );
+  const longest = useSyncExternalStore(
+    subscribeGoal,
+    () => getStreakBreak().longest,
+    () => 0,
+  );
 
   const pct = goal > 0 ? Math.min(100, Math.round((todayMinutes / goal) * 100)) : 0;
   const done = todayMinutes >= goal;
@@ -94,9 +96,9 @@ export function DailyGoal({ dict }: { dict: GoalDict }) {
       </div>
 
       {/* R4.3：断签挽回提示（说明事实，不伪造连续天数） */}
-      {breakInfo?.broken && !done && (
+      {broken && !done && (
         <p className="mt-3 text-xs text-muted leading-relaxed">
-          💡 {dict.reassureTpl.replace("{n}", String(breakInfo.longest))}
+          💡 {dict.reassureTpl.replace("{n}", String(longest))}
         </p>
       )}
     </div>

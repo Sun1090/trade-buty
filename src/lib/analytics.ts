@@ -13,7 +13,6 @@ export type AiEntry =
 
 export function trackAiClick(entry: AiEntry, meta?: Record<string, string | number>) {
   try {
-    // eslint-disable-next-line no-console
     console.info("[ai-track]", entry, meta ?? {});
   } catch {
     // ignore
