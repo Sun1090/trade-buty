@@ -22,7 +22,7 @@ export function getReadingTime(chapter: string, doc: string): number {
   return readReadingTime()[`${chapter}/${doc}`] ?? 0;
 }
 
-/** 累加阅读时长（秒） */
+/** 累加阅读时长（秒）——同时写入 R4.2 学习时长台账（read 源） */
 export function addReadingTime(chapter: string, doc: string, seconds: number): void {
   try {
     const all = readReadingTime();
@@ -32,6 +32,7 @@ export function addReadingTime(chapter: string, doc: string, seconds: number): v
   } catch {
     // ignore
   }
+  import("./study-time").then(({ addStudyTime }) => addStudyTime("read", seconds)).catch(() => {});
 }
 
 /** 总阅读时长（秒） */

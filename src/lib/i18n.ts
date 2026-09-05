@@ -180,7 +180,9 @@ const zh = {
     noBadges: "还没有成就，去学习解锁吧",
     goalLabel: "今日目标",
     goalUnit: "篇",
+    goalMinUnit: "分钟",
     goalSet: "设置",
+    streakReassureTpl: "昨天没学，连续天数重新计数了——今天学一点就接回来（历史最长 {n} 天）",
   },
   bookmarks: {
     nav: "收藏",
@@ -448,7 +450,9 @@ const en: Dict = {
     noBadges: "No badges yet — start learning to unlock",
     goalLabel: "Today's goal",
     goalUnit: "lessons",
+    goalMinUnit: "min",
     goalSet: "Set",
+    streakReassureTpl: "You missed yesterday — today restarts the streak. Keep going (longest: {n} days)!",
   },
   bookmarks: {
     nav: "Bookmarks",

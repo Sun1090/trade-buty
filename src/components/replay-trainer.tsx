@@ -10,6 +10,7 @@ import {
 } from "lightweight-charts";
 import { fetchKlines, fetchRandomHistoryWindow, type Kline } from "@/lib/binance";
 import { saveReplayRecord, saveReplayBest } from "@/lib/replay-store";
+import { addStudyTime } from "@/lib/study-time";
 
 const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] as const;
 const SYMBOL_NAMES: Record<string, string> = {
@@ -79,6 +80,8 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
   const [symbol, setSymbol] = useState<string>("BTCUSDT");
   const [interval_, setInterval_] = useState<string>("1h");
   const [round, setRound] = useState(0);
+  // R4.2：本轮回放开始时刻（round 变化即新一轮），结束时上报耗时
+  const roundStartRef = useRef<number>(Date.now());
   const [customMode, setCustomMode] = useState(false);
   const [endDateInput, setEndDateInput] = useState(() => {
     const d = new Date(Date.now() - 30 * 86400_000);
@@ -123,6 +126,9 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
       savedRoundRef.current !== round
     ) {
       savedRoundRef.current = round;
+      const elapsed = Math.min(Math.round((Date.now() - roundStartRef.current) / 1000), 8 * 3600);
+      if (elapsed > 0) addStudyTime("replay", elapsed);
+      roundStartRef.current = Date.now();
       saveReplayRecord({
         symbol,
         interval: interval_,

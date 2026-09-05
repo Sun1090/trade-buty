@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const store = new Map<string, string>();
 const localStorageMock = {
@@ -14,28 +14,23 @@ const localStorageMock = {
 vi.stubGlobal("localStorage", localStorageMock);
 vi.stubGlobal("window", { dispatchEvent: () => {} });
 
-const { getDailyGoal, setDailyGoal, isGoalSetToday } = await import("./daily-goal");
+const { getDailyGoalMin, setDailyGoalMin, GOAL_TIERS } = await import("./daily-goal");
 
-describe("daily-goal", () => {
+describe("daily-goal（R4.1 分钟三档）", () => {
   beforeEach(() => store.clear());
 
-  it("默认目标为正数", () => {
-    expect(getDailyGoal()).toBeGreaterThan(0);
+  it("默认 15 分钟", () => {
+    expect(getDailyGoalMin()).toBe(15);
   });
 
-  it("设置目标", () => {
-    setDailyGoal(5);
-    expect(getDailyGoal()).toBe(5);
-  });
-
-  it("无效目标被夹紧", () => {
-    setDailyGoal(-1);
-    expect(getDailyGoal()).toBeGreaterThan(0);
-    setDailyGoal(999);
-    expect(getDailyGoal()).toBeLessThanOrEqual(50);
-  });
-
-  it("未设目标时 isGoalSetToday=false", () => {
-    expect(isGoalSetToday()).toBe(false);
+  it("只接受 5/15/30 三个档位，非法值回落 15", () => {
+    for (const t of GOAL_TIERS) {
+      setDailyGoalMin(t);
+      expect(getDailyGoalMin()).toBe(t);
+    }
+    setDailyGoalMin(7);
+    expect(getDailyGoalMin()).toBe(15);
+    setDailyGoalMin(999);
+    expect(getDailyGoalMin()).toBe(15);
   });
 });

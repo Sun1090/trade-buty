@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
-import { getDailyGoal, setDailyGoal } from "@/lib/daily-goal";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { getDailyGoalMin, setDailyGoalMin, getTodayStudyMinutes, GOAL_TIERS } from "@/lib/daily-goal";
+import { getStreakBreak } from "@/lib/streak";
 
 function subscribeGoal(callback: () => void) {
   window.addEventListener("tb-goal", callback);
@@ -12,77 +13,91 @@ interface GoalDict {
   label: string;
   unit: string;
   set: string;
+  reassureTpl: string;
 }
 
-/** 每日目标小组件：显示今日目标 + 完成数，可调整 */
-export function DailyGoal({
-  todayRead,
-  dict,
-}: {
-  todayRead: number;
-  dict: GoalDict;
-}) {
+/** R4.1：每日目标（分钟三档）+ R4.3 断签挽回提示 + R4.4 完成庆祝动效 */
+export function DailyGoal({ dict }: { dict: GoalDict }) {
   const goal = useSyncExternalStore(
     subscribeGoal,
-    getDailyGoal,
-    () => 3, // SSR/SSG snapshot before client hydration.
+    getDailyGoalMin,
+    () => 15, // SSR/SSG snapshot before client hydration.
   );
-  const [editing, setEditing] = useState(false);
+  const [todayMinutes, setTodayMinutes] = useState(0);
+  const [breakInfo, setBreakInfo] = useState<{ broken: boolean; longest: number } | null>(null);
 
-  const pct = goal > 0 ? Math.min(100, Math.round((todayRead / goal) * 100)) : 0;
-  const done = todayRead >= goal;
+  // 台账每次写入都会派发 tb-study-time（阅读计时 5s 一个 tick）
+  useEffect(() => {
+    const refresh = () => setTodayMinutes(getTodayStudyMinutes());
+    refresh();
+    setBreakInfo(getStreakBreak());
+    window.addEventListener("tb-study-time", refresh);
+    window.addEventListener("tb-progress", refresh);
+    return () => {
+      window.removeEventListener("tb-study-time", refresh);
+      window.removeEventListener("tb-progress", refresh);
+    };
+  }, []);
+
+  const pct = goal > 0 ? Math.min(100, Math.round((todayMinutes / goal) * 100)) : 0;
+  const done = todayMinutes >= goal;
 
   return (
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-semibold">
-          {dict.label}
-          {done && <span className="ml-2 text-accent">✓</span>}
-        </p>
-        <button
-          onClick={() => setEditing((v) => !v)}
-          className="text-xs text-faint hover:text-accent transition"
-        >
-          {dict.set}
-        </button>
+        <p className="text-sm font-semibold">{dict.label}</p>
+        {/* R4.4：目标达成庆祝——轻量 CSS（脉冲徽标），不引入动画库 */}
+        {done && (
+          <span className="text-xs font-medium text-accent animate-pulse">🎉</span>
+        )}
       </div>
-      {editing ? (
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min={1}
-            max={20}
-            defaultValue={goal}
-            onChange={(e) => {
-              const v = parseInt(e.target.value, 10);
-              if (!Number.isNaN(v)) setDailyGoal(v);
-            }}
-            className="w-16 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm text-center outline-none focus:border-accent/50"
-          />
-          <span className="text-xs text-faint">{dict.unit}</span>
+      <div className="flex items-baseline gap-2 mb-2">
+        <span
+          className={`font-mono text-2xl font-bold ${done ? "text-accent" : "text-transparent bg-clip-text bg-gradient-to-r from-accent to-[var(--info)]"}`}
+        >
+          {todayMinutes}
+        </span>
+        <span className="text-sm text-muted">/ {goal} {dict.unit}</span>
+        <span className="ml-auto font-mono text-sm text-faint">
+          {done ? "✓ " : ""}{pct}%
+        </span>
+      </div>
+      <div
+        className={`h-2 rounded-full overflow-hidden ${done ? "bg-accent/30" : "bg-white/10"}`}
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${done ? "bg-accent" : "bg-gradient-to-r from-accent-strong to-accent"}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      {/* 档位切换（R4.1：5/15/30 分钟） */}
+      <div className="mt-3 flex items-center gap-2">
+        <span className="text-xs text-faint">{dict.set}</span>
+        {GOAL_TIERS.map((t) => (
           <button
-            onClick={() => { setDailyGoal(goal); setEditing(false); }}
-            className="ml-auto rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-medium px-4 py-1.5 text-xs transition"
+            key={t}
+            onClick={() => setDailyGoalMin(t)}
+            className={`rounded-full border px-3 py-1 text-xs transition ${
+              goal === t
+                ? "border-accent bg-[var(--accent-dim)] text-accent font-medium"
+                : "border-[var(--border)] text-muted hover:border-accent/50"
+            }`}
           >
-            ✓
+            {t} {dict.unit}
           </button>
-        </div>
-      ) : (
-        <>
-          <div className="flex items-baseline gap-2 mb-2">
-            <span className="font-mono text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent to-[var(--info)]">
-              {todayRead}
-            </span>
-            <span className="text-sm text-muted">/ {goal} {dict.unit}</span>
-            <span className="ml-auto font-mono text-sm text-faint">{pct}%</span>
-          </div>
-          <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${done ? "bg-accent" : "bg-gradient-to-r from-accent-strong to-accent"}`}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-        </>
+        ))}
+      </div>
+
+      {/* R4.3：断签挽回提示（说明事实，不伪造连续天数） */}
+      {breakInfo?.broken && !done && (
+        <p className="mt-3 text-xs text-muted leading-relaxed">
+          💡 {dict.reassureTpl.replace("{n}", String(breakInfo.longest))}
+        </p>
       )}
     </div>
   );
