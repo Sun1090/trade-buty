@@ -25,6 +25,14 @@ const zh = {
     // R9.1：登录后跳回原页提示
     returnToBannerTitle: "登录后将回到",
     returnToNoticeTpl: "📍 {path}",
+    // R9.2：OTP 错误分类与本地冷却
+    errorRateLimited: "请求过于频繁，请稍后再试",
+    errorRateLimitedHint: "邮箱服务有冷却时间，我们已经发了链接，请到邮箱查收（垃圾邮件夹也看看）",
+    errorInvalidEmail: "邮箱格式不正确，请检查后重试",
+    errorNetwork: "网络异常，请检查连接后重试",
+    errorUnknown: "发送失败，请稍后重试",
+    cooldownTpl: "请 {sec}s 后再试",
+    cooldownButton: "请 {sec}s 后重发",
   },
   brand: { name: "Trade Buty", badge: "免费 · 中立" },
   home: {
@@ -390,6 +398,14 @@ const en: Dict = {
     // R9.1: return-to-original-page banner
     returnToBannerTitle: "After login you'll return to",
     returnToNoticeTpl: "📍 {path}",
+    // R9.2: OTP error classification + client-side cooldown
+    errorRateLimited: "Too many requests — please try again later",
+    errorRateLimitedHint: "Email providers have a cooldown. We've already sent a link — check your inbox (and spam folder).",
+    errorInvalidEmail: "That email address doesn't look right — double-check and retry",
+    errorNetwork: "Network problem — check your connection and retry",
+    errorUnknown: "Couldn't send — please try again later",
+    cooldownTpl: "Please wait {sec}s",
+    cooldownButton: "Resend in {sec}s",
   },
   brand: { name: "Trade Buty", badge: "Free · Neutral" },
   home: {
