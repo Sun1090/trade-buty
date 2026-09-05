@@ -44,11 +44,10 @@ test.describe("核心路径冒烟", () => {
     await expect(page.locator("body")).toContainText(/回放|Replay/i);
   });
 
-  test("AI 问答页空状态与示例问题", async ({ page }) => {
+  test("AI 问答页可达（有 key 显示示例，无 key 显示禁用态）", async ({ page }) => {
     await page.goto("/zh/ai");
-    await expect(page.getByText("试试这样问")).toBeVisible();
-    const suggestions = page.locator("button").filter({ hasText: /什么是|如何|怎么/ });
-    await expect(suggestions.first()).toBeVisible();
+    // R3.9：AI_API_KEY 缺失的环境（如 CI）展示禁用态；有 key 展示空状态示例
+    await expect(page.locator("body")).toContainText(/试试这样问|暂未开启|unavailable/i);
   });
 
   test("未知章节展示软 404 内容", async ({ page }) => {
