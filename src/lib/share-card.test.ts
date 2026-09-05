@@ -169,3 +169,40 @@ describe("gradeFromReplayAccuracy", () => {
     expect(gradeFromReplayAccuracy(Number.NaN, 10)).toBe("C");
   });
 });
+import { gradeFromStreakDays } from "./share-card";
+
+describe("gradeFromStreakDays", () => {
+  it("0 → none（无学习）", () => {
+    expect(gradeFromStreakDays(0)).toBe("none");
+  });
+  it("1 → C（刚刚起步）", () => {
+    expect(gradeFromStreakDays(1)).toBe("C");
+  });
+  it("6 → C", () => {
+    expect(gradeFromStreakDays(6)).toBe("C");
+  });
+  it("7 边界 → B（一周坚持）", () => {
+    expect(gradeFromStreakDays(7)).toBe("B");
+  });
+  it("13 → B", () => {
+    expect(gradeFromStreakDays(13)).toBe("B");
+  });
+  it("14 边界 → A", () => {
+    expect(gradeFromStreakDays(14)).toBe("A");
+  });
+  it("29 → A", () => {
+    expect(gradeFromStreakDays(29)).toBe("A");
+  });
+  it("30 边界 → S（月度王者）", () => {
+    expect(gradeFromStreakDays(30)).toBe("S");
+  });
+  it("100 → S", () => {
+    expect(gradeFromStreakDays(100)).toBe("S");
+  });
+  it("负数 → none", () => {
+    expect(gradeFromStreakDays(-1)).toBe("none");
+  });
+  it("NaN → none", () => {
+    expect(gradeFromStreakDays(Number.NaN)).toBe("none");
+  });
+});

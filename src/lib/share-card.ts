@@ -418,3 +418,151 @@ function drawMetricBlock(
   ctx.textBaseline = "alphabetic";
   ctx.fillText(label, centerX, y + h - 12);
 }
+// ──────────────── R8.3 连续学习卡 ────────────────
+
+/**
+ * 连续学习评级（与 quiz / replay 错开）：
+ *   S ≥ 30 天
+ *   A ≥ 14 天
+ *   B ≥ 7 天
+ *   C ≥ 1 天
+ *   0 天无法评级
+ *
+ * 复用 Grade 字母+颜色（一致性优先）。
+ */
+export type StreakLevel = Grade | "none";
+
+export function gradeFromStreakDays(days: number): StreakLevel {
+  if (!Number.isFinite(days) || days < 1) return "none";
+  if (days >= 30) return "S";
+  if (days >= 14) return "A";
+  if (days >= 7) return "B";
+  return "C";
+}
+
+export interface StreakCardArgs {
+  ctx: CanvasRenderingContext2D;
+  width: number;
+  height: number;
+  /** 当前连续天数 */
+  currentStreak: number;
+  /** 历史最长 */
+  longestStreak: number;
+  /** 最近 7 天的活动日期（yyyy-MM-dd 字符串数组；缺日期视为未学习） */
+  recentDays: { date: string; active: boolean }[];
+  locale: ShareLocale;
+  theme: CardTheme;
+  siteName: string;
+  font: string;
+}
+
+/** 在指定画布上画一张「连续学习」分享卡。 */
+export function drawStreakCard(args: StreakCardArgs): void {
+  const {
+    ctx,
+    width,
+    height,
+    currentStreak,
+    longestStreak,
+    recentDays,
+    locale,
+    theme,
+    siteName,
+    font,
+  } = args;
+  const colors = colorsFor(theme);
+  const level = gradeFromStreakDays(currentStreak);
+  const gradeCol = level === "none" ? colors.fgMuted : gradeColor(level, colors);
+
+  drawBackground(ctx, width, height, colors);
+
+  // 上：标题
+  ctx.save();
+  ctx.fillStyle = colors.fgMuted;
+  ctx.font = `500 36px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  const heading = locale === "zh" ? "学习连续打卡" : "Study streak";
+  ctx.fillText(heading, width / 2, 90);
+
+  // 中：大火焰 + 天数
+  ctx.fillStyle = gradeCol;
+  ctx.font = `900 200px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("🔥", width / 2, height / 2 - 220);
+
+  ctx.fillStyle = gradeCol;
+  ctx.font = `900 240px ${font}`;
+  ctx.fillText(String(currentStreak), width / 2, height / 2 - 20);
+
+  ctx.fillStyle = colors.fg;
+  ctx.font = `600 56px ${font}`;
+  ctx.fillText(
+    locale === "zh" ? "连续天数" : "days in a row",
+    width / 2,
+    height / 2 + 130,
+  );
+
+  // 副：最长记录
+  ctx.fillStyle = colors.fgMuted;
+  ctx.font = `500 36px ${font}`;
+  ctx.textBaseline = "top";
+  ctx.fillText(
+    locale === "zh"
+      ? `最长连胜：${longestStreak} 天`
+      : `Longest streak: ${longestStreak} days`,
+    width / 2,
+    height / 2 + 220,
+  );
+
+  // 底：近 7 天小方格
+  const grid = drawStreakWeekGrid(ctx, recentDays, width, height, colors, font, locale);
+  void grid; // 未来若要返图备用
+
+  drawBrandFooter(ctx, width, height, colors, siteName, font);
+  ctx.restore();
+}
+
+/** 在画布底部画最近 7 天的活动方格（active=实心色，inactive=网格色）。 */
+function drawStreakWeekGrid(
+  ctx: CanvasRenderingContext2D,
+  recentDays: { date: string; active: boolean }[],
+  width: number,
+  height: number,
+  colors: CardColors,
+  font: string,
+  locale: ShareLocale,
+): void {
+  // 7 个方格，间距 12px，方格 80x80
+  const cellW = 80;
+  const cellGap = 16;
+  const totalW = cellW * 7 + cellGap * 6;
+  const startX = (width - totalW) / 2;
+  const y = height - 280;
+  ctx.save();
+  for (let i = 0; i < 7; i++) {
+    const day = recentDays[recentDays.length - 7 + i] ?? { date: "", active: false };
+    const x = startX + i * (cellW + cellGap);
+    ctx.fillStyle = day.active ? colors.accent : colors.grid;
+    ctx.fillRect(x, y, cellW, cellW);
+    // 日期标签（取日期末段 MM-DD）
+    ctx.fillStyle = colors.fgMuted;
+    ctx.font = `500 20px ${font}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const label = day.date.length >= 10 ? day.date.slice(5) : day.date;
+    ctx.fillText(label, x + cellW / 2, y + cellW + 8);
+  }
+  ctx.restore();
+  // caption
+  ctx.fillStyle = colors.fgMuted;
+  ctx.font = `500 24px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText(
+    locale === "zh" ? "近 7 天" : "Last 7 days",
+    width / 2,
+    height - 120,
+  );
+}

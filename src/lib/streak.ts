@@ -4,7 +4,7 @@
  * 记录每天的学习活动（标记已读/做测验/做回放），
  * 计算当前连续学习天数和历史最长记录。
  */
-import { recordActivity } from "./activity-calendar";
+import { readActivityDates, recordActivity } from "./activity-calendar";
 import { localDateStr, daysBetween } from "./date-utils";
 
 const KEY = "tb-streak";
@@ -109,4 +109,23 @@ export function getStreakBreak(): { broken: boolean; longest: number } {
   // 无任何历史（lastDate 为空）不算「断签」，是还没开始
   const broken = data.lastDate !== "" && !inGrace;
   return { broken, longest: data.longest };
+}
+
+/**
+ * 获取最近 7 天（含今天）的活动状态，用于分享卡的迷你日历。
+ * 始终返回 7 项，缺失日期视为未学习。
+ */
+export function getRecentDays(daysBack = 7): { date: string; active: boolean }[] {
+  const activity = new Set(readActivityDates());
+  const out: { date: string; active: boolean }[] = [];
+  for (let i = daysBack - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const date = `${yyyy}-${mm}-${dd}`;
+    out.push({ date, active: activity.has(date) });
+  }
+  return out;
 }
