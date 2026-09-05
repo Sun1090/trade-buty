@@ -255,3 +255,166 @@ export function drawQuizCard(args: QuizCardArgs): void {
 
   drawBrandFooter(ctx, width, height, colors, siteName, font);
 }
+
+// ──────────────── R8.2 回放战绩卡 ────────────────
+
+/**
+ * 回放训练有自己的评级标准（盘感更难，阈值更低）：
+ *   S ≥ 70% 准确率 + 命中 ≥ 3 次
+ *   A ≥ 60%
+ *   B ≥ 50%
+ *   C 其余
+ *
+ * 与 R8.1 测验不同：测验答案固定，回放是对抗随机走势——所以阈值宽松一点。
+ * 复用 R8.1 的 Grade 字母+颜色语义。
+ */
+export function gradeFromReplayAccuracy(accuracy: number, totalGuesses: number): Grade {
+  if (!Number.isFinite(accuracy) || accuracy < 0 || totalGuesses < 3) return "C";
+  if (accuracy >= 0.7) return "S";
+  if (accuracy >= 0.6) return "A";
+  if (accuracy >= 0.5) return "B";
+  return "C";
+}
+
+export interface ReplayCardArgs {
+  ctx: CanvasRenderingContext2D;
+  width: number;
+  height: number;
+  symbol: string;
+  interval: string;
+  correct: number;
+  total: number;
+  /** 0–1（不是 0–100） */
+  accuracy: number;
+  bestStreak: number;
+  currentStreak: number;
+  locale: ShareLocale;
+  theme: CardTheme;
+  siteName: string;
+  font: string;
+}
+
+/** 在指定画布上画一张「回放战绩」分享卡。 */
+export function drawReplayCard(args: ReplayCardArgs): void {
+  const {
+    ctx,
+    width,
+    height,
+    symbol,
+    interval,
+    correct,
+    total,
+    accuracy,
+    bestStreak,
+    currentStreak,
+    locale,
+    theme,
+    siteName,
+    font,
+  } = args;
+  const colors = colorsFor(theme);
+  const percent = accuracy * 100;
+  const grade = gradeFromReplayAccuracy(accuracy, total);
+  const gradeCol = gradeColor(grade, colors);
+
+  drawBackground(ctx, width, height, colors);
+
+  // 上：标题 + 标的/周期
+  ctx.save();
+  ctx.fillStyle = colors.fgMuted;
+  ctx.font = `500 36px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  const heading = locale === "zh" ? "回放战绩" : "Replay Result";
+  ctx.fillText(heading, width / 2, 90);
+
+  ctx.fillStyle = colors.fg;
+  ctx.font = `700 56px ${font}`;
+  ctx.textAlign = "center";
+  ctx.fillText(
+    truncateForCanvas(`${symbol} · ${interval}`, 18),
+    width / 2,
+    160,
+  );
+  ctx.restore();
+
+  // 中：大评级字母 + 准确率
+  ctx.fillStyle = gradeCol;
+  ctx.font = `900 360px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(grade, width / 2, height / 2 - 40);
+
+  ctx.fillStyle = colors.fg;
+  ctx.font = `800 96px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText(formatPercent(percent), width / 2, height - 460);
+
+  ctx.fillStyle = colors.fgMuted;
+  ctx.font = `500 32px ${font}`;
+  ctx.textAlign = "center";
+  ctx.fillText(
+    locale === "zh"
+      ? `${correct}/${total} 命中`
+      : `${correct}/${total} correct`,
+    width / 2,
+    height - 360,
+  );
+
+  // 底：连胜 + 最佳连胜 双指标
+  const blockY = height - 200;
+  const blockW = (width - 180) / 2;
+  drawMetricBlock(ctx, 60 + blockW / 2, blockY, blockW, colors,
+    locale === "zh" ? "本轮连胜" : "Streak",
+    String(currentStreak),
+    locale === "zh" ? "连" : "",
+    font,
+  );
+  drawMetricBlock(ctx, width - 60 - blockW / 2, blockY, blockW, colors,
+    locale === "zh" ? "最佳连胜" : "Best streak",
+    String(bestStreak),
+    locale === "zh" ? "连" : "",
+    font,
+  );
+
+  drawBrandFooter(ctx, width, height, colors, siteName, font);
+}
+
+/** 在画布底部画一个 metric 数据块（带边框的圆角矩形 + 大数字 + 小标签）。 */
+function drawMetricBlock(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  y: number,
+  w: number,
+  colors: CardColors,
+  label: string,
+  value: string,
+  unit: string,
+  font: string,
+): void {
+  const h = 130;
+  const x = centerX - w / 2;
+  ctx.save();
+  ctx.strokeStyle = colors.grid;
+  ctx.lineWidth = 2;
+  // 用背景色填充（轻微透明度），用网格色描边
+  ctx.fillStyle = colors.bgGradientTo;
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeRect(x, y, w, h);
+  ctx.restore();
+
+  // 数字（居中）
+  ctx.fillStyle = colors.fg;
+  ctx.font = `800 72px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(unit ? `${value}${unit}` : value, centerX, y + h / 2 - 8);
+
+  // 标签（底部）
+  ctx.fillStyle = colors.fgMuted;
+  ctx.font = `500 24px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(label, centerX, y + h - 12);
+}

@@ -133,3 +133,39 @@ describe("wrapText", () => {
     expect(wrapText(mockCtx(), "", 100)).toEqual([]);
   });
 });
+
+import { gradeFromReplayAccuracy } from "./share-card";
+
+describe("gradeFromReplayAccuracy", () => {
+  it("100% → S", () => {
+    expect(gradeFromReplayAccuracy(1.0, 10)).toBe("S");
+  });
+  it("70% 边界 → S", () => {
+    expect(gradeFromReplayAccuracy(0.7, 10)).toBe("S");
+  });
+  it("69.9% → A", () => {
+    expect(gradeFromReplayAccuracy(0.699, 10)).toBe("A");
+  });
+  it("60% 边界 → A", () => {
+    expect(gradeFromReplayAccuracy(0.6, 10)).toBe("A");
+  });
+  it("50% 边界 → B", () => {
+    expect(gradeFromReplayAccuracy(0.5, 10)).toBe("B");
+  });
+  it("49% → C", () => {
+    expect(gradeFromReplayAccuracy(0.49, 10)).toBe("C");
+  });
+  it("猜测次数 < 3 → C（样本不足不能给评级）", () => {
+    expect(gradeFromReplayAccuracy(1.0, 2)).toBe("C");
+    expect(gradeFromReplayAccuracy(0.8, 1)).toBe("C");
+  });
+  it("0 次 → C", () => {
+    expect(gradeFromReplayAccuracy(0, 0)).toBe("C");
+  });
+  it("负数 → C", () => {
+    expect(gradeFromReplayAccuracy(-0.5, 10)).toBe("C");
+  });
+  it("NaN → C", () => {
+    expect(gradeFromReplayAccuracy(Number.NaN, 10)).toBe("C");
+  });
+});

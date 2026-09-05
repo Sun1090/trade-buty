@@ -12,6 +12,7 @@ import { fetchKlines, fetchRandomHistoryWindow, type Kline } from "@/lib/binance
 import { saveReplayRecord, saveReplayBest } from "@/lib/replay-store";
 import { addStudyTime } from "@/lib/study-time";
 import { measureFps, LOW_END_FPS_THRESHOLD, REPLAY_REDUCED_CANDLES } from "@/lib/perf";
+import { ReplayShareCard } from "@/components/replay-share-card";
 
 const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] as const;
 const SYMBOL_NAMES: Record<string, string> = {
@@ -53,6 +54,10 @@ export interface ReplayDict {
   modeCustom: string;
   endDateLabel: string;
   startCustom: string;
+  shareReplay: string;
+  previewReplay: string;
+  download: string;
+  previewAlt: string;
 }
 
 interface GuessState {
@@ -74,7 +79,7 @@ function gradeOf(total: number, correct: number): string {
   return "C";
 }
 
-export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
+export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh" | "en" }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -460,19 +465,22 @@ export function ReplayTrainer({ dict }: { dict: ReplayDict }) {
                   >
                     {dict.newRound}
                   </button>
-                  <button
-                    onClick={async () => {
-                      const text = `Trade Buty 回放训练：${gradeOf(guess.total, guess.correct)} · ${guess.correct}/${guess.total} · 连击 ${guess.streak} · 最佳 ${guess.best}`;
-                      try {
-                        await navigator.clipboard.writeText(text);
-                      } catch {
-                        // ignore
-                      }
+                  {/* R8.2 回放战绩分享卡 */}
+                  <ReplayShareCard
+                    symbol={symbol}
+                    interval={interval_}
+                    correct={guess.correct}
+                    total={guess.total}
+                    accuracy={guess.total > 0 ? guess.correct / guess.total : 0}
+                    bestStreak={guess.best}
+                    currentStreak={guess.streak}
+                    locale={locale}
+                    labels={{
+                      share: dict.shareReplay,
+                      previewAlt: dict.previewAlt,
+                      download: dict.download,
                     }}
-                    className="rounded-full border border-[var(--accent)]/40 bg-[var(--surface)] hover:border-accent/60 text-accent font-medium px-5 py-2 text-sm transition"
-                  >
-                    📋 复制成绩
-                  </button>
+                  />
                 </div>
               </div>
             ) : guess.pending === null ? (
