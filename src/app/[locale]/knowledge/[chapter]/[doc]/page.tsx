@@ -11,7 +11,12 @@ import {
   getDocMetas,
   prepareForRender,
 } from "@/lib/content";
+import { suggestFromPath } from "@/lib/url-suggest";
+import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
+import { JsonLd } from "@/components/json-ld";
+import { breadcrumbList } from "@/lib/jsonld";
 import { getDict, isLocale } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { QUIZZES } from "@/lib/quizzes";
 import { Markdown } from "@/components/markdown";
 import { ChapterExamCard } from "@/components/chapter-exam-card";
@@ -51,17 +56,18 @@ export function generateStaticParams() {
 
 export async function generateMetadata({
   params,
-}: PageProps<"/[locale]/knowledge/[chapter]/[doc]">): Promise<Metadata> {
+}: PageProps<"/[locale]/knowledge/[chapter]/[doc]">) {
   const { locale, chapter, doc: docSlug } = await params;
+  if (!isLocale(locale)) return {};
   const doc = getDoc("zh", chapter, docSlug);
   if (!doc) return {};
-  return {
+  return buildPageMetadata({
+    locale,
     title: doc.title,
     description: doc.description,
-    alternates: {
-      canonical: `/${locale}/knowledge/${chapter}/${docSlug}`,
-    },
-  };
+    path: `/${locale}/knowledge/${chapter}/${docSlug}`,
+    type: "article",
+  });
 }
 
 export default async function DocPage({
@@ -80,25 +86,38 @@ export default async function DocPage({
   if (!doc) {
     const chapterData = getChapter(locale, chapterSlug);
     if (!chapterData) notFound();
-    const available = getDocMetas(locale, chapterSlug);
+    // R8.11：用 URL 推荐替换「同章所有 lessons」全列表
+    const suggestions = suggestFromPath(
+      `/${locale}/knowledge/${chapterSlug}/${docSlug}`,
+      buildKnowledgeCorpus(locale),
+      5,
+    );
     const tc = getDict(locale);
     return (
       <div className="mx-auto max-w-3xl px-4 sm:px-5 py-16">
         <p className="font-mono text-4xl text-accent">404</p>
         <h1 className="mt-4 text-2xl font-bold">{tc.notFound.docMissing}</h1>
         <p className="mt-2 text-sm text-muted">{tc.notFound.docHint}</p>
-        <ol className="mt-8 space-y-2.5">
-          {available.map((d) => (
-            <li key={d.slug}>
-              <Link
-                href={`/${locale}/knowledge/${chapterSlug}/${d.slug}`}
-                className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-3 hover:border-[var(--accent)]/60 transition"
-              >
-                {d.title}
-              </Link>
-            </li>
-          ))}
-        </ol>
+        {suggestions.length > 0 && (
+          <>
+            <p className="mt-8 text-xs font-semibold uppercase tracking-[0.2em] text-accent mb-3">
+              {tc.notFound.suggestTitle}
+            </p>
+            <ol className="space-y-2.5" data-testid="doc-suggestions">
+              {suggestions.map((s) => (
+                <li key={s.href}>
+                  <Link
+                    href={s.href}
+                    className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-3 hover:border-[var(--accent)]/60 transition"
+                  >
+                    <span className="font-semibold">{s.title}</span>
+                    <span className="block text-xs text-faint font-mono mt-0.5">{s.slug}</span>
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </>
+        )}
       </div>
     );
   }
@@ -199,27 +218,34 @@ export default async function DocPage({
         </div>
       </header>
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Article",
-            headline: doc.title,
-            description: doc.description,
-            author: { "@type": "Organization", name: "Trade Buty" },
-            publisher: {
-              "@type": "Organization",
-              name: "Trade Buty",
-              logo: { "@type": "ImageObject", url: `${SITE_URL}/icon` },
-            },
-            inLanguage: locale === "zh" ? "zh-CN" : "en",
-            isPartOf: {
-              "@type": "Course",
-              name: chapter?.title,
-            },
-          }),
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Article",
+          headline: doc.title,
+          description: doc.description,
+          author: { "@type": "Organization", name: "Trade Buty" },
+          publisher: {
+            "@type": "Organization",
+            name: "Trade Buty",
+            logo: { "@type": "ImageObject", url: `${SITE_URL}/icon` },
+          },
+          inLanguage: locale === "zh" ? "zh-CN" : "en",
+          isPartOf: {
+            "@type": "Course",
+            name: chapter?.title,
+          },
         }}
+      />
+      {/* R8.10：面包屑导航（搜索引擎可识别层级） */}
+      <JsonLd
+        data={breadcrumbList([
+          { name: locale === "zh" ? "首页" : "Home", href: `/${locale}` },
+          ...(chapter
+            ? [{ name: chapter.title, href: `/${locale}/knowledge/${chapterSlug}` }]
+            : []),
+          { name: doc.title, href: `/${locale}/knowledge/${chapterSlug}/${docSlug}` },
+        ])}
       />
 
       <ReadingTimeTracker chapter={chapterSlug} doc={docSlug} />

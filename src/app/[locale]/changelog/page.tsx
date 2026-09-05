@@ -1,15 +1,24 @@
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { execSync } from "child_process";
-import { isLocale, LOCALES } from "@/lib/i18n";
+import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { HeroCard } from "@/components/hero-card";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/[locale]/changelog">): Promise<Metadata> {
-  return { title: "Changelog", robots: { index: false, follow: false } };
+export async function generateMetadata({ params }: PageProps<"/[locale]/changelog">) {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const m = getDict(locale).pageMeta;
+  return buildPageMetadata({
+    locale,
+    title: m.changelogTitle,
+    description: m.changelogDesc,
+    path: `/${locale}/changelog`,
+    noindex: true,
+  });
 }
 
 /** 从 git log 获取最近变更 */

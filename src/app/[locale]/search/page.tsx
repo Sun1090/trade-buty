@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { SearchClient } from "@/components/search-client";
 import { HeroCard } from "@/components/hero-card";
 
@@ -11,8 +12,14 @@ export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/search">) {
   const { locale } = await params;
+  if (!isLocale(locale)) return {};
   const s = getDict(locale).search;
-  return { title: s.title, description: s.placeholder, alternates: { canonical: `/${locale}/search` } };
+  return buildPageMetadata({
+    locale,
+    title: s.title,
+    description: s.placeholder,
+    path: `/${locale}/search`,
+  });
 }
 
 export default async function SearchPage({

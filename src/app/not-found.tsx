@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { getChapters } from "@/lib/content";
-import { DEFAULT_LOCALE } from "@/lib/i18n";
+import { DEFAULT_LOCALE, getDict } from "@/lib/i18n";
+import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
+import { NotFoundSuggestions } from "@/components/not-found-suggestions";
 
-// 根级 404：无 locale 上下文，用默认语言
+// 根级 404：无 locale 上下文 → 默认 locale；客户端组件读 pathname 再做距离推荐
 export default function NotFound() {
-  const chapters = getChapters(DEFAULT_LOCALE).slice(0, 6);
+  const t = getDict(DEFAULT_LOCALE);
+  const corpus = buildKnowledgeCorpus(DEFAULT_LOCALE);
+  const starters = getChapters(DEFAULT_LOCALE).slice(0, 6);
 
   return (
     <div className="relative mx-auto max-w-3xl px-5 py-20 text-center overflow-hidden">
@@ -53,13 +57,20 @@ export default function NotFound() {
         </Link>
       </div>
 
-      {chapters.length > 0 && (
+      {/* R8.11：URL 推荐位（客户端组件：URL 命中知识库路径 → 显示 3 条最近；未命中 → 隐藏，由下方 Popular starters 兜底） */}
+      <NotFoundSuggestions
+        corpus={corpus}
+        heading={t.notFound.suggestTitle}
+        subheading={t.notFound.suggestHint}
+      />
+
+      {starters.length > 0 && (
         <div className="mt-16">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-faint mb-6">
             Popular starters
           </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {chapters.map((c) => (
+            {starters.map((c) => (
               <Link
                 key={c.slug}
                 href={`/${DEFAULT_LOCALE}/knowledge/${c.slug}`}

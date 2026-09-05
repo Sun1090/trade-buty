@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getStageGroups } from "@/lib/path";
 import { getChapters, getDocMetas } from "@/lib/content";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { PathProgress } from "@/components/path-progress";
 import { PathGlobalProgress } from "@/components/path-global-progress";
 import { KnowledgeGraph } from "@/components/knowledge-graph";
@@ -16,8 +17,14 @@ export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/path">) {
   const { locale } = await params;
+  if (!isLocale(locale)) return {};
   const t = getDict(locale);
-  return { title: t.path.title, description: t.path.intro, alternates: { canonical: `/${locale}/path` } };
+  return buildPageMetadata({
+    locale,
+    title: t.path.title,
+    description: t.path.intro,
+    path: `/${locale}/path`,
+  });
 }
 
 export default async function PathPage({

@@ -9,7 +9,12 @@ import {
   prepareForRender,
 } from "@/lib/content";
 import { QUIZZES } from "@/lib/quizzes";
+import { suggestFromPath } from "@/lib/url-suggest";
+import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
+import { JsonLd } from "@/components/json-ld";
+import { breadcrumbList, course, quiz } from "@/lib/jsonld";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { Markdown } from "@/components/markdown";
 import { Quiz } from "@/components/quiz";
 import { DocList } from "@/components/doc-list";
@@ -27,17 +32,18 @@ export function generateStaticParams() {
 
 export async function generateMetadata({
   params,
-}: PageProps<"/[locale]/knowledge/[chapter]">): Promise<Metadata> {
+}: PageProps<"/[locale]/knowledge/[chapter]">) {
   const { locale, chapter: slug } = await params;
+  if (!isLocale(locale)) return {};
   const resolved = getChapter("zh", slug);
   if (!resolved) return {};
-  return {
+  return buildPageMetadata({
+    locale,
     title: resolved.chapter.title,
     description: resolved.chapter.tagline,
-    alternates: {
-      canonical: `/${locale}/knowledge/${slug}`,
-    },
-  };
+    path: `/${locale}/knowledge/${slug}`,
+    type: "article",
+  });
 }
 
 export default async function ChapterPage({
@@ -50,29 +56,39 @@ export default async function ChapterPage({
   const p = (path: string) => `/${locale}${path}`;
   const data = getChapter(locale, slug);
   if (!data) {
-    const slugs = getChapterSlugs(locale);
-    if (!slugs.includes(slug)) {
-      const tc = getDict(locale);
-      return (
-        <div className="mx-auto max-w-3xl px-4 sm:px-5 py-16">
-          <p className="font-mono text-4xl text-accent">404</p>
-          <h1 className="mt-4 text-2xl font-bold">{tc.notFound.chapterMissing}</h1>
-          <ul className="mt-8 grid gap-2.5 sm:grid-cols-2">
-            {slugs.map((s) => (
-              <li key={s}>
-                <Link
-                  href={`/${locale}/knowledge/${s}`}
-                  className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-3 font-mono text-sm hover:border-[var(--accent)]/60 transition"
-                >
-                  {s}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
-    }
-    notFound();
+    // R8.11：用 URL 推荐替换「所有章节 slug」全列表
+    const suggestions = suggestFromPath(
+      `/${locale}/knowledge/${slug}`,
+      buildKnowledgeCorpus(locale),
+      6,
+    );
+    const tc = getDict(locale);
+    return (
+      <div className="mx-auto max-w-3xl px-4 sm:px-5 py-16">
+        <p className="font-mono text-4xl text-accent">404</p>
+        <h1 className="mt-4 text-2xl font-bold">{tc.notFound.chapterMissing}</h1>
+        {suggestions.length > 0 && (
+          <>
+            <p className="mt-8 text-xs font-semibold uppercase tracking-[0.2em] text-accent mb-3">
+              {tc.notFound.suggestTitle}
+            </p>
+            <ul className="grid gap-2.5 sm:grid-cols-2" data-testid="chapter-suggestions">
+              {suggestions.map((s) => (
+                <li key={s.href}>
+                  <Link
+                    href={s.href}
+                    className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-3 hover:border-[var(--accent)]/60 transition"
+                  >
+                    <span className="font-semibold">{s.title}</span>
+                    <span className="block text-xs text-faint font-mono mt-0.5">{s.slug}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
+    );
   }
   const docs = getDocMetas(locale, slug);
   const { chapter, introContent } = data;
@@ -87,6 +103,36 @@ export default async function ChapterPage({
         <span className="mx-2">/</span>
         <span>{chapter.title}</span>
       </nav>
+
+      {/* R8.10：结构化数据（Course + Quiz + BreadcrumbList） */}
+      <JsonLd
+        data={course({
+          locale,
+          title: chapter.title,
+          description: chapter.tagline,
+          chapterHref: `/${locale}/knowledge/${slug}`,
+          lessons: docs.map((d) => ({
+            title: d.title,
+            href: `/${locale}/knowledge/${slug}/${d.slug}`,
+          })),
+        })}
+      />
+      <JsonLd
+        data={breadcrumbList([
+          { name: locale === "zh" ? "首页" : "Home", href: `/${locale}` },
+          { name: chapter.title, href: `/${locale}/knowledge/${slug}` },
+        ])}
+      />
+      {QUIZZES[slug] && (
+        <JsonLd
+          data={quiz({
+            locale,
+            title: QUIZZES[slug]!.title,
+            chapterHref: `/${locale}/knowledge/${slug}`,
+            questions: QUIZZES[slug]!.questions.map((q) => ({ text: q.question })),
+          })}
+        />
+      )}
 
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-8">

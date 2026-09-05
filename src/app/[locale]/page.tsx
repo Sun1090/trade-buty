@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getChapters, getDocMetas } from "@/lib/content";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { TodayPick } from "@/components/today-pick";
 import { PathGlobalProgress } from "@/components/path-global-progress";
 import { GlobalReadStat } from "@/components/global-read-stat";
@@ -12,9 +13,16 @@ import { DailyTip } from "@/components/daily-tip";
 
 export function generateStaticParams() { return LOCALES.map((locale) => ({ locale })); }
 
-export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/[locale]">) {
   const { locale } = await params;
-  return { title: getDict(locale).home.title1, description: getDict(locale).home.metaDesc };
+  if (!isLocale(locale)) return {};
+  const t = getDict(locale).home;
+  return buildPageMetadata({
+    locale,
+    title: t.title1,
+    description: t.metaDesc,
+    path: `/${locale}`,
+  });
 }
 
 export default async function Home({ params }: PageProps<"/[locale]">) {

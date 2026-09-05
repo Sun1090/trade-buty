@@ -212,6 +212,8 @@ const zh = {
     docMissing: "这一节不存在",
     docHint: "可能尚未翻译或链接有误——本章现有课程如下：",
     chapterMissing: "这个篇章不存在",
+    suggestTitle: "最接近的课程",
+    suggestHint: "按你访问的地址猜的——如果不是你要的，用下面搜索：",
   },
   review: {
     label: "复习",
@@ -278,6 +280,22 @@ const zh = {
     source: "内容来源 kline-buty",
     feedback: "反馈建议",
     copyright: "© 2026 sun1090 · MIT License",
+  },
+  pageMeta: {
+    aboutTitle: "关于",
+    aboutDesc: "Trade Buty 是什么、不是什么：开源、免费、不荐股、不导流、不承诺收益。",
+    changelogTitle: "更新日志",
+    changelogDesc: "站点最近的迭代记录——新功能、性能修复、内容更新。",
+    faqTitle: "常见问题",
+    faqDesc: "免费、内容来源、注册、学习进度、AI、出题——所有最常被问到的。",
+    glossaryTitle: "术语表",
+    glossaryDesc: "从 K 线到隐含波动率，按中文术语检索。",
+    calendarTitle: "经济日历",
+    calendarDesc: "本周重要财经事件——非农、CPI、加息决议。",
+    privacyTitle: "隐私政策",
+    privacyDesc: "我们收集什么、不收集什么、数据如何存储和删除。",
+    termsTitle: "服务条款",
+    termsDesc: "使用本站须知的法律条款、免责声明与责任限制。",
   },
 };
 
@@ -488,6 +506,8 @@ const en: Dict = {
     docMissing: "This lesson doesn't exist",
     docHint: "It may not be translated yet, or the link is off — available lessons in this chapter:",
     chapterMissing: "This chapter doesn't exist",
+    suggestTitle: "Closest lessons",
+    suggestHint: "Guessed from the URL you visited — search below if none fit:",
   },
   review: {
     label: "Review",
@@ -554,6 +574,22 @@ const en: Dict = {
     source: "Content from kline-buty",
     feedback: "Feedback",
     copyright: "© 2026 sun1090 · MIT License",
+  },
+  pageMeta: {
+    aboutTitle: "About",
+    aboutDesc: "What Trade Buty is and isn't: open-source, free, no stock picks, no broker referrals, no return promises.",
+    changelogTitle: "Changelog",
+    changelogDesc: "Recent iterations to the site — new features, perf fixes, content updates.",
+    faqTitle: "FAQ",
+    faqDesc: "Everything most-asked: free, content source, signup, progress, AI, quizzes.",
+    glossaryTitle: "Glossary",
+    glossaryDesc: "From candlesticks to implied volatility, indexed by Chinese term.",
+    calendarTitle: "Economic Calendar",
+    calendarDesc: "This week's key events — NFP, CPI, rate decisions.",
+    privacyTitle: "Privacy Policy",
+    privacyDesc: "What we collect, what we don't, how data is stored and deleted.",
+    termsTitle: "Terms of Service",
+    termsDesc: "Legal terms, disclaimers, and liability limits for using the site.",
   },
 };
 

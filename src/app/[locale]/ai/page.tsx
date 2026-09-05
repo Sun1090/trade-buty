@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/metadata";
 import { AiChat } from "@/components/ai-chat";
 import { aiEnabledForPage } from "@/lib/ai-toggle";
 
@@ -8,9 +8,19 @@ export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
 }
 
-export function generateMetadata(): Metadata {
-  // 功能页不收录
-  return { robots: { index: false, follow: false } };
+export async function generateMetadata({
+  params,
+}: PageProps<"/[locale]/ai">) {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const t = getDict(locale).ai;
+  return buildPageMetadata({
+    locale,
+    title: t.label,
+    description: t.subtitle,
+    path: `/${locale}/ai`,
+    noindex: true,
+  });
 }
 
 export default async function AiPage({
