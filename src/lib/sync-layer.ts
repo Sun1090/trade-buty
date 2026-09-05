@@ -277,9 +277,14 @@ export async function hydrateFromCloud(id: string) {
     return;
   }
 
+  // R9.6：捕获合并前的本地快照，用于计算"新增了多少"摘要
+  const preMergeProgress = readLocalJson<ProgressMap>("tb-progress", {});
+  const preMergeWrong = readLocalJson<Record<string, WrongEntry>>("tb-wrong", {});
+  const preMergeReplay = readLocalJson<ReplayRecord[]>("tb-replay-history", []);
+
   if (progressRes?.data) {
     const merged = mergeProgress(
-      readLocalJson<ProgressMap>("tb-progress", {}),
+      preMergeProgress,
       progressRes.data as CloudProgress[],
     );
     writeLocalJson("tb-progress", merged);
@@ -302,7 +307,7 @@ export async function hydrateFromCloud(id: string) {
   }
 
   if (wrongRes?.data) {
-    writeLocalJson("tb-wrong", mergeWrongbook(readLocalJson<Record<string, WrongEntry>>("tb-wrong", {}), wrongRes.data as CloudWrong[]));
+    writeLocalJson("tb-wrong", mergeWrongbook(preMergeWrong, wrongRes.data as CloudWrong[]));
   }
 
   if (quizRes?.data) {
@@ -313,7 +318,7 @@ export async function hydrateFromCloud(id: string) {
   }
 
   if (replayRes?.data) {
-    writeLocalJson("tb-replay-history", mergeReplayHistory(readLocalJson<ReplayRecord[]>("tb-replay-history", []), replayRes.data as CloudReplay[]));
+    writeLocalJson("tb-replay-history", mergeReplayHistory(preMergeReplay, replayRes.data as CloudReplay[]));
   }
 
   if (bestRes?.data && bestRes.data.length > 0) {
@@ -339,9 +344,86 @@ export async function hydrateFromCloud(id: string) {
     }
   }
 
+  // R9.6：计算合并摘要并通知 UI（R9.7 登录引导卡片消费）
+  // 使用合并前的快照：cloud - localBefore 才代表"新增了多少"
+  const localQuiz: Record<string, { best: number; done: boolean }> = {};
+  for (const row of (quizRes?.data as CloudQuiz[] | undefined) ?? []) {
+    const key = `tb-quiz-${row.chapter_num}`;
+    localQuiz[row.chapter_num] = readLocalJson(key, { best: 0, done: false });
+  }
+  const summary = diffMergeSummary(
+    preMergeProgress,
+    (progressRes?.data as CloudProgress[] | undefined) ?? [],
+    preMergeWrong,
+    (wrongRes?.data as CloudWrong[] | undefined) ?? [],
+    localQuiz,
+    (quizRes?.data as CloudQuiz[] | undefined) ?? [],
+    preMergeReplay,
+    (replayRes?.data as CloudReplay[] | undefined) ?? [],
+  );
+  emitMergeSummary(summary);
+
   // 一次性通知所有消费组件刷新
   try {
     window.dispatchEvent(new Event("tb-progress"));
+  } catch {
+    // ignore
+  }
+}
+
+// ---- R9.6：合并摘要（纯函数，可独立测试）----
+
+export interface MergeSummary {
+  /** 云端新增的进度条目数（不在本地） */
+  newProgress: number;
+  /** 云端新增的错题条目数 */
+  newWrong: number;
+  /** 被云端覆盖的测验成绩（云端更高） */
+  quizImprovements: number;
+  /** 新增的回放记录 */
+  newReplays: number;
+  /** 是否有任何新内容 */
+  hasAny: boolean;
+}
+
+/**
+ * 计算本地 vs 云端合并后新增项的摘要。
+ * 用于 hydrateFromCloud 完成后向用户展示"已为你同步 N 篇进度"。
+ */
+export function diffMergeSummary(
+  localProgress: ProgressMap,
+  cloudProgress: CloudProgress[],
+  localWrong: Record<string, WrongEntry>,
+  cloudWrong: CloudWrong[],
+  localQuiz: Record<string, { best: number; done: boolean }>,
+  cloudQuiz: CloudQuiz[],
+  localReplay: ReplayRecord[],
+  cloudReplay: CloudReplay[],
+): MergeSummary {
+  const newProgress = cloudProgress.filter(
+    (row) => !(localProgress[row.chapter_num] ?? []).includes(row.doc_slug),
+  ).length;
+  const newWrong = cloudWrong.filter(
+    (row) => !localWrong[`${row.chapter_num}:${row.question_idx}`],
+  ).length;
+  const quizImprovements = cloudQuiz.filter((row) => {
+    const l = localQuiz[row.chapter_num];
+    return l ? row.best > l.best : row.best > 0;
+  }).length;
+  const newReplays = cloudReplay.length; // replay-history 是 append-only，新加的都是新的
+  const hasAny = newProgress + newWrong + quizImprovements + newReplays > 0;
+  return { newProgress, newWrong, quizImprovements, newReplays, hasAny };
+}
+
+/**
+ * hydrateFromCloud 完成时计算摘要并 dispatch 到 UI 层（R9.7 卡片消费）。
+ */
+function emitMergeSummary(summary: MergeSummary): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(
+      new CustomEvent("tb-merge-summary", { detail: summary }),
+    );
   } catch {
     // ignore
   }
