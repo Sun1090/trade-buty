@@ -46,21 +46,32 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
 
-  // rate limit
+  // rate limit（配额随响应头返回：游客前端展示剩余次数，429 附 Retry-After）
   const limit = user ? AUTHED_LIMIT : GUEST_LIMIT;
   const now = Date.now();
   const hit = ipHits.get(ip);
+  let quotaRemaining: number;
   if (hit && now < hit.reset) {
     if (hit.count >= limit) {
+      const retrySec = Math.ceil((hit.reset - now) / 1000);
       return NextResponse.json(
-        { error: "Rate limit exceeded", retryAfter: Math.ceil((hit.reset - now) / 1000) },
-        { status: 429 },
+        { error: "Rate limit exceeded", retryAfter: retrySec },
+        { status: 429, headers: { "Retry-After": String(retrySec) } },
       );
     }
     hit.count++;
+    quotaRemaining = limit - hit.count;
   } else {
     ipHits.set(ip, { count: 1, reset: now + 3600_000 });
+    quotaRemaining = limit - 1;
   }
+  // 仅游客暴露配额头，登录用户不展示配额提示
+  const withQuotaHeaders = (h: Headers) => {
+    if (!user) {
+      h.set("X-Quota-Limit", String(limit));
+      h.set("X-Quota-Remaining", String(quotaRemaining));
+    }
+  };
 
   const locale = body.locale || "zh";
 
@@ -70,6 +81,7 @@ export async function POST(req: NextRequest) {
     const headers = new Headers();
     headers.set('Content-Type', 'text/plain; charset=utf-8');
     headers.set('X-Refused', guardHit);
+    withQuotaHeaders(headers);
     return new Response(getRefusalMessage(guardHit, locale), { headers, status: 200 });
   }
   const isContinue =
@@ -142,6 +154,7 @@ export async function POST(req: NextRequest) {
     headers.set("X-Cache", "HIT");
     if (sources.length > 0) headers.set("X-Sources", encodeURIComponent(JSON.stringify(sources)));
     if (suggested.length > 0) headers.set("X-Suggested", encodeURIComponent(JSON.stringify(suggested)));
+    withQuotaHeaders(headers);
     return new Response(cached.text, { headers });
   }
 
@@ -198,6 +211,7 @@ export async function POST(req: NextRequest) {
     if (suggested.length > 0) {
       headers.set("X-Suggested", encodeURIComponent(JSON.stringify(suggested)));
     }
+    withQuotaHeaders(headers);
 
     return new Response(markedStream, { headers });
   } catch (e) {
