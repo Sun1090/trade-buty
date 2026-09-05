@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ChapterQuiz } from "@/lib/quiz-types";
 import { recordWrong, resolveWrong } from "@/lib/wrongbook";
+import { isAiGloballyDisabled } from "@/lib/ai-toggle";
 
 interface AiQuizProps {
   /** 用户错题列表（篇章+题号） */
@@ -21,13 +22,16 @@ interface AiQuestion {
 /**
  * AI 自适应出题组件：根据错题调用 AI 生成变体题，就地答题+解析。
  */
-export function AiQuiz({ wrongItems, quizzes, dict }: AiQuizProps) {
+export function AiQuiz({ wrongItems, quizzes, dict, aiEnabled = true }: AiQuizProps & { aiEnabled?: boolean }) {
   const [questions, setQuestions] = useState<AiQuestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [reported, setReported] = useState<Record<number, boolean>>({});
+
+  // R3.9/R3.10：AI 关闭时隐藏入口
+  if (aiEnabled === false || isAiGloballyDisabled()) return null;
 
   async function generate() {
     if (wrongItems.length === 0) return;

@@ -63,6 +63,8 @@ const dict = {
   guestLimit: "游客每小时限 10 次",
   quotaRemaining: "游客每小时限 10 次，本小时剩余 {n} 次",
   quotaLoginHint: "本小时次数已用完，登录可获更多额度",
+  contextBannerTpl: "正在基于《{title}》篇章回答",
+  followups: ["展开讲讲「{t}」", "「{t}」怎么用？", "「{t}」的误区？"],
   helpful: "有用",
   unhelpful: "无用",
 };
@@ -395,5 +397,53 @@ describe("AiChat 移动端键盘遮挡（R1.15）", () => {
       expect.objectContaining({ block: "end" })
     );
     vi.useRealTimers();
+  });
+});
+
+describe("AiChat 追问链与课程上下文（R3.4/R3.7）", () => {
+  it("回答完成后基于引用标题展示 3 个追问按钮，点击即发送", async () => {
+    const sources = [{ chapter: "spot", doc: "order-types", title: "订单类型" }];
+    let chatCount = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/api/ai/conversations") {
+          return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+        }
+        if (url === "/api/ai/chat") {
+          chatCount++;
+          return {
+            ok: true,
+            status: 200,
+            headers: {
+              get: (k: string) => (k === "X-Sources" ? encodeURIComponent(JSON.stringify(sources)) : null),
+            },
+            body: makeStreamBody(`回答${chatCount}`),
+          } as unknown as Response;
+        }
+        throw new Error(`unexpected fetch: ${url}`);
+      })
+    );
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    const rendered = [...container.querySelectorAll("button")].filter((b) =>
+      SUGGESTED_QUESTIONS_ZH.includes(b.textContent ?? "")
+    );
+    fireEvent.click(rendered[0]);
+    await screen.findByText("回答1");
+
+    const chips = container.querySelectorAll("button");
+    const followups = [...chips].filter((b) => (b.textContent ?? "").startsWith("💬"));
+    expect(followups).toHaveLength(3);
+    fireEvent.click(followups[0]);
+    await screen.findByText("回答2");
+    expect(chatCount).toBe(2);
+  });
+
+  it("带 ct 参数时展示课程上下文横幅", async () => {
+    window.history.replaceState({}, "", "/zh/ai?ctx=spot&ct=现货基础");
+    vi.stubGlobal("fetch", mockFetch());
+    render(<AiChat locale="zh" dict={dict} />);
+    expect(await screen.findByText("📖 正在基于《现货基础》篇章回答")).toBeInTheDocument();
+    window.history.replaceState({}, "", "/zh/ai");
   });
 });

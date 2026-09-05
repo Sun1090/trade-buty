@@ -4,14 +4,11 @@ import { retrieve } from "@/lib/ai/rag";
 import { buildRagContext, buildQuizPrompt, buildChapterQuizPrompt } from "@/lib/ai/prompt";
 import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
 import { validateAiQuestions, filterDuplicateQuestions } from "@/lib/ai/quiz-gen";
+import { getChapterTitle } from "@/lib/ai/chapters";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { QUIZZES } from "@/lib/quizzes";
-import titlesData from "@/lib/kb-titles.json";
 
 export const runtime = "edge";
-
-type TitlesMap = Record<string, Record<string, { title?: string }>>;
-const TITLES = titlesData as TitlesMap;
 
 interface GenerateBody {
   /** 错题的篇章+题号列表，用于取原题 + RAG（变体模式） */
@@ -25,13 +22,6 @@ interface GenerateBody {
 // R2.10 成本控制：同章节+语言+难度的题目缓存 24h（edge 实例级）
 const quizCache = new Map<string, { questions: unknown; at: number }>();
 const QUIZ_CACHE_TTL = 24 * 60 * 60 * 1000;
-
-/** 章节标题（去掉 "NN · " 前缀），未知章节返回 null */
-export function getChapterTitle(locale: string, chapter: string): string | null {
-  const entry = TITLES[locale]?.[chapter]?.title;
-  if (!entry) return null;
-  return entry.replace(/^\d+\s*·\s*/, "");
-}
 
 /**
  * POST: 根据用户错题生成 AI 变体题。

@@ -102,17 +102,17 @@
 
 ## R3 课程内 AI 入口（R3.1–R3.12）
 
-- [ ] R3.1 每节课末“问 AI”按钮（带课程上下文预填问题跳 /ai）
-- [ ] R3.2 章节 AI 导读（chapter-summary-ai 全 27 章覆盖检查）
+- [x] R3.1 课末「问 AI」按钮升级（LessonAskAi 组件：预填问题 + ctx/ct 上下文参数 + 点击埋点 + 开关控制；3 单测）
+- [x] R3.2 导读覆盖检查（scripts/summary-coverage.mjs：zh 27/27、en 27/27；npm run summary:coverage）
 - [ ] R3.3 术语划词解释（选中正文术语 → 小浮层给定义，RAG 查）
-- [ ] R3.4 概念追问链（回答底部“继续问”三个关联问题按钮）
-- [ ] R3.5 AI 导读缓存（同章 7 天有效，减少重复调用）
-- [ ] R3.6 导读失败降级（隐藏入口，不展示错误）
-- [ ] R3.7 问 AI 跳转携带课程 slug（落地页显示“正在基于《xx》回答”）
-- [ ] R3.8 移动端入口位置（课末按钮不与练习 CTA 打架的排序）
-- [ ] R3.9 无 key/离线环境隐藏所有 AI 入口（hasAiEnv 统一开关）
-- [ ] R3.10 AI 功能总开关环境变量（紧急一键全关）
-- [ ] R3.11 各入口点击埋点（后续分析用，console/debug 通道先行）
+- [x] R3.4 追问链（回答底部按引用/推荐标题生成 3 个关联问题 chips，点击即发；单测覆盖）
+- [x] R3.5 导读缓存 7 天 TTL（localStorage {text,at} 结构 + 过期重出按钮；2 单测）
+- [x] R3.6 导读失败降级（失败整个卡片隐藏，不展示错误文案；单测覆盖）
+- [x] R3.7 课程上下文链路（/ai?ctx&ct 横幅 + chat API contextChapter 注入 system 优先本章内容；单测覆盖横幅）
+- [x] R3.8 摆位（问 AI 保持测验/练习双栏之后全宽一行，不与 CTA 争位；沿用既有顺序）
+- [x] R3.9 统一开关（ai-toggle：hasAiServerEnv 读 AI_API_KEY，服务端页 aiEnabledForPage 判断，/ai 禁用态 + 各卡片 aiEnabled prop；单测覆盖）
+- [x] R3.10 总开关（NEXT_PUBLIC_AI_ENABLED=false 一键隐藏所有入口；单测覆盖）
+- [x] R3.11 点击埋点（src/lib/analytics.ts console 通道先行：lesson-ask-ai / ai-quiz-start / chapter-summary；单测覆盖）
 - [ ] R3.12 双语话术复核（en 下所有 AI 文案无中文残留）
 
 ## R4 每日目标与连续性（R4.1–R4.12）
