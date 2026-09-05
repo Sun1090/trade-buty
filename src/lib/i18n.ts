@@ -106,6 +106,10 @@ const zh = {
     nextQ: "下一题 →",
     finish: "完成",
     perfect: "全对！",
+    shareQuiz: "分享我的成绩",
+    previewQuiz: "预览卡面",
+    download: "下载 PNG",
+    previewAlt: "分享卡预览",
   },
   chart: {
     label: "Practice",
@@ -400,6 +404,10 @@ const en: Dict = {
     nextQ: "Next →",
     finish: "Finish",
     perfect: "Perfect score!",
+    shareQuiz: "Share my result",
+    previewQuiz: "Preview card",
+    download: "Download PNG",
+    previewAlt: "Share card preview",
   },
   chart: {
     label: "Practice",

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Quiz } from "@/components/quiz";
 import { readQuizProgress } from "@/lib/quiz-store";
 import type { ChapterQuiz } from "@/lib/quiz-types";
+import type { ShareLocale } from "@/lib/share-card";
 
 type QuizDict = {
   questionsUnit: string;
@@ -16,6 +17,10 @@ type QuizDict = {
   nextQ: string;
   finish: string;
   perfect: string;
+  shareQuiz: string;
+  previewQuiz: string;
+  download: string;
+  previewAlt: string;
 };
 
 /**
@@ -27,9 +32,13 @@ type QuizDict = {
 export function ChapterExamCard({
   quiz,
   dict,
+  locale,
+  chapterTitle,
 }: {
   quiz: ChapterQuiz;
   dict: QuizDict;
+  locale: ShareLocale;
+  chapterTitle?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const progress = readQuizProgress(quiz.chapterNum);
@@ -37,7 +46,7 @@ export function ChapterExamCard({
   const total = quiz.questions.length;
 
   if (expanded) {
-    return <Quiz quiz={quiz} dict={dict} />;
+    return <Quiz quiz={quiz} dict={dict} locale={locale} chapterTitle={chapterTitle} />;
   }
 
   const bestTpl = dict.bestTpl;

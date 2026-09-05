@@ -289,7 +289,7 @@ export default async function DocPage({
       {/* 测验 + 边学边练 双栏 */}
       <div className="mt-8 grid gap-4 lg:grid-cols-2">
         {QUIZZES[chapterSlug] ? (
-          <ChapterExamCard quiz={QUIZZES[chapterSlug]} dict={t.quiz} />
+          <ChapterExamCard quiz={QUIZZES[chapterSlug]} dict={t.quiz} locale={locale} chapterTitle={doc.title} />
         ) : (
           <AiChapterQuizCard
             chapter={chapterSlug}
