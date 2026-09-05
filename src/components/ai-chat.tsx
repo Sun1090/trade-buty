@@ -286,6 +286,25 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     }).catch(() => {});
   }
 
+  /** R1.13：引用点击上报（fire-and-forget，失败静默） */
+  function trackCitation(
+    kind: "source" | "suggested",
+    s: { chapter: string; doc?: string },
+    msgIdx: number
+  ) {
+    const userQ = [...messages.slice(0, msgIdx)].reverse().find((m) => m.role === "user");
+    void fetch("/api/ai/citation-click", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind,
+        chapter: s.chapter,
+        doc: s.doc,
+        question: userQ?.content,
+      }),
+    }).catch(() => {});
+  }
+
   async function copyMsg(text: string, e: React.MouseEvent) {
     try {
       await navigator.clipboard.writeText(text);
@@ -371,6 +390,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                             key={j}
                             href={p(`/knowledge/${s.chapter}`)}
                             title={s.chapter}
+                            onClick={() => trackCitation("suggested", s, i)}
                             className="inline-flex items-center gap-1 rounded-full border border-[var(--border-strong)] px-2.5 py-0.5 text-xs text-muted hover:text-accent hover:border-accent/60 transition"
                           >
                             📚 {s.title}
@@ -386,6 +406,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                             key={j}
                             href={p(`/knowledge/${s.chapter}/${s.doc}`)}
                             title={`${s.chapter}/${s.doc}`}
+                            onClick={() => trackCitation("source", s, i)}
                             className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-dim)] border border-[var(--accent)]/30 px-2.5 py-0.5 text-xs text-accent hover:border-accent/60 transition"
                           >
                             📖 {s.title ?? `${s.chapter}/${s.doc}`}
