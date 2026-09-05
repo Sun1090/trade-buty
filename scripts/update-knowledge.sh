@@ -7,14 +7,17 @@ cd "$(dirname "$0")/.."
 echo "▶ [1/4] 拉取知识库最新内容"
 git submodule update --remote content/kline-buty
 
-echo "▶ [2/4] 契约校验"
+echo "▶ [2/5] kb 产物 diff 摘要 + changelog 草稿"
+node scripts/kb-diff.mjs --update --changelog docs/kb-changelog-draft.md
+
+echo "▶ [3/5] 契约校验"
 node scripts/validate-knowledge-contract.mjs
 
-echo "▶ [3/4] 同步资产与搜索索引"
+echo "▶ [4/5] 同步资产与搜索索引"
 node scripts/sync-knowledge-assets.mjs
 node scripts/generate-search-index.mjs
 
-echo "▶ [4/4] 构建回归验证"
+echo "▶ [5/5] 构建回归验证"
 npm run build
 
 echo ""
