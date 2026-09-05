@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { getSupabaseBrowser, hasSupabaseEnv } from "@/lib/supabase/client";
 import { setAuthState, hydrateFromCloud } from "@/lib/sync-layer";
 import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 
@@ -23,6 +23,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    // R7.7：无 Supabase env（CI E2E / 预览环境）时降级为纯本地模式，不初始化客户端
+    if (!hasSupabaseEnv()) {
+      setAuthState(false);
+      return;
+    }
     const client = getSupabaseBrowser();
 
     // @supabase/ssr 的 createBrowserClient 默认 detectSessionInUrl=true + flowType=pkce：
