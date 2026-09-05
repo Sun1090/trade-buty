@@ -17,6 +17,7 @@ const base: LearnStats = {
   currentStreak: 0,
   longestStreak: 0,
   totalReadingTime: 0,
+  totalStudySeconds: 0,
   overallPct: 0,
 };
 
@@ -90,6 +91,7 @@ describe("getUnlockedBadges", () => {
       currentStreak: 30,
       longestStreak: 30,
       totalReadingTime: 3600,
+      totalStudySeconds: 7200,
       overallPct: 60,
     };
     const out = getUnlockedBadges(full);

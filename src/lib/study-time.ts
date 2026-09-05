@@ -78,7 +78,14 @@ export function getStudySeries(n: number, today: string = localDateStr()): DaySt
   return out;
 }
 
+/** 全部台账去重总秒数（口径对账用：统计页总时长 = Σ各日 max(read, quiz+replay)） */
+export function getTotalStudySeconds(): number {
+  const ledger = readLedger();
+  return Object.keys(ledger).reduce((sum, day) => sum + getStudySeconds(day).total, 0);
+}
+
 /** 今日学习秒数（便捷） */
 export function getTodayStudySeconds(): DayStudy {
   return getStudySeconds(localDateStr());
 }
+

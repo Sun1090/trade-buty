@@ -96,6 +96,14 @@ export function syncReplayBestUpsert(best: number) {
     .upsert({ user_id: userId, best_streak: best }, { onConflict: "user_id" });
 }
 
+/** R4.7：每日目标档位云端同步（登录后多设备一致） */
+export function syncGoalUpsert(goalMin: number) {
+  if (!authenticated || !userId) return;
+  void getSupabaseBrowser()
+    .from("user_settings")
+    .upsert({ user_id: userId, daily_goal_min: goalMin }, { onConflict: "user_id" });
+}
+
 // ---- 登录时从云端拉取并合并到本地 ----
 
 interface CloudProgress { chapter_num: string; doc_slug: string }
@@ -179,12 +187,13 @@ export function mergeReplayBest(local: number, cloudBest: number): number {
 export async function hydrateFromCloud(id: string) {
   if (!id) return;
 
-  const [progressRes, wrongRes, quizRes, replayRes, bestRes] = await Promise.all([
+  const [progressRes, wrongRes, quizRes, replayRes, bestRes, settingsRes] = await Promise.all([
     getSupabaseBrowser().from("progress").select("chapter_num, doc_slug").eq("user_id", id),
     getSupabaseBrowser().from("wrongbook").select("chapter_num, question_idx, picked, answered_at").eq("user_id", id),
     getSupabaseBrowser().from("quiz_scores").select("chapter_num, best, total, done").eq("user_id", id),
     getSupabaseBrowser().from("replay_history").select("symbol, interval, total, correct, best_streak, recorded_at").eq("user_id", id).order("recorded_at", { ascending: false }).limit(100),
     getSupabaseBrowser().from("replay_best").select("best_streak").eq("user_id", id),
+    getSupabaseBrowser().from("user_settings").select("daily_goal_min").eq("user_id", id),
   ]);
 
   if (progressRes.data) {
@@ -233,6 +242,19 @@ export async function hydrateFromCloud(id: string) {
       localStorage.setItem("tb-replay-best", String(mergeReplayBest(local, cloudBest)));
     } catch {
       // ignore
+    }
+  }
+
+  // R4.7：云端目标档位——本地未设置时才采用云端（设备本地意图优先，之后随写随推）
+  if (settingsRes.data && settingsRes.data.length > 0) {
+    const cloudGoal = (settingsRes.data[0] as { daily_goal_min: number }).daily_goal_min;
+    const localGoal = localStorage.getItem("tb-daily-goal-min");
+    if (cloudGoal && !localGoal) {
+      try {
+        localStorage.setItem("tb-daily-goal-min", String(cloudGoal));
+      } catch {
+        // ignore
+      }
     }
   }
 

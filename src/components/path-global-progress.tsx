@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocalProgress } from "@/components/use-local-progress";
+import { readSummary } from "@/lib/learn-stats";
 
 /**
  * 学习路线页：全局进度条——所有篇章总完成度。
@@ -12,15 +13,11 @@ export function PathGlobalProgress({
   chapters: { slug: string; docCount: number }[];
 }) {
   const progress = useLocalProgress();
-  const totalDocs = chapters.reduce((s, c) => s + c.docCount, 0);
-  const readDocs = chapters.reduce(
-    (s, c) => s + (progress?.[c.slug]?.length ?? 0),
-    0,
+  // R4.10：与统计页共用同一口径实现
+  const { readDocs, totalDocs, doneChapters, overallPct: pct } = readSummary(
+    (progress ?? {}) as Record<string, unknown[]>,
+    chapters,
   );
-  const pct = totalDocs > 0 ? Math.round((readDocs / totalDocs) * 100) : 0;
-  const doneChapters = chapters.filter(
-    (c) => (progress?.[c.slug]?.length ?? 0) >= c.docCount,
-  ).length;
 
   return (
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">

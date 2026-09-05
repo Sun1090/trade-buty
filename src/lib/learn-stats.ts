@@ -9,6 +9,22 @@ import { readStreak, getCurrentStreak } from "./streak";
 import { QUIZZES } from "./quizzes";
 import { readQuizProgress } from "./quiz-store";
 import { getTotalReadingTime } from "./reading-time";
+import { getTotalStudySeconds } from "./study-time";
+
+/**
+ * R4.10：已读口径的唯一实现——统计页（aggregateStats）与学习路线页
+ * （PathGlobalProgress）共用，保证两处「已读/完成度」永远一致。
+ */
+export function readSummary(
+  progress: Record<string, unknown[]>,
+  chapters: { slug: string; docCount: number }[],
+): { readDocs: number; totalDocs: number; doneChapters: number; overallPct: number } {
+  const totalDocs = chapters.reduce((s, c) => s + c.docCount, 0);
+  const readDocs = chapters.reduce((s, c) => s + (progress[c.slug]?.length ?? 0), 0);
+  const doneChapters = chapters.filter((c) => (progress[c.slug]?.length ?? 0) >= c.docCount).length;
+  const overallPct = totalDocs > 0 ? Math.round((readDocs / totalDocs) * 100) : 0;
+  return { readDocs, totalDocs, doneChapters, overallPct };
+}
 
 export interface LearnStats {
   /** 已读课程数 */
@@ -39,8 +55,10 @@ export interface LearnStats {
   currentStreak: number;
   /** 历史最长连续天数 */
   longestStreak: number;
-  /** 总阅读时长（秒） */
+  /** 总阅读时长（秒）——仅阅读源，保留兼容 */
   totalReadingTime: number;
+  /** R4.2/R4.10：总学习时长（秒），台账去重口径（阅读+测验+回放） */
+  totalStudySeconds: number;
   /** 总体完成度百分比 */
   overallPct: number;
 }
@@ -56,15 +74,7 @@ export function aggregateStats(chapters: { slug: string; docCount: number }[]): 
   const replayBest = readReplayBest();
   const streak = readStreak();
 
-  const totalDocs = chapters.reduce((s, c) => s + c.docCount, 0);
-  const readDocs = chapters.reduce(
-    (s, c) => s + (progress[c.slug]?.length ?? 0),
-    0,
-  );
-
-  const doneChapters = chapters.filter(
-    (c) => (progress[c.slug]?.length ?? 0) >= c.docCount,
-  ).length;
+  const { readDocs, totalDocs, doneChapters } = readSummary(progress, chapters);
 
   const currentWrong = Object.keys(wrong).length;
 
@@ -105,6 +115,7 @@ export function aggregateStats(chapters: { slug: string; docCount: number }[]): 
     currentStreak: getCurrentStreak(),
     longestStreak: streak.longest,
     totalReadingTime: getTotalReadingTime(),
+    totalStudySeconds: getTotalStudySeconds(),
     overallPct,
   };
 }
