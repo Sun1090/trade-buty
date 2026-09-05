@@ -181,6 +181,10 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
             return next;
           });
         }
+      } else {
+        // 非流式回退：骨架屏期间一次性读全文
+        const text = await res.text();
+        if (text) parts.push(text);
       }
 
       if (parts.length === 0) throw new Error(dict.error);
@@ -310,11 +314,15 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                   }`}
                 >
                   {msg.role === "assistant" && !msg.content && loading ? (
-                    <span className="flex gap-1 py-1">
-                      <span className="h-2 w-2 rounded-full bg-accent animate-pulse" style={{ animationDelay: "0ms" }} />
-                      <span className="h-2 w-2 rounded-full bg-accent animate-pulse" style={{ animationDelay: "150ms" }} />
-                      <span className="h-2 w-2 rounded-full bg-accent animate-pulse" style={{ animationDelay: "300ms" }} />
-                    </span>
+                    // 首个 token 未到：骨架屏 + 思考文案；流式到达后逐字填充
+                    <div aria-busy="true">
+                      <span className="text-xs text-faint">{dict.thinking}</span>
+                      <div className="mt-2 space-y-2" data-testid="chat-skeleton">
+                        <div className="h-3 rounded bg-[var(--border)] w-full animate-pulse" />
+                        <div className="h-3 rounded bg-[var(--border)] w-[85%] animate-pulse" />
+                        <div className="h-3 rounded bg-[var(--border)] w-[60%] animate-pulse" />
+                      </div>
+                    </div>
                   ) : msg.role === "assistant" ? (
                     <div className="kb-prose">
                       <Markdown content={msg.content} />

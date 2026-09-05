@@ -132,3 +132,64 @@ describe("AiChat 空状态与首屏示例问题", () => {
     expect(screen.queryByText("试试这样问")).not.toBeInTheDocument();
   });
 });
+
+describe("AiChat 加载态（R1.10）", () => {
+  it("首个 token 未到时显示思考文案和骨架屏，流式到达后填充正文", async () => {
+    let resolveChat!: (r: Response) => void;
+    const chatPromise = new Promise<Response>((res) => { resolveChat = res; });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/api/ai/conversations" && !url.includes("POST")) {
+          return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+        }
+        if (url === "/api/ai/chat") return chatPromise;
+        throw new Error(`unexpected fetch: ${url}`);
+      })
+    );
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    const rendered = [...container.querySelectorAll("button")].filter((b) =>
+      SUGGESTED_QUESTIONS_ZH.includes(b.textContent ?? "")
+    );
+    fireEvent.click(rendered[0]);
+
+    // 思考中：骨架屏可见
+    expect(await screen.findByText(dict.thinking)).toBeInTheDocument();
+    expect(container.querySelector('[data-testid="chat-skeleton"]')).toBeTruthy();
+
+    // 首个 token 到达后正文填充、骨架消失
+    resolveChat({
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      body: makeStreamBody("流式回答"),
+    } as unknown as Response);
+    await screen.findByText("流式回答");
+    expect(container.querySelector('[data-testid="chat-skeleton"]')).toBeNull();
+  });
+
+  it("非流式响应（无 body reader）回退为一次性读取全文", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === "/api/ai/conversations") {
+        return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+      }
+      if (url === "/api/ai/chat") {
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+          text: async () => "非流式全文",
+        } as unknown as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    const rendered = [...container.querySelectorAll("button")].filter((b) =>
+      SUGGESTED_QUESTIONS_ZH.includes(b.textContent ?? "")
+    );
+    fireEvent.click(rendered[0]);
+    await screen.findByText("非流式全文");
+    expect(container.querySelector('[data-testid="chat-skeleton"]')).toBeNull();
+  });
+});
