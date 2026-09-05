@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { isAiGloballyDisabled } from "@/lib/ai-toggle";
+import { trackAiClick } from "@/lib/analytics";
 
 interface AiQuizQuestion {
   question: string;
@@ -34,10 +36,13 @@ interface AiChapterQuizDict {
 export function AiChapterQuizCard({
   chapter,
   locale,
+  aiEnabled = true,
   dict,
 }: {
   chapter: string;
   locale: string;
+  /** R3.9：无 key 环境由服务端页传入 false */
+  aiEnabled?: boolean;
   dict: AiChapterQuizDict;
 }) {
   const [questions, setQuestions] = useState<AiQuizQuestion[] | null>(null);
@@ -49,9 +54,13 @@ export function AiChapterQuizCard({
   const [difficulty, setDifficulty] = useState<"basic" | "advanced">("basic");
   const [reported, setReported] = useState<Record<number, boolean>>({});
 
+  // R3.9/R3.10：AI 关闭时隐藏入口
+  if (aiEnabled === false || isAiGloballyDisabled()) return null;
+
   async function generate() {
     setLoading(true);
     setError(null);
+    trackAiClick("ai-quiz-start", { chapter, difficulty });
     setQuestions(null);
     setCurrent(0);
     setPicked(null);

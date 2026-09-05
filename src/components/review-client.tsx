@@ -27,10 +27,13 @@ export function ReviewClient({
   quizzes,
   dict,
   locale,
+  aiEnabled = true,
 }: {
   quizzes: ChapterQuiz[];
   dict: ReviewDict;
   locale: string;
+  /** R3.9：无 key 环境由服务端页传入 false */
+  aiEnabled?: boolean;
 }) {
   const [wrong, setWrong] = useState<Record<string, WrongEntry> | null>(null);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
@@ -269,6 +272,7 @@ export function ReviewClient({
       {items.length > 0 && (
         <div className="mt-8">
           <AiQuiz
+            aiEnabled={aiEnabled}
             wrongItems={items.map((i) => ({ chapterNum: i.chapterNum, questionIdx: i.questionIdx }))}
             quizzes={quizzes}
             dict={{ generate: "AI 针对错题出变体题", generating: "正在生成…", error: "生成失败，请重试", question: "题目", explain: "解析", report: "举报题目", reported: "已举报" }}

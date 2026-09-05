@@ -16,6 +16,9 @@ import { QUIZZES } from "@/lib/quizzes";
 import { Markdown } from "@/components/markdown";
 import { ChapterExamCard } from "@/components/chapter-exam-card";
 import { AiChapterQuizCard } from "@/components/ai-chapter-quiz";
+import { LessonAskAi } from "@/components/lesson-ask-ai";
+import { getChapterTitle } from "@/lib/ai/chapters";
+import { aiEnabledForPage } from "@/lib/ai-toggle";
 import { ChapterRail } from "@/components/chapter-rail";
 import { MarkRead } from "@/components/mark-read";
 import { LazyChartEmbed } from "@/components/chart-embed";
@@ -112,6 +115,8 @@ export default async function DocPage({
       }
     : null;
 
+  const chapterTitle = getChapterTitle(locale, chapterSlug);
+  const aiEnabled = aiEnabledForPage();
   const headings = extractHeadings(doc.content);
   const tools = t.docTools;
   const tocLabel = locale === "en" ? "On this page" : "本页目录";
@@ -249,6 +254,7 @@ export default async function DocPage({
           <AiChapterQuizCard
             chapter={chapterSlug}
             locale={locale}
+            aiEnabled={aiEnabled}
             dict={{
               start: t.ai.aiQuizStart,
               generating: t.ai.aiQuizGenerating,
@@ -294,22 +300,13 @@ export default async function DocPage({
         )}
       </div>
 
-      {/* 问 AI */}
-      <Link
-        href={`${p("/ai")}?q=${encodeURIComponent(locale === "en" ? `Summarize the key points of "${doc.title}"` : `帮我总结《${doc.title}》的要点`)}`}
-        className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 hover:border-[var(--accent)]/50 transition group"
-      >
-        <div className="flex items-center gap-3">
-          <span className="text-2xl" aria-hidden>🤖</span>
-          <div>
-            <p className="font-semibold text-sm group-hover:text-accent transition-colors">
-              {t.ai.askAbout} {doc.title}
-            </p>
-            <p className="text-xs text-faint">{t.ai.subtitle}</p>
-          </div>
-        </div>
-        <span className="text-accent group-hover:translate-x-1 transition-transform shrink-0">→</span>
-      </Link>
+      {/* 问 AI（R3.1/R3.7/R3.8：带章节上下文，置于测验/练习之后，可一键关闭） */}
+      <LessonAskAi
+        href={`${p("/ai")}?q=${encodeURIComponent(locale === "en" ? `Summarize the key points of "${doc.title}"` : `帮我总结《${doc.title}》的要点`)}&ctx=${encodeURIComponent(chapterSlug)}&ct=${encodeURIComponent(chapterTitle ?? "")}`}
+        label={`${t.ai.askAbout} ${doc.title}`}
+        chapter={chapterSlug}
+        enabled={aiEnabled}
+      />
 
       <RelatedCourses
         locale={locale}

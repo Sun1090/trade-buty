@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { QUIZZES } from "@/lib/quizzes";
 import { ReviewClient } from "@/components/review-client";
+import { aiEnabledForPage } from "@/lib/ai-toggle";
 import { HeroCard } from "@/components/hero-card";
 
 export function generateStaticParams() {
@@ -33,6 +34,7 @@ export default async function ReviewPage({
         quizzes={Object.values(QUIZZES)}
         dict={t.review}
         locale={locale}
+        aiEnabled={aiEnabledForPage()}
       />
       <Link
         href={`/${locale}/path`}

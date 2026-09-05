@@ -153,6 +153,10 @@ const zh = {
     aiQuizAdvanced: "进阶",
     aiQuizReport: "举报题目",
     aiQuizReported: "已举报",
+    aiDisabled: "AI 功能暂未开启",
+    contextBannerTpl: "正在基于《{title}》篇章回答",
+    followups: ["展开讲讲「{t}」", "「{t}」在实际交易中怎么用？", "学习「{t}」最常见的误区是什么？"],
+    lessonAskAi: "问 AI：梳理本课要点",
 
   },
   stats: {
@@ -413,6 +417,10 @@ const en: Dict = {
     aiQuizAdvanced: "Advanced",
     aiQuizReport: "Report question",
     aiQuizReported: "Reported",
+    aiDisabled: "AI features are currently unavailable",
+    contextBannerTpl: "Answering based on the \"{title}\" chapter",
+    followups: ['Tell me more about "{t}"', 'How to apply "{t}" in practice?', 'Common misconceptions about "{t}"?'],
+    lessonAskAi: "Ask AI: recap this lesson",
 
   },
   stats: {

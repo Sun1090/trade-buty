@@ -16,6 +16,7 @@ import { DocList } from "@/components/doc-list";
 import { ChapterCompleteCelebration } from "@/components/chapter-complete-celebration";
 import { Collapsible } from "@/components/collapsible";
 import { ChapterSummaryAi } from "@/components/chapter-summary-ai";
+import { aiEnabledForPage } from "@/lib/ai-toggle";
 import { TodayPick } from "@/components/today-pick";
 
 export function generateStaticParams() {
@@ -177,6 +178,7 @@ export default async function ChapterPage({
         chapter={slug}
         title={chapter.title}
         locale={locale}
+        aiEnabled={aiEnabledForPage()}
         dict={{
           title: t.chapter.aiSummaryTitle,
           generate: t.chapter.aiSummaryGenerate,

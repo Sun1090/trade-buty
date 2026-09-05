@@ -4,6 +4,7 @@ import { retrieve } from "@/lib/ai/rag";
 import { buildRagContext, SYSTEM_PROMPT } from "@/lib/ai/prompt";
 import { buildHistorySummaryPrompt, buildNoContextGuidance } from "@/lib/ai/prompt";
 import { getRefusalMessage } from "@/lib/ai/prompt";
+import { getChapterTitle } from "@/lib/ai/chapters";
 import { matchSensitiveRequest } from "@/lib/ai/guardrail";
 import { looksLikeRecommendation } from "@/lib/ai/guardrail";
 import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
@@ -23,6 +24,8 @@ interface ChatBody {
   locale?: string;
   /** 续写：已有回答全文，服务端在其后继续生成（不再重复 RAG） */
   continueFrom?: string;
+  /** R3.7：用户正在学习的章节 slug，system 注入「基于本章回答」上下文 */
+  contextChapter?: string;
 }
 
 // 简易内存 rate limit（edge runtime 每实例独立，够用于防基础滥用）
@@ -132,11 +135,19 @@ export async function POST(req: NextRequest) {
     }
   }
   const continuePrompt = locale === "en" ? "Continue." : "请继续。";
+  // R3.7：课程落地上下文（未知识别章节则忽略，不报错）
+  const ctxTitle = body.contextChapter ? getChapterTitle(locale, body.contextChapter) : null;
+  const ctxLine = ctxTitle
+    ? (locale === "en"
+      ? `\n\n## User context\nThe user is currently studying the chapter "${ctxTitle}". Prefer explanations grounded in this chapter's content.`
+      : `\n\n## 用户上下文\n用户正在学习《${ctxTitle}》篇章，请优先结合该篇章内容进行解释。`)
+    : "";
   const messages = [
     {
       role: "system" as const,
       content:
         SYSTEM_PROMPT +
+        ctxLine +
         (ragContext ? "\n\n" + ragContext : "") +
         (noContextGuidance ? "\n\n" + noContextGuidance : "") +
         (historySummary ? "\n\n## 早期对话摘要\n" + historySummary : ""),

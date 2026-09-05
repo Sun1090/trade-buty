@@ -13,6 +13,7 @@
     "kb:update": "bash scripts/update-knowledge.sh",
     "test": "vitest run",
     "quiz:coverage": "node scripts/quiz-coverage.mjs",
+    "summary:coverage": "node scripts/summary-coverage.mjs",
     "analyze": "ANALYZE=true next build",
     "kb:parity": "node scripts/check-locale-parity.mjs",
     "check:links": "node scripts/check-links.mjs",

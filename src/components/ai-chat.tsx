@@ -29,6 +29,8 @@ interface AiDict {
   sourcesLabel: string;
   suggestedLabel: string;
   examplesLabel: string;
+  contextBannerTpl: string;
+  followups: string[];
   disclaimer: string;
   guestLimit: string;
   quotaRemaining: string;
@@ -42,8 +44,11 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // R3.7：课程落地上下文（?ctx=章节 slug & ct=章节标题，课末「问 AI」按钮带入）
+  const [contextTitle, setContextTitle] = useState<string | null>(null);
   // 游客配额（服务端仅对未登录请求返回 X-Quota-* 头；登录用户为 null 不展示）
   const [quota, setQuota] = useState<{ remaining: number; limit: number } | null>(null);
+  const [contextChapter, setContextChapter] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Record<number, "helpful" | "unhelpful">>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -94,9 +99,15 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       } catch {
         // 拉历史失败不阻断
       }
-      // 无历史时处理 ?q= 参数
+      // 无历史时处理 ?q= 参数（R3.7：课末问 AI 带入 ctx/ct 上下文）
       const params = new URLSearchParams(window.location.search);
       const q = params.get("q");
+      const ctx = params.get("ctx");
+      const ct = params.get("ct");
+      if (ctx) {
+        setContextChapter(ctx);
+        if (ct) setContextTitle(ct);
+      }
       if (q) send(q);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -162,7 +173,12 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, locale, ...opts.extraBody }),
+        body: JSON.stringify({
+          messages: history,
+          locale,
+          ...(contextChapter ? { contextChapter } : {}),
+          ...opts.extraBody,
+        }),
         signal: controller.signal,
       });
       clearTimeout(timer);
@@ -332,8 +348,26 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
 
   const p = (path: string) => `/${locale}${path}`;
 
+  /** R3.4：追问链——从最后一条回答的引用/推荐标题生成 3 个关联问题 */
+  function followupsFor(idx: number): string[] {
+    const msg = messages[idx];
+    if (!msg || messages.length === 0 || idx !== messages.length - 1) return [];
+    const title = msg.sources?.[0]?.title ?? msg.suggested?.[0]?.title;
+    if (!title) return [];
+    return dict.followups.map((tpl) => tpl.replace("{t}", title));
+  }
+
   return (
     <div className="flex flex-col h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)]">
+      {/* R3.7：课程上下文横幅 */}
+      {contextTitle && (
+        <div className="px-4 pt-3">
+          <p className="mx-auto max-w-3xl rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-dim)] px-3 py-2 text-xs text-accent">
+            📖 {dict.contextBannerTpl.replace("{title}", contextTitle)}
+          </p>
+        </div>
+      )}
+
       {/* 消息区 */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
         <div className="mx-auto max-w-3xl space-y-6">
@@ -472,6 +506,20 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                         {locale === "en" ? "Example" : "例子"}
                       </button>
                     </span>
+                  </div>
+                )}
+                {/* R3.4：追问链 chips */}
+                {!loading && followupsFor(i).length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {followupsFor(i).map((fq) => (
+                      <button
+                        key={fq}
+                        onClick={() => send(fq)}
+                        className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-xs text-muted hover:text-accent hover:border-accent/60 transition"
+                      >
+                        💬 {fq}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
