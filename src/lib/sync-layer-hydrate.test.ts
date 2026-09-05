@@ -308,3 +308,55 @@ describe("hydrateFromCloud", () => {
     expect(mockSettingsSelect).not.toHaveBeenCalled();
   });
 });
+
+// ============================================================
+// R9.6/R9.7：合并摘要事件
+// ============================================================
+
+describe("R9.6 hydrateFromCloud 触发 tb-merge-summary 事件", () => {
+  it("云端新增进度 → 摘要含 newProgress", async () => {
+    memStore.set("tb-progress", JSON.stringify({ "getting-started": ["doc-a"] }));
+    mockProgressSelect.mockResolvedValueOnce({
+      data: [
+        { chapter_num: "getting-started", doc_slug: "doc-a" },
+        { chapter_num: "getting-started", doc_slug: "doc-b" },
+        { chapter_num: "futures", doc_slug: "margin" },
+      ],
+    });
+    const { hydrateFromCloud } = await import("./sync-layer");
+    let captured: unknown = null;
+    const handler = (e: Event) => {
+      captured = (e as CustomEvent).detail;
+    };
+    window.addEventListener("tb-merge-summary", handler);
+    await hydrateFromCloud("user-123");
+    window.removeEventListener("tb-merge-summary", handler);
+    expect(captured).toMatchObject({
+      newProgress: 2,
+      hasAny: true,
+    });
+  });
+
+  it("云端无任何新增时 hasAny=false（replay-history 永远 append）", async () => {
+    memStore.set("tb-progress", JSON.stringify({ "getting-started": ["doc-a"] }));
+    memStore.set("tb-wrong", JSON.stringify({ "ch1:0": { chapterNum: "ch1", questionIdx: 0, picked: 1, at: 1 } }));
+    memStore.set("tb-replay-history", JSON.stringify([
+      { at: 100, symbol: "BTCUSDT", interval: "1h", total: 10, correct: 5, bestStreak: 3 },
+    ]));
+    mockProgressSelect.mockResolvedValueOnce({
+      data: [{ chapter_num: "getting-started", doc_slug: "doc-a" }],
+    });
+    mockWrongSelect.mockResolvedValueOnce({
+      data: [{ chapter_num: "ch1", question_idx: 0, picked: 1, answered_at: "1970-01-01T00:00:00Z" }],
+    });
+    mockReplaySelect.mockResolvedValueOnce({ data: [] }); // 无新增
+    const { hydrateFromCloud } = await import("./sync-layer");
+    let captured: { hasAny?: boolean } | null = null;
+    const handler = (e: Event) => { captured = (e as CustomEvent).detail; };
+    window.addEventListener("tb-merge-summary", handler);
+    await hydrateFromCloud("user-123");
+    window.removeEventListener("tb-merge-summary", handler);
+    // 仅 replay-history append-only 会让 hasAny=true；这里无 replay cloud row → hasAny=false
+    expect(captured).toMatchObject({ hasAny: false, newProgress: 0, newWrong: 0 });
+  });
+});

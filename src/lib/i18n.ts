@@ -33,6 +33,13 @@ const zh = {
     errorUnknown: "发送失败，请稍后重试",
     cooldownTpl: "请 {sec}s 后再试",
     cooldownButton: "请 {sec}s 后重发",
+    // R9.7：登录后合并摘要卡片
+    syncSummaryTitle: "已为你同步云端进度",
+    syncSummaryProgressTpl: "📚 新增 {n} 篇已读",
+    syncSummaryWrongTpl: "📝 新增 {n} 条错题",
+    syncSummaryQuizTpl: "🏆 {n} 个章节测验分数提升",
+    syncSummaryReplayTpl: "📈 {n} 条回放战绩",
+    syncSummaryDismiss: "好的",
   },
   brand: { name: "Trade Buty", badge: "免费 · 中立" },
   home: {
@@ -406,6 +413,13 @@ const en: Dict = {
     errorUnknown: "Couldn't send — please try again later",
     cooldownTpl: "Please wait {sec}s",
     cooldownButton: "Resend in {sec}s",
+    // R9.7: login merge summary card
+    syncSummaryTitle: "Synced your cloud progress",
+    syncSummaryProgressTpl: "📚 {n} new lessons marked read",
+    syncSummaryWrongTpl: "📝 {n} new wrong answers",
+    syncSummaryQuizTpl: "🏆 {n} chapter scores improved",
+    syncSummaryReplayTpl: "📈 {n} replay records",
+    syncSummaryDismiss: "Got it",
   },
   brand: { name: "Trade Buty", badge: "Free · Neutral" },
   home: {
