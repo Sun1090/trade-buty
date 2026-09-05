@@ -5,6 +5,7 @@ import type { ChapterQuiz } from "@/lib/quiz-types";
 import { recordWrong, resolveWrong } from "@/lib/wrongbook";
 import { readQuizProgress, saveQuizProgress, type QuizProgress } from "@/lib/quiz-store";
 import { QuizTimer } from "@/components/quiz-timer";
+import { addStudyTime } from "@/lib/study-time";
 
 interface QuizDict {
   questionsUnit: string;
@@ -29,6 +30,7 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
   const [correct, setCorrect] = useState(0);
   const [progress, setProgress] = useState<QuizProgress | null>(null);
   const explainRef = useRef<HTMLDivElement>(null);
+  const startedAtRef = useRef<number>(0);
 
   // 答题后自动滚到解析区（小屏体验）
   useEffect(() => {
@@ -74,6 +76,12 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
     };
     setProgress(p);
     saveQuizProgress(quiz.chapterNum, p, quiz.questions.length);
+    // R4.2：测验耗时入学习时长台账（quiz 源）
+    if (startedAtRef.current > 0) {
+      const elapsed = Math.min(Math.round((Date.now() - startedAtRef.current) / 1000), 4 * 3600);
+      if (elapsed > 0) addStudyTime("quiz", elapsed);
+      startedAtRef.current = 0;
+    }
   }
 
   function pick(i: number) {
@@ -137,7 +145,10 @@ export function Quiz({ quiz, dict }: { quiz: ChapterQuiz; dict: QuizDict }) {
             )}
           </div>
           <button
-            onClick={() => setStarted(true)}
+            onClick={() => {
+                startedAtRef.current = Date.now();
+                setStarted(true);
+              }}
             className="rounded-full border border-accent/50 bg-accent-dim text-accent font-semibold px-6 py-2.5 hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition shrink-0"
           >
             {progress?.done ? dict.retry : dict.start}

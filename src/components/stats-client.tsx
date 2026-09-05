@@ -25,7 +25,9 @@ interface StatsDict {
   overall: string;
   goalLabel: string;
   goalUnit: string;
+  goalMinUnit: string;
   goalSet: string;
+  streakReassureTpl: string;
 }
 
 function StatCard({ value, label, accent }: { value: string | number; label: string; accent?: boolean }) {
@@ -80,8 +82,12 @@ export function StatsClient({
 
       {/* 每日目标 */}
       <DailyGoal
-        todayRead={stats.readDocs}
-        dict={{ label: dict.goalLabel, unit: dict.goalUnit, set: dict.goalSet }}
+        dict={{
+          label: dict.goalLabel,
+          unit: dict.goalMinUnit,
+          set: dict.goalSet,
+          reassureTpl: dict.streakReassureTpl,
+        }}
       />
 
       {/* 连续学习 + 准确率 + 阅读时长 */}

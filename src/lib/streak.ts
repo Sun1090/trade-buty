@@ -5,6 +5,7 @@
  * 计算当前连续学习天数和历史最长记录。
  */
 import { recordActivity } from "./activity-calendar";
+import { localDateStr, daysBetween } from "./date-utils";
 
 const KEY = "tb-streak";
 
@@ -15,27 +16,30 @@ interface StreakData {
   current: number;
   /** 历史最长连续天数 */
   longest: number;
+  /** R4.8：最后学习时刻的时间戳（时区宽限判断用） */
+  lastTs?: number;
 }
 
-function todayStr(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function yesterdayStr(): string {
+const todayStr = () => localDateStr();
+const yesterdayStr = () => {
   const d = new Date();
   d.setDate(d.getDate() - 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+  return localDateStr(d);
+};
+
+/** R4.8：跨时区/夏令时宽限窗——距上次活动不足 36h 视为未断签 */
+const GRACE_MS = 36 * 3600_000;
 
 /** 读取连续天数数据 */
 export function readStreak(): StreakData {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return { lastDate: "", current: 0, longest: 0 };
-    return JSON.parse(raw) as StreakData;
+    if (!raw) return { lastDate: "", current: 0, longest: 0, lastTs: 0 };
+    const parsed = JSON.parse(raw) as StreakData;
+    parsed.lastTs = parsed.lastTs ?? 0; // 旧数据迁移
+    return parsed;
   } catch {
-    return { lastDate: "", current: 0, longest: 0 };
+    return { lastDate: "", current: 0, longest: 0, lastTs: 0 };
   }
 }
 
@@ -51,8 +55,11 @@ export function touchStreak(): void {
     // 今天已经记录过，不重复
     if (data.lastDate === today) return;
 
-    // 昨天有记录 → 连续 +1
+    // R4.8：昨天有记录 → +1；跨时区/夏令时导致日历跳天但实际间隔
+    // 不足 36h（lastTs 宽限窗）同样视为连续，不误判断签
     if (data.lastDate === yesterdayStr()) {
+      data.current += 1;
+    } else if (data.lastTs && Date.now() - data.lastTs < GRACE_MS && daysBetween(data.lastDate, today) >= 1) {
       data.current += 1;
     } else {
       // 断了，重新计 1
@@ -60,6 +67,7 @@ export function touchStreak(): void {
     }
 
     data.lastDate = today;
+    data.lastTs = Date.now();
     data.longest = Math.max(data.longest, data.current);
     localStorage.setItem(KEY, JSON.stringify(data));
     recordActivity(); // 记录到活动日历
@@ -71,7 +79,7 @@ export function touchStreak(): void {
   }
 }
 
-/** 获取当前连续天数（如果最后学习日期不是今天或昨天，返回 0） */
+/** 获取当前连续天数（今天/昨天有活动，或 lastTs 在 36h 宽限窗内） */
 export function getCurrentStreak(): number {
   const data = readStreak();
   const today = todayStr();
@@ -80,5 +88,25 @@ export function getCurrentStreak(): number {
   if (data.lastDate === today || data.lastDate === yesterday) {
     return data.current;
   }
+  if (data.lastTs && Date.now() - data.lastTs < GRACE_MS) {
+    return data.current;
+  }
   return 0;
+}
+
+/**
+ * R4.3：断签挽回信息——昨天没学且已不在宽限窗内时，
+ * 给 UI 一次「从头再来」的说明（不造假数据：连续天数确实已清零重计）。
+ */
+export function getStreakBreak(): { broken: boolean; longest: number } {
+  const data = readStreak();
+  const today = todayStr();
+  const yesterday = yesterdayStr();
+  const inGrace =
+    data.lastDate === today ||
+    data.lastDate === yesterday ||
+    (data.lastTs !== undefined && data.lastTs > 0 && Date.now() - data.lastTs < GRACE_MS);
+  // 无任何历史（lastDate 为空）不算「断签」，是还没开始
+  const broken = data.lastDate !== "" && !inGrace;
+  return { broken, longest: data.longest };
 }
