@@ -49,7 +49,7 @@ export default async function ReplayPage({
           </div>
         ))}
       </div>
-      <ReplayTrainer dict={dict.replay} />
+      <ReplayTrainer dict={dict.replay} locale={locale} />
       <ReplayHistory
         dict={{
           histTitle: dict.replay.histTitle,
