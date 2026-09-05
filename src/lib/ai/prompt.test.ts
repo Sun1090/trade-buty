@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { buildRagContext, SYSTEM_PROMPT, pickRandomQuestions } from "./prompt";
+import { buildRagContext, SYSTEM_PROMPT, pickRandomQuestions, buildChapterQuizPrompt } from "./prompt";
 
 describe("buildRagContext", () => {
   it("空数组返回空字符串", () => {
@@ -137,5 +137,29 @@ describe("pickRandomQuestions", () => {
     const second = pickRandomQuestions(pool, 3);
     spy.mockRestore();
     expect(first).toEqual(second);
+  });
+});
+
+describe("buildChapterQuizPrompt", () => {
+  it("中文 prompt：含章节名、5 题、JSON 格式与教育红线", () => {
+    const msgs = buildChapterQuizPrompt("行为金融", "## 章节：行为金融", "zh");
+    expect(msgs[0].role).toBe("system");
+    expect(msgs[0].content).toContain("章节：行为金融");
+    expect(msgs[0].content).toContain("5 道选择题");
+    expect(msgs[0].content).toContain("不荐股");
+    expect(msgs[0].content).toContain("严格 JSON");
+  });
+
+  it("英文 locale 出英文题指令", () => {
+    const msgs = buildChapterQuizPrompt("Behavioral Finance", "ctx", "en");
+    expect(msgs[0].content).toContain("strict JSON, English");
+    expect(msgs[0].content).toContain("Behavioral Finance");
+  });
+
+  it("难度档影响出题要求", () => {
+    const basic = buildChapterQuizPrompt("止损", "ctx", "zh", "basic");
+    const adv = buildChapterQuizPrompt("止损", "ctx", "zh", "advanced");
+    expect(basic[0].content).toContain("入门");
+    expect(adv[0].content).toContain("进阶");
   });
 });

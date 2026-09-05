@@ -102,8 +102,71 @@ ${examples}`,
   ];
 }
 
-/** 历史摘要 prompt（v1.0.0 随 R1.6 引入）：超长对话时压缩早期轮次 */
-export function buildHistorySummaryPrompt(
+/**
+ * R2.1/R2.9：按章节出题 prompt——基于该章知识库上下文生成新题，
+ * 语言跟随 locale（en 出英文题），难度档预留（R2.2 接 UI）。
+ */
+export function buildChapterQuizPrompt(
+  chapterTitle: string,
+  ragContext: string,
+  locale: string,
+  difficulty: "basic" | "advanced" = "basic",
+): ChatMessage[] {
+  const isEn = locale === "en";
+  const count = 5;
+  const difficultyRule = isEn
+    ? difficulty === "basic"
+      ? "Difficulty: beginner level — test concept understanding, not memorization of numbers."
+      : "Difficulty: advanced — test application, edge cases and common misconceptions."
+    : difficulty === "basic"
+      ? "难度：入门——考察概念理解，不考数字记忆。"
+      : "难度：进阶——考察应用场景、易混淆点与常见误区。";
+  const system = isEn
+    ? `You are the quiz-writing expert for Trade Buty, a neutral trading-education site. Write ${count} multiple-choice questions based on the chapter below.
+
+## Rules
+1. No stock picks, no profit promises, education only
+2. Questions must be answerable from the chapter content provided — never invent facts
+3. ${count} questions, 4 options each, exactly 1 correct
+4. Every question needs an explanation citing the chapter concept; never write "obviously" style explanations
+5. ${difficultyRule}
+
+## Output format (strict JSON, English)
+{"questions":[{"question":"...","options":["...","...","...","..."],"answer":0,"explain":"..."}]}
+
+## Chapter: ${chapterTitle}
+
+## Knowledge base reference
+${ragContext}`
+    : `你是 Trade Buty（中立交易教育平台）的出题专家。根据下面的章节内容，生成 ${count} 道选择题。
+
+## 约束
+1. 不荐股、不承诺收益、中性教育
+2. 题目必须能从章节内容中找到依据，绝不编造知识库里没有的内容
+3. ${count} 题，每题 4 个选项，恰好 1 个正确
+4. 每题必须附解析，解析要引用章节概念，禁止「显然」「毫无疑问」式空话
+5. ${difficultyRule}
+
+## 输出格式（严格 JSON）
+{"questions":[{"question":"题目","options":["A","B","C","D"],"answer":0,"explain":"解析"}]}
+
+## 章节：${chapterTitle}
+
+## 知识库参考
+${ragContext}`;
+
+  return [
+    { role: "system", content: system },
+    {
+      role: "user",
+      content: isEn
+        ? `Write ${count} quiz questions for this chapter, strict JSON only.`
+        : `请为该章节生成 ${count} 道题，严格按 JSON 格式输出。`,
+    },
+  ];
+}
+
+/** 历史摘要 prompt（v1.0.0 随 R1.6 引入）：超长对话时压缩早期轮次 */export function buildHistorySummaryPrompt(
   messages: { role: string; content: string }[],
   locale: string
 ): ChatMessage[] {

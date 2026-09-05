@@ -143,6 +143,13 @@ const zh = {
     helpful: "有用",
     unhelpful: "无用",
     askAbout: "问 AI：",
+    aiQuizStart: "AI 智能出题",
+    aiQuizGenerating: "AI 正在出题，约需 10 秒…",
+    aiQuizBadge: "AI 生成",
+    aiQuizLogin: "登录后可用 AI 出题",
+    aiQuizError: "AI 出题暂时不可用，请稍后再试",
+    aiQuizFallback: "已回退站方题库",
+
   },
   stats: {
     nav: "统计",
@@ -392,6 +399,13 @@ const en: Dict = {
     helpful: "Helpful",
     unhelpful: "Not helpful",
     askAbout: "Ask AI:",
+    aiQuizStart: "AI Quiz",
+    aiQuizGenerating: "Generating questions, about 10s…",
+    aiQuizBadge: "AI generated",
+    aiQuizLogin: "Log in to use AI quiz",
+    aiQuizError: "AI quiz temporarily unavailable, try again later",
+    aiQuizFallback: "fell back to site question bank",
+
   },
   stats: {
     nav: "Stats",
