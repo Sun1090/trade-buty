@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Markdown } from "@/components/markdown";
-import { SUGGESTED_QUESTIONS_ZH, SUGGESTED_QUESTIONS_EN } from "@/lib/ai/prompt";
+import { SUGGESTED_QUESTIONS_ZH, SUGGESTED_QUESTIONS_EN, pickRandomQuestions } from "@/lib/ai/prompt";
 import { hasTruncatedMarker, stripTruncatedMarker } from "@/lib/ai/streaming";
 
 interface ChatMessage {
@@ -26,6 +26,7 @@ interface AiDict {
   continueLabel: string;
   sourcesLabel: string;
   suggestedLabel: string;
+  examplesLabel: string;
   disclaimer: string;
   guestLimit: string;
   helpful: string;
@@ -44,7 +45,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   // 初始化时从问题池随机取 5 个（每次进入页面看到不同推荐）
   const [suggestions] = useState(() => {
     const pool = locale === "en" ? SUGGESTED_QUESTIONS_EN : SUGGESTED_QUESTIONS_ZH;
-    return [...pool].sort(() => Math.random() - 0.5).slice(0, 5);
+    return pickRandomQuestions(pool, 5);
   });
 
   // 自动滚到底
@@ -281,7 +282,10 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
               <p className="mt-2 text-sm text-muted max-w-md mx-auto leading-relaxed">
                 {dict.subtitle}
               </p>
-              <div className="mt-8 grid gap-2 sm:grid-cols-2">
+              <p className="mt-8 text-xs font-medium uppercase tracking-wide text-faint">
+                {dict.examplesLabel}
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {suggestions.map((q) => (
                   <button
                     key={q}

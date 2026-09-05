@@ -160,6 +160,16 @@ export const SUGGESTED_QUESTIONS_EN = [
   "What are the most common beginner trading mistakes?",
 ];
 
+/** 从问题池随机抽 count 条（Fisher-Yates 全排列后取前 n，避免 sort(random) 的有偏抽样） */
+export function pickRandomQuestions(pool: string[], count: number): string[] {
+  const arr = [...pool];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, Math.max(0, count));
+}
+
 /** 无相关 chunk 时的兜底指引：坦诚说明 + 推荐最接近章节，绝不编造 */
 export function buildNoContextGuidance(
   suggestions: { chapter: string; title: string }[]

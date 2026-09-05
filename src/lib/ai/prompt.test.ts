@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { buildRagContext, SYSTEM_PROMPT } from "./prompt";
+import { describe, it, expect, vi } from "vitest";
+import { buildRagContext, SYSTEM_PROMPT, pickRandomQuestions } from "./prompt";
 
 describe("buildRagContext", () => {
   it("空数组返回空字符串", () => {
@@ -99,5 +99,43 @@ describe("getRefusalMessage", () => {
     expect(zhPick).not.toBe(zhProfit);
     expect(zhProfit).toContain("收益");
     expect(enPick).toContain("recommend");
+  });
+});
+
+describe("pickRandomQuestions", () => {
+  const pool = ["a", "b", "c", "d", "e"];
+
+  it("抽取数量正确且全部来自问题池", () => {
+    const picked = pickRandomQuestions(pool, 3);
+    expect(picked).toHaveLength(3);
+    for (const q of picked) expect(pool).toContain(q);
+  });
+
+  it("不修改原数组", () => {
+    const copy = [...pool];
+    pickRandomQuestions(pool, 5);
+    expect(pool).toEqual(copy);
+  });
+
+  it("count 超过池大小时返回整个池且无重复", () => {
+    const picked = pickRandomQuestions(pool, 10);
+    expect(picked).toHaveLength(5);
+    expect(new Set(picked).size).toBe(5);
+  });
+
+  it("count 为 0 或负数返回空数组", () => {
+    expect(pickRandomQuestions(pool, 0)).toEqual([]);
+    expect(pickRandomQuestions(pool, -1)).toEqual([]);
+  });
+
+  it("固定随机源下结果可复现", () => {
+    const seq = [0.9, 0.1, 0.5, 0.3, 0.7];
+    let i = 0;
+    const spy = vi.spyOn(Math, "random").mockImplementation(() => seq[i++ % seq.length]);
+    const first = pickRandomQuestions(pool, 3);
+    i = 0;
+    const second = pickRandomQuestions(pool, 3);
+    spy.mockRestore();
+    expect(first).toEqual(second);
   });
 });
