@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { normalizeReturnTo } from "@/lib/auth-return";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 type AuthDict = {
@@ -22,6 +23,9 @@ export function AuthCallbackClient({
   const [state, setState] = useState<"processing" | "success" | "error">(
     "processing",
   );
+  const searchParams = useSearchParams();
+  const rawReturn = searchParams?.get("returnTo");
+  const returnTo = normalizeReturnTo(rawReturn, locale);
 
   useEffect(() => {
     let settled = false;
@@ -37,13 +41,18 @@ export function AuthCallbackClient({
       }
     }, 4000);
 
+    const navigateAway = () => {
+      // R9.1：跳回原页（returnTo），未指定时回首页
+      router.push(returnTo ?? `/${locale}`);
+    };
+
     client.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
       if (settled) return;
       if (session?.user) {
         settled = true;
         clearTimeout(failTimer);
         setState("success");
-        setTimeout(() => router.push(`/${locale}`), 800);
+        setTimeout(navigateAway, 800);
       }
     });
 
@@ -54,7 +63,7 @@ export function AuthCallbackClient({
         clearTimeout(failTimer);
         setState("success");
         // hydrate 交给 AuthProvider 的 onAuthStateChange
-        setTimeout(() => router.push(`/${locale}`), 800);
+        setTimeout(navigateAway, 800);
       }
     });
 
@@ -63,7 +72,7 @@ export function AuthCallbackClient({
       clearTimeout(failTimer);
       sub.subscription.unsubscribe();
     };
-  }, [router, locale]);
+  }, [router, locale, returnTo]);
 
   return (
     <div className="mx-auto max-w-md px-5 py-24 text-center">

@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { withReturnTo } from "@/lib/auth-return";
 
 export function AuthHeader({ locale, dict }: {
   locale: string;
@@ -12,6 +14,7 @@ export function AuthHeader({ locale, dict }: {
   const user = useAuth();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!open) return;
@@ -30,9 +33,16 @@ export function AuthHeader({ locale, dict }: {
   }, [open]);
 
   if (!user) {
+    // 当前页面已经是登录/回调页 → 直链避免无限循环
+    const isAuthPage =
+      pathname === `/${locale}/auth` ||
+      pathname === `/${locale}/auth/callback`;
+    const loginHref = isAuthPage
+      ? `/${locale}/auth`
+      : withReturnTo(`/${locale}/auth`, pathname || `/${locale}`);
     return (
       <Link
-        href={`/${locale}/auth`}
+        href={loginHref}
         className="px-2 sm:px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition whitespace-nowrap text-sm"
       >
         <span aria-hidden>👤</span>{" "}
