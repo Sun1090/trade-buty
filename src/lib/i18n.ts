@@ -22,6 +22,9 @@ const zh = {
     callbackProcessing: "正在完成登录…",
     callbackSuccess: "登录成功，正在同步进度…",
     callbackError: "登录失败，链接可能已过期，请重新发送",
+    // R9.1：登录后跳回原页提示
+    returnToBannerTitle: "登录后将回到",
+    returnToNoticeTpl: "📍 {path}",
   },
   brand: { name: "Trade Buty", badge: "免费 · 中立" },
   home: {
@@ -384,6 +387,9 @@ const en: Dict = {
     callbackProcessing: "Finishing login…",
     callbackSuccess: "Logged in — syncing progress…",
     callbackError: "Login failed — the link may have expired. Please resend",
+    // R9.1: return-to-original-page banner
+    returnToBannerTitle: "After login you'll return to",
+    returnToNoticeTpl: "📍 {path}",
   },
   brand: { name: "Trade Buty", badge: "Free · Neutral" },
   home: {
