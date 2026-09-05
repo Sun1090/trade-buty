@@ -10,6 +10,8 @@ import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { RadarChart } from "@/components/radar-chart";
 import { WeekMiniBar } from "@/components/week-mini-bar";
 import { WeeklyReport } from "@/components/weekly-report";
+import { StreakShareCard } from "@/components/streak-share-card";
+import { getRecentDays } from "@/lib/streak";
 
 interface StatsDict {
   title: string;
@@ -29,6 +31,10 @@ interface StatsDict {
   goalMinUnit: string;
   goalSet: string;
   streakReassureTpl: string;
+  shareStreak: string;
+  previewStreak: string;
+  download: string;
+  previewAlt: string;
   totalStudyTime: string;
   weeklyTitle: string;
   weeklySummaryTpl: string;
@@ -121,7 +127,23 @@ export function StatsClient({
 
       {/* 连续学习 + 准确率 + 学习时长 */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <StatCard value={`🔥 ${stats.currentStreak}`} label={dict.streak} accent />
+        <div>
+          <StatCard value={`🔥 ${stats.currentStreak}`} label={dict.streak} accent />
+          {/* R8.3 连续学习分享卡：currentStreak=0 时按钮自动禁用 */}
+          <div className="mt-3">
+            <StreakShareCard
+              currentStreak={stats.currentStreak}
+              longestStreak={stats.longestStreak}
+              recentDays={getRecentDays()}
+              locale={locale === "en" ? "en" : "zh"}
+              labels={{
+                share: dict.shareStreak,
+                previewAlt: dict.previewAlt,
+                download: dict.download,
+              }}
+            />
+          </div>
+        </div>
         <StatCard value={stats.avgQuizScore !== null ? `${stats.avgQuizScore}%` : "—"} label={dict.accuracy} />
         <StatCard value={stats.replayAccuracy !== null ? `${stats.replayAccuracy}%` : "—"} label={`${dict.replay} ${dict.accuracy}`} />
         <StatCard value={formatDuration(stats.totalStudySeconds)} label={dict.totalStudyTime} />

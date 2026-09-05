@@ -92,3 +92,40 @@ describe("streak", () => {
     expect(info.longest).toBe(8);
   });
 });
+
+import { getRecentDays } from "./streak";
+
+describe("getRecentDays", () => {
+  beforeEach(() => {
+    store.clear();
+    vi.useRealTimers();
+    vi.setSystemTime(new Date("2026-09-05T12:00:00Z"));
+  });
+
+  it("默认返回 7 项", () => {
+    expect(getRecentDays()).toHaveLength(7);
+  });
+
+  it("空数据 → 全 false", () => {
+    const days = getRecentDays();
+    expect(days.every((d) => d.active === false)).toBe(true);
+  });
+
+  it("最近一天在活动集合内 → active=true", () => {
+    const today = "2026-09-05";
+    store.set("tb-activity", JSON.stringify([today]));
+    const days = getRecentDays();
+    expect(days[6].date).toBe(today);
+    expect(days[6].active).toBe(true);
+  });
+
+  it("date 格式 yyyy-MM-dd", () => {
+    const days = getRecentDays();
+    expect(days[0]).toMatchObject({ date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) });
+  });
+
+  it("按日期升序（最早在前，今天在最后）", () => {
+    const days = getRecentDays();
+    expect(days[0].date < days[6].date).toBe(true);
+  });
+});
