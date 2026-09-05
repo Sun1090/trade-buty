@@ -46,7 +46,20 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   const [quota, setQuota] = useState<{ remaining: number; limit: number } | null>(null);
   const [feedback, setFeedback] = useState<Record<number, "helpful" | "unhelpful">>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const initRef = useRef(false);
+
+  // R1.15：移动端软键盘弹起时保证输入框可见（dvh 只解决地址栏，键盘需主动滚动）
+  useEffect(() => {
+    const revealInput = () => {
+      if (document.activeElement === inputRef.current) {
+        inputRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+      }
+    };
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", revealInput);
+    return () => vv?.removeEventListener("resize", revealInput);
+  }, []);
 
   // 初始化时从问题池随机取 5 个（每次进入页面看到不同推荐）
   const [suggestions] = useState(() => {
@@ -501,9 +514,17 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
             className="flex gap-2"
           >
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onFocus={() => {
+                // 键盘弹起动画完成后补一次滚动，避免输入框被遮挡
+                window.setTimeout(
+                  () => inputRef.current?.scrollIntoView({ block: "end", behavior: "smooth" }),
+                  300
+                );
+              }}
               placeholder={dict.placeholder}
               aria-label={dict.placeholder}
               maxLength={500}
