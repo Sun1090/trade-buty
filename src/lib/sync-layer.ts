@@ -199,16 +199,36 @@ export function mergeReplayBest(local: number, cloudBest: number): number {
 export async function hydrateFromCloud(id: string) {
   if (!id) return;
 
-  const [progressRes, wrongRes, quizRes, replayRes, bestRes, settingsRes] = await Promise.all([
-    getSupabaseBrowser().from("progress").select("chapter_num, doc_slug").eq("user_id", id),
-    getSupabaseBrowser().from("wrongbook").select("chapter_num, question_idx, picked, answered_at, srs_stage, srs_due").eq("user_id", id),
-    getSupabaseBrowser().from("quiz_scores").select("chapter_num, best, total, done").eq("user_id", id),
-    getSupabaseBrowser().from("replay_history").select("symbol, interval, total, correct, best_streak, recorded_at").eq("user_id", id).order("recorded_at", { ascending: false }).limit(100),
-    getSupabaseBrowser().from("replay_best").select("best_streak").eq("user_id", id),
-    getSupabaseBrowser().from("user_settings").select("daily_goal_min").eq("user_id", id),
-  ]);
+  // R9.4：整体降级——任意一张表失败都不能抛（断网/RLS deny 都不该影响本地体验）
+  let progressRes: { data: CloudProgress[] | null } | undefined;
+  let wrongRes: { data: CloudWrong[] | null } | undefined;
+  let quizRes: { data: CloudQuiz[] | null } | undefined;
+  let replayRes: { data: CloudReplay[] | null } | undefined;
+  let bestRes: { data: CloudReplayBest[] | null } | undefined;
+  let settingsRes: { data: { daily_goal_min: number }[] | null } | undefined;
+  try {
+    const results = await Promise.all([
+      getSupabaseBrowser().from("progress").select("chapter_num, doc_slug").eq("user_id", id),
+      getSupabaseBrowser().from("wrongbook").select("chapter_num, question_idx, picked, answered_at, srs_stage, srs_due").eq("user_id", id),
+      getSupabaseBrowser().from("quiz_scores").select("chapter_num, best, total, done").eq("user_id", id),
+      getSupabaseBrowser().from("replay_history").select("symbol, interval, total, correct, best_streak, recorded_at").eq("user_id", id).order("recorded_at", { ascending: false }).limit(100),
+      getSupabaseBrowser().from("replay_best").select("best_streak").eq("user_id", id),
+      getSupabaseBrowser().from("user_settings").select("daily_goal_min").eq("user_id", id),
+    ]);
+    [progressRes, wrongRes, quizRes, replayRes, bestRes, settingsRes] = results as [typeof progressRes, typeof wrongRes, typeof quizRes, typeof replayRes, typeof bestRes, typeof settingsRes];
+  } catch (e) {
+    // 网络/RLS/任意失败：保留本地数据，dispatch 通知后直接返回
+    if (typeof window !== "undefined") {
+      try {
+        window.dispatchEvent(new Event("tb-progress"));
+      } catch {
+        // ignore
+      }
+    }
+    return;
+  }
 
-  if (progressRes.data) {
+  if (progressRes?.data) {
     const merged = mergeProgress(
       readLocalJson<ProgressMap>("tb-progress", {}),
       progressRes.data as CloudProgress[],
@@ -232,23 +252,23 @@ export async function hydrateFromCloud(id: string) {
     }
   }
 
-  if (wrongRes.data) {
+  if (wrongRes?.data) {
     writeLocalJson("tb-wrong", mergeWrongbook(readLocalJson<Record<string, WrongEntry>>("tb-wrong", {}), wrongRes.data as CloudWrong[]));
   }
 
-  if (quizRes.data) {
+  if (quizRes?.data) {
     for (const row of quizRes.data as CloudQuiz[]) {
       const key = `tb-quiz-${row.chapter_num}`;
       writeLocalJson(key, mergeQuizScore(readLocalJson(key, null), row));
     }
   }
 
-  if (replayRes.data) {
+  if (replayRes?.data) {
     writeLocalJson("tb-replay-history", mergeReplayHistory(readLocalJson<ReplayRecord[]>("tb-replay-history", []), replayRes.data as CloudReplay[]));
   }
 
-  if (bestRes.data && bestRes.data.length > 0) {
-    const cloudBest = (bestRes.data[0] as CloudReplayBest).best_streak;
+  if (bestRes?.data && bestRes.data.length > 0) {
+    const cloudBest = (bestRes?.data?.[0] as CloudReplayBest | undefined)?.best_streak ?? 0;
     const local = parseInt(localStorage.getItem("tb-replay-best") ?? "0", 10) || 0;
     try {
       localStorage.setItem("tb-replay-best", String(mergeReplayBest(local, cloudBest)));
@@ -258,8 +278,8 @@ export async function hydrateFromCloud(id: string) {
   }
 
   // R4.7：云端目标档位——本地未设置时才采用云端（设备本地意图优先，之后随写随推）
-  if (settingsRes.data && settingsRes.data.length > 0) {
-    const cloudGoal = (settingsRes.data[0] as { daily_goal_min: number }).daily_goal_min;
+  if (settingsRes?.data && settingsRes.data.length > 0) {
+    const cloudGoal = (settingsRes?.data?.[0] as { daily_goal_min: number } | undefined)?.daily_goal_min ?? 0;
     const localGoal = localStorage.getItem("tb-daily-goal-min");
     if (cloudGoal && !localGoal) {
       try {
