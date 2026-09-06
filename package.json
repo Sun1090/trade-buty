@@ -45,7 +45,8 @@
     "check:description-quality": "node scripts/check-description-quality.mjs",
     "check:risk-warning": "node scripts/check-risk-warning.mjs",
     "kb:accept": "node scripts/accept-new-course.mjs",
-    "check:slug-conflicts": "node scripts/check-slug-conflicts.mjs"
+    "check:slug-conflicts": "node scripts/check-slug-conflicts.mjs",
+    "check:description-dupes": "node scripts/check-description-dupes.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

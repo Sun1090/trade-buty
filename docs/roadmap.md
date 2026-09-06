@@ -258,7 +258,7 @@
 - [x] R10.12 图片资产与 alt 文本审计增强
 - [x] R10.13 术语表双语扩展
 - [x] R10.14 中英 slug 冲突检查
-- [ ] R10.15 课程摘要与 SEO description 去重
+- [x] R10.15 课程摘要与 SEO description 去重
 - [ ] R10.16 新章节上线 dry-run 命令
 - [ ] R10.17 内容质量报告 CI artifact
 - [ ] R10.18 上游知识库版本变更提示
