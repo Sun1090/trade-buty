@@ -40,7 +40,8 @@
     "kb:gap-priority": "node scripts/content-gap-priority.mjs",
     "check:title-terminology": "node scripts/check-title-terminology.mjs",
     "check:description-quality": "node scripts/check-description-quality.mjs",
-    "check:risk-warning": "node scripts/check-risk-warning.mjs"
+    "check:risk-warning": "node scripts/check-risk-warning.mjs",
+    "kb:accept": "node scripts/accept-new-course.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
