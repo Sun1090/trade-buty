@@ -45,6 +45,8 @@ jobs:
       - run: npm run check:glossary
       - run: npm run check:slug-conflicts
       - run: npm run check:description-dupes
+      - name: 上游版本指针核对（R10.18：指针/工作区/快照三者一致）
+        run: npm run check:kb-pointer
       - name: 新章节 dry-run 冒烟（R10.16）
         run: |
           mkdir -p /tmp/draft-ch/demo

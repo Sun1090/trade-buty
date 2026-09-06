@@ -3,14 +3,17 @@
  * 输出新增/删除的篇章与课程列表。
  * R10.7：快照同时记录每篇内容 sha256，可识别「内容修改未增删」的文档，
  * 供 scripts/check-kb-changelog.mjs 生成 changelog 自动片段。
+ * R10.18：快照额外记录上游 submodule 指针 `pointer`（随 --update 刷新），
+ * 供 scripts/check-kb-pointer.mjs 校验「仓库记录指针 = 工作区 = 快照」。
  *
  * 快照：scripts/kb-manifest.json（随 kb:update 自动刷新；形状向后兼容，
- * files 数组保留，新增 hashes 映射）。
+ * files 数组保留，新增 hashes 映射、pointer 字段）。
  * 用法：
  *   node scripts/kb-diff.mjs            # 对比并打印摘要
  *   node scripts/kb-diff.mjs --update   # 对比后刷新快照（files + hashes）
  *   node scripts/kb-diff.mjs --changelog docs/kb-changelog-draft.md
  */
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -84,9 +87,25 @@ if (changelogIdx > -1 && (added.length > 0 || removed.length > 0 || changed.leng
 }
 
 if (process.argv.includes("--update")) {
+  // R10.18：记录上游 submodule 指针（工作区实际 HEAD）；git 不可用时置空由门禁兜底
+  let pointer = "";
+  try {
+    pointer = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: path.join(root, "content/kline-buty"),
+      encoding: "utf8",
+    }).trim();
+  } catch {
+    pointer = "";
+  }
   fs.writeFileSync(
     MANIFEST,
-    JSON.stringify({ files: current, hashes: currentHashes, at: new Date().toISOString() }, null, 2),
+    JSON.stringify(
+      { files: current, hashes: currentHashes, pointer, at: new Date().toISOString() },
+      null,
+      2,
+    ),
   );
-  console.log(`📸 快照已刷新（${current.length} 个文件 + 内容 hash）`);
+  console.log(
+    `📸 快照已刷新（${current.length} 个文件 + 内容 hash${pointer ? ` + 上游指针 ${pointer.slice(0, 7)}` : ""}）`,
+  );
 }
