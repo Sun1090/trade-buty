@@ -37,6 +37,11 @@ export default async function SearchPage({
     browseCta: search.browseCta,
     recentLabel: search.recentLabel,
     suggestTitle: search.suggestTitle,
+    didYouMean: search.didYouMean,
+    triedSynTpl: search.triedSynTpl,
+    gapHint: search.gapHint,
+    filterZeroTpl: search.filterZeroTpl,
+    filterZeroCta: search.filterZeroCta,
   };
 
   return (

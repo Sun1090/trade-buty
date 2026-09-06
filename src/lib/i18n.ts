@@ -312,6 +312,12 @@ const zh = {
     browseCta: "去学习路线逛逛 →",
     recentLabel: "最近搜索",
     suggestTitle: "相关课程",
+    // R10.22：无结果诊断
+    didYouMean: "你是不是想找",
+    triedSynTpl: "已按同义说法搜索：{terms}",
+    gapHint: "这些说法均无对应课程——该主题可能尚未收录，或换个关键词试试。",
+    filterZeroTpl: "「{chapter}」暂无匹配，站内共有 {n} 条相关结果",
+    filterZeroCta: "查看全部结果",
   },
   newsletter: {
     title: "邮件订阅（占位）",
@@ -691,6 +697,12 @@ const en: Dict = {
     browseCta: "browse the learning path →",
     recentLabel: "Recent",
     suggestTitle: "Suggestions",
+    // R10.22: no-results diagnosis
+    didYouMean: "Did you mean",
+    triedSynTpl: "Also searched synonyms: {terms}",
+    gapHint: "No course covers these terms — this topic may not be published yet.",
+    filterZeroTpl: "No match in “{chapter}”, but {n} result(s) exist",
+    filterZeroCta: "Show all results",
   },
   newsletter: {
     title: "Newsletter (placeholder)",

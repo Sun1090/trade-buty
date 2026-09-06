@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { highlight, snippetHtml } from "@/lib/search-utils";
-import { scoreWithSynonyms } from "@/lib/search-synonyms";
+import { SYNONYM_GROUPS, scoreWithSynonyms } from "@/lib/search-synonyms";
+import { diagnoseNoResults } from "@/lib/search-diagnostics";
 
 interface Entry {
   url: string;
@@ -23,6 +24,11 @@ export function SearchClient({
     browseCta: string;
     recentLabel: string;
     suggestTitle: string;
+    didYouMean: string;
+    triedSynTpl: string;
+    gapHint: string;
+    filterZeroTpl: string;
+    filterZeroCta: string;
   };
 }) {
   const [query, setQuery] = useState("");
@@ -98,6 +104,31 @@ export function SearchClient({
   const hotTerms = locale === "en"
     ? ["stop loss", "candlestick", "leverage", "margin", "trend"]
     : ["止损", "K线", "杠杆", "保证金", "趋势"];
+
+  // R10.22：无结果诊断候选池——同义词组词条在前（短、精确），后接索引标题/篇章
+  const suggestionCandidates = useMemo(() => {
+    const pool: string[] = [];
+    const seen = new Set<string>();
+    const push = (raw: string) => {
+      const t = raw.trim().toLowerCase();
+      if (!t || seen.has(t)) return;
+      seen.add(t);
+      pool.push(raw.trim());
+    };
+    for (const g of SYNONYM_GROUPS) for (const t of g.terms) push(t);
+    for (const e of entries ?? []) {
+      push(e.title);
+      push(e.chapter);
+    }
+    return pool;
+  }, [entries]);
+
+  // R10.22：零结果诊断——只在全局零命中时计算（复用同义词组匹配 + 编辑距离）
+  const diag = useMemo(() => {
+    const q = debouncedQ.trim();
+    if (!q || results.length > 0 || !entries) return null;
+    return diagnoseNoResults(q, { candidates: suggestionCandidates });
+  }, [debouncedQ, results.length, entries, suggestionCandidates]);
 
   const groups = useMemo(() => {
     const map = new Map<string, Entry[]>();
@@ -252,8 +283,20 @@ export function SearchClient({
           </select>
         </div>
       )}
-      {query.trim() && filtered.length === 0 && (
-        <p className="mt-4 text-sm text-muted">{dict.noResults}</p>
+      {query.trim() && results.length > 0 && filtered.length === 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm text-muted">
+          <span>
+            {dict.filterZeroTpl
+              .replace("{chapter}", filterChapter)
+              .replace("{n}", String(results.length))}
+          </span>
+          <button
+            onClick={() => setFilterChapter("")}
+            className="ml-auto text-accent underline underline-offset-4"
+          >
+            {dict.filterZeroCta}
+          </button>
+        </div>
       )}
       {query.trim() && results.length === 0 && (
         <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center">
@@ -265,6 +308,35 @@ export function SearchClient({
               {dict.browseCta}
             </a>
           </p>
+          {diag?.kind === "typo" && diag.suggestions.length > 0 && (
+            <div className="mt-5">
+              <p className="mb-2 text-xs text-faint">{dict.didYouMean}</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {diag.suggestions.map((term) => (
+                  <button
+                    key={term}
+                    onClick={() => onInput(term)}
+                    className="rounded-full border border-[var(--accent)]/40 bg-[var(--accent-dim)] px-3 py-1 text-xs text-accent transition hover:border-accent/60"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {diag?.kind === "coverage-gap" && (
+            <div className="mt-5 text-xs text-muted">
+              <p>
+                {dict.triedSynTpl.replace(
+                  "{terms}",
+                  diag.tried
+                    .filter((t) => t !== debouncedQ.trim().toLowerCase())
+                    .join(" · "),
+                )}
+              </p>
+              <p className="mt-1 text-faint">{dict.gapHint}</p>
+            </div>
+          )}
           <div className="mt-5 flex flex-wrap justify-center gap-2">
             {hotTerms.map((term) => (
               <button
