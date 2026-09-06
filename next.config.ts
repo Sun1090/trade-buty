@@ -16,6 +16,26 @@ const csp = [
   "form-action 'self'",
 ].join("; ");
 
+// R10.24：name-stable 内容产物（内容更新后 URL 不变）必须每次重验证，
+// 保证 kb 变更 → 重新部署后立即可见，不被 CDN/浏览器长缓存挡住。
+// 与 Vercel/Next 现网默认一致（生产实测 `public, max-age=0, must-revalidate`），
+// 显式声明防未来默认值变化造成内容更新不失效的回归。
+const contentCacheHeader = {
+  key: "Cache-Control",
+  value: "public, max-age=0, must-revalidate",
+};
+// 供单测锁定的缓存策略条目（R10.24）：source → headers
+export const CONTENT_CACHE_POLICIES = [
+  {
+    source: "/search-index.json",
+    headers: [contentCacheHeader],
+  },
+  {
+    source: "/knowledge-assets/:path*",
+    headers: [contentCacheHeader],
+  },
+] as const;
+
 const nextConfig = {
   async headers() {
     return [
@@ -32,6 +52,8 @@ const nextConfig = {
           },
         ],
       },
+      // R10.24：内容产物缓存策略（详见 docs/caching.md §4）
+      ...CONTENT_CACHE_POLICIES,
     ];
   },
 };
