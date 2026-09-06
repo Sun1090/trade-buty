@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { score, highlight, snippetHtml } from "@/lib/search-utils";
+import { highlight, snippetHtml } from "@/lib/search-utils";
+import { scoreWithSynonyms } from "@/lib/search-synonyms";
 
 interface Entry {
   url: string;
@@ -62,7 +63,7 @@ export function SearchClient({
     const q = debouncedQ.trim().toLowerCase();
     if (!q || !entries) return [];
     return entries
-      .map((e) => ({ e, s: score(e, q) }))
+      .map((e) => ({ e, s: scoreWithSynonyms(e, q) }))
       .filter(({ s }) => s > 0)
       .sort((a, b) => b.s - a.s)
       .map(({ e }) => e);
@@ -114,7 +115,7 @@ export function SearchClient({
     const titleHits = entries.filter((e) => e.title.toLowerCase().includes(q));
     if (titleHits.length > 0) return titleHits.slice(0, 6);
     return entries
-      .map((e) => ({ e, s: score(e, q) }))
+      .map((e) => ({ e, s: scoreWithSynonyms(e, q) }))
       .filter(({ s }) => s > 0)
       .sort((a, b) => b.s - a.s)
       .slice(0, 6)
