@@ -71,6 +71,19 @@ MD
       - run: npm run check:nav-chain
       - run: npm run check:relative-links
       - run: npm run check:bundle
+      - name: 内容质量报告归档（R10.17）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: content-quality-reports
+          path: |
+            docs/*.json
+            docs/glossary-coverage.md
+            docs/description-dupes.md
+            docs/description-quality.md
+            docs/translation-status.md
+            docs/new-course-acceptance.md
+          retention-days: 7
       # E2E 放最后：运行时会向 .next 写入动态 fallback 页，避免污染产物校验
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
