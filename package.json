@@ -37,7 +37,8 @@
     "check:mobile": "node scripts/check-mobile.mjs",
     "pretest": "node scripts/generate-kb-titles.mjs",
     "kb:inventory": "node scripts/content-inventory.mjs",
-    "kb:gap-priority": "node scripts/content-gap-priority.mjs"
+    "kb:gap-priority": "node scripts/content-gap-priority.mjs",
+    "check:title-terminology": "node scripts/check-title-terminology.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
