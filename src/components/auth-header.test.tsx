@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { AuthHeader } from "./auth-header";
 
+const { mockUseAuth } = vi.hoisted(() => ({
+  mockUseAuth: vi.fn<() => { id: string; email: string } | null>(() => null),
+}));
 vi.mock("@/components/auth-provider", () => ({
-  useAuth: () => null,
+  useAuth: mockUseAuth,
 }));
 vi.mock("@/lib/supabase/client", () => ({
   getSupabaseBrowser: () => ({ auth: { signOut: vi.fn() } }),
@@ -12,8 +15,10 @@ vi.mock("@/lib/supabase/client", () => ({
 
 // next/navigation 在 jsdom 里 usePathname 默认返回 "/"——单独 mock 控制
 let mockPathname = "/en/replay";
+const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
   usePathname: () => mockPathname,
+  useRouter: () => ({ push: mockPush }),
 }));
 
 function getLoginHref(label: string): string {
@@ -51,5 +56,17 @@ describe("AuthHeader (未登录)", () => {
     mockPathname = "/en/auth/callback";
     render(<AuthHeader locale="en" dict={{ login: "Login", logout: "Logout" }} />);
     expect(getLoginHref("Login")).toBe("/en/auth");
+  });
+});
+
+describe("AuthHeader (已登录注销)", () => {
+  it("先进入确认态，取消不会请求删除", async () => {
+    mockUseAuth.mockReturnValue({ id: "user-1", email: "u@example.com" });
+    render(<AuthHeader locale="zh" dict={{ login: "登录", logout: "退出" }} />);
+    fireEvent.click(screen.getByRole("button", { name: /账户/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "注销账号" }));
+    expect(screen.getByRole("group", { name: "确认注销" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "取消" }));
+    expect(screen.queryByRole("group", { name: "确认注销" })).toBeNull();
   });
 });

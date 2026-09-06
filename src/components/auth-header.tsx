@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { withReturnTo } from "@/lib/auth-return";
+import { clearLocalAccountData, requestAccountDeletion } from "@/lib/account-delete";
 
 export function AuthHeader({ locale, dict }: {
   locale: string;
@@ -13,8 +14,12 @@ export function AuthHeader({ locale, dict }: {
 }) {
   const user = useAuth();
   const [open, setOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     if (!open) return;
@@ -84,17 +89,75 @@ export function AuthHeader({ locale, dict }: {
             <p className="text-[11px] uppercase tracking-wider text-faint">{accountLabel}</p>
             <p className="mt-1 truncate text-sm font-medium" title={email}>{email}</p>
           </div>
-          <button
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              void getSupabaseBrowser().auth.signOut();
-            }}
-            className="mt-1 flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm text-down hover:bg-down/10 transition"
-          >
-            <span aria-hidden className="mr-2">↪</span>
-            {logoutLabel}
-          </button>
+          {deleteConfirm ? (
+            <div className="mt-2 rounded-xl border border-down/30 bg-down/5 p-3" role="group" aria-label={locale === "zh" ? "确认注销" : "Confirm account deletion"}>
+              <p className="text-xs leading-relaxed text-muted">
+                {locale === "zh"
+                  ? "这会删除云端账号并清除本机 Trade Buty 数据，且无法撤销。"
+                  : "This deletes your cloud account and local Trade Buty data. This cannot be undone."}
+              </p>
+              {deleteError && (
+                <p role="alert" className="mt-2 text-xs text-red-500">
+                  {locale === "zh" ? "注销失败，请稍后重试。" : "Deletion failed. Please try again."}
+                </p>
+              )}
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => {
+                    setDeleting(true);
+                    setDeleteError(false);
+                    void requestAccountDeletion()
+                      .then(() => {
+                        clearLocalAccountData();
+                        router.push(`/${locale}/auth`);
+                      })
+                      .catch(() => {
+                        setDeleteError(true);
+                        setDeleting(false);
+                      });
+                  }}
+                  className="flex-1 rounded-lg bg-down px-2 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                >
+                  {deleting ? (locale === "zh" ? "处理中…" : "Deleting…") : (locale === "zh" ? "确认注销" : "Delete account")}
+                </button>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => setDeleteConfirm(false)}
+                  className="flex-1 rounded-lg border border-[var(--border)] px-2 py-1.5 text-xs text-muted disabled:opacity-50"
+                >
+                  {locale === "zh" ? "取消" : "Cancel"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setDeleteError(false);
+                  setDeleteConfirm(true);
+                }}
+                className="mt-1 flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm text-down hover:bg-down/10 transition"
+              >
+                <span aria-hidden className="mr-2">⌫</span>
+                {locale === "zh" ? "注销账号" : "Delete account"}
+              </button>
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  void getSupabaseBrowser().auth.signOut();
+                }}
+                className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm text-down hover:bg-down/10 transition"
+              >
+                <span aria-hidden className="mr-2">↪</span>
+                {logoutLabel}
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
