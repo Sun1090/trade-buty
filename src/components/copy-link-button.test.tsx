@@ -48,11 +48,11 @@ describe("CopyLinkButton", () => {
       />,
     );
     fireEvent.click(screen.getByTestId("copy-btn"));
+    // 主路径成功：writeText 被调用 + 文案切到复制成功
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith("https://example.com/share/quiz/v1-abc");
+      expect(screen.getByTestId("copy-btn").textContent).toContain("已复制");
     });
-    // 按钮文案切换成复制成功
-    expect(screen.getByTestId("copy-btn").textContent).toContain("已复制");
   });
 
   it("clipboard 失败时走 execCommand 降级路径", async () => {
@@ -67,10 +67,12 @@ describe("CopyLinkButton", () => {
       />,
     );
     fireEvent.click(screen.getByTestId("copy-btn2"));
+    // 降级成功：execCommand("copy") 被调用 + 文案切到 ok（两断言同处 waitFor，
+    // 避免 React 状态更新尚未 flush 到 DOM 时的 CI 竞态）
     await waitFor(() => {
       expect(document.execCommand).toHaveBeenCalledWith("copy");
+      expect(screen.getByTestId("copy-btn2").textContent).toContain("ok");
     });
-    expect(screen.getByTestId("copy-btn2").textContent).toContain("ok");
   });
 
   it("两条路径都失败时显示失败文案", async () => {
