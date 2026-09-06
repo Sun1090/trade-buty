@@ -36,7 +36,8 @@
     "lhci": "lhci autorun",
     "check:mobile": "node scripts/check-mobile.mjs",
     "pretest": "node scripts/generate-kb-titles.mjs",
-    "kb:inventory": "node scripts/content-inventory.mjs"
+    "kb:inventory": "node scripts/content-inventory.mjs",
+    "kb:gap-priority": "node scripts/content-gap-priority.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
