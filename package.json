@@ -30,6 +30,7 @@
     "analyze": "ANALYZE=true next build",
     "kb:parity": "node scripts/check-locale-parity.mjs",
     "check:links": "node scripts/check-links.mjs",
+    "check:nav-chain": "node scripts/check-nav-chain.mjs",
     "check:search-index": "node scripts/check-search-index.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
     "e2e": "playwright test e2e/smoke.spec.ts",
