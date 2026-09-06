@@ -5,6 +5,18 @@ import { ReturnNudgeToast } from "./return-nudge-toast";
 
 // jsdom 30 opaque origin → sessionStorage 不可用；挂 mock
 const memStore = new Map<string, string>();
+const localStore = new Map<string, string>();
+Object.defineProperty(globalThis, "localStorage", {
+  value: {
+    getItem: (k: string) => localStore.get(k) ?? null,
+    setItem: (k: string, v: string) => localStore.set(k, v),
+    removeItem: (k: string) => localStore.delete(k),
+    clear: () => localStore.clear(),
+    key: (i: number) => Array.from(localStore.keys())[i] ?? null,
+    get length() { return localStore.size; },
+  },
+  writable: true,
+});
 Object.defineProperty(globalThis, "sessionStorage", {
   value: {
     getItem: (k: string) => memStore.get(k) ?? null,
@@ -17,6 +29,7 @@ Object.defineProperty(globalThis, "sessionStorage", {
 
 beforeEach(() => {
   memStore.clear();
+  localStore.clear();
   Object.defineProperty(window, "location", {
     value: { pathname: "/zh/" },
     writable: true,
@@ -28,9 +41,11 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function emitNudge() {
+function emitNudge(days?: number) {
   act(() => {
-    window.dispatchEvent(new CustomEvent("tb-return-nudge"));
+    window.dispatchEvent(new CustomEvent("tb-return-nudge", {
+      detail: days == null ? undefined : { days },
+    }));
   });
 }
 
@@ -58,6 +73,14 @@ describe("ReturnNudgeToast (R9.8)", () => {
     // 再次派发——sessionStorage 标记仍在，不渲染
     emitNudge();
     expect(screen.queryByTestId("return-nudge-toast")).toBeNull();
+  });
+
+  it("使用事件携带的实际未访天数，并记录提示时间", () => {
+    render(<ReturnNudgeToast />);
+    emitNudge(12);
+    const text = screen.getByTestId("return-nudge-toast").textContent ?? "";
+    expect(text).toContain("已 12 天没来");
+    expect(localStorage.getItem("tb-last-visit-nudge")).toBeTruthy();
   });
 
   it("zh 文案：标题含'已 N 天没来'", () => {

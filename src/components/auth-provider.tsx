@@ -30,10 +30,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 同步逻辑纯函数 + sessionStorage 去重（toast 内已处理），不会每次都弹
     void import("@/lib/last-visit").then(({ touchLastVisit, getLastVisitAt, shouldShowReturnNudge }) => {
       const now = Date.now();
-      const hadBefore = getLastVisitAt() !== null;
+      const previousVisit = getLastVisitAt();
+      // 先用旧访问时间判断，再写入本次访问；否则每次都会把间隔清零。
+      const shouldNudge = previousVisit !== null && shouldShowReturnNudge(now, previousVisit);
       touchLastVisit(now);
-      if (hadBefore && shouldShowReturnNudge(now)) {
-        window.dispatchEvent(new CustomEvent("tb-return-nudge"));
+      if (shouldNudge) {
+        // lazy toast 可能尚未完成加载，用 pending 标记避免事件被错过。
+        try { window.sessionStorage.setItem("tb-return-nudge-pending", "1"); } catch { /* ignore */ }
+        const days = Math.max(1, Math.floor((now - previousVisit) / (24 * 60 * 60 * 1000)));
+        window.dispatchEvent(new CustomEvent("tb-return-nudge", { detail: { days } }));
       }
     });
 

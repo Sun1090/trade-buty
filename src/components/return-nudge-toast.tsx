@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getDict, isLocale, DEFAULT_LOCALE } from "@/lib/i18n";
-import { daysSinceLastVisit } from "@/lib/last-visit";
+import { daysSinceLastVisit, markNudgeShown } from "@/lib/last-visit";
 
 /**
  * R9.8：7 天未访温和提示 toast。
@@ -19,20 +19,31 @@ export function ReturnNudgeToast() {
   const [days, setDays] = useState<number | null>(null);
 
   useEffect(() => {
-    function onNudge() {
-      // sessionStorage 去重
+    function onNudge(event?: Event) {
+      // sessionStorage 去重；pending 让 lazy 组件挂载晚于事件时仍能消费提示.
       try {
         if (sessionStorage.getItem("tb-return-nudge-shown") === "1") return;
         sessionStorage.setItem("tb-return-nudge-shown", "1");
+        sessionStorage.removeItem("tb-return-nudge-pending");
       } catch {
         // ignore
       }
-      const d = daysSinceLastVisit(Date.now());
+      const detail = (event as CustomEvent<{ days?: number }> | undefined)?.detail;
+      const d = typeof detail?.days === "number" && detail.days > 0
+        ? detail.days
+        : daysSinceLastVisit(Date.now());
+      markNudgeShown(Date.now());
       setDays(d != null && d > 0 ? d : 7);
       setOpen(true);
       window.setTimeout(() => setOpen(false), 12000);
     }
     window.addEventListener("tb-return-nudge", onNudge);
+    // Dynamic import may resolve after auth-provider dispatched the event.
+    try {
+      if (sessionStorage.getItem("tb-return-nudge-pending") === "1") onNudge();
+    } catch {
+      // ignore
+    }
     return () => window.removeEventListener("tb-return-nudge", onNudge);
   }, []);
 

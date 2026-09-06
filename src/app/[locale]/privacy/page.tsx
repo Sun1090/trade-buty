@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/metadata";
 import { HeroCard } from "@/components/hero-card";
+import { PrivacyDataExport } from "@/components/privacy-data-export";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -42,6 +43,7 @@ export default async function PrivacyPage({ params }: PageProps<"/[locale]/priva
         <h2 className="text-lg font-semibold">{locale === "en" ? "Third-Party Services" : "第三方服务"}</h2>
         <p>{locale === "en" ? "Supabase (authentication + database), Binance public API (market data), SenseNova (AI chat), SiliconFlow (AI embeddings). Each service is used only when you explicitly interact with the feature." : "Supabase（认证+数据库）、Binance 公开 API（行情数据）、SenseNova（AI 对话）、硅基流动（AI 向量化）。每项服务仅在你主动使用功能时调用。"}</p>
       </section>
+      <PrivacyDataExport locale={locale} />
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{locale === "en" ? "Contact" : "联系方式"}</h2>
         <p>{locale === "en" ? "For privacy concerns, open an issue at github.com/Sun1090/trade-buty." : "如有隐私相关问题，请在 github.com/Sun1090/trade-buty 提 issue。"}</p>
