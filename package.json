@@ -22,6 +22,7 @@
     "check:quiz-coverage": "node scripts/check-quiz-coverage.mjs",
     "check:sitemap": "node scripts/check-sitemap.mjs",
     "kb:diff": "node scripts/kb-diff.mjs --update --changelog docs/kb-changelog-draft.md",
+    "kb:changelog": "node scripts/check-kb-changelog.mjs",
     "kb:translation-status": "node scripts/translation-status.mjs",
     "check:glossary": "node scripts/check-glossary.mjs",
     "ops:faq-candidates": "node scripts/faq-candidates.mjs",
