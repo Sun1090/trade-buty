@@ -1,0 +1,19 @@
+{
+  "generatedAt": "2026-09-06",
+  "budget": 1.0,
+  "note": "关键章节英文 parity 预算（R10.20）：budget 为该章节 zh 课程必须被 en 覆盖的比例。1.0 = 每篇 zh 课程都要有 en 译文。维护者人工维护本清单；新增关键章节需同步 roadmap 与 ops.md。",
+  "chapters": [
+    { "chapter": "getting-started", "budget": 1.0, "note": "入门主路径，SEO 门面" },
+    { "chapter": "spot", "budget": 1.0, "note": "现货基础 P0" },
+    { "chapter": "futures", "budget": 1.0, "note": "期货保证金/杠杆核心" },
+    { "chapter": "stocks", "budget": 1.0, "note": "股票基础" },
+    { "chapter": "crypto-perpetuals", "budget": 1.0, "note": "加密永续，站内练习主场景" },
+    { "chapter": "technical-analysis", "budget": 1.0, "note": "技术分析核心" },
+    { "chapter": "trading-system", "budget": 1.0, "note": "计划/风控/复盘闭环" },
+    { "chapter": "markets-instruments", "budget": 1.0, "note": "品种多，最易漏译" },
+    { "chapter": "trading-practice", "budget": 1.0, "note": "实战策略合集" },
+    { "chapter": "financial-statements", "budget": 1.0, "note": "财报深读" },
+    { "chapter": "regulation-compliance", "budget": 1.0, "note": "监管合规，内容红线相关" },
+    { "chapter": "wealth-allocation", "budget": 1.0, "note": "大类资产配置合规" }
+  ]
+}

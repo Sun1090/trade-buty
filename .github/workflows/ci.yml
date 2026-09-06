@@ -49,6 +49,8 @@ jobs:
         run: npm run check:kb-pointer
       - name: 翻译状态历史快照核对（R10.19）
         run: npm run check:translation-history
+      - name: 关键章节英文 parity 预算（R10.20）
+        run: npm run check:kb-parity-budget
       - name: 新章节 dry-run 冒烟（R10.16）
         run: |
           mkdir -p /tmp/draft-ch/demo
