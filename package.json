@@ -44,7 +44,8 @@
     "check:title-terminology": "node scripts/check-title-terminology.mjs",
     "check:description-quality": "node scripts/check-description-quality.mjs",
     "check:risk-warning": "node scripts/check-risk-warning.mjs",
-    "kb:accept": "node scripts/accept-new-course.mjs"
+    "kb:accept": "node scripts/accept-new-course.mjs",
+    "check:slug-conflicts": "node scripts/check-slug-conflicts.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
