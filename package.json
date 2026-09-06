@@ -35,7 +35,8 @@
     "e2e:visual": "playwright test e2e/visual.spec.ts",
     "lhci": "lhci autorun",
     "check:mobile": "node scripts/check-mobile.mjs",
-    "pretest": "node scripts/generate-kb-titles.mjs"
+    "pretest": "node scripts/generate-kb-titles.mjs",
+    "kb:inventory": "node scripts/content-inventory.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2026-09-06",
+  "locales": {
+    "zh": {
+      "chapters": 27,
+      "documents": 173
+    },
+    "en": {
+      "chapters": 27,
+      "documents": 173
+    }
+  },
+  "coverage": {
+    "chapter": {
+      "translated": 27,
+      "total": 27,
+      "percent": 100
+    },
+    "document": {
+      "translated": 173,
+      "total": 173,
+      "percent": 100
+    }
+  },
+  "missing": {
+    "chapters": [],
+    "documents": []
+  }
+}
