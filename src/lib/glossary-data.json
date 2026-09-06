@@ -1,0 +1,356 @@
+[
+  {
+    "term": "做多",
+    "en": "Long",
+    "def": "买入看涨资产，期望价格上涨后卖出获利。",
+    "defEn": "Buying an asset expecting the price to rise so it can be sold later for a profit."
+  },
+  {
+    "term": "做空",
+    "en": "Short",
+    "def": "卖出看跌资产（借入后卖出），期望价格下跌后买回获利。",
+    "defEn": "Selling a borrowed asset, expecting the price to fall so it can be bought back more cheaply."
+  },
+  {
+    "term": "杠杆",
+    "en": "Leverage",
+    "def": "用借来的资金放大仓位，同倍放大盈亏与爆仓风险。",
+    "defEn": "Using borrowed funds to enlarge a position, which magnifies both gains and losses and liquidation risk."
+  },
+  {
+    "term": "止损",
+    "en": "Stop Loss",
+    "def": "预设的平仓价格，到达时自动平仓，限制亏损。",
+    "defEn": "A preset exit price that closes a losing position automatically to cap losses."
+  },
+  {
+    "term": "止盈",
+    "en": "Take Profit",
+    "def": "预设的平仓价格，到达时自动平仓，锁定利润。",
+    "defEn": "A preset exit price that closes a winning position automatically to lock in gains."
+  },
+  {
+    "term": "K 线",
+    "en": "Candlestick",
+    "def": "记录一段时间内开盘价、最高价、最低价、收盘价的图表元素。",
+    "defEn": "A chart element showing the open, high, low, and close of a period."
+  },
+  {
+    "term": "订单簿",
+    "en": "Order Book",
+    "def": "交易所的买单和卖单列表，反映实时供需。",
+    "defEn": "The exchange's live list of buy and sell orders, reflecting supply and demand."
+  },
+  {
+    "term": "滑点",
+    "en": "Slippage",
+    "def": "下单价格与实际成交价格的差异。",
+    "defEn": "The difference between the requested price and the actual fill price."
+  },
+  {
+    "term": "爆仓",
+    "en": "Liquidation",
+    "def": "杠杆亏损导致保证金不足，仓位被交易所强制平仓。",
+    "defEn": "Forced closure of a leveraged position when losses exhaust the margin."
+  },
+  {
+    "term": "保证金",
+    "en": "Margin",
+    "def": "开杠杆仓位所需的抵押资金。",
+    "defEn": "The collateral required to open and hold a leveraged position."
+  },
+  {
+    "term": "现货",
+    "en": "Spot",
+    "def": "即时交割的资产交易，买入即拥有。",
+    "defEn": "Trading where assets are delivered immediately; buying means owning."
+  },
+  {
+    "term": "合约",
+    "en": "Futures/Perpetual",
+    "def": "约定未来交割的衍生品，可做多做空、带杠杆。",
+    "defEn": "A derivative contract settled at a future time; can be traded long or short with leverage."
+  },
+  {
+    "term": "永续合约",
+    "en": "Perpetual",
+    "def": "无到期日的期货合约，通过资金费率锚定现货价。",
+    "defEn": "A futures contract with no expiry, anchored to the spot price via funding rates."
+  },
+  {
+    "term": "资金费率",
+    "en": "Funding Rate",
+    "def": "永续合约多空双方定期支付的费率，维持价格锚定。",
+    "defEn": "A periodic fee paid between longs and shorts on perpetuals to keep the price anchored."
+  },
+  {
+    "term": "成交量",
+    "en": "Volume",
+    "def": "一段时间内交易的资产数量，衡量市场活跃度。",
+    "defEn": "The quantity traded in a period; a gauge of market activity."
+  },
+  {
+    "term": "流动性",
+    "en": "Liquidity",
+    "def": "市场快速买卖且不显著影响价格的能力。",
+    "defEn": "How easily an asset can be traded without materially moving its price."
+  },
+  {
+    "term": "支撑位",
+    "en": "Support",
+    "def": "价格下跌时可能止跌的价位，买盘聚集。",
+    "defEn": "A price level where a falling price tends to stop as buyers step in."
+  },
+  {
+    "term": "阻力位",
+    "en": "Resistance",
+    "def": "价格上涨时可能受阻的价位，卖盘聚集。",
+    "defEn": "A price level where a rising price tends to stall as sellers step in."
+  },
+  {
+    "term": "趋势",
+    "en": "Trend",
+    "def": "价格持续朝一个方向运动的倾向。",
+    "defEn": "A sustained directional tendency in price movement."
+  },
+  {
+    "term": "回撤",
+    "en": "Drawdown",
+    "def": "从最高点到后续低点的价格下跌幅度。",
+    "defEn": "The decline from a peak to a later low."
+  },
+  {
+    "term": "多头",
+    "en": "Bullish",
+    "def": "预期价格将上涨的一方或市场观点。",
+    "defEn": "A trader or a market view expecting prices to rise."
+  },
+  {
+    "term": "空头",
+    "en": "Bearish",
+    "def": "预期价格将下跌的一方或市场观点。",
+    "defEn": "A trader or a market view expecting prices to fall."
+  },
+  {
+    "term": "牛市",
+    "en": "Bull Market",
+    "def": "价格整体持续上涨的市场阶段。",
+    "defEn": "A market phase of broadly rising prices."
+  },
+  {
+    "term": "熊市",
+    "en": "Bear Market",
+    "def": "价格整体持续下跌的市场阶段。",
+    "defEn": "A market phase of broadly falling prices."
+  },
+  {
+    "term": "市价单",
+    "en": "Market Order",
+    "def": "以当前市场最优价立即成交的订单，成交确定但价格不确定。",
+    "defEn": "An order filled immediately at the best available price; execution is certain but the price is not."
+  },
+  {
+    "term": "限价单",
+    "en": "Limit Order",
+    "def": "只在指定价格或更优价格成交的订单，价格确定但成交不保证。",
+    "defEn": "An order that fills only at a set price or better; the price is fixed but execution is not guaranteed."
+  },
+  {
+    "term": "移动平均线",
+    "en": "Moving Average",
+    "def": "一段时间内收盘价的平均值连线，用于平滑价格、识别方向。",
+    "defEn": "A line of average prices over a window, used to smooth data and identify direction."
+  },
+  {
+    "term": "相对强弱指数",
+    "en": "RSI",
+    "def": "衡量近期涨跌力量强弱的摆动指标，取值 0–100。",
+    "defEn": "A 0–100 oscillator measuring the strength of recent gains versus losses."
+  },
+  {
+    "term": "布林带",
+    "en": "Bollinger Bands",
+    "def": "由中轨均线及上下标准差轨道构成的波动区间指标。",
+    "defEn": "A volatility band built from a moving average with upper and lower standard-deviation lines."
+  },
+  {
+    "term": "阳线",
+    "en": "Bullish Candle",
+    "def": "收盘价高于开盘价的 K 线，常表示该周期买方占优。",
+    "defEn": "A candle whose close is above its open, typically showing buyers dominated the period."
+  },
+  {
+    "term": "阴线",
+    "en": "Bearish Candle",
+    "def": "收盘价低于开盘价的 K 线，常表示该周期卖方占优。",
+    "defEn": "A candle whose close is below its open, typically showing sellers dominated the period."
+  },
+  {
+    "term": "十字星",
+    "en": "Doji",
+    "def": "开盘价与收盘价几乎相同的 K 线，多空力量暂时均衡。",
+    "defEn": "A candle whose open and close are nearly equal, signaling a temporary balance of forces."
+  },
+  {
+    "term": "缺口",
+    "en": "Gap",
+    "def": "价格跳空越过前一段区间，在图表上留下的空白。",
+    "defEn": "A price jump that skips a prior range, leaving a blank area on the chart."
+  },
+  {
+    "term": "突破",
+    "en": "Breakout",
+    "def": "价格越过关键支撑或阻力位并延续的运行。",
+    "defEn": "Price moving decisively beyond a key support or resistance level."
+  },
+  {
+    "term": "回调",
+    "en": "Pullback",
+    "def": "上升趋势中短暂的逆向下跌。",
+    "defEn": "A temporary counter-trend dip within an uptrend."
+  },
+  {
+    "term": "盘整",
+    "en": "Consolidation",
+    "def": "价格在较窄区间内反复震荡、方向不明的阶段。",
+    "defEn": "A phase of choppy, range-bound price action without a clear direction."
+  },
+  {
+    "term": "波动率",
+    "en": "Volatility",
+    "def": "价格变动幅度的统计度量，数值越大代表波动越剧烈。",
+    "defEn": "A statistical measure of how much price moves; higher values mean wilder swings."
+  },
+  {
+    "term": "期货",
+    "en": "Futures",
+    "def": "约定在未来某日按固定价格交割的标准化合约。",
+    "defEn": "A standardized contract to buy or sell at a fixed price on a future date."
+  },
+  {
+    "term": "交割",
+    "en": "Settlement",
+    "def": "合约到期时按约定完成资产或现金结算的过程。",
+    "defEn": "The process of completing a contract's obligation, physically or in cash, at expiry."
+  },
+  {
+    "term": "期权",
+    "en": "Options",
+    "def": "赋予买方在约定时间以约定价格买卖的权利（而非义务）的合约。",
+    "defEn": "A contract giving the buyer the right, not the obligation, to trade at a set price by a set time."
+  },
+  {
+    "term": "看涨期权",
+    "en": "Call Option",
+    "def": "赋予买方以约定价格买入标的权利的期权。",
+    "defEn": "An option giving the buyer the right to buy the underlying at a set price."
+  },
+  {
+    "term": "看跌期权",
+    "en": "Put Option",
+    "def": "赋予买方以约定价格卖出标的权利的期权。",
+    "defEn": "An option giving the buyer the right to sell the underlying at a set price."
+  },
+  {
+    "term": "对冲",
+    "en": "Hedge",
+    "def": "用相反方向的仓位降低已有风险的策略。",
+    "defEn": "A strategy using an offsetting position to reduce existing risk."
+  },
+  {
+    "term": "基本面分析",
+    "en": "Fundamental Analysis",
+    "def": "通过财务、行业与宏观数据评估资产内在价值的分析方法。",
+    "defEn": "Valuing an asset through financial, industry, and macroeconomic data."
+  },
+  {
+    "term": "技术分析",
+    "en": "Technical Analysis",
+    "def": "通过价格、成交量等图表数据预测走势的分析方法。",
+    "defEn": "Forecasting movement from chart data such as price and volume."
+  },
+  {
+    "term": "财务报表",
+    "en": "Financial Statements",
+    "def": "企业定期披露的资产负债、利润与现金流等报告。",
+    "defEn": "A company's periodic reports of its assets, liabilities, profits, and cash flow."
+  },
+  {
+    "term": "市盈率",
+    "en": "P/E Ratio",
+    "def": "股价与每股收益的比值，衡量估值水平。",
+    "defEn": "Price divided by earnings per share; a common valuation gauge."
+  },
+  {
+    "term": "股息",
+    "en": "Dividend",
+    "def": "公司从利润中向股东分配的现金回报。",
+    "defEn": "A cash distribution of company profits to shareholders."
+  },
+  {
+    "term": "定投",
+    "en": "DCA",
+    "def": "按固定周期投入固定金额，摊平买入成本的方式。",
+    "defEn": "Investing a fixed amount on a regular schedule (dollar-cost averaging) to average out entry prices."
+  },
+  {
+    "term": "复利",
+    "en": "Compound Interest",
+    "def": "收益再投入后产生新收益的利滚利效应。",
+    "defEn": "Earning returns on previously earned returns; interest on interest."
+  },
+  {
+    "term": "资产配置",
+    "en": "Asset Allocation",
+    "def": "按风险与目标把资金分配到不同资产类别的做法。",
+    "defEn": "Dividing capital across asset classes according to risk and goals."
+  },
+  {
+    "term": "纪律",
+    "en": "Discipline",
+    "def": "严格执行既定计划、不被情绪左右的交易品质。",
+    "defEn": "Sticking to a defined plan rather than being driven by emotion."
+  },
+  {
+    "term": "交易计划",
+    "en": "Trading Plan",
+    "def": "入场、止损、仓位与离场规则的书面预案。",
+    "defEn": "A written playbook covering entry, stop, position size, and exit rules."
+  },
+  {
+    "term": "模拟交易",
+    "en": "Paper Trading",
+    "def": "用模拟资金按真实规则练习交易的方式。",
+    "defEn": "Practicing trading with virtual money under real market rules."
+  },
+  {
+    "term": "汇率",
+    "en": "Exchange Rate",
+    "def": "一种货币兑换另一种货币的价格。",
+    "defEn": "The price of one currency in terms of another."
+  },
+  {
+    "term": "利率",
+    "en": "Interest Rate",
+    "def": "借贷资金的价格，通常以年化百分比表示。",
+    "defEn": "The price of borrowing money, usually expressed as an annual percentage."
+  },
+  {
+    "term": "通胀",
+    "en": "Inflation",
+    "def": "物价总体持续上涨、购买力下降的现象。",
+    "defEn": "A sustained rise in the general price level that erodes purchasing power."
+  },
+  {
+    "term": "央行",
+    "en": "Central Bank",
+    "def": "负责发行货币与制定货币政策的官方机构。",
+    "defEn": "The official institution that issues currency and sets monetary policy."
+  },
+  {
+    "term": "点差",
+    "en": "Spread",
+    "def": "买价与卖价之间的差额，是交易成本的一部分。",
+    "defEn": "The gap between the bid and ask price; part of trading cost."
+  }
+]

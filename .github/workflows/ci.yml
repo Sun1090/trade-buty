@@ -42,6 +42,7 @@ jobs:
       - run: npm run check:constitution
       - run: npm run check:frontmatter
       - run: npm run check:image-alt
+      - run: npm run check:glossary
       - run: npm run check:quiz-mounts
       - run: npm run check:quiz-coverage
       - run: npm run check:links
