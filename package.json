@@ -39,7 +39,8 @@
     "kb:inventory": "node scripts/content-inventory.mjs",
     "kb:gap-priority": "node scripts/content-gap-priority.mjs",
     "check:title-terminology": "node scripts/check-title-terminology.mjs",
-    "check:description-quality": "node scripts/check-description-quality.mjs"
+    "check:description-quality": "node scripts/check-description-quality.mjs",
+    "check:risk-warning": "node scripts/check-risk-warning.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
