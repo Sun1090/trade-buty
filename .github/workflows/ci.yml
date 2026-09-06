@@ -45,6 +45,24 @@ jobs:
       - run: npm run check:glossary
       - run: npm run check:slug-conflicts
       - run: npm run check:description-dupes
+      - name: 新章节 dry-run 冒烟（R10.16）
+        run: |
+          mkdir -p /tmp/draft-ch/demo
+          cat > /tmp/draft-ch/demo/README.md <<'MD'
+---
+title: 99 · 冒烟章节
+description: 供 CI 验证 dry-run 命令可运行。
+---
+# 99 · 冒烟章节
+MD
+          cat > /tmp/draft-ch/demo/intro.md <<'MD'
+---
+title: 01 · 冒烟课程
+description: 冒烟用课程。
+---
+# 01 · 冒烟课程
+MD
+          node scripts/dry-run-new-chapter.mjs --draft /tmp/draft-ch/demo
       - run: npm run check:quiz-mounts
       - run: npm run check:quiz-coverage
       - run: npm run check:links
