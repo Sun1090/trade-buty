@@ -15,7 +15,7 @@ import { suggestFromPath } from "@/lib/url-suggest";
 import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
 import { JsonLd } from "@/components/json-ld";
 import { breadcrumbList } from "@/lib/jsonld";
-import { getDict, isLocale } from "@/lib/i18n";
+import { getDict, isLocale, type Locale } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/metadata";
 import { QUIZZES } from "@/lib/quizzes";
 import { Markdown } from "@/components/markdown";
@@ -59,14 +59,23 @@ export async function generateMetadata({
 }: PageProps<"/[locale]/knowledge/[chapter]/[doc]">) {
   const { locale, chapter, doc: docSlug } = await params;
   if (!isLocale(locale)) return {};
-  const doc = getDoc("zh", chapter, docSlug);
+  // R10.23：metadata 按当前 locale 取正文（此前硬编码 zh，en 页标题/描述是中文）
+  const doc = getDoc(locale, chapter, docSlug);
   if (!doc) return {};
+  const other: Locale = locale === "zh" ? "en" : "zh";
+  const languages: Partial<Record<"zh" | "en", string>> = {
+    [locale]: `/${locale}/knowledge/${chapter}/${docSlug}`,
+  };
+  if (getDoc(other, chapter, docSlug)) {
+    languages[other] = `/${other}/knowledge/${chapter}/${docSlug}`;
+  }
   return buildPageMetadata({
     locale,
     title: doc.title,
     description: doc.description,
     path: `/${locale}/knowledge/${chapter}/${docSlug}`,
     type: "article",
+    languages,
   });
 }
 

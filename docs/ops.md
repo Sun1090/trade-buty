@@ -44,6 +44,17 @@
 
 > 候选池 = 同义词组词条 + 索引标题/篇章；空查询与单字符查询不触发同义扩展/模糊匹配。
 
+## 内容页 canonical/hreflang（R10.23）
+
+内容页（章节页 + 课程页）的 `generateMetadata` 经 `buildPageMetadata` 声明双语 SEO：
+
+- **canonical 不交叉**：zh/en 是两份翻译正文，各 canonical 到自己 URL（此前注释误以为「双语切换走前端 LanguageToggle」——实际切换是 `/[locale]` URL 变更，需 hreflang 声明配对）。
+- **hreflang 配对**：`alternates.languages` 输出 `<link rel="alternate" hreflang="zh|en">`，`x-default` 固定取 en（站内默认语言），en 缺失回退 zh。
+- **语料按 locale 取**：章节/doc metadata 此前硬编码 `"zh"`，en 页 `<title>`/description 是中文——R10.23 修复为按当前 locale 取正文。
+- **翻译缺口**：对侧不存在时只声明本页单条（测试锁定，知识库 en 补齐后自动升级为双语对）。
+
+验证方式：build 后检查 `.next/server/app/{zh,en}/knowledge/...html` 中的 `link[rel=alternate][hreflang]` 输出。
+
 ## 关键章节英文 parity 预算（R10.20）
 
 ```bash

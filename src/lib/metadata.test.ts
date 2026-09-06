@@ -76,3 +76,70 @@ describe("buildPageMetadata", () => {
     expect(m.openGraph?.url).toContain("/zh/knowledge/getting-started/first-trade");
   });
 });
+
+describe("buildPageMetadata alternates.languages（R10.23 hreflang）", () => {
+  it("zh 页 + en 对侧存在：声明双语对 + x-default=en", () => {
+    const m = buildPageMetadata({
+      locale: "zh",
+      title: "课程",
+      description: "d",
+      path: "/zh/knowledge/getting-started/candlestick-basics",
+      type: "article",
+      languages: {
+        zh: "/zh/knowledge/getting-started/candlestick-basics",
+        en: "/en/knowledge/getting-started/candlestick-basics",
+      },
+    });
+    expect(m.alternates?.canonical).toBe("/zh/knowledge/getting-started/candlestick-basics");
+    expect(m.alternates?.languages).toEqual({
+      zh: "/zh/knowledge/getting-started/candlestick-basics",
+      en: "/en/knowledge/getting-started/candlestick-basics",
+      "x-default": "/en/knowledge/getting-started/candlestick-basics",
+    });
+  });
+
+  it("en 页 + zh 对侧存在：x-default 仍取 en 本页", () => {
+    const m = buildPageMetadata({
+      locale: "en",
+      title: "Lesson",
+      description: "d",
+      path: "/en/knowledge/getting-started/candlestick-basics",
+      type: "article",
+      languages: {
+        en: "/en/knowledge/getting-started/candlestick-basics",
+        zh: "/zh/knowledge/getting-started/candlestick-basics",
+      },
+    });
+    expect(m.alternates?.languages).toEqual({
+      en: "/en/knowledge/getting-started/candlestick-basics",
+      zh: "/zh/knowledge/getting-started/candlestick-basics",
+      "x-default": "/en/knowledge/getting-started/candlestick-basics",
+    });
+  });
+
+  it("对侧缺（翻译缺口）：只声明本页 + x-default 回退", () => {
+    const m = buildPageMetadata({
+      locale: "zh",
+      title: "课程",
+      description: "d",
+      path: "/zh/knowledge/advanced-zh-only",
+      type: "article",
+      languages: { zh: "/zh/knowledge/advanced-zh-only" },
+    });
+    expect(m.alternates?.languages).toEqual({
+      zh: "/zh/knowledge/advanced-zh-only",
+      "x-default": "/zh/knowledge/advanced-zh-only",
+    });
+  });
+
+  it("不传 languages：无 languages 键（维持单语 canonical，向后兼容）", () => {
+    const m = buildPageMetadata({
+      locale: "en",
+      title: "Home",
+      description: "d",
+      path: "/en",
+    });
+    expect(m.alternates?.canonical).toBe("/en");
+    expect(m.alternates?.languages).toBeUndefined();
+  });
+});

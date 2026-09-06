@@ -33,6 +33,13 @@ interface BuildArgs {
   publishedTime?: string;
   /** 文章修改时间（ISO 字符串） */
   modifiedTime?: string;
+  /**
+   * 双语对应页（R10.23 hreflang）。key 为 locale（zh/en），value 为对应页
+   * 站点内路径。只传「确实存在」的对应页——知识库翻译缺口时缺哪侧传哪侧；
+   * 未传 = 页面不声明 alternate（维持单语 canonical）。
+   * x-default 自动取 en（站内默认语言），en 缺失时回退 zh。
+   */
+  languages?: Partial<Record<"zh" | "en", string>>;
 }
 
 export function buildPageMetadata({
@@ -44,17 +51,24 @@ export function buildPageMetadata({
   noindex = false,
   publishedTime,
   modifiedTime,
+  languages,
 }: BuildArgs): Metadata {
   const ogLocale = OG_LOCALES[locale] ?? "en_US";
   const altLocale = locale === "zh" ? "en_US" : "zh_CN";
-  // canonical 始终指向传入的 path（不切换 alternate hreflang——双语切换由前端 LanguageToggle 完成）
+  // canonical 始终指向本页 path（zh/en 是两份翻译正文，各自 canonical 到自身，
+  // 用 hreflang languages 声明翻译配对，不交叉 canonical）
   const fullUrl = `${SITE_URL}${path}`;
+  const alternates: Metadata["alternates"] = { canonical: path };
+  if (languages && Object.keys(languages).length > 0) {
+    alternates.languages = {
+      ...languages,
+      "x-default": languages.en ?? languages.zh ?? path,
+    };
+  }
   const base: Metadata = {
     title,
     description,
-    alternates: {
-      canonical: path,
-    },
+    alternates,
     openGraph: {
       type,
       siteName: "Trade Buty",
