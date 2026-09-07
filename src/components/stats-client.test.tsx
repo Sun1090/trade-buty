@@ -60,6 +60,13 @@ const dict = {
   trendCompletions: "Completed docs",
   trendNewChapters: "Completed chapters",
   trendNoDates: "No completion dates",
+  quizTrendTitle: "Quiz score trend",
+  quizTrendDesc: "Quiz trend description",
+  quizTrendEmpty: "No quiz attempts",
+  quizTrendAttempts: "Attempts",
+  quizBestInRange: "Best in range",
+  quizAvgScore: "Average score",
+  quizNoDates: "No quiz dates",
   weeklyTitle: "Weekly",
   weeklySummaryTpl: "Weekly summary",
   emptyTitle: "Empty",
@@ -91,5 +98,32 @@ describe("StatsClient course completion trend", () => {
     store.delete("tb-progress-completions");
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
     expect(screen.getByText("No completion dates")).toBeInTheDocument();
+  });
+});
+
+
+describe("StatsClient quiz score trend", () => {
+  it("renders the quiz trend section and no-date notice when only current quiz progress exists", async () => {
+    store.set("tb-quiz-getting-started", JSON.stringify({ best: 8, done: true }));
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+
+    expect(await screen.findByText("Quiz score trend")).toBeInTheDocument();
+    expect(screen.getByText("Quiz trend description")).toBeInTheDocument();
+    expect(screen.getByText("No quiz dates")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Quiz score trend|No quiz attempts/ })).toBeInTheDocument();
+    expect(screen.getByText("1/1")).toBeInTheDocument();
+  });
+
+  it("renders dated quiz attempt summaries from the local ledger", async () => {
+    const attemptAt = new Date(2026, 8, 7, 12).getTime();
+    store.set("tb-quiz-getting-started", JSON.stringify({ best: 8, done: true }));
+    store.set("tb-quiz-attempts", JSON.stringify({
+      "getting-started:attempt": { chapter: "getting-started", best: 8, total: 10, at: attemptAt },
+    }));
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+
+    expect(await screen.findByText("Quiz score trend")).toBeInTheDocument();
+    expect(screen.queryByText("No quiz dates")).not.toBeInTheDocument();
+    expect(screen.getByText("1/1")).toBeInTheDocument();
   });
 });

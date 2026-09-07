@@ -3,6 +3,7 @@
 /** 测验成绩本地存储 + 云端双写（抽出原 quiz.tsx 内联逻辑） */
 
 import { syncQuizUpsert } from "@/lib/sync-layer";
+import { writeQuizAttempt } from "@/lib/quiz-attempt-ledger";
 
 const KEY = (ch: string) => `tb-quiz-${ch}`;
 
@@ -33,6 +34,10 @@ export function saveQuizProgress(
     localStorage.setItem(KEY(chapterNum), JSON.stringify(progress));
   } catch {
     // 存储不可用时仅内存保留
+  }
+  // R12.3：记录测验历史台账；仅新完成记录，不去重更新旧日期
+  if (progress.done && progress.best > 0) {
+    writeQuizAttempt(localStorage, chapterNum, progress.best, total);
   }
   // dispatch 让消费方刷新（quiz 原来不参与事件，加入后错题本/进度联动更顺）
   try {

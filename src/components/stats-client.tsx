@@ -18,9 +18,13 @@ function useStreakShareUrl(
 
 
 import { aggregateStats, getUnlockedBadges, BADGES, type LearnStats, type Badge } from "@/lib/learn-stats";
+import { QUIZZES } from "@/lib/quizzes";
+import { readQuizProgress } from "@/lib/quiz-store";
 import { buildCourseCompletionTrend } from "@/lib/course-completion-trend";
 import { buildLearningOverview, type LearningOverview } from "@/lib/learning-overview";
+import { buildQuizScoreTrend } from "@/lib/quiz-score-trend";
 import { readProgressCompletions } from "@/lib/progress";
+import { readQuizAttemptLedger } from "@/lib/quiz-attempt-ledger";
 import { formatDuration } from "@/lib/reading-time";
 import { DailyGoal } from "@/components/daily-goal";
 import { StudyPlan } from "@/components/study-plan";
@@ -72,6 +76,13 @@ interface StatsDict {
   trendCompletions: string;
   trendNewChapters: string;
   trendNoDates: string;
+  quizTrendTitle: string;
+  quizTrendDesc: string;
+  quizTrendEmpty: string;
+  quizTrendAttempts: string;
+  quizBestInRange: string;
+  quizAvgScore: string;
+  quizNoDates: string;
   weeklyTitle: string;
   weeklySummaryTpl: string;
   emptyTitle: string;
@@ -100,8 +111,25 @@ export function StatsClient({
   const [stats, setStats] = useState<LearnStats | null>(null);
   const progress = useLocalProgress();
   const completions = typeof window === "undefined" ? {} : readProgressCompletions();
+  const quizAttempts = typeof window === "undefined" ? {} : readQuizAttemptLedger();
+  const quizProgress = typeof window === "undefined" || !stats
+    ? {}
+    : Object.fromEntries(
+        Object.keys(QUIZZES).map((slug) => [
+          slug,
+          readQuizProgress(slug) ?? { best: 0, done: false },
+        ]),
+      );
   const courseTrend = stats && progress
     ? buildCourseCompletionTrend({ chapters, progress, completions, days: 7 })
+    : null;
+  const quizTrend = stats && progress
+    ? buildQuizScoreTrend({
+        chapters: Object.keys(QUIZZES).map((slug) => ({ slug, questions: QUIZZES[slug].questions.length })),
+        progress: quizProgress,
+        attempts: quizAttempts,
+        days: 7,
+      })
     : null;
   const overview: LearningOverview | null = stats && progress
     ? buildLearningOverview({
@@ -228,6 +256,29 @@ export function StatsClient({
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.overviewCourses}</dt><dd className="mt-1 font-mono text-xl font-bold">{courseTrend!.latest.completionPct}%</dd></div>
         </dl>
         {!courseTrend!.hasLedger && <p className="mt-3 text-xs text-muted">{dict.trendNoDates}</p>}
+      </section>
+
+      {/* R12.3：测验成绩趋势与最高分 */}
+      <section aria-labelledby="quiz-score-trend-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+        <p id="quiz-score-trend-title" className="text-xs font-semibold uppercase tracking-wide text-faint">{dict.quizTrendTitle}</p>
+        <p className="mt-2 text-sm text-muted leading-relaxed">{dict.quizTrendDesc}</p>
+        <div className="mt-4 grid h-24 items-end gap-2" role="img" aria-label={`${dict.quizTrendTitle}: ${quizTrend!.summary.bestInRangeText ?? dict.quizTrendEmpty}`}>{quizTrend!.days.map((day) => {
+          const height = Math.max(day.attempts > 0 ? 12 : 2, day.bestPct || 2);
+          return (
+            <div key={day.date} className="flex h-full flex-1 flex-col justify-end gap-1">
+              <span className="text-[10px] font-mono text-faint">{day.bestScoreText ?? ""}</span>
+              <div className="w-full rounded-t-md bg-[var(--info)]/75" style={{ height: `${height}%` }} />
+              <span className="text-[10px] text-faint">{day.date.slice(5)}</span>
+            </div>
+          );
+        })}</div>
+        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 text-center">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.quizTrendAttempts}</dt><dd className="mt-1 font-mono text-xl font-bold">{quizTrend!.summary.attemptsInRange}</dd></div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.quizBestInRange}</dt><dd className="mt-1 font-mono text-xl font-bold">{quizTrend!.summary.bestInRangeText ?? "-"}</dd></div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.quizAvgScore}</dt><dd className="mt-1 font-mono text-xl font-bold">{quizTrend!.latest.avgPct === null ? "-" : `${quizTrend!.latest.avgPct}%`}</dd></div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.quizzes}</dt><dd className="mt-1 font-mono text-xl font-bold">{quizTrend!.latest.doneQuizzes}/{quizTrend!.latest.totalQuizzes}</dd></div>
+        </dl>
+        {!quizTrend!.hasLedger && <p className="mt-3 text-xs text-muted">{dict.quizNoDates}</p>}
       </section>
 
       {/* 详细统计概览 */}

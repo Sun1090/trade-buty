@@ -1,5 +1,35 @@
 # Progress
 
+## 2026-09-07 — R12.3 Quiz score trend
+
+Implemented R12.3 as a local-data-first quiz score trend with no fabricated historical dates:
+
+- Added `src/lib/quiz-score-trend.ts` as a versioned pure aggregator over quiz definitions, current quiz progress, and the local attempt ledger.
+- Added `tb-quiz-attempts` local ledger writes in `saveQuizProgress()` so completed positive-score quiz attempts record chapter, best, total, and timestamp.
+- Kept current best scores authoritative in existing `tb-quiz-{chapter}` storage; the ledger is metadata only.
+- Preserved legacy behavior: if no attempt ledger exists, trend output reports `dataSource: "current-quiz-progress-only"`, `hasLedger: false`, and warning `no-quiz-attempt-dates`.
+- Tightened ledger writes so zero-score attempts are ignored and duplicate same-timestamp entries are not appended.
+- Integrated an accessible quiz trend mini chart into `/[locale]/stats`, showing attempts in range, best score in range, current average score, completed quiz count, and a no-date notice for legacy data.
+- Added zh/en stats labels for the quiz trend section.
+- Added tests for trend bucketing, current best/average calculation, legacy no-date warnings, corrupt/unknown/invalid attempts, ledger normalization, zero-score/duplicate writes, and stats-page rendering.
+
+Verification recorded:
+
+- Targeted Vitest suite: `npx vitest run src/lib/quiz-score-trend.test.ts src/lib/quiz-attempt-ledger.test.ts src/components/stats-client.test.tsx` passed with 3 files and 12 tests.
+- Full suite: `npm test` passed with 124 test files and 952 tests.
+- Lint gate: `npm run lint -- --quiet` passed.
+- Typecheck gate: `npm run typecheck` passed.
+- Build gate: `npm run build` passed with `/zh/stats` and `/en/stats` routes included.
+
+Next queue:
+
+1. Commit and push R12.3, then watch GitHub Actions and fix any failures.
+2. Continue R12.4 wrongbook review efficiency and R12.5 replay practice duration with measurable local summaries.
+3. Continue the remaining R12 retention suite: streak recovery, personalized next suggestions, local/cloud source labels, time-range filters, empty-state CTAs, export versioning, privacy/cleanup docs, reminder controls, weekly summaries, mobile/performance budgets, consistency checks, no-login degradation, and retention metric audit docs.
+
+
+# Progress
+
 ## 2026-09-07 — R12.2 Course completion trend
 
 Implemented R12.2 as local-data-first course completion trend support without fabricating timestamps for legacy progress:
