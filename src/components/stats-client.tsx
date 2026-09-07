@@ -18,7 +18,9 @@ function useStreakShareUrl(
 
 
 import { aggregateStats, getUnlockedBadges, BADGES, type LearnStats, type Badge } from "@/lib/learn-stats";
+import { buildCourseCompletionTrend } from "@/lib/course-completion-trend";
 import { buildLearningOverview, type LearningOverview } from "@/lib/learning-overview";
+import { readProgressCompletions } from "@/lib/progress";
 import { formatDuration } from "@/lib/reading-time";
 import { DailyGoal } from "@/components/daily-goal";
 import { StudyPlan } from "@/components/study-plan";
@@ -63,6 +65,13 @@ interface StatsDict {
   overviewReplay: string;
   overviewTime: string;
   overviewLocal: string;
+  trendTitle: string;
+  trendDesc: string;
+  trendRange: string;
+  trendEmpty: string;
+  trendCompletions: string;
+  trendNewChapters: string;
+  trendNoDates: string;
   weeklyTitle: string;
   weeklySummaryTpl: string;
   emptyTitle: string;
@@ -90,6 +99,10 @@ export function StatsClient({
 }) {
   const [stats, setStats] = useState<LearnStats | null>(null);
   const progress = useLocalProgress();
+  const completions = typeof window === "undefined" ? {} : readProgressCompletions();
+  const courseTrend = stats && progress
+    ? buildCourseCompletionTrend({ chapters, progress, completions, days: 7 })
+    : null;
   const overview: LearningOverview | null = stats && progress
     ? buildLearningOverview({
         chapters,
@@ -189,6 +202,34 @@ export function StatsClient({
         </dl>
       </section>
 
+      {/* R12.2：课程完成率趋势 */}
+      <section aria-labelledby="course-completion-trend-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+        <p id="course-completion-trend-title" className="text-xs font-semibold uppercase tracking-wide text-faint">{dict.trendTitle}</p>
+        <p className="mt-2 text-sm text-muted leading-relaxed">{dict.trendDesc}</p>
+        <div className="mt-4" role="img" aria-label={`${dict.trendRange}: ${courseTrend!.summary.completionsInRange} ${dict.trendCompletions}, ${courseTrend!.summary.chaptersCompletedInRange} ${dict.trendNewChapters}`}>
+          <div className="grid grid-cols-7 gap-2 sm:gap-3 items-end h-24">
+            {courseTrend!.days.map((day) => {
+              const max = Math.max(1, ...courseTrend!.days.map((bucket) => bucket.completions));
+              const height = day.completions > 0 ? Math.max(18, Math.round((day.completions / max) * 100)) : 4;
+              return (
+                <div key={day.date} className="flex flex-col items-center gap-1 min-h-0">
+                  <span className="text-[10px] font-mono text-faint">{day.completions || ""}</span>
+                  <div className="w-full rounded-t-md bg-[var(--accent)]/70" style={{ height: `${height}%` }} />
+                  <span className="text-[10px] text-faint">{day.date.slice(5)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 text-center">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.trendCompletions}</dt><dd className="mt-1 font-mono text-xl font-bold">{courseTrend!.summary.completionsInRange}</dd></div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.trendNewChapters}</dt><dd className="mt-1 font-mono text-xl font-bold">{courseTrend!.summary.chaptersCompletedInRange}</dd></div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.readDocs}</dt><dd className="mt-1 font-mono text-xl font-bold">{courseTrend!.latest.readDocs}/{courseTrend!.latest.totalDocs}</dd></div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.overviewCourses}</dt><dd className="mt-1 font-mono text-xl font-bold">{courseTrend!.latest.completionPct}%</dd></div>
+        </dl>
+        {!courseTrend!.hasLedger && <p className="mt-3 text-xs text-muted">{dict.trendNoDates}</p>}
+      </section>
+
       {/* 详细统计概览 */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard value={`${stats.overallPct}%`} label={dict.overall} accent />
@@ -250,7 +291,7 @@ export function StatsClient({
       {/* 近 7 天迷你条 */}
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-faint mb-3">
-          {locale === "en" ? "Last 7 days" : "近 7 天"}
+          {dict.trendRange}
         </p>
         <WeekMiniBar locale={locale} />
       </div>

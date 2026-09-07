@@ -1,5 +1,32 @@
 # Progress
 
+## 2026-09-07 — R12.2 Course completion trend
+
+Implemented R12.2 as local-data-first course completion trend support without fabricating timestamps for legacy progress:
+
+- Added `src/lib/course-completion-trend.ts` as a versioned pure aggregator over chapters, current progress, and the local completion ledger.
+- Added `tb-progress-completions` ledger writes in `markRead()` so only first-time reads record completion timestamps; duplicate reads do not update history.
+- Kept legacy progress non-inventive: when no ledger exists, trend output reports `dataSource: "current-progress-only"`, `hasLedger: false`, and warning `no-completion-dates`.
+- Integrated a 7-day accessible mini bar chart into `StatsClient`, showing course completions, completed chapters, read docs, completion percentage, and a legacy-data notice when completion dates are unavailable.
+- Added zh/en `stats` labels for the course completion trend section.
+- Added tests for aggregator bucketing, chapter completion counting, duplicate/legacy/empty/corruption handling, progress ledger write behavior, and stats-page rendering.
+
+Verification recorded:
+
+- Targeted Vitest suite: `npx vitest run src/lib/course-completion-trend.test.ts src/lib/progress.test.ts` passed.
+- Targeted Vitest component suite: `npx vitest run src/components/stats-client.test.tsx` passed.
+- Full suite: `npm test` passed with 122 test files and 942 tests.
+- Lint gate: `npm run lint -- --quiet` passed.
+- Typecheck gate: `npm run typecheck` passed.
+- Build gate: `npm run build` passed with `/zh/stats` and `/en/stats` routes included.
+
+Next queue:
+
+1. Commit and push R12.2, then watch GitHub Actions and fix failures.
+2. Continue R12.3 quiz score trend and highest score with a local quiz completion ledger, preserving no-fabricated-dates semantics.
+3. Continue R12.4 wrongbook review efficiency and R12.5 replay duration with measurable local summaries.
+4. Continue the remaining R12 retention suite: streak recovery, personalized next suggestions, local/cloud source labels, time-range filters, empty-state CTAs, export versioning, privacy/cleanup docs, reminder controls, weekly summaries, mobile/performance budgets, consistency checks, no-login degradation, and retention metric audit docs.
+
 ## 2026-09-07 — R12.1 Learning overview card
 
 Implemented the first R12 retention/statistics task as a real, tested stats feature:

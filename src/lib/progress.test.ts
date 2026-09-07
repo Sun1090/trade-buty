@@ -12,7 +12,7 @@ vi.stubGlobal("window", {
   dispatchEvent: vi.fn(),
 });
 
-const { readProgress, markRead } = await import("./progress");
+const { readProgress, readProgressCompletions, markRead } = await import("./progress");
 
 describe("progress storage", () => {
   beforeEach(() => store.clear());
@@ -45,5 +45,35 @@ describe("progress storage", () => {
   it("损坏的 JSON 返回空对象", () => {
     store.set("tb-progress", "{broken");
     expect(readProgress()).toEqual({});
+  });
+
+  it("首次标记课程会写入 completion ledger", () => {
+    const before = Date.now();
+    markRead("getting-started", "market-overview");
+    const after = Date.now();
+    const completions = readProgressCompletions();
+    const entry = completions["getting-started:market-overview"];
+
+    expect(entry).toEqual({ chapter: "getting-started", doc: "market-overview", at: entry!.at });
+    expect(entry!.at).toBeGreaterThanOrEqual(before);
+    expect(entry!.at).toBeLessThanOrEqual(after);
+  });
+
+  it("重复标记同一课程不会覆盖 completion 时间", () => {
+    markRead("spot", "a");
+    const firstAt = readProgressCompletions()["spot:a"]!.at;
+    markRead("spot", "a");
+    expect(readProgressCompletions()["spot:a"]!.at).toBe(firstAt);
+  });
+
+  it("损坏的 completion ledger 安全降级并允许继续写入", () => {
+    store.set("tb-progress-completions", "{broken");
+    expect(readProgressCompletions()).toEqual({});
+
+    markRead("futures", "margin");
+    expect(readProgressCompletions()["futures:margin"]).toMatchObject({
+      chapter: "futures",
+      doc: "margin",
+    });
   });
 });
