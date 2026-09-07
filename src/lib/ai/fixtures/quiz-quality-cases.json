@@ -1,0 +1,343 @@
+{
+  "version": "r11.9-1",
+  "validationCases": [
+    {
+      "name": "accepts valid Chinese question with chapter document source",
+      "locale": "zh",
+      "raw": {
+        "questions": [
+          {
+            "question": "止损单的主要作用是什么？",
+            "options": ["限制亏损", "提高收益", "增加杠杆", "隐藏风险"],
+            "answer": 0,
+            "explain": "止损单在价格触及预设位时自动平仓，帮助控制单笔风险。",
+            "source": { "chapter": "spot", "doc": "spot-basics" }
+          }
+        ]
+      },
+      "expectedIssues": [],
+      "expectedAcceptedCount": 1
+    },
+    {
+      "name": "accepts valid English question with technical-analysis source",
+      "locale": "en",
+      "raw": {
+        "questions": [
+          {
+            "question": "What is the main purpose of a stop-loss order?",
+            "options": [
+              "Limit downside risk",
+              "Guarantee profit",
+              "Increase leverage",
+              "Hide volatility"
+            ],
+            "answer": 0,
+            "explain": "A stop-loss order closes the position when price reaches a preset level, helping manage per-trade risk.",
+            "source": { "chapter": "technical-analysis", "doc": "ta-validation" }
+          }
+        ]
+      },
+      "expectedIssues": [],
+      "expectedAcceptedCount": 1
+    },
+    {
+      "name": "rejects response root that is not an object",
+      "locale": "zh",
+      "raw": "junk",
+      "expectedIssues": [{ "questionIndex": 0, "code": "not-object" }],
+      "expectedAcceptedCount": 0
+    },
+    {
+      "name": "rejects response object without questions array",
+      "locale": "zh",
+      "raw": {},
+      "expectedIssues": [{ "questionIndex": 0, "code": "missing-question" }],
+      "expectedAcceptedCount": 0
+    },
+    {
+      "name": "detects missing question and missing options",
+      "locale": "zh",
+      "raw": {
+        "questions": [
+          {
+            "options": ["A", "B", "C", "D"],
+            "answer": 0,
+            "explain": "这是一段足够长的解释文本。",
+            "source": { "none": true }
+          }
+        ]
+      },
+      "expectedIssues": [{ "questionIndex": 0, "code": "missing-question" }],
+      "expectedAcceptedCount": 0
+    },
+    {
+      "name": "detects duplicate and short answer options",
+      "locale": "zh",
+      "raw": {
+        "questions": [
+          {
+            "question": "什么是仓位管理？",
+            "options": ["控制风险", "控制风险 ", "C", "D"],
+            "answer": 0,
+            "explain": "仓位管理通过限定单次风险来控制回撤。",
+            "source": { "none": true }
+          }
+        ]
+      },
+      "expectedIssues": [{ "questionIndex": 0, "code": "duplicate-option" }],
+      "expectedAcceptedCount": 0
+    },
+    {
+      "name": "detects non-integer and out-of-range answers",
+      "locale": "zh",
+      "raw": {
+        "questions": [
+          {
+            "question": "什么是不对称收益？",
+            "options": ["收益结构", "固定收益", "亏损扩大", "无法评估"],
+            "answer": 1.5,
+            "explain": "不对称收益指盈亏结构不等价的风险状态。",
+            "source": { "none": true }
+          }
+        ]
+      },
+      "expectedIssues": [{ "questionIndex": 0, "code": "answer-not-int" }],
+      "expectedAcceptedCount": 0
+    },
+    {
+      "name": "detects too-short question and explanation",
+      "locale": "zh",
+      "raw": {
+        "questions": [
+          {
+            "question": "杠杆",
+            "options": ["放大盈亏", "降低风险", "稳定收益", "规避波动"],
+            "answer": 0,
+            "explain": "正确",
+            "source": { "none": true }
+          }
+        ]
+      },
+      "expectedIssues": [
+        { "questionIndex": 0, "code": "question-too-short" },
+        { "questionIndex": 0, "code": "explain-too-short" }
+      ],
+      "expectedAcceptedCount": 0
+    },
+    {
+      "name": "rejects invalid source shape",
+      "locale": "zh",
+      "raw": {
+        "questions": [
+          {
+            "question": "什么是市场深度？",
+            "options": ["可交易流动性", "价格波动", "情绪判断", "新闻热度"],
+            "answer": 0,
+            "explain": "市场深度衡量当前订单簿可吸收的成交量。",
+            "source": "market-depth"
+          }
+        ]
+      },
+      "expectedIssues": [{ "questionIndex": 0, "code": "invalid-source" }],
+      "expectedAcceptedCount": 0
+    },
+    {
+      "name": "rejects unknown source chapter and unknown source document",
+      "locale": "zh",
+      "raw": {
+        "questions": [
+          {
+            "question": "什么是流动性风险？",
+            "options": ["成交困难", "收益变高", "风险下降", "方向改变"],
+            "answer": 0,
+            "explain": "流动性风险来自无法按预期价格及时成交。",
+            "source": { "chapter": "missing-chapter", "doc": "missing-doc" }
+          },
+          {
+            "question": "什么是止盈单？",
+            "options": ["锁定收益", "扩大亏损", "隐藏仓位", "提高杠杆"],
+            "answer": 0,
+            "explain": "止盈单在价格达到目标时帮助退出并锁定收益。",
+            "source": { "chapter": "spot", "doc": "missing-doc" }
+          }
+        ]
+      },
+      "expectedIssues": [
+        { "questionIndex": 0, "code": "unknown-source-chapter" },
+        { "questionIndex": 1, "code": "unknown-source-doc" }
+      ],
+      "expectedAcceptedCount": 0
+    },
+    {
+      "name": "accepts explicit no-source as long as the question is otherwise valid",
+      "locale": "zh",
+      "raw": {
+        "questions": [
+          {
+            "question": "为什么需要交易日志？",
+            "options": ["复盘交易", "提高收益", "替代学习", "隐藏决策"],
+            "answer": 0,
+            "explain": "交易日志帮助复盘决策质量并识别重复错误。",
+            "source": { "none": true }
+          }
+        ]
+      },
+      "expectedIssues": [],
+      "expectedAcceptedCount": 1
+    },
+    {
+      "name": "locale-specific source validation uses selected title map",
+      "locale": "en",
+      "raw": {
+        "questions": [
+          {
+            "question": "Why should traders use a stop-loss?",
+            "options": ["Limit losses", "Guarantee wins", "Avoid learning", "Hide positions"],
+            "answer": 0,
+            "explain": "A stop-loss reduces the size of a losing trade when the market moves against the plan.",
+            "source": { "chapter": "getting-started", "doc": "position-sizing" }
+          }
+        ]
+      },
+      "expectedIssues": [],
+      "expectedAcceptedCount": 1
+    }
+  ],
+  "relevanceCases": [
+    {
+      "name": "keeps relevant question and removes irrelevant question",
+      "context": "仓位管理与资金管理：每次交易只使用有限资金承担风险。",
+      "minScore": 0.25,
+      "questions": [
+        {
+          "question": "仓位管理的核心目标是什么？",
+          "options": ["控制风险", "提高收益", "增加杠杆", "忽略波动"],
+          "answer": 0,
+          "explain": "仓位管理通过控制单笔风险来保护账户。",
+          "source": { "none": true }
+        },
+        {
+          "question": "如何准备早餐更简单？",
+          "options": ["牛奶", "面包", "鸡蛋", "咖啡"],
+          "answer": 0,
+          "explain": "这是与交易学习无关的问题。",
+          "source": { "none": true }
+        }
+      ],
+      "expectedKeptQuestions": ["仓位管理的核心目标是什么？"]
+    },
+    {
+      "name": "removes all questions when context is empty",
+      "context": "   ",
+      "minScore": 0.25,
+      "questions": [
+        {
+          "question": "什么是止盈单？",
+          "options": ["锁定收益", "扩大亏损", "隐藏仓位", "提高杠杆"],
+          "answer": 0,
+          "explain": "止盈单用于价格达到目标后退出并锁定收益。",
+          "source": { "none": true }
+        }
+      ],
+      "expectedKeptQuestions": []
+    },
+    {
+      "name": "applies configurable threshold boundary",
+      "context": "止损用于控制交易风险。",
+      "minScore": 0.9,
+      "questions": [
+        {
+          "question": "止损有什么作用？",
+          "options": ["控制风险", "提高收益", "增加杠杆", "忽略波动"],
+          "answer": 0,
+          "explain": "止损帮助交易者控制单笔风险。",
+          "source": { "none": true }
+        }
+      ],
+      "expectedKeptQuestions": []
+    }
+  ],
+  "dedupeCases": [
+    {
+      "name": "removes duplicates against existing questions",
+      "threshold": 0.6,
+      "existing": ["什么是止损单？"],
+      "questions": [
+        {
+          "question": "什么是止损单？",
+          "options": ["限制亏损", "提高收益", "增加杠杆", "隐藏风险"],
+          "answer": 0,
+          "explain": "止损单用于价格触及预设位后自动平仓。",
+          "source": { "none": true }
+        }
+      ],
+      "expectedKeptQuestions": []
+    },
+    {
+      "name": "removes near-duplicates within incoming batch",
+      "threshold": 0.6,
+      "existing": [],
+      "questions": [
+        {
+          "question": "什么是止损单？",
+          "options": ["限制亏损", "提高收益", "增加杠杆", "隐藏风险"],
+          "answer": 0,
+          "explain": "止损单用于限制亏损并控制风险。",
+          "source": { "none": true }
+        },
+        {
+          "question": "什么是止损单？",
+          "options": ["减少亏损", "提高收益", "增加杠杆", "隐藏风险"],
+          "answer": 0,
+          "explain": "止损单用于减少亏损并控制风险。",
+          "source": { "none": true }
+        }
+      ],
+      "expectedKeptQuestions": ["什么是止损单？"]
+    },
+    {
+      "name": "keeps distinct questions",
+      "threshold": 0.6,
+      "existing": ["什么是止损单？"],
+      "questions": [
+        {
+          "question": "什么是对称止损？",
+          "options": ["风险对称", "收益更高", "方向相反", "无法判断"],
+          "answer": 0,
+          "explain": "对称止损让潜在盈亏范围保持可比。",
+          "source": { "none": true }
+        },
+        {
+          "question": "什么是止盈单？",
+          "options": ["锁定收益", "扩大亏损", "隐藏仓位", "提高杠杆"],
+          "answer": 0,
+          "explain": "止盈单用于价格达到目标后退出并锁定收益。",
+          "source": { "none": true }
+        }
+      ],
+      "expectedKeptQuestions": ["什么是对称止损？", "什么是止盈单？"]
+    }
+  ],
+  "strategyCases": [
+    {
+      "name": "chapter basic uses five questions",
+      "options": { "locale": "zh", "difficulty": "basic", "chapter": "spot" },
+      "expected": { "expectedCount": 5, "temperature": 0.65, "maxTokens": 2600, "minRelevance": 0.25 }
+    },
+    {
+      "name": "chapter advanced uses five questions with higher budget",
+      "options": { "locale": "en", "difficulty": "advanced", "chapter": "spot" },
+      "expected": { "expectedCount": 5, "temperature": 0.75, "maxTokens": 3200, "minRelevance": 0.32 }
+    },
+    {
+      "name": "variant basic uses three questions",
+      "options": { "locale": "zh", "difficulty": "basic", "variant": true },
+      "expected": { "expectedCount": 3, "maxInputQuestions": 5, "minRelevance": 0.25 }
+    },
+    {
+      "name": "variant advanced uses three questions and advanced budget",
+      "options": { "locale": "en", "difficulty": "advanced", "variant": true },
+      "expected": { "expectedCount": 3, "maxInputQuestions": 5, "maxTokens": 3200, "minRelevance": 0.32 }
+    }
+  ]
+}
