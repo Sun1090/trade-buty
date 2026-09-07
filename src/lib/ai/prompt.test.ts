@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { resolveQuizStrategy } from "../quiz-strategy";
 import { buildRagContext, SYSTEM_PROMPT, pickRandomQuestions, buildQuizPrompt, buildChapterQuizPrompt } from "./prompt";
 
 describe("buildRagContext", () => {
@@ -141,8 +142,12 @@ describe("pickRandomQuestions", () => {
 });
 
 describe("buildChapterQuizPrompt", () => {
+  const basicZh = resolveQuizStrategy({ locale: "zh", difficulty: "basic", chapter: "behavioral-finance" });
+  const basicEn = resolveQuizStrategy({ locale: "en", difficulty: "basic", chapter: "behavioral-finance" });
+  const variantZh = resolveQuizStrategy({ locale: "zh", difficulty: "basic", variant: true });
+
   it("中文 prompt：含章节名、5 题、JSON 格式与教育红线", () => {
-    const msgs = buildChapterQuizPrompt("行为金融", "## 章节：行为金融", "zh");
+    const msgs = buildChapterQuizPrompt("行为金融", "## 章节：行为金融", basicZh);
     expect(msgs[0].role).toBe("system");
     expect(msgs[0].content).toContain("章节：行为金融");
     expect(msgs[0].content).toContain("5 道选择题");
@@ -151,25 +156,25 @@ describe("buildChapterQuizPrompt", () => {
   });
 
   it("英文 locale 出英文题指令", () => {
-    const msgs = buildChapterQuizPrompt("Behavioral Finance", "ctx", "en");
+    const msgs = buildChapterQuizPrompt("Behavioral Finance", "ctx", basicEn);
     expect(msgs[0].content).toContain("strict JSON, English");
     expect(msgs[0].content).toContain("Behavioral Finance");
   });
 
   it("难度档影响出题要求", () => {
-    const basic = buildChapterQuizPrompt("止损", "ctx", "zh", "basic");
-    const adv = buildChapterQuizPrompt("止损", "ctx", "zh", "advanced");
+    const basic = buildChapterQuizPrompt("止损", "ctx", resolveQuizStrategy({ locale: "zh", difficulty: "basic", chapter: "risk-management" }));
+    const adv = buildChapterQuizPrompt("止损", "ctx", resolveQuizStrategy({ locale: "zh", difficulty: "advanced", chapter: "risk-management" }));
     expect(basic[0].content).toContain("入门");
     expect(adv[0].content).toContain("进阶");
   });
 
   it("题目 prompt 要求每题带 source 且给出无引用写法", async () => {
     const { PROMPT_VERSION } = await import("./prompt");
-    expect(PROMPT_VERSION).toBe("v1.3.0");
-    const chapter = buildChapterQuizPrompt("行为金融", "ctx", "zh")[0].content;
+    expect(PROMPT_VERSION).toBe("v1.4.0");
+    const chapter = buildChapterQuizPrompt("行为金融", "ctx", basicZh)[0].content;
     expect(chapter).toContain('"source"');
     expect(chapter).toContain('"none":true');
-    expect(buildQuizPrompt([{ question: "止损", explain: "控制风险。" }], "ctx")[0].content).toContain('"source"');
-    expect(buildQuizPrompt([{ question: "止损", explain: "控制风险。" }], "ctx")[0].content).toContain('"none":true');
+    expect(buildQuizPrompt([{ question: "止损", explain: "控制风险。" }], "ctx", variantZh)[0].content).toContain('"source"');
+    expect(buildQuizPrompt([{ question: "止损", explain: "控制风险。" }], "ctx", variantZh)[0].content).toContain('"none":true');
   });
 });

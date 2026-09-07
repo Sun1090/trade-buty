@@ -3,7 +3,27 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { AiChapterQuizCard } from "./ai-chapter-quiz";
 
-afterEach(cleanup);
+const localStorageMock = (() => {
+  const store = new Map<string, string>();
+  return {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => store.set(key, String(value)),
+    removeItem: (key: string) => store.delete(key),
+    clear: () => store.clear(),
+  };
+})();
+
+vi.stubGlobal("localStorage", localStorageMock);
+Object.defineProperty(window, "localStorage", {
+  value: localStorageMock,
+  configurable: true,
+  writable: true,
+});
+
+afterEach(() => {
+  cleanup();
+  localStorageMock.clear();
+});
 
 const dict = {
   start: "AI 智能出题",
@@ -32,12 +52,19 @@ const questions = [
   },
 ];
 
+interface FetchMockCall {
+  body?: string;
+}
+
 function setup(status = 200, body: unknown = { questions, source: "ai" }) {
-  return vi.fn(async () => ({
+  const mock = vi.fn(async (_input: RequestInfo | URL, _init?: FetchMockCall) => ({
     ok: status < 400,
     status,
     json: async () => body,
-  }) as unknown as Response);
+  }) as unknown as Response) as unknown as ReturnType<typeof vi.fn> & {
+    mock: { calls: FetchMockCall[][] };
+  };
+  return mock;
 }
 
 describe("AiChapterQuizCard", () => {
@@ -45,6 +72,19 @@ describe("AiChapterQuizCard", () => {
     const { container } = render(<AiChapterQuizCard chapter="spot" locale="zh" dict={dict} />);
     expect(screen.getByRole("button", { name: dict.start })).toBeInTheDocument();
     expect(container.textContent).toContain(dict.badge);
+  });
+
+  it("难度选择：写入本地偏好并在生成请求中提交 advanced", async () => {
+    const fetchMock = setup();
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AiChapterQuizCard chapter="spot" locale="zh" dict={dict} />);
+    fireEvent.click(screen.getByRole("button", { name: dict.advanced }));
+    fireEvent.click(screen.getByRole("button", { name: dict.start }));
+    await screen.findByText(questions[0].question);
+
+    expect(localStorageMock.getItem("tb-quiz-difficulty:zh")).toBe("advanced");
+    const init = JSON.parse(fetchMock.mock.calls[0][1]?.body ?? "{}");
+    expect(init).toMatchObject({ chapter: "spot", locale: "zh", difficulty: "advanced" });
   });
 
   it("未登录 401：展示登录引导，不出题", async () => {

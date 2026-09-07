@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { isAiGloballyDisabled } from "@/lib/ai-toggle";
 import { trackAiClick } from "@/lib/analytics";
+import { readQuizDifficulty, writeQuizDifficulty, type QuizDifficulty } from "@/lib/quiz-strategy";
 
 interface AiQuizQuestion {
   question: string;
@@ -51,8 +52,13 @@ export function AiChapterQuizCard({
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
-  const [difficulty, setDifficulty] = useState<"basic" | "advanced">("basic");
+  const [difficulty, setDifficulty] = useState<QuizDifficulty>(() => readQuizDifficulty(locale));
   const [reported, setReported] = useState<Record<number, boolean>>({});
+
+  function changeDifficulty(next: QuizDifficulty) {
+    setDifficulty(next);
+    writeQuizDifficulty(next, locale);
+  }
 
   // R3.9/R3.10：AI 关闭时隐藏入口
   if (aiEnabled === false || isAiGloballyDisabled()) return null;
@@ -126,7 +132,7 @@ export function AiChapterQuizCard({
           {(["basic", "advanced"] as const).map((d) => (
             <button
               key={d}
-              onClick={() => setDifficulty(d)}
+              onClick={() => changeDifficulty(d)}
               className={`rounded-full border px-3 py-1 text-xs transition ${
                 difficulty === d
                   ? "border-accent bg-[var(--accent-dim)] text-accent"

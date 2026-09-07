@@ -5,6 +5,7 @@ import { buildRagContext, buildQuizPrompt, buildChapterQuizPrompt } from "@/lib/
 import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
 import { validateAiQuestions, filterDuplicateQuestions, filterRelevantQuestions } from "@/lib/ai/quiz-gen";
 import { PROMPT_VERSION } from "@/lib/ai/prompt";
+import { resolveQuizStrategy, normalizeQuizDifficulty } from "@/lib/quiz-strategy";
 import { getChapterTitle } from "@/lib/ai/chapters";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { QUIZZES } from "@/lib/quizzes";
@@ -77,12 +78,15 @@ const profile = getRetrievalProfile('quiz');
     // RAG 失败不阻断
   }
 
+  // R11.7：错题变体路径与章节路径共享同一份策略配置。
+  const variantStrategy = resolveQuizStrategy({ locale: "zh", difficulty: "basic", variant: true });
+
   // AI 出题
   try {
     const raw = await chat({
-      messages: buildQuizPrompt(wrongQuestions, ragContext),
-      temperature: 0.7,
-      maxTokens: 2000,
+      messages: buildQuizPrompt(wrongQuestions, ragContext, variantStrategy),
+      temperature: variantStrategy.temperature,
+      maxTokens: variantStrategy.maxTokens,
     });
 
     // 解析 JSON
@@ -92,7 +96,7 @@ const profile = getRetrievalProfile('quiz');
     }
 
     // R11.1/R11.2：错题变体路径也必须使用统一严格校验，避免与章节出题路径产生质量差异。
-    const valid = filterRelevantQuestions(validateAiQuestions(parsed, "zh"), ragContext);
+    const valid = filterRelevantQuestions(validateAiQuestions(parsed, "zh"), ragContext, variantStrategy.minRelevance);
 
     if (valid.length === 0) {
       throw new Error("No valid questions generated");
@@ -114,15 +118,16 @@ async function handleChapterQuiz(
   userId: string,
 ): Promise<NextResponse> {
   const locale = body.locale === "en" ? "en" : "zh";
-  const difficulty = body.difficulty === "advanced" ? "advanced" : "basic";
+  const difficulty = normalizeQuizDifficulty(body.difficulty);
   const chapter = body.chapter as string;
   const chapterTitle = getChapterTitle(locale, chapter);
+  const strategy = resolveQuizStrategy({ locale, difficulty, chapter });
   if (!chapterTitle) {
     return NextResponse.json({ error: "Unknown chapter" }, { status: 400 });
   }
 
   // R2.10 缓存命中直接返回
-  const cacheKey = `${PROMPT_VERSION}::${chapter}::${locale}::${difficulty}`;
+  const cacheKey = `${PROMPT_VERSION}::${strategy.cacheKey}`;
   const cached = quizCache.get(cacheKey);
   if (cached && Date.now() - cached.at < QUIZ_CACHE_TTL) {
     return NextResponse.json({ questions: cached.questions, source: "ai", cached: true });
@@ -144,12 +149,12 @@ async function handleChapterQuiz(
     }
 
     const raw = await chat({
-      messages: buildChapterQuizPrompt(chapterTitle, ragContext, locale, difficulty),
-      temperature: 0.7,
-      maxTokens: 3000,
+      messages: buildChapterQuizPrompt(chapterTitle, ragContext, strategy),
+      temperature: strategy.temperature,
+      maxTokens: strategy.maxTokens,
     });
     const valid = filterDuplicateQuestions(
-      filterRelevantQuestions(validateAiQuestions(JSON.parse(raw), locale), ragContext),
+      filterRelevantQuestions(validateAiQuestions(JSON.parse(raw), locale), ragContext, strategy.minRelevance),
       existingQuestions,
     );
     if (valid.length === 0) throw new Error("No valid questions generated");
