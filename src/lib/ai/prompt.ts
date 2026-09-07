@@ -7,9 +7,10 @@
  * Prompt 版本历史（改 prompt 先加版本、写 changelog，不直接改线上版本）：
  * - v1.0.0 (2026-08)：初版——中立教育五约束 + 回答风格 + 免责
  * - v1.1.0：v1.0 全文保留；问答逻辑未动，仅接入版本管理
- * - v1.2.0 (当前)：输入侧护栏（R1.8）将荐股/收益承诺在路由层直接拒绝，减少模型浪费
+ * - v1.2.0：输入侧护栏（R1.8）将荐股/收益承诺在路由层直接拒绝，减少模型浪费
+ * - v1.3.0 (当前)：AI 出题 schema 增加 source，要求每题绑定可访问知识库章节或显式 none（R11.5/R11.6）
  */
-export const PROMPT_VERSION = "v1.2.0" as const;
+export const PROMPT_VERSION = "v1.3.0" as const;
 
 const SYSTEM_PROMPT_V1 = `你是 Trade Buty 的交易学习助手，帮助用户理解交易知识。
 
@@ -46,6 +47,7 @@ const PROMPT_REGISTRY: Record<string, string> = {
   "v1.0.0": SYSTEM_PROMPT_V1,
   "v1.1.0": SYSTEM_PROMPT_V1,
   "v1.2.0": SYSTEM_PROMPT_V1,
+  "v1.3.0": SYSTEM_PROMPT_V1,
 };
 
 export function getSystemPrompt(version: string = PROMPT_VERSION): string {
@@ -88,9 +90,10 @@ export function buildQuizPrompt(
 2. 题目必须和错题同主题，但换个角度或场景
 3. 每题 4 个选项，1 个正确
 4. 必须附答案解析
+5. 每题必须包含 source：若依据检索内容，用章节/文档 slug；若无知识库依据，必须显式写 {"none":true}
 
 ## 输出格式（严格 JSON）
-{"questions":[{"question":"题目","options":["A","B","C","D"],"answer":0,"explain":"解析"}]}
+{"questions":[{"question":"题目","options":["A","B","C","D"],"answer":0,"explain":"解析","source":{"chapter":"chapter-slug","doc":"doc-slug"}}]}
 
 ## 知识库参考
 ${ragContext}
@@ -130,9 +133,10 @@ export function buildChapterQuizPrompt(
 3. ${count} questions, 4 options each, exactly 1 correct
 4. Every question needs an explanation citing the chapter concept; never write "obviously" style explanations
 5. ${difficultyRule}
+6. Every question needs source: use chapter/doc slugs from the reference, or {"none":true} when there is no knowledge-base source
 
 ## Output format (strict JSON, English)
-{"questions":[{"question":"...","options":["...","...","...","..."],"answer":0,"explain":"..."}]}
+{"questions":[{"question":"...","options":["...","...","...","..."],"answer":0,"explain":"...","source":{"chapter":"chapter-slug","doc":"doc-slug"}}]}
 
 ## Chapter: ${chapterTitle}
 
@@ -146,9 +150,10 @@ ${ragContext}`
 3. ${count} 题，每题 4 个选项，恰好 1 个正确
 4. 每题必须附解析，解析要引用章节概念，禁止「显然」「毫无疑问」式空话
 5. ${difficultyRule}
+6. 每题必须包含 source：优先使用检索内容中的章节/文档 slug；若无知识库依据，必须显式写 {"none":true}
 
 ## 输出格式（严格 JSON）
-{"questions":[{"question":"题目","options":["A","B","C","D"],"answer":0,"explain":"解析"}]}
+{"questions":[{"question":"题目","options":["A","B","C","D"],"answer":0,"explain":"解析","source":{"chapter":"chapter-slug","doc":"doc-slug"}}]}
 
 ## 章节：${chapterTitle}
 

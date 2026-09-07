@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { buildRagContext, SYSTEM_PROMPT, pickRandomQuestions, buildChapterQuizPrompt } from "./prompt";
+import { buildRagContext, SYSTEM_PROMPT, pickRandomQuestions, buildQuizPrompt, buildChapterQuizPrompt } from "./prompt";
 
 describe("buildRagContext", () => {
   it("空数组返回空字符串", () => {
@@ -161,5 +161,15 @@ describe("buildChapterQuizPrompt", () => {
     const adv = buildChapterQuizPrompt("止损", "ctx", "zh", "advanced");
     expect(basic[0].content).toContain("入门");
     expect(adv[0].content).toContain("进阶");
+  });
+
+  it("题目 prompt 要求每题带 source 且给出无引用写法", async () => {
+    const { PROMPT_VERSION } = await import("./prompt");
+    expect(PROMPT_VERSION).toBe("v1.3.0");
+    const chapter = buildChapterQuizPrompt("行为金融", "ctx", "zh")[0].content;
+    expect(chapter).toContain('"source"');
+    expect(chapter).toContain('"none":true');
+    expect(buildQuizPrompt([{ question: "止损", explain: "控制风险。" }], "ctx")[0].content).toContain('"source"');
+    expect(buildQuizPrompt([{ question: "止损", explain: "控制风险。" }], "ctx")[0].content).toContain('"none":true');
   });
 });

@@ -3,7 +3,8 @@ import { chat } from "@/lib/ai/client";
 import { retrieve } from "@/lib/ai/rag";
 import { buildRagContext, buildQuizPrompt, buildChapterQuizPrompt } from "@/lib/ai/prompt";
 import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
-import { validateAiQuestions, filterDuplicateQuestions } from "@/lib/ai/quiz-gen";
+import { validateAiQuestions, filterDuplicateQuestions, filterRelevantQuestions } from "@/lib/ai/quiz-gen";
+import { PROMPT_VERSION } from "@/lib/ai/prompt";
 import { getChapterTitle } from "@/lib/ai/chapters";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { QUIZZES } from "@/lib/quizzes";
@@ -90,11 +91,8 @@ const profile = getRetrievalProfile('quiz');
       throw new Error("Invalid AI response");
     }
 
-    // 校验每道题结构
-    const valid = parsed.questions.filter(
-      (q: { question?: string; options?: string[]; answer?: number; explain?: string }) =>
-        q.question && q.options?.length === 4 && q.answer !== undefined && q.answer >= 0 && q.answer < 4 && q.explain,
-    );
+    // R11.1/R11.2：错题变体路径也必须使用统一严格校验，避免与章节出题路径产生质量差异。
+    const valid = filterRelevantQuestions(validateAiQuestions(parsed, "zh"), ragContext);
 
     if (valid.length === 0) {
       throw new Error("No valid questions generated");
@@ -124,7 +122,7 @@ async function handleChapterQuiz(
   }
 
   // R2.10 缓存命中直接返回
-  const cacheKey = `${chapter}::${locale}::${difficulty}`;
+  const cacheKey = `${PROMPT_VERSION}::${chapter}::${locale}::${difficulty}`;
   const cached = quizCache.get(cacheKey);
   if (cached && Date.now() - cached.at < QUIZ_CACHE_TTL) {
     return NextResponse.json({ questions: cached.questions, source: "ai", cached: true });
@@ -151,7 +149,7 @@ async function handleChapterQuiz(
       maxTokens: 3000,
     });
     const valid = filterDuplicateQuestions(
-      validateAiQuestions(JSON.parse(raw)),
+      filterRelevantQuestions(validateAiQuestions(JSON.parse(raw), locale), ragContext),
       existingQuestions,
     );
     if (valid.length === 0) throw new Error("No valid questions generated");
