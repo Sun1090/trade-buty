@@ -1,5 +1,31 @@
 # Progress
 
+## 2026-09-07 — R12.1 Learning overview card
+
+Implemented the first R12 retention/statistics task as a real, tested stats feature:
+
+- Added `src/lib/learning-overview.ts` with a versioned pure learning overview model for course progress, quiz records, replay practice, and engagement time.
+- Added `src/lib/learning-overview.test.ts` covering stable output, duplicate course progress handling, empty/new status, invalid inputs, and rate sanitization.
+- Integrated the overview into `/[locale]/stats` via `StatsClient`, including an accessible local-data source label and responsive course/quiz/replay/time cards.
+- Added zh/en stats dictionary labels for the overview card.
+- Marked R12.1 complete in `docs/roadmap.md` after tests and UI wiring were added.
+
+Verification recorded:
+
+- Targeted Vitest suite: `npx vitest run src/lib/learning-overview.test.ts` passed with 1 file and 4 tests.
+- Full suite: `npm test` passed with 120 test files and 934 tests.
+- Lint gate: `npm run lint -- --quiet` passed.
+- Typecheck gate: `npm run typecheck` passed after tightening numeric sanitization.
+- Build gate: `npm run build` passed.
+
+Next queue:
+
+1. Commit and push R12.1, then watch GitHub Actions and fix failures.
+2. Continue R12.2 course completion trends and R12.3 quiz score trends with pure aggregators plus stats-page rendering.
+3. Continue R12.4 wrongbook review efficiency and R12.5 replay duration with measurable local data summaries.
+4. Continue the remaining R12 retention suite: streak recovery, personalized next suggestions, local/cloud source labels, time-range filters, empty-state CTAs, export versioning, privacy/cleanup docs, reminder controls, weekly summaries, mobile/performance budgets, consistency checks, no-login degradation, and retention metric audit docs.
+
+
 ## 2026-09-07 — R11.9 AI quiz offline quality fixtures
 
 Implemented offline fixture-driven quality gates for AI quiz generation:

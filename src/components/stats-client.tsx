@@ -18,6 +18,7 @@ function useStreakShareUrl(
 
 
 import { aggregateStats, getUnlockedBadges, BADGES, type LearnStats, type Badge } from "@/lib/learn-stats";
+import { buildLearningOverview, type LearningOverview } from "@/lib/learning-overview";
 import { formatDuration } from "@/lib/reading-time";
 import { DailyGoal } from "@/components/daily-goal";
 import { StudyPlan } from "@/components/study-plan";
@@ -55,6 +56,13 @@ interface StatsDict {
   copyLink: string;
   copiedLink: string;
   totalStudyTime: string;
+  overviewTitle: string;
+  overviewDesc: string;
+  overviewCourses: string;
+  overviewQuizzes: string;
+  overviewReplay: string;
+  overviewTime: string;
+  overviewLocal: string;
   weeklyTitle: string;
   weeklySummaryTpl: string;
   emptyTitle: string;
@@ -82,6 +90,19 @@ export function StatsClient({
 }) {
   const [stats, setStats] = useState<LearnStats | null>(null);
   const progress = useLocalProgress();
+  const overview: LearningOverview | null = stats && progress
+    ? buildLearningOverview({
+        chapters,
+        progress,
+        quizzesDone: stats.quizzesDone,
+        totalQuizzes: stats.totalQuizzes,
+        avgQuizScore: stats.avgQuizScore,
+        replayRounds: stats.replayRounds,
+        replayAccuracy: stats.replayAccuracy,
+        totalStudySeconds: stats.totalStudySeconds,
+        currentStreak: stats.currentStreak,
+      })
+    : null;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -108,7 +129,7 @@ export function StatsClient({
       : null,
   );
 
-  if (!stats) return null;
+  if (!stats || !overview) return null;
 
   const unlocked = getUnlockedBadges(stats);
   const locked = BADGES.filter((b) => !b.check(stats));
@@ -132,7 +153,43 @@ export function StatsClient({
 
   return (
     <div className="space-y-10">
-      {/* 概览卡片 */}
+      {/* R12.1 学习总览卡片 */}
+      <section aria-labelledby="learning-overview-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 id="learning-overview-title" className="text-base font-semibold">{dict.overviewTitle}</h2>
+            <p className="mt-1 text-sm text-muted">{dict.overviewDesc}</p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg)] px-3 py-1 text-xs text-faint" aria-label={dict.overviewLocal}>
+            <span aria-hidden>●</span>
+            {dict.overviewLocal}
+          </span>
+        </div>
+        <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
+            <dt className="text-xs text-faint">{dict.overviewCourses}</dt>
+            <dd className="mt-2 font-mono text-2xl font-bold">{overview.courses.readDocs}/{overview.courses.totalDocs}</dd>
+            <dd className="mt-1 text-xs text-muted">{overview.courses.doneChapters}/{overview.courses.totalChapters} · {overview.courses.completionPct}%</dd>
+          </div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
+            <dt className="text-xs text-faint">{dict.overviewQuizzes}</dt>
+            <dd className="mt-2 font-mono text-2xl font-bold">{overview.quizzes.done}/{overview.quizzes.total}</dd>
+            <dd className="mt-1 text-xs text-muted">{overview.quizzes.bestPct === null ? "—" : `${overview.quizzes.bestPct}%`}</dd>
+          </div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
+            <dt className="text-xs text-faint">{dict.overviewReplay}</dt>
+            <dd className="mt-2 font-mono text-2xl font-bold">{overview.replay.rounds}</dd>
+            <dd className="mt-1 text-xs text-muted">{overview.replay.accuracyPct === null ? "—" : `${overview.replay.accuracyPct}%`}</dd>
+          </div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
+            <dt className="text-xs text-faint">{dict.overviewTime}</dt>
+            <dd className="mt-2 font-mono text-2xl font-bold">{formatDuration(overview.engagement.totalStudySeconds)}</dd>
+            <dd className="mt-1 text-xs text-muted">🔥 {overview.engagement.currentStreak}</dd>
+          </div>
+        </dl>
+      </section>
+
+      {/* 详细统计概览 */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard value={`${stats.overallPct}%`} label={dict.overall} accent />
         <StatCard value={`${stats.readDocs}/${stats.totalDocs}`} label={dict.readDocs} />
