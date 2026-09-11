@@ -1,5 +1,27 @@
 # Progress
 
+## 2026-09-11 — R12.9 Multi-device sync conflict notice
+
+Implemented R12.9 as a truthful, auto-resolving conflict surface for multi-device sync:
+
+- Added `src/lib/sync-conflicts.ts`: pure `detectMergeConflicts()` (daily-goal divergence when both sides explicitly set values, same-key wrongbook SRS/picked divergence with resolution direction), plus `tb-sync-conflicts` record/dismiss storage with per-timestamp dismissal so a genuinely new conflict set re-notifies.
+- `hydrateFromCloud()` now computes conflicts from the pre-merge local snapshot vs. cloud rows and records them after every merge (empty conflicts clear prior records); failure paths never leave stale notices.
+- The stats dashboard shows a dismissible "多设备同步提示 / Multi-device sync note" banner describing the automatic merge rules (local goal wins, newer review plan wins) instead of silently overwriting.
+- Tests cover detection edge cases (one-side-unset is not a conflict, cloud-only keys ignored, resolution direction), storage/dismissal semantics, the hydrate wiring, and banner render/dismiss behavior.
+
+Verification recorded:
+
+- Targeted Vitest suite: `npx vitest run src/lib/sync-conflicts.test.ts src/lib/sync-layer-hydrate.test.ts src/components/stats-client.test.tsx` passed.
+- Full suite: `npm test` passed with 136 test files and 1025 tests.
+- Lint gate: `npm run lint -- --quiet` passed; typecheck gate passed.
+
+Next queue:
+
+1. GitHub auth still needs reconnecting to push the R12 batches and watch CI on PR #1.
+2. Continue the remaining R12 suite: R12.11 empty-state CTA review, R12.12 export versioning, R12.13 privacy settings, R12.14 retention docs, R12.15–R12.17 reminders, R12.18 completion celebration audit, R12.19 editable goals, R12.20 weekly summaries, R12.24 no-login degradation, R12.25 retention metric audit docs.
+
+## 2026-09-11 — R12.23 Stats consistency audit
+
 ## 2026-09-11 — R12.23 Stats consistency audit
 
 Implemented R12.23 as a cross-aggregator reconciliation auditor plus dev-time diagnosis:

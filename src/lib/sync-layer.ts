@@ -5,6 +5,7 @@ import { getSupabaseBrowser } from "@/lib/supabase/client";
 // 避免 sync-queue-store 被打进 layout 的共享 chunk（每个内容页 -12KB gzip）。
 import { lazyEnqueueWrite as enqueueWriteLazy } from "./sync-layer-queue-fallback";
 import { recordCloudSync } from "./cloud-sync-meta";
+import { detectMergeConflicts, recordSyncConflicts } from "./sync-conflicts";
 import type { ProgressMap } from "./progress";
 import type { WrongEntry } from "./wrongbook";
 import type { ReplayRecord } from "./replay-store";
@@ -365,6 +366,22 @@ export async function hydrateFromCloud(id: string) {
     (replayRes?.data as CloudReplay[] | undefined) ?? [],
   );
   emitMergeSummary(summary);
+
+  // R12.9：多设备冲突检测——目标档位分歧 + 错题同键计划分歧，记录供统计页提示
+  try {
+    const localGoalRaw = localStorage.getItem("tb-daily-goal-min");
+    const localGoal = localGoalRaw !== null && Number(localGoalRaw) > 0 ? Number(localGoalRaw) : null;
+    const cloudGoal = settingsRes?.data?.[0]?.daily_goal_min ?? null;
+    const conflicts = detectMergeConflicts({
+      localGoalMin: localGoal,
+      cloudGoalMin: typeof cloudGoal === "number" && cloudGoal > 0 ? cloudGoal : null,
+      localWrong: preMergeWrong,
+      cloudWrong: (wrongRes?.data as CloudWrong[] | undefined) ?? [],
+    });
+    recordSyncConflicts(conflicts);
+  } catch {
+    // 冲突提示是 best-effort，不影响合并
+  }
 
   // R12.8：记录最近一次云端合并时间（统计页数据来源标识用）
   recordCloudSync();

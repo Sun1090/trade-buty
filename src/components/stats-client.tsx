@@ -29,6 +29,7 @@ import { buildNextSuggestion } from "@/lib/next-suggestion";
 import { getStatsRangeDays, setStatsRangeDays, STATS_RANGE_OPTIONS } from "@/lib/stats-range";
 import { getLastCloudSync } from "@/lib/cloud-sync-meta";
 import { auditStatsConsistency } from "@/lib/stats-consistency";
+import { dismissSyncConflicts, readSyncConflicts } from "@/lib/sync-conflicts";
 import { useAuth } from "@/components/auth-provider";
 import { effectiveSrs, isSrsDue } from "@/lib/srs";
 import { localDateStr } from "@/lib/date-utils";
@@ -50,6 +51,51 @@ import { StreakShareCard } from "@/components/streak-share-card";
 import { encodeStreak } from "@/lib/share-decode";
 import type { StatsDict } from "@/lib/i18n-stats";
 import { getRecentDays } from "@/lib/streak";
+
+function subscribeConflictEvent(cb: () => void) {
+  window.addEventListener("tb-sync-conflict", cb);
+  return () => window.removeEventListener("tb-sync-conflict", cb);
+}
+
+/** R12.9：多设备冲突提示横幅（读取原始字符串作稳定快照，避免每次渲染新对象） */
+function SyncConflictNotice({ labels }: { labels: { title: string; bodyTpl: string; dismiss: string } }) {
+  const raw = useSyncExternalStore(
+    subscribeConflictEvent,
+    () => (typeof window === "undefined" ? null : localStorage.getItem("tb-sync-conflicts")),
+    () => null,
+  );
+  const dismissedAt = useSyncExternalStore(
+    subscribeConflictEvent,
+    () => (typeof window === "undefined" ? null : localStorage.getItem("tb-sync-conflicts-dismissed")),
+    () => null,
+  );
+  let record: ReturnType<typeof readSyncConflicts> = null;
+  try {
+    record = raw ? (JSON.parse(raw) as ReturnType<typeof readSyncConflicts>) : null;
+  } catch {
+    record = null;
+  }
+  if (!record || record.items.length === 0) return null;
+  if (dismissedAt === String(record.at)) return null;
+
+  return (
+    <section aria-label={labels.title} className="rounded-2xl border border-[var(--info)]/40 bg-[var(--surface)] p-4 flex flex-wrap items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold">🔄 {labels.title}</p>
+        <p className="mt-1 text-sm text-muted leading-relaxed">
+          {labels.bodyTpl.replace("{n}", String(record.items.length))}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => dismissSyncConflicts(record.at)}
+        className="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs text-muted hover:border-accent/50 transition"
+      >
+        {labels.dismiss}
+      </button>
+    </section>
+  );
+}
 
 function StatCard({ value, label, accent }: { value: string | number; label: string; accent?: boolean }) {
   return (
@@ -309,6 +355,15 @@ export function StatsClient({
           </a>
         </section>
       )}
+
+      {/* R12.9：多设备同步冲突提示（自动合并后可关闭） */}
+      <SyncConflictNotice
+        labels={{
+          title: dict.conflictTitle,
+          bodyTpl: dict.conflictBodyTpl,
+          dismiss: dict.conflictDismiss,
+        }}
+      />
 
       {/* R12.10：时间范围筛选（作用于下面四组趋势） */}
       <div className="flex items-center justify-end gap-2" role="group" aria-label={dict.rangeLabel}>

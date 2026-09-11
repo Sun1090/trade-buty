@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { StatsClient } from "./stats-client";
 
 const store = new Map<string, string>();
@@ -92,6 +92,9 @@ const dict = {
   sourceLocal: "This device",
   sourceCloud: "Local + cloud",
   sourceSyncedTpl: "Last cloud sync {t}",
+  conflictTitle: "Multi-device sync note",
+  conflictBodyTpl: "{n} item(s) differ from another device and were merged automatically.",
+  conflictDismiss: "Got it",
   replayTrendTitle: "Replay practice time",
   replayTrendDesc: "Replay trend description",
   replayTrendEmpty: "No replay rounds",
@@ -306,5 +309,30 @@ describe("StatsClient data source label (R12.8)", () => {
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
     expect(await screen.findByLabelText("This device")).toBeInTheDocument();
     expect(screen.queryByText(/Last cloud sync/)).not.toBeInTheDocument();
+  });
+});
+
+describe("StatsClient sync conflict notice (R12.9)", () => {
+  it("shows the notice when conflicts were recorded and hides it after dismiss", async () => {
+    localStorage.setItem(
+      "tb-sync-conflicts",
+      JSON.stringify({ at: 1234, items: [{ kind: "goal", key: "daily-goal-min", local: "15", cloud: "30", resolution: "kept-local" }] }),
+    );
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    expect(await screen.findByLabelText("Multi-device sync note")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Got it" }));
+    expect(screen.queryByLabelText("Multi-device sync note")).not.toBeInTheDocument();
+    expect(localStorage.getItem("tb-sync-conflicts-dismissed")).toBe("1234");
+  });
+
+  it("stays hidden for an already-dismissed record and for no record", async () => {
+    localStorage.setItem(
+      "tb-sync-conflicts",
+      JSON.stringify({ at: 42, items: [{ kind: "wrongbook", key: "spot:1", local: "1/—", cloud: "3/—", resolution: "took-cloud" }] }),
+    );
+    localStorage.setItem("tb-sync-conflicts-dismissed", "42");
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    await screen.findByRole("button", { name: "Last 7 days" });
+    expect(screen.queryByLabelText("Multi-device sync note")).not.toBeInTheDocument();
   });
 });

@@ -213,6 +213,37 @@ describe("hydrateFromCloud", () => {
     expect(merged["futures"]).toEqual(["margin"]);
   });
 
+  it("R12.9：目标档位分歧与错题计划分歧写入 tb-sync-conflicts", async () => {
+    // 本机显式设 15 分钟；云端 goal=30 + 云端同键错题 SRS 不同
+    memStore.set("tb-daily-goal-min", "15");
+    memStore.set("tb-wrong", JSON.stringify({
+      "spot:1": { chapterNum: "spot", questionIdx: 1, picked: 0, at: 1000, srsStage: 1, srsDue: "2026-09-20" },
+    }));
+    mockSettingsSelect.mockResolvedValueOnce({ data: [{ daily_goal_min: 30, theme: null }] });
+    mockWrongSelect.mockResolvedValueOnce({
+      data: [{
+        chapter_num: "spot", question_idx: 1, picked: 2,
+        answered_at: new Date(2000).toISOString(), srs_stage: 3, srs_due: "2026-09-25",
+      }],
+    });
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await hydrateFromCloud("user-123");
+    const record = JSON.parse(memStore.get("tb-sync-conflicts")!);
+    expect(record.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "goal", resolution: "kept-local" }),
+        expect.objectContaining({ kind: "wrongbook", key: "spot:1", resolution: "took-cloud" }),
+      ]),
+    );
+  });
+
+  it("R12.9：无分歧时清空旧冲突记录", async () => {
+    memStore.set("tb-sync-conflicts", JSON.stringify({ at: 1, items: [{ kind: "goal", key: "k", local: "a", cloud: "b", resolution: "kept-local" }] }));
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await hydrateFromCloud("user-123");
+    expect(memStore.has("tb-sync-conflicts")).toBe(false);
+  });
+
   it("R12.8：云端合并成功后记录 tb-last-cloud-sync 时间戳", async () => {
     mockProgressSelect.mockResolvedValueOnce({ data: [{ chapter_num: "c", doc_slug: "d" }] });
     const { hydrateFromCloud } = await import("./sync-layer");
