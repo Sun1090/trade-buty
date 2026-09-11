@@ -1,5 +1,26 @@
 # Progress
 
+## 2026-09-11 — R12.25 Retention metric definitions & audit doc — R12 complete
+
+Closed R12 with `docs/retention-metrics.md`, an honest retention-metrics constitution:
+
+- §0 records the binding constraint: no server-side cohort analytics exists by design (privacy constitution), so every metric is defined as locally computable or computable from the user's own export.
+- §1 defines the metrics with exact data sources: active learning day (≥60s in the study-time ledger), 7-day active days/minutes, weekly goal attainment, streak semantics (truthful `tb-streak` increment/break behavior, longest as monotonic max counter), revisit proxy, due-review visibility, and the R12.23 cross-surface consistency invariant — plus explicit "NOT retention metrics" exclusions.
+- §2 audits trim policies (90-day study ledger, 100-round replay history) and bans labeling trimmed numbers as "all-time" — matching the R12.14 privacy-page wording.
+- §3 ties to the R12.24 no-login parity contract; §4 leaves an audit checklist including a gate that any future server-side retention telemetry must be reviewed here first.
+
+Verification recorded:
+
+- Doc claims were checked against code (`streak.ts`, `study-time.ts`, `replay-store.ts`, `wrongbook.ts`); the longest-streak wording was corrected to match the monotonic `tb-streak.longest` counter.
+- Roadmap: all 25 R12 items are now complete.
+
+Next queue:
+
+1. Watch PR #1 CI after this push; consider squashing/merging once the whole milestone is verified on production CI.
+2. Next milestone suite per roadmap: R13 feedback loop / P2 quality (chapter-level quizzes expansion, share quality, etc.) or the governance backlog.
+
+## 2026-09-11 — R12.13 Privacy entry review + R12.14 Data retention notes
+
 ## 2026-09-11 — R12.13 Privacy entry review + R12.14 Data retention notes
 
 R12.13 review found a real gap: the privacy page (`/privacy`, R9.x) was an orphan — no link existed anywhere in the app chrome:
