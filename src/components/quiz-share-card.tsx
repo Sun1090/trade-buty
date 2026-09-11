@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CARD_SIZE, drawQuizCard, type ShareLocale } from "@/lib/share-card";
+import { CARD_SIZE, cardFontFor, drawQuizCard, type ShareLocale } from "@/lib/share-card";
 import { downloadCanvasAsPng } from "@/lib/download";
 import { CopyLinkButton } from "@/components/copy-link-button";
 
@@ -43,6 +43,12 @@ export function QuizShareCard({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const percent = total > 0 ? (score / total) * 100 : 0;
   const filename = `trade-buty-quiz-${slugify(chapterTitle)}.png`;
+  // R13.2：预览图 alt 必须能被读屏复述出卡片内容，而不只是「预览图」
+  const pctText = Math.round(percent * 10) / 10;
+  const contentAlt =
+    locale === "zh"
+      ? `${labels.previewAlt}：随堂测成绩，章节「${chapterTitle}」，共 ${score}/${total}（${pctText}%）`
+      : `${labels.previewAlt}: quiz result card for "${chapterTitle}", ${score}/${total} (${pctText}%)`;
 
   // 卸载预览 URL 避免内存泄漏
   useEffect(() => {
@@ -69,7 +75,7 @@ export function QuizShareCard({
       locale,
       theme: "dark",
       siteName,
-      font: locale === "zh" ? '"PingFang SC", "Microsoft YaHei", sans-serif' : "system-ui, sans-serif",
+      font: cardFontFor(locale),
     });
   }, [chapterTitle, score, total, percent, locale, siteName]);
 
@@ -135,7 +141,7 @@ export function QuizShareCard({
           <p className="text-xs text-faint mb-2 font-mono">{labels.previewAlt}</p>
           <img
             src={previewUrl}
-            alt={labels.previewAlt}
+            alt={contentAlt}
             width={CARD_SIZE / 2}
             height={CARD_SIZE / 2}
             className="block max-w-full h-auto rounded-lg border border-[var(--border)]"

@@ -139,7 +139,8 @@ describe("StreakShareCard", () => {
       () => {
         const img = container.querySelector("img");
         expect(img).toBeTruthy();
-        expect(img?.getAttribute("alt")).toBe("连续打卡卡预览");
+        expect(img?.getAttribute("alt")).toMatch(/^连续打卡卡预览：/);
+        expect(img?.getAttribute("alt")).toContain("已连续 5 天");
       },
       { timeout: 2000 },
     );

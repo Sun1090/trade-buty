@@ -1,5 +1,26 @@
 # Progress
 
+## 2026-09-11 — R13.1 Unified share-card template + R13.2 Shared fonts and accessible alt text
+
+Started the R13 share/mobile/growth suite with the two card-system foundations:
+
+- `src/lib/share-card.ts` gains the template skeleton: exported `CARD_LAYOUT` layout constants (heading/meta/hero/metric-line/footer anchors) plus `drawCardHeading`, `drawHeroValue`, and `drawCardMetricLine`. All three card types (quiz, replay, streak) were refactored onto the shared helpers so future cards cannot fork random coordinates; `drawBrandFooter` reads padding from the layout constants. New tests assert anchor ordering and that the helpers paint at the unified coordinates.
+- New `cardFontFor(locale)` helper replaced four independently hardcoded font stacks (three share components + share-card-preview), adding Noto Sans CJK fallback for Linux and explicit Segoe UI for Windows.
+- Accessibility upgrade: preview `<img>` alt now narrates the card contents (e.g. "回放卡预览：回放战绩卡，BTCUSDT · 1h，准确率 70%…") instead of a bare "preview" placeholder, in both locales; existing tests were upgraded to the new contract rather than relaxed.
+
+Verification recorded:
+
+- Targeted Vitest suites: `share-card.test.ts` (51 tests incl. new R13.1 specs) and all three share component suites passed.
+- Full suite: `npm test` passed with 140 test files and 1065 tests.
+- Lint gate: `npm run lint -- --quiet` passed; typecheck gate passed.
+
+Next queue:
+
+1. Watch PR #1 CI after this push.
+2. Continue R13: R13.3 share link param whitelist, R13.4 share landing privacy redaction, R13.5 OG image error degradation, R13.6 download failure feedback, then the mobile/perf/SEO batch.
+
+## 2026-09-11 — R12.25 Retention metric definitions & audit doc — R12 complete
+
 ## 2026-09-11 — R12.25 Retention metric definitions & audit doc — R12 complete
 
 Closed R12 with `docs/retention-metrics.md`, an honest retention-metrics constitution:

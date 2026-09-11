@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CARD_SIZE, drawReplayCard, type ShareLocale } from "@/lib/share-card";
+import { CARD_SIZE, cardFontFor, drawReplayCard, type ShareLocale } from "@/lib/share-card";
 import { downloadCanvasAsPng } from "@/lib/download";
 import { CopyLinkButton } from "@/components/copy-link-button";
 
@@ -45,6 +45,11 @@ export function ReplayShareCard({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const filename = `trade-buty-replay-${slugify(symbol)}-${slugify(interval)}.png`;
+  // R13.2：预览图 alt 描述卡片内容（准确率/命中/连胜），读屏可复述
+  const contentAlt =
+    locale === "zh"
+      ? `${labels.previewAlt}：回放战绩卡，${symbol} · ${interval}，准确率 ${Math.round(accuracy * 100)}%（命中 ${correct}/${total}），最佳连胜 ${bestStreak}`
+      : `${labels.previewAlt}: replay result card for ${symbol} ${interval}, accuracy ${Math.round(accuracy * 100)}% (${correct}/${total} correct), best streak ${bestStreak}`;
 
   useEffect(() => {
     return () => {
@@ -73,7 +78,7 @@ export function ReplayShareCard({
       locale,
       theme: "dark",
       siteName,
-      font: locale === "zh" ? '"PingFang SC", "Microsoft YaHei", sans-serif' : "system-ui, sans-serif",
+      font: cardFontFor(locale),
     });
   }, [symbol, interval, correct, total, accuracy, bestStreak, currentStreak, locale, siteName]);
 
@@ -138,7 +143,7 @@ export function ReplayShareCard({
           <p className="text-xs text-faint mb-2 font-mono">{labels.previewAlt}</p>
           <img
             src={previewUrl}
-            alt={labels.previewAlt}
+            alt={contentAlt}
             width={CARD_SIZE / 2}
             height={CARD_SIZE / 2}
             className="block max-w-full h-auto rounded-lg border border-[var(--border)]"

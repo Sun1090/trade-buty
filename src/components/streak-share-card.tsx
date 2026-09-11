@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CARD_SIZE, drawStreakCard, type ShareLocale } from "@/lib/share-card";
+import { CARD_SIZE, cardFontFor, drawStreakCard, type ShareLocale } from "@/lib/share-card";
 import { downloadCanvasAsPng } from "@/lib/download";
 import { CopyLinkButton } from "@/components/copy-link-button";
 
@@ -39,6 +39,11 @@ export function StreakShareCard({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const filename = `trade-buty-streak-${currentStreak}d.png`;
+  // R13.2：预览图 alt 描述连续天数与历史最长，读屏可复述
+  const contentAlt =
+    locale === "zh"
+      ? `${labels.previewAlt}：连续学习打卡卡，已连续 ${currentStreak} 天，历史最长 ${longestStreak} 天`
+      : `${labels.previewAlt}: study streak card, ${currentStreak} days in a row, longest ${longestStreak} days`;
   const disabled = currentStreak <= 0;
 
   useEffect(() => {
@@ -65,7 +70,7 @@ export function StreakShareCard({
       locale,
       theme: "dark",
       siteName,
-      font: locale === "zh" ? '"PingFang SC", "Microsoft YaHei", sans-serif' : "system-ui, sans-serif",
+      font: cardFontFor(locale),
     });
   }, [disabled, currentStreak, longestStreak, recentDays, locale, siteName]);
 
@@ -135,7 +140,7 @@ export function StreakShareCard({
           <p className="text-xs text-faint mb-2 font-mono">{labels.previewAlt}</p>
           <img
             src={previewUrl}
-            alt={labels.previewAlt}
+            alt={contentAlt}
             width={CARD_SIZE / 2}
             height={CARD_SIZE / 2}
             className="block max-w-full h-auto rounded-lg border border-[var(--border)]"

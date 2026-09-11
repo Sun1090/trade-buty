@@ -129,7 +129,8 @@ describe("ReplayShareCard", () => {
       () => {
         const img = container.querySelector("img");
         expect(img).toBeTruthy();
-        expect(img?.getAttribute("alt")).toBe("回放卡预览");
+        expect(img?.getAttribute("alt")).toMatch(/^回放卡预览：/);
+        expect(img?.getAttribute("alt")).toContain("BTCUSDT");
       },
       { timeout: 2000 },
     );

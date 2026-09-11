@@ -155,7 +155,8 @@ describe("QuizShareCard", () => {
       () => {
         const img = container.querySelector("img");
         expect(img).toBeTruthy();
-        expect(img?.getAttribute("alt")).toBe("预览卡");
+        expect(img?.getAttribute("alt")).toMatch(/^预览卡：/);
+        expect(img?.getAttribute("alt")).toContain("入门基础");
       },
       { timeout: 2000 },
     );
