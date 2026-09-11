@@ -93,7 +93,7 @@ describe("R12.24 guest-mode stats degradation", () => {
     fireEvent.click(await screen.findByRole("button", { name: zh.dataExportBtn }));
 
     expect(createObjectURL).toHaveBeenCalledOnce();
-    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    const blob = (createObjectURL.mock.calls[0] as unknown[])[0] as Blob;
     const parsed = JSON.parse(await blob.text());
     expect(parsed.format).toBe("trade-buty-stats-export");
     expect(parsed.version).toBe(1);
