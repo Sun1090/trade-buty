@@ -45,6 +45,15 @@ export default async function PrivacyPage({ params }: PageProps<"/[locale]/priva
       </section>
       <PrivacyDataExport locale={locale} />
       <section className="space-y-3">
+        <h2 className="text-lg font-semibold">{locale === "en" ? "Data retention & cleanup" : "数据保留与清理"}</h2>
+        <p>{locale === "en"
+          ? "Local data lives only in your browser's localStorage and stays until you clear site data — nothing expires on the server because nothing lives on the server before you log in. Built-in trims keep the footprint small: the study-time ledger keeps the most recent 90 days and market replay history keeps the latest 100 rounds."
+          : "本机数据只存活于浏览器 localStorage，直到你清除站点数据为止——未登录时服务器上没有任何数据，因此也没有服务端过期之说。为控制体积，学习时长台账仅保留最近 90 天，行情回放历史仅保留最近 100 轮。"}</p>
+        <p>{locale === "en"
+          ? "Cloud data (only after you log in) is kept while your account exists so learning progress survives across devices. Pending offline writes are retried until they sync or the account is removed. To delete everything, sign in and use the account menu → Delete account: it removes all cloud rows for your account (progress, mistake log, quiz scores, replay history, settings) and clears local data on that device."
+          : "云端数据（仅在登录后存在）在你的账户存续期间保留，用于多设备同步；离线写入队列会持续重试，直到同步成功或账户被删除。如需彻底清理：登录后在账户菜单选择「删除账户」，将删除该账户的全部云端数据（进度、错题、测验成绩、回放历史、设置）并清除本机数据。"}</p>
+      </section>
+      <section className="space-y-3">
         <h2 className="text-lg font-semibold">{locale === "en" ? "Contact" : "联系方式"}</h2>
         <p>{locale === "en" ? "For privacy concerns, open an issue at github.com/Sun1090/trade-buty." : "如有隐私相关问题，请在 github.com/Sun1090/trade-buty 提 issue。"}</p>
       </section>

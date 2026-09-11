@@ -340,6 +340,7 @@ const zh = {
     navHeading: "导航",
     source: "内容来源 kline-buty",
     feedback: "反馈建议",
+    privacy: "隐私政策",
     copyright: "© 2026 sun1090 · MIT License",
   },
   pageMeta: {
@@ -695,6 +696,7 @@ const en: Dict = {
     navHeading: "Navigate",
     source: "Content from kline-buty",
     feedback: "Feedback",
+    privacy: "Privacy Policy",
     copyright: "© 2026 sun1090 · MIT License",
   },
   pageMeta: {
