@@ -32,6 +32,7 @@ import { readReviewAttemptLedger } from "@/lib/review-attempt-ledger";
 import { readWrong } from "@/lib/wrongbook";
 import { formatDuration } from "@/lib/reading-time";
 import { DailyGoal } from "@/components/daily-goal";
+import { StreakRecoveryCard } from "@/components/streak-recovery-card";
 import { StudyPlan } from "@/components/study-plan";
 import { useLocalProgress } from "@/components/use-local-progress";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
@@ -312,6 +313,20 @@ export function StatsClient({
           unit: dict.goalMinUnit,
           set: dict.goalSet,
           reassureTpl: dict.streakReassureTpl,
+        }}
+      />
+
+      {/* R12.6：断档恢复提示（断签且今日未破零时出现） */}
+      <StreakRecoveryCard
+        hasUnfinishedChapter={chapters.some((c) => (progress?.[c.slug]?.length ?? 0) < c.docCount)}
+        locale={locale}
+        labels={{
+          title: dict.recoveryTitle,
+          bodyTpl: dict.recoveryBodyTpl,
+          reviewTpl: dict.recoveryReviewTpl,
+          continueLabel: dict.recoveryContinue,
+          replayLabel: dict.recoveryReplay,
+          later: dict.recoveryLater,
         }}
       />
 

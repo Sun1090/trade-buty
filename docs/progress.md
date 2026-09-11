@@ -1,5 +1,26 @@
 # Progress
 
+## 2026-09-11 — R12.6 Gentle streak recovery prompt
+
+Implemented R12.6 as a fact-only, action-oriented recovery card (distinct from R4.3's fact reassurance inside DailyGoal):
+
+- Added `src/lib/streak-recovery.ts`: `buildStreakRecovery()` pure decision function — shows only when the streak actually broke AND today has zero study minutes (hides automatically once the user restarts, so no nagging).
+- Action priority derived from real local data: due SRS reviews first, then continue an unfinished chapter, else a replay warm-up; capped at two actions with localized hrefs.
+- Added `src/components/streak-recovery-card.tsx` on `/[locale]/stats` with useSyncExternalStore subscriptions (auto-hides when today goes above zero), a per-day "later" dismiss (`tb-recovery-dismissed`), and accessible section labeling.
+- Added zh/en stats labels for the recovery card.
+
+Verification recorded:
+
+- Targeted Vitest suite: `npx vitest run src/lib/streak-recovery.test.ts src/components/streak-recovery-card.test.tsx src/components/stats-client.test.tsx` passed with 3 files and 18 tests.
+- Full suite: `npm test` passed with 130 test files and 990 tests.
+- Lint gate: `npm run lint -- --quiet` passed; `npm run check:ai-copy` passed.
+- Typecheck gate: `npm run typecheck` passed.
+
+Next queue:
+
+1. Watch GitHub Actions on PR #1 and fix any failures.
+2. Continue R12.7 personalized next suggestions and the remaining R12 retention suite: R12.8 local/cloud source labels, R12.9 sync conflict notice, R12.10 time-range filters, R12.11 empty-state CTA review, R12.12 export versioning, R12.13 privacy settings, R12.14 retention docs, R12.15–R12.17 reminders, R12.18 completion celebration audit, R12.19 editable goals, R12.20 weekly summaries, R12.21 mobile layout, R12.23 consistency checks, R12.24 no-login degradation, R12.25 retention metric audit docs.
+
 ## 2026-09-11 — R12.5 Replay practice time trend
 
 Implemented R12.5 as local-data-first replay practice duration statistics with no fabricated durations:
