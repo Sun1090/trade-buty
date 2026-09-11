@@ -30,6 +30,8 @@ import { getStatsRangeDays, setStatsRangeDays, STATS_RANGE_OPTIONS } from "@/lib
 import { getLastCloudSync } from "@/lib/cloud-sync-meta";
 import { auditStatsConsistency } from "@/lib/stats-consistency";
 import { dismissSyncConflicts, readSyncConflicts } from "@/lib/sync-conflicts";
+import { buildStatsExport, downloadStatsExport } from "@/lib/stats-export";
+import { getDailyGoalMin } from "@/lib/daily-goal";
 import { useAuth } from "@/components/auth-provider";
 import { effectiveSrs, isSrsDue } from "@/lib/srs";
 import { localDateStr } from "@/lib/date-utils";
@@ -516,6 +518,44 @@ export function StatsClient({
         <StatCard value={`${stats.quizzesDone}/${stats.totalQuizzes}`} label={dict.quizzes} />
         <StatCard value={stats.replayRounds} label={dict.replay} />
       </div>
+
+      {/* R12.12：版本化数据导出（本地生成，不上传） */}
+      <section aria-labelledby="stats-export-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p id="stats-export-title" className="text-xs font-semibold uppercase tracking-wide text-faint">{dict.dataExportTitle}</p>
+          <p className="mt-1 text-xs text-muted leading-relaxed">{dict.dataExportDesc}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const payload = buildStatsExport({
+              locale,
+              courses: overview.courses,
+              quizzes: overview.quizzes,
+              replay: {
+                rounds: overview.replay.rounds,
+                accuracyPct: overview.replay.accuracyPct,
+                bestStreak: Math.max(replayBestStreak, replayTrend!.allTime.bestStreak),
+              },
+              review: {
+                pending: reviewTrend!.latest.pending,
+                dueToday: reviewTrend!.latest.dueToday,
+                overdue: reviewTrend!.latest.overdue,
+              },
+              engagement: {
+                totalStudySeconds: overview.engagement.totalStudySeconds,
+                currentStreak: overview.engagement.currentStreak,
+                longestStreak: stats.longestStreak,
+              },
+              goals: { dailyGoalMinutes: getDailyGoalMin() },
+            });
+            downloadStatsExport(payload);
+          }}
+          className="rounded-full border border-accent/40 bg-[var(--accent-dim)] px-4 py-1.5 text-xs font-medium text-accent hover:border-accent transition"
+        >
+          {dict.dataExportBtn}
+        </button>
+      </section>
 
       {/* 每日目标 */}
       <DailyGoal

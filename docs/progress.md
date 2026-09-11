@@ -1,5 +1,26 @@
 # Progress
 
+## 2026-09-11 — R12.12 Versioned stats data export
+
+Implemented R12.12 as a local, versioned JSON export on the stats dashboard:
+
+- Added `src/lib/stats-export.ts`: `buildStatsExport()` (pure, injectable clock) emits `{ format: "trade-buty-stats-export", version: 1, exportedAt, locale, data }` with stable field names for courses/quizzes/replay/review/engagement/goals; all numeric inputs clamped so corrupt local state never produces NaN/negative garbage; `serializeStatsExport()` + `downloadStatsExport()` (blob + temp anchor, dated filename).
+- Export button on the stats overview grid builds the payload from the live models — zero network calls (privacy-constitution compliant), labels bilingual.
+- Tests: field-shape/version assertions, corrupt-input sanitization, null-percentage and locale coercion, JSON round-trip, and the download helper wiring.
+
+Verification recorded:
+
+- Targeted Vitest suite: `npx vitest run src/lib/stats-export.test.ts src/components/stats-client.test.tsx` passed (24 tests).
+- Full suite: `npm test` passed with 137 test files and 1034 tests.
+- Lint gate: `npm run lint -- --quiet` passed; typecheck gate passed; `npm run check:ai-copy` passed.
+
+Next queue:
+
+1. Watch PR #1 CI after this push.
+2. Continue the remaining R12 suite: R12.13 privacy settings entry review, R12.14 retention docs, R12.15–R12.17 reminders, R12.18 completion celebration audit, R12.19 editable goals, R12.20 weekly summaries, R12.24 no-login degradation, R12.25 retention metric audit docs.
+
+## 2026-09-11 — R12.11 Per-section empty-state CTAs on stats
+
 ## 2026-09-11 — R12.11 Per-section empty-state CTAs on stats
 
 Implemented R12.11 as actionable empty states inside each stats trend section (the page-level new-user CTA from R4.5 only covers the all-zero case):
