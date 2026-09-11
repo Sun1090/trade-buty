@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getChapters } from "@/lib/content";
+import { getChapters, getDocMetas } from "@/lib/content";
 import { isLocale, LOCALES } from "@/lib/i18n";
 import { getStatsDict } from "@/lib/i18n-stats";
 import { buildPageMetadata } from "@/lib/metadata";
@@ -30,7 +30,12 @@ export default async function StatsPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const t = getStatsDict(locale);
-  const chapters = getChapters(locale).map((c) => ({ slug: c.slug, docCount: c.docCount }));
+  const chapters = getChapters(locale).map((c) => ({
+    slug: c.slug,
+    title: c.title,
+    docCount: c.docCount,
+    docs: getDocMetas(locale, c.slug).map((d) => ({ slug: d.slug, title: d.title })),
+  }));
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-5 py-10 sm:py-14">

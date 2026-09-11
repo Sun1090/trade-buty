@@ -25,6 +25,9 @@ import { buildLearningOverview, type LearningOverview } from "@/lib/learning-ove
 import { buildQuizScoreTrend } from "@/lib/quiz-score-trend";
 import { buildWrongbookEfficiency } from "@/lib/wrongbook-efficiency";
 import { buildReplayTimeTrend } from "@/lib/replay-time-trend";
+import { buildNextSuggestion } from "@/lib/next-suggestion";
+import { effectiveSrs, isSrsDue } from "@/lib/srs";
+import { localDateStr } from "@/lib/date-utils";
 import { readReplayHistory, readReplayBest } from "@/lib/replay-store";
 import { readProgressCompletions } from "@/lib/progress";
 import { readQuizAttemptLedger } from "@/lib/quiz-attempt-ledger";
@@ -58,7 +61,7 @@ export function StatsClient({
   dict,
   locale = "en",
 }: {
-  chapters: { slug: string; docCount: number }[];
+  chapters: { slug: string; docCount: number; title?: string; docs?: { slug: string; title: string }[] }[];
   dict: StatsDict;
   locale?: string;
 }) {
@@ -94,6 +97,53 @@ export function StatsClient({
   const replayBestStreak = typeof window === "undefined" ? 0 : readReplayBest();
   const replayTrend = stats && progress
     ? buildReplayTimeTrend({ history: replayHistory, days: 7 })
+    : null;
+  // R12.7：下一步学习建议（本地数据推导，复习 > 新学 > 测验 > 回放）
+  const dueReviewCount = typeof window === "undefined"
+    ? 0
+    : Object.values(wrongEntries).filter((entry) =>
+        isSrsDue(effectiveSrs(entry).due, localDateStr()),
+      ).length;
+  const nextUnread = progress
+    ? (() => {
+        for (const chapter of chapters) {
+          const read = new Set(progress[chapter.slug] ?? []);
+          const unread = (chapter.docs ?? []).find((doc) => !read.has(doc.slug));
+          if (unread) {
+            return {
+              chapter: chapter.slug,
+              chapterTitle: chapter.title ?? chapter.slug,
+              doc: unread.slug,
+              docTitle: unread.title ?? unread.slug,
+            };
+          }
+        }
+        return null;
+      })()
+    : null;
+  const pendingQuizChapter = progress
+    ? (() => {
+        for (const chapter of chapters) {
+          if (chapter.docCount <= 0) continue;
+          const readCount = (progress[chapter.slug] ?? []).length;
+          if (readCount < chapter.docCount) continue;
+          const quizEntry = quizProgress[chapter.slug];
+          const quizDone = Boolean(quizEntry?.done) || (quizEntry?.best ?? 0) > 0;
+          if (!quizDone) {
+            return { chapter: chapter.slug, chapterTitle: chapter.title ?? chapter.slug };
+          }
+        }
+        return null;
+      })()
+    : null;
+  const nextSuggestion = stats && progress
+    ? buildNextSuggestion({
+        dueReviews: dueReviewCount,
+        nextUnread,
+        pendingQuizChapter,
+        replayRounds: stats.replayRounds,
+        locale,
+      })
     : null;
   const overview: LearningOverview | null = stats && progress
     ? buildLearningOverview({
@@ -193,6 +243,28 @@ export function StatsClient({
           </div>
         </dl>
       </section>
+
+      {/* R12.7：个性化下一步学习建议 */}
+      {nextSuggestion && (
+        <section aria-labelledby="next-suggestion-title" className="rounded-2xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-5">
+          <p id="next-suggestion-title" className="text-xs font-semibold uppercase tracking-wide text-accent">{dict.nextTitle}</p>
+          <p className="mt-2 font-semibold">
+            {nextSuggestion.kind === "review" && dict.nextDueReviewTpl.replace("{n}", String(nextSuggestion.count ?? 0))}
+            {nextSuggestion.kind === "read" && dict.nextReadTpl
+              .replace("{doc}", nextSuggestion.docTitle ?? "")
+              .replace("{chapter}", nextSuggestion.chapterTitle ?? "")}
+            {nextSuggestion.kind === "quiz" && dict.nextQuizTpl.replace("{chapter}", nextSuggestion.chapterTitle ?? "")}
+            {nextSuggestion.kind === "replay" && dict.nextReplay}
+            {nextSuggestion.kind === "explore" && dict.nextAllClear}
+          </p>
+          <a
+            href={nextSuggestion.href}
+            className="mt-4 inline-block rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2.5 text-sm transition"
+          >
+            →
+          </a>
+        </section>
+      )}
 
       {/* R12.2：课程完成率趋势 */}
       <section aria-labelledby="course-completion-trend-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">

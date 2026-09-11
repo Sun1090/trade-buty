@@ -75,6 +75,18 @@ const dict = {
   reviewTrendMastered: "Mastered in range",
   reviewTrendDue: "Due now",
   reviewNoDates: "No review dates",
+  recoveryTitle: "Breaks happen",
+  recoveryBodyTpl: "Streak restarted (longest: {n})",
+  recoveryReviewTpl: "Review {n} due cards",
+  recoveryContinue: "Continue",
+  recoveryReplay: "Replay warm-up",
+  recoveryLater: "Later",
+  nextTitle: "Up next",
+  nextDueReviewTpl: "Review {n} due cards first",
+  nextReadTpl: "Continue: {doc} · {chapter}",
+  nextQuizTpl: "Check yourself: the {chapter} quiz",
+  nextReplay: "Run a replay round",
+  nextAllClear: "Everything complete",
   replayTrendTitle: "Replay practice time",
   replayTrendDesc: "Replay trend description",
   replayTrendEmpty: "No replay rounds",
@@ -203,5 +215,58 @@ describe("StatsClient replay practice time", () => {
     const section = document.querySelector("#replay-time-trend-title")?.closest("section");
     expect(section?.textContent).toContain("5m 0s"); // 期间时长 300s
     expect(section?.textContent).toContain("6");     // 历史最佳连击（tb-replay-best 优先）
+  });
+});
+
+describe("StatsClient personalized next suggestion (R12.7)", () => {
+  it("suggests continuing the next unread doc when nothing is due", async () => {
+    // 读 1/2 篇：既避开全新用户空态，又让「下一篇未读」存在
+    store.set("tb-progress", JSON.stringify({ "getting-started": ["market-overview"] }));
+    render(<StatsClient
+      chapters={[{ slug: "getting-started", docCount: 2, title: "01 · Basics", docs: [
+        { slug: "market-overview", title: "01 · Market overview" },
+        { slug: "candlestick-basics", title: "02 · Candlesticks" },
+      ] }]}
+      dict={dict}
+      locale="en"
+    />);
+
+    expect(await screen.findByText("Up next")).toBeInTheDocument();
+    const link = screen.getByText("Continue: 02 · Candlesticks · 01 · Basics");
+    expect(link).toBeInTheDocument();
+    const section = document.querySelector("#next-suggestion-title")?.closest("section");
+    expect(section?.querySelector("a")?.getAttribute("href")).toBe("/en/knowledge/getting-started/candlestick-basics");
+  });
+
+  it("prioritizes due reviews over unread docs", async () => {
+    store.set("tb-wrong", JSON.stringify({
+      "getting-started:0": { chapterNum: "getting-started", questionIdx: 0, picked: 1, at: Date.now(), srsStage: 0, srsDue: localDateStr() },
+    }));
+    render(<StatsClient
+      chapters={[{ slug: "getting-started", docCount: 2, title: "01 · Basics", docs: [
+        { slug: "market-overview", title: "01 · Market overview" },
+        { slug: "candlestick-basics", title: "02 · Candlesticks" },
+      ] }]}
+      dict={dict}
+      locale="en"
+    />);
+
+    expect(await screen.findByText("Review 1 due cards first")).toBeInTheDocument();
+    const section = document.querySelector("#next-suggestion-title")?.closest("section");
+    expect(section?.querySelector("a")?.getAttribute("href")).toBe("/en/review");
+  });
+
+  it("suggests the chapter quiz once every doc is read", async () => {
+    store.set("tb-progress", JSON.stringify({ "getting-started": ["market-overview", "candlestick-basics"] }));
+    render(<StatsClient
+      chapters={[{ slug: "getting-started", docCount: 2, title: "01 · Basics", docs: [
+        { slug: "market-overview", title: "01 · Market overview" },
+        { slug: "candlestick-basics", title: "02 · Candlesticks" },
+      ] }]}
+      dict={dict}
+      locale="zh"
+    />);
+
+    expect(await screen.findByText(/the 01 · Basics quiz/)).toBeInTheDocument();
   });
 });
