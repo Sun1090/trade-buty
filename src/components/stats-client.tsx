@@ -27,6 +27,8 @@ import { buildWrongbookEfficiency } from "@/lib/wrongbook-efficiency";
 import { buildReplayTimeTrend } from "@/lib/replay-time-trend";
 import { buildNextSuggestion } from "@/lib/next-suggestion";
 import { getStatsRangeDays, setStatsRangeDays, STATS_RANGE_OPTIONS } from "@/lib/stats-range";
+import { getLastCloudSync } from "@/lib/cloud-sync-meta";
+import { useAuth } from "@/components/auth-provider";
 import { effectiveSrs, isSrsDue } from "@/lib/srs";
 import { localDateStr } from "@/lib/date-utils";
 import { readReplayHistory, readReplayBest } from "@/lib/replay-store";
@@ -85,6 +87,16 @@ export function StatsClient({
     },
     getStatsRangeDays,
     () => 7,
+  );
+  // R12.8：数据来源标识（本机 vs 本机+云端、上次云端合并时间）
+  const user = useAuth();
+  const lastCloudSync = useSyncExternalStore(
+    (cb) => {
+      window.addEventListener("tb-cloud-sync", cb);
+      return () => window.removeEventListener("tb-cloud-sync", cb);
+    },
+    getLastCloudSync,
+    () => null,
   );
   const courseTrend = stats && progress
     ? buildCourseCompletionTrend({ chapters, progress, completions, days: rangeDays })
@@ -224,10 +236,25 @@ export function StatsClient({
             <h2 id="learning-overview-title" className="text-base font-semibold">{dict.overviewTitle}</h2>
             <p className="mt-1 text-sm text-muted">{dict.overviewDesc}</p>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg)] px-3 py-1 text-xs text-faint" aria-label={dict.overviewLocal}>
-            <span aria-hidden>●</span>
-            {dict.overviewLocal}
-          </span>
+          <div className="flex flex-col items-end gap-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg)] px-3 py-1 text-xs text-faint" aria-label={user ? dict.sourceCloud : dict.sourceLocal}>
+              <span aria-hidden>●</span>
+              {user ? dict.sourceCloud : dict.sourceLocal}
+            </span>
+            {user && lastCloudSync !== null && (
+              <span className="text-[11px] text-faint">
+                {dict.sourceSyncedTpl.replace(
+                  "{t}",
+                  new Date(lastCloudSync).toLocaleString(locale === "en" ? "en-US" : "zh-CN", {
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }),
+                )}
+              </span>
+            )}
+          </div>
         </div>
         <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">

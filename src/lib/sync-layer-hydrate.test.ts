@@ -213,6 +213,15 @@ describe("hydrateFromCloud", () => {
     expect(merged["futures"]).toEqual(["margin"]);
   });
 
+  it("R12.8：云端合并成功后记录 tb-last-cloud-sync 时间戳", async () => {
+    mockProgressSelect.mockResolvedValueOnce({ data: [{ chapter_num: "c", doc_slug: "d" }] });
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await hydrateFromCloud("user-123");
+    const recorded = Number(memStore.get("tb-last-cloud-sync"));
+    expect(Number.isFinite(recorded)).toBe(true);
+    expect(recorded).toBeGreaterThan(0);
+  });
+
   it("本地有 cloud 没有：补传到云端 (ignoreDuplicates true)", async () => {
     memStore.set("tb-progress", JSON.stringify({ ch1: ["doc-a", "doc-b"] }));
     mockProgressSelect.mockResolvedValueOnce({

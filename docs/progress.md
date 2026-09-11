@@ -1,5 +1,28 @@
 # Progress
 
+## 2026-09-11 — R12.8 Local/cloud data source labels
+
+Implemented R12.8 as a truthful data-source indicator on the stats dashboard:
+
+- Added `src/lib/cloud-sync-meta.ts`: `recordCloudSync()` / `getLastCloudSync()` for the last successful cloud-merge timestamp (`tb-last-cloud-sync`), corrupt-value safe.
+- `hydrateFromCloud()` now records the timestamp after a successful merge (failed hydrations never fake a sync).
+- The stats overview source pill is now dynamic: signed-out visitors see "本机数据 / This device"; signed-in users see "本机 + 云端 / Local + cloud" plus the last cloud-sync time (localized).
+- Added zh/en labels and tests for the meta store, the hydrate wiring, and the signed-out rendering path.
+
+Verification recorded:
+
+- Targeted Vitest suite: `npx vitest run src/lib/cloud-sync-meta.test.ts src/lib/sync-layer-hydrate.test.ts src/components/stats-client.test.tsx` passed.
+- Full suite: `npm test` passed with 133 test files and 1010 tests.
+- Lint gate: `npm run lint -- --quiet` passed.
+- Typecheck gate: `npm run typecheck` passed.
+
+Next queue:
+
+1. GitHub auth still needs reconnecting to push R12.6–R12.8 batches and watch CI on PR #1.
+2. Continue the remaining R12 suite: R12.9 sync conflict notice, R12.11 empty-state CTA review, R12.12 export versioning, R12.13 privacy settings, R12.14 retention docs, R12.15–R12.17 reminders, R12.18 completion celebration audit, R12.19 editable goals, R12.20 weekly summaries, R12.23 consistency checks, R12.24 no-login degradation, R12.25 retention metric audit docs.
+
+## 2026-09-11 — R12.10 Time-range filter + R12.21 stats mobile layout gate
+
 ## 2026-09-11 — R12.10 Time-range filter + R12.21 stats mobile layout gate
 
 Implemented R12.10 as a shared, persisted time-range filter for the four R12 trend sections, and turned R12.21 into an automated 320px gate for the stats page:

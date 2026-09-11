@@ -4,6 +4,7 @@ import { getSupabaseBrowser } from "@/lib/supabase/client";
 // R9.6：sync-layer 仅在登录后才需要 enqueueWrite；改为通过独立模块动态 import
 // 避免 sync-queue-store 被打进 layout 的共享 chunk（每个内容页 -12KB gzip）。
 import { lazyEnqueueWrite as enqueueWriteLazy } from "./sync-layer-queue-fallback";
+import { recordCloudSync } from "./cloud-sync-meta";
 import type { ProgressMap } from "./progress";
 import type { WrongEntry } from "./wrongbook";
 import type { ReplayRecord } from "./replay-store";
@@ -364,6 +365,9 @@ export async function hydrateFromCloud(id: string) {
     (replayRes?.data as CloudReplay[] | undefined) ?? [],
   );
   emitMergeSummary(summary);
+
+  // R12.8：记录最近一次云端合并时间（统计页数据来源标识用）
+  recordCloudSync();
 
   // 一次性通知所有消费组件刷新
   try {

@@ -89,6 +89,9 @@ const dict = {
   nextAllClear: "Everything complete",
   rangeLabel: "Time range",
   rangeDaysTpl: "Last {n} days",
+  sourceLocal: "This device",
+  sourceCloud: "Local + cloud",
+  sourceSyncedTpl: "Last cloud sync {t}",
   replayTrendTitle: "Replay practice time",
   replayTrendDesc: "Replay trend description",
   replayTrendEmpty: "No replay rounds",
@@ -295,5 +298,13 @@ describe("StatsClient time-range filter (R12.10)", () => {
     // 30 天网格列数生效
     const section = document.querySelector("#course-completion-trend-title")?.closest("section");
     expect(section?.querySelector("div[style]")?.getAttribute("style")).toContain("repeat(30, minmax(0, 1fr))");
+  });
+});
+
+describe("StatsClient data source label (R12.8)", () => {
+  it("shows the local-device source pill when not signed in", async () => {
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    expect(await screen.findByLabelText("This device")).toBeInTheDocument();
+    expect(screen.queryByText(/Last cloud sync/)).not.toBeInTheDocument();
   });
 });
