@@ -22,8 +22,8 @@
 | 7 日活跃天数 | 最近 7 个自然日中活跃学习日个数（0–7） | `tb-study-time` | 周摘要卡（R12.20） |
 | 周学习分钟数 | 最近 7 个自然日 `study-time` 合计秒数 ÷ 60，向下取整 | `tb-study-time` | 周摘要卡（R12.20） |
 | 周目标达成 | 周学习分钟数 ≥ 每周目标（45/90/150 档，默认 90） | `tb-weekly-goal-min` + `tb-study-time` | 周摘要卡（R12.19/R12.20） |
-| 连续学习天数 streak | 活动日历 `tb-activity` 中从今天向前不间断的自然日串长度；**断档如实展示，绝不伪造**（R4.3/R12.6） | `tb-activity` | 统计页时间卡 + 恢复提示卡 |
-| 历史最长 streak | 活动日历上的最长不间断串（只增不减不适用——按台账真实计算） | `tb-activity` | 分享卡/恢复提示 |
+| 连续学习天数 streak | `tb-streak` 自动记录：同一自然日幂等 +1，间断即 current 归零重新计；**断档如实展示，绝不伪造**（R4.3/R12.6） | `tb-streak`（touchStreak 在 markRead/recordWrong/saveQuizProgress 落笔时维护） | 统计页时间卡 + 恢复提示卡 |
+| 历史最长 streak | `tb-streak.longest` 单调 max 计数器（历史只增不减） | `tb-streak` | 分享卡/恢复提示 |
 | 回访（retention proxy） | 本地存在**两个不同自然日**的活跃学习日 | `tb-study-time` | 无独立 UI（可由导出自算） |
 | 复习暴露率（due 可见性） | 有到期 SRS 错题时是否被产品提示到（周/日提醒+英 review-wide due chip） | wrongbook SRS + `tb-review-reminder-*` | 复习提醒横幅（R12.15–R12.17） |
 | 出口一致性 | 同一侧窗内所有统计区对同一事实的读数一致 | R12.23 `auditStatsConsistency` | 开发期 console 告警 + 单测 |
@@ -42,7 +42,7 @@
 | `tb-replay-history` | 最近 100 轮 | 轮次统计的「allTime」实为最近 100 轮口径（R12.5 summary 已在文案边界内） |
 | `tb-progress-completions` | 无上限（体积上限由浏览器配额兜底） | 课程完成日期的完整历史可得 |
 | `tb-quiz-attempt-ledger` / `tb-review-attempt-ledger` | 无上限 | 测验/复习尝试完整历史可得 |
-| `tb-activity` | 无上限 | streak 历史可得 |
+| `tb-activity` | 无上限 | 活动日历完整历史可得（streak 数值本体在 `tb-streak`） |
 
 **因此**：90 天以上的分钟数、100 轮以上回放次数会被裁剪——任何报表（含将来的导出分析工具）必须在窗口内计算，
 禁止把裁剪后的值标注为「历史累计」。当前产品内文案遵守此规则（「近 7 天」「最近 100 轮」）。
