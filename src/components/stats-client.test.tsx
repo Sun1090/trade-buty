@@ -95,6 +95,9 @@ const dict = {
   conflictTitle: "Multi-device sync note",
   conflictBodyTpl: "{n} item(s) differ from another device and were merged automatically.",
   conflictDismiss: "Got it",
+  ctaQuiz: "Try a chapter quiz",
+  ctaReview: "Take a chapter quiz to start collecting",
+  ctaReplay: "Start your first round",
   replayTrendTitle: "Replay practice time",
   replayTrendDesc: "Replay trend description",
   replayTrendEmpty: "No replay rounds",
@@ -334,5 +337,39 @@ describe("StatsClient sync conflict notice (R12.9)", () => {
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
     await screen.findByRole("button", { name: "Last 7 days" });
     expect(screen.queryByLabelText("Multi-device sync note")).not.toBeInTheDocument();
+  });
+});
+
+describe("StatsClient per-section empty-state CTAs (R12.11)", () => {
+  it("links to the first chapter quiz when no quiz was ever finished", async () => {
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    const link = await screen.findByRole("link", { name: /Try a chapter quiz/ });
+    expect(link).toHaveAttribute("href", `/zh/knowledge/${chapters[0].slug}`);
+  });
+
+  it("links the review-empty CTA and hides it once the wrongbook has entries", async () => {
+    const { unmount } = render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    expect(await screen.findByRole("link", { name: /Take a chapter quiz to start collecting/ })).toBeInTheDocument();
+    unmount();
+    localStorage.setItem(
+      "tb-wrong",
+      JSON.stringify({ "spot:0": { chapterNum: "spot", questionIdx: 0, picked: 1, at: Date.now(), srsStage: 0, srsDue: "2099-01-01" } }),
+    );
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    await screen.findByRole("button", { name: "Last 7 days" });
+    expect(screen.queryByRole("link", { name: /Take a chapter quiz to start collecting/ })).not.toBeInTheDocument();
+  });
+
+  it("links to the replay page when no replay was ever done", async () => {
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    const link = await screen.findByRole("link", { name: /Start your first round/ });
+    expect(link).toHaveAttribute("href", "/zh/replay");
+  });
+
+  it("hides the quiz CTA once a quiz has been finished", async () => {
+    localStorage.setItem("tb-quiz-getting-started", JSON.stringify({ best: 8, done: true }));
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    await screen.findByRole("button", { name: "Last 7 days" });
+    expect(screen.queryByRole("link", { name: /Try a chapter quiz/ })).not.toBeInTheDocument();
   });
 });

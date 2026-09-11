@@ -1,5 +1,29 @@
 # Progress
 
+## 2026-09-11 — R12.11 Per-section empty-state CTAs on stats
+
+Implemented R12.11 as actionable empty states inside each stats trend section (the page-level new-user CTA from R4.5 only covers the all-zero case):
+
+- Quiz trend: when no quiz was ever finished, links to the first chapter quiz (`/{locale}/knowledge/{firstChapter}`).
+- Review efficiency: when the mistake log is empty and no review has ever been recorded, explains that quiz attempts feed the wrongbook and links to the first chapter quiz.
+- Replay practice time: when no replay was ever done, links to `/{locale}/replay`.
+- CTAs disappear as soon as real data exists (tests assert the toggle on finished quizzes / wrongbook entries).
+- zh/en labels added (`ctaQuiz`/`ctaReview`/`ctaReplay`).
+
+Verification recorded:
+
+- Targeted Vitest suite: `npx vitest run src/components/stats-client.test.tsx` passed (19 tests).
+- Full suite: `npm test` passed with 136 test files and 1025 tests.
+- Lint gate: `npm run lint -- --quiet` passed; typecheck gate passed; `npm run check:ai-copy` passed.
+- PR #1 CI (vitest + mutation + deps + bundle + mobile) passed on `d9ace57`.
+
+Next queue:
+
+1. PR #1 remains open accumulating the R12 suite; keep batching and watch CI per push.
+2. Continue the remaining R12 suite: R12.12 export versioning, R12.13 privacy settings entry review, R12.14 retention docs, R12.15–R12.17 reminders, R12.18 completion celebration audit, R12.19 editable goals, R12.20 weekly summaries, R12.24 no-login degradation, R12.25 retention metric audit docs.
+
+## 2026-09-11 — R12.9 Multi-device sync conflict notice
+
 ## 2026-09-11 — R12.9 Multi-device sync conflict notice
 
 Implemented R12.9 as a truthful, auto-resolving conflict surface for multi-device sync:

@@ -436,6 +436,12 @@ export function StatsClient({
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.quizzes}</dt><dd className="mt-1 font-mono text-xl font-bold">{quizTrend!.latest.doneQuizzes}/{quizTrend!.latest.totalQuizzes}</dd></div>
         </dl>
         {!quizTrend!.hasLedger && <p className="mt-3 text-xs text-muted">{dict.quizNoDates}</p>}
+        {/* R12.11：分区空态 CTA——从未完成过任何测验时给出行动入口 */}
+        {quizTrend!.latest.doneQuizzes === 0 && chapters[0] && (
+          <p className="mt-3 text-xs text-muted">
+            <a className="text-accent hover:underline" href={`/${locale}/knowledge/${chapters[0].slug}`}>{dict.ctaQuiz} →</a>
+          </p>
+        )}
       </section>
 
       {/* R12.4：错题复习效率 */}
@@ -463,6 +469,12 @@ export function StatsClient({
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.reviewTrendDue}</dt><dd className="mt-1 font-mono text-xl font-bold">{reviewTrend!.latest.dueToday}/{reviewTrend!.latest.pending}</dd></div>
         </dl>
         {!reviewTrend!.hasLedger && <p className="mt-3 text-xs text-muted">{dict.reviewNoDates}</p>}
+        {/* R12.11：错题本为空时引导先去做测验收集错题 */}
+        {reviewTrend!.latest.pending === 0 && reviewTrend!.summary.reviewsInRange === 0 && chapters[0] && (
+          <p className="mt-3 text-xs text-muted">
+            <a className="text-accent hover:underline" href={`/${locale}/knowledge/${chapters[0].slug}`}>{dict.ctaReview} →</a>
+          </p>
+        )}
       </section>
 
       {/* R12.5：回放练习时长 */}
@@ -487,6 +499,12 @@ export function StatsClient({
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.replayTrendBestStreak}</dt><dd className="mt-1 font-mono text-xl font-bold">{Math.max(replayBestStreak, replayTrend!.allTime.bestStreak)}</dd></div>
         </dl>
         {replayTrend!.hasHistory && !replayTrend!.hasDurations && <p className="mt-3 text-xs text-muted">{dict.replayNoDurations}</p>}
+        {/* R12.11：从未做过回放时给出入口 */}
+        {replayTrend!.allTime.totalRounds === 0 && (
+          <p className="mt-3 text-xs text-muted">
+            <a className="text-accent hover:underline" href={`/${locale}/replay`}>{dict.ctaReplay} →</a>
+          </p>
+        )}
       </section>
 
       {/* 详细统计概览 */}
