@@ -87,6 +87,8 @@ const dict = {
   nextQuizTpl: "Check yourself: the {chapter} quiz",
   nextReplay: "Run a replay round",
   nextAllClear: "Everything complete",
+  rangeLabel: "Time range",
+  rangeDaysTpl: "Last {n} days",
   replayTrendTitle: "Replay practice time",
   replayTrendDesc: "Replay trend description",
   replayTrendEmpty: "No replay rounds",
@@ -268,5 +270,30 @@ describe("StatsClient personalized next suggestion (R12.7)", () => {
     />);
 
     expect(await screen.findByText(/the 01 · Basics quiz/)).toBeInTheDocument();
+  });
+});
+
+describe("StatsClient time-range filter (R12.10)", () => {
+  it("defaults to 7 days and switching to 30 days re-renders all trend grids and persists", async () => {
+    render(<StatsClient chapters={chapters} dict={dict} locale="en" />);
+
+    // 默认 7 天档已选中
+    expect(await screen.findByRole("group", { name: "Time range" })).toBeInTheDocument();
+    const btn7 = screen.getByRole("button", { name: "Last 7 days" });
+    const btn30 = screen.getByRole("button", { name: "Last 30 days" });
+    expect(btn7).toHaveAttribute("aria-pressed", "true");
+    expect(btn30).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getAllByRole("img", { name: /^Last 7 days:/ })).toHaveLength(1);
+
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(btn30);
+
+    expect(store.get("tb-stats-range-days")).toBe("30");
+    expect(screen.getByRole("button", { name: "Last 30 days" })).toHaveAttribute("aria-pressed", "true");
+    // 课程趋势 aria 摘要随范围更新
+    expect(screen.getByRole("img", { name: /^Last 30 days:/ })).toBeInTheDocument();
+    // 30 天网格列数生效
+    const section = document.querySelector("#course-completion-trend-title")?.closest("section");
+    expect(section?.querySelector("div[style]")?.getAttribute("style")).toContain("repeat(30, minmax(0, 1fr))");
   });
 });

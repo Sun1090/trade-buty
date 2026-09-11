@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 function useStreakShareUrl(
   payload: { currentStreak: number; longestStreak: number; locale: "zh" | "en" } | null,
@@ -26,6 +26,7 @@ import { buildQuizScoreTrend } from "@/lib/quiz-score-trend";
 import { buildWrongbookEfficiency } from "@/lib/wrongbook-efficiency";
 import { buildReplayTimeTrend } from "@/lib/replay-time-trend";
 import { buildNextSuggestion } from "@/lib/next-suggestion";
+import { getStatsRangeDays, setStatsRangeDays, STATS_RANGE_OPTIONS } from "@/lib/stats-range";
 import { effectiveSrs, isSrsDue } from "@/lib/srs";
 import { localDateStr } from "@/lib/date-utils";
 import { readReplayHistory, readReplayBest } from "@/lib/replay-store";
@@ -77,26 +78,34 @@ export function StatsClient({
           readQuizProgress(slug) ?? { best: 0, done: false },
         ]),
       );
+  const rangeDays = useSyncExternalStore(
+    (cb) => {
+      window.addEventListener("tb-stats-range", cb);
+      return () => window.removeEventListener("tb-stats-range", cb);
+    },
+    getStatsRangeDays,
+    () => 7,
+  );
   const courseTrend = stats && progress
-    ? buildCourseCompletionTrend({ chapters, progress, completions, days: 7 })
+    ? buildCourseCompletionTrend({ chapters, progress, completions, days: rangeDays })
     : null;
   const quizTrend = stats && progress
     ? buildQuizScoreTrend({
         chapters: Object.keys(QUIZZES).map((slug) => ({ slug, questions: QUIZZES[slug].questions.length })),
         progress: quizProgress,
         attempts: quizAttempts,
-        days: 7,
+        days: rangeDays,
       })
     : null;
   const wrongEntries = typeof window === "undefined" ? {} : readWrong();
   const reviewAttempts = typeof window === "undefined" ? {} : readReviewAttemptLedger();
   const reviewTrend = stats && progress
-    ? buildWrongbookEfficiency({ wrongEntries, attempts: reviewAttempts, days: 7 })
+    ? buildWrongbookEfficiency({ wrongEntries, attempts: reviewAttempts, days: rangeDays })
     : null;
   const replayHistory = typeof window === "undefined" ? [] : readReplayHistory();
   const replayBestStreak = typeof window === "undefined" ? 0 : readReplayBest();
   const replayTrend = stats && progress
-    ? buildReplayTimeTrend({ history: replayHistory, days: 7 })
+    ? buildReplayTimeTrend({ history: replayHistory, days: rangeDays })
     : null;
   // R12.7：下一步学习建议（本地数据推导，复习 > 新学 > 测验 > 回放）
   const dueReviewCount = typeof window === "undefined"
@@ -266,12 +275,33 @@ export function StatsClient({
         </section>
       )}
 
+      {/* R12.10：时间范围筛选（作用于下面四组趋势） */}
+      <div className="flex items-center justify-end gap-2" role="group" aria-label={dict.rangeLabel}>
+        <span className="text-xs text-faint">{dict.rangeLabel}</span>
+        {STATS_RANGE_OPTIONS.map((days) => (
+          <button
+            key={days}
+            type="button"
+            aria-pressed={rangeDays === days}
+            onClick={() => setStatsRangeDays(days)}
+            className={`rounded-full border px-3 py-1 text-xs transition ${
+              rangeDays === days
+                ? "border-accent bg-[var(--accent-dim)] text-accent font-medium"
+                : "border-[var(--border)] text-muted hover:border-accent/50"
+            }`}
+          >
+            {dict.rangeDaysTpl.replace("{n}", String(days))}
+          </button>
+        ))}
+      </div>
+
       {/* R12.2：课程完成率趋势 */}
       <section aria-labelledby="course-completion-trend-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
         <p id="course-completion-trend-title" className="text-xs font-semibold uppercase tracking-wide text-faint">{dict.trendTitle}</p>
         <p className="mt-2 text-sm text-muted leading-relaxed">{dict.trendDesc}</p>
-        <div className="mt-4" role="img" aria-label={`${dict.trendRange}: ${courseTrend!.summary.completionsInRange} ${dict.trendCompletions}, ${courseTrend!.summary.chaptersCompletedInRange} ${dict.trendNewChapters}`}>
-          <div className="grid grid-cols-7 gap-2 sm:gap-3 items-end h-24">
+        <div className="mt-4" role="img" aria-label={`${dict.rangeDaysTpl.replace("{n}", String(rangeDays))}: ${courseTrend!.summary.completionsInRange} ${dict.trendCompletions}, ${courseTrend!.summary.chaptersCompletedInRange} ${dict.trendNewChapters}`}>
+          <div className={rangeDays > 7 ? "overflow-x-auto pb-1" : ""}>
+          <div className="grid gap-2 sm:gap-3 items-end h-24" style={{ gridTemplateColumns: `repeat(${rangeDays}, minmax(0, 1fr))`, minWidth: rangeDays > 7 ? `${rangeDays * 2.2}rem` : undefined }}>
             {courseTrend!.days.map((day) => {
               const max = Math.max(1, ...courseTrend!.days.map((bucket) => bucket.completions));
               const height = day.completions > 0 ? Math.max(18, Math.round((day.completions / max) * 100)) : 4;
@@ -283,6 +313,7 @@ export function StatsClient({
                 </div>
               );
             })}
+          </div>
           </div>
         </div>
         <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 text-center">
@@ -298,7 +329,7 @@ export function StatsClient({
       <section aria-labelledby="quiz-score-trend-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
         <p id="quiz-score-trend-title" className="text-xs font-semibold uppercase tracking-wide text-faint">{dict.quizTrendTitle}</p>
         <p className="mt-2 text-sm text-muted leading-relaxed">{dict.quizTrendDesc}</p>
-        <div className="mt-4 grid h-24 items-end gap-2" role="img" aria-label={`${dict.quizTrendTitle}: ${quizTrend!.summary.bestInRangeText ?? dict.quizTrendEmpty}`}>{quizTrend!.days.map((day) => {
+        <div className="mt-4 grid h-24 items-end gap-2 overflow-x-auto pb-1" style={{ gridTemplateColumns: `repeat(${rangeDays}, minmax(0, 1fr))`, minWidth: rangeDays > 7 ? `${rangeDays * 2.2}rem` : undefined }} role="img" aria-label={`${dict.quizTrendTitle}: ${quizTrend!.summary.bestInRangeText ?? dict.quizTrendEmpty}`}>{quizTrend!.days.map((day) => {
           const height = Math.max(day.attempts > 0 ? 12 : 2, day.bestPct || 2);
           return (
             <div key={day.date} className="flex h-full flex-1 flex-col justify-end gap-1">
@@ -321,7 +352,7 @@ export function StatsClient({
       <section aria-labelledby="review-efficiency-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
         <p id="review-efficiency-title" className="text-xs font-semibold uppercase tracking-wide text-faint">{dict.reviewTrendTitle}</p>
         <p className="mt-2 text-sm text-muted leading-relaxed">{dict.reviewTrendDesc}</p>
-        <div className="mt-4 grid h-24 items-end gap-2" role="img" aria-label={`${dict.reviewTrendTitle}: ${reviewTrend!.summary.reviewsInRange > 0 ? `${reviewTrend!.summary.correctInRange}/${reviewTrend!.summary.reviewsInRange}` : dict.reviewTrendEmpty}`}>{reviewTrend!.days.map((day) => {
+        <div className="mt-4 grid h-24 items-end gap-2 overflow-x-auto pb-1" style={{ gridTemplateColumns: `repeat(${rangeDays}, minmax(0, 1fr))`, minWidth: rangeDays > 7 ? `${rangeDays * 2.2}rem` : undefined }} role="img" aria-label={`${dict.reviewTrendTitle}: ${reviewTrend!.summary.reviewsInRange > 0 ? `${reviewTrend!.summary.correctInRange}/${reviewTrend!.summary.reviewsInRange}` : dict.reviewTrendEmpty}`}>{reviewTrend!.days.map((day) => {
           const max = Math.max(1, ...reviewTrend!.days.map((bucket) => bucket.reviews));
           const height = day.reviews > 0 ? Math.max(12, Math.round((day.reviews / max) * 100)) : 2;
           const correctHeight = day.reviews > 0 ? Math.round((day.correct / day.reviews) * 100) : 0;
@@ -348,7 +379,7 @@ export function StatsClient({
       <section aria-labelledby="replay-time-trend-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
         <p id="replay-time-trend-title" className="text-xs font-semibold uppercase tracking-wide text-faint">{dict.replayTrendTitle}</p>
         <p className="mt-2 text-sm text-muted leading-relaxed">{dict.replayTrendDesc}</p>
-        <div className="mt-4 grid h-24 items-end gap-2" role="img" aria-label={`${dict.replayTrendTitle}: ${replayTrend!.summary.roundsInRange > 0 ? `${replayTrend!.summary.roundsInRange}` : dict.replayTrendEmpty}`}>{replayTrend!.days.map((day) => {
+        <div className="mt-4 grid h-24 items-end gap-2 overflow-x-auto pb-1" style={{ gridTemplateColumns: `repeat(${rangeDays}, minmax(0, 1fr))`, minWidth: rangeDays > 7 ? `${rangeDays * 2.2}rem` : undefined }} role="img" aria-label={`${dict.replayTrendTitle}: ${replayTrend!.summary.roundsInRange > 0 ? `${replayTrend!.summary.roundsInRange}` : dict.replayTrendEmpty}`}>{replayTrend!.days.map((day) => {
           const max = Math.max(1, ...replayTrend!.days.map((bucket) => bucket.rounds));
           const height = day.rounds > 0 ? Math.max(12, Math.round((day.rounds / max) * 100)) : 2;
           return (
