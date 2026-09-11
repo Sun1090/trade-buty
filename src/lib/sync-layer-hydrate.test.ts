@@ -237,6 +237,23 @@ describe("hydrateFromCloud", () => {
     );
   });
 
+  it("R12.19：周目标本地未设时采用云端；已设时云端不覆盖", async () => {
+    const { hydrateFromCloud } = await import("./sync-layer");
+    mockSettingsSelect.mockResolvedValueOnce({ data: [{ daily_goal_min: 30, weekly_goal_min: 150 }] });
+    await hydrateFromCloud("user-123");
+    expect(memStore.get("tb-weekly-goal-min")).toBe("150");
+
+    memStore.clear();
+    memStore.set("tb-weekly-goal-min", "45");
+    mockSettingsSelect.mockResolvedValueOnce({ data: [{ daily_goal_min: 30, weekly_goal_min: 150 }] });
+    await hydrateFromCloud("user-123");
+    expect(memStore.get("tb-weekly-goal-min")).toBe("45");
+    const record = JSON.parse(memStore.get("tb-sync-conflicts")!);
+    expect(record.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ kind: "weekly-goal", resolution: "kept-local" })]),
+    );
+  });
+
   it("R12.9：无分歧时清空旧冲突记录", async () => {
     memStore.set("tb-sync-conflicts", JSON.stringify({ at: 1, items: [{ kind: "goal", key: "k", local: "a", cloud: "b", resolution: "kept-local" }] }));
     const { hydrateFromCloud } = await import("./sync-layer");

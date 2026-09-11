@@ -11,7 +11,7 @@
  */
 
 export interface SyncConflictItem {
-  kind: "goal" | "wrongbook";
+  kind: "goal" | "weekly-goal" | "wrongbook";
   /** 冲突对象标识（错题 key 等） */
   key: string;
   /** 本机值（展示用，简短） */
@@ -34,23 +34,33 @@ const DISMISS_KEY = "tb-sync-conflicts-dismissed";
 export function detectMergeConflicts(input: {
   localGoalMin?: number | null;
   cloudGoalMin?: number | null;
+  localWeeklyGoalMin?: number | null;
+  cloudWeeklyGoalMin?: number | null;
   localWrong: Record<string, { at: number; picked: number; srsStage?: number; srsDue?: string }>;
   cloudWrong: { chapter_num: string; question_idx: number; picked: number; answered_at: string; srs_stage?: number | null; srs_due?: string | null }[];
 }): SyncConflictItem[] {
   const items: SyncConflictItem[] = [];
 
-  const localGoal = input.localGoalMin;
-  const cloudGoal = input.cloudGoalMin;
-  if (
-    typeof localGoal === "number" && Number.isFinite(localGoal) && localGoal > 0 &&
-    typeof cloudGoal === "number" && Number.isFinite(cloudGoal) && cloudGoal > 0 &&
-    localGoal !== cloudGoal
-  ) {
+  const detectGoalDrift = (local: number | null | undefined, cloud: number | null | undefined): boolean =>
+    typeof local === "number" && Number.isFinite(local) && local > 0 &&
+    typeof cloud === "number" && Number.isFinite(cloud) && cloud > 0 &&
+    local !== cloud;
+
+  if (detectGoalDrift(input.localGoalMin, input.cloudGoalMin)) {
     items.push({
       kind: "goal",
       key: "daily-goal-min",
-      local: `${Math.round(localGoal)}`,
-      cloud: `${Math.round(cloudGoal)}`,
+      local: `${Math.round(input.localGoalMin!)}`,
+      cloud: `${Math.round(input.cloudGoalMin!)}`,
+      resolution: "kept-local",
+    });
+  }
+  if (detectGoalDrift(input.localWeeklyGoalMin, input.cloudWeeklyGoalMin)) {
+    items.push({
+      kind: "weekly-goal",
+      key: "weekly-goal-min",
+      local: `${Math.round(input.localWeeklyGoalMin!)}`,
+      cloud: `${Math.round(input.cloudWeeklyGoalMin!)}`,
       resolution: "kept-local",
     });
   }

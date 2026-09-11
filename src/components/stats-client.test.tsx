@@ -15,6 +15,11 @@ const { localDateStr, shiftDate } = await import("@/lib/date-utils");
 const { buildLearningOverview } = await import("@/lib/learning-overview");
 
 const chapters = [{ slug: "getting-started", docCount: 2 }];
+
+function todayDateStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 const progress = { "getting-started": ["market-overview", "candlestick-basics"] };
 const completions = {
   "getting-started:market-overview": { chapter: "getting-started", doc: "market-overview", at: new Date(2026, 8, 3, 12).getTime() },
@@ -99,6 +104,11 @@ const dict = {
   dataExportDesc: "Generated locally as JSON; nothing is uploaded",
   dataExportBtn: "Export data",
   ctaQuiz: "Try a chapter quiz",
+  weekSummaryTitle: "Weekly learning summary",
+  weekSummaryTpl: "{m} min this week across {d} active days · {docs} read · {quiz} quizzes · {review} reviews · {replay} replay rounds",
+  weekGoalLabel: "Weekly goal",
+  weekGoalAchieved: "Weekly goal achieved 🎉",
+  weekGoalLeftTpl: "{m} min to go for your weekly goal",
   ctaReview: "Take a chapter quiz to start collecting",
   ctaReplay: "Start your first round",
   replayTrendTitle: "Replay practice time",
@@ -374,5 +384,27 @@ describe("StatsClient per-section empty-state CTAs (R12.11)", () => {
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
     await screen.findByRole("button", { name: "Last 7 days" });
     expect(screen.queryByRole("link", { name: /Try a chapter quiz/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("StatsClient weekly summary card (R12.19/R12.20)", () => {
+  it("renders the local summary line and shows remaining-to-goal minutes", async () => {
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    expect(await screen.findByText("Weekly learning summary")).toBeInTheDocument();
+    expect(screen.getByText(/to go for your weekly goal/)).toBeInTheDocument();
+  });
+
+  it("edits the weekly goal via tier buttons and persists it", async () => {
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    await screen.findByRole("button", { name: "Last 7 days" });
+    fireEvent.click(screen.getByRole("button", { name: "150 minutes" }));
+    expect(localStorage.getItem("tb-weekly-goal-min")).toBe("150");
+  });
+
+  it("marks the goal achieved only with real minutes from the study ledger", async () => {
+    localStorage.setItem("tb-weekly-goal-min", "45");
+    localStorage.setItem("tb-study-time", JSON.stringify({ [todayDateStr()]: { read: 60 * 60 } }));
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    expect(await screen.findByText("Weekly goal achieved 🎉")).toBeInTheDocument();
   });
 });

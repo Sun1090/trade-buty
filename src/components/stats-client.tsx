@@ -32,6 +32,8 @@ import { auditStatsConsistency } from "@/lib/stats-consistency";
 import { dismissSyncConflicts, readSyncConflicts } from "@/lib/sync-conflicts";
 import { buildStatsExport, downloadStatsExport } from "@/lib/stats-export";
 import { getDailyGoalMin } from "@/lib/daily-goal";
+import { buildWeeklySummary, getWeeklyGoalMin, setWeeklyGoalMin, WEEKLY_GOAL_TIERS, type WeeklySummaryInput } from "@/lib/weekly-summary";
+import { getStudySeries } from "@/lib/study-time";
 import { useAuth } from "@/components/auth-provider";
 import { effectiveSrs, isSrsDue } from "@/lib/srs";
 import { localDateStr } from "@/lib/date-utils";
@@ -57,6 +59,73 @@ import { getRecentDays } from "@/lib/streak";
 function subscribeConflictEvent(cb: () => void) {
   window.addEventListener("tb-sync-conflict", cb);
   return () => window.removeEventListener("tb-sync-conflict", cb);
+}
+
+interface WeeklySummaryCardDict {
+  title: string;
+  summaryTpl: string;
+  goalLabel: string;
+  goalAchieved: string;
+  goalLeftTpl: string;
+  unit: string;
+}
+
+function subscribeWeeklyGoal(cb: () => void) {
+  const events = ["tb-weekly-goal", "tb-study-time", "tb-progress"] as const;
+  events.forEach((e) => window.addEventListener(e, cb));
+  return () => events.forEach((e) => window.removeEventListener(e, cb));
+}
+
+/** R12.19+R12.20：周度摘要卡（本地台账生成）+ 周目标档位编辑 */
+function WeeklySummaryCard({ dict, input }: {
+  dict: WeeklySummaryCardDict;
+  input: Pick<WeeklySummaryInput, "dailySeconds" | "completions" | "quizAttempts" | "reviewAttempts" | "replayHistory">;
+}) {
+  const goalMin = useSyncExternalStore(subscribeWeeklyGoal, getWeeklyGoalMin, () => 90);
+  const summary = buildWeeklySummary({ ...input, weeklyGoalMin: goalMin });
+  const line = dict.summaryTpl
+    .replace("{m}", String(summary.totalMinutes))
+    .replace("{d}", String(summary.activeDays))
+    .replace("{docs}", String(summary.completions))
+    .replace("{quiz}", String(summary.quizAttempts))
+    .replace("{review}", String(summary.reviews))
+    .replace("{replay}", String(summary.replayRounds));
+
+  return (
+    <section aria-labelledby="weekly-summary-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p id="weekly-summary-title" className="text-sm font-semibold">{dict.title}</p>
+        <span className="text-xs text-faint">{summary.weekStart} ~ {summary.weekEnd}</span>
+      </div>
+      <p className="mt-2 text-sm text-muted leading-relaxed">{line}</p>
+      <p className="mt-1 text-sm" aria-live="polite">
+        {summary.goalAchieved ? (
+          <span className="text-accent font-medium">{dict.goalAchieved}</span>
+        ) : (
+          <span className="text-muted">{dict.goalLeftTpl.replace("{m}", String(summary.remainingMin))}</span>
+        )}
+      </p>
+      {/* R12.19：周目标可编辑（45/90/150 分钟，登录后云端同步） */}
+      <div className="mt-3 flex items-center gap-2" role="group" aria-label={dict.goalLabel}>
+        <span className="text-xs text-faint">{dict.goalLabel}</span>
+        {WEEKLY_GOAL_TIERS.map((t) => (
+          <button
+            key={t}
+            type="button"
+            aria-pressed={goalMin === t}
+            onClick={() => setWeeklyGoalMin(t)}
+            className={`rounded-full border px-3 py-1 text-xs transition ${
+              goalMin === t
+                ? "border-accent bg-[var(--accent-dim)] text-accent font-medium"
+                : "border-[var(--border)] text-muted hover:border-accent/50"
+            }`}
+          >
+            {t} {dict.unit}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 /** R12.9：多设备冲突提示横幅（读取原始字符串作稳定快照，避免每次渲染新对象） */
@@ -583,6 +652,25 @@ export function StatsClient({
 
       {/* R4.6：近 7 天周报 */}
       <WeeklyReport dict={{ title: dict.weeklyTitle, unit: dict.goalMinUnit, summaryTpl: dict.weeklySummaryTpl }} />
+
+      {/* R12.19 每周目标可编辑 + R12.20 周度学习摘要（本地生成） */}
+      <WeeklySummaryCard
+        dict={{
+          title: dict.weekSummaryTitle,
+          summaryTpl: dict.weekSummaryTpl,
+          goalLabel: dict.weekGoalLabel,
+          goalAchieved: dict.weekGoalAchieved,
+          goalLeftTpl: dict.weekGoalLeftTpl,
+          unit: dict.goalMinUnit,
+        }}
+        input={{
+          dailySeconds: getStudySeries(7).map((d) => d.total),
+          completions,
+          quizAttempts,
+          reviewAttempts,
+          replayHistory,
+        }}
+      />
 
       {/* 连续学习 + 准确率 + 学习时长 */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">

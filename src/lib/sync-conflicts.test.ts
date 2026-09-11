@@ -102,3 +102,13 @@ describe("sync conflict storage", () => {
     expect(readSyncConflicts(localStorageMock as unknown as Storage)).toBeNull();
   });
 });
+
+describe("weekly goal conflicts (R12.19)", () => {
+  it("flags weekly goal divergence only when both sides explicitly set values", () => {
+    expect(detectMergeConflicts({ localWeeklyGoalMin: 45, cloudWeeklyGoalMin: 150, localWrong: {}, cloudWrong: [] })).toEqual([
+      { kind: "weekly-goal", key: "weekly-goal-min", local: "45", cloud: "150", resolution: "kept-local" },
+    ]);
+    expect(detectMergeConflicts({ localWeeklyGoalMin: null, cloudWeeklyGoalMin: 150, localWrong: {}, cloudWrong: [] })).toEqual([]);
+    expect(detectMergeConflicts({ localWeeklyGoalMin: 90, cloudWeeklyGoalMin: 90, localWrong: {}, cloudWrong: [] })).toEqual([]);
+  });
+});

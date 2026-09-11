@@ -71,11 +71,11 @@ export function buildQueueExecutor(uid: string) {
           return !error;
         }
         case "goal": {
-          const { daily_goal_min } = item.payload as { daily_goal_min: number };
-          const { error } = await sb.from("user_settings").upsert(
-            { user_id: uid, daily_goal_min },
-            { onConflict: "user_id" },
-          );
+          const payload = item.payload as { daily_goal_min?: number; weekly_goal_min?: number };
+          const row: Record<string, number | string> = { user_id: uid };
+          if (typeof payload.daily_goal_min === "number") row.daily_goal_min = payload.daily_goal_min;
+          if (typeof payload.weekly_goal_min === "number") row.weekly_goal_min = payload.weekly_goal_min;
+          const { error } = await sb.from("user_settings").upsert(row, { onConflict: "user_id" });
           return !error;
         }
         default:
