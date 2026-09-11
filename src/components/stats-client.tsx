@@ -23,8 +23,13 @@ import { readQuizProgress } from "@/lib/quiz-store";
 import { buildCourseCompletionTrend } from "@/lib/course-completion-trend";
 import { buildLearningOverview, type LearningOverview } from "@/lib/learning-overview";
 import { buildQuizScoreTrend } from "@/lib/quiz-score-trend";
+import { buildWrongbookEfficiency } from "@/lib/wrongbook-efficiency";
+import { buildReplayTimeTrend } from "@/lib/replay-time-trend";
+import { readReplayHistory, readReplayBest } from "@/lib/replay-store";
 import { readProgressCompletions } from "@/lib/progress";
 import { readQuizAttemptLedger } from "@/lib/quiz-attempt-ledger";
+import { readReviewAttemptLedger } from "@/lib/review-attempt-ledger";
+import { readWrong } from "@/lib/wrongbook";
 import { formatDuration } from "@/lib/reading-time";
 import { DailyGoal } from "@/components/daily-goal";
 import { StudyPlan } from "@/components/study-plan";
@@ -35,60 +40,8 @@ import { WeekMiniBar } from "@/components/week-mini-bar";
 import { WeeklyReport } from "@/components/weekly-report";
 import { StreakShareCard } from "@/components/streak-share-card";
 import { encodeStreak } from "@/lib/share-decode";
+import type { StatsDict } from "@/lib/i18n-stats";
 import { getRecentDays } from "@/lib/streak";
-
-interface StatsDict {
-  title: string;
-  subtitle: string;
-  readDocs: string;
-  chapters: string;
-  wrong: string;
-  quizzes: string;
-  replay: string;
-  streak: string;
-  accuracy: string;
-  badges: string;
-  noBadges: string;
-  overall: string;
-  goalLabel: string;
-  goalUnit: string;
-  goalMinUnit: string;
-  goalSet: string;
-  streakReassureTpl: string;
-  shareStreak: string;
-  previewStreak: string;
-  download: string;
-  previewAlt: string;
-  copyLink: string;
-  copiedLink: string;
-  totalStudyTime: string;
-  overviewTitle: string;
-  overviewDesc: string;
-  overviewCourses: string;
-  overviewQuizzes: string;
-  overviewReplay: string;
-  overviewTime: string;
-  overviewLocal: string;
-  trendTitle: string;
-  trendDesc: string;
-  trendRange: string;
-  trendEmpty: string;
-  trendCompletions: string;
-  trendNewChapters: string;
-  trendNoDates: string;
-  quizTrendTitle: string;
-  quizTrendDesc: string;
-  quizTrendEmpty: string;
-  quizTrendAttempts: string;
-  quizBestInRange: string;
-  quizAvgScore: string;
-  quizNoDates: string;
-  weeklyTitle: string;
-  weeklySummaryTpl: string;
-  emptyTitle: string;
-  emptyBody: string;
-  emptyCta: string;
-}
 
 function StatCard({ value, label, accent }: { value: string | number; label: string; accent?: boolean }) {
   return (
@@ -130,6 +83,16 @@ export function StatsClient({
         attempts: quizAttempts,
         days: 7,
       })
+    : null;
+  const wrongEntries = typeof window === "undefined" ? {} : readWrong();
+  const reviewAttempts = typeof window === "undefined" ? {} : readReviewAttemptLedger();
+  const reviewTrend = stats && progress
+    ? buildWrongbookEfficiency({ wrongEntries, attempts: reviewAttempts, days: 7 })
+    : null;
+  const replayHistory = typeof window === "undefined" ? [] : readReplayHistory();
+  const replayBestStreak = typeof window === "undefined" ? 0 : readReplayBest();
+  const replayTrend = stats && progress
+    ? buildReplayTimeTrend({ history: replayHistory, days: 7 })
     : null;
   const overview: LearningOverview | null = stats && progress
     ? buildLearningOverview({
@@ -279,6 +242,57 @@ export function StatsClient({
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.quizzes}</dt><dd className="mt-1 font-mono text-xl font-bold">{quizTrend!.latest.doneQuizzes}/{quizTrend!.latest.totalQuizzes}</dd></div>
         </dl>
         {!quizTrend!.hasLedger && <p className="mt-3 text-xs text-muted">{dict.quizNoDates}</p>}
+      </section>
+
+      {/* R12.4：错题复习效率 */}
+      <section aria-labelledby="review-efficiency-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+        <p id="review-efficiency-title" className="text-xs font-semibold uppercase tracking-wide text-faint">{dict.reviewTrendTitle}</p>
+        <p className="mt-2 text-sm text-muted leading-relaxed">{dict.reviewTrendDesc}</p>
+        <div className="mt-4 grid h-24 items-end gap-2" role="img" aria-label={`${dict.reviewTrendTitle}: ${reviewTrend!.summary.reviewsInRange > 0 ? `${reviewTrend!.summary.correctInRange}/${reviewTrend!.summary.reviewsInRange}` : dict.reviewTrendEmpty}`}>{reviewTrend!.days.map((day) => {
+          const max = Math.max(1, ...reviewTrend!.days.map((bucket) => bucket.reviews));
+          const height = day.reviews > 0 ? Math.max(12, Math.round((day.reviews / max) * 100)) : 2;
+          const correctHeight = day.reviews > 0 ? Math.round((day.correct / day.reviews) * 100) : 0;
+          return (
+            <div key={day.date} className="flex h-full flex-1 flex-col justify-end gap-1">
+              <span className="text-[10px] font-mono text-faint">{day.reviews > 0 ? `${day.correct}/${day.reviews}` : ""}</span>
+              <div className="relative w-full rounded-t-md bg-[var(--accent)]/30" style={{ height: `${height}%` }}>
+                {correctHeight > 0 && <div className="absolute inset-x-0 bottom-0 rounded-t-md bg-[var(--accent)]/80" style={{ height: `${correctHeight}%` }} />}
+              </div>
+              <span className="text-[10px] text-faint">{day.date.slice(5)}</span>
+            </div>
+          );
+        })}</div>
+        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 text-center">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.reviewTrendReviews}</dt><dd className="mt-1 font-mono text-xl font-bold">{reviewTrend!.summary.reviewsInRange}</dd></div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.reviewTrendAccuracy}</dt><dd className="mt-1 font-mono text-xl font-bold">{reviewTrend!.summary.accuracyPct === null ? "-" : `${reviewTrend!.summary.accuracyPct}%`}</dd></div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.reviewTrendMastered}</dt><dd className="mt-1 font-mono text-xl font-bold">{reviewTrend!.summary.masteredInRange}</dd></div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.reviewTrendDue}</dt><dd className="mt-1 font-mono text-xl font-bold">{reviewTrend!.latest.dueToday}/{reviewTrend!.latest.pending}</dd></div>
+        </dl>
+        {!reviewTrend!.hasLedger && <p className="mt-3 text-xs text-muted">{dict.reviewNoDates}</p>}
+      </section>
+
+      {/* R12.5：回放练习时长 */}
+      <section aria-labelledby="replay-time-trend-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+        <p id="replay-time-trend-title" className="text-xs font-semibold uppercase tracking-wide text-faint">{dict.replayTrendTitle}</p>
+        <p className="mt-2 text-sm text-muted leading-relaxed">{dict.replayTrendDesc}</p>
+        <div className="mt-4 grid h-24 items-end gap-2" role="img" aria-label={`${dict.replayTrendTitle}: ${replayTrend!.summary.roundsInRange > 0 ? `${replayTrend!.summary.roundsInRange}` : dict.replayTrendEmpty}`}>{replayTrend!.days.map((day) => {
+          const max = Math.max(1, ...replayTrend!.days.map((bucket) => bucket.rounds));
+          const height = day.rounds > 0 ? Math.max(12, Math.round((day.rounds / max) * 100)) : 2;
+          return (
+            <div key={day.date} className="flex h-full flex-1 flex-col justify-end gap-1">
+              <span className="text-[10px] font-mono text-faint">{day.rounds > 0 ? (day.durationSec > 0 ? formatDuration(day.durationSec) : `${day.rounds}`) : ""}</span>
+              <div className="w-full rounded-t-md bg-[var(--info)]/60" style={{ height: `${height}%` }} />
+              <span className="text-[10px] text-faint">{day.date.slice(5)}</span>
+            </div>
+          );
+        })}</div>
+        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 text-center">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.replayTrendRounds}</dt><dd className="mt-1 font-mono text-xl font-bold">{replayTrend!.summary.roundsInRange}</dd></div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.replayTrendTime}</dt><dd className="mt-1 font-mono text-xl font-bold">{replayTrend!.summary.durationInRangeSec > 0 ? formatDuration(replayTrend!.summary.durationInRangeSec) : "-"}</dd></div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.replayTrendAvg}</dt><dd className="mt-1 font-mono text-xl font-bold">{replayTrend!.summary.avgSecInRange === null ? "-" : formatDuration(replayTrend!.summary.avgSecInRange)}</dd></div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.replayTrendBestStreak}</dt><dd className="mt-1 font-mono text-xl font-bold">{Math.max(replayBestStreak, replayTrend!.allTime.bestStreak)}</dd></div>
+        </dl>
+        {replayTrend!.hasHistory && !replayTrend!.hasDurations && <p className="mt-3 text-xs text-muted">{dict.replayNoDurations}</p>}
       </section>
 
       {/* 详细统计概览 */}

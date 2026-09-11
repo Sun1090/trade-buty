@@ -12,6 +12,8 @@ export interface ReplayRecord {
   total: number;
   correct: number;
   bestStreak: number;
+  /** R12.5：本轮耗时（秒）。旧记录缺省，统计时按无时长处理，不回推 */
+  durationSec?: number;
 }
 
 export function readReplayHistory(): ReplayRecord[] {

@@ -20,6 +20,8 @@ const BUDGETS = [
   { page: "en", budgetKB: 295 },
   { page: "zh/knowledge/getting-started/market-overview", budgetKB: 305 },
   { page: "zh/search", budgetKB: 295 },
+  // R12.22：统计页单独预算（2026-09 实测 306KB：图表/热力图/雷达组件 + stats 字典已拆分）
+  { page: "zh/stats", budgetKB: 320 },
   { page: "zh/ai", budgetKB: 310 }, // R7.1：AI 页单独预算（问答 UI，无模型 SDK）
   { page: "zh/chart", budgetKB: 360 },
   { page: "zh/replay", budgetKB: 360 },

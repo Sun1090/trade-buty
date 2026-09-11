@@ -67,6 +67,22 @@ const dict = {
   quizBestInRange: "Best in range",
   quizAvgScore: "Average score",
   quizNoDates: "No quiz dates",
+  reviewTrendTitle: "Review efficiency",
+  reviewTrendDesc: "Review trend description",
+  reviewTrendEmpty: "No reviews",
+  reviewTrendReviews: "Reviews",
+  reviewTrendAccuracy: "Accuracy in range",
+  reviewTrendMastered: "Mastered in range",
+  reviewTrendDue: "Due now",
+  reviewNoDates: "No review dates",
+  replayTrendTitle: "Replay practice time",
+  replayTrendDesc: "Replay trend description",
+  replayTrendEmpty: "No replay rounds",
+  replayTrendRounds: "Replay rounds",
+  replayTrendTime: "Time in range",
+  replayTrendAvg: "Avg per round",
+  replayTrendBestStreak: "Best streak",
+  replayNoDurations: "No replay durations",
   weeklyTitle: "Weekly",
   weeklySummaryTpl: "Weekly summary",
   emptyTitle: "Empty",
@@ -125,5 +141,67 @@ describe("StatsClient quiz score trend", () => {
     expect(await screen.findByText("Quiz score trend")).toBeInTheDocument();
     expect(screen.queryByText("No quiz dates")).not.toBeInTheDocument();
     expect(screen.getByText("1/1")).toBeInTheDocument();
+  });
+});
+
+describe("StatsClient wrongbook review efficiency", () => {
+  it("renders the review efficiency section with no-date notice when no ledger exists", async () => {
+    store.set("tb-wrong", JSON.stringify({
+      "getting-started:0": { chapterNum: "getting-started", questionIdx: 0, picked: 1, at: Date.now(), srsStage: 0, srsDue: localDateStr() },
+    }));
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+
+    expect(await screen.findByText("Review efficiency")).toBeInTheDocument();
+    expect(screen.getByText("Review trend description")).toBeInTheDocument();
+    expect(screen.getByText("No review dates")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Review efficiency|No reviews/ })).toBeInTheDocument();
+    // 当前待复习口径仍然可读：due 1 / pending 1
+    const section = document.querySelector("#review-efficiency-title")?.closest("section");
+    expect(section?.textContent).toContain("1/1");
+  });
+
+  it("renders dated review summaries from the local ledger without the notice", async () => {
+    const at = new Date(2026, 8, 7, 12).getTime();
+    store.set("tb-wrong", JSON.stringify({
+      "getting-started:0": { chapterNum: "getting-started", questionIdx: 0, picked: 1, at, srsStage: 1, srsDue: localDateStr() },
+    }));
+    store.set("tb-review-attempts", JSON.stringify({
+      "getting-started:0:123": { chapter: "getting-started", questionIdx: 0, correct: true, mastered: false, stage: 1, at },
+      "getting-started:1:456": { chapter: "getting-started", questionIdx: 1, correct: false, mastered: false, stage: 0, at },
+    }));
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+
+    expect(await screen.findByText("Review efficiency")).toBeInTheDocument();
+    expect(screen.queryByText("No review dates")).not.toBeInTheDocument();
+    const section = document.querySelector("#review-efficiency-title")?.closest("section");
+    expect(section?.textContent).toContain("50%");
+  });
+});
+
+describe("StatsClient replay practice time", () => {
+  it("renders rounds from legacy records with the no-duration notice", async () => {
+    store.set("tb-replay-history", JSON.stringify([
+      { at: Date.now(), symbol: "BTCUSDT", interval: "1h", total: 10, correct: 7, bestStreak: 4 },
+    ]));
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+
+    expect(await screen.findByText("Replay practice time")).toBeInTheDocument();
+    expect(screen.getByText("Replay trend description")).toBeInTheDocument();
+    expect(screen.getByText("No replay durations")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Replay practice time|No replay rounds/ })).toBeInTheDocument();
+  });
+
+  it("renders duration summaries from new records without the notice", async () => {
+    store.set("tb-replay-history", JSON.stringify([
+      { at: Date.now(), symbol: "BTCUSDT", interval: "1h", total: 10, correct: 7, bestStreak: 4, durationSec: 300 },
+    ]));
+    store.set("tb-replay-best", "6");
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+
+    expect(await screen.findByText("Replay practice time")).toBeInTheDocument();
+    expect(screen.queryByText("No replay durations")).not.toBeInTheDocument();
+    const section = document.querySelector("#replay-time-trend-title")?.closest("section");
+    expect(section?.textContent).toContain("5m 0s"); // 期间时长 300s
+    expect(section?.textContent).toContain("6");     // 历史最佳连击（tb-replay-best 优先）
   });
 });

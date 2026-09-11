@@ -2,7 +2,8 @@
 
 import { syncWrongbookWrite, syncWrongbookDelete } from "./sync-layer";
 import { touchStreak } from "./streak";
-import { srsOnAnswer, type SrsOutcome } from "./srs";
+import { EBBINGHAUS_INTERVALS, srsOnAnswer, type SrsOutcome } from "./srs";
+import { writeReviewAttempt } from "./review-attempt-ledger";
 
 const KEY = "tb-wrong";
 
@@ -42,6 +43,8 @@ export function applySrsResult(
     } catch {
       // ignore
     }
+    // R12.4：复习效率台账（元数据，不影响权威状态）
+    writeReviewAttempt(globalThis.localStorage, chapterNum, questionIdx, true, true, EBBINGHAUS_INTERVALS.length - 1);
     syncWrongbookDelete(chapterNum, questionIdx);
     try {
       touchStreak();
@@ -64,6 +67,8 @@ export function applySrsResult(
   } catch {
     // ignore
   }
+  // R12.4：复习效率台账（答错也记录：正确率是效率指标的一部分）
+  writeReviewAttempt(globalThis.localStorage, chapterNum, questionIdx, correct, false, outcome.stage);
   syncWrongbookWrite(chapterNum, questionIdx, w[key].picked, outcome.stage, outcome.due);
   try {
     touchStreak();
