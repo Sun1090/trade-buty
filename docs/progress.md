@@ -1,5 +1,25 @@
 # Progress
 
+## 2026-09-11 — R12.18 Completion celebration audit (no profit hints)
+
+Audited `ChapterCompleteCelebration` and found a real constitution violation, now fixed:
+
+- The emoji sequence contained 📈 (bull-market gains) and 💎 ("diamond hands" holding meme), which violate the "never imply returns" rule. The list is now exported as `CELEBRATION_EMOJIS` and restricted to learning-neutral glyphs (🎉 📖 ✨ ✅ 📚 🎓); a regression test asserts the forbidden set ({📈💎🚀💰🤑🐂🌕}) stays excluded.
+- Copy was hardcoded zh "篇章完成！" — now localized via `locale` prop (zh/en) and wired from the knowledge chapter page; the overlay gained `role="status"` for screen readers.
+- Tests lock: celebration appears only for genuinely complete chapters, copy never mentions profit/win-rate/returns, and the overlay auto-dismisses.
+
+Verification recorded:
+
+- Targeted Vitest suite: `npx vitest run src/components/chapter-complete-celebration.test.tsx` passed (3 tests).
+- Typecheck gate: `npm run typecheck` passed.
+
+Next queue:
+
+1. Watch PR #1 CI after this push.
+2. Continue the remaining R12 suite: R12.13 privacy settings entry review, R12.14 retention docs, R12.15–R12.17 reminders, R12.25 retention metric audit docs.
+
+## 2026-09-11 — R12.24 Guest-mode stats degradation contract
+
 ## 2026-09-11 — R12.24 Guest-mode stats degradation contract
 
 Implemented R12.24 as a verified no-login parity contract (the stats page was already local-first; this locks it with regression coverage):

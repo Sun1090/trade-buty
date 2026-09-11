@@ -170,7 +170,7 @@ export default async function ChapterPage({
         </div>
       </section>
 
-      <ChapterCompleteCelebration chapterSlug={slug} docCount={docs.length} />
+      <ChapterCompleteCelebration chapterSlug={slug} docCount={docs.length} locale={locale} />
 
       <TodayPick
         chapters={[{ slug, title: chapter.title, docs: docs.map((d) => ({ slug: d.slug, title: d.title })) }]}
