@@ -1,5 +1,22 @@
 # Progress
 
+## 2026-09-11 — R12.24 Guest-mode stats degradation contract
+
+Implemented R12.24 as a verified no-login parity contract (the stats page was already local-first; this locks it with regression coverage):
+
+- Added `src/components/stats-client-guest.test.tsx`: three specs proving that with no AuthProvider and no Supabase env, the dashboard renders every section (overview, all four trends, weekly report + summary, next suggestion), the source badge reads "本机数据", range switching persists, a guest export produces the complete versioned payload (correct counts from seeded local ledgers), and no login wall / degraded placeholder text ever appears.
+
+Verification recorded:
+
+- Targeted Vitest suite: `npx vitest run src/components/stats-client-guest.test.tsx` passed (3 tests).
+
+Next queue:
+
+1. Watch PR #1 CI after this push.
+2. Continue the remaining R12 suite: R12.13 privacy settings entry review, R12.14 retention docs, R12.15–R12.17 reminders, R12.18 course-completion celebration audit, R12.25 retention metric audit docs.
+
+## 2026-09-11 — R12.19 Editable weekly learning goal + R12.20 Local weekly summary
+
 ## 2026-09-11 — R12.19 Editable weekly learning goal + R12.20 Local weekly summary
 
 Implemented R12.19 and R12.20 as one coherent goal-and-feedback pair (daily goal was already tier-editable with cloud double-write; the real gap was the weekly axis):
