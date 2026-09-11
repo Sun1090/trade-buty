@@ -1,5 +1,26 @@
 # Progress
 
+## 2026-09-11 — R12.23 Stats consistency audit
+
+Implemented R12.23 as a cross-aggregator reconciliation auditor plus dev-time diagnosis:
+
+- Added `src/lib/stats-consistency.ts`: `auditStatsConsistency()` asserts the identities and range invariants that must hold when every stats widget reads the same local facts — course overview ↔ course trend (readDocs/doneChapters/totalDocs/completionPct), quiz done counts, replay rounds, wrong pending vs due/overdue ranges, and all percentage fields inside [0,100] or null.
+- `StatsClient` runs the audit in non-production builds and `console.warn`s on drift (tree-shaken out of production bundles).
+- Tests prove the real builders agree on a shared fixture (zero issues) and that the auditor catches course/quiz/replay/wrong drift, range inversions, out-of-range percentages, and missing inputs.
+
+Verification recorded:
+
+- Targeted Vitest suite: `npx vitest run src/lib/stats-consistency.test.ts src/components/stats-client.test.tsx` passed.
+- Full suite: `npm test` passed with 134 test files and 1015 tests.
+- Lint gate: `npm run lint -- --quiet` passed; typecheck gate passed.
+
+Next queue:
+
+1. GitHub auth still needs reconnecting to push the R12 batches and watch CI on PR #1.
+2. Continue the remaining R12 suite: R12.9 sync conflict notice, R12.11 empty-state CTA review, R12.12 export versioning, R12.13 privacy settings, R12.14 retention docs, R12.15–R12.17 reminders, R12.18 completion celebration audit, R12.19 editable goals, R12.20 weekly summaries, R12.24 no-login degradation, R12.25 retention metric audit docs.
+
+## 2026-09-11 — R12.8 Local/cloud data source labels
+
 ## 2026-09-11 — R12.8 Local/cloud data source labels
 
 Implemented R12.8 as a truthful data-source indicator on the stats dashboard:

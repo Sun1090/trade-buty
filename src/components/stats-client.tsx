@@ -28,6 +28,7 @@ import { buildReplayTimeTrend } from "@/lib/replay-time-trend";
 import { buildNextSuggestion } from "@/lib/next-suggestion";
 import { getStatsRangeDays, setStatsRangeDays, STATS_RANGE_OPTIONS } from "@/lib/stats-range";
 import { getLastCloudSync } from "@/lib/cloud-sync-meta";
+import { auditStatsConsistency } from "@/lib/stats-consistency";
 import { useAuth } from "@/components/auth-provider";
 import { effectiveSrs, isSrsDue } from "@/lib/srs";
 import { localDateStr } from "@/lib/date-utils";
@@ -204,6 +205,13 @@ export function StatsClient({
         }
       : null,
   );
+
+  // R12.23：跨聚合器口径对账——开发/测试环境发现口径漂移即告警；生产构建摇树移除
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production" || !stats || !overview) return;
+    const issues = auditStatsConsistency({ overview, courseTrend, quizTrend, reviewTrend, replayTrend, stats });
+    if (issues.length > 0) console.warn("[stats] 数据口径不一致:", issues);
+  }, [stats, overview, courseTrend, quizTrend, reviewTrend, replayTrend]);
 
   if (!stats || !overview) return null;
 
