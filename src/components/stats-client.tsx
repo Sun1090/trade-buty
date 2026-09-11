@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 function useStreakShareUrl(
   payload: { currentStreak: number; longestStreak: number; locale: "zh" | "en" } | null,
@@ -31,6 +31,16 @@ import { getLastCloudSync } from "@/lib/cloud-sync-meta";
 import { auditStatsConsistency } from "@/lib/stats-consistency";
 import { dismissSyncConflicts, readSyncConflicts } from "@/lib/sync-conflicts";
 import { buildStatsExport, downloadStatsExport } from "@/lib/stats-export";
+import {
+  DEFAULT_REMINDER_SETTINGS,
+  getLastShownKey,
+  getReminderSettings,
+  markReminderShown,
+  reminderPeriodKey,
+  saveReminderSettings,
+  shouldShowReminder,
+  type ReminderCadence,
+} from "@/lib/review-reminder";
 import { getDailyGoalMin } from "@/lib/daily-goal";
 import { buildWeeklySummary, getWeeklyGoalMin, setWeeklyGoalMin, WEEKLY_GOAL_TIERS, type WeeklySummaryInput } from "@/lib/weekly-summary";
 import { getStudySeries } from "@/lib/study-time";
@@ -205,6 +215,25 @@ export function StatsClient({
     },
     getStatsRangeDays,
     () => 7,
+  );
+  // R12.15–R12.17：复习提醒（频率/免打扰/周期去重，时钟即渲染环境时间）
+  // 快照必须是值稳定类型（原始字符串），渲染期再解析，避免 useSyncExternalStore 无限重渲染
+  const reminderSettingsRaw = useSyncExternalStore(
+    (cb) => {
+      window.addEventListener("tb-reminder", cb);
+      return () => window.removeEventListener("tb-reminder", cb);
+    },
+    () => (typeof window === "undefined" ? null : localStorage.getItem("tb-review-reminder-settings")),
+    () => null,
+  );
+  const reminderSettings = useMemo(() => getReminderSettings(), [reminderSettingsRaw]);
+  const reminderLastShown = useSyncExternalStore(
+    (cb) => {
+      window.addEventListener("tb-reminder", cb);
+      return () => window.removeEventListener("tb-reminder", cb);
+    },
+    () => getLastShownKey(),
+    () => null,
   );
   // R12.8：数据来源标识（本机 vs 本机+云端、上次云端合并时间）
   const user = useAuth();
@@ -436,6 +465,31 @@ export function StatsClient({
         }}
       />
 
+      {/* R12.15–12.17：复习提醒横幅（本周期去重，可关闭） */}
+      {shouldShowReminder({ settings: reminderSettings, dueCount: dueReviewCount, lastShownKey: reminderLastShown }) && (
+        <section aria-label={dict.reminderTitle} className="rounded-2xl border border-[var(--accent)]/40 bg-[var(--accent-dim)]/60 p-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">⏰ {dict.reminderTitle}</p>
+            <p className="mt-1 text-sm text-muted">{dict.reminderBodyTpl.replace("{n}", String(dueReviewCount))}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <a href={`/${locale}/review`} className="rounded-full bg-accent-strong hover:bg-accent px-4 py-1.5 text-xs font-semibold text-white dark:text-[#06281c] transition">
+              {dict.reminderCta}
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                const key = reminderPeriodKey(reminderSettings);
+                if (key) markReminderShown(key);
+              }}
+              className="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs text-muted hover:border-accent/50 transition"
+            >
+              {dict.reminderLater}
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* R12.10：时间范围筛选（作用于下面四组趋势） */}
       <div className="flex items-center justify-end gap-2" role="group" aria-label={dict.rangeLabel}>
         <span className="text-xs text-faint">{dict.rangeLabel}</span>
@@ -635,6 +689,46 @@ export function StatsClient({
           reassureTpl: dict.streakReassureTpl,
         }}
       />
+
+      {/* R12.15/R12.16：复习提醒设置（频率 + 免打扰窗口） */}
+      <section aria-labelledby="reminder-settings-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
+        <p id="reminder-settings-title" className="text-sm font-semibold">{dict.reminderSettingsTitle}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <label className="flex items-center gap-2 text-xs text-muted">
+            {dict.reminderCadenceLabel}
+            <select
+              value={reminderSettings.cadence}
+              onChange={(e) => saveReminderSettings({ ...reminderSettings, cadence: e.target.value as ReminderCadence })}
+              className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-xs"
+              aria-label={dict.reminderCadenceLabel}
+            >
+              <option value="off">{dict.reminderCadenceOff}</option>
+              <option value="daily">{dict.reminderCadenceDaily}</option>
+              <option value="weekly">{dict.reminderCadenceWeekly}</option>
+            </select>
+          </label>
+          <span className="flex items-center gap-2 text-xs text-muted">
+            {dict.reminderDndLabel}
+            <select
+              value={reminderSettings.dndStartHour}
+              onChange={(e) => saveReminderSettings({ ...reminderSettings, dndStartHour: Number(e.target.value) })}
+              className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-xs"
+              aria-label={`${dict.reminderDndLabel} start`}
+            >
+              {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{h}:00</option>)}
+            </select>
+            →
+            <select
+              value={reminderSettings.dndEndHour}
+              onChange={(e) => saveReminderSettings({ ...reminderSettings, dndEndHour: Number(e.target.value) })}
+              className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-xs"
+              aria-label={`${dict.reminderDndLabel} end`}
+            >
+              {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{h}:00</option>)}
+            </select>
+          </span>
+        </div>
+      </section>
 
       {/* R12.6：断档恢复提示（断签且今日未破零时出现） */}
       <StreakRecoveryCard

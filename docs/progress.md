@@ -1,5 +1,27 @@
 # Progress
 
+## 2026-09-11 — R12.15–R12.17 Local review reminders
+
+Implemented the reminder triad as one coherent in-site system (no push, no service worker, no permissions — consistent with the no-tracking constitution):
+
+- Added `src/lib/review-reminder.ts`: settings (cadence off/daily/weekly + DND start/end hour) with repair-on-read clamping; `inDndWindow` supporting cross-midnight windows (22→8) and start==end as disabled; `reminderPeriodKey` (local date / ISO week via Thursday rule) so each period shows at most one banner; `shouldShowReminder` is pure with an injectable `now` — unit tests never touch real time.
+- Stats dashboard: dismissible reminder banner appears only with due reviews, outside the DND window, once per period (CTA links to `/{locale}/review`; "Later" marks the period shown). A settings section edits cadence and DND window with bilingual labels and persists immediately.
+- Snapshot-stability lesson applied: `useSyncExternalStore` snapshots are raw strings and the parsed settings object is memoized — object-valued snapshots cause infinite re-render loops.
+
+Verification recorded:
+
+- Targeted Vitest suites: `src/lib/review-reminder.test.ts` (9 tests incl. cross-midnight, ISO-week boundaries, dedup), `src/components/stats-client.test.tsx` (3 reminder UI specs) passed.
+- Full suite: `npm test` passed with 140 test files and 1062 tests.
+- Lint gate: `npm run lint -- --quiet` passed; typecheck gate passed; `npm run check:ai-copy` passed.
+- Prior push CI on PR #1 passed (ci + Vercel).
+
+Next queue:
+
+1. Watch PR #1 CI after this push.
+2. Remaining R12: R12.13 privacy settings entry review, R12.14 retention docs, R12.25 retention metric audit docs — then R14 governance backlog (R14.1–R14.10).
+
+## 2026-09-11 — R12.18 Completion celebration audit (no profit hints)
+
 ## 2026-09-11 — R12.18 Completion celebration audit (no profit hints)
 
 Audited `ChapterCompleteCelebration` and found a real constitution violation, now fixed:

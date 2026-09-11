@@ -105,6 +105,16 @@ const dict = {
   dataExportBtn: "Export data",
   ctaQuiz: "Try a chapter quiz",
   weekSummaryTitle: "Weekly learning summary",
+  reminderTitle: "Review reminder",
+  reminderBodyTpl: "{n} wrong questions are due",
+  reminderCta: "Review now",
+  reminderLater: "Later",
+  reminderSettingsTitle: "Review reminder settings",
+  reminderCadenceLabel: "Frequency",
+  reminderCadenceOff: "Off",
+  reminderCadenceDaily: "Once a day",
+  reminderCadenceWeekly: "Once a week",
+  reminderDndLabel: "Do-not-disturb",
   weekSummaryTpl: "{m} min this week across {d} active days · {docs} read · {quiz} quizzes · {review} reviews · {replay} replay rounds",
   weekGoalLabel: "Weekly goal",
   weekGoalAchieved: "Weekly goal achieved 🎉",
@@ -406,5 +416,52 @@ describe("StatsClient weekly summary card (R12.19/R12.20)", () => {
     localStorage.setItem("tb-study-time", JSON.stringify({ [todayDateStr()]: { read: 60 * 60 } }));
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
     expect(await screen.findByText("Weekly goal achieved 🎉")).toBeInTheDocument();
+  });
+});
+
+describe("StatsClient review reminder banner + settings (R12.15–R12.17)", () => {
+  const overdueWrong = () =>
+    localStorage.setItem(
+      "tb-wrong",
+      JSON.stringify({ "spot:0": { chapterNum: "spot", questionIdx: 0, picked: 1, at: Date.now() - 86_400_000, srsStage: 0, srsDue: "2026-01-01" } }),
+    );
+
+  it("shows the banner when wrong questions are due and dedups once dismissed", async () => {
+    overdueWrong();
+    // 显式关闭免打扰窗（start==end），时钟无视当前系统时间（R12.17 纯逻辑层已做窗口用例）
+    localStorage.setItem("tb-review-reminder-settings", JSON.stringify({ cadence: "daily", dndStartHour: 26, dndEndHour: 26 }));
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    expect(await screen.findByLabelText("Review reminder")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Later" }));
+    expect(screen.queryByLabelText("Review reminder")).not.toBeInTheDocument();
+    expect(localStorage.getItem("tb-review-reminder-shown")).toBeTruthy();
+  });
+
+  it("never shows the banner with cadence off, no due reviews, or inside the DND window", async () => {
+    overdueWrong();
+    localStorage.setItem("tb-review-reminder-settings", JSON.stringify({ cadence: "off", dndStartHour: 22, dndEndHour: 8 }));
+    const first = render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    await screen.findByRole("button", { name: "Last 7 days" });
+    expect(screen.queryByLabelText("Review reminder")).not.toBeInTheDocument();
+    cleanup();
+
+    // 无到期错题（到期日远在未来）
+    localStorage.setItem("tb-review-reminder-settings", JSON.stringify({ cadence: "daily", dndStartHour: 26, dndEndHour: 26 }));
+    localStorage.setItem(
+      "tb-wrong",
+      JSON.stringify({ "spot:0": { chapterNum: "spot", questionIdx: 0, picked: 1, at: Date.now(), srsStage: 0, srsDue: "2099-01-01" } }),
+    );
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    await screen.findByRole("button", { name: "Last 7 days" });
+    expect(screen.queryByLabelText("Review reminder")).not.toBeInTheDocument();
+  });
+
+  it("persists cadence and DND edits from the settings panel", async () => {
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    await screen.findByRole("button", { name: "Last 7 days" });
+    fireEvent.change(screen.getByLabelText("Frequency"), { target: { value: "weekly" } });
+    expect(JSON.parse(localStorage.getItem("tb-review-reminder-settings")!).cadence).toBe("weekly");
+    fireEvent.change(screen.getByLabelText("Do-not-disturb start"), { target: { value: "13" } });
+    expect(JSON.parse(localStorage.getItem("tb-review-reminder-settings")!).dndStartHour).toBe(13);
   });
 });
