@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { highlight, snippetHtml } from "@/lib/search-utils";
@@ -302,12 +303,14 @@ export function SearchClient({
         <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center">
           <p className="text-3xl" aria-hidden>🔍</p>
           <p className="mt-3 font-medium">{dict.noResults}</p>
-          <p className="mt-2 text-sm text-muted">
-            {dict.emptyHint}{" "}
-            <a href={`/${locale}/path`} className="text-accent underline underline-offset-4">
-              {dict.browseCta}
-            </a>
-          </p>
+          <p className="mt-2 text-sm text-muted">{dict.emptyHint}</p>
+          <Link
+            href={`/${locale}/path`}
+            data-testid="search-empty-cta"
+            className="mt-5 inline-flex rounded-full bg-accent-strong px-5 py-2.5 font-semibold text-white transition hover:bg-accent dark:text-[#06281c]"
+          >
+            {dict.browseCta}
+          </Link>
           {diag?.kind === "typo" && diag.suggestions.length > 0 && (
             <div className="mt-5">
               <p className="mb-2 text-xs text-faint">{dict.didYouMean}</p>

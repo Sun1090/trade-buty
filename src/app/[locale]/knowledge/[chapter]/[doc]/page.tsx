@@ -40,6 +40,7 @@ import { CopyLinkButton } from "@/components/copy-link-button";
 import { ReadAloud } from "@/components/read-aloud";
 import { FocusMode } from "@/components/focus-mode";
 import { extractHeadings } from "@/lib/toc";
+import { KnowledgeMiss } from "@/components/knowledge-miss";
 
 export function generateStaticParams() {
   const params: { locale: string; chapter: string; doc: string }[] = [];
@@ -103,31 +104,16 @@ export default async function DocPage({
     );
     const tc = getDict(locale);
     return (
-      <div className="mx-auto max-w-3xl px-4 sm:px-5 py-16">
-        <p className="font-mono text-4xl text-accent">404</p>
-        <h1 className="mt-4 text-2xl font-bold">{tc.notFound.docMissing}</h1>
-        <p className="mt-2 text-sm text-muted">{tc.notFound.docHint}</p>
-        {suggestions.length > 0 && (
-          <>
-            <p className="mt-8 text-xs font-semibold uppercase tracking-[0.2em] text-accent mb-3">
-              {tc.notFound.suggestTitle}
-            </p>
-            <ol className="space-y-2.5" data-testid="doc-suggestions">
-              {suggestions.map((s) => (
-                <li key={s.href}>
-                  <Link
-                    href={s.href}
-                    className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-3 hover:border-[var(--accent)]/60 transition"
-                  >
-                    <span className="font-semibold">{s.title}</span>
-                    <span className="block text-xs text-faint font-mono mt-0.5">{s.slug}</span>
-                  </Link>
-                </li>
-              ))}
-            </ol>
-          </>
-        )}
-      </div>
+      <KnowledgeMiss
+        locale={locale}
+        kind="doc"
+        heading={tc.notFound.docMissing}
+        hint={tc.notFound.docHint}
+        suggestTitle={tc.notFound.suggestTitle}
+        searchCta={tc.notFound.searchCta}
+        pathCta={tc.notFound.pathCta}
+        suggestions={suggestions}
+      />
     );
   }
   const { prev, next } = getAdjacentDocs(locale, chapterSlug, docSlug);

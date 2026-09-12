@@ -107,3 +107,50 @@ test.describe("SEO 表面复核（R13.17）", () => {
     }
   });
 });
+
+/**
+ * R13.18：搜索引擎旧链接进入未知页面时，用户必须能一键返回搜索或学习路线。
+ */
+test.describe("无结果页面 CTA（R13.18）", () => {
+  test("根级 404 提供本地化可达入口", async ({ page }) => {
+    await page.goto("/missing-from-search-engine");
+    const ctas = page.getByTestId("root-no-result-cta");
+    await expect(ctas).toBeVisible();
+    await expect(ctas.locator('a[href="/en/search"]')).toBeVisible();
+    await expect(ctas.locator('a[href="/en/path"]')).toBeVisible();
+    await expect(ctas.locator('a[href="/en"]')).toBeVisible();
+  });
+
+  test("未知章节的搜索 CTA 进入当前语言搜索页", async ({ page }) => {
+    await page.goto("/zh/knowledge/nonexistent-chapter");
+    const ctas = page.getByTestId("chapter-no-result-cta");
+    await expect(ctas).toBeVisible();
+    const search = ctas.locator('a[href="/zh/search"]');
+    await expect(search).toBeVisible();
+    await expect(ctas.locator('a[href="/zh/path"]')).toBeVisible();
+    await search.click();
+    await expect(page).toHaveURL(/\/zh\/search$/);
+    await expect(page.getByRole("searchbox")).toBeVisible();
+  });
+
+  test("未知课程保留推荐并提供英文学习路线出口", async ({ page }) => {
+    await page.goto("/en/knowledge/getting-started/nonexistent-lesson");
+    const ctas = page.getByTestId("doc-no-result-cta");
+    await expect(ctas).toBeVisible();
+    await expect(page.getByTestId("doc-suggestions")).toBeVisible();
+    const path = ctas.locator('a[href="/en/path"]');
+    await path.click();
+    await expect(page).toHaveURL(/\/en\/path$/);
+    await expect(page.locator("a[href*='/knowledge/']").first()).toBeVisible();
+  });
+
+  test("搜索零结果提供明显的学习路线 CTA", async ({ page }) => {
+    await page.goto("/zh/search");
+    await page.getByRole("searchbox").fill("definitely-no-such-lesson");
+    const cta = page.getByTestId("search-empty-cta");
+    await expect(cta).toBeVisible();
+    await expect(cta).toHaveAttribute("href", "/zh/path");
+    await cta.click();
+    await expect(page).toHaveURL(/\/zh\/path$/);
+  });
+});
