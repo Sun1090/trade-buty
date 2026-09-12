@@ -1,11 +1,15 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { ReviewClient } from "./review-client";
 import type { ChapterQuiz } from "@/lib/quiz-types";
 
+const wrongState = vi.hoisted(() => ({
+  items: {} as Record<string, { chapterNum: string; questionIdx: number; picked: number; at: number }>,
+}));
+
 vi.mock("@/lib/wrongbook", () => ({
-  readWrong: () => ({}),
+  readWrong: () => wrongState.items,
   resolveWrong: vi.fn(),
   clearAllWrong: vi.fn(),
   applySrsResult: vi.fn(),
@@ -41,5 +45,27 @@ describe("ReviewClient (空态)", () => {
   it("空态显示引导 CTA", () => {
     const { container } = render(<ReviewClient quizzes={quizzes} dict={dict} locale="zh" />);
     expect(container.textContent).toContain("浏览课程");
+  });
+});
+
+describe("ReviewClient 重答选项键盘可达（R13.9）", () => {
+  beforeEach(() => {
+    wrongState.items = {
+      "spot:0": { chapterNum: "spot", questionIdx: 0, picked: 0, at: 1 },
+    };
+  });
+
+  afterEach(() => {
+    wrongState.items = {};
+  });
+
+  it("重答选项是按钮，作答后禁用", () => {
+    render(<ReviewClient quizzes={quizzes} dict={dict} locale="zh" />);
+    fireEvent.click(screen.getByText("开始快速重答"));
+
+    const optionA = screen.getByRole("button", { name: "A. a" });
+    expect(optionA).toBeEnabled();
+    fireEvent.click(optionA);
+    expect(optionA).toBeDisabled();
   });
 });
