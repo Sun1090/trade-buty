@@ -1,5 +1,30 @@
 # Progress
 
+## 云端合并前本地快照结构校验（Q2.4 / R12 数据韧性）
+
+- 状态：DONE（本地实现与全量验证完成；远端发布待授权）
+- 工作分支：`codex/zero-eslint-warnings`
+- PR：none
+- PR 状态：none
+- Base：`origin/main@53f7e01`
+- 远端 Head：none（`LOCAL_ONLY`，未推送）
+- 本地提交：`799831a`
+- 目标：修复合法 JSON 但结构损坏的本地 progress / wrongbook / replay / quiz 快照在登录云端合并时被当作强类型数据使用，导致异常值写回本机并影响合并摘要、冲突检测的问题。
+- 已完成：
+  - `sync-layer` 在合并前统一通过结构校验器读取 `tb-progress`、`tb-wrong`、`tb-replay-history` 与各章 `tb-quiz-*`，损坏顶层值回退为空快照。
+  - 进度过滤空章节、空课程标识、非数组与重复项；错题过滤空章节、非法数字、key 与内嵌 `chapterNum/questionIdx` 不一致的条目；回放过滤空币种/周期和非法计数；测验仅接受有限的非负 `best` 与布尔 `done`。
+  - 新增 4 组回归，覆盖 `null`/错误字段/错 key/空标识/损坏测验成绩，确认云端数据仍可恢复且本地不会写回 `NaN`。
+- 验证命令与结果：
+  - `npx vitest run src/lib/sync-layer-hydrate.test.ts src/lib/sync-layer.test.ts` → 2 文件 / 38 用例通过。
+  - `npm test` → 237 文件 / 1700 用例通过。
+  - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0；`npm run build` exit 0（473 个静态页面）。
+- 变更文件：`src/lib/sync-layer.ts`、`src/lib/sync-layer-hydrate.test.ts`。
+- 上游依赖：无。
+- 未验证项：远端 CI / Vercel 部署（`LOCAL_ONLY`，未推送、未部署）。
+- 风险与回滚：只收紧异常本地快照的读取结果，合法数据保持原样；回滚可撤销 `799831a`。
+- 下一步：把当前本地功能线推送为 PR，确认远端 CI 后按 rebase 策略合并。
+- 最后更新：2026-09-13
+
 ## 本地进度存储结构校验（Q2.4 / R12 数据韧性）
 
 - 状态：DONE（本地实现与全量验证完成；远端发布待授权）
