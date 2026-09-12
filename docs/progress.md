@@ -1,12 +1,36 @@
 # Progress
 
-## 环境变量文档门禁（docs/env.md ↔ 代码对账）
+## 无专属单测模块补测（storage-json / lazy enqueue / network quality hook）
 
 - 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
-- 工作分支：`codex/env-docs-completeness`
+- 工作分支：`codex/test-coverage-gaps`
 - PR：推送后跟踪
-- Base：`origin/main@f374570`
+- Base：`origin/main@5bca7a6`
 - 远端 Head：推送后跟踪
+- 本地提交：`test(storage): cover localStorage JSON readers and fallbacks`、`test(sync): cover the lazy enqueue fallback boundary`、`test(network): cover the reactive network quality hook`
+- 目标：扫描「被间接覆盖但无专属单测」的模块，挑出三个有真实分支逻辑的补测：`src/lib/storage-json.ts`（SSR / 损坏数据 / 非法数值回退）、`src/lib/sync-layer-queue-fallback.ts`（R9.6 动态 import 边界）、`src/components/use-network-quality.ts`（在线/慢速/离线重算与退订）。
+- 已完成：
+  - `src/lib/storage-json.test.ts`（10 例）：`isRecord` 只认普通对象；`readStorageJson` 解析成功、缺键返回 null、JSON 损坏返回 null、`getItem` 抛错（隐私模式）返回 null、SSR 无 storage 返回 null；`readNonNegativeNumber` 保留有限非负数并拒绝负数/NaN/Infinity/字符串；`readNonNegativeInteger` 四舍五入与回退。
+  - `src/lib/sync-layer-queue-fallback.test.ts`（3 例）：`enqueueWrite` 通过 `vi.hoisted` 打桩，验证参数原样转发、多类别（含 `wrongbook-delete` / `replay-best`）转发、以及 `await` 之前不触达 store（保住 R9.6 的 chunk 拆分语义）。
+  - `src/components/use-network-quality.test.tsx`（7 例，jsdom + `renderHook`）：默认 online、`navigator.onLine === false` → offline、`effectiveType === 3g` → slow、`saveData` → slow、窗口 `online`/`offline` 事件触发重算、connection `change` 事件触发重算、卸载时退订窗口与 connection 监听。
+- 变更文件（关键）：`src/lib/storage-json.test.ts`、`src/lib/sync-layer-queue-fallback.test.ts`、`src/components/use-network-quality.test.tsx`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npx vitest run src/lib/storage-json.test.ts` → 10 通过；`npx vitest run src/lib/sync-layer-queue-fallback.test.ts` → 3 通过；`npx vitest run src/components/use-network-quality.test.tsx` → 7 通过。
+  - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0。
+  - `npm test` → 245 文件 / 1778 用例通过（较 base `main@5bca7a6` 的 242 文件 / 1758 用例新增 3 文件 / 20 用例）。
+- 上游依赖：无（纯测试，未改运行时行为，未新增依赖）。
+- 未验证项：远端 CI 复跑结果。
+- 风险与回滚：只新增测试文件，不动产品代码；若某条断言与既有实现不符即为真实回归信号。回滚即撤销本分支提交。
+- 下一步：推送、CI 全绿后按 rebase 合并；继续扫描其它缺口（依赖月度审计补记、CI actions 的 Node.js 20 弃用注记）。
+- 最后更新：2026-09-13
+
+## 环境变量文档门禁（docs/env.md ↔ 代码对账）
+
+- 状态：DONE（远端 CI 全绿后已 rebase 合并进 main）
+- 工作分支：`codex/env-docs-completeness`
+- PR：[#24](https://github.com/Sun1090/trade-buty/pull/24)
+- Base：`origin/main@f374570`
+- 远端 Head：`568b3c0`（rebase 合并前 tip；合并后 main 为 `5bca7a6`）
 - 本地提交：`docs(env): complete the environment variable reference`、`test(env): gate the environment variable docs against code`
 - 目标：`docs/env.md` 自称「唯一受版本控制的环境变量说明」，但此前没有任何门禁保证它与真实 `process.env.*` 用法一致；同时发现 `NEXT_PUBLIC_AI_ENABLED`（R3.10 紧急总开关）根本没登记。补齐文档并把对账关系固化为 CI 门禁。
 - 已完成：
@@ -23,9 +47,9 @@
   - `npm test` → 242 文件 / 1758 用例通过（较 base `main@f374570` 的 241 文件 / 1749 用例新增 1 文件 / 9 用例）。
   - `npm run check:docs` exit 0（27 章 / 182 篇，zh/en 对齐）；`npm run check:secrets` exit 0（652 个文本文件无疑似凭据）；`npm run check:changelog` exit 0。
 - 上游依赖：无（纯静态审计脚本，复用现有 vitest，未新增依赖）。
-- 未验证项：远端 CI 复跑结果。
+- 未验证项：无（远端 CI 全绿）。
 - 风险与回滚：门禁为只读静态分析，最坏情况是误报阻断合并；回滚即撤销本分支提交。
-- 下一步：推送、CI 全绿后按 rebase 合并；再继续扫描未列出的真实技术缺口。
+- 下一步：已合并；继续按扫描结果补其它真实缺口。
 - 最后更新：2026-09-13
 
 ## 质量门禁覆盖补齐（R7.6 限流回归 + ops 门禁表）
