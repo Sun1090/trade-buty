@@ -79,7 +79,7 @@ async function main() {
     console.error(`[mobile] ${failures.length} 个页面横向溢出，构建阻断`);
     process.exit(1);
   }
-  console.log("[mobile] ✓ 12 个关键页面 320px 无溢出");
+  console.log(`[mobile] ✓ ${ROUTES.length} 个关键页面 320px 无溢出`);
 }
 
 main().catch((e) => {
