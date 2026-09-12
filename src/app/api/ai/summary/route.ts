@@ -4,6 +4,10 @@ import { retrieve } from "@/lib/ai/rag";
 import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { parseJsonLoose } from "@/lib/ai/json-extract";
+import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
+
+// R7.12：章节导语会调用 LLM，游客/登录分档限流。
+const summaryLimiter = createRateLimiter({ guestLimit: 20, authedLimit: 60 });
 
 export interface SummaryBody {
   chapter: string;
@@ -39,7 +43,15 @@ export function parseSummaryBody(value: unknown): SummaryBody | null {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
-    await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const decision = summaryLimiter.check(user?.id ?? clientIp(req), !!user);
+    if (!decision.allowed) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded", retryAfter: decision.retryAfterSec },
+        { status: 429, headers: { "Retry-After": String(decision.retryAfterSec) } },
+      );
+    }
 
     let raw1: unknown;
     try {

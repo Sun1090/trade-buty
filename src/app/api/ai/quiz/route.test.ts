@@ -75,3 +75,16 @@ describe("POST /api/ai/quiz 输入校验（R7.12）", () => {
     expect(chat).not.toHaveBeenCalled();
   });
 });
+
+describe("POST /api/ai/quiz 限流（R7.12）", () => {
+  it("超过每用户配额返回 429", async () => {
+    getUser.mockResolvedValue({ data: { user: { id: "quiz-rl-user" } }, error: null });
+    let last;
+    for (let i = 0; i < 41; i++) {
+      last = await POST(request({ items: [{ chapterNum: "01", questionIdx: 0 }] }));
+      if (last.status === 429) break;
+    }
+    expect(last!.status).toBe(429);
+    expect(Number(last!.headers.get("Retry-After"))).toBeGreaterThan(0);
+  });
+});

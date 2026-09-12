@@ -11,6 +11,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { QUIZZES } from "@/lib/quizzes";
 import { parseJsonLoose } from "@/lib/ai/json-extract";
 import { BoundedMap, sweepExpired } from "@/lib/bounded-map";
+import { createRateLimiter } from "@/lib/ai/rate-limit";
+
+// R7.12：AI 出题会调用 LLM，按用户限流（缓存命中不消耗生成预算，但仍走限流防刷）。
+const quizLimiter = createRateLimiter({ guestLimit: 40, authedLimit: 40 });
 
 
 interface GenerateBody {
@@ -45,6 +49,14 @@ export async function POST(req: NextRequest) {
   // 登录用户才可用（消耗较大）
   if (!user) {
     return NextResponse.json({ error: "Login required" }, { status: 401 });
+  }
+
+  const decision = quizLimiter.check(user.id, true);
+  if (!decision.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded", retryAfter: decision.retryAfterSec },
+      { status: 429, headers: { "Retry-After": String(decision.retryAfterSec) } },
+    );
   }
 
   let raw1: unknown;

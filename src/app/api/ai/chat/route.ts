@@ -18,14 +18,14 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { parseChatBody } from "@/lib/ai/chat-input";
 import { BoundedMap, sweepExpired } from "@/lib/bounded-map";
+import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
 
 // 简易内存 rate limit（Node.js 实例间相互独立，够用于防基础滥用）。
-// 用 BoundedMap 而不是裸 Map：否则伪造 X-Forwarded-For 的攻击者可以每请求
-// 塞一个新 key，把常驻实例的内存吃满。
-const IP_HITS_MAX = 10_000;
-const ipHits = new BoundedMap<string, { count: number; reset: number }>(IP_HITS_MAX);
-const GUEST_LIMIT = 10; // 游客每小时 10 次
-const AUTHED_LIMIT = 50; // 登录每小时 50 次
+// 共用 R7.12 的限流器：底层 BoundedMap 防止伪造 X-Forwarded-For 撑爆内存。
+const chatLimiter = createRateLimiter({
+  guestLimit: 10, // 游客每小时 10 次
+  authedLimit: 50, // 登录每小时 50 次
+});
 
 // 相同问题缓存（10 分钟 TTL，降低 AI API 消耗）；同样有容量上限，
 // 避免不同问题无限堆积。
@@ -38,30 +38,18 @@ export async function POST(req: NextRequest) {
   // 不会出现「先解析再限流」的绕过窗口。
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+  const ip = clientIp(req);
 
   // rate limit（配额随响应头返回：游客前端展示剩余次数，429 附 Retry-After）
-  const limit = user ? AUTHED_LIMIT : GUEST_LIMIT;
-  const now = Date.now();
-  // 表变大时顺手清掉已过期窗口（按需触发，不做每请求全量扫描）
-  sweepExpired(ipHits, (v) => v.reset <= now, 5_000);
-  const hit = ipHits.get(ip);
-  let quotaRemaining: number;
-  if (hit && now < hit.reset) {
-    if (hit.count >= limit) {
-      const retrySec = Math.ceil((hit.reset - now) / 1000);
-      return NextResponse.json(
-        { error: "Rate limit exceeded", retryAfter: retrySec },
-        { status: 429, headers: { "Retry-After": String(retrySec) } },
-      );
-    }
-    hit.count++;
-    ipHits.set(ip, hit);
-    quotaRemaining = limit - hit.count;
-  } else {
-    ipHits.set(ip, { count: 1, reset: now + 3600_000 });
-    quotaRemaining = limit - 1;
+  const decision = chatLimiter.check(ip, !!user);
+  if (!decision.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded", retryAfter: decision.retryAfterSec },
+      { status: 429, headers: { "Retry-After": String(decision.retryAfterSec) } },
+    );
   }
+  const limit = decision.limit;
+  const quotaRemaining = decision.remaining;
   // 仅游客暴露配额头，登录用户不展示配额提示
   const withQuotaHeaders = (h: Headers) => {
     if (!user) {

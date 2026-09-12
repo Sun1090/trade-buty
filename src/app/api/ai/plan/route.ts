@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { chat } from "@/lib/ai/client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { parseJsonLoose } from "@/lib/ai/json-extract";
+import { createRateLimiter } from "@/lib/ai/rate-limit";
+
+// R7.12：学习计划会调用 LLM，按用户限流，避免单账号无限打端点烧预算。
+const planLimiter = createRateLimiter({ guestLimit: 30, authedLimit: 30 });
 
 export interface PlanBody {
   doneChapters: string[];
@@ -54,6 +58,14 @@ export async function POST(req: NextRequest) {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Login required" }, { status: 401 });
+
+    const decision = planLimiter.check(user.id, true);
+    if (!decision.allowed) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded", retryAfter: decision.retryAfterSec },
+        { status: 429, headers: { "Retry-After": String(decision.retryAfterSec) } },
+      );
+    }
 
     let raw1: unknown;
     try {
