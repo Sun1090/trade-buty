@@ -35,4 +35,4 @@
 
 `npm run audit:prod` 只审计实际部署的依赖，并在 high / critical 漏洞时阻断 CI。2026-09-12 的审计发现 `next@16.3.1` 命中 critical Image Optimization RCE 公告，已升级到 `16.3.5`；`sharp` 同时更新到 `0.35.4`。`gray-matter` 的 `js-yaml@3.15.2` 与 ESLint 配置链的 `js-yaml@4.3.2` 通过 npm `overrides` 固定到修复版本。生产依赖审计结果必须保持 0。
 
-完整开发依赖审计中仍有 `@lhci/cli@0.15.1` 自带的 Lighthouse / Puppeteer / archive 工具链告警；截至本次审查没有修复版，且这些包只在本地与 CI 审计阶段运行，不进入 Next 产物。它们不是“无风险”，但由生产门禁单独隔离，升级依赖时继续复查。
+完整依赖审计现已保持 0 漏洞。`@lhci/cli@0.15.1` 仍固定依赖 Lighthouse 12，但 Lighthouse 13.4.1 已修复其 Puppeteer/archive 链告警；本项目通过 npm `overrides` 固定 `lighthouse@13.4.1`、`tmp@0.2.7`、`uuid@11.1.1` 与 `qs@6.16.0`，并已用完整 `lhci autorun`、构建和测试回归验证兼容性。CI 同时运行 `audit:prod` 与 `audit:all`，任一 high/critical 漏洞都会阻断。
