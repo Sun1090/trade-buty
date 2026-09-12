@@ -29,7 +29,9 @@ export function Collapsible({
         {open && <div className="mt-3">{children}</div>}
       </div>
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
         className="mt-3 text-sm text-accent hover:text-foreground transition font-medium inline-flex items-center gap-1"
       >
         {open ? collapseLabel : expandLabel}
