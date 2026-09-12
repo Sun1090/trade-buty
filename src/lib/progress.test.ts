@@ -47,6 +47,31 @@ describe("progress storage", () => {
     expect(readProgress()).toEqual({});
   });
 
+  it("合法但结构错误的 progress 返回空对象", () => {
+    for (const raw of ["null", "[]", '"oops"', "42"]) {
+      store.set("tb-progress", raw);
+      expect(readProgress()).toEqual({});
+    }
+  });
+
+  it("过滤非数组章节、非字符串文档并去重", () => {
+    store.set(
+      "tb-progress",
+      JSON.stringify({
+        spot: ["a", "a", "b", 3, null],
+        broken: "not-an-array",
+        empty: [],
+      }),
+    );
+    expect(readProgress()).toEqual({ spot: ["a", "b"], empty: [] });
+  });
+
+  it("结构损坏后仍可正常标记并恢复进度", () => {
+    store.set("tb-progress", "null");
+    expect(() => markRead("spot", "a")).not.toThrow();
+    expect(readProgress()).toEqual({ spot: ["a"] });
+  });
+
   it("首次标记课程会写入 completion ledger", () => {
     const before = Date.now();
     markRead("getting-started", "market-overview");
@@ -74,6 +99,23 @@ describe("progress storage", () => {
     expect(readProgressCompletions()["futures:margin"]).toMatchObject({
       chapter: "futures",
       doc: "margin",
+    });
+  });
+
+  it("completion ledger 忽略非对象条目并清洗字段", () => {
+    store.set(
+      "tb-progress-completions",
+      JSON.stringify({
+        good: { chapter: "spot", doc: "a", at: 1 },
+        nullish: null,
+        array: [],
+        partial: { chapter: "futures", at: "bad" },
+      }),
+    );
+
+    expect(readProgressCompletions()).toEqual({
+      good: { chapter: "spot", doc: "a", at: 1 },
+      partial: { chapter: "futures" },
     });
   });
 });
