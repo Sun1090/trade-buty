@@ -47,6 +47,19 @@
 - `follow`：保留推荐位的内链权重；
 - **不产出 canonical**：指向一个不存在的 URL 只会制造重复信号。
 
+### 软 404 与「根级伪页面」的边界
+
+软 404 只适用于**路由确实存在、但 slug 无效**的动态段（知识库章节 / 课程）。根级的
+**不存在路径**（`/foo.png`、`/apple-icon`、`/sitemap.json`…）不属于这一类：它们过去因
+`src/proxy.ts` 的 matcher 用 `.*\.\w+$` 通配放行而落进根级动态段 `/[locale]`，
+被当成非法 locale 渲染成 HTTP 200 的首页外壳——对搜索引擎同样是软 404，却没有任何
+`noindex` 信号，比知识库软 404 更隐蔽。
+
+现在 matcher 改为**显式列举真实静态表面**（`public/` 文件、app 根级 file-route、
+根级真实页面前缀 `/share/`），且每条都锚定路径边界；其余根级路径一律补 `/{locale}`
+前缀、由路由层正常返回 404。两侧回归分别由 `e2e/static-surface.spec.ts`（HTTP 契约）
+与 `src/proxy.test.ts`（`public/` 全文件枚举守卫，新增静态文件漏登记即失败）钉住。
+
 ## sitemap 的 `lastmod`
 
 知识库页面的 `lastmod` 取知识库子模块 HEAD 的提交时间（`src/lib/kb-freshness.ts`），
