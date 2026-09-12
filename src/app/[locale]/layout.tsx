@@ -9,6 +9,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { SyncSummaryToastLazy } from "@/components/sync-summary-toast-lazy";
 import { ReturnNudgeToastLazy } from "@/components/return-nudge-toast-lazy";
 import { InviteBanner } from "@/components/invite-banner";
+import { InstallPrompt } from "@/components/install-prompt";
 import { OnboardingTour } from "@/components/onboarding-tour";
 import { MobileNav } from "@/components/mobile-nav";
 import { BookmarkCount } from "@/components/bookmark-count";
@@ -207,6 +208,10 @@ export default async function LocaleLayout({
           bodyTpl: t.invite.bodyTpl,
           dismiss: t.invite.dismiss,
         }}
+        locale={locale === "en" ? "en" : "zh"}
+      />
+      <InstallPrompt
+        labels={t.install}
         locale={locale === "en" ? "en" : "zh"}
       />
       <SyncSummaryToastLazy />

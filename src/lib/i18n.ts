@@ -327,6 +327,12 @@ const zh = {
     bodyTpl: "你通过邀请链接进入 Trade Buty。一起学起来吧。",
     dismiss: "知道了",
   },
+  install: {
+    title: "安装 Trade Buty",
+    body: "浏览器允许时可添加到设备，以独立窗口打开。不会自动安装，也不会发送通知。",
+    install: "安装",
+    dismiss: "暂不",
+  },
   share: {
     quizTitleTpl: "{chapter} · {grade} 评级 · {score}/{total}",
     quizDescTpl: "我刚在 Trade Buty 完成「{chapter}」随堂测，{score}/{total}（{percent}%）。你也来试试？",
@@ -691,6 +697,12 @@ const en: Dict = {
     titleTpl: "Invited by a friend 🎉 · ref {ref}",
     bodyTpl: "You arrived via a referral link. Welcome!",
     dismiss: "Got it",
+  },
+  install: {
+    title: "Install Trade Buty",
+    body: "Add it to this device for a standalone window when your browser allows it. Nothing installs or sends notifications automatically.",
+    install: "Install",
+    dismiss: "Not now",
   },
   share: {
     quizTitleTpl: "{chapter} · Grade {grade} · {score}/{total}",

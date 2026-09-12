@@ -20,6 +20,25 @@ async function waitForServiceWorkerControl(page: Page) {
   );
 }
 
+async function emitInstallPrompt(page: Page) {
+  await page.evaluate(() => {
+    const runtime = window as Window & { __installPromptCalls?: number };
+    runtime.__installPromptCalls = 0;
+    const event = new Event("beforeinstallprompt", { cancelable: true });
+    Object.defineProperties(event, {
+      prompt: {
+        value: async () => {
+          runtime.__installPromptCalls = (runtime.__installPromptCalls ?? 0) + 1;
+        },
+      },
+      userChoice: {
+        value: Promise.resolve({ outcome: "accepted", platform: "web" }),
+      },
+    });
+    window.dispatchEvent(event);
+  });
+}
+
 test.describe("PWA 离线兜底", () => {
   test("manifest / sw / offline 静态产物带正确响应契约", async ({ request }) => {
     const manifestResponse = await request.get("/manifest.webmanifest");
@@ -111,5 +130,70 @@ test.describe("PWA 离线兜底", () => {
           url.includes("/knowledge-assets/")
       )
     ).toBe(false);
+  });
+});
+
+test.describe("PWA 安装提示（R13.14）", () => {
+  test("浏览器提供安装能力时显示，点击后调用原生 prompt 且不再展示", async ({
+    page,
+  }) => {
+    await page.goto("/zh");
+    await expect(page.locator("header")).toBeVisible();
+    await emitInstallPrompt(page);
+
+    const prompt = page.getByTestId("install-prompt");
+    await expect(prompt).toBeVisible();
+    await expect(prompt).toContainText("不会自动安装");
+
+    await prompt.getByRole("button", { name: "安装" }).click();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window as Window & { __installPromptCalls?: number })
+              .__installPromptCalls ?? 0
+        )
+      )
+      .toBe(1);
+    await expect(prompt).toBeHidden();
+    await expect
+      .poll(() =>
+        page.evaluate(() => localStorage.getItem("tb-install-prompt-dismissed"))
+      )
+      .toBe("1");
+  });
+
+  test("选择暂不后写入本地状态，刷新并再次收到事件也不再展示", async ({
+    page,
+  }) => {
+    await page.goto("/zh");
+    await expect(page.locator("header")).toBeVisible();
+    await emitInstallPrompt(page);
+
+    await page.getByTestId("install-prompt").getByRole("button", { name: "暂不" }).click();
+    await expect(page.getByTestId("install-prompt")).toBeHidden();
+
+    await page.reload();
+    await emitInstallPrompt(page);
+    await expect(page.getByTestId("install-prompt")).toBeHidden();
+  });
+
+  test("standalone 模式即使收到事件也保持静默", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "standalone", {
+        configurable: true,
+        value: true,
+      });
+    });
+    await page.goto("/zh");
+    await expect(page.locator("header")).toBeVisible();
+    await emitInstallPrompt(page);
+    await expect(page.getByTestId("install-prompt")).toBeHidden();
+  });
+
+  test("不支持安装的浏览器没有事件时不渲染任何提示", async ({ page }) => {
+    await page.goto("/zh");
+    await expect(page.locator("header")).toBeVisible();
+    await expect(page.getByTestId("install-prompt")).toBeHidden();
   });
 });
