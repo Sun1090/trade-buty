@@ -1,5 +1,22 @@
 # Progress
 
+## 搜索索引错误边界（Q2.6）
+
+- 状态：DONE
+- 目标：外部搜索索引加载失败时，不能再把失败伪装成“无结果”；图表、搜索、AI 三个入口都要有可恢复降级 UI。
+- 已完成：
+  - `SearchClient` 的裸 `fetch("/search-index.json")` 改为受保护加载：校验 HTTP 状态与数组载荷，失败显示 `role="alert"` 错误态和重试按钮。
+  - 错误态与无结果态互斥，重试成功后恢复搜索；补齐 zh/en 文案。
+  - 新增 2 个组件回归测试：首次失败不显示误导性空结果 CTA；重试成功恢复并只请求两次。
+- 验证命令与结果：
+  - `npx vitest run src/components/search-client.test.tsx` → 3/3 通过。
+  - `npm test` → 163 文件 / 1274 用例通过。
+  - `npm run lint` → exit 0（0 error / 59 warning）。
+  - `npm run typecheck` → exit 0。
+  - `npm run build` → exit 0（Next.js 16.3.5）。
+- 未验证项：远端 CI 与部署（LOCAL_ONLY，未推送）。
+- 最后更新：2026-09-12
+
 ## v0.6 关账与发布复盘（R13.25）
 
 - 状态：DONE（R13.23 作为同一里程碑的独立项为 BLOCKED_EXTERNAL，不随本项关账）

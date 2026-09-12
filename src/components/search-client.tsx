@@ -30,6 +30,8 @@ export function SearchClient({
     gapHint: string;
     filterZeroTpl: string;
     filterZeroCta: string;
+    indexError: string;
+    retry: string;
   };
 }) {
   const [query, setQuery] = useState("");
@@ -40,6 +42,7 @@ export function SearchClient({
   const [debouncedQ, setDebouncedQ] = useState("");
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [suggestIdx, setSuggestIdx] = useState(-1);
+  const [indexError, setIndexError] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(query), 200);
@@ -154,14 +157,27 @@ export function SearchClient({
       .map(({ e }) => e);
   }, [query, entries]);
 
+  // R13.25 / Q2.6：索引加载失败必须有降级 UI（原来的裸 fetch 会让「加载失败」伪装成「无结果」）。
+  async function loadIndex(): Promise<boolean> {
+    try {
+      const res = await fetch("/search-index.json");
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error("invalid index payload");
+      setEntries(data as Entry[]);
+      setIndexError(false);
+      return true;
+    } catch {
+      setIndexError(true);
+      return false;
+    }
+  }
+
   async function onInput(value: string) {
     setQuery(value);
     setSuggestOpen(value.trim().length > 0);
     setSuggestIdx(-1);
-    if (!entries) {
-      const res = await fetch("/search-index.json");
-      setEntries(await res.json());
-    }
+    if (!entries) await loadIndex();
   }
 
   return (
@@ -171,7 +187,7 @@ export function SearchClient({
           type="search"
           maxLength={100}
           value={query}
-          onChange={(e) => onInput(e.target.value)}
+          onChange={(e) => void onInput(e.target.value)}
           onKeyDown={(e) => {
             if (suggestOpen && suggestions.length > 0 && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
               e.preventDefault();
@@ -257,7 +273,7 @@ export function SearchClient({
                 key={term}
                 onClick={() => {
                   setQuery(term);
-                  onInput(term);
+                  void onInput(term);
                 }}
                 className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs text-muted hover:text-accent hover:border-accent/50 transition"
               >
@@ -299,7 +315,23 @@ export function SearchClient({
           </button>
         </div>
       )}
-      {query.trim() && results.length === 0 && (
+      {query.trim() && indexError && (
+        <div
+          role="alert"
+          data-testid="search-index-error"
+          className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center"
+        >
+          <p className="text-3xl" aria-hidden>⚠️</p>
+          <p className="mt-3 font-medium">{dict.indexError}</p>
+          <button
+            onClick={() => void loadIndex()}
+            className="mt-5 inline-flex min-h-10 items-center rounded-full border border-[var(--border-strong)] px-5 py-2.5 font-semibold transition hover:border-accent/60"
+          >
+            {dict.retry}
+          </button>
+        </div>
+      )}
+      {query.trim() && !indexError && results.length === 0 && (
         <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center">
           <p className="text-3xl" aria-hidden>🔍</p>
           <p className="mt-3 font-medium">{dict.noResults}</p>
@@ -318,7 +350,7 @@ export function SearchClient({
                 {diag.suggestions.map((term) => (
                   <button
                     key={term}
-                    onClick={() => onInput(term)}
+                    onClick={() => void onInput(term)}
                     className="rounded-full border border-[var(--accent)]/40 bg-[var(--accent-dim)] px-3 py-1 text-xs text-accent transition hover:border-accent/60"
                   >
                     {term}
@@ -344,7 +376,7 @@ export function SearchClient({
             {hotTerms.map((term) => (
               <button
                 key={term}
-                onClick={() => onInput(term)}
+                onClick={() => void onInput(term)}
                 className="rounded-full border border-[var(--border)] bg-[var(--surface-hover)] px-3 py-1 text-xs text-muted hover:text-accent hover:border-[var(--accent)]/40 transition"
               >
                 {term}
