@@ -25,6 +25,26 @@
 - 图表库（recharts 等）：周报柱状用纯 CSS/SVG（R4.6）
 - dotenv：脚本手动解析 .env.local（沿用 generate-embeddings.mjs 惯例）
 
+## 月度审计日志（Q5.3）
+
+> 每月至少跑一次 `npm run audit:prod` + `npm run audit:all` 与 `npm outdated`，把结果与「暂缓升级」的理由登记在此，避免审计只停留在口头。
+
+### 2026-09-13
+
+- `npm run audit:prod` → `found 0 vulnerabilities`（exit 0）
+- `npm run audit:all` → `found 0 vulnerabilities`（exit 0）
+- `npm outdated`：落后项全部是 major，无 minor/patch 待跟：
+
+| 包 | 当前 | 最新 | 处理 |
+|---|---|---|---|
+| `@types/node` | 20.19.43 | 22.20.2 | 暂缓：等 TypeScript 主版本升级时一并跟到 Node 22 类型面，避免与 `tsconfig` 的 lib/target 设定错配 |
+| `eslint` | 9.39.5 | 10.10.0 | 暂缓：等 10.x 的 flat-config 生态（含各插件 peer 范围）稳定后再升，避免 0 warning 门禁被插件兼容问题带崩 |
+| `js-yaml` | 4.3.2 | 5.4.1 | 暂缓：当前 4.3.2 由 `overrides` 固定在 `gray-matter` 与 ESLint 配置链上；升级 5.x 需先验证两处调用方 API 兼容 |
+| `typescript` | 5.9.3 | 7.0.2 | 暂缓：跨两个 major，需先单独开分支跑 `tsc --noEmit` + 全量测试评估破坏面 |
+| `vitest` | 4.1.11 | 5.0.0 | 暂缓：等 5.x 对 React 19 / jsdom 环境的支持矩阵明确后再升 |
+
+> 判断依据：`npm outdated` 只把「latest 领先 wanted」的包列出来；本仓库锁文件已把想要的版本都拉到锁内，因此本表只讨论 major 迁移。
+
 ## 审查流程
 
 1. PR 中说明：解决什么问题、为什么内置/已有依赖不行、体积影响（`npm run check:bundle`）

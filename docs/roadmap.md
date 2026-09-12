@@ -50,7 +50,7 @@
 
 - [x] Q5.1 docs 与实现一致性走查（plan/research/p2-research 已区分历史选型与当前实现；新增 `check:docs` 校验课程数、当前技术栈与中立承诺）
 - [x] Q5.2 AGENTS.md 契约段复核（删除旧 `NN-*`/数字文件名描述，统一为 `{zh,en}/English-slug`；`check:docs` 防回归）
-- [x] Q5.3 依赖月度审计（2026-09-12：`audit:prod` 0 漏洞；`npm outdated` 记录 React/Supabase/Playwright/Testing Library 等补丁或 minor，ESLint 10 / TypeScript 7 / Vitest 5 等 major 暂缓并单独评估）
+- [x] Q5.3 依赖月度审计（2026-09-13：`audit:prod` / `audit:all` 均 `found 0 vulnerabilities`；`npm outdated` 只剩 `@types/node`、`eslint`、`js-yaml`、`typescript`、`vitest` 五个 major 待评估，逐条暂缓理由见 `docs/deps.md` §月度审计日志。历史：2026-09-12 曾记录 React/Supabase/Playwright/Testing Library 等补丁或 minor）
 - [ ] Q5.4 [手动] 备份演练：Supabase 数据导出 + 仓库镜像确认 — 本地半边已完成：`npm run backup:drill` 全自动跑「迁移 → 全业务表灌数据 → `pg_dump -Fc`(30,963 bytes) → 销毁源库 → 全新实例 `pg_restore` → 数据/schema/RLS/约束指纹比对 → 重跑 pgTAP(38+26 断言)」，脚本与边界见 docs/database-testing.md 第 4 节；`BLOCKED_EXTERNAL`：Supabase 云导出（auth/Storage/项目配置）、定时备份与仓库镜像确认需云控制台权限。
 
 ## 版本关账标准
