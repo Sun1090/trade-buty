@@ -8,6 +8,7 @@
     "prebuild": "node scripts/sync-knowledge-assets.mjs && node scripts/generate-search-index.mjs && node scripts/validate-knowledge-contract.mjs && node scripts/generate-kb-titles.mjs",
     "build": "next build",
     "start": "next start",
+    "audit:prod": "npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "kb:update": "bash scripts/update-knowledge.sh",
@@ -63,7 +64,7 @@
     "github-slugger": "^2.0.0",
     "gray-matter": "^4.0.3",
     "lightweight-charts": "^5.2.1",
-    "next": "16.3.1",
+    "next": "16.3.5",
     "postgres": "^3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -81,11 +82,19 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.1",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.5",
     "jsdom": "^30.0.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "@eslint/eslintrc": {
+      "js-yaml": "4.3.2"
+    },
+    "gray-matter": {
+      "js-yaml": "3.15.2"
+    }
   }
 }

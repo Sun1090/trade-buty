@@ -30,3 +30,9 @@
 1. PR 中说明：解决什么问题、为什么内置/已有依赖不行、体积影响（`npm run check:bundle`）
 2. 登记到本表（包名、理由、否决的替代方案）
 3. CI 的 bundle 预算与 E2E 作为回归防线
+
+## 安全基线
+
+`npm run audit:prod` 只审计实际部署的依赖，并在 high / critical 漏洞时阻断 CI。2026-09-12 的审计发现 `next@16.3.1` 命中 critical Image Optimization RCE 公告，已升级到 `16.3.5`；`sharp` 同时更新到 `0.35.4`。`gray-matter` 的 `js-yaml@3.15.2` 与 ESLint 配置链的 `js-yaml@4.3.2` 通过 npm `overrides` 固定到修复版本。生产依赖审计结果必须保持 0。
+
+完整开发依赖审计中仍有 `@lhci/cli@0.15.1` 自带的 Lighthouse / Puppeteer / archive 工具链告警；截至本次审查没有修复版，且这些包只在本地与 CI 审计阶段运行，不进入 Next 产物。它们不是“无风险”，但由生产门禁单独隔离，升级依赖时继续复查。
