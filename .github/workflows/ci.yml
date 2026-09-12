@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# 同一 PR 连续 push 时取消被取代的运行（否则一次 push 会并行占用多份 runner）；
+# main 的 push 用 run_id 分组，保持每次提交都有独立的完整门禁结果。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ci:
     runs-on: ubuntu-latest

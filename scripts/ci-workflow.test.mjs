@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const workflowDir = ".github/workflows";
 const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+const ciWorkflowPath = path.join(workflowDir, "ci.yml");
 
 /** 仓库里所有 GitHub Actions 工作流文件（相对路径，稳定排序） */
 const workflowPaths = fs
@@ -121,6 +122,16 @@ describe("GitHub Actions workflow contract", () => {
     expect(problems, `存在无超时上界的 job：\n${problems.join("\n")}`).toEqual([]);
   });
 
+  it("CI 在 PR 事件上取消被取代的运行，main 的 push 保持独立", () => {
+    const [workflow] = loadWorkflow(ciWorkflowPath);
+    const concurrency = workflow.concurrency;
+    expect(concurrency, "ci.yml 缺少 concurrency 配置").toBeTruthy();
+    expect(String(concurrency["cancel-in-progress"])).toContain("pull_request");
+    const group = String(concurrency.group);
+    expect(group, "PR 分组需按 head_ref 收敛到同一分支").toContain("github.head_ref");
+    expect(group, "main 的 push 需用 run_id 与 PR 分组隔离").toContain("github.run_id");
+  });
+
   it("每个 run 步骤引用的 npm 脚本都真实存在（防重命名后静默失配）", () => {
     const missing = [];
     for (const { workflowPath, jobName, job } of allJobs()) {
@@ -159,7 +170,7 @@ describe("GitHub Actions workflow contract", () => {
 });
 
 describe("CI workflow contract", () => {
-  const ciPath = path.join(workflowDir, "ci.yml");
+  const ciPath = ciWorkflowPath;
   const [workflow] = loadWorkflow(ciPath);
 
   it("keeps all post-dry-run quality gates in the workflow", () => {
