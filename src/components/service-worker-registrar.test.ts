@@ -1,49 +1,43 @@
-// @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
-import {
-  registerServiceWorker,
-  type ServiceWorkerContainerLike,
-} from "@/components/service-worker-registrar";
+import { registerServiceWorker } from "./service-worker-registrar";
 
 describe("registerServiceWorker（R13.13）", () => {
-  it("生产环境下以根作用域注册 /sw.js 并触发更新检查", async () => {
-    const update = vi.fn(async () => undefined);
-    const register = vi.fn(async () => ({ update }));
-    const container: ServiceWorkerContainerLike = { register };
-
-    await expect(registerServiceWorker(container, true)).resolves.toBe(true);
-    expect(register).toHaveBeenCalledWith("/sw.js", { scope: "/" });
-    expect(update).toHaveBeenCalledTimes(1);
-  });
-
-  it("开发/测试环境不注册", async () => {
-    const register = vi.fn(async () => ({}));
+  it("does nothing when registration is disabled", async () => {
+    const register = vi.fn();
     await expect(registerServiceWorker({ register }, false)).resolves.toBe(
-      false
+      false,
     );
     expect(register).not.toHaveBeenCalled();
   });
 
-  it("浏览器不支持 Service Worker 时静默跳过", async () => {
+  it("returns false when the browser has no service worker container", async () => {
     await expect(registerServiceWorker(undefined, true)).resolves.toBe(false);
   });
 
-  it("注册失败不抛出（无 SW 时站点保持可用）", async () => {
-    const register = vi.fn(async () => {
-      throw new Error("SecurityError");
-    });
+  it("registers /sw.js at root scope and pings for an update", async () => {
+    const update = vi.fn().mockResolvedValue(undefined);
+    const register = vi.fn().mockResolvedValue({ update });
+    await expect(registerServiceWorker({ register }, true)).resolves.toBe(true);
+    expect(register).toHaveBeenCalledWith("/sw.js", { scope: "/" });
+    expect(update).toHaveBeenCalledTimes(1);
+  });
+
+  it("swallows registration failures so the site keeps working", async () => {
+    const register = vi.fn().mockRejectedValue(new Error("blocked"));
     await expect(registerServiceWorker({ register }, true)).resolves.toBe(
-      false
+      false,
     );
   });
 
-  it("更新检查失败不影响注册结果", async () => {
-    const update = vi.fn(async () => {
-      throw new Error("offline");
-    });
-    const register = vi.fn(async () => ({ update }));
+  it("stays successful when the post-registration update ping rejects", async () => {
+    const update = vi.fn().mockRejectedValue(new Error("offline"));
+    const register = vi.fn().mockResolvedValue({ update });
     await expect(registerServiceWorker({ register }, true)).resolves.toBe(true);
-    // 让 update() 的 rejection 处理跑完，确保没有 unhandled rejection
-    await Promise.resolve();
+    expect(update).toHaveBeenCalledTimes(1);
+  });
+
+  it("handles registrations that resolve without a registration object", async () => {
+    const register = vi.fn().mockResolvedValue(undefined);
+    await expect(registerServiceWorker({ register }, true)).resolves.toBe(true);
   });
 });
