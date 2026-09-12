@@ -121,7 +121,18 @@ export function readWrong(): Record<string, WrongEntry> {
 
 export function recordWrong(chapterNum: string, questionIdx: number, picked: number) {
   const w = readWrong();
-  w[`${chapterNum}:${questionIdx}`] = { chapterNum, questionIdx, picked, at: Date.now() };
+  const outcome = srsOnAnswer(null, false);
+  if (outcome === "mastered") {
+    throw new Error("a wrong answer cannot be mastered");
+  }
+  w[`${chapterNum}:${questionIdx}`] = {
+    chapterNum,
+    questionIdx,
+    picked,
+    at: Date.now(),
+    srsStage: outcome.stage,
+    srsDue: outcome.due,
+  };
   try {
     localStorage.setItem(KEY, JSON.stringify(w));
   } catch {
@@ -133,7 +144,7 @@ export function recordWrong(chapterNum: string, questionIdx: number, picked: num
   } catch {
     // ignore
   }
-  syncWrongbookWrite(chapterNum, questionIdx, picked);
+  syncWrongbookWrite(chapterNum, questionIdx, picked, outcome.stage, outcome.due);
 }
 
 export function resolveWrong(chapterNum: string, questionIdx: number) {

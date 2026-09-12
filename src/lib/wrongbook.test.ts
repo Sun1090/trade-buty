@@ -9,10 +9,19 @@ const localStorageMock = {
 vi.stubGlobal("localStorage", localStorageMock);
 vi.stubGlobal("window", { dispatchEvent: vi.fn() });
 
+vi.mock("./sync-layer", () => ({
+  syncWrongbookWrite: vi.fn(),
+  syncWrongbookDelete: vi.fn(),
+}));
+
+const { syncWrongbookWrite } = await import("./sync-layer");
 const { readWrong, recordWrong, resolveWrong } = await import("./wrongbook");
 
 describe("wrongbook storage", () => {
-  beforeEach(() => store.clear());
+  beforeEach(() => {
+    store.clear();
+    vi.clearAllMocks();
+  });
 
   it("空时返回空对象", () => {
     expect(readWrong()).toEqual({});
@@ -36,6 +45,43 @@ describe("wrongbook storage", () => {
     const second = readWrong()["spot:2"];
     expect(second.picked).toBe(3);
     expect(second.at).toBeGreaterThanOrEqual(first.at);
+  });
+
+  it("recordWrong 持久化 SRS stage/due 并同步到云端", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 13, 12, 0, 0));
+    try {
+      recordWrong("spot", 2, 3);
+      expect(readWrong()["spot:2"]).toMatchObject({
+        srsStage: 0,
+        srsDue: "2026-09-14",
+      });
+      expect(vi.mocked(syncWrongbookWrite)).toHaveBeenCalledWith(
+        "spot",
+        2,
+        3,
+        0,
+        "2026-09-14",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("recordWrong 再次答错时把已有 SRS 计划重置为 stage 0", () => {
+    store.set("tb-wrong", JSON.stringify({
+      "spot:2": {
+        chapterNum: "spot",
+        questionIdx: 2,
+        picked: 0,
+        at: 1,
+        srsStage: 4,
+        srsDue: "2026-12-01",
+      },
+    }));
+    recordWrong("spot", 2, 1);
+    expect(readWrong()["spot:2"].srsStage).toBe(0);
+    expect(readWrong()["spot:2"].srsDue).not.toBe("2026-12-01");
   });
 
   it("resolveWrong 移除指定错题", () => {
