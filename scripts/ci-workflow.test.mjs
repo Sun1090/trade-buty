@@ -89,4 +89,16 @@ describe("CI workflow contract", () => {
     }
     expect(missing, `工作流引用了不存在的脚本文件：\n${missing.join("\n")}`).toEqual([]);
   });
+
+  it("Playwright Chromium 在移动端门禁和 E2E 之前安装", () => {
+    const [workflow] = loadWorkflow();
+    const commands = (workflow.jobs.ci.steps ?? []).map((step) => step.run).filter(Boolean);
+    const installIndex = commands.findIndex((command) => command.includes("playwright install"));
+    const mobileIndex = commands.findIndex((command) => command.includes("npm run check:mobile"));
+    const e2eIndex = commands.findIndex((command) => command.includes("npm run e2e"));
+
+    expect(installIndex, "缺少 Playwright 浏览器安装步骤").toBeGreaterThanOrEqual(0);
+    expect(installIndex, "浏览器安装必须早于移动端门禁").toBeLessThan(mobileIndex);
+    expect(installIndex, "浏览器安装必须早于 E2E").toBeLessThan(e2eIndex);
+  });
 });
