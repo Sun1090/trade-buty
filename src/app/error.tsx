@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
+import { reportRouteError } from "@/lib/error-report";
 
 export default function ErrorPage({
   error,
@@ -10,6 +12,10 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    reportRouteError(error, "route-error");
+  }, [error]);
+
   return (
     <div className="relative mx-auto max-w-3xl px-5 py-28 text-center overflow-hidden">
       <div

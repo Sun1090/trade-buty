@@ -30,3 +30,16 @@ export function reportError(
     // 上报本身永不抛错
   }
 }
+
+/**
+ * 路由级 ErrorBoundary 的统一上报入口（R7.6 的 `fatal` 场景）。
+ *
+ * Next.js 会把服务端异常的摘要哈希放进 `error.digest`，用于和服务端日志对账；
+ * 有就带上，没有就不塞空 meta，保证控制台输出稳定可断言。
+ */
+export function reportRouteError(
+  error: Error & { digest?: string },
+  scope = "route-error",
+): void {
+  reportError("fatal", scope, error, error.digest ? { digest: error.digest } : undefined);
+}
