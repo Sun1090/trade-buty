@@ -1,5 +1,31 @@
 # Progress
 
+## CI actions 升到 node24 运行时（清掉 GitHub 弃用注记）
+
+- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 工作分支：`codex/ci-actions-node24`
+- PR：[#26](https://github.com/Sun1090/trade-buty/pull/26)
+- Base：`origin/main@cf0f92a`
+- 远端 Head：`c6bdf3d`（rebase onto `main@cf0f92a` 后的 tip）
+- 本地提交：`ci(actions): run official actions on node24 and guard against regressions`
+- 目标：PR #24 的 CI 日志出现 GitHub 注记「Node.js 20 is deprecated…actions/checkout@v4、actions/setup-node@v4、actions/cache@v4、actions/upload-artifact@v4」。这些 v4 action 打包在 Node.js 20 上，被强制改用 Node.js 24 运行；GitHub 会逐步下线该兼容层，属于真实（非阻塞但有期限）的 CI 债务。
+- 已完成：
+  - `.github/workflows/ci.yml`：`actions/checkout@v4 → v7`、`actions/setup-node@v4 → v7`、`actions/cache@v4 → v6`、`actions/upload-artifact@v4 → v7`（四个 action 切到 node24 运行时的稳定 major；`ci` 与 `db-tests` 两个作业同步）。
+  - `scripts/ci-workflow.test.mjs`：新增回归守卫，遍历所有作业的 `uses:`，对 `checkout/setup-node/cache/upload-artifact` 设最小 major（5/5/5/6），低于即失败并报出具体作业与版本。
+  - `docs/ops.md`：门禁表下补「运行时注记」，说明这四个 action 的 node24 下限与守卫位置。
+- 变更文件（关键）：`.github/workflows/ci.yml`、`scripts/ci-workflow.test.mjs`、`docs/ops.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npx vitest run scripts/ci-workflow.test.mjs` → 7 用例通过（较 base 新增 1 例）。
+  - 负向验证：临时把 `actions/checkout@v7` 改回 `@v4` 后该用例失败并打印 `ci: actions/checkout@v4`，恢复后通过。
+  - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0。
+  - `npm test` → 242 文件 / 1759 用例通过（base `main@5bca7a6` 为 242 文件 / 1758 用例，本分支只多 1 例）。
+  - `npm run check:secrets` exit 0；`npm run check:docs` exit 0。
+- 上游依赖：无（仅 action major 升级，未新增依赖）。四个 action 要求 runner ≥ 2.327.1，GitHub 托管 `ubuntu-latest` 已满足。
+- 未验证项：无（本 PR 的 CI 就是新版 action 的实跑验证：run `34716619164` → `ci` 5m+ pass、`db-tests` pass）。
+- 风险与回滚：若新版 action 的输入语义有变，PR 的 CI 会直接失败（不会静默通过）；回滚即把四个 `uses:` 改回原 major。
+- 下一步：推送、CI 全绿后按 rebase 合并；继续补齐 Q5.3 依赖月度审计的 2026-09-13 记录。
+- 最后更新：2026-09-13
+
 ## 无专属单测模块补测（storage-json / lazy enqueue / network quality hook）
 
 - 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
@@ -188,7 +214,6 @@
 - 未验证项：无（已 rebase 合并为 `main@4077e14`）。
 - 风险与回滚：只在错误路径增加一次 console 上报，不触碰成功路径；首屏 JS 零增长（`zh` 301.7KB 与 base 同量级）。回滚即撤销本分支提交。
 - 下一步：再评估「统一上报端点 + CSP `connect-src`」是否值得进首屏预算。
-- 最后更新：2026-09-13
 - 最后更新：2026-09-13
 
 ## 文档事实校正（roadmap Q2.3 + v0.6 复盘状态）
