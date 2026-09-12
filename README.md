@@ -43,6 +43,8 @@ npm run dev         # dev server
 npm run build       # production build (prebuild syncs assets/index/contract checks)
 npm run lint        # ESLint
 npm run typecheck   # next typegen + tsc --noEmit
+npm test            # Vitest unit/component tests
+npm run check:bundle # route-level first-load budgets (after build)
 ```
 
 ## Project Structure

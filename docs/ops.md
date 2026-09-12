@@ -27,7 +27,7 @@
 | `npm run check:search-index` | 搜索索引与构建产物一致：新文档必须进索引（R10.9，需先 build） | 检查 generate-search-index 是否漏同步 |
 | `npm run check:nav-chain` | 章节导航与上一篇/下一篇链路三条不变量（R10.10） | 修正 kb-order/content 导航语义 |
 | `npm run check:relative-links` | 相对链接跨语言解析：目标在当前 locale 真实存在（R10.11） | 修正 md 内相对链接/资产引用 |
-| `npm run check:bundle` | 首屏 JS gzip 预算 + AI chunk 隔离（R7.1，需先 build） | 拆分/按需加载超预算 chunk |
+| `npm run check:bundle` | 全部 zh/en 路由的 JS/CSS/HTML/total gzip 预算（R13.15）+ AI chunk 隔离（R7.1，需先 build） | 调整 `scripts/bundle-budgets.json` 或拆分/按需加载超预算 chunk（不得为掩盖回归直接放宽） |
 | 内容质量报告归档（CI artifact，R10.17） | docs/*.json、glossary/description 报告随 CI 归档 7 天 | —（只读产物） |
 
 > 执行顺序注记：E2E 与 Lighthouse 排在所有产物校验之后（R7.7/E2E 运行时向 `.next` 写 fallback 页，避免污染其后的 check 产物；顺序由 ci.yml 保证）。
