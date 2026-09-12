@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import config, {
   CONTENT_CACHE_POLICIES,
+  HSTS_VALUE,
   MARKET_CONNECT_SOURCES,
   SERVICE_WORKER_CACHE_POLICY,
 } from "../../next.config";
@@ -54,10 +55,22 @@ describe("next.config 内容产物缓存策略（R10.24）", () => {
       "Content-Security-Policy",
       "X-Content-Type-Options",
       "X-Frame-Options",
+      "Strict-Transport-Security",
       "Referrer-Policy",
       "Permissions-Policy",
     ]) {
       expect(keys).toContain(k);
     }
+  });
+
+  it("R7.12 下发 HSTS，且 max-age 保持在两年以上", async () => {
+    const rules = (await config.headers()) as HeaderRule[];
+    const generic = ruleFor("/:path*", rules)!;
+    const hsts = generic.headers.find((h) => h.key === "Strict-Transport-Security");
+
+    expect(hsts?.value).toBe(HSTS_VALUE);
+    const maxAge = Number(/max-age=(\d+)/.exec(hsts!.value)?.[1]);
+    expect(Number.isFinite(maxAge)).toBe(true);
+    expect(maxAge).toBeGreaterThanOrEqual(63072000);
   });
 });

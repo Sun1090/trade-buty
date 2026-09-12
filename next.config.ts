@@ -51,6 +51,9 @@ export const SERVICE_WORKER_CACHE_POLICY = {
   headers: [{ key: "Cache-Control", value: "no-cache" }],
 } as const;
 
+// R7.12：HSTS 值单独导出，单测锁定 max-age 下限，防止未来被误删或调成 0 而静默失去保护。
+export const HSTS_VALUE = "max-age=63072000; includeSubDomains";
+
 const nextConfig = {
   async headers() {
     return [
@@ -60,6 +63,9 @@ const nextConfig = {
           { key: "Content-Security-Policy", value: csp },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
+          // R7.12 补充：整站强制 HTTPS。Vercel 不会自动下发 HSTS，必须显式声明；
+          // 不含 preload，避免未来新增仅 HTTP 的子域被浏览器硬编码锁死。
+          { key: "Strict-Transport-Security", value: HSTS_VALUE },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Permissions-Policy",
