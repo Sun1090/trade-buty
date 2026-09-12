@@ -2,6 +2,11 @@
 
 > 本文件是唯一受版本控制的环境变量说明。`.env*` 全被 gitignore，
 > 本地复制以下变量写入 `.env.local`；线上写入 Vercel → Project Settings → Environment Variables。
+>
+> `NEXT_PUBLIC_` 前缀的变量在构建期内联进浏览器 bundle，可被任何访客读到；
+> 其余变量只在服务端可见。服务端密钥（`SUPABASE_SERVICE_ROLE_KEY`、`ADMIN_TOKEN`、
+> `AI_API_KEY`、`AI_EMBEDDING_KEY`）**绝不许**加 `NEXT_PUBLIC_` 前缀。
+> 本文件由 `npm run check:env-docs` 与代码对账：漏登记、幽灵条目、密钥进客户端模块都会挂 CI。
 
 ## Supabase（P2 数据层 + Auth）
 
@@ -24,8 +29,11 @@
 | `AI_EMBEDDING_MODEL` | RAG 要 | embedding 模型 |
 | `AI_EMBEDDING_KEY` | RAG 要 | embedding key（可与对话 key 不同） |
 | `AI_RETRIEVAL_JSON` | 否 | 检索配置覆盖，如 `{"chat":{"threshold":0.25}}`（见 R1.4） |
+| `NEXT_PUBLIC_AI_ENABLED` | 否 | 紧急总开关：设为字符串 `false` 时隐藏全部 AI 入口（R3.10），其它值或未设均视为开启；构建期内联到客户端 |
 
 无 AI key 时：AI 页显示未配置态，不阻断其他功能。
+
+紧急关闭：把 `NEXT_PUBLIC_AI_ENABLED` 设为 `false` 并重新部署，即可在所有页面隐藏 AI 入口（不改代码、不回滚）。
 
 ## 运营
 
