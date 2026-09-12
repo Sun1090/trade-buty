@@ -61,20 +61,20 @@ jobs:
       - name: 新章节 dry-run 冒烟（R10.16）
         run: |
           mkdir -p /tmp/draft-ch/demo
-          cat > /tmp/draft-ch/demo/README.md <<'MD'
----
-title: 99 · 冒烟章节
-description: 供 CI 验证 dry-run 命令可运行。
----
-# 99 · 冒烟章节
-MD
-          cat > /tmp/draft-ch/demo/intro.md <<'MD'
----
-title: 01 · 冒烟课程
-description: 冒烟用课程。
----
-# 01 · 冒烟课程
-MD
+          printf '%s\n' \
+            '---' \
+            'title: 99 · 冒烟章节' \
+            'description: 供 CI 验证 dry-run 命令可运行。' \
+            '---' \
+            '# 99 · 冒烟章节' \
+            > /tmp/draft-ch/demo/README.md
+          printf '%s\n' \
+            '---' \
+            'title: 01 · 冒烟课程' \
+            'description: 冒烟用课程。' \
+            '---' \
+            '# 01 · 冒烟课程' \
+            > /tmp/draft-ch/demo/intro.md
           node scripts/dry-run-new-chapter.mjs --draft /tmp/draft-ch/demo
       - run: npm run check:quiz-mounts
       - run: npm run check:quiz-coverage
@@ -86,6 +86,15 @@ MD
       - run: npm run check:relative-links
       - run: npm run check:bundle
       - run: npm run check:structured-data
+      - name: 生成内容质量报告（R10.1–R10.6 / R10.17）
+        run: |
+          npm run kb:inventory
+          npm run kb:gap-priority
+          npm run kb:accept
+          npm run kb:translation-status
+          npm run check:title-terminology
+          npm run check:description-quality
+          npm run check:risk-warning
       - name: 内容质量报告归档（R10.17）
         if: always()
         uses: actions/upload-artifact@v4
