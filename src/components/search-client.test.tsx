@@ -3,8 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { SearchClient } from "./search-client";
 
+const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
+
 vi.mock("next/navigation", () => ({
   usePathname: () => "/zh/search",
+  useRouter: () => ({ push: mockPush }),
 }));
 
 const values = new Map<string, string>();
@@ -122,6 +125,7 @@ describe("SearchClient index failure fallback (Q2.6 / R13.25)", () => {
 describe("SearchClient accessibility (Q2.4)", () => {
   beforeEach(() => {
     storage.clear();
+    mockPush.mockClear();
   });
 
   afterEach(() => {
@@ -141,6 +145,71 @@ describe("SearchClient accessibility (Q2.4)", () => {
     const filter = await screen.findByRole("combobox", { name: dict.filterLabel });
     expect(filter).toBeVisible();
     expect(screen.getByRole("option", { name: "全部篇章" })).toBeInTheDocument();
+  });
+});
+
+describe("SearchClient keyboard navigation", () => {
+  const resultLink = (index = 0) =>
+    document.querySelector<HTMLAnchorElement>(
+      `a[data-search-result-index="${index}"]`,
+    );
+
+  const entries = [
+    {
+      url: "/zh/knowledge/spot/order-types",
+      title: "订单类型",
+      chapter: "spot",
+      text: "限价单 市价单 保证金",
+    },
+    {
+      url: "/zh/knowledge/futures/orders",
+      title: "期货订单",
+      chapter: "futures",
+      text: "限价单 保证金",
+    },
+  ];
+
+  beforeEach(() => {
+    storage.clear();
+    mockPush.mockClear();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => entries }),
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("opens the first matching result on Enter when none is highlighted", async () => {
+    render(<SearchClient dict={dict} />);
+    const box = screen.getByRole("searchbox");
+    fireEvent.change(box, { target: { value: "限价单" } });
+
+    await waitFor(() => expect(resultLink()).not.toBeNull());
+    fireEvent.keyDown(box, { key: "Enter" });
+
+    expect(mockPush).toHaveBeenCalledWith("/zh/knowledge/spot/order-types");
+  });
+
+  it("highlights on ArrowDown and resets the highlight when the query changes", async () => {
+    render(<SearchClient dict={dict} />);
+    const box = screen.getByRole("searchbox");
+    fireEvent.change(box, { target: { value: "限价单" } });
+
+    await waitFor(() => expect(resultLink()).not.toBeNull());
+
+    fireEvent.keyDown(box, { key: "Escape" });
+    fireEvent.keyDown(box, { key: "ArrowDown" });
+    expect(resultLink()).toHaveAttribute("data-search-result-index", "0");
+    expect(resultLink()?.className).toContain("border-accent");
+
+    fireEvent.change(box, { target: { value: "期货" } });
+    await waitFor(() =>
+      expect(resultLink()?.textContent).toContain("期货订单"),
+    );
+    expect(resultLink()?.className).not.toContain("border-accent");
   });
 });
 
