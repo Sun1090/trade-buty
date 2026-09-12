@@ -59,6 +59,45 @@ test.describe("核心路径冒烟", () => {
 });
 
 /**
+ * R13.22：里程碑分享必须由真实学习进度触发，并在零进度时保持静默。
+ */
+test.describe("学习里程碑分享（R13.22）", () => {
+  test("已有学习进度时显示用户主动分享入口", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "tb-progress",
+        JSON.stringify({ "getting-started": ["market-overview"] }),
+      );
+      localStorage.setItem(
+        "tb-progress-completions",
+        JSON.stringify({
+          "getting-started:market-overview": {
+            chapter: "getting-started",
+            doc: "market-overview",
+            at: Date.now(),
+          },
+        }),
+      );
+    });
+
+    await page.goto("/zh/stats");
+    const share = page.getByTestId("milestone-share");
+    await expect(share).toBeVisible();
+    await expect(share.getByRole("button", { name: /分享里程碑/ })).toBeVisible();
+  });
+
+  test("零学习进度时不显示分享催促", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.clear();
+    });
+
+    await page.goto("/zh/stats");
+    await expect(page.getByText("还没有学习记录")).toBeVisible();
+    await expect(page.getByTestId("milestone-share")).toHaveCount(0);
+  });
+});
+
+/**
  * R13.17：可索引表面的线上契约（sitemap / robots.txt / 页面 robots meta 三者自洽）。
  * 产物级全量复核在 `npm run check:seo-surface`，这里只钉住用户可见的几条真实响应。
  */

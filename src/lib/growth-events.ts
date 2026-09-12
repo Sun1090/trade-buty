@@ -18,6 +18,7 @@ export const GROWTH_EVENT_NAMES = [
   "invite_banner_viewed",
   "invite_banner_dismissed",
   "invite_banner_cleared",
+  "milestone_share",
 ] as const;
 
 export type GrowthEventName = (typeof GROWTH_EVENT_NAMES)[number];
@@ -26,6 +27,7 @@ export type GrowthLocale = "zh" | "en";
 export type ShareSurface = "owner" | "landing";
 export type ShareDownloadTrigger = "share" | "preview";
 export type GrowthOutcome = "started" | "succeeded" | "failed";
+export type MilestoneShareChannel = "web-share" | "clipboard";
 
 export type GrowthEvent =
   | {
@@ -61,6 +63,12 @@ export type GrowthEvent =
   | {
       name: "invite_banner_dismissed" | "invite_banner_cleared";
       locale: GrowthLocale;
+    }
+  | {
+      name: "milestone_share";
+      locale: GrowthLocale;
+      channel: MilestoneShareChannel;
+      outcome: Extract<GrowthOutcome, "succeeded" | "failed">;
     };
 
 const SHARE_CARDS = new Set<ShareCardKind>(["quiz", "replay", "streak"]);
@@ -68,6 +76,7 @@ const LOCALES = new Set<GrowthLocale>(["zh", "en"]);
 const SURFACES = new Set<ShareSurface>(["owner", "landing"]);
 const TRIGGERS = new Set<ShareDownloadTrigger>(["share", "preview"]);
 const OUTCOMES = new Set<GrowthOutcome>(["started", "succeeded", "failed"]);
+const MILESTONE_CHANNELS = new Set<MilestoneShareChannel>(["web-share", "clipboard"]);
 
 function isShareCard(value: unknown): value is ShareCardKind {
   return typeof value === "string" && SHARE_CARDS.has(value as ShareCardKind);
@@ -152,6 +161,20 @@ export function normalizeGrowthEvent(event: GrowthEvent): GrowthEvent | null {
     case "invite_banner_cleared":
       if (!isLocale(event.locale)) return null;
       return { name: "invite_banner_cleared", locale: event.locale };
+    case "milestone_share":
+      if (
+        !isLocale(event.locale) ||
+        !MILESTONE_CHANNELS.has(event.channel) ||
+        (event.outcome !== "succeeded" && event.outcome !== "failed")
+      ) {
+        return null;
+      }
+      return {
+        name: "milestone_share",
+        locale: event.locale,
+        channel: event.channel,
+        outcome: event.outcome,
+      };
     default:
       return null;
   }

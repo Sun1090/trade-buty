@@ -1,5 +1,5 @@
 {
-  "$comment": "R13.21 增长表面唯一事实来源：任何面向用户的增长/推广界面都必须登记在此，并由 scripts/check-dark-pattern-copy.mjs 校验。新增增长入口而不登记会让门禁失败。",
+  "$comment": "R13.21–R13.22 增长表面唯一事实来源：任何面向用户的增长/推广界面都必须登记在此，并由 scripts/check-dark-pattern-copy.mjs 校验。新增增长入口而不登记会让门禁失败。",
   "version": 1,
   "surfaces": [
     {
@@ -68,6 +68,18 @@
       "requiresDismiss": false,
       "optIn": true,
       "notes": "分享落地页 CTA，只引导到免费学习路线或回放训练。"
+    },
+    {
+      "id": "milestone-share",
+      "kind": "sharing",
+      "component": "src/components/milestone-share-button.tsx",
+      "i18nSection": "milestoneShare",
+      "i18nSource": "src/lib/i18n-stats.ts",
+      "dismissKeys": [],
+      "blocking": false,
+      "requiresDismiss": false,
+      "optIn": true,
+      "notes": "R13.22 用户主动发起的学习里程碑分享；无进度时不渲染，取消系统分享面板不记为失败。"
     }
   ],
   "unregisteredAllowed": [

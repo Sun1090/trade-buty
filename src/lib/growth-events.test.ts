@@ -22,6 +22,7 @@ describe("growth event contract", () => {
       "invite_banner_viewed",
       "invite_banner_dismissed",
       "invite_banner_cleared",
+      "milestone_share",
     ]);
   });
 
@@ -60,6 +61,15 @@ describe("growth event contract", () => {
     ],
     [{ name: "invite_banner_dismissed", locale: "en" }, "invite_banner_dismissed"],
     [{ name: "invite_banner_cleared", locale: "zh" }, "invite_banner_cleared"],
+    [
+      {
+        name: "milestone_share",
+        locale: "zh",
+        channel: "web-share",
+        outcome: "succeeded",
+      },
+      "milestone_share",
+    ],
   ] satisfies [GrowthEvent, string][])("logs a whitelisted %s", (event, name) => {
     trackGrowthEvent(event);
     expect(info).toHaveBeenCalledWith("[growth-event]", name, normalizeGrowthEvent(event));
@@ -107,6 +117,25 @@ describe("growth event contract", () => {
       ref: "alice",
     } as unknown as GrowthEvent;
     trackGrowthEvent(invalid);
+    expect(info).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid milestone share channel and outcome values", () => {
+    const invalidChannel = {
+      name: "milestone_share",
+      locale: "zh",
+      channel: "email",
+      outcome: "succeeded",
+      ref: "alice",
+    } as unknown as GrowthEvent;
+    const invalidOutcome = {
+      name: "milestone_share",
+      locale: "zh",
+      channel: "clipboard",
+      outcome: "started",
+    } as unknown as GrowthEvent;
+    trackGrowthEvent(invalidChannel);
+    trackGrowthEvent(invalidOutcome);
     expect(info).not.toHaveBeenCalled();
   });
 

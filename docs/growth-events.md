@@ -25,6 +25,7 @@
 | `invite_banner_viewed` | 邀请 banner 首次展示 | `locale`, `source` | 区分 URL 新邀请与本地既有邀请 |
 | `invite_banner_dismissed` | 用户点击“知道了” | `locale` | 衡量邀请提示打扰程度 |
 | `invite_banner_cleared` | 用户主动清除邀请 | `locale` | 区分关闭提示与删除邀请记录 |
+| `milestone_share` | 用户点击分享学习里程碑 | `locale`, `channel`, `outcome` | 观察轻量社交分享的成功率与渠道 |
 
 ### 枚举
 
@@ -35,6 +36,7 @@
 - `outcome`: `started` | `succeeded` | `failed`；复制链接只允许后两者
 - `destination`: `path` | `replay`
 - `source`: `url` | `storage`
+- `channel`: `web-share`（系统分享面板） | `clipboard`（复制文案）；里程碑分享只允许 `succeeded` | `failed`
 
 ## 2. 明确禁止的字段
 
@@ -54,6 +56,13 @@
 3. 若使用链接：`share_link_copy` / `outcome=succeeded|failed`
 
 预览是独立分支：只有成功生成 canvas 预览才写 `share_preview_opened`。
+
+### 里程碑分享（R13.22）
+
+1. 用户主动点击「分享里程碑」：不区分 started，只在结果落地时写
+   `milestone_share` / `channel=web-share|clipboard` / `outcome=succeeded|failed`；
+2. 分享文案只含聚合计数（已读篇数 / 完成篇章 / 连续天数），不含身份、章节标题或完整 URL；
+3. 分享链接固定指向公开学习路线，绝不把进度编码进 URL。
 
 ### 邀请
 

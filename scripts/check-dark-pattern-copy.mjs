@@ -135,7 +135,7 @@ export function extractLocaleBlock(src, locale) {
 /** 取出 section（如 `share:`）对应的对象文本；找不到返回 null。 */
 export function extractSection(block, section) {
   if (!block) return null;
-  const re = new RegExp(`\\n\\s{2}${section}\\s*:\\s*\\{`);
+  const re = new RegExp(`\\n[ \\t]*${section}\\s*:\\s*\\{`);
   const match = re.exec(block);
   if (!match) return null;
   return extractObjectBlock(block, match.index + match[0].length - 1);
@@ -252,10 +252,28 @@ export function auditGrowthSurfaces({ rootDir, inventory, i18nSource }) {
     errors.push({ rule: "unregistered", detail: `${missing} 看起来是增长表面但未登记，也未说明豁免原因` });
   }
 
-  const zhBlock = extractLocaleBlock(i18nSource, "zh");
-  const enBlock = extractLocaleBlock(i18nSource, "en");
-  if (!zhBlock) errors.push({ rule: "i18n", detail: "未找到 zh 字典块" });
-  if (!enBlock) errors.push({ rule: "i18n", detail: "未找到 en 字典块" });
+  const defaultBlocks = {
+    zhBlock: extractLocaleBlock(i18nSource, "zh"),
+    enBlock: extractLocaleBlock(i18nSource, "en"),
+  };
+  const sourceCache = new Map([["src/lib/i18n.ts", defaultBlocks]]);
+
+  function blocksForSurface(surface) {
+    const rel = surface.i18nSource ?? "src/lib/i18n.ts";
+    if (sourceCache.has(rel)) return sourceCache.get(rel);
+    let blocks;
+    try {
+      const source = readFileSync(join(rootDir, rel), "utf8");
+      blocks = {
+        zhBlock: extractLocaleBlock(source, "zh"),
+        enBlock: extractLocaleBlock(source, "en"),
+      };
+    } catch {
+      blocks = { zhBlock: null, enBlock: null };
+    }
+    sourceCache.set(rel, blocks);
+    return blocks;
+  }
 
   const seen = new Set();
   for (const surface of inventory.surfaces) {
@@ -273,6 +291,9 @@ export function auditGrowthSurfaces({ rootDir, inventory, i18nSource }) {
       continue;
     }
 
+    const { zhBlock, enBlock } = blocksForSurface(surface);
+    if (!zhBlock) errors.push({ rule: "i18n", detail: `${surface.id} 未找到 zh 字典块（${surface.i18nSource ?? "src/lib/i18n.ts"}）` });
+    if (!enBlock) errors.push({ rule: "i18n", detail: `${surface.id} 未找到 en 字典块（${surface.i18nSource ?? "src/lib/i18n.ts"}）` });
     const { zh, en } = toLiteralsForSection(zhBlock, enBlock, surface);
     if (!zh.section) errors.push({ rule: "i18n", detail: `${surface.id} 缺少 zh section ${surface.i18nSection}` });
     if (!en.section) errors.push({ rule: "i18n", detail: `${surface.id} 缺少 en section ${surface.i18nSection}` });
