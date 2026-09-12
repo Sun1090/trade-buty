@@ -118,6 +118,19 @@ describe("AiQuiz 错题本打通与幂等（R2.6/R2.8/R2.11）", () => {
     expect(screen.getByText("✅ 正确")).toBeInTheDocument();
   });
 
+  it("R13.9：选项是键盘可聚焦的按钮，作答后全部禁用", async () => {
+    vi.stubGlobal("fetch", setup());
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
+    await generateQuestions();
+
+    const optionA = screen.getByRole("button", { name: "A. 限制单笔亏损" });
+    expect(optionA).toBeEnabled();
+    fireEvent.click(optionA);
+
+    expect(optionA).toBeDisabled();
+    expect(screen.getByRole("button", { name: "B. 预测走势" })).toBeDisabled();
+  });
+
   it("举报按钮调用 feedback API 且只报一次", async () => {
     const fetchMock = setup();
     vi.stubGlobal("fetch", fetchMock);

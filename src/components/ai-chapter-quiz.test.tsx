@@ -110,6 +110,18 @@ describe("AiChapterQuizCard", () => {
     expect(container.textContent).not.toContain(questions[0].question);
   });
 
+  it("R13.9：选项是键盘可聚焦的按钮", async () => {
+    vi.stubGlobal("fetch", setup());
+    render(<AiChapterQuizCard chapter="spot" locale="zh" dict={dict} />);
+    fireEvent.click(screen.getByRole("button", { name: dict.start }));
+    await screen.findByText(questions[0].question);
+
+    const optionA = screen.getByRole("button", { name: "A. 限制亏损" });
+    expect(optionA).toBeEnabled();
+    fireEvent.click(optionA);
+    expect(optionA).toBeDisabled();
+  });
+
   it("fallback 来源显示回退标识", async () => {
     vi.stubGlobal("fetch", setup(200, { questions, source: "fallback" }));
     const { container } = render(<AiChapterQuizCard chapter="spot" locale="zh" dict={dict} />);
