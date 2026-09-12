@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getRefFromUrl, recordInvite, readInvite, clearInvite } from "@/lib/invite-ref";
+import { trackGrowthEvent } from "@/lib/growth-events";
 
 interface Labels {
   titleTpl: string;
@@ -19,6 +20,7 @@ export function InviteBanner({ labels, locale }: { labels: Labels; locale: "zh" 
   const [visible, setVisible] = useState(false);
   const [ref, setRef] = useState<string | null>(null);
   const [dismissedKey, setDismissedKey] = useState<string | null>(null);
+  const viewTracked = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -42,6 +44,14 @@ export function InviteBanner({ labels, locale }: { labels: Labels; locale: "zh" 
     setRef(active.ref);
     setDismissedKey(key);
     setVisible(true);
+    if (!viewTracked.current) {
+      viewTracked.current = true;
+      trackGrowthEvent({
+        name: "invite_banner_viewed",
+        locale,
+        source: urlRef ? "url" : "storage",
+      });
+    }
 
     // 监听 storage 让多 tab 同步——另一个 tab 清掉邀请时这里也消失
     const onStorage = (e: StorageEvent) => {
@@ -57,16 +67,18 @@ export function InviteBanner({ labels, locale }: { labels: Labels; locale: "zh" 
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  }, [locale]);
 
   function handleDismiss() {
     if (typeof localStorage === "undefined") return;
     if (dismissedKey) localStorage.setItem(dismissedKey, "1");
+    trackGrowthEvent({ name: "invite_banner_dismissed", locale });
     setVisible(false);
   }
 
   function handleClear() {
     clearInvite();
+    trackGrowthEvent({ name: "invite_banner_cleared", locale });
     setVisible(false);
     setRef(null);
   }

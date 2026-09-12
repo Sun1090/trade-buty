@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { InviteBanner } from "./invite-banner";
+vi.mock("@/lib/growth-events", () => ({ trackGrowthEvent: vi.fn() }));
+import { trackGrowthEvent } from "@/lib/growth-events";
+
+const growthTrack = vi.mocked(trackGrowthEvent);
 
 /**
  * R8.5 InviteBanner 单测：
@@ -44,6 +48,7 @@ function setSearch(search: string) {
 
 beforeEach(() => {
   cleanup();
+  growthTrack.mockClear();
   localStorage.clear();
   setSearch("");
 });
@@ -61,6 +66,11 @@ describe("InviteBanner", () => {
     const banner = await screen.findByTestId("invite-banner");
     expect(banner).toBeInTheDocument();
     expect(banner.textContent).toContain("alice");
+    expect(growthTrack).toHaveBeenCalledWith({
+      name: "invite_banner_viewed",
+      locale: "en",
+      source: "url",
+    });
   });
 
   it("URL 没 ref 但 storage 已有 invite 时显示", async () => {
@@ -72,6 +82,11 @@ describe("InviteBanner", () => {
     render(<InviteBanner labels={labels} locale="en" />);
     const banner = await screen.findByTestId("invite-banner");
     expect(banner.textContent).toContain("bob");
+    expect(growthTrack).toHaveBeenCalledWith({
+      name: "invite_banner_viewed",
+      locale: "en",
+      source: "storage",
+    });
   });
 
   it("无 URL ref 也无 storage 时不显示", async () => {
@@ -89,6 +104,10 @@ describe("InviteBanner", () => {
       expect(screen.queryByTestId("invite-banner")).toBeNull();
     });
     expect(localStorage.getItem("tb-invite-dismissed-carol")).toBe("1");
+    expect(growthTrack).toHaveBeenCalledWith({
+      name: "invite_banner_dismissed",
+      locale: "en",
+    });
   });
 
   it("点击 clear 后清掉 storage 并隐藏", async () => {
@@ -100,6 +119,10 @@ describe("InviteBanner", () => {
       expect(screen.queryByTestId("invite-banner")).toBeNull();
     });
     expect(localStorage.getItem("tb-invite-ref")).toBeNull();
+    expect(growthTrack).toHaveBeenCalledWith({
+      name: "invite_banner_cleared",
+      locale: "en",
+    });
   });
 
   it("zh locale 时 data-locale=zh", async () => {

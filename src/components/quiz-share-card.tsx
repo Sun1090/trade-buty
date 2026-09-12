@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CARD_SIZE, cardFontFor, drawQuizCard, type ShareLocale } from "@/lib/share-card";
 import { downloadCanvasAsPng } from "@/lib/download";
 import { CopyLinkButton } from "@/components/copy-link-button";
+import { trackGrowthEvent, type ShareDownloadTrigger } from "@/lib/growth-events";
 
 interface Props {
   chapterTitle: string;
@@ -82,21 +83,45 @@ export function QuizShareCard({
     });
   }, [chapterTitle, score, total, percent, locale, siteName]);
 
-  async function tryDownload() {
+  async function tryDownload(trigger: ShareDownloadTrigger) {
+    trackGrowthEvent({
+      name: "share_card_download",
+      card: "quiz",
+      locale,
+      surface: "owner",
+      trigger,
+      outcome: "started",
+    });
     try {
-      await draw();
+      if (trigger === "share") await draw();
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas) throw new Error("share canvas unavailable");
       await downloadCanvasAsPng(canvas, filename);
       setDownloadFailed(false);
+      trackGrowthEvent({
+        name: "share_card_download",
+        card: "quiz",
+        locale,
+        surface: "owner",
+        trigger,
+        outcome: "succeeded",
+      });
     } catch {
       // R13.6：对「伪装的失败」诚实——拿到错误就反馈，不假装成功
       setDownloadFailed(true);
+      trackGrowthEvent({
+        name: "share_card_download",
+        card: "quiz",
+        locale,
+        surface: "owner",
+        trigger,
+        outcome: "failed",
+      });
     }
   }
 
   async function handleShare() {
-    await tryDownload();
+    await tryDownload("share");
   }
 
   async function handlePreview() {
@@ -108,6 +133,7 @@ export function QuizShareCard({
       const url = canvas.toDataURL("image/png");
       setPreviewUrl(url);
       setDownloadFailed(false);
+      trackGrowthEvent({ name: "share_preview_opened", card: "quiz", locale });
     } catch {
       setDownloadFailed(true);
     }
@@ -115,15 +141,10 @@ export function QuizShareCard({
 
   async function handleDownload() {
     if (!previewUrl) {
-      await tryDownload();
+      await tryDownload("share");
       return;
     }
-    try {
-      await downloadCanvasAsPng(canvasRef.current!, filename);
-      setDownloadFailed(false);
-    } catch {
-      setDownloadFailed(true);
-    }
+    await tryDownload("preview");
   }
 
   return (
@@ -158,6 +179,14 @@ export function QuizShareCard({
           label={labels.copyLink}
           copiedLabel={labels.copiedLink}
           testId="quiz-share-link-btn"
+          onOutcome={(outcome) =>
+            trackGrowthEvent({
+              name: "share_link_copy",
+              card: "quiz",
+              locale,
+              outcome: outcome === "success" ? "succeeded" : "failed",
+            })
+          }
         />
       )}
       {downloadFailed && (

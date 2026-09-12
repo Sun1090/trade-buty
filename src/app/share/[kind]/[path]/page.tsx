@@ -9,6 +9,7 @@ import {
 } from "@/lib/share-decode";
 import { getDict, DEFAULT_LOCALE } from "@/lib/i18n";
 import { ShareCardPreview } from "@/components/share-card-preview";
+import { ShareLandingCtas } from "@/components/share-landing-ctas";
 import { JsonLd } from "@/components/json-ld";
 import { siteGraph, webPage } from "@/lib/jsonld";
 
@@ -141,18 +142,12 @@ export default async function ShareLandingPage({
         <p className="text-sm font-semibold">{t.share.ctaTitle}</p>
         <p className="mt-1 text-xs text-muted leading-relaxed">{t.share.ctaBody}</p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <a
-            href={`/${locale}/path`}
-            className="rounded-full bg-accent-strong text-white dark:text-[#06281c] font-semibold px-5 py-2 text-sm hover:bg-accent transition"
-          >
-            {t.share.ctaPath}
-          </a>
-          <a
-            href={`/${locale}/replay`}
-            className="rounded-full border border-[var(--accent)]/40 bg-[var(--surface)] text-accent font-medium px-5 py-2 text-sm hover:border-accent/60 transition"
-          >
-            {t.share.ctaReplay}
-          </a>
+          <ShareLandingCtas
+            card={kind}
+            locale={locale}
+            pathLabel={t.share.ctaPath}
+            replayLabel={t.share.ctaReplay}
+          />
         </div>
       </div>
 

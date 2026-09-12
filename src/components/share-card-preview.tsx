@@ -16,6 +16,7 @@ import {
   type ShareKind,
 } from "@/lib/share-decode";
 import { downloadCanvasAsPng } from "@/lib/download";
+import { trackGrowthEvent } from "@/lib/growth-events";
 
 interface Labels {
   quizTitleTpl: string;
@@ -119,7 +120,34 @@ export function ShareCardPreview({ kind, path, locale, labels }: Props) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const filename = `trade-buty-${kind}-${path.slice(0, 8)}.png`;
-    await downloadCanvasAsPng(canvas, filename);
+    trackGrowthEvent({
+      name: "share_card_download",
+      card: kind,
+      locale,
+      surface: "landing",
+      trigger: "preview",
+      outcome: "started",
+    });
+    try {
+      await downloadCanvasAsPng(canvas, filename);
+      trackGrowthEvent({
+        name: "share_card_download",
+        card: kind,
+        locale,
+        surface: "landing",
+        trigger: "preview",
+        outcome: "succeeded",
+      });
+    } catch {
+      trackGrowthEvent({
+        name: "share_card_download",
+        card: kind,
+        locale,
+        surface: "landing",
+        trigger: "preview",
+        outcome: "failed",
+      });
+    }
   }
 
   const textSummary = summarizeText(kind, path, labels, locale);

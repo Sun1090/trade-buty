@@ -103,4 +103,40 @@ describe("CopyLinkButton", () => {
       expect(writeText).toHaveBeenCalled();
     });
   });
+
+  it("通过 onOutcome 只上报 success/failure，不回传敏感 URL", async () => {
+    stubClipboard({ ok: true });
+    const onOutcome = vi.fn();
+    render(
+      <CopyLinkButton
+        url="https://example.com/share/quiz/secret?ref=alice"
+        label="copy"
+        copiedLabel="ok"
+        testId="copy-btn5"
+        onOutcome={onOutcome}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("copy-btn5"));
+    await waitFor(() => expect(onOutcome).toHaveBeenCalledWith("success"));
+    expect(onOutcome).toHaveBeenCalledTimes(1);
+  });
+
+  it("onOutcome 抛错时复制仍成功", async () => {
+    stubClipboard({ ok: true });
+    render(
+      <CopyLinkButton
+        url="https://example.com/x"
+        label="copy"
+        copiedLabel="ok"
+        testId="copy-btn6"
+        onOutcome={() => {
+          throw new Error("analytics failed");
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("copy-btn6"));
+    await waitFor(() => {
+      expect(screen.getByTestId("copy-btn6").textContent).toContain("ok");
+    });
+  });
 });
