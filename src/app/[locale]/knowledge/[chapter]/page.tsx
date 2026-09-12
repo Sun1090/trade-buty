@@ -127,10 +127,13 @@ export default async function ChapterPage({
         })}
       />
       <JsonLd
-        data={breadcrumbList([
-          { name: locale === "zh" ? "首页" : "Home", href: `/${locale}` },
-          { name: chapter.title, href: `/${locale}/knowledge/${slug}` },
-        ])}
+        data={breadcrumbList(
+          [
+            { name: locale === "zh" ? "首页" : "Home", href: `/${locale}` },
+            { name: chapter.title, href: `/${locale}/knowledge/${slug}` },
+          ],
+          `/${locale}/knowledge/${slug}`,
+        )}
       />
       {QUIZZES[slug] && (
         <JsonLd

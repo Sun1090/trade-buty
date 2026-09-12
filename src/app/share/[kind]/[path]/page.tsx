@@ -8,9 +8,9 @@ import {
   type ShareKind,
 } from "@/lib/share-decode";
 import { getDict, DEFAULT_LOCALE } from "@/lib/i18n";
-import { SITE_URL } from "@/lib/site";
 import { ShareCardPreview } from "@/components/share-card-preview";
 import { JsonLd } from "@/components/json-ld";
+import { siteGraph, webPage } from "@/lib/jsonld";
 
 interface RouteParams {
   kind: string;
@@ -133,6 +133,7 @@ export default async function ShareLandingPage({
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-12 sm:py-16">
+      <JsonLd data={siteGraph(locale)} />
       <ShareCardPreview kind={kind} path={path} locale={locale} labels={t.share} />
 
       {/* 站内 CTA：把访客引导进学习入口，而非冷冰冰的离开 */}
@@ -156,18 +157,12 @@ export default async function ShareLandingPage({
       </div>
 
       <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@type": "WebPage",
-          name: metaTitle(kind, path),
-          url: `${SITE_URL}/share/${kind}/${path}`,
+        data={webPage({
+          locale,
+          title: metaTitle(kind, path),
           description: metaDesc(kind, path),
-          isPartOf: {
-            "@type": "WebSite",
-            name: "Trade Buty",
-            url: SITE_URL,
-          },
-        }}
+          pageHref: `/share/${kind}/${path}`,
+        })}
       />
     </div>
   );

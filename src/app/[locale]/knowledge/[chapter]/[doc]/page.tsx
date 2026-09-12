@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SITE_URL } from "@/lib/site";
 import {
   getAdjacentChapters,
   getAdjacentDocs,
@@ -14,7 +13,7 @@ import {
 import { suggestFromPath } from "@/lib/url-suggest";
 import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
 import { JsonLd } from "@/components/json-ld";
-import { breadcrumbList } from "@/lib/jsonld";
+import { article, breadcrumbList } from "@/lib/jsonld";
 import { getDict, isLocale, type Locale } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/metadata";
 import { QUIZZES } from "@/lib/quizzes";
@@ -228,23 +227,14 @@ export default async function DocPage({
       </header>
 
       <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@type": "Article",
-          headline: doc.title,
+        data={article({
+          locale,
+          title: doc.title,
           description: doc.description,
-          author: { "@type": "Organization", name: "Trade Buty" },
-          publisher: {
-            "@type": "Organization",
-            name: "Trade Buty",
-            logo: { "@type": "ImageObject", url: `${SITE_URL}/icon` },
-          },
-          inLanguage: locale === "zh" ? "zh-CN" : "en",
-          isPartOf: {
-            "@type": "Course",
-            name: chapter?.title,
-          },
-        }}
+          pageHref: `/${locale}/knowledge/${chapterSlug}/${docSlug}`,
+          chapterTitle: chapter?.title,
+          chapterHref: chapter ? `/${locale}/knowledge/${chapterSlug}` : undefined,
+        })}
       />
       {/* R8.10：面包屑导航（搜索引擎可识别层级） */}
       <JsonLd
@@ -254,7 +244,7 @@ export default async function DocPage({
             ? [{ name: chapter.title, href: `/${locale}/knowledge/${chapterSlug}` }]
             : []),
           { name: doc.title, href: `/${locale}/knowledge/${chapterSlug}/${docSlug}` },
-        ])}
+        ], `/${locale}/knowledge/${chapterSlug}/${docSlug}`)}
       />
 
       <ReadingTimeTracker chapter={chapterSlug} doc={docSlug} />

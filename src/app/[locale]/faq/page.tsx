@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/metadata";
 import { HeroCard } from "@/components/hero-card";
+import { JsonLd } from "@/components/json-ld";
+import { faqPage } from "@/lib/jsonld";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -55,6 +57,12 @@ export default async function FaqPage({ params }: PageProps<"/[locale]/faq">) {
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-5 py-10 sm:py-14">
+      <JsonLd
+        data={faqPage(
+          locale,
+          faqs.map((item) => ({ question: item.q, answer: item.a })),
+        )}
+      />
       <HeroCard label="FAQ" title={en ? "Frequently Asked Questions" : "常见问题"} />
       <ul className="space-y-6">
         {faqs.map((item, i) => (

@@ -45,6 +45,7 @@ npm run lint        # ESLint
 npm run typecheck   # next typegen + tsc --noEmit
 npm test            # Vitest 单测/组件测试
 npm run check:bundle # 路由级首屏预算（需先 build）
+npm run check:structured-data # 全站 JSON-LD 结构化数据回归（需先 build）
 ```
 
 ## 项目结构
