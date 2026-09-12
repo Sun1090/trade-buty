@@ -16,7 +16,10 @@ import {
   validateLesson,
   findOrderDuplicates,
   planIntegration,
+  parseStageSlugs,
+  buildReleaseChecklist,
 } from "./new-chapter-lib.mjs";
+import { parseQuizMounts } from "./quiz-source-lib.mjs";
 import { CHAPTER_ORDER } from "./nav-chain-lib.mjs";
 
 const root = process.cwd();
@@ -110,6 +113,21 @@ for (const n of planIntegration({ chapter, existingOrder: CHAPTER_ORDER, zhChapt
   notes.push(n);
 }
 
+const stageSource = fs.readFileSync(path.join(root, "src/lib/path.ts"), "utf8");
+const quizSource = fs.readFileSync(path.join(root, "src/lib/quizzes.ts"), "utf8");
+const quizMount = parseQuizMounts(quizSource).find((entry) => entry.key === chapter) ?? null;
+const releaseChecklist = buildReleaseChecklist({
+  chapter,
+  lessons,
+  hasReadme: mdFiles.includes("README.md"),
+  chapterOrder: CHAPTER_ORDER,
+  stageSlugs: parseStageSlugs(stageSource),
+  quizMount,
+});
+for (const item of releaseChecklist) {
+  if (item.blocking) problems.push(`${item.label}：${item.detail}`);
+}
+
 console.log(`\n[kb:dry-run] 新章节预检：${chapter}`);
 console.log(`  草稿：${draft}`);
 console.log(`  课程文件：${lessons.length} 篇`);
@@ -117,6 +135,12 @@ if (problems.length > 0) {
   console.error(`\n❌ 阻断问题 ${problems.length} 个：`);
   for (const p of problems) console.error(`  - ${p}`);
   process.exit(1);
+}
+console.log("\n上线核对（Q1.7）");
+for (const item of releaseChecklist) {
+  const icon = item.status === "ready" ? "✅" : item.status === "block" ? "❌" : "⚠️";
+  console.log(`  ${icon} ${item.label}：${item.detail}`);
+  console.log(`     验证：${item.verify}`);
 }
 console.log("\n✅ 契约预检通过");
 if (notes.length > 0) {

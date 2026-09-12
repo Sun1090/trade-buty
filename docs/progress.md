@@ -1,5 +1,26 @@
 # Progress
 
+## 新章节上线四项核对（Q1.7）
+
+- 状态：DONE
+- 工作分支：codex/r13-e2e-expansion
+- Base：origin/main@abe8106
+- 远端状态：未推送（LOCAL_ONLY）
+- 目标：把新章节上线清单从人工记忆变成 dry-run 可执行输出，覆盖索引、sitemap、固定题挂载点和 /path 阶段分组。
+- 已完成：
+  - 新增 `buildReleaseChecklist()`：固定输出搜索索引、sitemap、测验挂载点、路径分组四项，分别标记 ready / action / block，并给出真实验证命令。
+  - 新增 `parseStageSlugs()`：用 TypeScript AST 读取 `src/lib/path.ts` 的 STAGES，避免只检查 CHAPTER_ORDER 却漏掉 `/path` 与知识图谱展示。
+  - `kb:dry-run` 会读取真实 `quizzes.ts` 挂载：固定题的 docSlug 不在草稿课程内时阻断；未挂固定题时明确提示 AI 回退，不误报为已配置。
+  - 新增 `docs/new-chapter-release-checklist.md`，记录四项检查、合入顺序与发布门禁。
+  - 扩展 `src/lib/new-chapter.test.ts` 至 11 个用例，含真实 path.ts 的 27 章解析、四项就绪、坏挂载阻断和未分组提示。
+- 变更文件：`scripts/new-chapter-lib.mjs`、`scripts/dry-run-new-chapter.mjs`、`src/lib/new-chapter.test.ts`、`docs/new-chapter-release-checklist.md`、`docs/ops.md`、`docs/roadmap.md`。
+- 验证命令与结果：
+  - `npx vitest run src/lib/new-chapter.test.ts` → 1 文件 / 11 用例通过。
+  - CI 等价 dry-run 冒烟 → exit 0；输出四项核对，未挂固定题和未分组分别显示可执行的 ⚠️，而非静默通过。
+  - `node --check scripts/new-chapter-lib.mjs`、`node --check scripts/dry-run-new-chapter.mjs` → 通过。
+- 未验证项：远端 CI 与部署（LOCAL_ONLY，未推送）。
+- 最后更新：2026-09-12
+
 ## 测验挂载点与题库覆盖率门禁修复（R6.3 / R6.4）
 
 - 状态：DONE
