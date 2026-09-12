@@ -1,5 +1,35 @@
 # Progress
 
+## 统一错误上报端点（R7.6 补口）
+
+- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 工作分支：`codex/error-reporting-endpoint`
+- PR：推送后跟踪
+- Base：`origin/main@52732f7`（rebase 后）
+- 远端 Head：推送后跟踪
+- 本地提交：`feat(errors): report privacy-safe client diagnostics`、`docs(privacy): disclose error diagnostics and update roadmap`
+- 目标：R7.6 定义了 fatal / recoverable / silent 三档，但此前 `reportError` 只写本机 console，服务端收不到任何真实崩溃信号（PR #19 已把「统一上报端点」列为遗留项）。本次补齐同源端点，并把隐私约束固化成代码而非口头约定。
+- 已完成：
+  - 新增 `POST /api/error-reports`（`src/app/api/error-reports/route.ts`）：仅接受 `application/json`；`level` 限 `fatal|recoverable`；`scope`/`kind`/`digest` 必须是限长安全 token（`[a-z0-9._:-]`，无空白/自由文本）；**未知字段整包拒绝**（携带 `message`/`url` 直接 400，不记录不透传）；body 有界读取，上限 `MAX_ERROR_REPORT_BYTES = 2048`（超限 413 并断流）；复用 R7.12 的进程内限流器（每 IP 每分钟 100 次，超限 429 + `Retry-After`）；成功返回 `202` + `Cache-Control: no-store`。
+  - 服务端只写一行 sanitized 日志 `[error-report] fatal scope=route-error kind=Error digest=abc123`，**不落库、不回显请求体**。
+  - 客户端 `src/lib/error-report.ts`：新增 `buildErrorReportPayload`（只保留 `level/scope/kind/digest` 白名单，绝不携带 message/stack/URL/账号/其他 meta）与 `sendErrorReport`（`sendBeacon` 优先 → 失败/返回 false/抛错回退 `keepalive` fetch → 两者都失败静默放弃，绝不重试或抛错）；`silent` 档仅本机 console，不上报。`reportError` 保持原 console 行为后追加最佳努力上报。
+  - 隐私政策中英文同步披露（`src/app/[locale]/privacy/page.tsx`）：无身份、白名单诊断元数据、不写数据库、不用于追踪/广告；并修正原「未登录时服务器上没有任何数据」的失真表述。
+  - 新增 `docs/error-reporting.md`：记录 schema、隐私边界、校验规则、传输策略、日志格式/保留、告警边界与已验证用例。
+  - 测试：新增 `src/app/api/error-reports/route.test.ts`（14 例：合法/silent/未知 level、非法 scope/kind/digest、未知字段、数组/非对象、畸形 JSON、超长 body 413、非 JSON 415、日志不含原始内容）；`src/lib/error-report.test.ts` 扩 11 例（白名单载荷不含敏感字段、silent 返回 null、无 window 不发请求、sendBeacon 优先/回退/抛错、fetch 抛错不外抛、fatal+recoverable 上报 2 次而 silent 0 次）；`e2e/smoke.spec.ts` 新增「错误上报端点」×3（对 `next start` 真实响应 202+no-store / 400 / 413）。
+- 变更文件（关键）：`src/lib/error-report.ts`、`src/lib/error-report.test.ts`、`src/app/api/error-reports/route.ts`、`src/app/api/error-reports/route.test.ts`、`src/app/[locale]/privacy/page.tsx`、`e2e/smoke.spec.ts`、`docs/error-reporting.md`、`docs/roadmap.md`。
+- 验证命令与结果：
+  - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0；`git diff --check` clean。
+  - `npm test` → 240 文件 / 1741 用例通过（较 base `main@52732f7` 的 239 文件 / 1716 用例新增 1 文件 / 25 用例）。
+  - `npm run build` exit 0（构建条目 473 → 474，唯一差异是新增动态路由 `ƒ /api/error-reports`；未新增预渲染 HTML 页）。
+  - `npm run check:bundle` exit 0（15 组预算全部通过；`drawing-tools` 最紧 392.6/400KB，`zh/privacy` 315.1/340KB）。
+  - `npx playwright test e2e/smoke.spec.ts -g "错误上报端点" --reporter=line` → 3 用例通过（本地 `next start` 生产构建真实响应）。
+  - `npm run check:docs` exit 0（27 章 / 182 篇，zh/en 对齐）；`npm run check:secrets` exit 0（648 个文本文件无疑似凭据）；`npm run check:growth-event-privacy` exit 0（8 个事件仍为 console-only，无网络/持久化 API）。
+- 上游依赖：无（复用 R7.12 的 `clientIp` / `createRateLimiter` 与 `BoundedMap`，未新增依赖；同源端点已被现有 CSP `connect-src 'self'` 放行，无需改 CSP）。
+- 未验证项：远端 CI 复跑结果；部署后线上端点真实可用性（Vercel 部署配额恢复后复核）。
+- 风险与回滚：端点匿名、无鉴权但限流 + 输入白名单 + 有界 body，最坏情况只产生本站日志；客户端上报全程最佳努力，不影响任何成功路径与错误兜底渲染。回滚即撤销本分支提交。
+- 下一步：推送、CI 全绿后按 rebase 合并；再继续扫描 roadmap / progress 中未列出的真实技术缺口。
+- 最后更新：2026-09-13
+
 ## 安全头补齐 HSTS（R7.12 补口）
 
 - 状态：DONE（本地实现与全量验证完成；远端 CI `ci` + `db-tests` 通过，待 rebase 合并）
