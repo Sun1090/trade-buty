@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-06",
+  "generatedAt": "2026-09-12",
   "counts": {
-    "pass": 275,
-    "review": 71,
+    "pass": 294,
+    "review": 70,
     "gap": 0
   },
   "results": [
@@ -10,7 +10,7 @@
       "locale": "en",
       "chapter": "behavioral-finance",
       "document": "behavioral-finance-basics",
-      "title": "Foundations of Behavioral Finance",
+      "title": "01 · Foundations of Behavioral Finance",
       "description": "Traditional finance assumes you are a rational agent: fully informed, precisely calculating, always maximizing your own utility. In reality, you snap up discounts, sell your winners and keep your losers, and panic-sell at the bottom of a bear market. The first thing behavioral finance does is…",
       "length": 294,
       "matchedTitleWords": [
@@ -31,7 +31,7 @@
       "locale": "en",
       "chapter": "behavioral-finance",
       "document": "behavioral-playbook",
-      "title": "Applying Behavioral Finance",
+      "title": "05 · Applying Behavioral Finance",
       "description": "The previous four articles answered why people are irrational. This one answers the last question: knowing all this — what is it good for? Three paths: exploit your own biases (ex-ante rules), exploit others' biases (sentiment signals), exploit the market's collective biases (contrarian and sentiment indicators)…",
       "length": 314,
       "matchedTitleWords": [],
@@ -48,7 +48,7 @@
       "locale": "en",
       "chapter": "behavioral-finance",
       "document": "cognitive-biases",
-      "title": "A Field Guide to Cognitive Biases in Trading",
+      "title": "02 · A Field Guide to Cognitive Biases in Trading",
       "description": "Article 01 covered the theory: why people aren't rational. This one holds up the mirror — the 12 most common cognitive biases in trading, each with a definition, a trading example, and countermeasures. You don't have weak willpower; you've been ambushed by these biases. And the scariest thing about…",
       "length": 300,
       "matchedTitleWords": [
@@ -70,7 +70,7 @@
       "locale": "en",
       "chapter": "behavioral-finance",
       "document": "market-anomalies",
-      "title": "Market Anomalies: Evidence That Markets Are Less Efficient",
+      "title": "03 · Market Anomalies: Evidence That Markets Are Less Efficient",
       "description": "If markets truly worked as the efficient market hypothesis describes, there would be no 'regular' windows of excess return. Yet academia has spent decades unearthing a set of repeatedly observed phenomena — calendar effects, momentum, the small-firm effect, the index effect… Some later decayed, some…",
       "length": 301,
       "matchedTitleWords": [
@@ -91,7 +91,7 @@
       "locale": "en",
       "chapter": "behavioral-finance",
       "document": "mental-accounts-framing",
-      "title": "Mental Accounting & Framing",
+      "title": "04 · Mental Accounting & Framing",
       "description": "Richard Thaler (2017 Nobel laureate in Economics) asked a simple question: is the 100 in your paycheck the same money as a 100 lottery windfall? The rational agent says yes — but in reality almost everyone spends the two completely differently. Money isn't just money…",
       "length": 268,
       "matchedTitleWords": [],
@@ -108,7 +108,7 @@
       "locale": "en",
       "chapter": "bonds-rates",
       "document": "china-bond-market",
-      "title": "China Bond Market in Practice",
+      "title": "02 · China Bond Market in Practice",
       "description": "China's bond market is the world's second largest, yet over 90% of trading happens in the interbank market — the institutional playground. Retail investors' real arena is the exchange market, and there's plenty to play with: government bond reverse repos, savings bonds, bond funds, convertible bonds",
       "length": 300,
       "matchedTitleWords": [
@@ -130,7 +130,7 @@
       "locale": "en",
       "chapter": "bonds-rates",
       "document": "credit-high-yield",
-      "title": "Credit Bonds & High Yield",
+      "title": "04 · Credit Bonds & High Yield",
       "description": "Government bonds settle the risk-free rate; the other half of the bond world is credit — the possibility that a borrowing company defaults, priced openly by the market. That price is the credit spread",
       "length": 200,
       "matchedTitleWords": [
@@ -150,7 +150,7 @@
       "locale": "en",
       "chapter": "bonds-rates",
       "document": "treasuries-practice",
-      "title": "Treasury Investment in Practice",
+      "title": "01 · Treasury Investment in Practice",
       "description": "Treasuries (US government bonds) are the anchor of the global risk-free rate and the 'cleanest fixed income' ordinary investors can buy — no credit risk (under the assumption that Treasuries don't default), only interest rate risk",
       "length": 230,
       "matchedTitleWords": [
@@ -169,7 +169,7 @@
       "locale": "en",
       "chapter": "bonds-rates",
       "document": "yield-curve-trading",
-      "title": "Yield Curve Trading",
+      "title": "03 · Yield Curve Trading",
       "description": "The yield curve isn't a 'chart for bond investors' — it's the thermometer of the entire macro world: central bank policy, inflation expectations, recession odds, and equity valuations are all written on this one line",
       "length": 216,
       "matchedTitleWords": [
@@ -189,7 +189,7 @@
       "locale": "en",
       "chapter": "career",
       "document": "content-creation",
-      "title": "Content Creation & Knowledge Sharing",
+      "title": "04 · Content Creation & Knowledge Sharing",
       "description": "For those who want to create content in finance/trading: articles, videos, podcasts, courses, communities. The temptation is that 'trading skills can be reused endlessly'; the trap is that financial content is one of the most compliance-sensitive content verticals",
       "length": 264,
       "matchedTitleWords": [
@@ -208,7 +208,7 @@
       "locale": "en",
       "chapter": "career",
       "document": "indie-startups",
-      "title": "Indie Development & Startups",
+      "title": "03 · Indie Development & Startups",
       "description": "For indie developers who want to build trading tools: turn 'I understand trading + I can code' into a product that makes money. More freedom than a job, but harder to earn from — indie development is the process of turning 'a long-term unpaid side gig' into 'a business with uncertain income'…",
       "length": 293,
       "matchedTitleWords": [
@@ -228,7 +228,7 @@
       "locale": "en",
       "chapter": "career",
       "document": "professional-trader-path",
-      "title": "Professional Trader Path",
+      "title": "05 · Professional Trader Path",
       "description": "The previous four articles covered selling skills to institutions or building products; this one covers the last lifestyle: no employer, no startup — living full-time off your own trading system. It is also the road with the heaviest survivorship bias, the most sentimental narrative, and the harshest reality",
       "length": 309,
       "matchedTitleWords": [],
@@ -245,7 +245,7 @@
       "locale": "en",
       "chapter": "career",
       "document": "quant-career-path",
-      "title": "Quant Career Path",
+      "title": "01 · Quant Career Path",
       "description": "For STEM/finance backgrounds who want to break into quant. This article is about how to get a job at a quant firm, not how to trade systematically — for that, see [Quant Practice](../quant-practice/)",
       "length": 199,
       "matchedTitleWords": [
@@ -264,7 +264,7 @@
       "locale": "en",
       "chapter": "career",
       "document": "trading-careers",
-      "title": "Trading Careers Overview",
+      "title": "02 · Trading Careers Overview",
       "description": "The previous article covered how to get into quant; this one zooms out: trading-related careers go far beyond quant. Buy-side traders, sell-side market makers, research analysts, risk, middle office, quant developers, systems engineers, algo execution, operations and settlement — each line differs in work content, skill barriers…",
       "length": 331,
       "matchedTitleWords": [
@@ -284,7 +284,7 @@
       "locale": "en",
       "chapter": "crypto-perpetuals",
       "document": "crypto-derivatives",
-      "title": "Crypto Derivatives",
+      "title": "03 · Crypto Derivatives",
       "description": "The crypto derivatives zoo — how crypto options, leveraged tokens, dual investment, tokenized synthetic assets, on-chain contracts, and other products work, how to play them, and where the risks are",
       "length": 198,
       "matchedTitleWords": [
@@ -304,7 +304,7 @@
       "locale": "en",
       "chapter": "crypto-perpetuals",
       "document": "funding-rate",
-      "title": "Funding Rates",
+      "title": "02 · Funding Rates",
       "description": "Crypto perpetual funding rates explained — positive vs negative rates, the 8-hour settlement mechanism, typical ranges, rate arbitrage in extreme markets, and holding cost control",
       "length": 179,
       "matchedTitleWords": [
@@ -324,7 +324,7 @@
       "locale": "en",
       "chapter": "crypto-perpetuals",
       "document": "leverage-math",
-      "title": "The Math of Leverage: Why 10x Is Not '10x Profit'",
+      "title": "05 · The Math of Leverage: Why 10x Is Not \"10x Profit\"",
       "description": "The mathematical reality of leverage — margin occupation, liquidation price calculation, maintenance margin, isolated vs cross differences, how fees amplify costs, and your true effective leverage",
       "length": 196,
       "matchedTitleWords": [
@@ -347,7 +347,7 @@
       "locale": "en",
       "chapter": "crypto-perpetuals",
       "document": "liquidation-cases",
-      "title": "Perpetual Blow-Up Case Studies",
+      "title": "06 · Perpetual Blow-Up Case Studies",
       "description": "Three typical contract blow-up case studies — a 20x long hunted by a wick, a counter-trend bag-holder without a stop, and a long-term position crushed by funding rates — each with a full timeline and lessons",
       "length": 207,
       "matchedTitleWords": [
@@ -369,7 +369,7 @@
       "locale": "en",
       "chapter": "crypto-perpetuals",
       "document": "perp-trading-risk",
-      "title": "Perpetual Trading in Practice & Risk Control",
+      "title": "04 · Perpetual Trading in Practice & Risk Control",
       "description": "Practical risk control for crypto perpetuals — how to choose leverage, position sizing, take-profit and stop-loss placement, spotting liquidation walls, and how to exit after consecutive blow-ups",
       "length": 195,
       "matchedTitleWords": [
@@ -391,7 +391,7 @@
       "locale": "en",
       "chapter": "crypto-perpetuals",
       "document": "perpetuals",
-      "title": "Perpetual Swaps",
+      "title": "01 · Perpetual Swaps",
       "description": "Crypto perpetual swaps explained — what a perpetual swap is, USDT-margined vs coin-margined contracts, cross vs isolated margin, liquidation price calculation, leverage risk, and how to avoid liquidation",
       "length": 203,
       "matchedTitleWords": [
@@ -411,7 +411,7 @@
       "locale": "en",
       "chapter": "data-interpretation",
       "document": "central-bank-language",
-      "title": "Central Bank Language: Statement Translation and Policy Expectation-Gap Trading",
+      "title": "02 · Central Bank Language: Statement Translation and Policy Expectation-Gap Trading",
       "description": "The central bank is the market's biggest market maker — it does not buy or sell assets directly, yet every word it utters reprices the whole market's rate path. This article treats central bank statements as a foreign language: how to dissect an FOMC statement, what hawkish/dov…",
       "length": 279,
       "matchedTitleWords": [
@@ -433,7 +433,7 @@
       "locale": "en",
       "chapter": "data-interpretation",
       "document": "earnings-calls",
-      "title": "Earnings Calls: Guidance, Management Tone, and Corporate-Speak Translation",
+      "title": "03 · Earnings Calls: Guidance, Management Tone, and Corporate-Speak Translation",
       "description": "Earnings numbers are the 'past'; the words on the call are the 'future'. A company beats EPS expectations by 5% yet its stock plunges 8% — the answer usually sits in the call: management cut next quarter's guidance. This article teaches what to listen for on a call and how to translat…",
       "length": 286,
       "matchedTitleWords": [
@@ -455,7 +455,7 @@
       "locale": "en",
       "chapter": "data-interpretation",
       "document": "economic-calendar",
-      "title": "Economic Calendar User Guide: Event Classification, Weekly Scheduling, and Event Trading",
+      "title": "05 · Economic Calendar User Guide: Event Classification, Weekly Scheduling, and Event Trading",
       "description": "Data is not a flood; it is a train on a schedule — and the economic calendar is the timetable. Knowing which 'event checkpoints' your holdings must pass this week gives your position sizing and stop-losses a target. This article covers the three-tier event classification, the 10-minute Sunday-evening scheduling method, position checks before m…",
       "length": 346,
       "matchedTitleWords": [
@@ -480,7 +480,7 @@
       "locale": "en",
       "chapter": "data-interpretation",
       "document": "industry-data",
-      "title": "Industry Data: Supply-Demand Analysis and Inventory-Cycle Reading",
+      "title": "04 · Industry Data: Supply-Demand Analysis and Inventory-Cycle Reading",
       "description": "Macro data tells you 'how the economy is doing'; industry data tells you 'how your instrument is doing'. Crude oil, copper, hogs, real estate, new energy — every industry has a 'data map': inventories, output, prices, orders. This article teaches you to translate that pile of data into supply-dem…",
       "length": 298,
       "matchedTitleWords": [
@@ -501,7 +501,7 @@
       "locale": "en",
       "chapter": "data-interpretation",
       "document": "macro-data",
-      "title": "Macro Data Reading: Expectation Gaps, Structure Breakdown, and a Complete Interpretation Template",
+      "title": "01 · Macro Data Reading: Expectation Gaps, Structure Breakdown, and a Complete Interpretation Template",
       "description": "The same 'CPI 3.2%' — why do some call it bearish and others bullish? Because the number itself means nothing; the gap between the number and expectations is what matters. This article builds 'expectation gap' thinking, then breaks down how to read CPI, PMI, nonfarm payrolls, and the unemployment rate item by item…",
       "length": 316,
       "matchedTitleWords": [
@@ -521,7 +521,7 @@
       "locale": "en",
       "chapter": "financial-history",
       "document": "bubble-history",
-      "title": "A History of Financial Bubbles",
+      "title": "01 · A History of Financial Bubbles",
       "description": "Eight great bubbles dissected on a timeline — from background to evolution to the lessons of human nature — distilling the crash patterns common to them all.",
       "length": 157,
       "matchedTitleWords": [
@@ -541,7 +541,7 @@
       "locale": "en",
       "chapter": "financial-history",
       "document": "china-market-history",
-      "title": "A Brief History of China's Stock Market",
+      "title": "05 · A Brief History of China's Stock Market",
       "description": "Ten key stages of China's stock market on a timeline — from subscription warrants to registration-based IPOs — distilling the A-share market's most characteristic patterns.",
       "length": 172,
       "matchedTitleWords": [
@@ -563,7 +563,7 @@
       "locale": "en",
       "chapter": "financial-history",
       "document": "crypto-history",
-      "title": "Crypto History",
+      "title": "06 · Crypto History",
       "description": "Eight key milestones of cryptocurrency history, distilling the operating law of four overlapping cycles: halving, leverage, regulation, and technology.",
       "length": 151,
       "matchedTitleWords": [
@@ -583,7 +583,7 @@
       "locale": "en",
       "chapter": "financial-history",
       "document": "famous-crashes",
-      "title": "Famous Crashes and Black Swans",
+      "title": "02 · Famous Crashes and Black Swans",
       "description": "Extreme market events from 1987 to 2020 reviewed one by one — what happened, how markets reacted, and the risk-control lessons they left behind.",
       "length": 144,
       "matchedTitleWords": [
@@ -602,7 +602,7 @@
       "locale": "en",
       "chapter": "financial-history",
       "document": "trading-masters",
-      "title": "Trading Masters",
+      "title": "03 · Trading Masters",
       "description": "Eight trading masters — their lives, core methods, and famous lessons — covering the two main lineages: trend-and-sentiment and value-and-quant.",
       "length": 144,
       "matchedTitleWords": [
@@ -622,7 +622,7 @@
       "locale": "en",
       "chapter": "financial-history",
       "document": "trading-philosophy",
-      "title": "Trading Schools and Philosophy",
+      "title": "04 · Trading Schools and Philosophy",
       "description": "A panoramic scan of four trading schools, five deep philosophical questions — market efficiency, probabilistic thinking, circle of competence — and a template for writing your own trading philosophy.",
       "length": 199,
       "matchedTitleWords": [
@@ -644,7 +644,7 @@
       "locale": "en",
       "chapter": "financial-statements",
       "document": "cash-flow-analysis",
-      "title": "Cash Flow Analysis",
+      "title": "04 · Cash Flow Analysis",
       "description": "Why cash flow matters more than profit, the three patterns of operating cash flow, and how to use FCF and DCF — with a cash-flow mine-sweeping checklist.",
       "length": 153,
       "matchedTitleWords": [
@@ -664,7 +664,7 @@
       "locale": "en",
       "chapter": "financial-statements",
       "document": "earnings-analysis",
-      "title": "Financial Statement Analysis in Practice",
+      "title": "05 · Financial Statement Analysis in Practice",
       "description": "Integrating statement knowledge, metric tools, and mine-sweeping thinking into a 10-step reading method, an analysis template, and common report-reading mistakes.",
       "length": 162,
       "matchedTitleWords": [
@@ -685,7 +685,7 @@
       "locale": "en",
       "chapter": "financial-statements",
       "document": "financial-metrics",
-      "title": "Financial Metrics in Practice",
+      "title": "02 · Financial Metrics in Practice",
       "description": "Answering business questions with numbers: a thorough treatment of five metric groups — DuPont ROE, growth, operating efficiency, solvency, and cash flow.",
       "length": 154,
       "matchedTitleWords": [
@@ -704,7 +704,7 @@
       "locale": "en",
       "chapter": "financial-statements",
       "document": "fraud-detection",
-      "title": "Detecting Financial Fraud",
+      "title": "03 · Detecting Financial Fraud",
       "description": "A full map of fraud motives and techniques, a review of the Luckin Coffee case, plus the three-high signals, audit opinions, and a detection toolbox.",
       "length": 149,
       "matchedTitleWords": [
@@ -723,7 +723,7 @@
       "locale": "en",
       "chapter": "financial-statements",
       "document": "three-statements",
-      "title": "Reading the Three Statements Closely",
+      "title": "01 · Reading the Three Statements Closely",
       "description": "A close reading of the balance sheet, income statement, and cash flow statement, explaining how the three statements tie together, with a 10-item earnings-quality checklist and a practical workflow.",
       "length": 198,
       "matchedTitleWords": [
@@ -745,7 +745,7 @@
       "locale": "en",
       "chapter": "forex-trading",
       "document": "carry-trade",
-      "title": "Carry Trade and Interest Rate Differentials: The Primary Driver of Exchange Rates",
+      "title": "02 · Carry Trade and Interest Rate Differentials: The Primary Driver of Exchange Rates",
       "description": "The forex market's most classic, most profitable, and most dangerous strategy has only one name: the carry trade — borrow low-yield currencies, buy high-yield currencies, and earn the rate differential while you sleep. But it was also the detonator of the August 2024 global equity crash. This chapter…",
       "length": 302,
       "matchedTitleWords": [
@@ -769,7 +769,7 @@
       "locale": "en",
       "chapter": "forex-trading",
       "document": "central-bank-trading",
-      "title": "Central Bank Policy and Event Trading",
+      "title": "06 · Central Bank Policy and Event Trading",
       "description": "Forex is at heart the relative strength of two currencies, and interest rates are the primary driver of exchange rates — so 'what central banks do' decides the medium-term direction more than any technical indicator. Every Fed rate decision, every BOJ verbal intervention, every digit of the NFP report…",
       "length": 303,
       "matchedTitleWords": [
@@ -790,7 +790,7 @@
       "locale": "en",
       "chapter": "forex-trading",
       "document": "forex-ea",
-      "title": "Forex Automation (EAs) and Copy Trading: Holy Grail or Meat Grinder",
+      "title": "03 · Forex Automation (EAs) and Copy Trading: Holy Grail or Meat Grinder",
       "description": "Forex has two of the most seductive narratives: 'EA auto-profits' and 'copy the pros'. What they share is charging you money on the premise that 'you don't need to trade yourself'. This chapter explains the technical truth about MT4/MT5 and EAs, how backtest scams work, the traps of copy-trading…",
       "length": 297,
       "matchedTitleWords": [
@@ -814,7 +814,7 @@
       "locale": "en",
       "chapter": "forex-trading",
       "document": "forex-leverage-risk",
-      "title": "Forex Leverage and Risk Management: Learn Not to Die Before Chasing Profit",
+      "title": "04 · Forex Leverage and Risk Management: Learn Not to Die Before Chasing Profit",
       "description": "The core of forex margin trading is a lever: it lets $1,000 control $100,000 of notional value — and lets a novice walk into a casino carrying a crowbar. This chapter first drills the leverage math to the bone, then works through blow-up mechanics with numbers, risk management…",
       "length": 278,
       "matchedTitleWords": [
@@ -839,7 +839,7 @@
       "locale": "en",
       "chapter": "forex-trading",
       "document": "forex-practice",
-      "title": "Forex Trading Practice: Pair Personalities, Pip Value & P&L, and a Beginner Workflow",
+      "title": "01 · Forex Trading Practice: Pair Personalities, Pip Value & P&L, and a Beginner Workflow",
       "description": "The concepts chapter covered it: forex is the world's largest market, how quotes work, how pip value is computed, how dangerous leverage is. This chapter gets practical: every major pair has its own 'personality' — some steady, some explosive, some tracking commodities…",
       "length": 270,
       "matchedTitleWords": [
@@ -861,7 +861,7 @@
       "locale": "en",
       "chapter": "forex-trading",
       "document": "forex-technicals",
-      "title": "Forex Technical Analysis and Practical Patterns",
+      "title": "05 · Forex Technical Analysis and Practical Patterns",
       "description": "Forex is the world's deepest and most 'pure' market for technical analysis: no price limits, no T+1, no insider earnings reports — prices form through global auction. Technical analysis is far more usable here than in A-shares — but precisely because everyone uses it, the same…",
       "length": 278,
       "matchedTitleWords": [
@@ -883,7 +883,7 @@
       "locale": "en",
       "chapter": "futures",
       "document": "commodity-options",
-      "title": "Futures Options and Commodity Options: Contracts That Insure Your Futures",
+      "title": "07 · Futures Options and Commodity Options: Contracts That Insure Your Futures",
       "description": "Futures options and commodity options — mechanics, domestic products, volatility traits, hands-on buyer and seller strategies, option pricing Greeks, and common ways to die",
       "length": 172,
       "matchedTitleWords": [
@@ -907,7 +907,7 @@
       "locale": "en",
       "chapter": "futures",
       "document": "delivery-rollover",
-      "title": "Delivery and Rollover: Which Side Is Time On",
+      "title": "03 · Delivery and Rollover: Which Side Is Time On",
       "description": "Futures delivery and rollover — physical vs. cash delivery, delivery-month risks, how the dominant contract forms and positions roll, basis gaps at rollover, and how to choose contract months",
       "length": 191,
       "matchedTitleWords": [
@@ -930,7 +930,7 @@
       "locale": "en",
       "chapter": "futures",
       "document": "futures-basics",
-      "title": "Futures Basics: What a Contract Is",
+      "title": "01 · Futures Basics: What a Contract Is",
       "description": "An introduction to futures contracts — what futures are, their historical origins, the eight contract elements, the trading process, domestic futures exchanges, and a full futures vs. stocks comparison",
       "length": 201,
       "matchedTitleWords": [
@@ -952,7 +952,7 @@
       "locale": "en",
       "chapter": "futures",
       "document": "futures-products",
-      "title": "Futures Products Encyclopedia: Your Battlefield Map",
+      "title": "04 · Futures Products Encyclopedia: Your Battlefield Map",
       "description": "A futures product encyclopedia — 25+ mainstream products across eight sectors with contract codes, exchanges, trading units, margin rates, price drivers, and suitable audiences",
       "length": 176,
       "matchedTitleWords": [
@@ -973,7 +973,7 @@
       "locale": "en",
       "chapter": "futures",
       "document": "futures-strategies",
-      "title": "Futures Trading Strategies: From Hedging Risk to Trading Volatility",
+      "title": "05 · Futures Trading Strategies: From Hedging Risk to Trading Volatility",
       "description": "Futures trading strategies explained — hedging, cash-futures arbitrage, calendar and inter-commodity spreads, trend following, intraday scalping, and algorithmic trading",
       "length": 169,
       "matchedTitleWords": [
@@ -996,12 +996,13 @@
       "locale": "en",
       "chapter": "futures",
       "document": "margin-leverage-liquidation",
-      "title": "Margin, Leverage & Forced Liquidation: A Trader's Lifeline",
+      "title": "02 · Margin, Leverage, and Forced Liquidation: A Trader's Lifeline",
       "description": "Margin, leverage, and forced liquidation in futures explained — the margin system, leverage multiples, mark-to-market, liquidation mechanics, margin calls, negative-balance blow-throughs, and a beginner risk-control checklist",
       "length": 225,
       "matchedTitleWords": [
         "margin",
         "leverage",
+        "and",
         "forced",
         "liquidation"
       ],
@@ -1009,16 +1010,16 @@
         "presence": 30,
         "length": 20,
         "detail": 20,
-        "titleRelevance": 13
+        "titleRelevance": 14
       },
-      "score": 83,
+      "score": 84,
       "status": "pass"
     },
     {
       "locale": "en",
       "chapter": "futures",
       "document": "otc-derivatives",
-      "title": "OTC Derivatives: The Dark Side of Custom Contracts",
+      "title": "06 · OTC Derivatives: The Dark Side of Custom Contracts",
       "description": "OTC derivatives explained — forwards, swaps, exotic OTC options, structured products and snowballs; see the real risks behind tailor-made contracts",
       "length": 147,
       "matchedTitleWords": [
@@ -1040,7 +1041,7 @@
       "locale": "en",
       "chapter": "getting-started",
       "document": "candlestick-basics",
-      "title": "Candlestick & Chart Basics",
+      "title": "03 · Candlestick & Chart Basics",
       "description": "Candlestick and chart fundamentals — the four elements of a single candle, timeframe selection, moving-average usage, volume confirmation, and chart type differences; enough to start reading charts right away",
       "length": 208,
       "matchedTitleWords": [
@@ -1060,7 +1061,7 @@
       "locale": "en",
       "chapter": "getting-started",
       "document": "core-concepts",
-      "title": "Trading Core Concepts",
+      "title": "02 · Trading Core Concepts",
       "description": "A dictionary of trading terms — leverage, margin, liquidation, order book, slippage, market orders, limit orders; each with a plain-language explanation, a one-line example, and a worked calculation",
       "length": 198,
       "matchedTitleWords": [
@@ -1079,7 +1080,7 @@
       "locale": "en",
       "chapter": "getting-started",
       "document": "first-trade",
-      "title": "Your First Trade: The Complete Flow from Account Setup to Order Placement",
+      "title": "07 · Your First Trade: The Complete Flow from Account Setup to Order Placement",
       "description": "A complete hands-on walkthrough of a beginner's first crypto trade — choosing a platform, registering and depositing, reading the trading screen, placing your first order, setting take-profit and stop-loss, and a checklist of common beginner mistakes",
       "length": 250,
       "matchedTitleWords": [
@@ -1104,7 +1105,7 @@
       "locale": "en",
       "chapter": "getting-started",
       "document": "market-overview",
-      "title": "Financial Market Overview",
+      "title": "01 · Financial Market Overview",
       "description": "A panoramic overview of the four major financial markets — stocks, spot commodities, futures, and crypto — their roles, participants, rule differences, and cross-market linkages",
       "length": 177,
       "matchedTitleWords": [
@@ -1125,7 +1126,7 @@
       "locale": "en",
       "chapter": "getting-started",
       "document": "order-types-execution",
-      "title": "Order Types and Execution Mechanics",
+      "title": "05 · Order Types and Execution Mechanics",
       "description": "Trigger logic for market, limit, stop-market, stop-limit, and OCO orders, the causes of slippage, and handling partial fills, with an illustrated order book depth walkthrough",
       "length": 174,
       "matchedTitleWords": [
@@ -1145,7 +1146,7 @@
       "locale": "en",
       "chapter": "getting-started",
       "document": "position-sizing",
-      "title": "Position Sizing and Money Management",
+      "title": "06 · Position Sizing and Money Management",
       "description": "Per-trade risk exposure calculation, the Kelly formula, fixed-fraction methods, equity curve drawdown control, and liquidation prevention, with an illustrated position allocation breakdown",
       "length": 188,
       "matchedTitleWords": [
@@ -1165,7 +1166,7 @@
       "locale": "en",
       "chapter": "getting-started",
       "document": "trading-hours",
-      "title": "Trading Hours Overview: When Every Market Opens and Closes",
+      "title": "04 · Trading Hours Overview: When Every Market Opens and Closes",
       "description": "A panorama of trading hours across markets — prime sessions, night sessions, holiday rules, and daylight-saving shifts for A-shares, HK stocks, US stocks, Japanese stocks, futures, and forex",
       "length": 190,
       "matchedTitleWords": [
@@ -1187,7 +1188,7 @@
       "locale": "en",
       "chapter": "global-markets",
       "document": "cross-border-investing",
-      "title": "Cross-Border Investing in Practice (Pragmatic Guide)",
+      "title": "05 · Cross-Border Investing in Practice (Pragmatic Guide)",
       "description": "The first four articles answered 'what is out there'; this one answers the most practical question: 'how do I participate compliantly'. It teaches no regulatory loopholes — it lays out goal setting, legal paths for moving funds offshore, choosing an offshore broker, tax filing obligations, and a risk checklist…",
       "length": 312,
       "matchedTitleWords": [
@@ -1206,7 +1207,7 @@
       "locale": "en",
       "chapter": "global-markets",
       "document": "emerging-markets",
-      "title": "Emerging Markets",
+      "title": "03 · Emerging Markets",
       "description": "Emerging Markets (EM) combine high-growth imagination with high-volatility reality: India's long bull narrative, Vietnam's manufacturing relocation, Brazil's resource endowment, Mexico's nearshoring… each sounds like 'A-shares ten years ago'. But emerging markets share one fate — massive capital inflows and outflows. One Fed hike, and money leaves and c…",
       "length": 356,
       "matchedTitleWords": [
@@ -1226,7 +1227,7 @@
       "locale": "en",
       "chapter": "global-markets",
       "document": "european-markets",
-      "title": "European Markets",
+      "title": "02 · European Markets",
       "description": "\"European markets\" is not one market but a patchwork of dozens of national markets: Germany is the manufacturing engine, France luxury and nuclear power, the UK finance and energy, Switzerland and the Nordics the home of safe-haven assets and high-quality consumer stocks. Europe's single currency (the euro) ties their rates, FX, and bonds together while…",
       "length": 356,
       "matchedTitleWords": [
@@ -1246,7 +1247,7 @@
       "locale": "en",
       "chapter": "global-markets",
       "document": "global-market-comparison",
-      "title": "Global Markets Comparison Overview",
+      "title": "04 · Global Markets Comparison Overview",
       "description": "The previous three articles looked at Japan/Korea, Europe, and emerging markets respectively; this one puts them on the same table for comparison: each index's 'personality', its correlation with A-shares, how time zones line up, and which channels you can use to actually get exposure. It ends by answering a practical question: what use are these 'global markets'…",
       "length": 366,
       "matchedTitleWords": [
@@ -1267,7 +1268,7 @@
       "locale": "en",
       "chapter": "global-markets",
       "document": "japan-korea-markets",
-      "title": "Japan and Korea Markets",
+      "title": "01 · Japan and Korea Markets",
       "description": "Japan and Korea are the mature markets closest to China, and also the two with the biggest perceived contrast for A-share traders: Japan's zero rates, flat valuations, and retail culture; Korea's chaebol structure, extremely high individual-investor participation, and semiconductor concentration — only by understanding Japan and Korea do you tr…",
       "length": 347,
       "matchedTitleWords": [
@@ -1289,7 +1290,7 @@
       "locale": "en",
       "chapter": "industry-research",
       "document": "competitive-moats",
-      "title": "Competitive Landscape & Economic Moats",
+      "title": "03 · Competitive Landscape & Economic Moats",
       "description": "Industry size determines 'how big the pie is'; the competitive landscape determines 'how big your slice can be'",
       "length": 111,
       "matchedTitleWords": [
@@ -1309,7 +1310,7 @@
       "locale": "en",
       "chapter": "industry-research",
       "document": "industry-cycles",
-      "title": "Sector Prosperity & Cycles",
+      "title": "04 · Sector Prosperity & Cycles",
       "description": "Half of industry analysis is 'size and landscape' (slow variables); the other half is 'where are we now' (fast variables)",
       "length": 121,
       "matchedTitleWords": [],
@@ -1326,7 +1327,7 @@
       "locale": "en",
       "chapter": "industry-research",
       "document": "industry-methodology",
-      "title": "Industry Research Methodology",
+      "title": "01 · Industry Research Methodology",
       "description": "Research the industry before researching a stock — the first lesson of sell-side analysts and the scarcest skill among retail investors",
       "length": 135,
       "matchedTitleWords": [
@@ -1346,7 +1347,7 @@
       "locale": "en",
       "chapter": "industry-research",
       "document": "new-themes-investing",
-      "title": "New Tracks & Theme Investing",
+      "title": "05 · New Tracks & Theme Investing",
       "description": "Every era has its 'sexiest' track — from the internet and new energy to AI and robotics — and retail investors are most easily drawn in there",
       "length": 141,
       "matchedTitleWords": [
@@ -1365,7 +1366,7 @@
       "locale": "en",
       "chapter": "industry-research",
       "document": "value-chain-analysis",
-      "title": "Value Chain Analysis",
+      "title": "02 · Value Chain Analysis",
       "description": "An industry is not a monolith but a value chain with upstream/downstream division of labor: the upstream sells raw materials, the midstream manufactures, and the downstream builds brands and channels",
       "length": 199,
       "matchedTitleWords": [
@@ -1397,9 +1398,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 12
+        "titleRelevance": 15
       },
-      "score": 92,
+      "score": 95,
       "status": "pass"
     },
     {
@@ -1416,9 +1417,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 5
+        "titleRelevance": 7
       },
-      "score": 85,
+      "score": 87,
       "status": "pass"
     },
     {
@@ -1436,9 +1437,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 7
+        "titleRelevance": 8
       },
-      "score": 87,
+      "score": 88,
       "status": "pass"
     },
     {
@@ -1457,9 +1458,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 15
+        "titleRelevance": 20
       },
-      "score": 95,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -1477,9 +1478,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 13
       },
-      "score": 90,
+      "score": 93,
       "status": "pass"
     },
     {
@@ -1497,9 +1498,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 13
       },
-      "score": 90,
+      "score": 93,
       "status": "pass"
     },
     {
@@ -1517,16 +1518,16 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 8
+        "titleRelevance": 10
       },
-      "score": 88,
+      "score": 90,
       "status": "pass"
     },
     {
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "alternative-assets",
-      "title": "Alternative Asset Investing: Collectibles and 'Hobby Investing'",
+      "title": "12 · Alternative Asset Investing: Collectibles and \"Hobby Investing\"",
       "description": "Alternative asset investing — liquidity, pricing and authenticity risks of collectibles such as Moutai, Rolex, whisky casks and digital collectibles, plus the correct position discipline",
       "length": 186,
       "matchedTitleWords": [
@@ -1550,9 +1551,9 @@
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "bonds-interest-rates",
-      "title": "Bonds and Interest Rates: The Pricing Anchor of Assets",
-      "description": "Bonds and interest rates explained — bond pricing, the yield curve, the risk-free rate, the US 10-year pricing anchor, and how hikes and cuts transmit to every asset class",
-      "length": 171,
+      "title": "02 · Bonds and Interest Rates: The Pricing Anchor of Assets",
+      "description": "Bonds and interest rates at a glance — an instrument map of bond types, coupon vs. YTM, the risk-free rate, yield-curve inversion, and the US 10-year pricing anchor; the deep dives live in Chapter 22, Bonds & Rates Deep Dive",
+      "length": 224,
       "matchedTitleWords": [
         "bonds",
         "and",
@@ -1560,22 +1561,23 @@
         "rates",
         "the",
         "pricing",
-        "anchor"
+        "anchor",
+        "of"
       ],
       "dimensions": {
         "presence": 30,
-        "length": 30,
+        "length": 20,
         "detail": 20,
-        "titleRelevance": 16
+        "titleRelevance": 18
       },
-      "score": 96,
+      "score": 88,
       "status": "pass"
     },
     {
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "commodities-overview",
-      "title": "Commodity Panorama: Understanding Commodities Through Their Global Pricing Centers",
+      "title": "06 · Commodity Panorama: Understanding Commodities Through Their Global Pricing Centers",
       "description": "Commodity panorama — the global pricing centers, participation tools, and daily-life links of precious metals, energy, industrial metals, ferrous products, and agricultural products",
       "length": 181,
       "matchedTitleWords": [
@@ -1598,7 +1600,7 @@
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "commodity-indices-cycles",
-      "title": "Commodity Indices and Cycles: Reading the Rhythm of an Era of Rising Prices",
+      "title": "14 · Commodity Indices and Cycles: Reading the Rhythm of an Era of Rising Prices",
       "description": "Commodity indices and cycles — CRB, S&P GSCI and the Nanhua index, commodities as a leading inflation indicator, supercycles and macro linkages",
       "length": 143,
       "matchedTitleWords": [
@@ -1622,7 +1624,7 @@
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "crypto-landscape",
-      "title": "Crypto Landscape: From Digital Gold to the Map of Crypto",
+      "title": "07 · Crypto Landscape: From Digital Gold to the Map of Crypto",
       "description": "Crypto landscape — major coin positioning, market-cap distribution and the crypto map, the CEX vs DEX landscape, on-chain data, and DeFi/NFT/Meme risks",
       "length": 151,
       "matchedTitleWords": [
@@ -1646,7 +1648,7 @@
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "defi-deep-dive",
-      "title": "DeFi and the On-Chain Ecosystem Deep Dive: From Yield Myths to a Risk Dissection",
+      "title": "15 · DeFi and the On-Chain Ecosystem Deep Dive: From Yield Myths to a Risk Dissection",
       "description": "A deep dive into DeFi and the on-chain ecosystem — the concrete mechanics, dollar math, and risk switches of staking, lending, liquidity mining, yield aggregation, and cross-chain bridges",
       "length": 187,
       "matchedTitleWords": [
@@ -1675,28 +1677,27 @@
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "forex-market",
-      "title": "Forex Market: The World's Largest Financial Battlefield",
-      "description": "Forex market explained — currency pairs, the US Dollar Index DXY, quote mechanics, pip value calculation, four-city trading sessions, leverage characteristics, and what drives exchange rates",
-      "length": 190,
+      "title": "01 · Forex Market: The World's Largest Financial Battlefield",
+      "description": "Forex market primer card — panoramic overview (size, currency pairs, sessions), five core concepts, and navigation into Chapter 23 · Forex Trading in Practice",
+      "length": 158,
       "matchedTitleWords": [
         "forex",
-        "market",
-        "the"
+        "market"
       ],
       "dimensions": {
         "presence": 30,
-        "length": 20,
+        "length": 30,
         "detail": 20,
-        "titleRelevance": 9
+        "titleRelevance": 6
       },
-      "score": 79,
-      "status": "review"
+      "score": 86,
+      "status": "pass"
     },
     {
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "funds-etf",
-      "title": "Funds and ETFs: The Ordinary Person's Asset Tool",
+      "title": "03 · Funds and ETFs: The Ordinary Person's Asset Tool",
       "description": "Funds and ETFs explained — public vs private, active vs passive, on-exchange vs off-exchange, ETF arbitrage and premiums/discounts, the case for index investing, dollar-cost averaging, and a broad-based index list",
       "length": 213,
       "matchedTitleWords": [
@@ -1718,7 +1719,7 @@
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "hk-us-ipo",
-      "title": "HK and US IPO Subscription: From Prospectus to First-Day Trading",
+      "title": "10 · HK and US IPO Subscription: From Prospectus to First-Day Trading",
       "description": "HK and US IPO subscription — new-issue mechanism comparison, the full HK subscription workflow, the reality of retail participation in US IPOs, and SPAC backdoor listings",
       "length": 170,
       "matchedTitleWords": [
@@ -1741,7 +1742,7 @@
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "indices-sectors",
-      "title": "Indexes and Sectors: The Market's Ruler and Map",
+      "title": "05 · Indexes and Sectors: The Market's Ruler and Map",
       "description": "Indexes and sectors — index construction, the styles of major A-share, HK, US, and global indexes, industry classification, sector rotation, and the Merrill Lynch Investment Clock",
       "length": 179,
       "matchedTitleWords": [
@@ -1764,7 +1765,7 @@
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "macro-markets",
-      "title": "Macro Economy and Markets: Read the Big Picture Before Trading",
+      "title": "08 · Macro Economy and Markets: Read the Big Picture Before Trading",
       "description": "Macro economy and markets — central-bank monetary policy, how to read key economic data, the data calendar, the economic cycle and Merrill Lynch Investment Clock, and market sentiment indicators",
       "length": 194,
       "matchedTitleWords": [
@@ -1788,28 +1789,27 @@
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "options-basics",
-      "title": "Options Basics: The Most Sophisticated Financial Instrument",
-      "description": "Options basics — Call and Put, the four elements, ITM/ATM/OTM, buyer vs seller rights and obligations, intrinsic and time value, implied volatility IV, and the Greeks",
-      "length": 166,
+      "title": "04 · Options Basics: The Most Sophisticated Financial Instrument",
+      "description": "Options quick-start card — what an option is, premium/strike/expiry, the four basic positions, and buyer-seller obligation asymmetry; the shortest path into options, then on to the Options Strategies chapter",
+      "length": 207,
       "matchedTitleWords": [
         "options",
-        "basics",
         "the"
       ],
       "dimensions": {
         "presence": 30,
-        "length": 30,
+        "length": 20,
         "detail": 20,
-        "titleRelevance": 9
+        "titleRelevance": 6
       },
-      "score": 89,
-      "status": "pass"
+      "score": 76,
+      "status": "review"
     },
     {
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "precious-metals-energy",
-      "title": "Precious Metals and Energy Spot: How to Participate in Gold, Silver, and Crude Oil",
+      "title": "09 · Precious Metals and Energy Spot: How to Participate in Gold, Silver, and Crude Oil",
       "description": "Participation routes for precious metals and energy spot — gold bars, paper gold, gold ETFs, gold T+D, and London gold compared; crude oil derivatives; and how to spot the most dangerous scams",
       "length": 192,
       "matchedTitleWords": [
@@ -1838,7 +1838,7 @@
       "locale": "en",
       "chapter": "markets-instruments",
       "document": "reits-real-estate",
-      "title": "REITs and Real Estate Investing: From Buying a Home to Buying the Property Business",
+      "title": "11 · REITs and Real Estate Investing: From Buying a Home to Buying the Property Business",
       "description": "REITs and real estate investing — four ways to invest in property, the REITs securitization mechanism, onshore public REITs and overseas comparison, and a framework for whether to buy a home",
       "length": 190,
       "matchedTitleWords": [
@@ -1864,8 +1864,35 @@
     {
       "locale": "en",
       "chapter": "markets-instruments",
+      "document": "sentiment-indicators",
+      "title": "16 · Sentiment Indicators Panorama: Fear & Greed, Long/Short Ratio, and PCR",
+      "description": "A panorama of sentiment indicators — how the Fear & Greed Index is built and read in reverse, account-based vs position-based long/short ratios, the options-market meaning of the Put/Call Ratio, and the correct use of sentiment: sizing positions, never timing entries",
+      "length": 267,
+      "matchedTitleWords": [
+        "sentiment",
+        "indicators",
+        "panorama",
+        "fear",
+        "greed",
+        "long",
+        "short",
+        "ratio",
+        "and"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 20,
+        "detail": 20,
+        "titleRelevance": 18
+      },
+      "score": 88,
+      "status": "pass"
+    },
+    {
+      "locale": "en",
+      "chapter": "markets-instruments",
       "document": "volatility-vix",
-      "title": "Volatility and VIX: Fear Can Be Priced",
+      "title": "13 · Volatility and VIX: Fear Can Be Priced",
       "description": "Volatility and VIX explained — historical vs implied volatility, how the VIX is constructed and its traits, futures contango decay, crypto volatility, and a primer on volatility trading",
       "length": 185,
       "matchedTitleWords": [
@@ -1886,7 +1913,7 @@
       "locale": "en",
       "chapter": "options-strategies",
       "document": "greeks-in-practice",
-      "title": "The Greeks in Practice: Your Position Is a Risk Balance Sheet",
+      "title": "02 · The Greeks in Practice: Your Position Is a Risk Balance Sheet",
       "description": "Option prices are sensitive to five factors: underlying price, time, volatility, interest rates (plus a second-order acceleration term). The Greeks are the dashboard that isolates and quantifies each sensitivity",
       "length": 211,
       "matchedTitleWords": [
@@ -1908,7 +1935,7 @@
       "locale": "en",
       "chapter": "options-strategies",
       "document": "options-strategies",
-      "title": "The Complete Catalog of Option Combinations: Classified by Risk-Return Type",
+      "title": "03 · The Complete Catalog of Option Combinations: Classified by Risk-Return Type",
       "description": "There are thousands of option strategies, but fewer than 20 are truly worth a retail trader's mastery. This article sorts them into four classes by 'what money you're earning': directional, volatility, income, and hedging strategies",
       "length": 232,
       "matchedTitleWords": [
@@ -1930,7 +1957,7 @@
       "locale": "en",
       "chapter": "options-strategies",
       "document": "options-tools-review",
-      "title": "Options Tools and Review: Master the Tools, Turn Experience into an Asset",
+      "title": "05 · Options Tools and Review: Master the Tools, Turn Experience into an Asset",
       "description": "Options trading is a contest of not just knowledge but information access and accumulated experience. Reading the same option chain, a veteran extracts IV percentile, changes in OI, and strike concentration — while a novice sees only a wall of prices",
       "length": 250,
       "matchedTitleWords": [
@@ -1953,7 +1980,7 @@
       "locale": "en",
       "chapter": "options-strategies",
       "document": "options-trading-risk",
-      "title": "Options in Practice and Risk Control: From Paper Trading to Real Money",
+      "title": "04 · Options in Practice and Risk Control: From Paper Trading to Real Money",
       "description": "The previous three articles covered how options are priced, how to read the Greeks, and which strategies exist. This one answers the final question: how to put that knowledge to work in live trading — and how not to get wiped out",
       "length": 229,
       "matchedTitleWords": [
@@ -1976,7 +2003,7 @@
       "locale": "en",
       "chapter": "options-strategies",
       "document": "pricing-volatility",
-      "title": "Option Pricing and Volatility: Where Prices Come From, and How to Tell If They're Expensive",
+      "title": "01 · Option Pricing and Volatility: Where Prices Come From, and How to Tell If They're Expensive",
       "description": "The options basics article only gave you the formula premium = intrinsic value + time value. This article answers three deadlier questions: how is that number actually computed…",
       "length": 177,
       "matchedTitleWords": [
@@ -1997,28 +2024,26 @@
       "locale": "en",
       "chapter": "pitfalls",
       "document": "compliance-taxes",
-      "title": "Compliance and Taxes",
-      "description": "Trading compliance and taxes — platform regulation, deposit and withdrawal channels, bank account freeze risk, tax filing, and asset classification: a summary of regulatory and legal essentials",
-      "length": 193,
+      "title": "03 · Compliance and Taxes",
+      "description": "Focuses on trading channels, cross-border funding, account freezes, and AML risk, then shows when tax filing requires verification or professional advice.",
+      "length": 154,
       "matchedTitleWords": [
-        "compliance",
-        "and",
-        "taxes"
+        "and"
       ],
       "dimensions": {
         "presence": 30,
-        "length": 20,
+        "length": 30,
         "detail": 20,
-        "titleRelevance": 20
+        "titleRelevance": 7
       },
-      "score": 90,
+      "score": 87,
       "status": "pass"
     },
     {
       "locale": "en",
       "chapter": "pitfalls",
       "document": "scam-detection",
-      "title": "Scam Detection",
+      "title": "02 · Scam Detection",
       "description": "Detecting financial scams — the shared skeleton of pig-butchering scams, high-yield schemes, fake platforms, and insider-tip tricks, with an anti-fraud education guide",
       "length": 167,
       "matchedTitleWords": [
@@ -2037,7 +2062,7 @@
       "locale": "en",
       "chapter": "pitfalls",
       "document": "why-traders-lose",
-      "title": "Why Traders Lose",
+      "title": "01 · Why Traders Lose",
       "description": "The most common reasons retail traders lose — nine behavioral patterns dissected: trading without a plan, excessive leverage, holding losers without a stop-loss, fee attrition from overtrading, and more",
       "length": 202,
       "matchedTitleWords": [
@@ -2057,7 +2082,7 @@
       "locale": "en",
       "chapter": "quant-practice",
       "document": "data-acquisition",
-      "title": "Data Acquisition in Practice",
+      "title": "02 · Data Acquisition in Practice",
       "description": "Hands-on data fetching across China A-shares, futures, and crypto — cleaning and incremental storage that turns data from 'fetchable' to 'trustworthy'.",
       "length": 151,
       "matchedTitleWords": [
@@ -2077,7 +2102,7 @@
       "locale": "en",
       "chapter": "quant-practice",
       "document": "first-backtest",
-      "title": "Your First Backtest",
+      "title": "03 · Your First Backtest",
       "description": "A complete runnable Python script covering the minimal backtest loop — data, signals, fill simulation, performance — plus your first real understanding of overfitting.",
       "length": 167,
       "matchedTitleWords": [
@@ -2098,7 +2123,7 @@
       "locale": "en",
       "chapter": "quant-practice",
       "document": "live-automation",
-      "title": "Live Automation",
+      "title": "04 · Live Automation",
       "description": "The compliance boundaries of personal automation, a complete crypto spot playbook, and the semi-automatic 'signal alert + manual execution' route for China A-shares.",
       "length": 165,
       "matchedTitleWords": [
@@ -2117,7 +2142,7 @@
       "locale": "en",
       "chapter": "quant-practice",
       "document": "quant-toolchain",
-      "title": "Quant Toolchain",
+      "title": "01 · Quant Toolchain",
       "description": "Build a sufficient, low-friction quant research toolchain for the individual programmer and run the research loop at minimal cost.",
       "length": 130,
       "matchedTitleWords": [
@@ -2137,7 +2162,7 @@
       "locale": "en",
       "chapter": "quant-practice",
       "document": "strategy-coding",
-      "title": "Strategy Coding in Practice",
+      "title": "05 · Strategy Coding in Practice",
       "description": "Five complete strategy examples from simple to advanced: dual moving average, Bollinger Bands, RSI, grid trading, and a statistical arbitrage prototype.",
       "length": 152,
       "matchedTitleWords": [
@@ -2157,7 +2182,7 @@
       "locale": "en",
       "chapter": "reading-list",
       "document": "beginner-books",
-      "title": "Beginner Books",
+      "title": "01 · Beginner Books",
       "description": "The first batch of books for complete beginners. This tier's goal is not teaching you how to trade, but building three things: a sound view of money (how money works), a sound view of assets (what is an asset vs. a liability), and a sound view of investing (investing before trading; slow is fast)",
       "length": 297,
       "matchedTitleWords": [
@@ -2177,7 +2202,7 @@
       "locale": "en",
       "chapter": "reading-list",
       "document": "how-to-read",
-      "title": "How to Read a Book Closely",
+      "title": "05 · How to Read a Book Closely",
       "description": "The previous four chapters recommended 20+ books. But buying without reading and reading without retaining is the trader's most common self-deception — between 'having read many books' and 'having a framework' stands an engineering project called close reading",
       "length": 260,
       "matchedTitleWords": [
@@ -2197,7 +2222,7 @@
       "locale": "en",
       "chapter": "reading-list",
       "document": "quant-psychology-books",
-      "title": "Quant & Trading Psychology",
+      "title": "04 · Quant & Trading Psychology",
       "description": "The first two tiers taught you to read the market; this tier teaches you to read yourself and read patterns along two tracks — trading psychology and quantitative methods",
       "length": 170,
       "matchedTitleWords": [
@@ -2218,7 +2243,7 @@
       "locale": "en",
       "chapter": "reading-list",
       "document": "ta-classics",
-      "title": "Technical Analysis Classics",
+      "title": "02 · Technical Analysis Classics",
       "description": "Knowledge base chapter [06-Technical Analysis](../technical-analysis/) has turned candlestick patterns, technical indicators, and volume-price analysis into a searchable checklist. This chapter's mission: put those methods back into the books where they were born, and see each author's original framework…",
       "length": 306,
       "matchedTitleWords": [
@@ -2238,7 +2263,7 @@
       "locale": "en",
       "chapter": "reading-list",
       "document": "value-investing-classics",
-      "title": "Value Investing Classics",
+      "title": "03 · Value Investing Classics",
       "description": "Technical analysis tells you what price is doing; value investing tells you what a thing is actually worth. This tier runs from Graham's The Intelligent Investor through Buffett, Munger, Lynch, and Howard Marks, landing in the Chinese market context — seven books spanning…",
       "length": 273,
       "matchedTitleWords": [
@@ -2258,7 +2283,7 @@
       "locale": "en",
       "chapter": "regulation-compliance",
       "document": "algo-trading-compliance",
-      "title": "Algorithmic Trading and Compliance",
+      "title": "05 · Algorithmic Trading and Compliance",
       "description": "Breaks down the unified algorithmic trading rule framework, covering the reporting regime, high-frequency trading supervision, and a compliance checklist for individual developers.",
       "length": 180,
       "matchedTitleWords": [
@@ -2280,7 +2305,7 @@
       "locale": "en",
       "chapter": "regulation-compliance",
       "document": "aml-compliance",
-      "title": "AML and Trading Compliance",
+      "title": "08 · AML and Trading Compliance",
       "description": "A thorough look at AML and KYC rules, covering compliance actions, suspicious transaction markers, and tax filing handling.",
       "length": 123,
       "matchedTitleWords": [
@@ -2301,7 +2326,7 @@
       "locale": "en",
       "chapter": "regulation-compliance",
       "document": "china-regulation",
-      "title": "China's Financial Regulatory System",
+      "title": "01 · China's Financial Regulatory System",
       "description": "Maps China's financial regulators to each type of institution, building the skeleton of the regulatory system around the question of who regulates what.",
       "length": 152,
       "matchedTitleWords": [
@@ -2323,7 +2348,7 @@
       "locale": "en",
       "chapter": "regulation-compliance",
       "document": "crypto-regulation",
-      "title": "Crypto Regulation",
+      "title": "03 · Crypto Regulation",
       "description": "A region-by-region map of crypto regulation, covering institutional differences across China, the US, Hong Kong, and the EU, plus a compliance survival guide for ordinary users.",
       "length": 177,
       "matchedTitleWords": [
@@ -2343,7 +2368,7 @@
       "locale": "en",
       "chapter": "regulation-compliance",
       "document": "licensing-access",
-      "title": "Licensing and Market Access",
+      "title": "04 · Licensing and Market Access",
       "description": "Maps China's financial license landscape and overseas licensing regimes, teaching you to verify an institution's compliance on official websites in three minutes.",
       "length": 162,
       "matchedTitleWords": [
@@ -2363,7 +2388,7 @@
       "locale": "en",
       "chapter": "regulation-compliance",
       "document": "market-data-compliance",
-      "title": "Market Data and Tooling Compliance",
+      "title": "07 · Market Data and Tooling Compliance",
       "description": "Covers data rights and licensing, permissions for displaying real-time quotes, the boundary with investment advice, and a compliance checklist for open-source projects.",
       "length": 168,
       "matchedTitleWords": [
@@ -2384,7 +2409,7 @@
       "locale": "en",
       "chapter": "regulation-compliance",
       "document": "platform-disclaimers",
-      "title": "Platform Disclaimers and Investor Suitability",
+      "title": "06 · Platform Disclaimers and Investor Suitability",
       "description": "Clarifies the legal role of disclaimers and the underlying logic of investor suitability, teaching you to read platforms' fine print and its compliance boundaries.",
       "length": 163,
       "matchedTitleWords": [
@@ -2407,7 +2432,7 @@
       "locale": "en",
       "chapter": "regulation-compliance",
       "document": "us-global-regulation",
-      "title": "US and Global Regulation",
+      "title": "02 · US and Global Regulation",
       "description": "A regulatory map of major global markets, covering the US two-tier system, the licensing logic of Hong Kong, Singapore, and the EU, and the choice of offshore domiciles.",
       "length": 169,
       "matchedTitleWords": [
@@ -2428,7 +2453,7 @@
       "locale": "en",
       "chapter": "spot",
       "document": "crypto-spot",
-      "title": "Crypto Spot Deep Dive",
+      "title": "03 · Crypto Spot Deep Dive",
       "description": "A crypto spot special — what cryptocurrency is, CEX vs DEX, wallets and seed phrases, funding channels, stablecoin de-pegs, on-chain transfers, and crypto-specific risks",
       "length": 169,
       "matchedTitleWords": [
@@ -2447,8 +2472,31 @@
     {
       "locale": "en",
       "chapter": "spot",
+      "document": "dca-methodology",
+      "title": "07 · DCA and Batch Accumulation Methodology",
+      "description": "DCA and batch accumulation methodology — replacing timing with time diversification, the math and limits of why the DCA average cost sits below the arithmetic mean, comparing equal-amount DCA, pyramiding, and grid strategies, take-profit discipline, when to stop, and the link to portfolio rebalancing",
+      "length": 301,
+      "matchedTitleWords": [
+        "dca",
+        "and",
+        "batch",
+        "accumulation",
+        "methodology"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 20,
+        "detail": 20,
+        "titleRelevance": 20
+      },
+      "score": 90,
+      "status": "pass"
+    },
+    {
+      "locale": "en",
+      "chapter": "spot",
       "document": "portfolio-rebalancing",
-      "title": "Portfolio Management & Rebalancing",
+      "title": "06 · Portfolio Management & Rebalancing",
       "description": "Building a crypto portfolio — BTC/ETH/altcoin allocation ratios, rebalancing triggers, the correlation matrix, drawdown control, and long-term holding discipline",
       "length": 161,
       "matchedTitleWords": [
@@ -2468,7 +2516,7 @@
       "locale": "en",
       "chapter": "spot",
       "document": "spot-basics",
-      "title": "Spot Trading Basics",
+      "title": "01 · Spot Trading Basics",
       "description": "Spot trading basics — the definition of spot, the order flow, four order types, fee structures, and indirect ways to short spot, all in one place",
       "length": 145,
       "matchedTitleWords": [
@@ -2489,7 +2537,7 @@
       "locale": "en",
       "chapter": "spot",
       "document": "spot-intermediate",
-      "title": "Spot Practice: Next Level",
+      "title": "02 · Spot Practice: Next Level",
       "description": "Spot trading in practice, advanced — funding workflows, order placement techniques, position management, combining spot with yield products, and review checklists; curing the two chronic faults of buying too high and failing to hold",
       "length": 232,
       "matchedTitleWords": [
@@ -2509,7 +2557,7 @@
       "locale": "en",
       "chapter": "spot",
       "document": "spot-strategies",
-      "title": "Spot Trading Strategies",
+      "title": "04 · Spot Trading Strategies",
       "description": "Six spot trading strategies — DCA, grid, value investing, swing, arbitrage, and new listings/airdrops; each with its fit, core logic, and risk points so you can find your seat",
       "length": 175,
       "matchedTitleWords": [
@@ -2530,7 +2578,7 @@
       "locale": "en",
       "chapter": "spot",
       "document": "wallet-security",
-      "title": "Secure Storage & Wallet Management",
+      "title": "05 · Secure Storage & Wallet Management",
       "description": "A complete guide to storing crypto assets safely — hot wallets, cold wallets, and hardware wallets compared; seed phrase management; exchange risk assessment; multi-sig schemes; and an anti-theft anti-loss checklist",
       "length": 215,
       "matchedTitleWords": [
@@ -2550,7 +2598,7 @@
       "locale": "en",
       "chapter": "stocks",
       "document": "a-share-rules",
-      "title": "A-Share Trading Rules",
+      "title": "02 · A-Share Trading Rules",
       "description": "A practical rulebook for trading A-shares — trading hours, call auction vs continuous auction, price limits, T+1, fees, IPO subscription, margin trading, and northbound funds, all in one place",
       "length": 192,
       "matchedTitleWords": [
@@ -2569,8 +2617,31 @@
     {
       "locale": "en",
       "chapter": "stocks",
+      "document": "adjusted-price-dividends",
+      "title": "08 · Adjusted Prices, Ex-Dividend Days, and Indicator Distortion",
+      "description": "Adjusted prices and ex-dividend/ex-rights mechanics — the ex-price formula, choosing among pre-adjusted, post-adjusted, and unadjusted data, how ex-day gaps corrupt moving averages, MACD, and Fibonacci retracements, a practical checklist, and special notes for high-dividend stocks",
+      "length": 281,
+      "matchedTitleWords": [
+        "adjusted",
+        "prices",
+        "ex",
+        "dividend",
+        "and"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 20,
+        "detail": 20,
+        "titleRelevance": 13
+      },
+      "score": 83,
+      "status": "pass"
+    },
+    {
+      "locale": "en",
+      "chapter": "stocks",
       "document": "adr-cross-listing",
-      "title": "ADR and Cross-Border Listing",
+      "title": "05 · ADR and Cross-Border Listing",
       "description": "ADRs and cross-border listings — depositary receipts, the full history of US-listed Chinese companies, the hidden risks of the VIE structure, cross-border listing routes, and risks unique to Chinese ADRs",
       "length": 203,
       "matchedTitleWords": [
@@ -2593,7 +2664,7 @@
       "locale": "en",
       "chapter": "stocks",
       "document": "etf-portfolio",
-      "title": "US and Global ETF Portfolio Construction",
+      "title": "07 · US and Global ETF Portfolio Construction",
       "description": "Building US and global ETF portfolios — choosing broad-base ETFs, style and sector allocation, topping up with global bonds and commodities, the three-fund and permanent portfolios, and DCA in practice",
       "length": 201,
       "matchedTitleWords": [
@@ -2616,7 +2687,7 @@
       "locale": "en",
       "chapter": "stocks",
       "document": "hk-us-stocks",
-      "title": "HK and US Stocks",
+      "title": "03 · HK and US Stocks",
       "description": "HK and US stock trading rules — HK T+0 round trips with T+2 settlement, US pre-market and after-hours sessions, the VCM and circuit breakers, compliant account opening and funding, ADRs and index ETFs",
       "length": 200,
       "matchedTitleWords": [
@@ -2637,7 +2708,7 @@
       "locale": "en",
       "chapter": "stocks",
       "document": "stock-analysis",
-      "title": "Stock Analysis Methods",
+      "title": "04 · Stock Analysis Methods",
       "description": "Stock analysis methods — the three-layer fundamental framework, reading the three financial statements, key financial metrics, valuation tools (PE/PB/PS/dividend yield/DCF), and the three classic retail traps",
       "length": 208,
       "matchedTitleWords": [
@@ -2658,7 +2729,7 @@
       "locale": "en",
       "chapter": "stocks",
       "document": "stock-basics",
-      "title": "Stock Basics",
+      "title": "01 · Stock Basics",
       "description": "Stock fundamentals — what a stock is, market participants, the IPO process, what indexes measure, dividend and share-distribution math, and a comparison of the essential differences among stocks, futures, and spot",
       "length": 213,
       "matchedTitleWords": [
@@ -2677,7 +2748,7 @@
       "locale": "en",
       "chapter": "stocks",
       "document": "us-stock-options",
-      "title": "US Stock Options Primer",
+      "title": "06 · US Stock Options Primer",
       "description": "A hands-on guide to US stock Options — reading the option chain, four beginner strategies with worked numbers, US permission tiers, margin and tax rules, and the classic ways to blow up",
       "length": 185,
       "matchedTitleWords": [
@@ -2698,7 +2769,7 @@
       "locale": "en",
       "chapter": "system-integration",
       "document": "ctp-integration",
-      "title": "CTP Integration in Practice: From Zero to First Order",
+      "title": "10 · CTP Integration in Practice: From Zero to First Order",
       "description": "The full CTP futures interface workflow in practice, from environment setup and the development flow to a minimal runnable example and common pitfalls.",
       "length": 151,
       "matchedTitleWords": [
@@ -2721,7 +2792,7 @@
       "locale": "en",
       "chapter": "system-integration",
       "document": "data-infrastructure",
-      "title": "Data and Infrastructure",
+      "title": "07 · Data and Infrastructure",
       "description": "A full view of trading system data architecture, covering storage selection, message middleware, monitoring and alerting, and deployment architecture.",
       "length": 150,
       "matchedTitleWords": [
@@ -2741,7 +2812,7 @@
       "locale": "en",
       "chapter": "system-integration",
       "document": "exchanges-oms",
-      "title": "Exchanges and OMSs: Which Layer Your System Actually Connects To",
+      "title": "02 · Exchanges and OMSs: Which Layer Your System Actually Connects To",
       "description": "The engineering shapes and selection trade-offs of four integration paths: direct exchange access, futures OMSs, crypto APIs, and overseas markets.",
       "length": 147,
       "matchedTitleWords": [
@@ -2762,7 +2833,7 @@
       "locale": "en",
       "chapter": "system-integration",
       "document": "fix-protocol",
-      "title": "FIX Protocol Deep Dive: The Common Language of Global Institutional Trading",
+      "title": "09 · FIX Protocol Deep Dive: The Common Language of Global Institutional Trading",
       "description": "FIX message format, core message types, session keep-alive, and a selection guide for overseas institutional markets.",
       "length": 117,
       "matchedTitleWords": [
@@ -2782,7 +2853,7 @@
       "locale": "en",
       "chapter": "system-integration",
       "document": "integration-overview",
-      "title": "Integration Overview and Role Division: Draw the Map Before Writing Code",
+      "title": "01 · Integration Overview and Role Division: Draw the Map Before Writing Code",
       "description": "Integration map, module checklist, and role division for trading systems, clarifying system boundaries and team responsibilities.",
       "length": 129,
       "matchedTitleWords": [
@@ -2805,7 +2876,7 @@
       "locale": "en",
       "chapter": "system-integration",
       "document": "market-data-systems",
-      "title": "Market Data Systems: The Eyes of Trading Software",
+      "title": "03 · Market Data Systems: The Eyes of Trading Software",
       "description": "A full walkthrough of market data system architecture, covering data sources, protocols, latency, reconnect recovery, and storage strategy.",
       "length": 139,
       "matchedTitleWords": [
@@ -2826,7 +2897,7 @@
       "locale": "en",
       "chapter": "system-integration",
       "document": "matching-engine",
-      "title": "Matching Engine Principles: How Orders Become Fills",
+      "title": "11 · Matching Engine Principles: How Orders Become Fills",
       "description": "Core matching engine principles, covering matching rules, order book data structures, algorithms, and the exchange vs AMM comparison.",
       "length": 133,
       "matchedTitleWords": [
@@ -2847,7 +2918,7 @@
       "locale": "en",
       "chapter": "system-integration",
       "document": "order-lifecycle",
-      "title": "Trading Interfaces and Order Lifecycle: The Heart of the System",
+      "title": "04 · Trading Interfaces and Order Lifecycle: The Heart of the System",
       "description": "Interface shapes, the order state machine, matching principles, reconciliation and rate limits, plus a battle-scarred bug checklist.",
       "length": 132,
       "matchedTitleWords": [
@@ -2869,7 +2940,7 @@
       "locale": "en",
       "chapter": "system-integration",
       "document": "risk-systems",
-      "title": "Risk Controls and Capital Management: The Last Line of Defense Must Be Your Own",
+      "title": "05 · Risk Controls and Capital Management: The Last Line of Defense Must Be Your Own",
       "description": "Client-side risk control architecture, covering pre-trade checks, circuit breaker design, exception handling, and audit trails.",
       "length": 127,
       "matchedTitleWords": [
@@ -2889,7 +2960,7 @@
       "locale": "en",
       "chapter": "system-integration",
       "document": "role-skills-map",
-      "title": "Role Skills Map",
+      "title": "08 · Role Skills Map",
       "description": "A panoramic guide to the eight core roles on a trading system team: responsibilities, hard skills, tech stacks, and career paths.",
       "length": 129,
       "matchedTitleWords": [
@@ -2909,7 +2980,7 @@
       "locale": "en",
       "chapter": "system-integration",
       "document": "strategy-backtest",
-      "title": "Quantitative Strategies and Backtesting",
+      "title": "06 · Quantitative Strategies and Backtesting",
       "description": "An engineer's guide to quant strategy R&D: from logic validation to a deployable, monitorable code system.",
       "length": 106,
       "matchedTitleWords": [],
@@ -2926,7 +2997,7 @@
       "locale": "en",
       "chapter": "technical-analysis",
       "document": "advanced-candles",
-      "title": "Advanced Candlesticks",
+      "title": "04 · Advanced Candlesticks",
       "description": "Advanced candlesticks — quantifying wick language, confirming and falsifying combination patterns, multi-timeframe confluence, volume endorsement, and differentiated reading across markets",
       "length": 188,
       "matchedTitleWords": [
@@ -2946,7 +3017,7 @@
       "locale": "en",
       "chapter": "technical-analysis",
       "document": "chart-patterns",
-      "title": "Candlestick Patterns",
+      "title": "01 · Candlestick Patterns",
       "description": "Candlestick patterns in depth — single-candle, reversal and continuation combinations, and gap patterns, each with diagrams plus confirmation and failure conditions",
       "length": 164,
       "matchedTitleWords": [
@@ -2966,7 +3037,7 @@
       "locale": "en",
       "chapter": "technical-analysis",
       "document": "drawing-tools",
-      "title": "Drawing Tools in Practice",
+      "title": "07 · Drawing Tools in Practice",
       "description": "Drawing tools in practice — horizontal lines, trend lines, channels, Fibonacci, and XABCD: turning price structure into verifiable hypotheses",
       "length": 141,
       "matchedTitleWords": [
@@ -2988,7 +3059,7 @@
       "locale": "en",
       "chapter": "technical-analysis",
       "document": "elliott-gann-chan",
-      "title": "Elliott Waves · Gann · Chan Theory",
+      "title": "05 · Elliott Waves · Gann · Chan Theory",
       "description": "Elliott Wave, Gann, and Chan Theory — the principles, rules, and controversies of all three, their real merit, and how to use them as a language for describing market structure rather than prediction tools",
       "length": 205,
       "matchedTitleWords": [
@@ -3010,7 +3081,7 @@
       "locale": "en",
       "chapter": "technical-analysis",
       "document": "gann-box-angles",
-      "title": "Gann Box and Angles in Practice",
+      "title": "08 · Gann Box and Angles in Practice",
       "description": "Gann box and angle lines in practice — drawing the 1x1 angle line, the time-price relationship, Gann box structure, and their use as a language for describing market structure",
       "length": 175,
       "matchedTitleWords": [
@@ -3033,7 +3104,7 @@
       "locale": "en",
       "chapter": "technical-analysis",
       "document": "indicators",
-      "title": "Technical Indicators in Depth",
+      "title": "02 · Technical Indicators in Depth",
       "description": "Technical indicators in depth — how trend and oscillator indicators like moving averages, MACD, and KDJ process their inputs, with formulas, parameter settings, and failure scenarios fully explained",
       "length": 198,
       "matchedTitleWords": [
@@ -3054,8 +3125,55 @@
     {
       "locale": "en",
       "chapter": "technical-analysis",
+      "document": "indicators-advanced",
+      "title": "12 · Advanced Indicators: DMI/ADX, Supertrend, BBW",
+      "description": "Advanced indicators — DMI/ADX separating direction from trend strength, Supertrend's ATR ratchet band and flip-stop, BBW's volatility squeeze-and-expansion cycle, and how the three combine with existing indicators",
+      "length": 213,
+      "matchedTitleWords": [
+        "advanced",
+        "indicators",
+        "dmi",
+        "adx",
+        "supertrend",
+        "bbw"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 20,
+        "detail": 20,
+        "titleRelevance": 20
+      },
+      "score": 90,
+      "status": "pass"
+    },
+    {
+      "locale": "en",
+      "chapter": "technical-analysis",
+      "document": "multi-timeframe",
+      "title": "13 · Multi-Timeframe Analysis: Let Timeframes Cross-Examine Each Other",
+      "description": "Multi-timeframe analysis — why a single timeframe deceives, choosing adjacent 4–6x timeframes, the three-layer framework of direction/structure/entry, handling conflicts between timeframes, the fallacy of translating indicator parameters across timeframes, and common errors",
+      "length": 274,
+      "matchedTitleWords": [
+        "multi",
+        "timeframe",
+        "analysis",
+        "timeframes",
+        "cross"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 20,
+        "detail": 20,
+        "titleRelevance": 11
+      },
+      "score": 81,
+      "status": "pass"
+    },
+    {
+      "locale": "en",
+      "chapter": "technical-analysis",
       "document": "order-flow-microstructure",
-      "title": "Order Flow and Market Microstructure",
+      "title": "09 · Order Flow and Market Microstructure",
       "description": "Order flow and market microstructure — candles as results vs. order flow as process, time & sales, order book depth, aggressive buying/selling, and large-order detection",
       "length": 169,
       "matchedTitleWords": [
@@ -3077,8 +3195,52 @@
     {
       "locale": "en",
       "chapter": "technical-analysis",
+      "document": "orderbook-depth",
+      "title": "10 · Order Book & Depth Chart: A Practical Guide",
+      "description": "Order book and depth chart interpretation — reading the bid/ask spread, analyzing order book structure, identifying support/resistance from depth curves, spotting iceberg orders and spoofing, and combining order book signals with price action.",
+      "length": 243,
+      "matchedTitleWords": [
+        "order",
+        "book",
+        "depth",
+        "chart"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 20,
+        "detail": 20,
+        "titleRelevance": 13
+      },
+      "score": 83,
+      "status": "pass"
+    },
+    {
+      "locale": "en",
+      "chapter": "technical-analysis",
+      "document": "replay-training",
+      "title": "11 · The Replay Training Method",
+      "description": "The replay training method — compressing experience by stepping through historical candlesticks with future data hidden, designing focused training plans, mastering the blind-forecast-and-verify loop, and understanding replay's limits and its division of labor with paper trading",
+      "length": 279,
+      "matchedTitleWords": [
+        "the",
+        "replay",
+        "training",
+        "method"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 20,
+        "detail": 20,
+        "titleRelevance": 20
+      },
+      "score": 90,
+      "status": "pass"
+    },
+    {
+      "locale": "en",
+      "chapter": "technical-analysis",
       "document": "ta-validation",
-      "title": "Technical Analysis: Critique and Validation",
+      "title": "06 · Technical Analysis: Critique and Validation",
       "description": "Critique and validation of technical analysis — the momentum effect, support/resistance anchoring, backtesting methodology, and an academic audit of whether a signal is truly effective",
       "length": 184,
       "matchedTitleWords": [
@@ -3101,7 +3263,7 @@
       "locale": "en",
       "chapter": "technical-analysis",
       "document": "volume-price",
-      "title": "Volume-Price Analysis",
+      "title": "03 · Volume-Price Analysis",
       "description": "Volume-price analysis — volume as the market's raw data; the meaning of expanding, shrinking, and stacked volume, judging the authenticity of rises and falls, and the classic volume-price relationships",
       "length": 201,
       "matchedTitleWords": [
@@ -3122,7 +3284,7 @@
       "locale": "en",
       "chapter": "tools-platforms",
       "document": "analysis-scripting",
-      "title": "Analysis & Scripting",
+      "title": "04 · Analysis & Scripting",
       "description": "From TradingView to a Python workflow, making analysis reproducible — the right way to script your analysis.",
       "length": 108,
       "matchedTitleWords": [
@@ -3141,7 +3303,7 @@
       "locale": "en",
       "chapter": "tools-platforms",
       "document": "automation-environment",
-      "title": "Runtime & Automation Environment",
+      "title": "05 · Runtime & Automation Environment",
       "description": "From server selection to deployment, operations, and a security baseline — keeping quant scripts running stably and automatically for the long term.",
       "length": 148,
       "matchedTitleWords": [],
@@ -3158,7 +3320,7 @@
       "locale": "en",
       "chapter": "tools-platforms",
       "document": "broker-selection",
-      "title": "Broker & Futures Broker Selection",
+      "title": "03 · Broker & Futures Broker Selection",
       "description": "A comparison across four channel types — A-share brokers, futures brokers, HK/US brokers, and crypto exchanges — with safety checklists.",
       "length": 136,
       "matchedTitleWords": [
@@ -3179,7 +3341,7 @@
       "locale": "en",
       "chapter": "tools-platforms",
       "document": "charting-platforms",
-      "title": "A Panorama of Market Data Software",
+      "title": "01 · A Panorama of Market Data Software",
       "description": "Classifies market data software by market and purpose, explains the strengths of free tools and professional terminals, and gives a multi-software workflow.",
       "length": 156,
       "matchedTitleWords": [
@@ -3201,7 +3363,7 @@
       "locale": "en",
       "chapter": "tools-platforms",
       "document": "research-platforms",
-      "title": "Data & Research Platforms",
+      "title": "02 · Data & Research Platforms",
       "description": "A layered tour of quant data sources, historical quotes, macro and industry data, and research reports, with a zero-cost research toolkit.",
       "length": 138,
       "matchedTitleWords": [
@@ -3221,7 +3383,7 @@
       "locale": "en",
       "chapter": "trading-practice",
       "document": "a-share-playbook",
-      "title": "A-Share Special Plays",
+      "title": "05 · A-Share Special Plays",
       "description": "Seven signature A-share plays dissected one by one — limit-up chasing, IPO subscriptions, convertible bond T+0, and ST delisting risk.",
       "length": 134,
       "matchedTitleWords": [
@@ -3241,7 +3403,7 @@
       "locale": "en",
       "chapter": "trading-practice",
       "document": "arbitrage-handbook",
-      "title": "Arbitrage in Practice",
+      "title": "06 · Arbitrage in Practice",
       "description": "The core logic of arbitrage and seven mainstream plays — cash-and-carry, calendar, cross-market, cross-commodity, ETF, crypto, and statistical arbitrage.",
       "length": 153,
       "matchedTitleWords": [
@@ -3261,7 +3423,7 @@
       "locale": "en",
       "chapter": "trading-practice",
       "document": "crypto-airdrops",
-      "title": "Crypto Airdrops and Airdrop Farming",
+      "title": "07 · Crypto Airdrops and Airdrop Farming",
       "description": "A practical guide to crypto airdrops and farming — classic cases, cost accounting, expected returns, and anti-Sybil risk.",
       "length": 121,
       "matchedTitleWords": [
@@ -3284,7 +3446,7 @@
       "locale": "en",
       "chapter": "trading-practice",
       "document": "day-trading",
-      "title": "Day Trading in Practice",
+      "title": "01 · Day Trading in Practice",
       "description": "A day trading survival guide — run the numbers on fees and slippage, and master practical T+0 buy-low sell-high methods.",
       "length": 120,
       "matchedTitleWords": [
@@ -3305,7 +3467,7 @@
       "locale": "en",
       "chapter": "trading-practice",
       "document": "event-driven",
-      "title": "Event-Driven Trading",
+      "title": "04 · Event-Driven Trading",
       "description": "A practical guide to event-driven trading — position around known events like earnings and NFP, buy the expectation, sell the fact.",
       "length": 131,
       "matchedTitleWords": [
@@ -3326,7 +3488,7 @@
       "locale": "en",
       "chapter": "trading-practice",
       "document": "onchain-data-trading",
-      "title": "On-chain Data Trading",
+      "title": "08 · On-chain Data Trading",
       "description": "On-chain analytics in practice — six core indicators, tooling, and smart-money copy-trading strategies.",
       "length": 103,
       "matchedTitleWords": [
@@ -3347,7 +3509,7 @@
       "locale": "en",
       "chapter": "trading-practice",
       "document": "range-grid-trading",
-      "title": "Range Markets and Grid Trading in Practice",
+      "title": "03 · Range Markets and Grid Trading in Practice",
       "description": "A complete guide to grid trading in range markets — principles, parameter setup, mathematical expectation, and one-sided-market risk.",
       "length": 133,
       "matchedTitleWords": [
@@ -3371,7 +3533,7 @@
       "locale": "en",
       "chapter": "trading-practice",
       "document": "swing-trend-trading",
-      "title": "Swing and Trend in Practice",
+      "title": "02 · Swing and Trend in Practice",
       "description": "Swing and trend trading in practice — from trend confirmation and entry/exit to position management and the most common ways to die.",
       "length": 132,
       "matchedTitleWords": [
@@ -3393,8 +3555,32 @@
     {
       "locale": "en",
       "chapter": "trading-system",
+      "document": "alert-discipline",
+      "title": "08 · Price Alerts and Off-Screen Discipline",
+      "description": "Price alerts and off-screen discipline — the attention cost of watching charts, outsourcing the \"condition→action\" trigger to the system, binding alerts to trading-plan key levels, alert overload, and what to do after an alert fires",
+      "length": 232,
+      "matchedTitleWords": [
+        "price",
+        "alerts",
+        "and",
+        "off",
+        "screen",
+        "discipline"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 20,
+        "detail": 20,
+        "titleRelevance": 20
+      },
+      "score": 90,
+      "status": "pass"
+    },
+    {
+      "locale": "en",
+      "chapter": "trading-system",
       "document": "equity-curve-attribution",
-      "title": "Equity Curve and Performance Attribution",
+      "title": "04 · Equity Curve and Performance Attribution",
       "description": "Equity curve and performance attribution — how to read the equity curve, maximum drawdown, Sharpe ratio, and deciding whether profits come from a good system or a good market",
       "length": 174,
       "matchedTitleWords": [
@@ -3417,7 +3603,7 @@
       "locale": "en",
       "chapter": "trading-system",
       "document": "journaling-checklists",
-      "title": "Trading Journal and Checklists",
+      "title": "06 · Trading Journal and Checklists",
       "description": "Trading journal and checklists — daily, weekly, and monthly logging and review templates; using checklists to enforce discipline and close the trading-system loop",
       "length": 162,
       "matchedTitleWords": [
@@ -3438,8 +3624,34 @@
     {
       "locale": "en",
       "chapter": "trading-system",
+      "document": "paper-to-live",
+      "title": "07 · From Paper Trading to Live: The Path to Real Money",
+      "description": "The path from paper trading to live trading — what simulation can and cannot teach, what to practice and the three traps, graduation criteria, switching to live with minimum size, and the first-30-days slow-down rules",
+      "length": 217,
+      "matchedTitleWords": [
+        "from",
+        "paper",
+        "trading",
+        "to",
+        "live",
+        "the",
+        "path",
+        "to"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 20,
+        "detail": 20,
+        "titleRelevance": 16
+      },
+      "score": 86,
+      "status": "pass"
+    },
+    {
+      "locale": "en",
+      "chapter": "trading-system",
       "document": "risk-management",
-      "title": "Risk Management",
+      "title": "02 · Risk Management",
       "description": "Trading risk management — the accelerating cost of recovering losses, per-trade risk fractions, position calculation, maximum drawdown control, and the logic of always having a next hand to play",
       "length": 194,
       "matchedTitleWords": [
@@ -3459,7 +3671,7 @@
       "locale": "en",
       "chapter": "trading-system",
       "document": "trade-review",
-      "title": "Advanced Trade Review",
+      "title": "05 · Advanced Trade Review",
       "description": "Advanced trade review — upgrading from a diary to data-driven review across five layers: single trade, periodic, system, emotion, and market environment",
       "length": 152,
       "matchedTitleWords": [
@@ -3480,7 +3692,7 @@
       "locale": "en",
       "chapter": "trading-system",
       "document": "trading-plan",
-      "title": "Trading Plan",
+      "title": "01 · Trading Plan",
       "description": "Trading plans — turning entries, exits, stop-losses and adds from feelings into rules, behavioral comparisons of planned vs unplanned traders, and how to write your own plan",
       "length": 173,
       "matchedTitleWords": [
@@ -3500,7 +3712,7 @@
       "locale": "en",
       "chapter": "trading-system",
       "document": "trading-psychology",
-      "title": "Trading Psychology",
+      "title": "03 · Trading Psychology",
       "description": "Trading psychology — the neural mechanics of FOMO and panic, System 1 vs System 2, and the cognitive biases behind loss aversion, sunk costs, and failing to follow your own plan",
       "length": 177,
       "matchedTitleWords": [
@@ -3520,7 +3732,7 @@
       "locale": "en",
       "chapter": "wealth-allocation",
       "document": "asset-allocation",
-      "title": "Asset Allocation Basics",
+      "title": "01 · Asset Allocation Basics",
       "description": "Why allocation beats stock picking and timing, the temperaments of core asset classes, and portfolio logic for long-term holding.",
       "length": 129,
       "matchedTitleWords": [
@@ -3540,7 +3752,7 @@
       "locale": "en",
       "chapter": "wealth-allocation",
       "document": "compounding-returns",
-      "title": "Compounding and Return Expectations",
+      "title": "02 · Compounding and Return Expectations",
       "description": "The compound-interest formula and Rule of 72 in numbers, the four enemies that destroy compounding, and how to make getting rich slowly an accountable path.",
       "length": 156,
       "matchedTitleWords": [
@@ -3560,7 +3772,7 @@
       "locale": "en",
       "chapter": "wealth-allocation",
       "document": "family-financial-planning",
-      "title": "Family Financial Planning",
+      "title": "03 · Family Financial Planning",
       "description": "Run your family like a company: balance sheet, cash flow, emergency reserves, debt management, and the four-bucket money framework.",
       "length": 131,
       "matchedTitleWords": [
@@ -3579,7 +3791,7 @@
       "locale": "en",
       "chapter": "wealth-allocation",
       "document": "inflation-purchasing-power",
-      "title": "Inflation and Purchasing Power",
+      "title": "04 · Inflation and Purchasing Power",
       "description": "How CPI is constructed, how inflation treats each asset class, and how to separate genuine anti-inflation tools from marketing talk.",
       "length": 132,
       "matchedTitleWords": [
@@ -3599,7 +3811,7 @@
       "locale": "en",
       "chapter": "wealth-allocation",
       "document": "insurance-basics",
-      "title": "Insurance and Protection",
+      "title": "05 · Insurance and Protection",
       "description": "Insurance's defensive role in personal finance: what to buy, how much coverage you need, and which 'insurance' is actually a trap.",
       "length": 130,
       "matchedTitleWords": [
@@ -3619,7 +3831,7 @@
       "locale": "en",
       "chapter": "wealth-allocation",
       "document": "overseas-allocation",
-      "title": "Overseas Allocation in Practice",
+      "title": "06 · Overseas Allocation in Practice",
       "description": "Compliance boundaries, legitimate paths, costs, and risks of overseas asset allocation — and an objective look at what problems it actually solves.",
       "length": 147,
       "matchedTitleWords": [
@@ -3639,7 +3851,7 @@
       "locale": "en",
       "chapter": "wealth-allocation",
       "document": "tax-planning",
-      "title": "Tax Planning Basics",
+      "title": "07 · Tax Planning Basics",
       "description": "China's personal investment tax framework, the line between legitimate planning and evasion, covering tax categories, rates, and reliefs.",
       "length": 137,
       "matchedTitleWords": [
@@ -3907,9 +4119,9 @@
         "presence": 30,
         "length": 30,
         "detail": 10,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 80,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -3926,9 +4138,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -3996,9 +4208,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -4083,9 +4295,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 5
+        "titleRelevance": 7
       },
-      "score": 85,
+      "score": 87,
       "status": "pass"
     },
     {
@@ -4146,16 +4358,14 @@
       "title": "02 · 著名崩盘与黑天鹅",
       "description": "复盘 1987 至 2020 年极端行情，拆解黑天鹅事件经过、市场反应与风控教训。",
       "length": 41,
-      "matchedTitleWords": [
-        "02"
-      ],
+      "matchedTitleWords": [],
       "dimensions": {
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 0
       },
-      "score": 90,
+      "score": 80,
       "status": "pass"
     },
     {
@@ -4172,9 +4382,9 @@
         "presence": 30,
         "length": 20,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 80,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -4286,23 +4496,21 @@
       "title": "02 · 套息交易与利差：汇率的第一驱动力",
       "description": "外汇市场最经典、最赚钱也最危险的策略只有一个名字：套息交易（Carry Trade）——借低息货币，买高息货币，躺着赚利差。但它同时也是 2024 年 8 月全球股灾的引爆点。本篇…",
       "length": 91,
-      "matchedTitleWords": [
-        "02"
-      ],
+      "matchedTitleWords": [],
       "dimensions": {
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 7
+        "titleRelevance": 0
       },
-      "score": 87,
+      "score": 80,
       "status": "pass"
     },
     {
       "locale": "zh",
       "chapter": "forex-trading",
       "document": "central-bank-trading",
-      "title": "央行政策与事件交易",
+      "title": "06 · 央行政策与事件交易",
       "description": "外汇的本质是两种货币的相对强弱，而利率是汇率的第一驱动力——所以「央行怎么做」比任何技术指标都更能决定中期方向。美联储的每一次利率决议、日本央行的每一次口头干预、非农数据的每一个数…",
       "length": 91,
       "matchedTitleWords": [],
@@ -4329,9 +4537,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 4
+        "titleRelevance": 5
       },
-      "score": 84,
+      "score": 85,
       "status": "pass"
     },
     {
@@ -4372,7 +4580,7 @@
       "locale": "zh",
       "chapter": "forex-trading",
       "document": "forex-technicals",
-      "title": "外汇技术分析与实战形态",
+      "title": "05 · 外汇技术分析与实战形态",
       "description": "外汇是全球流动性最深、技术分析最「纯」的市场：没有涨跌停、没有 T+1、没有内幕财报，价格由全世界共同竞价形成。技术分析在这里的可用性，比在 A 股高得多——但也正因为人人都用，同…",
       "length": 91,
       "matchedTitleWords": [],
@@ -4399,9 +4607,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 7
+        "titleRelevance": 10
       },
-      "score": 87,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -4418,9 +4626,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 7
+        "titleRelevance": 10
       },
-      "score": 87,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -4454,10 +4662,10 @@
         "presence": 30,
         "length": 30,
         "detail": 10,
-        "titleRelevance": 7
+        "titleRelevance": 10
       },
-      "score": 77,
-      "status": "review"
+      "score": 80,
+      "status": "pass"
     },
     {
       "locale": "zh",
@@ -4473,9 +4681,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 7
+        "titleRelevance": 10
       },
-      "score": 87,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -4492,9 +4700,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 5
+        "titleRelevance": 7
       },
-      "score": 85,
+      "score": 87,
       "status": "pass"
     },
     {
@@ -4511,9 +4719,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 7
+        "titleRelevance": 10
       },
-      "score": 87,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -4530,9 +4738,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -4634,9 +4842,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 5
+        "titleRelevance": 7
       },
-      "score": 85,
+      "score": 87,
       "status": "pass"
     },
     {
@@ -4670,9 +4878,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -4689,9 +4897,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -4878,9 +5086,9 @@
         "presence": 30,
         "length": 20,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 80,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -4897,9 +5105,9 @@
         "presence": 30,
         "length": 20,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 80,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -4950,9 +5158,9 @@
         "presence": 30,
         "length": 30,
         "detail": 10,
-        "titleRelevance": 5
+        "titleRelevance": 7
       },
-      "score": 75,
+      "score": 77,
       "status": "review"
     },
     {
@@ -4960,8 +5168,8 @@
       "chapter": "markets-instruments",
       "document": "bonds-interest-rates",
       "title": "02 · 债券与利率：资产的定价之锚",
-      "description": "债券与利率详解——债券定价、收益率曲线、无风险利率、美债10Y定价锚与加息降息对各类资产的传导路径",
-      "length": 49,
+      "description": "债券与利率导读——债券品种全景速览、票息与到期收益率、无风险利率、收益率曲线倒挂与美债10Y定价锚，深度内容见 22 章债券与利率深潜篇",
+      "length": 68,
       "matchedTitleWords": [
         "债券与利率"
       ],
@@ -4969,9 +5177,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 7
+        "titleRelevance": 10
       },
-      "score": 87,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -4989,9 +5197,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 13
       },
-      "score": 90,
+      "score": 93,
       "status": "pass"
     },
     {
@@ -5008,9 +5216,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 4
+        "titleRelevance": 5
       },
-      "score": 84,
+      "score": 85,
       "status": "pass"
     },
     {
@@ -5028,9 +5236,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 13
       },
-      "score": 90,
+      "score": 93,
       "status": "pass"
     },
     {
@@ -5047,9 +5255,9 @@
         "presence": 30,
         "length": 30,
         "detail": 10,
-        "titleRelevance": 4
+        "titleRelevance": 5
       },
-      "score": 74,
+      "score": 75,
       "status": "review"
     },
     {
@@ -5057,8 +5265,8 @@
       "chapter": "markets-instruments",
       "document": "forex-market",
       "title": "01 · 外汇市场：全球最大的金融战场",
-      "description": "外汇市场全解——货币对、美元指数DXY、报价机制、Pip点值计算、四城交易时间、杠杆特色与汇率驱动",
-      "length": 49,
+      "description": "外汇市场导读卡——市场全景速览（规模、货币对、交易时段）、核心概念五条与外汇交易专章（23 章）导航",
+      "length": 50,
       "matchedTitleWords": [
         "外汇市场"
       ],
@@ -5066,9 +5274,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 7
+        "titleRelevance": 10
       },
-      "score": 87,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -5086,9 +5294,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 13
       },
-      "score": 90,
+      "score": 93,
       "status": "pass"
     },
     {
@@ -5106,9 +5314,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 13
       },
-      "score": 90,
+      "score": 93,
       "status": "pass"
     },
     {
@@ -5125,9 +5333,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 4
+        "titleRelevance": 5
       },
-      "score": 84,
+      "score": 85,
       "status": "pass"
     },
     {
@@ -5144,9 +5352,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 4
+        "titleRelevance": 5
       },
-      "score": 84,
+      "score": 85,
       "status": "pass"
     },
     {
@@ -5154,18 +5362,16 @@
       "chapter": "markets-instruments",
       "document": "options-basics",
       "title": "04 · 期权基础：最精密的金融工具",
-      "description": "期权基础——Call与Put、四要素、实值平值虚值、买卖方权利义务、内在时间价值、隐含波动率IV与希腊字母",
-      "length": 53,
-      "matchedTitleWords": [
-        "期权基础"
-      ],
+      "description": "期权入门导读卡——期权是什么、权利金/行权价/到期日、四种基础头寸与买卖双方义务不对称，最短路径搞懂期权，再进阶期权策略篇",
+      "length": 61,
+      "matchedTitleWords": [],
       "dimensions": {
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 7
+        "titleRelevance": 0
       },
-      "score": 87,
+      "score": 80,
       "status": "pass"
     },
     {
@@ -5182,9 +5388,9 @@
         "presence": 30,
         "length": 30,
         "detail": 10,
-        "titleRelevance": 4
+        "titleRelevance": 5
       },
-      "score": 74,
+      "score": 75,
       "status": "review"
     },
     {
@@ -5203,9 +5409,31 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 12
       },
-      "score": 90,
+      "score": 92,
+      "status": "pass"
+    },
+    {
+      "locale": "zh",
+      "chapter": "markets-instruments",
+      "document": "sentiment-indicators",
+      "title": "16 · 情绪指标全景：恐贪指数、多空比与 PCR",
+      "description": "情绪指标全景——恐贪指数的构成与反向参考、合约多空比与持仓比的区别、PCR 认沽认购比的期权市场含义，以及只调仓位不做择时的正确用法",
+      "length": 66,
+      "matchedTitleWords": [
+        "情绪指标全景",
+        "恐贪指数",
+        "多空比与",
+        "pcr"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 30,
+        "detail": 20,
+        "titleRelevance": 20
+      },
+      "score": 100,
       "status": "pass"
     },
     {
@@ -5223,9 +5451,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 13
       },
-      "score": 90,
+      "score": 93,
       "status": "pass"
     },
     {
@@ -5318,18 +5546,16 @@
       "chapter": "pitfalls",
       "document": "compliance-taxes",
       "title": "03 · 合规与税务",
-      "description": "交易合规与税务——平台合规、出入金渠道、冻卡风险、税务申报与资产性质等监管法律常识整理",
-      "length": 43,
-      "matchedTitleWords": [
-        "合规与税务"
-      ],
+      "description": "聚焦交易渠道、跨境出入金、冻卡与反洗钱风险，并说明何时需要转入税务申报与专业咨询。",
+      "length": 41,
+      "matchedTitleWords": [],
       "dimensions": {
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 0
       },
-      "score": 90,
+      "score": 80,
       "status": "pass"
     },
     {
@@ -5346,9 +5572,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -5365,9 +5591,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -5476,7 +5702,7 @@
       "locale": "zh",
       "chapter": "reading-list",
       "document": "how-to-read",
-      "title": "06 · 如何精读一本书",
+      "title": "05 · 如何精读一本书",
       "description": "前四篇书单推荐了 20 多本书。但买书不读书、读书不进脑，是交易者最常见的自我欺骗——「读了很多书」和「建立体系」之间，隔着一个叫作「精读」的工程",
       "length": 73,
       "matchedTitleWords": [],
@@ -5493,7 +5719,7 @@
       "locale": "zh",
       "chapter": "reading-list",
       "document": "quant-psychology-books",
-      "title": "05 · 量化与交易心理",
+      "title": "04 · 量化与交易心理",
       "description": "前两层书单教你「看市场」，本层书单分两条线教你「看自己」和「看规律」：",
       "length": 35,
       "matchedTitleWords": [],
@@ -5605,9 +5831,9 @@
         "presence": 30,
         "length": 20,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 80,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -5682,7 +5908,7 @@
       "locale": "zh",
       "chapter": "spot",
       "document": "crypto-spot",
-      "title": "加密现货专题",
+      "title": "03 · 加密现货专题",
       "description": "加密货币现货专题——加密货币本身、交易所CEX与DEX、钱包助记词、出入金、稳定币脱锚、链上转账与特有风险",
       "length": 53,
       "matchedTitleWords": [],
@@ -5693,6 +5919,25 @@
         "titleRelevance": 0
       },
       "score": 80,
+      "status": "pass"
+    },
+    {
+      "locale": "zh",
+      "chapter": "spot",
+      "document": "dca-methodology",
+      "title": "07 · 定投与分批建仓方法论",
+      "description": "定投与分批建仓方法论——用时间分散替代择时、定投均价低于算术平均的数学与边界、等额定投金字塔网格三种建仓对比、止盈纪律与停投条件、与再平衡的衔接",
+      "length": 72,
+      "matchedTitleWords": [
+        "定投与分批建仓方法论"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 30,
+        "detail": 20,
+        "titleRelevance": 20
+      },
+      "score": 100,
       "status": "pass"
     },
     {
@@ -5716,7 +5961,7 @@
       "locale": "zh",
       "chapter": "spot",
       "document": "spot-basics",
-      "title": "现货交易基础",
+      "title": "01 · 现货交易基础",
       "description": "现货交易基础——现货定义、下单流程、四种订单类型、手续费结构、现货做空的间接方式全解析",
       "length": 43,
       "matchedTitleWords": [
@@ -5735,7 +5980,7 @@
       "locale": "zh",
       "chapter": "spot",
       "document": "spot-intermediate",
-      "title": "现货实务进阶",
+      "title": "02 · 现货实务进阶",
       "description": "现货交易实战进阶——出入金实务、挂单技巧、持仓管理、现货与理财组合、复盘要点，治好买贵与拿不住两大毛病",
       "length": 51,
       "matchedTitleWords": [],
@@ -5752,7 +5997,7 @@
       "locale": "zh",
       "chapter": "spot",
       "document": "spot-strategies",
-      "title": "现货交易策略",
+      "title": "04 · 现货交易策略",
       "description": "现货交易六大策略——定投网格价值投资波段套利与打新空投，每种策略适用人群核心逻辑与风险点对号入座",
       "length": 48,
       "matchedTitleWords": [],
@@ -5796,6 +6041,25 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
+        "titleRelevance": 20
+      },
+      "score": 100,
+      "status": "pass"
+    },
+    {
+      "locale": "zh",
+      "chapter": "stocks",
+      "document": "adjusted-price-dividends",
+      "title": "08 · 复权、除权除息与指标失真",
+      "description": "复权与除权除息——除权参考价原理、前复权后复权不复权三种口径的选择、除权跳空对均线与 MACD 等指标的破坏、实操清单与高分红股注意事项",
+      "length": 68,
+      "matchedTitleWords": [
+        "复权"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 30,
+        "detail": 20,
         "titleRelevance": 10
       },
       "score": 90,
@@ -5816,9 +6080,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 13
+        "titleRelevance": 20
       },
-      "score": 93,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -5837,9 +6101,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 15
+        "titleRelevance": 20
       },
-      "score": 95,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -5873,9 +6137,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -5892,9 +6156,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -5928,9 +6192,9 @@
         "presence": 30,
         "length": 20,
         "detail": 20,
-        "titleRelevance": 5
+        "titleRelevance": 7
       },
-      "score": 75,
+      "score": 77,
       "status": "review"
     },
     {
@@ -5981,9 +6245,9 @@
         "presence": 30,
         "length": 20,
         "detail": 20,
-        "titleRelevance": 5
+        "titleRelevance": 7
       },
-      "score": 75,
+      "score": 77,
       "status": "review"
     },
     {
@@ -6017,9 +6281,9 @@
         "presence": 30,
         "length": 20,
         "detail": 20,
-        "titleRelevance": 5
+        "titleRelevance": 7
       },
-      "score": 75,
+      "score": 77,
       "status": "review"
     },
     {
@@ -6121,9 +6385,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -6140,9 +6404,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -6159,9 +6423,9 @@
         "presence": 30,
         "length": 30,
         "detail": 10,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 80,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -6180,9 +6444,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 15
+        "titleRelevance": 20
       },
-      "score": 95,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -6199,9 +6463,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -6209,18 +6473,60 @@
       "chapter": "technical-analysis",
       "document": "indicators",
       "title": "02 · 技术指标详解",
-      "description": "技术指标详解——均线MACDKDJ等趋势与震荡指标的原料加工原理公式参数设置与失行情境全解析",
-      "length": 46,
+      "description": "技术指标详解——均线、MACD、KDJ 等趋势与震荡指标的原理、公式、参数设置与失真情境全解析",
+      "length": 47,
       "matchedTitleWords": [
         "技术指标详解"
       ],
       "dimensions": {
         "presence": 30,
         "length": 30,
-        "detail": 10,
+        "detail": 20,
+        "titleRelevance": 20
+      },
+      "score": 100,
+      "status": "pass"
+    },
+    {
+      "locale": "zh",
+      "chapter": "technical-analysis",
+      "document": "indicators-advanced",
+      "title": "12 · 指标进阶补遗：DMI/ADX、Supertrend、BBW",
+      "description": "指标进阶补遗——DMI/ADX 把方向与趋势强度分离、Supertrend 的 ATR 棘轮轨道与翻转止损、BBW 的波动挤压与扩张周期，以及三者的组合定位",
+      "length": 78,
+      "matchedTitleWords": [
+        "指标进阶补遗",
+        "dmi",
+        "adx",
+        "supertrend",
+        "bbw"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 30,
+        "detail": 20,
+        "titleRelevance": 20
+      },
+      "score": 100,
+      "status": "pass"
+    },
+    {
+      "locale": "zh",
+      "chapter": "technical-analysis",
+      "document": "multi-timeframe",
+      "title": "13 · 多周期分析：让周期之间互相证明",
+      "description": "多周期分析——单周期为何会骗人、相邻 4–6 倍的周期选择、大周期定方向/中周期定结构/小周期定入场的三层框架，以及跨周期冲突与常见错误的处理",
+      "length": 71,
+      "matchedTitleWords": [
+        "多周期分析"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 30,
+        "detail": 20,
         "titleRelevance": 10
       },
-      "score": 80,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -6237,9 +6543,47 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
+      "status": "pass"
+    },
+    {
+      "locale": "zh",
+      "chapter": "technical-analysis",
+      "document": "orderbook-depth",
+      "title": "10 · 订单簿与深度图解读",
+      "description": "订单簿与深度图解读——盘口五档十档读法、挂单结构分析、深度图识别支撑阻力、大单博弈与挂单撤单策略识别",
+      "length": 50,
+      "matchedTitleWords": [
+        "订单簿与深度图解读"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 30,
+        "detail": 20,
+        "titleRelevance": 20
+      },
+      "score": 100,
+      "status": "pass"
+    },
+    {
+      "locale": "zh",
+      "chapter": "technical-analysis",
+      "document": "replay-training",
+      "title": "11 · 回放训练方法论",
+      "description": "回放训练方法论——用历史 K 线逐根推进压缩经验时间，设计专项训练计划、掌握「盲推-验证」循环，并认清回放与模拟盘的分工与局限",
+      "length": 63,
+      "matchedTitleWords": [
+        "回放训练方法论"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 30,
+        "detail": 20,
+        "titleRelevance": 20
+      },
+      "score": 100,
       "status": "pass"
     },
     {
@@ -6256,9 +6600,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -6275,9 +6619,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -6414,9 +6758,9 @@
         "presence": 30,
         "length": 20,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 13
       },
-      "score": 80,
+      "score": 83,
       "status": "pass"
     },
     {
@@ -6450,9 +6794,9 @@
         "presence": 30,
         "length": 20,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 80,
+      "score": 90,
       "status": "pass"
     },
     {
@@ -6509,6 +6853,25 @@
     {
       "locale": "zh",
       "chapter": "trading-system",
+      "document": "alert-discipline",
+      "title": "08 · 价格提醒与离盘纪律",
+      "description": "价格提醒与离盘纪律——盯盘的注意力代价、把「条件→行动」外包给提醒系统、绑定交易计划关键位的设置方法，以及提醒过载与触发后的应对",
+      "length": 64,
+      "matchedTitleWords": [
+        "价格提醒与离盘纪律"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 30,
+        "detail": 20,
+        "titleRelevance": 20
+      },
+      "score": 100,
+      "status": "pass"
+    },
+    {
+      "locale": "zh",
+      "chapter": "trading-system",
       "document": "equity-curve-attribution",
       "title": "04 · 资金曲线与绩效归因",
       "description": "资金曲线与绩效归因——权益净值曲线读法、最大回撤夏普比率与判断盈利来源是系统好还是行情好",
@@ -6520,9 +6883,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -6539,9 +6902,29 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
+      "status": "pass"
+    },
+    {
+      "locale": "zh",
+      "chapter": "trading-system",
+      "document": "paper-to-live",
+      "title": "07 · 模拟盘到实盘：进阶路径",
+      "description": "模拟盘到实盘的进阶路径——模拟盘的价值与边界、该练什么与三个陷阱、毕业标准、实盘切换的最小仓位原则与前 30 天降速规则",
+      "length": 60,
+      "matchedTitleWords": [
+        "模拟盘到实盘",
+        "进阶路径"
+      ],
+      "dimensions": {
+        "presence": 30,
+        "length": 30,
+        "detail": 20,
+        "titleRelevance": 20
+      },
+      "score": 100,
       "status": "pass"
     },
     {
@@ -6558,9 +6941,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -6577,9 +6960,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -6596,9 +6979,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
@@ -6615,9 +6998,9 @@
         "presence": 30,
         "length": 30,
         "detail": 20,
-        "titleRelevance": 10
+        "titleRelevance": 20
       },
-      "score": 90,
+      "score": 100,
       "status": "pass"
     },
     {
