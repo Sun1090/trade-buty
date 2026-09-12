@@ -1,5 +1,57 @@
 # Progress
 
+## v0.6 关账与发布复盘（R13.25）
+
+- 状态：DONE（R13.23 作为同一里程碑的独立项为 BLOCKED_EXTERNAL，不随本项关账）
+- 工作分支：codex/r13-e2e-expansion
+- PR：none（无关联 PR；gh pr list 为空）
+- PR 状态：none
+- Base：origin/main@abe8106
+- 远端 Head：未推送（LOCAL_ONLY）
+- 本地提交：30d180e（kb 同步）、4c867fa（描述评分修复）、47d8628（术语子串修复）、d65b2ec（本关账）
+- 目标：按 roadmap v0.6 关账标准复核 R10–R13，产出发布复盘文档，并如实分类未完成/阻塞项。
+- 已完成：
+  - 新增 `docs/v0.6-release-review.md`：关账标准对照、交付范围、全量门禁证据、安全与依赖、部署回滚、未完成与阻塞、已知告警。
+  - roadmap R13.25 标记完成；R13.23 保持未勾选并显式标注 `BLOCKED_EXTERNAL`。
+  - 关账期暴露并修复三处真实缺陷（见下）。
+- 变更文件：docs/v0.6-release-review.md、docs/roadmap.md；缺陷修复见下两条。
+- 验证命令与结果：
+  - `npm run lint` → exit 0（0 error / 59 warning）
+  - `npm test` → exit 0（163 文件 / 1272 用例）
+  - `npm run typecheck` → exit 0
+  - `npm run build` → exit 0（Next.js 16.3.5，465 静态页，搜索索引 418）
+  - `npm run e2e` → exit 0（Playwright 53/53）
+  - `npm run lhci` → exit 0（3 URL × 2 采样，6/6 断言；本地仅写文件系统，未上传公共存储）
+  - `npm run audit:prod` → `found 0 vulnerabilities`
+  - 内容门禁全绿：frontmatter / slug-conflicts / description-dupes / glossary / image-alt / quiz-mounts / quiz-coverage / kb-pointer（a57d510）/ translation-history / kb-parity-budget / links / sitemap（418）/ seo-surface（430/454）/ search-index / nav-chain / relative-links / bundle（454 路由）/ structured-data（5656 实体）/ ai-copy / growth-event-privacy / dark-pattern-copy / constitution（报告式）
+- 上游依赖：
+  - 章节 README 风险提示缺口（40/54）属 kline-buty 内容，本仓库禁止就地编辑 → `BLOCKED_UPSTREAM`。
+  - 未完成项 R13.23（评论/排行榜用户研究）需真实目标用户证据 → `BLOCKED_EXTERNAL`。
+- 未验证项：远端 CI 与部署（LOCAL_ONLY 未推送/未部署）。
+- 风险与回滚：见 docs/v0.6-release-review.md §4/§6；无 schema 迁移，回滚 = revert 上一发布提交后重部署。
+- 下一步：授权后推送 codex/r13-e2e-expansion 复核远端 CI；推进 R13.23 用户研究与上游风险提示补齐。
+- 最后更新：2026-09-12
+
+## 内容报告缺陷修复（R10.3 / R10.4 复查）
+
+- 状态：DONE
+- 目标：关账复核发现两处评分/匹配缺陷并修复，避免运营报告产生假告警。
+- 已完成：
+  - `4c867fa`：`scripts/description-quality-lib.mjs` 的 `titleWords()` 未剥离契约的 `NN ·` 序号前缀，把 `01` 当标题词压低相关性；改为复用 `stripTitleOrder`，补回归测试（带/不带前缀评分一致、原 title 保留），report pass 286→294、review 78→70。
+  - `47d8628`：`scripts/title-terminology-lib.mjs` 的 `findTitleTerms()` 未抑制被更长术语包含的短术语（「交易」⊂「交易所」），产生 2 处假 gap；修复后 gap 2→0、pass 60→62。
+- 验证命令与结果：`npx vitest run src/lib/description-quality.test.ts src/lib/title-terminology.test.ts`（11 用例通过）；`npm run check:description-quality`、`npm run check:title-terminology` 重生成报告；`npx eslint` 改动文件 0 error。
+- 未验证项：无。
+- 最后更新：2026-09-12
+
+## 知识库版本同步（kline-buty@a57d510）
+
+- 状态：DONE
+- 已完成：`30d180e` 按 `npm run kb:update` 同步上游 1ebbaef→a57d510（5 提交，内容零变更，仅子模块指针与 kb-manifest 快照）。
+- 验证命令与结果：`check:kb-pointer` 通过（仓库记录 = 工作区 = 快照 = a57d510）；构建仍 465 页。
+- 未验证项：无。
+- 最后更新：2026-09-12
+
+
 ## 2026-09-12 — 生产依赖安全修复
 
 在 v0.6 发布关账审计中发现并在发布前修复 critical 生产漏洞：
