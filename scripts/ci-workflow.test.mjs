@@ -88,6 +88,39 @@ describe("GitHub Actions workflow contract", () => {
     expect(drift, `setup-node 配置与 CI 运行时不一致：\n${drift.join("\n")}`).toEqual([]);
   });
 
+  it("每个工作流显式声明最小权限（contents: read），不依赖仓库默认值", () => {
+    const problems = [];
+    for (const workflowPath of workflowPaths) {
+      const [workflow] = loadWorkflow(workflowPath);
+      const permissions = workflow.permissions;
+      if (permissions === undefined || permissions === null || permissions === "read-all") {
+        problems.push(`${workflowPath}: 缺少显式最小权限声明（得到 ${JSON.stringify(permissions)}）`);
+        continue;
+      }
+      if (permissions.contents !== "read") {
+        problems.push(`${workflowPath}: contents 权限应为 read，实际 ${JSON.stringify(permissions.contents)}`);
+      }
+      const extra = Object.keys(permissions).filter((key) => key !== "contents");
+      if (extra.length > 0) {
+        problems.push(`${workflowPath}: 多授予了权限 ${extra.join(", ")}`);
+      }
+    }
+    expect(problems, `工作流权限未最小化：\n${problems.join("\n")}`).toEqual([]);
+  });
+
+  it("每个 job 都有超时上界，避免卡死占用 runner 数小时", () => {
+    const problems = [];
+    for (const { workflowPath, jobName, job } of allJobs()) {
+      const timeout = job["timeout-minutes"];
+      if (typeof timeout !== "number" || !Number.isFinite(timeout)) {
+        problems.push(`${workflowPath} · ${jobName}: 缺少数值型 timeout-minutes`);
+      } else if (timeout <= 0 || timeout > 60) {
+        problems.push(`${workflowPath} · ${jobName}: timeout-minutes=${timeout} 超出合理区间 (0, 60]`);
+      }
+    }
+    expect(problems, `存在无超时上界的 job：\n${problems.join("\n")}`).toEqual([]);
+  });
+
   it("每个 run 步骤引用的 npm 脚本都真实存在（防重命名后静默失配）", () => {
     const missing = [];
     for (const { workflowPath, jobName, job } of allJobs()) {
