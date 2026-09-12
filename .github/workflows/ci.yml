@@ -77,6 +77,7 @@ MD
       - run: npm run check:nav-chain
       - run: npm run check:relative-links
       - run: npm run check:bundle
+      - run: npm run check:structured-data
       - name: 内容质量报告归档（R10.17）
         if: always()
         uses: actions/upload-artifact@v4
