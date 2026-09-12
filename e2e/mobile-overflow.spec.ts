@@ -120,4 +120,28 @@ test.describe("R13.8 关键可点区域 ≥ 40px", () => {
     await expect(dialog).toBeHidden();
     await expect(trigger).toBeFocused();
   });
+
+  test("行情图移动端默认精简加载并可切回完整视图（R13.11）", async ({ page }) => {
+    const requestedLimits: string[] = [];
+    await page.route(/\/api\/v3\/klines(?:\?|$)/, async (route) => {
+      const limit = new URL(route.request().url()).searchParams.get("limit");
+      if (limit) requestedLimits.push(limit);
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
+      });
+    });
+
+    await page.goto("/zh/chart");
+    const chart = page.getByTestId("kline-chart");
+    await expect(chart).toHaveAttribute("data-density", "compact");
+    await expect.poll(() => requestedLimits).toContain("180");
+    await expect(page.getByText(/最近 180 根 K 线/)).toBeVisible();
+
+    await page.getByTestId("chart-density-toggle").click();
+    await expect(chart).toHaveAttribute("data-density", "full");
+    await expect.poll(() => requestedLimits).toContain("500");
+    await expect(page.getByText(/最近 500 根 K 线/)).toBeVisible();
+  });
 });

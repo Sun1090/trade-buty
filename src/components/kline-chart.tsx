@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   createChart,
   CandlestickSeries,
@@ -13,14 +13,46 @@ import {
   type LineData,
 } from "lightweight-charts";
 import { fetchKlines } from "@/lib/binance";
+import {
+  MOBILE_CHART_MAX_WIDTH,
+  getChartDataLimit,
+  getChartDensityFromViewport,
+} from "@/lib/chart-density";
 
 const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] as const;
 const INTERVALS = ["15m", "1h", "4h", "1d"] as const;
+type ViewportSnapshot = "server" | "mobile" | "desktop";
+
+function subscribeToViewport(onChange: () => void) {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return () => {};
+  }
+  const media = window.matchMedia(`(max-width: ${MOBILE_CHART_MAX_WIDTH}px)`);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+
+function getViewportSnapshot(): ViewportSnapshot {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return "server";
+  }
+  return window.matchMedia(`(max-width: ${MOBILE_CHART_MAX_WIDTH}px)`).matches
+    ? "mobile"
+    : "desktop";
+}
+
+function getServerViewportSnapshot(): ViewportSnapshot {
+  return "server";
+}
 
 interface ChartDict {
   loading: string;
   error: string;
   retry: string;
+  compactNote: string;
+  fullNote: string;
+  showFull: string;
+  showCompact: string;
   disclaimer: string;
 }
 
@@ -34,7 +66,17 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [lastPrice, setLastPrice] = useState<number | null>(null);
   const [showMA, setShowMA] = useState(false);
+  const [forceFull, setForceFull] = useState(false);
+  const viewport = useSyncExternalStore(
+    subscribeToViewport,
+    getViewportSnapshot,
+    getServerViewportSnapshot,
+  );
+  const viewportReady = viewport !== "server";
+  const isNarrowViewport = viewport === "mobile";
   const maRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const density = getChartDensityFromViewport(isNarrowViewport, forceFull);
+  const dataLimit = getChartDataLimit(density);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -77,12 +119,29 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
   }, []);
 
   useEffect(() => {
+    chartRef.current?.applyOptions({
+      layout: { fontSize: density === "compact" ? 10 : 12 },
+      grid: {
+        vertLines: { visible: density !== "compact" },
+        horzLines: { visible: density !== "compact" },
+      },
+      rightPriceScale: { minimumWidth: density === "compact" ? 54 : 0 },
+    });
+  }, [density]);
+
+  useEffect(() => {
     let cancelled = false;
     async function load() {
-      if (!candleRef.current || !volumeRef.current) return;
+      if (
+        !viewportReady ||
+        !candleRef.current ||
+        !volumeRef.current
+      ) {
+        return;
+      }
       setStatus("loading");
       try {
-        const klines = await fetchKlines(symbol, interval_);
+        const klines = await fetchKlines(symbol, interval_, { limit: dataLimit });
         if (cancelled) return;
         const candles: CandlestickData<UTCTimestamp>[] = klines.map((k) => ({
           time: k.time as UTCTimestamp,
@@ -127,7 +186,7 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
     return () => {
       cancelled = true;
     };
-  }, [symbol, interval_]);
+  }, [symbol, interval_, dataLimit, viewportReady]);
 
   // WS 实时更新最后一根 K 线（指数退避重连）
   useEffect(() => {
@@ -264,8 +323,14 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
           </button>
         </div>
       </div>
-      <div className="relative rounded-2xl border border-[var(--border-strong)] bg-[var(--surface)] overflow-hidden" role="img" aria-label={`${symbol} chart`}>
-        <div ref={containerRef} className="h-[420px]" />
+      <div
+        data-testid="kline-chart"
+        data-density={density}
+        className="relative rounded-2xl border border-[var(--border-strong)] bg-[var(--surface)] overflow-hidden"
+        role="img"
+        aria-label={`${symbol} chart`}
+      >
+        <div ref={containerRef} className={density === "compact" ? "h-[300px]" : "h-[420px]"} />
         {status === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-faint">
             {dict.loading}
@@ -283,6 +348,19 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
           </div>
         )}
       </div>
+      {isNarrowViewport && (
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-faint">
+          <p aria-live="polite">{density === "compact" ? dict.compactNote : dict.fullNote}</p>
+          <button
+            type="button"
+            data-testid="chart-density-toggle"
+            onClick={() => setForceFull((value) => !value)}
+            className="min-h-10 px-3 text-accent underline underline-offset-4"
+          >
+            {density === "compact" ? dict.showFull : dict.showCompact}
+          </button>
+        </div>
+      )}
       <p className="mt-3 text-xs text-faint">{dict.disclaimer}</p>
     </div>
   );
