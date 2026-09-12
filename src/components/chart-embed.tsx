@@ -13,6 +13,10 @@ export interface ChartEmbedDict {
   loading: string;
   error: string;
   retry: string;
+  compactNote: string;
+  fullNote: string;
+  showFull: string;
+  showCompact: string;
   disclaimer: string;
 }
 
@@ -46,11 +50,15 @@ export function LazyChartEmbed({ dict }: { dict: ChartEmbedDict }) {
             loading: dict.loading,
             error: dict.error,
             retry: dict.retry,
+            compactNote: dict.compactNote,
+            fullNote: dict.fullNote,
+            showFull: dict.showFull,
+            showCompact: dict.showCompact,
             disclaimer: dict.disclaimer,
           }}
         />
       ) : (
-        <div className="h-[360px] rounded-2xl border border-[var(--border)] bg-[var(--surface)] animate-pulse" />
+        <div className="h-[300px] sm:h-[420px] rounded-2xl border border-[var(--border)] bg-[var(--surface)] animate-pulse" />
       )}
     </div>
   );

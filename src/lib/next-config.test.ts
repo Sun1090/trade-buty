@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import config, { CONTENT_CACHE_POLICIES } from "../../next.config";
+import config, { CONTENT_CACHE_POLICIES, MARKET_CONNECT_SOURCES } from "../../next.config";
 
 type HeaderRule = { source: string; headers: { key: string; value: string }[] };
 
@@ -17,6 +17,19 @@ describe("next.config 内容产物缓存策略（R10.24）", () => {
       expect(rule, `缺少 ${policy.source} 的缓存规则`).toBeDefined();
       const cc = rule!.headers.find((h) => h.key === "Cache-Control");
       expect(cc?.value).toBe("public, max-age=0, must-revalidate");
+    }
+  });
+
+  it("CSP 允许行情 REST 与 WebSocket 连接", async () => {
+    const rules = (await config.headers()) as HeaderRule[];
+    const generic = ruleFor("/:path*", rules);
+    const csp = generic!.headers.find(
+      (header) => header.key === "Content-Security-Policy"
+    )?.value;
+
+    expect(csp).toContain("connect-src");
+    for (const source of MARKET_CONNECT_SOURCES) {
+      expect(csp).toContain(source);
     }
   });
 

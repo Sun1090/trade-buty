@@ -330,6 +330,10 @@ export default async function DocPage({
               loading: t.chart.loading,
               error: t.chart.error,
               retry: t.chart.retry,
+              compactNote: t.chart.compactNote,
+              fullNote: t.chart.fullNote,
+              showFull: t.chart.showFull,
+              showCompact: t.chart.showCompact,
               disclaimer: t.chart.disclaimer,
             }}
           />

@@ -1,5 +1,28 @@
 # Progress
 
+## 2026-09-12 — R13.11 mobile chart degradation + Binance CSP repair
+
+Shipped the mobile chart density contract and fixed a production-blocking CSP gap found by the browser regression:
+
+- Added `chart-density.ts`: 640px breakpoint, compact = 180 candles, full = 500 candles, with pure selection/limit helpers and boundary tests.
+- `KlineChart` now uses `useSyncExternalStore` for viewport density. The server snapshot defers loading until hydration, avoiding a duplicate 500-candle request before switching to the 180-candle mobile view.
+- Compact mode renders at 300px with 10px axis text, hidden grid lines, and a narrower price scale while retaining candlesticks, volume, live updates, symbol/interval controls, and all chart functionality. Narrow-screen users can explicitly switch to the full 500-candle view.
+- `LazyChartEmbed` skeleton height follows the compact/full split; zh/en copy explains both modes.
+- Found and fixed the real reason `/chart` showed "行情加载失败": the global CSP `connect-src` blocked `https://api.binance.com` and `wss://stream.binance.com:9443` before requests left the browser. The policy now allows exactly those market origins, with a config regression test.
+- Stabilized the AiChat streaming unit test by stubbing only the `next/dynamic` chunk boundary; lazy loading remains covered by the production build and E2E, while the unit test deterministically observes stream state.
+- Added a Playwright interception assertion proving the initial mobile request is `limit=180` and the explicit toggle requests `limit=500`.
+
+Verification recorded:
+
+- Focused Vitest: chart density 3 tests and next config 3 tests passed.
+- `npm run lint`: 0 errors (59 existing warnings); `npm run typecheck`: passed.
+- Full suite: `npm test` passed with 143 test files and 1082 tests.
+- Production build: passed with 465 static pages.
+- `npm run e2e`: 22/22 passed, including the real-browser compact/full request-limit assertion and the existing 320px/touch/focus/block-scroll checks.
+
+Next queue: R13.12 slow-network loading experience, R13.13 offline PWA review, R13.14 install prompt/dismissal state, then R13.15–R13.18 performance/SEO.
+
+
 ## 2026-09-12 — R13.7–R13.10 mobile regression, touch targets, focus, and block scrolling
 
 Completed the mobile quality batch with real browser coverage and a shared dialog focus contract:
