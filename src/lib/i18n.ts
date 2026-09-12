@@ -219,6 +219,7 @@ const zh = {
     fontLarger: "放大字号",
     bookmark: "收藏",
     bookmarked: "已收藏",
+    estimatedReadingTime: (minutes: number) => `约 ${minutes} 分钟阅读`,
   },
   notFound: {
     metaTitle: "页面不存在",
@@ -599,6 +600,7 @@ const en: Dict = {
     fontLarger: "Larger text",
     bookmark: "Bookmark",
     bookmarked: "Bookmarked",
+    estimatedReadingTime: (minutes: number) => `~${minutes} min read`,
   },
   notFound: {
     metaTitle: "Page not found",

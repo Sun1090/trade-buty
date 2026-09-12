@@ -1,5 +1,24 @@
 # Progress
 
+## 课程预计阅读时长（Q4.4）
+
+- 状态：DONE
+- 目标：课程页同时展示正文预计阅读时长与当前设备已读累计，避免把停留时长误当作篇幅估算；中英文文案均使用准确量纲。
+- 已完成：
+  - 新增 `estimateReadingMinutes()` 纯函数：中英混合正文按中文 300 字/分钟、英文 200 词/分钟合并后向上取整。
+  - 估算排除 frontmatter、围栏/行内代码、HTML 标签和链接 URL，同时保留链接/图片的可见文字。
+  - 课程页展示 zh「约 N 分钟阅读」/ en「~N min read」，并保留原有「已读/read」本地累计显示。
+  - 新增 7 个纯函数单测与 1 条课程页 Playwright 回归断言。
+- 验证命令与结果：
+  - `npx vitest run src/lib/estimated-reading-time.test.ts src/lib/i18n.test.ts` → 2 文件 / 16 用例通过。
+  - `npm test` → 164 文件 / 1281 用例通过。
+  - `npm run lint` → exit 0（0 error / 59 warning）。
+  - `npm run typecheck` → exit 0。
+  - `npm run build` → exit 0。
+  - `npx playwright test e2e/smoke.spec.ts --grep '章节页'` → 1/1 通过，真实课程页标签可见。
+- 未验证项：远端 CI 与部署（LOCAL_ONLY，未推送）。
+- 最后更新：2026-09-12
+
 ## 搜索索引错误边界（Q2.6）
 
 - 状态：DONE

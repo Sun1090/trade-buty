@@ -24,6 +24,7 @@ test.describe("核心路径冒烟", () => {
     // 进入第一章第一课（有固定题库挂载）
     await page.goto("/zh/knowledge/getting-started/first-trade");
     await expect(page.locator("article")).toBeVisible();
+    await expect(page.getByTestId("estimated-reading-time")).toContainText(/约 \d+ 分钟阅读/);
 
     // 展开随堂测（锚定测验卡片，避免误点页头 CTA）并作答
     const card = page.locator("section").filter({ hasText: "随堂测" });
