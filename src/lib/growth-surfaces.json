@@ -1,0 +1,79 @@
+{
+  "$comment": "R13.21 增长表面唯一事实来源：任何面向用户的增长/推广界面都必须登记在此，并由 scripts/check-dark-pattern-copy.mjs 校验。新增增长入口而不登记会让门禁失败。",
+  "version": 1,
+  "surfaces": [
+    {
+      "id": "install-prompt",
+      "kind": "pwa-install",
+      "component": "src/components/install-prompt.tsx",
+      "i18nSection": "install",
+      "dismissKeys": ["dismiss"],
+      "blocking": false,
+      "requiresDismiss": true,
+      "optIn": true,
+      "notes": "只在 beforeinstallprompt 到达时出现；关闭后本机不再询问。"
+    },
+    {
+      "id": "invite-banner",
+      "kind": "referral",
+      "component": "src/components/invite-banner.tsx",
+      "i18nSection": "invite",
+      "dismissKeys": ["dismiss"],
+      "blocking": false,
+      "requiresDismiss": true,
+      "optIn": false,
+      "notes": "被动展示、可关闭、可清除；不含奖励承诺或社交压力文案。"
+    },
+    {
+      "id": "return-nudge",
+      "kind": "re-engagement",
+      "component": "src/components/return-nudge-toast.tsx",
+      "i18nSection": "auth",
+      "keyPrefix": "returnNudge",
+      "dismissKeys": ["returnNudgeLater"],
+      "blocking": false,
+      "requiresDismiss": true,
+      "optIn": false,
+      "notes": "7 天未访的单次温和提示，无 push、无邮件、无焦虑文案。"
+    },
+    {
+      "id": "newsletter-signup",
+      "kind": "newsletter",
+      "component": "src/components/newsletter-signup.tsx",
+      "i18nSection": "newsletter",
+      "dismissKeys": [],
+      "blocking": false,
+      "requiresDismiss": false,
+      "optIn": true,
+      "notes": "占位功能，邮箱仅存本机；必须保持显式提交、可清除、可导出。"
+    },
+    {
+      "id": "share-cards",
+      "kind": "sharing",
+      "component": "src/components/quiz-share-card.tsx",
+      "i18nSection": "share",
+      "dismissKeys": [],
+      "blocking": false,
+      "requiresDismiss": false,
+      "optIn": true,
+      "notes": "用户主动点击后才生成分享内容，无自动分享、无强制转发解锁。"
+    },
+    {
+      "id": "share-landing-cta",
+      "kind": "sharing",
+      "component": "src/components/share-landing-ctas.tsx",
+      "i18nSection": "share",
+      "dismissKeys": [],
+      "blocking": false,
+      "requiresDismiss": false,
+      "optIn": true,
+      "notes": "分享落地页 CTA，只引导到免费学习路线或回放训练。"
+    }
+  ],
+  "unregisteredAllowed": [
+    { "component": "src/components/replay-share-card.tsx", "reason": "与 quiz-share-card 同属 share-cards 表面，复用同一套分享文案与隐私规则。" },
+    { "component": "src/components/streak-share-card.tsx", "reason": "与 quiz-share-card 同属 share-cards 表面，复用同一套分享文案与隐私规则。" },
+    { "component": "src/components/share-card-preview.tsx", "reason": "分享卡预览容器，仅渲染已登记的分享卡内容。" },
+    { "component": "src/components/return-nudge-toast-lazy.tsx", "reason": "return-nudge 的懒加载包装，逻辑与文案来自已登记的 return-nudge-toast.tsx。" }
+  ]
+}
