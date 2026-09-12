@@ -1,5 +1,71 @@
 # Progress
 
+## 备份恢复演练上线（Q5.4 本地半边 / R7 可恢复性）
+
+- 状态：DONE（本地实现与全量验证完成；远端发布待授权）
+- 工作分支：`codex/zero-eslint-warnings`
+- PR：none
+- PR 状态：none
+- Base：`origin/main@53f7e01`
+- 远端 Head：none（`LOCAL_ONLY`，未推送）
+- 本地提交：`f19d47d`
+- 目标：把「备份演练」从人工口头承诺变成可重复执行的自动化门禁，真实证明「实例整体丢失后能从 `pg_dump` 恢复出数据、schema、RLS 与约束」。
+- 已完成：
+  - 新增 `scripts/backup-drill.mjs`：干净 `supabase/postgres:17.6.1.155` 源容器 → 应用全部 9 个迁移 → 写入覆盖全部 10 张业务表的夹具数据 → `pg_dump -Fc --schema=public --no-owner --no-acl` → **销毁源容器模拟实例丢失** → 全新目标容器（先补 `auth.users` 外键行）→ `pg_restore --single-transaction --exit-on-error`。
+  - 恢复后做三维指纹比对：逐表数据 md5、schema 指纹（表/列/RLS/策略/约束/索引/触发器/函数/扩展）、`authenticated` 权限；再在恢复库上重跑两个 pgTAP 文件。
+  - 新增 `npm run backup:drill`，并追加到 `.github/workflows/ci.yml` 的 `db-tests` 作业（与主 `ci` 作业并行、失败即阻断）。
+  - 演练过程中暴露并修掉两处 pgTAP 夹具脆弱点（真实 bug）：`rls_isolation.sql` 的 `kb_embeddings` 夹具改用独立 `chapter='rls-fixture'` 并按夹具计数，`sync_and_constraints.sql` 的每用户唯一性断言改为只统计两个测试用户，避免在非空库/恢复库上误判。
+  - `docs/database-testing.md` 补第 4 节，写明演练流程与边界（仅 public schema 与业务数据；云 auth/Storage/项目配置、定时备份与仓库镜像确认仍属外部人工）。
+- 验证命令与结果：
+  - `npm run backup:drill` → exit 0：`备份 30963 bytes`；9 个迁移、10 张业务表、`rls_isolation.sql` 38 断言、`sync_and_constraints.sql` 26 断言在恢复库上全部通过。
+  - `npm run db:test` → exit 0（迁移 9/9、RLS 38、同步 26、`0008_*` 回滚 → 重放通过）。
+  - `npm run check:docs` → 通过（27 章 / 182 篇，zh/en 对齐）；`git diff --check` 干净；无遗留容器（`docker ps -a` 已确认）。
+- 风险与回滚：演练只操作临时容器与临时 dump，不触碰线上数据；如需回滚，撤销 `f19d47d` 并从 `package.json` / `ci.yml` 移除 `backup:drill` 步骤即可。
+- 未验证项：远端 CI —— `db-tests` 作业（含新增的备份恢复步骤）此前从未在 GitHub Actions 上运行过，本地绿灯不等于远端绿灯；Supabase 云导出、定时备份、仓库镜像确认（`BLOCKED_EXTERNAL`，见 roadmap Q5.4）。
+- 最后更新：2026-09-13
+
+## 错题 SRS 排期跨设备丢失修复（R5 / R9.9）
+
+- 状态：DONE（本地实现与全量验证完成；远端发布待授权）
+- 工作分支：`codex/zero-eslint-warnings`
+- PR：none
+- PR 状态：none
+- Base：`origin/main@53f7e01`
+- 远端 Head：none（`LOCAL_ONLY`，未推送）
+- 本地提交：`6734824`、`0ee7103`
+- 目标：修掉一个真实的跨设备数据缺陷——新答错的题目写进本机错题本后，SRS 排期没有随同步上行，换设备会静默退回按日期回填的近似排期。
+- 已完成：
+  - 根因：`recordWrong()` 只写 `chapterNum/questionIdx/picked/at`，却调用 `syncWrongbookWrite(chapter, idx, picked)` 省略 SRS 参数 → `sync-layer.ts` 显式 upsert `srs_stage: null, srs_due: null`；另一端 `mergeWrongbook` 把 null 当作「不覆盖」，于是条目退化成 `backfillSrs(entry.at)`，真实排期丢失。
+  - 修复：`recordWrong()` 现在用 `srsOnAnswer(null, false)` 计算 `{ stage: 0, due: 今天+1 }`，本地落盘 `srsStage`/`srsDue` 并把两者一并传给 `syncWrongbookWrite`；重复答错同一题按状态机重置回 stage 0（行为正确）。
+  - 补测：`wrongbook.test.ts` 用假时钟断言 `srsStage:0` / `srsDue:"2026-09-14"`，并 mock 校验 `syncWrongbookWrite("spot",2,3,0,"2026-09-14")`，另加一条重答重置用例。
+  - 隐私导出随之变化：`srsStages` 由 `{ none: 2 }` 变为 `{ s0: 2 }`，`privacy-export.test.ts` 同步更新并新增「历史无 srs 字段条目仍归入 none」的用例，锁定前后兼容。
+- 验证命令与结果：
+  - `npx vitest run src/lib/wrongbook.test.ts src/lib/sync-layer-hydrate.test.ts src/lib/sync-layer.test.ts src/lib/srs.test.ts` → 4 文件 / 51 用例通过。
+  - `npx vitest run src/lib/privacy-export.test.ts` → 1 文件 / 13 用例通过。
+  - `npm test` → 178 文件 / 1359 用例通过；`npm run lint` exit 0（0 warning）；`npm run typecheck` exit 0；`npm run build` exit 0。
+- 风险与回滚：改动只影响本地写入与上行的 SRS 字段；老数据读取路径未变（缺省仍按 `at` 回填）。如需回滚，撤销 `6734824`、`0ee7103` 两个提交。
+- 未验证项：远端 CI、真实双设备跨端同步联调（`BLOCKED_EXTERNAL`，需 Supabase keys，见 roadmap Q2.8）；PR 与 Vercel 部署（`LOCAL_ONLY`，尚未推送/未部署）。
+- 最后更新：2026-09-13
+
+## 真实 Postgres 上的 RLS / 同步 / 回滚门禁（Q2.8 本地半边）
+
+- 状态：DONE（本地实现与全量验证完成；远端发布待授权）
+- 工作分支：`codex/zero-eslint-warnings`
+- PR：none
+- PR 状态：none
+- Base：`origin/main@53f7e01`
+- 远端 Head：none（`LOCAL_ONLY`，未推送）
+- 本地提交：`f194963`
+- 目标：把「RLS 越权防护」与「双设备同步约束」从 SQL 文本评审升级为在真实 Supabase Postgres 镜像上跑的可阻断门禁。
+- 已完成：
+  - 新增 `scripts/db-test.mjs`：拉起干净 `supabase/postgres:17.6.1.155` 容器、应用全部 9 个迁移、执行 pgTAP、跑 `0008_*` 回滚 → 重放演练、最后清理容器。
+  - 新增两个 pgTAP 文件：`supabase/tests/rls_isolation.sql`（`SET ROLE authenticated/anon` 验证跨用户读写隔离，38 断言）与 `supabase/tests/sync_and_constraints.sql`（每用户唯一性、外键、目标档位约束等，26 断言）。
+  - 新增 `npm run db:test` 与 `.github/workflows/ci.yml` 的 `db-tests` 并行作业；`docs/database-testing.md` 记录运行方式与设计取舍（`postgres` 角色绕过 RLS，故测试必须切角色）。
+- 验证命令与结果：`npm run db:test` → exit 0（迁移 9/9、RLS 38 断言、同步/约束 26 断言、回滚 → 重放通过）。
+- 风险与回滚：测试只操作一次性容器，不影响线上；如需回滚，撤销 `f194963` 并从 `package.json` / `ci.yml` 移除 `db:test`。
+- 未验证项：远端 CI `db-tests` 作业从未在 GitHub Actions 上运行过；Supabase 云项目线上联调与真实双设备验证（`BLOCKED_EXTERNAL`，需 keys）。
+- 最后更新：2026-09-13
+
 ## 测验选项键盘可达与回放回归去抖动（R13.9 / R13.5）
 
 - 状态：DONE（本地实现与全量验证完成；远端发布待授权）
