@@ -40,7 +40,7 @@ select lives_ok(
   $$ insert into progress (user_id, chapter_num, doc_slug)
      values ('bbbbbbbb-0000-0000-0000-000000000002','ch','doc') $$,
   '另一个用户可以拥有相同的 (chapter, doc)');
-select is((select count(*) from progress), 2::bigint, 'progress 唯一约束是 per-user 而非全局');
+select is((select count(*) from progress where user_id in ('aaaaaaaa-0000-0000-0000-000000000001','bbbbbbbb-0000-0000-0000-000000000002')), 2::bigint, 'progress 唯一约束是 per-user 而非全局');
 
 -- ------------------------------------------------------------
 -- 2. wrongbook：同键重复 insert 必须冲突（客户端 upsert 依赖它）

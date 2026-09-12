@@ -19,6 +19,10 @@ npm run db:test                  # 全流程，结束销毁容器
 npm run db:test -- --keep        # 保留容器（trade-buty-db-test）供人工排查
 DB_TEST_IMAGE=supabase/postgres:17.6.1.155 npm run db:test   # 覆盖镜像
 DB_TEST_CONTAINER=my-db npm run db:test                      # 覆盖容器名
+
+npm run backup:drill             # 备份 → 销毁源库 → 全新实例恢复 → 指纹/RLS 复验
+npm run backup:drill -- --keep   # 保留恢复容器供人工排查
+BACKUP_DRILL_IMAGE=supabase/postgres:17.6.1.155 npm run backup:drill
 ```
 
 需要本机有可用的 Docker daemon。CI 中作为独立作业 `db-tests` 与主 `ci` 作业并行执行。
@@ -67,6 +71,22 @@ DB_TEST_CONTAINER=my-db npm run db:test                      # 覆盖容器名
 
 这一步同时验证了**回滚脚本本身可用**和**正向迁移对脏数据的归一化路径可用**。
 
+### 4. 备份/恢复演练（Q5.4 本地可复现部分）
+
+`npm run backup:drill` 不依赖线上 Supabase 项目，实际执行的是：
+
+1. 在干净 Supabase Postgres 上应用全部迁移，写入覆盖 10 张业务表的样例数据；
+2. 用 `pg_dump -Fc --schema=public --no-owner --no-acl` 生成 custom-format 备份；
+3. **销毁源容器**，模拟实例丢失；
+4. 启动另一个全新 Supabase Postgres，预置恢复 public schema 外键所需的最小
+   `auth.users` 行，再执行 `pg_restore --single-transaction --exit-on-error`；
+5. 逐表对比恢复前后的数据指纹，并对比表/列/RLS 策略/约束/索引/触发器/函数/扩展指纹；
+6. 确认 `authenticated` 权限仍在；在恢复库上重跑全部 pgTAP RLS 与同步/约束测试。
+
+本演练只覆盖 Supabase 托管的 `public` schema 与应用数据。托管项目的 `auth`、Storage、
+项目配置、定时备份策略及仓库镜像确认仍必须在 Supabase 控制台和外部存储中完成，不能
+用本脚本替代。
+
 ## 新增测试
 
 测试文件放在 `supabase/tests/`，命名为英文、不含数字前缀，扩展名 `.sql`，
@@ -82,5 +102,5 @@ select throws_ok($$ insert ... $$, 42501, NULL, '描述');
 ## 尚未覆盖（需要外部资源）
 
 - 线上 Supabase 项目的真实联调（需项目 URL 与 anon/service key）；
-- 云端定时备份与导出策略（本地可复现部分见 Q5.4 备份演练脚本）；
+- 云端定时备份、auth/Storage/项目配置导出与仓库镜像确认（本地 public schema/data 部分见 `npm run backup:drill`）；
 - 真实第三方 OAuth/邮件链路。
