@@ -33,6 +33,24 @@ describe("replay-store", () => {
       store.set("tb-replay-history", "not json");
       expect(readReplayHistory()).toEqual([]);
     });
+
+    it("合法 JSON 中的非数组结构返回空数组", () => {
+      store.set("tb-replay-history", "null");
+      expect(readReplayHistory()).toEqual([]);
+      store.set("tb-replay-history", JSON.stringify({ at: 1 }));
+      expect(readReplayHistory()).toEqual([]);
+    });
+
+    it("过滤并修正损坏的历史记录", () => {
+      store.set("tb-replay-history", JSON.stringify([
+        { at: 1, symbol: "BTCUSDT", interval: "1h", total: 10, correct: 12, bestStreak: 8, durationSec: 20 },
+        { at: "bad", symbol: "ETHUSDT", interval: "1h", total: 10, correct: 2, bestStreak: 1 },
+        null,
+      ]));
+      expect(readReplayHistory()).toEqual([
+        { at: 1, symbol: "BTCUSDT", interval: "1h", total: 10, correct: 10, bestStreak: 8, durationSec: 20 },
+      ]);
+    });
   });
 
   describe("saveReplayRecord + readReplayHistory", () => {
@@ -81,6 +99,13 @@ describe("replay-store", () => {
     it("损坏值返回 0（NaN guard）", () => {
       store.set("tb-replay-best", "not a number");
       expect(readReplayBest()).toBe(0);
+    });
+
+    it("拒绝负数和非整数最佳连击", () => {
+      store.set("tb-replay-best", "-3");
+      expect(readReplayBest()).toBe(0);
+      store.set("tb-replay-best", "4.6");
+      expect(readReplayBest()).toBe(5);
     });
   });
 });

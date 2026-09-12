@@ -10,6 +10,7 @@
  * quiz/replay 由组件在会话结束时上报实际耗时。
  */
 import { localDateStr } from "./date-utils";
+import { isRecord, readStorageJson } from "./storage-json";
 
 const KEY = "tb-study-time";
 
@@ -24,11 +25,22 @@ interface DayEntry {
 type Ledger = Record<string, DayEntry>;
 
 function readLedger(): Ledger {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "{}") as Ledger;
-  } catch {
-    return {};
+  const parsed = readStorageJson(KEY);
+  if (!isRecord(parsed)) return {};
+
+  const out: Ledger = {};
+  for (const [day, rawEntry] of Object.entries(parsed)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !isRecord(rawEntry)) continue;
+    const entry: DayEntry = {};
+    for (const source of ["read", "quiz", "replay"] as const) {
+      const value = rawEntry[source];
+      if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+        entry[source] = Math.min(value, 8 * 3600);
+      }
+    }
+    if (Object.keys(entry).length > 0) out[day] = entry;
   }
+  return out;
 }
 
 /** 累加某来源当日学习秒数（单次 ≤4h、单日单源 ≤8h 防呆） */
@@ -88,4 +100,3 @@ export function getTotalStudySeconds(): number {
 export function getTodayStudySeconds(): DayStudy {
   return getStudySeconds(localDateStr());
 }
-

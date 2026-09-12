@@ -42,6 +42,21 @@ describe("streak", () => {
     expect(getCurrentStreak()).toBe(0);
   });
 
+  it("合法 JSON 中的非对象或错误字段会归一化", () => {
+    store.set("tb-streak", "null");
+    expect(readStreak()).toEqual({ lastDate: "", current: 0, longest: 0, lastTs: 0 });
+    store.set(
+      "tb-streak",
+      JSON.stringify({ lastDate: "not-a-date", current: -2, longest: "5", lastTs: Infinity }),
+    );
+    expect(readStreak()).toEqual({ lastDate: "", current: 0, longest: 0, lastTs: 0 });
+    store.set(
+      "tb-streak",
+      JSON.stringify({ lastDate: "2026-09-13", current: 3.6, longest: 2.4, lastTs: 42.8 }),
+    );
+    expect(readStreak()).toEqual({ lastDate: "2026-09-13", current: 4, longest: 4, lastTs: 43 });
+  });
+
   it("R4.8：日历跳天但实际间隔 <36h（跨时区旅行）视为连续", () => {
     // 前天有记录，但 lastTs 只有 20 小时前（跨时区旅行导致日历跳天）
     const twoDaysAgo = new Date();
@@ -108,6 +123,13 @@ describe("getRecentDays", () => {
 
   it("空数据 → 全 false", () => {
     const days = getRecentDays();
+    expect(days.every((d) => d.active === false)).toBe(true);
+  });
+
+  it("活动记录为 null 时仍返回完整的全 false 序列", () => {
+    store.set("tb-activity", "null");
+    const days = getRecentDays();
+    expect(days).toHaveLength(7);
     expect(days.every((d) => d.active === false)).toBe(true);
   });
 

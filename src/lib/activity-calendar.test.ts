@@ -29,6 +29,22 @@ describe("activity-calendar", () => {
     expect(readActivityDates()).toEqual([]);
   });
 
+  it("合法 JSON 中的非数组结构回退为空数组且可恢复记录", () => {
+    store.set("tb-activity", "null");
+    expect(readActivityDates()).toEqual([]);
+    vi.setSystemTime(new Date(2026, 8, 13, 10, 0, 0));
+    recordActivity();
+    expect(readActivityDates()).toEqual(["2026-09-13"]);
+  });
+
+  it("过滤非法日期并去重", () => {
+    store.set(
+      "tb-activity",
+      JSON.stringify(["2026-09-13", "bad", null, 42, "2026-09-13"]),
+    );
+    expect(readActivityDates()).toEqual(["2026-09-13"]);
+  });
+
   it("当天重复记录只留一条", () => {
     vi.setSystemTime(new Date(2026, 8, 13, 10, 0, 0));
     recordActivity();

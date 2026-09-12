@@ -3,15 +3,21 @@
  * 数据来源：progress 的 at 时间? progress 没记时间。用阅读时长记录补充。
  * 这里用一个简单的活动记录——每次 touchStreak 记录当天日期。
  */
+import { readStorageJson } from "./storage-json";
+
 const KEY = "tb-activity";
 
 export function readActivityDates(): string[] {
-  try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as string[]) : [];
-  } catch {
-    return [];
-  }
+  const parsed = readStorageJson(KEY);
+  if (!Array.isArray(parsed)) return [];
+  return [
+    ...new Set(
+      parsed.filter(
+        (value): value is string =>
+          typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value),
+      ),
+    ),
+  ];
 }
 
 /** 记录今天有学习活动（touchStreak 内部调用） */

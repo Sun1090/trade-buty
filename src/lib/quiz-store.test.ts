@@ -39,4 +39,20 @@ describe("quiz-store", () => {
     store.set("tb-quiz-spot", "{bad");
     expect(readQuizProgress("spot")).toBeNull();
   });
+
+  it("合法 JSON 中的非对象或错误字段返回 null", () => {
+    store.set("tb-quiz-spot", "null");
+    expect(readQuizProgress("spot")).toBeNull();
+    store.set("tb-quiz-spot", JSON.stringify([]));
+    expect(readQuizProgress("spot")).toBeNull();
+    store.set("tb-quiz-spot", JSON.stringify({ best: "8", done: true }));
+    expect(readQuizProgress("spot")).toBeNull();
+    store.set("tb-quiz-spot", JSON.stringify({ best: 8 }));
+    expect(readQuizProgress("spot")).toBeNull();
+  });
+
+  it("归一化有限非负分数", () => {
+    store.set("tb-quiz-spot", JSON.stringify({ best: 7.6, done: true }));
+    expect(readQuizProgress("spot")).toEqual({ best: 8, done: true });
+  });
 });

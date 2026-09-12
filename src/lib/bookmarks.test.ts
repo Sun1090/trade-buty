@@ -46,4 +46,24 @@ describe("bookmarks", () => {
     expect(all[key].title).toBe("标题A");
     expect(typeof all[key].at).toBe("number");
   });
+
+  it("合法 JSON 中的非对象结构返回空收藏且可继续写入", () => {
+    store.set("tb-bookmarks", "null");
+    expect(readBookmarks()).toEqual({});
+    expect(isBookmarked("spot", "a")).toBe(false);
+    expect(toggleBookmark("spot", "a", "标题A")).toBe(true);
+    expect(readBookmarks()["spot/a"].title).toBe("标题A");
+  });
+
+  it("过滤字段缺失或类型错误的条目", () => {
+    store.set(
+      "tb-bookmarks",
+      JSON.stringify({
+        "spot/a": { chapter: "spot", doc: "a", title: "A", at: 1 },
+        "spot/b": { chapter: "spot", doc: "b", title: "B", at: "now" },
+        "spot/c": null,
+      }),
+    );
+    expect(Object.keys(readBookmarks())).toEqual(["spot/a"]);
+  });
 });
