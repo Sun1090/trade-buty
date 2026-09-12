@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { SITE_URL } from "@/lib/site";
+import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
 
 // 自托管 Geist（OFL 授权，见 src/fonts/GEIST-LICENSE.txt）——构建期不依赖外网，
 // 离线 CI/沙箱可复现构建，同时消除 Google Fonts 往返。
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
         {children}
+        <ServiceWorkerRegistrar />
       </body>
     </html>
   );

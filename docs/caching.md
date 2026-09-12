@@ -61,3 +61,16 @@ SRS 字段云端空值不覆盖本地计划（R5.7）；目标档位**本地意�
 1. `npm run kb:update` 同步并刷新 `public/search-index.json` 与 `public/knowledge-assets/`；
 2. 提交 submodule 指针 + `scripts/kb-manifest.json` + 同步产物（CI 门禁：`check:kb-pointer` / `check:translation-history` / `check:kb-parity-budget`）；
 3. push → CI build → Vercel 部署完成即新内容生效。
+
+## 5. PWA 离线兜底（R13.13）
+
+Service Worker 采用**最小缓存边界**：安装期只预缓存 `public/offline.html` 一个静态应用壳，不缓存页面 HTML、RSC payload、API、`search-index.json` 或 `knowledge-assets`。因此断网导航会显示明确的离线引导页，而不是可能过期的课程内容；联网时所有内容请求仍直接走网络，与 §4 的即时更新契约一致。
+
+| 资源 | 缓存策略 | 说明 |
+|---|---|---|
+| `/sw.js` | `Cache-Control: no-cache` | 每次检查脚本更新，避免旧 worker 拖住策略修复 |
+| `/offline.html` | `public, max-age=0, must-revalidate` | 静态、双语、无外链；Service Worker 安装时以 `cache: "reload"` 预取 |
+| `/` 及本地化页面 HTML | 不进入 Service Worker Cache | 仅由 `GET + mode=navigate` 请求触发；网络失败时才返回离线壳 |
+| API / search-index / knowledge-assets | 不拦截、不缓存 | 保持内容、行情、AI 和数据新鲜度 |
+
+离线页只说明本地学习数据仍保留、联网能力暂时不可用，并提供重试与自动恢复刷新。`public/offline.html` 的内容哈希固化在 `public/sw.js`；修改页面时必须同步 hash 和 `CACHE_VERSION`，单测会阻止漏改。

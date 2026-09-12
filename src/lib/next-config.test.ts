@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import config, { CONTENT_CACHE_POLICIES, MARKET_CONNECT_SOURCES } from "../../next.config";
+import config, {
+  CONTENT_CACHE_POLICIES,
+  MARKET_CONNECT_SOURCES,
+  SERVICE_WORKER_CACHE_POLICY,
+} from "../../next.config";
 
 type HeaderRule = { source: string; headers: { key: string; value: string }[] };
 
@@ -31,6 +35,14 @@ describe("next.config 内容产物缓存策略（R10.24）", () => {
     for (const source of MARKET_CONNECT_SOURCES) {
       expect(csp).toContain(source);
     }
+  });
+
+  it("R13.13 service worker 脚本禁止长缓存（保证离线策略能更新）", async () => {
+    const rules = (await config.headers()) as HeaderRule[];
+    const rule = ruleFor(SERVICE_WORKER_CACHE_POLICY.source, rules);
+    expect(rule, "缺少 /sw.js 的缓存规则").toBeDefined();
+    const cc = rule!.headers.find((h) => h.key === "Cache-Control");
+    expect(cc?.value).toBe("no-cache");
   });
 
   it("R7.12 安全头仍覆盖全站通配规则", async () => {
