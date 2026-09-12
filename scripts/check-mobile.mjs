@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 
 /**
@@ -8,6 +9,7 @@ import { chromium } from "@playwright/test";
  */
 const PORT = 3210;
 const BASE = `http://localhost:${PORT}`;
+const NEXT_BIN = fileURLToPath(new URL("../node_modules/next/dist/bin/next", import.meta.url));
 
 const ROUTES = [
   "/zh",
@@ -29,32 +31,58 @@ const ROUTES = [
 
 function waitForServer(proc) {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("server start timeout")), 60000);
-    proc.stdout.on("data", (d) => {
-      if (String(d).includes("Ready in")) {
-        clearTimeout(timer);
-        resolve();
-      }
-    });
-    proc.on("error", (e) => {
+    let output = "";
+    let settled = false;
+    let timer;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
-      reject(e);
-    });
+      proc.stdout.off("data", onStdout);
+      proc.stderr.off("data", onStderr);
+      proc.off("exit", onExit);
+      proc.off("error", onError);
+      callback(value);
+    };
+    const onStdout = (data) => {
+      output += String(data);
+      if (output.includes("Ready in")) finish(resolve);
+    };
+    const onStderr = (data) => {
+      output += String(data);
+    };
+    const onExit = (code, signal) => {
+      finish(reject, new Error(`server exited before ready (code=${code}, signal=${signal})\n${output}`));
+    };
+    const onError = (error) => {
+      finish(reject, new Error(`server spawn failed: ${error.message}`));
+    };
+
+    timer = setTimeout(() => {
+      finish(reject, new Error(`server start timeout\n${output}`));
+    }, 60000);
+    proc.stdout.on("data", onStdout);
+    proc.stderr.on("data", onStderr);
+    proc.on("exit", onExit);
+    proc.on("error", onError);
   });
 }
 
 async function main() {
-  const proc = spawn("npx", ["next", "start", "-p", String(PORT)], {
+  const proc = spawn(process.execPath, [NEXT_BIN, "start", "-p", String(PORT)], {
     stdio: ["ignore", "pipe", "pipe"],
   });
   let failures = [];
+  let browser;
   try {
     await waitForServer(proc);
-    const browser = await chromium.launch();
+    browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 320, height: 700 } });
     for (const route of ROUTES) {
       try {
-        await page.goto(BASE + route, { waitUntil: "networkidle", timeout: 30000 });
+        await page.goto(BASE + route, { waitUntil: "domcontentloaded", timeout: 30000 });
+        // networkidle 在 CI 的长期连接下可能永远不触发；等待 load 有上限并继续检查最终布局。
+        await page.waitForLoadState("load", { timeout: 10000 }).catch(() => {});
       } catch {
         failures.push(`${route}（加载超时）`);
         continue;
@@ -71,8 +99,8 @@ async function main() {
         console.log(`[mobile] ✓ ${route}`);
       }
     }
-    await browser.close();
   } finally {
+    await browser?.close().catch(() => {});
     proc.kill("SIGTERM");
   }
   if (failures.length > 0) {
