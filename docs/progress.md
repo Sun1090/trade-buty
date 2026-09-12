@@ -1,5 +1,43 @@
 # Progress
 
+## 未覆盖模块单测扩面 + 折叠组件可访问性（R7.12 / R13.9）
+
+- 状态：DONE（本地实现与全量验证完成；远端发布待授权）
+- 工作分支：`codex/zero-eslint-warnings`
+- PR：none
+- PR 状态：none
+- Base：`origin/main@53f7e01`
+- 远端 Head：none（`LOCAL_ONLY`，未推送）
+- 本地提交：`1aadd5b`、`6715aaa`、`e941247`、`573f29a`、`c22c3fa`
+- 目标：把此前无任何单测的运行时模块（AI 客户端三模型 fallback、浏览器下载/分享、币安行情、AI 开关、章节标题、404 推荐语料）与关键小部件补上回归保护，并修掉一个真实的折叠组件无障碍缺陷。
+- 已完成：
+  - `src/lib/ai/client.test.ts`（16 例）：`streamChat` 首个模型成功直返、400 降级到 deepseek、跳过 `reasoning_content`、跨 chunk SSE 行拼回、`finish_reason` 回调、全链失败抛错、`AI_MODEL` 去重与自定义模型置链首；`chat` 非流式成功/降级/空内容继续降级/全空抛错；`embed` 正常返回、独立 env 覆盖端点/模型/密钥、非 2xx 抛错、缺字段返回空数组。
+  - `src/lib/download.test.ts`（7 例，jsdom）：Canvas→PNG 触发下载并回收 ObjectURL、toBlob 为 null 抛错；`canWebShare` 能力探测；`webShare` 不支持/用户取消静默返回 false、成功透传载荷。
+  - `src/lib/binance.test.ts`（4 例）：原始 K 线解析与 UTC+8 时间对齐、默认 limit/endTime 查询参数、非 2xx 抛状态码错误；随机历史窗口的 limit 与 endTime 落点区间。
+  - `src/lib/ai-toggle.test.ts`（4 例）：全局关、key 探测、`aiEnabledForPage` 双条件。
+  - `src/lib/ai/chapters.test.ts`（3 例）：`NN · ` 前缀剥离、未知章节/locale 返回 null。
+  - `src/lib/progress-helpers.test.ts`（2 例，jsdom）：记录连续天数并派发 `tb-progress`、内部抛错静默。
+  - `src/lib/url-suggest-server.test.ts`（3 例）：`buildKnowledgeCorpus` 的 zh/en 前缀、章节/doc 层级、章节 slug 唯一。
+  - `src/components/market-ticker.test.tsx`（6 例）：成功渲染三条价格、离线暂停轮询、慢速提示、失败+重试、非数组响应按失败、英文文案。
+  - `src/components/daily-goal.test.tsx`（7 例）：百分比、未达成无庆祝、达成 🎉/100%、超额封顶、档位切换、断签挽回提示与已达成时不提示。
+  - `src/components/replay-trend.test.tsx`（4 例）：<2 轮空态、≥2 轮折线图、total=0 不产生 NaN、只取最近 20 轮。
+  - `src/components/collapsible.test.tsx`（4 例）+ 源码修复：折叠按钮补 `aria-expanded={open}` 与 `type="button"`，让屏幕阅读器能拿到展开状态并避免意外触发表单提交。
+  - `src/components/progress-ring.test.tsx`（4 例）：0/50/100% 与超额封顶的 dashoffset 数学。
+  - `src/components/week-mini-bar.test.tsx`（3 例）、`src/components/streak-badge.test.tsx`（4 例）、`src/components/today-pick.test.tsx`（5 例）、`src/components/not-found-suggestions.test.tsx`（4 例）。
+  - `c22c3fa`：把测试里的 fetch mock 显式类型化为 `(url, init?)`，修掉 `tsc` 对 `mock.calls` 空元组的报错（lint 不抓、typecheck 抓到）。
+- 验证命令与结果：
+  - `npm test` → **209 文件 / 1550 用例全部通过**（本轮由 193/1470 增至 209/1550）。
+  - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0；`npm run build` exit 0。
+  - 内容/SEO 门禁全绿（clean build 后）：`check:docs`（27 章/182 篇）、`check:constitution`、`check:frontmatter`、`check:image-alt`（102 图）、`check:glossary`（59 词条）、`check:slug-conflicts`（364 课程）、`check:description-dupes`（418 篇）、`check:kb-pointer`（a57d510）、`check:translation-history`、`check:kb-parity-budget`（12/12）、`check:quiz-mounts`、`check:quiz-coverage`（81 题）、`check:links`（454 页/8958 链接）、`check:sitemap`（418 页）、`check:seo-surface`（430/454/418）、`check:search-index`（418/418）、`check:nav-chain`、`check:relative-links`、`check:bundle`（454 路由）、`check:structured-data`（454 页/5656 实体）、`check:mobile`（14 页 @320px）全部 exit 0。
+  - 数据与安全：`npm run db:test` exit 0（迁移 9/9、RLS 38、同步 26、`0008_*` 回滚→重放）；`npm run check:secrets` exit 0（609 文件）；`npm run audit:prod` / `audit:all` → 0 vulnerabilities。
+  - E2E 与性能：`npm run e2e` → 58 passed；`npm run lhci` exit 0（3 URL × 2 次，断言全过；无 GitHub token，跳过 status check）。
+- 变更文件（关键）：`src/lib/ai/client.test.ts`、`src/lib/{download,binance,ai-toggle,progress-helpers,url-suggest-server}.test.ts`、`src/lib/ai/chapters.test.ts`、`src/components/{market-ticker,daily-goal,replay-trend,collapsible,progress-ring,week-mini-bar,streak-badge,today-pick,not-found-suggestions}.test.tsx`、`src/components/collapsible.tsx`。
+- 上游依赖：无（纯站内库/组件层）。
+- 未验证项：远端 CI / Vercel 部署（`LOCAL_ONLY`，未推送、未部署）；`db-tests` 作业（含备份恢复步骤）从未在 GitHub Actions 上运行过。
+- 风险与回滚：新增内容为测试与一处 aria 属性，运行时不改变既有行为（折叠交互逻辑不变，仅补语义）。回滚可分别撤销 `1aadd5b`、`6715aaa`、`e941247`、`573f29a`、`c22c3fa`。
+- 下一步：roadmap 剩余项均为外部依赖（Sentry、Supabase 云联调、GSC/Bing、Vercel Analytics、PostHog、OG 卡片人工渲染、冷启动分发、云备份、评论/排行榜用户研究）。
+- 最后更新：2026-09-13
+
 ## 生成式 AI 路由限流 + 未覆盖模块单测（R7.12 / R9 / R13）
 
 - 状态：DONE（本地实现与全量验证完成；远端发布待授权）
