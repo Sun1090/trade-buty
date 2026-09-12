@@ -1,13 +1,40 @@
 # Progress
 
+## 路由级错误上报接线（R7.6 补口）
+
+- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 工作分支：`codex/route-error-reporting`
+- PR：[#19](https://github.com/Sun1090/trade-buty/pull/19)
+- Base：`origin/main@160e34b`（rebase 后）
+- 远端 Head：推送后跟踪
+- 本地提交：`fix(errors): report route crashes through the fatal channel`、本 `docs(errors)` 提交
+- 目标：修掉「定义了 fatal 档但没有任何路由调用方」的真实缺口 —— `src/app/error.tsx` 只渲染兜底 UI，从不调用 `reportError`；全仓库此前只有 `ai-chat.tsx` 用到 `reportError`（recoverable）。
+- 已完成：
+  - `src/lib/error-report.ts` 新增 `reportRouteError(error, scope = "route-error")`：统一按 `fatal` 上报，带上 Next.js 的 `error.digest`（无 digest 时不塞空 meta，保持控制台输出可断言）。
+  - `src/app/error.tsx` 在 `useEffect` 中按 Next.js 官方 error boundary 约定上报一次。
+  - 测试：`error-report.test.ts` 补 `reportRouteError` 两例（带 digest / 自定义 scope）；新增 `src/app/error.test.tsx` 组件测试（仅上报一次、兜底渲染、重试按钮接线）。
+  - 明确**不**新增 `src/app/global-error.tsx`：实测该文件会给全部 454 条 zh/en 路由各加 **13.4KB gzip JS**（home `301.7→315.1`、stats `317.1→330.5`、drawing-tools `302.5→315.9`），一次性击穿 home/lesson/chapter/stats 四组 R13.15 预算。根 layout 崩溃由 Next 内置兜底页承接，收益不抵全站首屏成本；已在本条留证，未来若要接统一上报端点再单独评估「不进首屏预算」的方案。
+- 变更文件（关键）：`src/lib/error-report.ts`、`src/lib/error-report.test.ts`、`src/app/error.tsx`、`src/app/error.test.tsx`、`docs/roadmap.md`。
+- 验证命令与结果：
+  - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0；`git diff --check` clean。
+  - `npx vitest run src/app/error.test.tsx src/lib/error-report.test.ts` → 2 文件 / 9 用例通过。
+  - `npm test` → 239 文件 / 1715 用例通过（较 base `main@160e34b` 的 238 文件 / 1711 用例新增 1 文件 / 4 用例，无 `global-error.test.tsx`）。
+  - `npm run build` exit 0（473 静态页，与 base 一致，未新增路由）。
+  - `npm run check:bundle` exit 0（15 组预算全部通过；`drawing-tools` 最紧：392.3/400KB）。
+- 上游依赖：无。
+- 未验证项：远端 CI 复跑结果（推送后跟踪）。
+- 风险与回滚：只在错误路径增加一次 console 上报，不触碰成功路径；首屏 JS 零增长（`zh` 301.7KB 与 base 同量级）。回滚即撤销本分支提交。
+- 下一步：推送、CI 全绿后按 rebase 合并；再评估「统一上报端点 + CSP `connect-src`」是否值得进首屏预算。
+- 最后更新：2026-09-13
+
 ## 文档事实校正（roadmap Q2.3 + v0.6 复盘状态）
 
-- 状态：DONE（本地验证完成；已推送分支并纳入远端 CI 复核）
+- 状态：DONE（已合并）
 - 工作分支：`codex/docs-freshness`
-- PR：[#18](https://github.com/Sun1090/trade-buty/pull/18)
+- PR：[#18](https://github.com/Sun1090/trade-buty/pull/18)（MERGED，rebase）
 - Base：`origin/main@b41e193`
-- 远端 Head：推送后跟踪
-- 本地提交：`docs(roadmap): align Q2.3 with enforced Lighthouse gates`、`docs(release-review): record post-closure push and merge status`，本条目随 docs 提交入库
+- 远端 Head：`2a6f4c0`（已随 rebase 合入 `main@160e34b`）
+- 本地提交：`docs(roadmap): align Q2.3 with enforced Lighthouse gates`、`docs(release-review): record post-closure push and merge status`、`docs(progress): record doc accuracy pass and changelog merge`
 - 目标：审计仓库文档中与当前事实不符的陈述并如实更正；不改产品代码。
 - 已完成：
   - `docs/roadmap.md` Q2.3：原文写的是旧版 Lighthouse 门槛与旧实测分数，与 `.lighthouserc.json` 实际强制执行的门禁不一致；更正为 `categories:accessibility` minScore=1 error + 单独阻断 `color-contrast` / `link-name` / `label-content-name-mismatch`，`best-practices` / `seo` ≥ 0.9 error，`performance` ≥ 0.7 warn。
@@ -18,9 +45,9 @@
   - `npm run check:secrets` exit 0（扫描 639 个文本文件，无疑似凭据）。
   - 引用数字均可复现：`.lighthouserc.json`、`gh run view 34711354683`（237 文件 / 1701 用例 / 61 e2e）、`gh pr view 16`（mergeCommit `b41e193`）。
 - 上游依赖：无。
-- 未验证项：远端 CI 复跑结果（推送后跟踪）。
+- 未验证项：无（远端 CI run `34712716577` 全绿：`ci` + `db-tests`）。
 - 风险与回滚：纯文档更正，无运行时影响；回滚即撤销本分支提交。
-- 下一步：CI 全绿后按 rebase 合并，继续审计其余文档与可执行缺口。
+- 下一步：已完成合并；后续见上方「路由级错误上报接线」条目。
 - 最后更新：2026-09-13
 
 ## 策展式发布说明（更新日志）与 CHANGELOG 门禁
