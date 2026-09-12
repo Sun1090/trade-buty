@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useModalFocus } from "./use-modal-focus";
 
 /** 知识库图片点击放大（灯箱），ESC 或点击遮罩关闭 */
 export function ImageLightbox({
@@ -11,6 +12,13 @@ export function ImageLightbox({
   closeLabel: string;
 }) {
   const [img, setImg] = useState<{ src: string; alt: string } | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useModalFocus({
+    active: img !== null,
+    containerRef: dialogRef,
+    onClose: () => setImg(null),
+  });
 
   useEffect(() => {
     const root = document.querySelector(containerSelector);
@@ -28,13 +36,8 @@ export function ImageLightbox({
 
   useEffect(() => {
     if (!img) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setImg(null);
-    };
-    window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
-      window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
   }, [img]);
@@ -43,11 +46,13 @@ export function ImageLightbox({
 
   return (
     <div
+      ref={dialogRef}
       onClick={() => setImg(null)}
       className="fixed inset-0 z-[70] bg-black/85 flex flex-col items-center justify-center p-4 cursor-zoom-out"
       role="dialog"
       aria-modal="true"
       aria-label={closeLabel}
+      tabIndex={-1}
     >
       <button
         onClick={() => setImg(null)}

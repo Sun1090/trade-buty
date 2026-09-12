@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
+import { useModalFocus } from "./use-modal-focus";
 
 interface NavItem {
   href: string;
@@ -12,6 +13,14 @@ interface NavItem {
 /** 移动端导航：窄屏汉堡按钮 + 抽屉菜单 */
 export function MobileNav({ items, locale }: { items: NavItem[]; locale: string }) {
   const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuId = `mobile-nav-${locale}`;
+
+  useModalFocus({
+    active: open,
+    containerRef: menuRef,
+    onClose: () => setOpen(false),
+  });
 
   return (
     <div className="sm:hidden">
@@ -19,6 +28,7 @@ export function MobileNav({ items, locale }: { items: NavItem[]; locale: string 
         onClick={() => setOpen((v) => !v)}
         aria-label="Menu"
         aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
         className="p-2 min-h-10 min-w-10 inline-flex items-center justify-center rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
@@ -30,7 +40,15 @@ export function MobileNav({ items, locale }: { items: NavItem[]; locale: string 
         </svg>
       </button>
       {open && (
-        <div className="absolute top-14 left-0 right-0 border-b border-[var(--border)] bg-[var(--background)] shadow-lg z-50">
+        <div
+          ref={menuRef}
+          id={menuId}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu"
+          tabIndex={-1}
+          className="absolute top-14 left-0 right-0 border-b border-[var(--border)] bg-[var(--background)] shadow-lg z-50"
+        >
           <nav className="flex flex-col p-4 gap-1">
             {items.map((item) => (
               <Link

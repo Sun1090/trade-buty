@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MobileNav } from "./mobile-nav";
 
 const items = [
@@ -26,5 +26,19 @@ describe("MobileNav", () => {
     fireEvent.click(container.querySelector("button")!);
     const link = container.querySelector('a[href="/en/path"]');
     expect(link).toBeTruthy();
+  });
+
+  it("打开后聚焦首项，Escape 关闭并把焦点还给触发按钮", async () => {
+    render(<MobileNav items={items} locale="zh" />);
+    const trigger = screen.getByLabelText("Menu");
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const firstLink = screen.getByRole("link", { name: /路线/ });
+    await waitFor(() => expect(firstLink).toHaveFocus());
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(trigger).toHaveFocus();
   });
 });
