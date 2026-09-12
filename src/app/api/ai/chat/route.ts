@@ -17,7 +17,6 @@ import {
 } from "@/lib/ai/sources";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const runtime = "edge";
 
 interface ChatBody {
   messages: { role: "user" | "assistant"; content: string }[];
@@ -28,7 +27,7 @@ interface ChatBody {
   contextChapter?: string;
 }
 
-// 简易内存 rate limit（edge runtime 每实例独立，够用于防基础滥用）
+// 简易内存 rate limit（Node.js 实例间相互独立，够用于防基础滥用）
 const ipHits = new Map<string, { count: number; reset: number }>();
 const GUEST_LIMIT = 10; // 游客每小时 10 次
 const AUTHED_LIMIT = 50; // 登录每小时 50 次

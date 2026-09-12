@@ -4,7 +4,6 @@ import { retrieve } from "@/lib/ai/rag";
 import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const runtime = "edge";
 
 interface SummaryBody {
   chapter: string;

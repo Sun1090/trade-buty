@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const runtime = "edge";
 
 interface FeedbackBody {
   rating: "helpful" | "unhelpful";

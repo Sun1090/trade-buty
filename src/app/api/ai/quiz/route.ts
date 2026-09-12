@@ -10,7 +10,6 @@ import { getChapterTitle } from "@/lib/ai/chapters";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { QUIZZES } from "@/lib/quizzes";
 
-export const runtime = "edge";
 
 interface GenerateBody {
   /** 错题的篇章+题号列表，用于取原题 + RAG（变体模式） */
@@ -21,7 +20,7 @@ interface GenerateBody {
   difficulty?: "basic" | "advanced";
 }
 
-// R2.10 成本控制：同章节+语言+难度的题目缓存 24h（edge 实例级）
+// R2.10 成本控制：同章节+语言+难度的题目缓存 24h（Node.js 实例级）
 const quizCache = new Map<string, { questions: unknown; at: number }>();
 const QUIZ_CACHE_TTL = 24 * 60 * 60 * 1000;
 
