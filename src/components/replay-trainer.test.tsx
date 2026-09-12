@@ -128,7 +128,9 @@ describe("ReplayTrainer 难度切换（回归：难度变更必须重置上下�
     await waitFor(() => expect(screen.getByText(/0\/285/)).toBeInTheDocument());
     expect(screen.queryByText(/15\/285/)).toBeNull();
     expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(2);
-    // 图表只渲染到新的起点位置
-    expect(mocks.series.setData.mock.lastCall?.[0]).toHaveLength(15);
+    // 图表只渲染到新的起点位置（setData 在被动 effect 中执行，需等待其刷新）
+    await waitFor(() =>
+      expect(mocks.series.setData.mock.lastCall?.[0]).toHaveLength(15)
+    );
   });
 });
