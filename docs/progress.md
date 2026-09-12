@@ -2,12 +2,13 @@
 
 ## 门禁表覆盖机检（docs/ops.md ↔ ci.yml）
 
-- 状态：VERIFYING
+- 状态：DONE（PR #32 已以 `--rebase` 合并进 main；PR CI 与合并后 main CI 均通过）
 - 工作分支：`codex/ops-gate-coverage`
-- PR：待创建
-- PR 状态：none
+- PR：[#32](https://github.com/Sun1090/trade-buty/pull/32) · `MERGED`
+- PR 状态：MERGED
 - Base：`origin/main@265dac3`
-- 已验证 Head：见 PR head
+- 合并提交：`8ce77a6`（PR CI run [34720356967](https://github.com/Sun1090/trade-buty/actions/runs/34720356967) `ci` + `db-tests` 全绿；合并后 main CI run [34720648720](https://github.com/Sun1090/trade-buty/actions/runs/34720648720) `ci` + `db-tests` 全绿）
+- 已验证 Head：`bb9da23`（见 PR #32 head）
 - 本地提交：`docs(ops): register the db-tests gates and machine-check table coverage`
 - 目标：`docs/ops.md` 表头声称「下表覆盖 `.github/workflows/ci.yml` 的全部执行步骤，并按实际顺序排列」，但整张表漏掉了 `db-tests` 作业（`docker pull` / `node scripts/db-test.mjs` / `npm run backup:drill`），且 `npx playwright install` 行排在流水线最末（实际在 `build` 与 `check:mobile` 之间）。该声明此前无任何门禁守护，会随工作流演进而静默漂移。
 - 已完成：
@@ -27,9 +28,9 @@
   - `npm run audit:prod` / `npm run audit:all` exit 0 → 0 vulnerabilities。
   - `npm run check:docs` / `npm run check:changelog` / `npm run check:secrets` exit 0。
 - 上游依赖：无。
-- 未验证项：远端 CI。
+- 未验证项：无。
 - 风险与回滚：只改文档与新增测试守卫，回滚单个提交即可；覆盖/顺序守卫可能对工作表结构敏感，已在测试注释中固定「首列命令参与顺序校验」的约定。
-- 下一步：推送分支、开 PR、CI 全绿后 `gh pr merge --rebase`。
+- 下一步：无（已完成）。
 - 最后更新：2026-09-13
 
 ## CI 并发收敛（被取代的 PR 运行自动取消）
