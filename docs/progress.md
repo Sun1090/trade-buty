@@ -26,6 +26,8 @@
   - `npm run e2e` → 58 passed（含新增错题本键盘重答用例）。
   - `npm run check:mobile` → 14 个关键页面 320px 无溢出。
   - `npm run check:docs` → 通过（27 章 / 182 篇，zh/en 对齐）。
+  - CI 全量门禁本地复核全部 exit 0：`check:secrets`、`check:ai-copy`、`check:growth-event-privacy`、`check:dark-pattern-copy`、`check:constitution`、`check:frontmatter`、`check:image-alt`、`check:glossary`、`check:slug-conflicts`、`check:description-dupes`、`check:kb-pointer`、`check:translation-history`、`check:kb-parity-budget`、`check:quiz-mounts`、`check:quiz-coverage`、`check:links`、`check:sitemap`、`check:seo-surface`、`check:structured-data`、`check:nav-chain`、`check:relative-links`、`check:search-index`、`check:bundle`、`check:title-terminology`、`check:description-quality`、`check:risk-warning`、`kb:parity`、`audit:all`、`audit:prod`。
+  - Lighthouse 13 本地复核（`npx lhci collect --collect.numberOfRuns=1` + `npx lhci assert`，Playwright Chrome for Testing 作 CHROME_PATH，未上传）：`/zh` a11y=100/perf=79/bp=96/seo=100，课程页 a11y=100/perf=82/bp=100/seo=100，`/chart` a11y=100/perf=83/bp=100/seo=100，assert exit 0。
 - 风险与回滚：选项由 `<li>` 改为 `<button>` 只改变可交互语义与焦点行为，视觉类名保持不变；如需回滚，撤销 `b65a733` 即可。回放测试仅调整断言时机，不改生产代码。
 - 未验证项：远端 CI、PR 与 Vercel 部署（`LOCAL_ONLY`，尚未推送/未部署）。
 - 最后更新：2026-09-13

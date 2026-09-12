@@ -13,7 +13,7 @@
 | 范围 | 键盘/辅助技术契约 | 回归证据 |
 | --- | --- | --- |
 | 课程图片灯箱 | 图片获得 `role="button"`、`tabindex=0`、`aria-haspopup="dialog"`；Enter/Space 打开；Escape 关闭；焦点归还图片 | `markdown.test.tsx`、`image-lightbox.test.tsx`、`e2e/full-site.spec.ts` |
-| 随堂测 | A/B/C 选项可用 Enter 或 Space 选择，可完成三题并显示结果 | `e2e/full-site.spec.ts` |
+| 随堂测 | 四处测验界面（课程 `quiz.tsx`、`ai-quiz.tsx`、`ai-chapter-quiz.tsx`、错题本 `review-client.tsx` 重答）的 A/B/C 选项都是带 `aria-label="A. <选项>"` 的真实 `<button>`，可用 Enter 或 Space 作答，作答后统一 `disabled`；课程随堂测可完成三题并显示结果 | `e2e/full-site.spec.ts`（随堂测 + 错题本键盘重答）、`ai-quiz.test.tsx`、`ai-chapter-quiz.test.tsx`、`review-client.test.tsx` |
 | 回放训练 | 品种/周期有本地化名称；速度、难度、模式等按钮暴露 `aria-pressed`；难度与速度有分组标签；跳到末尾有稳定名称 | `e2e/full-site.spec.ts` |
 | 行情图 | 交易对/周期按钮与自定义交易对输入有可访问名称；周期切换可被键盘触发 | `kline-chart.tsx`、`e2e/full-site.spec.ts` |
 | 搜索筛选 | 篇章下拉框有本地化 `aria-label`，不依赖视觉位置 | `search-client.test.tsx` |
@@ -44,7 +44,15 @@ npx playwright test e2e/full-site.spec.ts -g 'Q2.4'
 npm run e2e
 ```
 
-结果（2026-09-12，`446900c`）：
+结果（2026-09-13，`3df7444` 复核）：
+
+- 全量 Vitest：178 文件 / 1356 用例通过（新增四处测验选项按钮可达用例）。
+- lint：0 error / 0 warning；typecheck、build：通过。
+- 完整 Playwright：58/58 通过（新增「错题本重答选项可用键盘作答（R13.9）」）。
+- Lighthouse 13 本地复核（`/zh`、课程页、`/chart`，CHROME_PATH=Playwright Chrome for Testing，1 run/URL）：accessibility 全部 100，SEO 全部 100，best-practices 96/100/100，performance 79/82/83；`color-contrast`、`link-name`、`label-content-name-mismatch` 零失败。
+
+## 历史记录（2026-09-12，`446900c`）
+
 
 - 全量 Vitest：178 文件 / 1350 用例通过。
 - lint：0 error / 0 warning；typecheck、build：通过；构建 473 个静态页。
