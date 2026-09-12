@@ -145,3 +145,104 @@ test.describe("R13.8 关键可点区域 ≥ 40px", () => {
     await expect(page.getByText(/最近 500 根 K 线/)).toBeVisible();
   });
 });
+
+test.describe("R13.12 慢速/离线网络降级", () => {
+  test.use({ viewport: { width: 375, height: 667 } });
+
+  test("慢速网络使用精简图表、暂停实时推送与完整视图", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "onLine", {
+        configurable: true,
+        get: () => true,
+      });
+      Object.defineProperty(navigator, "connection", {
+        configurable: true,
+        value: {
+          effectiveType: "2g",
+          saveData: false,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        },
+      });
+    });
+
+    const requestedLimits: string[] = [];
+    await page.route(/\/api\/v3\/klines(?:\?|$)/, async (route) => {
+      const limit = new URL(route.request().url()).searchParams.get("limit");
+      if (limit) requestedLimits.push(limit);
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
+      });
+    });
+
+    await page.goto("/zh/chart");
+    const chart = page.getByTestId("kline-chart");
+    await expect(chart).toHaveAttribute("data-network-quality", "slow");
+    await expect(chart).toHaveAttribute("data-density", "compact");
+    await expect(page.getByTestId("network-quality-note")).toContainText(
+      /慢速模式|暂停实时推送/,
+    );
+    await expect(page.getByTestId("chart-density-toggle")).toHaveCount(0);
+    await expect.poll(() => requestedLimits).toEqual(["180"]);
+    await page.waitForTimeout(250);
+    expect(requestedLimits).toEqual(["180"]);
+
+    await page.route(
+      /https:\/\/api\.binance\.com\/api\/v3\/ticker\/24hr.*/,
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            { symbol: "BTCUSDT", lastPrice: "60000", priceChangePercent: "1.2" },
+            { symbol: "ETHUSDT", lastPrice: "3000", priceChangePercent: "-0.4" },
+            { symbol: "SOLUSDT", lastPrice: "150", priceChangePercent: "2.1" },
+          ]),
+        });
+      },
+    );
+    await page.goto("/zh");
+    await expect(page.getByTestId("market-ticker")).toHaveAttribute(
+      "data-network-quality",
+      "slow",
+    );
+    await expect(page.getByTestId("market-network-note")).toContainText(
+      "60 秒",
+    );
+  });
+
+  test("离线时不发起图表请求并显示自动重试说明", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "onLine", {
+        configurable: true,
+        get: () => false,
+      });
+      Object.defineProperty(navigator, "connection", {
+        configurable: true,
+        value: {
+          effectiveType: "4g",
+          saveData: false,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        },
+      });
+    });
+
+    let requests = 0;
+    await page.route(/\/api\/v3\/klines(?:\?|$)/, async (route) => {
+      requests += 1;
+      await route.abort();
+    });
+
+    await page.goto("/zh/chart");
+    const chart = page.getByTestId("kline-chart");
+    await expect(chart).toHaveAttribute("data-network-quality", "offline");
+    await expect(page.getByTestId("network-quality-note")).toContainText(
+      /恢复联网后会自动重试/,
+    );
+    await page.waitForTimeout(300);
+    expect(requests).toBe(0);
+  });
+});

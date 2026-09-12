@@ -334,6 +334,9 @@ export default async function DocPage({
               fullNote: t.chart.fullNote,
               showFull: t.chart.showFull,
               showCompact: t.chart.showCompact,
+              slowNetwork: t.chart.slowNetwork,
+              offline: t.chart.offline,
+              timeout: t.chart.timeout,
               disclaimer: t.chart.disclaimer,
             }}
           />
