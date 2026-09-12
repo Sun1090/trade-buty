@@ -1,9 +1,11 @@
 /** R10.4：课程 frontmatter description 质量评分的纯计算与 Markdown 渲染。 */
 
+import { stripTitleOrder } from "./title-terminology-lib.mjs";
+
 const clamp = (value) => Math.max(0, Math.min(100, value));
 
 function titleWords(title) {
-  return String(title ?? "")
+  return stripTitleOrder(title)
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\u4e00-\u9fff]+/gu, " ")
     .split(/\s+/u)

@@ -26,4 +26,15 @@ describe("description quality (R10.4)", () => {
     expect(markdown).toContain("总课程：1");
     expect(markdown).toContain("2026-09-06");
   });
+
+  it("ignores the NN · lesson-order prefix when scoring title relevance (R10.4)", () => {
+    const description = "Traditional finance assumes you are a rational agent, but real traders sell winners and hold losers.";
+    const prefixed = scoreDescription({ title: "01 · Foundations of Behavioral Finance", description });
+    const plain = scoreDescription({ title: "Foundations of Behavioral Finance", description });
+    expect(prefixed.title).toBe("01 · Foundations of Behavioral Finance");
+    expect(prefixed.dimensions.titleRelevance).toBe(plain.dimensions.titleRelevance);
+    expect(prefixed.score).toBe(plain.score);
+    expect(prefixed.matchedTitleWords).toEqual(plain.matchedTitleWords);
+    expect(prefixed.matchedTitleWords).not.toContain("01");
+  });
 });
