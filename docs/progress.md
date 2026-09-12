@@ -1,5 +1,28 @@
 # Progress
 
+## 依赖月度审计记录（Q5.3 的 2026-09-13 快照）
+
+- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 工作分支：`codex/deps-monthly-audit`
+- PR：[#27](https://github.com/Sun1090/trade-buty/pull/27)
+- Base：`origin/main@cf0f92a`
+- 远端 Head：见 PR #27 的 head（分支在合并前若再变基，SHA 会随之变化）
+- 本地提交：`docs(deps): record the 2026-09-13 monthly dependency audit`
+- 目标：Q5.3 要求依赖月度审计，但 `docs/deps.md` 只有「安全基线」叙述，没有可回溯的月度日志；roadmap 里 2026-09-12 的记录也停留在文字上。补齐可审计的日志结构并刷新到 2026-09-13 的真实现状。
+- 已完成：
+  - `docs/deps.md`：新增「月度审计日志（Q5.3）」小节，规定每月跑 `audit:prod` + `audit:all` + `npm outdated` 并登记；填入 2026-09-13 记录 —— 两条 audit 均 `found 0 vulnerabilities`，`npm outdated` 只剩五个 major（`@types/node` 20.19.43→22.20.2、`eslint` 9.39.5→10.10.0、`js-yaml` 4.3.2→5.4.1、`typescript` 5.9.3→7.0.2、`vitest` 4.1.11→5.0.0），逐条写明暂缓理由。
+  - `docs/roadmap.md`：Q5.3 一行刷新到 2026-09-13 的实测结果，并指向 `docs/deps.md` §月度审计日志；保留 2026-09-12 作为历史。
+- 变更文件（关键）：`docs/deps.md`、`docs/roadmap.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npm run audit:prod` → `found 0 vulnerabilities`（exit 0）。
+  - `npm run audit:all` → `found 0 vulnerabilities`（exit 0）。
+  - `npm outdated` → 仅五个包落后且全部是 major（无 minor/patch 待跟），已逐条登记。
+  - `npm run check:secrets` exit 0；`npm run check:docs` exit 0；`npm run check:changelog` exit 0。
+- 上游依赖：无（纯文档记录）。
+- 未验证项：无（本分支两次推送的 CI 均 `ci` + `db-tests` 绿；Vercel 配额限流为已知外部因素，不阻塞合并）。
+- 风险与回滚：纯文档，无运行时影响；回滚即撤销本分支提交。
+- 下一步：推送、CI 全绿后按 rebase 合并；继续扫描其它真实缺口。
+
 ## CI actions 升到 node24 运行时（清掉 GitHub 弃用注记）
 
 - 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
