@@ -39,6 +39,7 @@ jobs:
             echo "::warning::构建链路超过 4 分钟（${ELAPSED}s），请检查大 chunk 与依赖体积"
           fi
       - run: npm run check:ai-copy
+      - run: npm run check:growth-event-privacy
       - run: npm run check:constitution
       - run: npm run check:frontmatter
       - run: npm run check:image-alt

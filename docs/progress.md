@@ -1,5 +1,23 @@
 # Progress
 
+## 2026-09-12 — R13.20 增长事件隐私审计
+
+对 R13.19 的事件链路做了代码、数据、出口和文档四层审计，并用 CI 门禁锁定 console-only 边界：
+
+- 新增 `docs/growth-event-privacy-audit.md`：记录数据流、字段分类、0 秒应用层保留、无跨境 / 无供应商结论、威胁模型、变更触发条件和验收证据。
+- 中英文隐私政策补充本机开发者控制台披露：分享 / 邀请 / AI 入口可能打印少量白名单 debug 事件；事件不发送给站点，也不含原始邀请码、邮箱、章节标题、完整 URL 或自由文本。
+- 新增 `scripts/growth-event-privacy.mjs` 与测试：静态拒绝 `fetch`、`sendBeacon`、`XMLHttpRequest`、localStorage / sessionStorage / IndexedDB、cookie、剪贴板出口；同时要求唯一 `console.info` 只接收 normalize 后的 `safe` 事件、事件目录完整、双语隐私披露存在。
+- 新门禁 `npm run check:growth-event-privacy` 已接入 CI。任何远端分析 SDK、持久化、字段扩张或供应商接入都会失败并要求重新审计。
+
+Verification recorded:
+
+- `npm run check:growth-event-privacy`：通过，7 类事件、console-only、无网络 / 持久化 API。
+- 聚焦 Vitest：审计器 5 用例 + 事件层 6 用例通过。
+- 全量 Vitest：160 文件 / 1236 用例通过。
+- `npm run lint` 0 error（59 条既有 warning）、`npm run typecheck` 通过。
+- 干净生产构建 465 静态页；21 项内容与产物门禁退出码全 0，包括新增增长事件隐私门禁、454 页 / 8958 链接无死链、sitemap 418 个知识库页面、SEO 表面 430 条、搜索索引 418/418、结构化数据 454 页 / 5656 实体、全部 454 路由 bundle 预算和 KB 指针 `1ebbaef`。
+- Playwright `npm run e2e` 40/40 通过。
+
 ## 2026-09-12 — R13.19 分享 / 邀请转化事件设计
 
 实现本地、无网络、无持久化副作用的分享与邀请事件层，先把漏斗口径、隐私边界和测试契约固定下来：

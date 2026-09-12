@@ -15,6 +15,7 @@
     "quiz:coverage": "node scripts/quiz-coverage.mjs",
     "summary:coverage": "node scripts/summary-coverage.mjs",
     "check:ai-copy": "node scripts/check-ai-copy.mjs",
+    "check:growth-event-privacy": "node scripts/growth-event-privacy.mjs",
     "check:constitution": "node scripts/check-constitution.mjs",
     "check:frontmatter": "node scripts/check-frontmatter.mjs",
     "check:image-alt": "node scripts/check-image-alt.mjs",

@@ -33,6 +33,7 @@ export default async function PrivacyPage({ params }: PageProps<"/[locale]/priva
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{locale === "en" ? "Data We Collect" : "我们收集的数据"}</h2>
         <p>{locale === "en" ? "Trade Buty does not collect personal data. All learning progress (read status, quiz results, replay history) is stored locally in your browser's localStorage. No data is sent to our servers unless you choose to log in with email." : "Trade Buty 不收集个人数据。所有学习进度（已读状态、测验成绩、回放记录）仅存储在浏览器的 localStorage 中。除非你选择登录，否则不会向服务器发送任何数据。"}</p>
+        <p>{locale === "en" ? "Share, invite and AI entry interactions may print a small allowlisted debug event to your browser's developer console. These events stay on your device, are not sent to us, and do not include raw invite codes, email addresses, chapter titles, full URLs or free text." : "分享、邀请和 AI 入口交互可能会在浏览器开发者控制台打印少量白名单 debug 事件。这些事件只留在你的设备上，不会发送给我们，也不包含原始邀请码、邮箱、章节标题、完整 URL 或自由文本。"}</p>
         <p>{locale === "en" ? "When you log in via email magic link, your email address is stored by Supabase Auth (our authentication provider, hosted in the US). Your learning progress is synced to Supabase only to enable cross-device access." : "当你通过邮箱魔法链接登录时，你的邮箱地址由 Supabase Auth（我们的认证服务商，托管于美国）存储。学习进度同步到 Supabase 仅用于跨设备恢复。"}</p>
       </section>
       <section className="space-y-3">
