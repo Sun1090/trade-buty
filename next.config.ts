@@ -1,12 +1,16 @@
 /** @type {import('next').NextConfig} */
 
-// R7.12：安全头——CSP 允许 Supabase（connect/wss）与内联样式/脚本（Next 必需），
+// R7.12：安全头——CSP 允许 Supabase、行情 REST/WS（connect）与内联样式/脚本（Next 必需），
 // 图片允许 data: 与全部 https 外链（知识库外链图片）。
+export const MARKET_CONNECT_SOURCES = [
+  "https://api.binance.com",
+  "wss://stream.binance.com:9443",
+] as const;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://*.supabase.co";
 const supabaseHost = `wss://${supabaseUrl.replace(/^https?:\/\//, "")}`;
 const csp = [
   "default-src 'self'",
-  `connect-src 'self' ${supabaseUrl} ${supabaseHost}`,
+  `connect-src 'self' ${supabaseUrl} ${supabaseHost} ${MARKET_CONNECT_SOURCES.join(" ")}`,
   "img-src 'self' data: blob: https:",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
