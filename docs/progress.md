@@ -2,13 +2,13 @@
 
 ## CI actions 运行时对齐（workflow action parity）
 
-- 状态：VERIFYING
+- 状态：VERIFYING（本地全绿 + PR CI 全绿；等待 rebase 合并后回填合并提交）
 - 工作分支：`codex/ci-action-parity`
-- PR：待创建
-- PR 状态：none
+- PR：[#30](https://github.com/Sun1090/trade-buty/pull/30) · `MERGEABLE`
+- PR 状态：OPEN
 - Base：`origin/main@e8be59c`
-- 远端 Head：见本 PR 的 head（提交内容自引用，SHA 不写回自身）
-- 本地提交：`ci(workflows): align link-patrol action runtimes and guard every workflow`
+- 已验证 Head：`6fd15fa`（PR CI run [34718615164](https://github.com/Sun1090/trade-buty/actions/runs/34718615164) → `ci` 5m23s、`db-tests` 54s 全绿；Vercel 仍为平台 `Deployment rate limited`，外部因素）
+- 本地提交：`ci(workflows): align link-patrol action runtimes and guard every workflow`、`docs(progress): backfill merged PR evidence for the 2026-09-12 batch`、`ci(workflows): pin least-privilege permissions and job timeouts`
 - 目标：`ci.yml` 已升到 `actions/checkout@v7` / `actions/setup-node@v7`，但 `.github/workflows/link-patrol.yml` 仍停留在 `@v4`，会继续在月度巡检里触发 Node.js 20 弃用并漂移工具链。对齐后把结构守卫从只测 `ci.yml` 扩到全工作流，防止以后再漏。
 - 已完成：
   - `.github/workflows/link-patrol.yml`：`actions/checkout@v4 → v7`、`actions/setup-node@v4 → v7`（Node 22 / npm cache 保持）。
@@ -22,16 +22,16 @@
   - 新增两条对应守卫：每个工作流必须有显式 `contents: read` 且不多授予其它权限；每个 job 必须有 (0, 60] 区间内的数值 `timeout-minutes`。反向验证：临时移除 `link-patrol.yml` 的权限与超时后两条用例均失败并报出文件与 job 名。
 - 变更文件（关键）：`.github/workflows/ci.yml`、`.github/workflows/link-patrol.yml`、`scripts/ci-workflow.test.mjs`、`docs/progress.md`。
 - 验证命令与结果：
-  - `npx vitest run scripts/ci-workflow.test.mjs` exit 0 → 12 用例通过（原 7 用例）；反向验证：把 `link-patrol.yml` 临时退回 `@v4`、以及临时移除其权限/超时声明，都会让对应用例失败。
+  - `npx vitest run scripts/ci-workflow.test.mjs` exit 0 → 12 用例通过（原 7 用例）；反向验证：把 `link-patrol.yml` 临时退回 `@v4`、临时移除其 `permissions`、临时移除其 `timeout-minutes` 三处都实际触发失败并报出文件/job。
   - `npm run lint` exit 0（零 warning）；`npm run typecheck` exit 0。
   - `npm test` exit 0 → 247 文件 / 1798 用例通过。
   - `npm run build` exit 0 → 474 静态页面生成完成。
   - `npm run audit:prod` / `npm run audit:all` exit 0 → 均 `found 0 vulnerabilities`。
   - `npm run check:docs` / `npm run check:changelog` / `npm run check:secrets` exit 0。
 - 上游依赖：无。
-- 未验证项：远端 CI。
-- 风险与回滚：仅改 action major 与测试，回滚单个提交即可；`link-patrol` 是月度定时任务，不阻塞主流水线。
-- 下一步：推送分支、开 PR、CI 全绿后 `gh pr merge --rebase`。
+- 未验证项：合并后 main CI（合并后回填）。
+- 风险与回滚：仅改 action major、工作流权限/超时与测试，回滚单个提交即可；`link-patrol` 是月度定时任务，不阻塞主流水线。
+- 下一步：`gh pr merge 30 --rebase`；随后单独开分支处理下拉后的新发现——同一 PR 连续 push 会并行起多个 workflow（本次 3 个 run 同时在跑，已手动取消 2 个），考虑给 PR 事件加 `concurrency` 自动取消被取代的运行。
 - 最后更新：2026-09-13
 
 ## 工具链 major 升级（三个落地、两个按上游阻塞延期）
