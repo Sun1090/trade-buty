@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { Toc } from "./toc";
 import type { TocItem } from "@/lib/toc";
 
@@ -36,5 +36,28 @@ describe("Toc", () => {
     const { container } = render(<Toc items={items} heading="目录" />);
     const link = container.querySelectorAll("nav a")[0];
     expect(link?.getAttribute("href")).toBe("#section-1");
+  });
+});
+
+describe("Toc mobile dialog", () => {
+  const items: TocItem[] = [
+    { text: "第一节", depth: 2, id: "section-1" },
+    { text: "子节", depth: 3, id: "subsection" },
+    { text: "第二节", depth: 2, id: "section-2" },
+  ];
+
+  it("打开后聚焦首项，Escape 关闭并归还焦点", async () => {
+    render(<Toc items={items} heading="目录" />);
+    const trigger = screen.getByRole("button", { name: "目录" });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const dialog = screen.getByRole("dialog", { name: "目录" });
+    const firstLink = within(dialog).getByRole("link", { name: "第一节" });
+    await waitFor(() => expect(firstLink).toHaveFocus());
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(trigger).toHaveFocus();
   });
 });

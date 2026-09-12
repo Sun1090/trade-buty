@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { TocItem } from "@/lib/toc";
+import { useModalFocus } from "./use-modal-focus";
 
 export function Toc({ items, heading }: { items: TocItem[]; heading: string }) {
   const [active, setActive] = useState<string>("");
   const [open, setOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useModalFocus({
+    active: open,
+    containerRef: panelRef,
+    onClose: () => setOpen(false),
+  });
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -75,6 +83,8 @@ export function Toc({ items, heading }: { items: TocItem[]; heading: string }) {
       <div className="2xl:hidden fixed right-4 bottom-20 z-40">
         <button
           onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls={open ? "mobile-toc" : undefined}
           className="h-10 w-10 rounded-full bg-accent-strong text-white dark:text-[#06281c] shadow-lg flex items-center justify-center text-sm font-bold hover:bg-accent transition"
           aria-label={heading}
         >
@@ -86,7 +96,15 @@ export function Toc({ items, heading }: { items: TocItem[]; heading: string }) {
               className="fixed inset-0 bg-black/30 z-30"
               onClick={() => setOpen(false)}
             />
-            <div className="absolute right-0 bottom-12 w-60 max-h-[60vh] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xl z-40">
+            <div
+              ref={panelRef}
+              id="mobile-toc"
+              role="dialog"
+              aria-modal="true"
+              aria-label={heading}
+              tabIndex={-1}
+              className="absolute right-0 bottom-12 w-60 max-h-[60vh] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xl z-40"
+            >
               <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-3">
                 {heading}
               </p>

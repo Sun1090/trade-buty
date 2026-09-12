@@ -1,14 +1,14 @@
 # 课程风险提示块覆盖率报告
 
-> 自动生成于 2026-09-06（npm run check:risk-warning），勿手改。
+> 自动生成于 2026-09-12（npm run check:risk-warning），勿手改。
 
 > 产品红线（docs/plan.md）：每篇内容必须带「⚠️ 风险提示 / Risk Warning」块。
 > pass = 有合规块；review = 仅提及「风险提示」字样或存在未装箱风险句，需人工补成标准块；
 > gap = 完全缺失。报告不阻断（知识库内容改动需在 kline-buty 仓库进行）。
 
 ## 课程正文（lesson）
-- zh：173 篇课程 | ✅ pass：173 | 🔎 review：0 | ⚠️ gap：0
-- en：173 篇课程 | ✅ pass：173 | 🔎 review：0 | ⚠️ gap：0
+- zh：182 篇课程 | ✅ pass：182 | 🔎 review：0 | ⚠️ gap：0
+- en：182 篇课程 | ✅ pass：182 | 🔎 review：0 | ⚠️ gap：0
 
 ## 章节导语（README）
 - 共 54 篇 | ✅ pass：40 | 🔎 review：12 | ⚠️ gap：2
