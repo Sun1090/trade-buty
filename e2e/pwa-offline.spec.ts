@@ -49,6 +49,16 @@ test.describe("PWA 离线兜底", () => {
     expect(manifest.start_url).toBe("/zh");
     expect(manifest.display).toBe("standalone");
 
+    // 根级 /icon 是 Next 的动态元数据路由，不能落入语言前缀重定向；
+    // manifest 与页面 <link rel="icon"> 都直接引用它。
+    for (const icon of manifest.icons) {
+      const iconResponse = await request.get(icon.src);
+      expect(iconResponse.status(), `${icon.src} should be servable`).toBe(200);
+      expect(iconResponse.headers()["content-type"], `${icon.src} content type`).toContain(
+        icon.type
+      );
+    }
+
     const swResponse = await request.get("/sw.js");
     expect(swResponse.status()).toBe(200);
     expect(swResponse.headers()["cache-control"]).toBe("no-cache");

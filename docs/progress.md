@@ -1,5 +1,31 @@
 # Progress
 
+## PWA 图标元数据路由被语言代理重定向
+
+- 状态：VERIFYING
+- 工作分支：`codex/icon-metadata-route`
+- PR：待创建
+- PR 状态：none
+- Base：`origin/main@8ce77a6`
+- 已验证 Head：见 PR head
+- 本地提交：`fix(proxy): preserve Next icon metadata routes`（分支另含前置 `docs(progress): close out the ops gate coverage work` 收口提交）
+- 目标：`src/app/icon.tsx` 由 Next 暴露为根级动态元数据路由 `/icon`，manifest 的两枚 512×512 图标与页面自动 `<link rel="icon">` 都直接引用该无扩展名地址；但 `src/proxy.ts` 的 matcher 只排除了带扩展名的静态文件，导致 `/icon` 被语言代理 307 到 `/en/icon`，最终返回 404 HTML。已用生产构建实测复现：修复前 `/icon` → `307 /en/icon` → `404 text/html`。
+- 已完成：
+  - `src/proxy.ts` matcher 精确排除 `icon` / `apple-icon`（使用路径边界，避免误伤 `/iconography` 等真实页面），不再重定向 Next 根级图标元数据路由。
+  - `src/proxy.test.ts` 增加 `/icon`、`/apple-icon` 排除断言与 `/iconography` 同前缀不误伤断言（共 14 用例）。
+  - `e2e/pwa-offline.spec.ts` 读取 manifest 后逐项请求 `icons[].src`，断言 HTTP 200 且响应 `content-type` 与 manifest 声明一致，防止 manifest 将来新增图标后再次出现不可达地址。
+  - 生产回归：`npm run build` 后 `next start`，`/icon` 返回 `200 image/png`，文件识别为 512×512 PNG；`/iconography` 仍按语言 cookie 正确 307。
+- 验证命令与结果：
+  - `npx vitest run src/proxy.test.ts` exit 0 → 14 用例通过。
+  - `npx playwright test e2e/pwa-offline.spec.ts` exit 0 → 7 用例通过。
+  - `npm run build` exit 0 → 474 静态页面生成完成。
+  - `npx eslint src/proxy.ts src/proxy.test.ts e2e/pwa-offline.spec.ts` exit 0。
+- 上游依赖：无。
+- 未验证项：远端 CI 与 Vercel 预览。
+- 风险与回滚：matcher 改动只放行两个精确路径；若需回滚，恢复单条 matcher 字符串并撤销对应测试即可。
+- 下一步：跑全量本地门禁、推送分支、开 PR、CI 全绿后 `gh pr merge --rebase`。
+- 最后更新：2026-09-13
+
 ## 门禁表覆盖机检（docs/ops.md ↔ ci.yml）
 
 - 状态：DONE（PR #32 已以 `--rebase` 合并进 main；PR CI 与合并后 main CI 均通过）
