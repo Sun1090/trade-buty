@@ -38,6 +38,7 @@ const dict = {
   gapHint: "该主题可能尚未收录。",
   filterZeroTpl: "「{chapter}」暂无匹配，站内共有 {n} 条相关结果",
   filterZeroCta: "查看全部结果",
+  filterLabel: "按篇章筛选",
   indexError: "搜索索引暂时加载失败，请检查网络后重试。",
   retry: "重试",
 };
@@ -115,5 +116,30 @@ describe("SearchClient index failure fallback (Q2.6 / R13.25)", () => {
       expect(screen.queryByTestId("search-empty-cta")).toBeNull();
     });
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("SearchClient accessibility (Q2.4)", () => {
+  beforeEach(() => {
+    storage.clear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("names the chapter filter for assistive technology", async () => {
+    const entry = [
+      { url: "/zh/knowledge/spot/order-types", title: "订单类型", chapter: "spot", text: "限价单" },
+      { url: "/zh/knowledge/futures/orders", title: "期货订单", chapter: "futures", text: "限价单" },
+    ];
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => entry }));
+    render(<SearchClient dict={dict} />);
+
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "限价单" } });
+
+    const filter = await screen.findByRole("combobox", { name: dict.filterLabel });
+    expect(filter).toBeVisible();
+    expect(screen.getByRole("option", { name: "全部篇章" })).toBeInTheDocument();
   });
 });

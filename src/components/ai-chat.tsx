@@ -590,7 +590,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
               aria-label={dict.placeholder}
               maxLength={500}
               disabled={loading}
-              className="flex-1 rounded-xl border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 text-sm outline-none focus:border-accent/50 focus:shadow-[0_0_0_3px_var(--accent-dim)] transition-all disabled:opacity-50"
+              className="flex-1 rounded-xl border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 text-sm focus:border-accent/50 focus:shadow-[0_0_0_3px_var(--accent-dim)] transition-all disabled:opacity-50"
             />
             <button
               type="submit"

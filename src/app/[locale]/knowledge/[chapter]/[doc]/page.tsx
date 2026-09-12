@@ -263,7 +263,11 @@ export default async function DocPage({
         </details>
       )}
       <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-        <Markdown content={prepareForRender(doc.content, locale, chapterSlug)} />
+        <Markdown
+          content={prepareForRender(doc.content, locale, chapterSlug)}
+          interactiveImages
+          interactiveImageLabel={tools.lightboxOpen}
+        />
       </article>
 
       {/* R3.3：划词解释（挂载于正文容器，AI 开关控制） */}
@@ -314,6 +318,10 @@ export default async function DocPage({
               loading: t.chart.loading,
               error: t.chart.error,
               retry: t.chart.retry,
+              symbolLabel: t.chart.symbolLabel,
+              intervalLabel: t.chart.intervalLabel,
+              customSymbolLabel: t.chart.customSymbolLabel,
+              customSymbolPlaceholder: t.chart.customSymbolPlaceholder,
               compactNote: t.chart.compactNote,
               fullNote: t.chart.fullNote,
               showFull: t.chart.showFull,

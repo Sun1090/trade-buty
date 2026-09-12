@@ -156,7 +156,7 @@ export function LoginClient({
           onChange={(e) => setEmail(e.target.value)}
           placeholder={dict.emailPlaceholder}
           aria-label={dict.emailPlaceholder}
-          className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm outline-none focus:border-accent/50 focus:shadow-[0_0_0_3px_var(--accent-dim)] transition-all"
+          className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm focus:border-accent/50 focus:shadow-[0_0_0_3px_var(--accent-dim)] transition-all"
           disabled={status === "sending"}
         />
         <button

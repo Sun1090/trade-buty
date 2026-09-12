@@ -51,6 +51,10 @@ interface ChartDict {
   loading: string;
   error: string;
   retry: string;
+  symbolLabel: string;
+  intervalLabel: string;
+  customSymbolLabel: string;
+  customSymbolPlaceholder: string;
   compactNote: string;
   fullNote: string;
   showFull: string;
@@ -287,7 +291,7 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Symbol">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label={dict.symbolLabel}>
           {SYMBOLS.map((s) => (
             <button
               key={s}
@@ -300,7 +304,7 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
                   localStorage.setItem("tb-chart-favs", JSON.stringify(next));
                 } catch {}
               }}
-              aria-label={`Symbol ${s}`}
+              aria-label={`${dict.symbolLabel} ${s}`}
               aria-pressed={s === symbol}
               className={`px-3 py-1.5 rounded-lg font-mono text-xs transition ${
                 s === symbol
@@ -313,7 +317,8 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
           ))}
           <input
             type="text"
-            placeholder="自定义"
+            placeholder={dict.customSymbolPlaceholder}
+            aria-label={dict.customSymbolLabel}
             defaultValue={symbol}
             onBlur={(e) => {
               const v = e.target.value.trim().toUpperCase();
@@ -324,7 +329,7 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
             onKeyDown={(e) => {
               if (e.key === "Enter") (e.target as HTMLInputElement).blur();
             }}
-            className="w-24 px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-muted text-xs font-mono outline-none focus:border-accent transition"
+            className="w-24 px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-muted text-xs font-mono focus:border-accent transition"
           />
         </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -333,12 +338,12 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
                 {lastPrice.toLocaleString()}
               </span>
             )}
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Interval">
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={dict.intervalLabel}>
             {INTERVALS.map((i) => (
               <button
                 key={i}
                 onClick={() => setInterval_(i)}
-                aria-label={`Interval ${i}`}
+                aria-label={`${dict.intervalLabel} ${i}`}
                 aria-pressed={i === interval_}
                 className={`px-2.5 py-1.5 rounded-lg font-mono text-xs transition ${
                   i === interval_

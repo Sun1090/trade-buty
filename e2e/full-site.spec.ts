@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 
 /**
  * R13.24：v0.6 全站冒烟扩展。
@@ -38,6 +38,23 @@ const EN_CORE_PATHS = [
 ] as const;
 
 const LESSON_PATH = "/zh/knowledge/getting-started/first-trade";
+
+async function expectVisibleFocusRing(page: Page, locator: Locator) {
+  await locator.focus();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Shift+Tab");
+  const outline = await locator.evaluate((element) => {
+    const style = window.getComputedStyle(element);
+    return {
+      color: style.outlineColor,
+      style: style.outlineStyle,
+      width: Number.parseFloat(style.outlineWidth),
+    };
+  });
+  expect(outline.style).toBe("solid");
+  expect(outline.width).toBeGreaterThanOrEqual(2);
+  expect(outline.color).not.toBe("rgba(0, 0, 0, 0)");
+}
 
 async function seedStorage(page: Page, values: Record<string, string>) {
   await page.addInitScript((entries) => {
@@ -281,7 +298,7 @@ test.describe("R13.24 图表与回放确定性交互", () => {
       const url = new URL(request.url());
       return url.hostname === "api.binance.com" && url.searchParams.get("interval") === "4h";
     });
-    await page.getByRole("button", { name: "Interval 4h", exact: true }).click();
+    await page.getByRole("button", { name: "K 线周期 4h", exact: true }).click();
     const request = await nextRequest;
     expect(new URL(request.url()).searchParams.get("symbol")).toBe("BTCUSDT");
     await expect(chart.getByText("加载行情中…", { exact: true })).toHaveCount(0);
@@ -296,25 +313,89 @@ test.describe("R13.24 图表与回放确定性交互", () => {
     await expect(step).toBeEnabled();
     expect(requests.some((raw) => new URL(raw).searchParams.get("symbol") === "BTCUSDT")).toBe(true);
 
-    const selects = page.locator("select");
-    await expect(selects).toHaveCount(2);
+    const symbolSelect = page.getByRole("combobox", { name: "交易品种", exact: true });
+    const intervalSelect = page.getByRole("combobox", { name: "K 线周期", exact: true });
+    await expect(symbolSelect).toBeVisible();
+    await expect(intervalSelect).toBeVisible();
     const symbolRequest = page.waitForRequest((request) =>
       new URL(request.url()).searchParams.get("symbol") === "ETHUSDT",
     );
-    await selects.nth(0).selectOption("ETHUSDT");
+    await symbolSelect.selectOption("ETHUSDT");
     await symbolRequest;
     await expect(step).toBeEnabled();
 
     const intervalRequest = page.waitForRequest((request) =>
       new URL(request.url()).searchParams.get("interval") === "15m",
     );
-    await selects.nth(1).selectOption("15m");
+    await intervalSelect.selectOption("15m");
     await intervalRequest;
     await expect(step).toBeEnabled();
 
     const speed = page.getByRole("button", { name: "2x", exact: true });
-    await speed.click();
-    await expect(speed).toHaveClass(/bg-accent-dim/);
+    await speed.focus();
+    await page.keyboard.press("Space");
+    await expect(speed).toHaveAttribute("aria-pressed", "true");
+
+    const difficulty = page.getByRole("button", { name: "挑战", exact: true });
+    await difficulty.focus();
+    await page.keyboard.press("Enter");
+    await expect(difficulty).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("group", { name: "难度", exact: true })).toBeVisible();
+    await expect(page.getByRole("group", { name: "速度", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "跳到回放末尾", exact: true })).toBeVisible();
+  });
+});
+
+test.describe("Q2.4 核心交互无障碍", () => {
+  test("课程图片可用键盘打开灯箱并在关闭后归还焦点", async ({ page }) => {
+    await page.goto("/zh/knowledge/spot/portfolio-rebalancing", { waitUntil: "networkidle" });
+    const image = page.getByRole("button", { name: /不同风险偏好的加密组合饼图/ });
+    await expect(image).toHaveAttribute("aria-haspopup", "dialog");
+    await image.focus();
+    await page.keyboard.press("Enter");
+
+    const dialog = page.getByRole("dialog", { name: "关闭大图", exact: true });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "关闭大图", exact: true })).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(image).toBeFocused();
+  });
+
+  test("邮件和自定义行情输入具有稳定的可访问名称", async ({ page }) => {
+    await page.goto("/zh/about");
+    await expect(page.getByRole("textbox", { name: "订阅邮箱", exact: true })).toBeVisible();
+
+    await page.goto("/zh/chart");
+    await expect(page.getByRole("textbox", { name: "自定义交易对", exact: true })).toBeVisible();
+  });
+
+  test("键盘焦点在核心控件上可见", async ({ page }) => {
+    await page.goto(LESSON_PATH, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "开始测验", exact: true }).click();
+    await page.getByRole("button", { name: "开始测验", exact: true }).click();
+    await expectVisibleFocusRing(
+      page,
+      page.getByRole("button", { name: /^A\./ }).first(),
+    );
+
+    await page.goto("/zh/replay", { waitUntil: "networkidle" });
+    await expectVisibleFocusRing(
+      page,
+      page.getByRole("combobox", { name: "K 线周期", exact: true }),
+    );
+
+    await page.goto("/zh/chart", { waitUntil: "networkidle" });
+    await expectVisibleFocusRing(
+      page,
+      page.getByRole("textbox", { name: "自定义交易对", exact: true }),
+    );
+
+    await page.goto("/zh/about", { waitUntil: "networkidle" });
+    await expectVisibleFocusRing(
+      page,
+      page.getByRole("textbox", { name: "订阅邮箱", exact: true }),
+    );
   });
 });
 
@@ -327,7 +408,9 @@ test.describe("R13.24 完整随堂测", () => {
 
     const choices = ["A", "B", "B"] as const;
     for (let i = 0; i < choices.length; i++) {
-      await page.getByRole("button", { name: new RegExp(`^${choices[i]}\\.`) }).click();
+      const choice = page.getByRole("button", { name: new RegExp(`^${choices[i]}\\.`) });
+      await choice.focus();
+      await page.keyboard.press(i === 1 ? "Space" : "Enter");
       const action = i === choices.length - 1 ? "完成" : "下一题 →";
       await page.getByRole("button", { name: action, exact: true }).click();
     }

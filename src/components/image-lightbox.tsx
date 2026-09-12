@@ -21,17 +21,32 @@ export function ImageLightbox({
   });
 
   useEffect(() => {
-    const root = document.querySelector(containerSelector);
+    const root = document.querySelector<HTMLElement>(containerSelector);
     if (!root) return;
+    const openImage = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLImageElement)) return false;
+      setImg({ src: target.src, alt: target.alt });
+      return true;
+    };
     const onClick = (e: Event) => {
-      const t = e.target as HTMLElement;
-      if (t.tagName === "IMG") {
+      if (openImage(e.target)) {
         e.preventDefault();
-        setImg({ src: (t as HTMLImageElement).src, alt: (t as HTMLImageElement).alt });
       }
     };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const target = e.target;
+      if (!(target instanceof HTMLImageElement) || target.getAttribute("role") !== "button") {
+        return;
+      }
+      if (openImage(target)) e.preventDefault();
+    };
     root.addEventListener("click", onClick);
-    return () => root.removeEventListener("click", onClick);
+    root.addEventListener("keydown", onKeyDown);
+    return () => {
+      root.removeEventListener("click", onClick);
+      root.removeEventListener("keydown", onKeyDown);
+    };
   }, [containerSelector]);
 
   useEffect(() => {

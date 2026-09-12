@@ -13,6 +13,10 @@ export interface ChartEmbedDict {
   loading: string;
   error: string;
   retry: string;
+  symbolLabel: string;
+  intervalLabel: string;
+  customSymbolLabel: string;
+  customSymbolPlaceholder: string;
   compactNote: string;
   fullNote: string;
   showFull: string;
@@ -53,6 +57,10 @@ export function LazyChartEmbed({ dict }: { dict: ChartEmbedDict }) {
             loading: dict.loading,
             error: dict.error,
             retry: dict.retry,
+            symbolLabel: dict.symbolLabel,
+            intervalLabel: dict.intervalLabel,
+            customSymbolLabel: dict.customSymbolLabel,
+            customSymbolPlaceholder: dict.customSymbolPlaceholder,
             compactNote: dict.compactNote,
             fullNote: dict.fullNote,
             showFull: dict.showFull,

@@ -13,6 +13,7 @@ interface Labels {
   title: string;
   desc: string;
   placeholder: string;
+  emailLabel: string;
   submit: string;
   saved: string;
   change: string;
@@ -128,8 +129,9 @@ export function NewsletterSignup({ labels, locale }: { labels: Labels; locale: "
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder={labels.placeholder}
+            aria-label={labels.emailLabel}
             data-testid="newsletter-input"
-            className="flex-1 min-w-[200px] rounded-full border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm focus:border-accent focus:outline-none"
+            className="flex-1 min-w-[200px] rounded-full border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm focus:border-accent"
           />
           <button
             type="submit"
