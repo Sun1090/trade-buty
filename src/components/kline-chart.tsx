@@ -192,8 +192,8 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
         setLastPrice(klines[klines.length - 1]?.close ?? null);
         chart.timeScale().fitContent();
 
-        // MA(7) 移动平均线
-        if (showMA && chart) {
+        // MA(7) 移动平均线：关闭时移除 series，而不是只停止更新。
+        if (showMA) {
           if (!maRef.current) {
             maRef.current = chart.addSeries(LineSeries, {
               color: "rgba(96,165,250,0.7)",
@@ -205,7 +205,10 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
             const sum = candles.slice(i - 6, i + 1).reduce((s, c) => s + c.close, 0);
             maData.push({ time: candles[i].time, value: sum / 7 });
           }
-          maRef.current?.setData(maData);
+          maRef.current.setData(maData);
+        } else if (maRef.current) {
+          chart.removeSeries(maRef.current);
+          maRef.current = null;
         }
 
         setStatus("ready");
@@ -230,6 +233,7 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
     viewportReady,
     networkQuality,
     retryNonce,
+    showMA,
   ]);
 
   // WS 实时更新最后一根 K 线（指数退避重连）

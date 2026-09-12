@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { highlight, snippetHtml } from "@/lib/search-utils";
 import { SYNONYM_GROUPS, scoreWithSynonyms } from "@/lib/search-synonyms";
@@ -55,11 +55,12 @@ export function SearchClient({
     setRecent(JSON.parse(localStorage.getItem("tb-recent-search") ?? "[]"));
   }, []);
 
-  function saveRecent(q: string) {
+  const saveRecent = useCallback((q: string) => {
     const trimmed = q.trim();
     if (!trimmed) return;
     setRecent((prev) => {
       const next = [trimmed, ...prev.filter((s) => s !== trimmed)].slice(0, 5);
+      if (next.length === prev.length && next.every((term, i) => term === prev[i])) return prev;
       try {
         localStorage.setItem("tb-recent-search", JSON.stringify(next));
       } catch {
@@ -67,7 +68,7 @@ export function SearchClient({
       }
       return next;
     });
-  }
+  }, []);
 
 
   const results = useMemo(() => {
@@ -99,11 +100,11 @@ export function SearchClient({
     return visibleResults.filter((r) => r.chapter === filterChapter);
   }, [visibleResults, filterChapter]);
 
-  // 有结果时存为最近搜索（故意只依赖 results.length，不依赖 query）
+  // 有结果时存为最近搜索；用 debounce 后的 query，避免保存尚未执行搜索的半截输入。
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (query.trim() && results.length > 0) saveRecent(query);
-  }, [results.length]);
+    if (debouncedQ.trim() && results.length > 0) saveRecent(debouncedQ);
+  }, [debouncedQ, results.length, saveRecent]);
 
   const locale = usePathname()?.split("/")[1] || "en";
   const hotTerms = locale === "en"
