@@ -1,5 +1,5 @@
 /**
- * 章节元数据访问（kb-titles 静态映射，edge 构建安全）。
+ * 章节元数据访问（kb-titles 静态映射，服务端构建安全）。
  * R2.1/R3.7 共用。
  */
 import titlesData from "@/lib/kb-titles.json";

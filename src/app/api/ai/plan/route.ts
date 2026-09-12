@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { chat } from "@/lib/ai/client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const runtime = "edge";
 
 interface PlanBody {
   doneChapters: string[];

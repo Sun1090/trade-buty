@@ -16,7 +16,7 @@ export function enrichSourcesWithTitles(
   locale: string
 ): SourceLink[] {
   return results.map((r) => {
-    // 静态标题映射（edge 安全）；缺失回退 slug，保证引用不断链
+    // 静态标题映射（服务端安全）；缺失回退 slug，保证引用不断链
     const title =
       titles[locale]?.[r.chapter]?.docs?.[r.doc] ?? `${r.chapter}/${r.doc}`;
     return { chapter: r.chapter, doc: r.doc, title };

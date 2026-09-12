@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 /**
- * 生成知识库标题映射（供 edge runtime 使用，不能碰 fs/gray-matter 的地方读它）。
+ * 生成知识库标题映射（供服务端与构建期读取，避免在请求路径直接解析 Markdown）。
  * 输出: src/lib/kb-titles.json { [locale]: { [chapterSlug]: { title, docs: { [docSlug]: title } } } }
  * 用法: npm run prebuild 的一部分；生成文件不入库（.gitignore）。
  */

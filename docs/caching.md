@@ -9,7 +9,7 @@
 | `/[locale]/knowledge/**` | SSG（generateStaticParams） | 知识库内容随构建固化；kb 内容变更 → 重新部署即刷新 |
 | `/[locale]`、`/path`、`/stats` 等内容页 | SSG | 学习数据全部客户端渲染（localStorage），HTML 可长期缓存 |
 | `/[locale]/ai` | SSG + robots noindex | 纯客户端交互页 |
-| `/api/ai/**` | edge runtime，`Cache-Control: no-cache` | AI 回答不可 CDN 缓存（流式 + 个性化限流） |
+| `/api/ai/**` | Node.js runtime（Next.js 默认），`Cache-Control: no-cache` | AI 回答不可 CDN 缓存（流式 + 个性化限流） |
 | sitemap.xml / robots.txt | 构建时生成 | lastModified = 构建时间 |
 
 ## 2. 客户端 localStorage（学习数据，单一事实源）
@@ -26,13 +26,13 @@
 
 事件总线：`tb-progress` / `tb-streak` / `tb-study-time` / `tb-goal`——写端派发，消费组件经 `useSyncExternalStore` 订阅。
 
-## 3. 服务端内存缓存（edge 实例级）
+## 3. 服务端内存缓存（Node.js 实例级）
 
 | 缓存 | 内容 | TTL | 已知边界 |
 |---|---|---|---|
-| `answerCache`（chat 路由） | 相同问题的 AI 回答 | 10 分钟 | edge 每实例独立 |
-| `quizCache`（quiz 路由） | 同章+语言+难度的 AI 出题（R2.10） | 24 小时 | edge 每实例独立；跨实例靠 R2.3 去重兜底 |
-| `ipHits`（chat 路由） | 游客限流计数 | 1 小时滚动 | edge 每实例独立，总量≈实例数×上限 |
+| `answerCache`（chat 路由） | 相同问题的 AI 回答 | 10 分钟 | 每个 Node.js 实例独立 |
+| `quizCache`（quiz 路由） | 同章+语言+难度的 AI 出题（R2.10） | 24 小时 | 每个 Node.js 实例独立；跨实例靠 R2.3 去重兜底 |
+| `ipHits`（chat 路由） | 游客限流计数 | 1 小时滚动 | 每个 Node.js 实例独立，总量≈实例数×上限 |
 
 ## 云端合并规则（sync-layer）
 
