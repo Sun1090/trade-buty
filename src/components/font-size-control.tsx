@@ -9,7 +9,16 @@ const MAX = 1.2;
 const STEP = 0.05;
 
 /** 正文字号 + 行距调节，记忆到 localStorage */
-export function FontSizeControl({ labels }: { labels: { smaller: string; larger: string } }) {
+export function FontSizeControl({
+  labels,
+}: {
+  labels: {
+    smaller: string;
+    larger: string;
+    lineHeightIncrease: string;
+    lineHeightDecrease: string;
+  };
+}) {
   const [scale, setScale] = useState(1);
   const [lh, setLh] = useState(1.85);
 
@@ -70,7 +79,7 @@ export function FontSizeControl({ labels }: { labels: { smaller: string; larger:
       <button
         onClick={() => change(-STEP)}
         disabled={scale <= MIN}
-        aria-label={labels.smaller}
+        aria-label={`${labels.smaller}: A-`}
         className="h-7 w-7 rounded-lg border border-[var(--border)] text-faint hover:text-accent hover:border-accent/40 transition disabled:opacity-30"
       >
         A-
@@ -78,7 +87,7 @@ export function FontSizeControl({ labels }: { labels: { smaller: string; larger:
       <button
         onClick={() => change(STEP)}
         disabled={scale >= MAX}
-        aria-label={labels.larger}
+        aria-label={`${labels.larger}: A+`}
         className="h-7 w-7 rounded-lg border border-[var(--border)] text-faint hover:text-accent hover:border-accent/40 transition disabled:opacity-30"
       >
         A+
@@ -86,18 +95,16 @@ export function FontSizeControl({ labels }: { labels: { smaller: string; larger:
       <button
         onClick={() => changeLh(0.1)}
         disabled={lh >= 2.2}
-        aria-label="Line height +"
+        aria-label={`${labels.lineHeightIncrease}: ☰+`}
         className="h-7 px-2 rounded-lg border border-[var(--border)] text-faint hover:text-accent hover:border-accent/40 transition disabled:opacity-30 font-mono"
-        title="行距+"
       >
         ☰+
       </button>
       <button
         onClick={() => changeLh(-0.1)}
         disabled={lh <= 1.5}
-        aria-label="Line height -"
+        aria-label={`${labels.lineHeightDecrease}: ☰-`}
         className="h-7 px-2 rounded-lg border border-[var(--border)] text-faint hover:text-accent hover:border-accent/40 transition disabled:opacity-30 font-mono"
-        title="行距-"
       >
         ☰-
       </button>

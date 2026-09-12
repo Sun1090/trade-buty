@@ -61,7 +61,7 @@ export function Markdown({
             return (
               <div className="relative">
                 {lang && (
-                  <span className="absolute right-3 top-1.5 text-[10px] font-mono text-faint pointer-events-none select-none uppercase">
+                  <span className="absolute right-3 top-1.5 text-[10px] font-mono text-muted pointer-events-none select-none uppercase">
                     {lang}
                   </span>
                 )}

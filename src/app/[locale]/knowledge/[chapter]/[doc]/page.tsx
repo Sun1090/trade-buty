@@ -197,7 +197,14 @@ export default async function DocPage({
           </p>
         )}
         <div className="mt-4 flex items-center gap-3 flex-wrap">
-          <FontSizeControl labels={{ smaller: tools.fontSmaller, larger: tools.fontLarger }} />
+          <FontSizeControl
+            labels={{
+              smaller: tools.fontSmaller,
+              larger: tools.fontLarger,
+              lineHeightIncrease: tools.lineHeightIncrease,
+              lineHeightDecrease: tools.lineHeightDecrease,
+            }}
+          />
           <BookmarkButton
             chapter={chapterSlug}
             doc={docSlug}

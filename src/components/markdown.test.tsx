@@ -15,8 +15,11 @@ describe("Markdown", () => {
   });
 
   it("渲染代码块", () => {
-    const { container } = render(<Markdown content="```js\nconsole.log(1)\n```" />);
+    const { container } = render(<Markdown content={"```js\nconsole.log(1)\n```"} />);
     expect(container.textContent).toContain("console.log");
+    const badge = container.querySelector("pre + span, div.relative > span");
+    expect(badge?.textContent).toBe("js");
+    expect(badge?.className).toContain("text-muted");
   });
 
   it("外链加 target=_blank", () => {
