@@ -1,5 +1,32 @@
 # Progress
 
+## 亮色主题对比度回归修复（R13.10 / CI lhci 门禁）
+
+- 状态：DONE（本地实现与全量验证完成；已推送到 PR 功能分支，等待远端 CI 复核）
+- 工作分支：`codex/zero-eslint-warnings`
+- PR：[#16](https://github.com/Sun1090/trade-buty/pull/16)（OPEN，MERGEABLE）
+- Base：`origin/main@53f7e01`
+- 远端 Head：`a7c62d1`（推送前）
+- 本地提交：本条目随修复提交一起入库
+- 目标：修复 CI 中 `npm run lhci` 唯一失败步骤——亮色主题仍沿用暗色硬编码颜色，导致首页与课程正文页触发 Lighthouse/axe `color-contrast` 违规。
+- 已完成：
+  - 首页 6 个章节序号的 `text-accent/80` 在浅色背景上实测对比度 3.74:1（低于 4.5:1），改为不透明 `text-accent`；`/path` 序号与学习侧栏未读图标同步收紧。
+  - `.kb-prose` 正文由硬编码 `rgba(233, 237, 245, 0.88)`（暗色专用）改为跟随主题的 `var(--foreground)`，消除课程页 187 处违规。
+  - callout 的 info / warning 边框与标题不再硬编码 `#60a5fa` / `#fbbf24`，改用 `var(--info)` / `var(--warn)`；亮色 `--warn` 由 `#d97706` 调整为 `#b45309`，并补齐亮色 `--down: #b91c1c`。
+  - 新增 `e2e/light-contrast.spec.ts`：对 `/zh`、课程页、`/chart` 三个页面注入亮色主题后用 `axe-core` 只跑 `color-contrast` 规则并断言零违规，纳入 `npm run e2e`。
+- 验证命令与结果：
+  - `npm run lint` exit 0；`npm run typecheck` exit 0；`git diff --check` clean。
+  - `npm test` → 237 文件 / 1701 用例通过。
+  - `npm run build` exit 0（473 个静态页面）。
+  - `npx playwright test e2e/light-contrast.spec.ts --reporter=line` → 3 用例通过；`npm run e2e` → 61 用例通过。
+  - `npm run lhci` → 3 URL × 2 次采样，6/6 断言通过（accessibility 全 100）。
+- 变更文件（关键）：`src/app/globals.css`、`src/app/[locale]/page.tsx`、`src/app/[locale]/path/page.tsx`、`src/components/learning-sidebar.tsx`、`e2e/light-contrast.spec.ts`、`package.json`、`package-lock.json`。
+- 上游依赖：无。
+- 未验证项：远端 CI 复跑结果（推送后由本周期继续跟踪并在绿后 rebase 合并 PR #16）。
+- 风险与回滚：仅调整主题色 token 与测试，不改信息结构；回滚可撤销本修复提交。
+- 下一步：推送功能分支、守到 CI 全绿后 `gh pr merge 16 --rebase`，再 fetch main 核对合并结果。
+- 最后更新：2026-09-13
+
 ## 云端合并前本地快照结构校验（Q2.4 / R12 数据韧性）
 
 - 状态：DONE（本地实现与全量验证完成；远端发布待授权）

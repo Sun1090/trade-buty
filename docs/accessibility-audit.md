@@ -2,7 +2,7 @@
 
 日期：2026-09-12  
 范围：课程阅读、随堂测、行情图、回放训练、搜索筛选、邮件订阅占位  
-基线：`codex/zero-eslint-warnings`，`origin/main@53f7e01`，最近验证 `446900c`
+基线：`codex/zero-eslint-warnings`，`origin/main@53f7e01`，最近验证 `a7c62d1` + 亮色对比度修复
 
 ## 结论
 
@@ -22,6 +22,7 @@
 | 引导与代码块 | 引导 CTA 使用主题对比色；代码块语言/复制控件在暗色、亮色、护眼主题均使用可读 `text-muted` | `color-contrast`、`markdown.test.tsx`、`code-copy.test.tsx` |
 | 阅读设置 | `A-` / `A+` 可访问名称包含可见文本；行距增减按钮有本地化名称，满足 WCAG 2.5.3 | `label-content-name-mismatch`、`font-size-control.test.tsx` |
 | 全站焦点样式 | `src/app/globals.css` 的 `:focus-visible` 提供 2px solid 主题色 outline 和 2px offset；组件不得用裸 `outline-none` 抑制 | Playwright 计算样式断言覆盖测验、回放、图表、订阅 |
+| 亮色主题对比度 | 亮色下正文 `.kb-prose` 跟随 `var(--foreground)`，序号/图标不得用低于 4.5:1 的 `text-accent/70|80`；callout 使用 `var(--info)` / `var(--warn)` | `e2e/light-contrast.spec.ts`（axe `color-contrast`，`/zh` + 课程页 + `/chart`）、CI `npm run lhci` |
 
 ## 验证
 
@@ -41,10 +42,20 @@ npm run lint
 npm run typecheck
 npm run build
 npx playwright test e2e/full-site.spec.ts -g 'Q2.4'
+npx playwright test e2e/light-contrast.spec.ts
 npm run e2e
+npm run lhci
 ```
 
-结果（2026-09-13，`3df7444` 复核）：
+结果（2026-09-13，亮色对比度修复复核）：
+
+- 全量 Vitest：237 文件 / 1701 用例通过。
+- lint：0 error / 0 warning；typecheck、build 通过（473 个静态页面）；`git diff --check` clean。
+- 完整 Playwright：61/61 通过（新增亮色 `axe` 对比度回归 `e2e/light-contrast.spec.ts`，3 页零违规）。
+- Lighthouse 13（`/zh`、课程页、`/chart`，2 runs/URL）：6/6 断言通过，accessibility 全部 100，`color-contrast` 零失败。
+- 触发原因：CI `npm run lhci` 曾在亮色主题下报首页 6 处（`text-accent/80` = 3.74:1）、课程页 187 处违规（`.kb-prose` 与 callout 沿用暗色硬编码色）；修复后本地与 CI 门禁同源规则复跑通过。
+
+## 历史记录（2026-09-13，`3df7444`）
 
 - 全量 Vitest：178 文件 / 1356 用例通过（新增四处测验选项按钮可达用例）。
 - lint：0 error / 0 warning；typecheck、build：通过。
@@ -64,4 +75,4 @@ npm run e2e
 - 未做 NVDA / VoiceOver 真机屏幕阅读器走查。
 - 未做 Safari / Firefox 的人工键盘焦点走查。
 - Lighthouse 三个代表页面已通过当前审计集并将门槛提升到 100，但仍只覆盖三个 URL；本文件不把自动分数等同于完整人工合规结论。
-- 本周期权限为 `LOCAL_ONLY`，远端 CI、PR 与部署不在本审计声明内。
+- 本审计的自动化结果来自本地门禁与本 PR 的远端 CI；部署后真实用户环境的持续监测仍属独立工作项。
