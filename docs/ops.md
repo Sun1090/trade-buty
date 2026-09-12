@@ -149,8 +149,14 @@ npm run ops:faq-candidates
 npm run ops:link-patrol
 ```
 
-HEAD（失败降级 GET）+ 10s 超时 + 一次重试；失效外链 exit 1。
-CI 里是**每月定时任务**（`.github/workflows/link-patrol.yml`，每月 1 日 03:00 UTC），也支持手动 workflow_dispatch 触发。
+HEAD（失败降级 GET）+ 10s 超时 + 网络错误重试一次；失效外链 exit 1。
+默认 **fail closed**：知识库目录缺失、目录内没有 Markdown、或扫描结果为 0 个外链时 exit 1，避免空集被误报成“全部健康”。确知知识库当前确实没有外链时，可人工确认后显式放行：
+
+```bash
+LINK_PATROL_ALLOW_EMPTY=1 npm run ops:link-patrol
+```
+
+CI 里是**每月定时任务**（`.github/workflows/link-patrol.yml`，每月 1 日 03:00 UTC），也支持手动 workflow_dispatch 触发；CI 不设置空集豁免，零外链会保持可见失败。
 
 ## Supabase 迁移清单（按文件名顺序执行）
 
