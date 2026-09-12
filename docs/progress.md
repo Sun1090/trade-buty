@@ -8,7 +8,7 @@
 - PR 状态：none
 - Base：`origin/main@53f7e01`
 - 远端 Head：none（`LOCAL_ONLY`，未推送）
-- 本地提交：`dc5ecb6`、`5f90dd2`、`b55019d`、`6d220ab`、`a32e2c0`、`90de579`、`dc22107`、`0dbd75d`、`49b8204`、`2081717`、`8fe3759`、`f7b8992`
+- 本地提交：`dc5ecb6`、`5f90dd2`、`b55019d`、`6d220ab`、`a32e2c0`、`90de579`、`dc22107`、`0dbd75d`、`49b8204`、`2081717`、`8fe3759`、`f7b8992`、`516ec26`、`ef26c23`
 - 目标：清零全仓库 ESLint 警告，把「零警告」与 320px 溢出变成 CI 阻断门禁，并修复门禁复核暴露的 UI、内容回退、AI 持久化、数据库约束和 PWA E2E 稳定性问题。
 - 已完成：
   - `npm run lint` 固定为 `eslint --max-warnings=0`，59 条既有 warning 清零；CI 在生产构建后执行 `check:mobile`，覆盖 14 个关键 zh/en 页面的 320px 横向溢出回归。
@@ -18,14 +18,16 @@
   - 新增 `0008_goal_tier_constraints.sql` 归一化并约束日/周目标档位，提供匹配回滚脚本；扩展 Drizzle schema 镜像与静态契约测试，覆盖表列、RLS、策略及约束。
   - Playwright 使用独立端口避免复用陈旧本地服务；离线 E2E 先在线导航预热 service worker，再切换 CDP offline，消除冷启动竞态。
   - 修复 CI 工作流中 heredoc 顶层 `---` 形成第二份 YAML document、导致 dry-run 之后质量门禁被静默跳过的问题；新增 workflow 契约测试锁定单文档和完整步骤，并让 CI 在当前提交重生成内容质量报告后再归档。
-- 变更文件：`.github/workflows/ci.yml`、`package.json`、`playwright.config.ts`、`scripts/**`、`src/components/**`、`src/lib/**`、`src/app/api/ai/conversations/**`、`supabase/migrations/0008_goal_tier_constraints.sql`、`supabase/rollback/**`、`e2e/pwa-offline.spec.ts`、`docs/**`。
+  - 按 Next.js 16.3.5 官方弃用说明移除 8 个 AI 路由的 Edge Runtime，统一使用默认 Node.js runtime；新增运行时契约测试，缓存文档同步更新，生产构建不再输出弃用警告。
+  - 将 Vitest 配置迁移为 `vitest.config.mts`，用 `import.meta.dirname` 替代 CommonJS `__dirname`，消除 Vite 原生配置加载提示。
+- 变更文件：`.github/workflows/ci.yml`、`package.json`、`playwright.config.ts`、`vitest.config.mts`、`scripts/**`、`src/components/**`、`src/lib/**`、`src/app/api/ai/**`、`supabase/migrations/0008_goal_tier_constraints.sql`、`supabase/rollback/**`、`e2e/pwa-offline.spec.ts`、`docs/**`。
 - 验证命令与结果：
   - `npm run lint` → exit 0（0 error / 0 warning）。
-  - `npm test` → 176 文件 / 1338 用例通过；`npx vitest run scripts/ci-workflow.test.mjs` → 2/2 通过。
-  - `npm run typecheck` → 通过；`npm run build` → 通过（Next.js 16.3.5，465 静态页，搜索索引 418）。
+  - `npm test` → 177 文件 / 1339 用例通过；`npx vitest run scripts/ci-workflow.test.mjs` → 2/2 通过。
+  - `npm run typecheck` → 通过；`npm run build` → 通过（Next.js 16.3.5，473 静态页，搜索索引 418；SEO 可索引页面口径为 454）。
   - `npm run e2e` → 56/56 通过；`npm run lhci` → 3 URL × 2 次采样，6/6 断言通过。
   - `npm run check:mobile` → 14 个关键页面 320px 无溢出。
-  - 内容与产物门禁全部通过：docs、frontmatter、image-alt、glossary、slug-conflicts、description-dupes、kb-pointer（`a57d510`）、translation-history、kb-parity-budget、quiz-mounts、quiz-coverage、links、sitemap（418）、seo-surface（430/454）、search-index（418/418）、nav-chain、relative-links、bundle（454 路由）、structured-data（5656 实体）、ai-copy、growth-event-privacy、dark-pattern-copy。
+  - 内容与产物门禁全部通过：docs、frontmatter、image-alt、glossary、slug-conflicts、description-dupes、kb-pointer（`a57d510`）、translation-history、kb-parity-budget、quiz-mounts、quiz-coverage、links、sitemap（418）、seo-surface（430/454）、search-index（418/418）、nav-chain、relative-links、bundle（454 路由）、structured-data（454 页 / 5656 实体）、ai-copy、growth-event-privacy、dark-pattern-copy。E2E 会为 fallback 请求在 `.next` 留下运行时路由；按检查器约定执行干净 `npm run build` 后，结构化数据、SEO、sitemap、搜索索引与 bundle 门禁全部复验通过。
   - `npm run check:risk-warning` → 课程正文 364/364，通过；章节 README 40/54（12 review / 2 gap，上游缺口，见 `docs/risk-warning-coverage.md`）。
   - `npm run audit:prod` → 0 漏洞；`git diff --check` → 通过。
 - 上游依赖：知识库指针 `a57d510`，zh/en 各 27 章 / 182 篇；README 风险提示剩余缺口需在 kline-buty 仓库修复。
