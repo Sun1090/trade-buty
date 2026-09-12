@@ -1,5 +1,35 @@
 # Progress
 
+## API 路由输入校验与内部错误收敛（R7.12 / R9）
+
+- 状态：DONE（本地实现与全量验证完成；远端发布待授权）
+- 工作分支：`codex/zero-eslint-warnings`
+- PR：none
+- PR 状态：none
+- Base：`origin/main@53f7e01`
+- 远端 Head：none（`LOCAL_ONLY`，未推送）
+- 本地提交：`1af8a41`、`c475b25`
+- 目标：把 11 个 Route Handler 从「几乎全部 `await req.json() as X`、零运行时校验、多处回传 `error.message`」收紧为有界校验 + 通用错误文案 + 全量单测覆盖。
+- 已完成：
+  - 新增可复用纯函数：`parseJsonLoose`（去 ```json 围栏、取最外层括号片段、容忍尾逗号，返回 null 不抛）、`extractJsonBlock`、`BoundedMap`（FIFO 淘汰 + 写刷新 + 非法容量抛错）、`sweepExpired`。
+  - `POST /api/ai/chat`：限流提前到 body 解析之前（畸形请求也计入配额）；仅允许 `user`/`assistant` 角色，阻断客户端注入 `system` 覆盖；≤40 轮、单轮 ≤8000 字、`continueFrom` ≤16000 字、章节 slug 白名单正则；上游错误不再回传，改通用中文 502；缓存改 `BoundedMap`（ipHits 10k / answerCache 500）。
+  - `POST /api/ai/plan`、`/summary`、`/quiz`：新增各自解析器（slug 数组 ≤64 项、每项 ≤64 字；quiz 仅收 `^\d{1,3}$` 与非负 `questionIdx`、≤5 项）；LLM 返回改宽松解析并回退到文本；`summary` 补 `body.chapter` 过滤，修掉跨章节内容泄漏进摘要的真实缺陷；quiz 缓存改 `BoundedMap`（500）。
+  - `POST /api/ai/conversations`：校验顺序改为先解析 body 再鉴权；`userMessage` ≤8000、`assistantMessage` ≤20000、`sources` ≤20 项且 slug ≤100；GET/POST 均改通用错误文案。
+  - `POST /api/ai/feedback`、`/feedback/export`、`/citation-click`：加长度上限（问题 ≤2000 / 回答 ≤8000）、`try/catch` 包裹 Supabase 调用、服务端 `console.error` 记录、客户端只拿通用文案；export 的 `ADMIN_TOKEN` 鉴权路径补测。
+  - `GET /api/auth/session`、`POST /api/auth/signout`：异常日志化，响应改 `user:null` / `"session error"` / `"signout error"`，不再回传 `e.message`。
+  - 测试：新增/扩充 `chat`、`plan`、`summary`、`quiz`、`conversations`、`feedback`、`feedback/export`、`citation-click`、`session`、`signout` 路由的单测；此时 11 个 Route Handler **全部**有对应 `route.test.ts`（此前仅 4 个）。
+- 验证命令与结果：
+  - `npm test` → 188 文件 / 1428 用例全部通过；`npm run lint` exit 0（0 warning）；`npm run typecheck` exit 0；`npm run build` exit 0（473 静态页）。
+  - 内容/SEO 门禁全绿：`check:mobile`、`check:docs`、`check:constitution`、`check:frontmatter`、`check:image-alt`、`check:glossary`、`check:slug-conflicts`、`check:description-dupes`、`check:kb-pointer`、`check:translation-history`、`check:kb-parity-budget`、`check:quiz-mounts`、`check:quiz-coverage`、`check:links`、`check:sitemap`（418 知识页）、`check:seo-surface`（430 sitemap / 454 页面）、`check:search-index`、`check:nav-chain`、`check:relative-links`、`check:bundle`（454 路由）、`check:structured-data`（454 页 / 5656 实体）全部 exit 0。
+  - 数据与安全：`npm run db:test` exit 0（迁移 9/9、RLS 38、同步 26、`0008_*` 回滚→重放）；`npm run backup:drill` exit 0（30963 bytes，恢复库重跑 pgTAP 38+26 通过）；`npm run check:secrets` exit 0（587 文件无凭据）；`npm run audit:prod`、`npm run audit:all` → 0 vulnerabilities。
+  - E2E 与性能：`npm run e2e` → 58 passed；`npm run lhci` exit 0（3 URL × 2 次，断言全过；无 GitHub token，跳过 status check）。
+- 变更文件（关键）：`src/lib/ai/json-extract.ts`、`src/lib/bounded-map.ts`、`src/lib/ai/chat-input.ts`、`src/app/api/ai/*`、`src/app/api/auth/{session,signout}` 及各自 `route.test.ts`。
+- 上游依赖：无（纯站内 API 层）。
+- 未验证项：远端 CI / Vercel 部署（`LOCAL_ONLY`，未推送、未部署）；`db-tests` 作业（含备份恢复步骤）从未在 GitHub Actions 上运行过。
+- 风险与回滚：改动集中在请求校验与错误文案，行为向后兼容（合法请求路径不变）；若上游依赖非 JSON 返回，已用宽松解析 + 文本回退兜底。回滚可分别撤销 `1af8a41`、`c475b25`。
+- 下一步：roadmap 剩余项均为外部依赖（Sentry、Supabase 云联调、GSC/Bing、Vercel Analytics、PostHog、OG 卡片人工渲染、冷启动分发、云备份）。本地可继续的工作已清零。
+- 最后更新：2026-09-13
+
 ## 备份恢复演练上线（Q5.4 本地半边 / R7 可恢复性）
 
 - 状态：DONE（本地实现与全量验证完成；远端发布待授权）
