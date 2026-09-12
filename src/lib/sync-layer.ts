@@ -9,6 +9,7 @@ import { detectMergeConflicts, recordSyncConflicts } from "./sync-conflicts";
 import type { ProgressMap } from "./progress";
 import type { WrongEntry } from "./wrongbook";
 import type { ReplayRecord } from "./replay-store";
+import { isRecord, readStorageJson } from "./storage-json";
 
 /**
  * 双写同步层：已登录时，lib 写函数在写 localStorage 后调这些函数，
@@ -186,6 +187,96 @@ interface CloudQuiz { chapter_num: string; best: number; total: number; done: bo
 interface CloudReplay { symbol: string; interval: string; total: number; correct: number; best_streak: number; recorded_at: string }
 interface CloudReplayBest { best_streak: number }
 
+function normalizeLocalProgress(value: unknown): ProgressMap {
+  if (!isRecord(value)) return {};
+  const out: ProgressMap = {};
+  for (const [chapter, docs] of Object.entries(value)) {
+    if (!chapter || !Array.isArray(docs)) continue;
+    const normalized = [
+      ...new Set(docs.filter((doc): doc is string => typeof doc === "string" && doc.length > 0)),
+    ];
+    out[chapter] = normalized;
+  }
+  return out;
+}
+
+function normalizeLocalWrong(value: unknown): Record<string, WrongEntry> {
+  if (!isRecord(value)) return {};
+  const out: Record<string, WrongEntry> = {};
+  for (const [key, rawEntry] of Object.entries(value)) {
+    if (!isRecord(rawEntry)) continue;
+    const { chapterNum, questionIdx, picked, at, srsStage, srsDue } = rawEntry;
+    if (
+      typeof chapterNum !== "string" || chapterNum.length === 0 ||
+      typeof questionIdx !== "number" || !Number.isFinite(questionIdx) || questionIdx < 0 ||
+      typeof picked !== "number" || !Number.isFinite(picked) || picked < -1 ||
+      typeof at !== "number" || !Number.isFinite(at) || at < 0
+    ) {
+      continue;
+    }
+    const normalizedQuestionIdx = Math.round(questionIdx);
+    if (key !== `${chapterNum}:${normalizedQuestionIdx}`) continue;
+    const entry: WrongEntry = {
+      chapterNum,
+      questionIdx: normalizedQuestionIdx,
+      picked: Math.round(picked),
+      at: Math.round(at),
+    };
+    if (typeof srsStage === "number" && Number.isFinite(srsStage) && srsStage >= 0) {
+      entry.srsStage = Math.round(srsStage);
+    }
+    if (typeof srsDue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(srsDue)) {
+      entry.srsDue = srsDue;
+    }
+    out[key] = entry;
+  }
+  return out;
+}
+
+function normalizeLocalReplay(value: unknown): ReplayRecord[] {
+  if (!Array.isArray(value)) return [];
+  const out: ReplayRecord[] = [];
+  for (const rawEntry of value) {
+    if (!isRecord(rawEntry)) continue;
+    const { at, symbol, interval, total, correct, bestStreak, durationSec } = rawEntry;
+    if (
+      typeof at !== "number" || !Number.isFinite(at) || at < 0 ||
+      typeof symbol !== "string" || symbol.length === 0 ||
+      typeof interval !== "string" || interval.length === 0 ||
+      typeof total !== "number" || !Number.isFinite(total) || total < 0 ||
+      typeof correct !== "number" || !Number.isFinite(correct) || correct < 0 ||
+      typeof bestStreak !== "number" || !Number.isFinite(bestStreak) || bestStreak < 0
+    ) {
+      continue;
+    }
+    const normalizedTotal = Math.round(total);
+    const record: ReplayRecord = {
+      at: Math.round(at),
+      symbol,
+      interval,
+      total: normalizedTotal,
+      correct: Math.min(Math.round(correct), normalizedTotal),
+      bestStreak: Math.min(Math.round(bestStreak), normalizedTotal),
+    };
+    if (typeof durationSec === "number" && Number.isFinite(durationSec) && durationSec >= 0) {
+      record.durationSec = Math.round(durationSec);
+    }
+    out.push(record);
+  }
+  return out;
+}
+
+function normalizeLocalQuiz(value: unknown): { best: number; done: boolean } | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.best !== "number" || !Number.isFinite(value.best) || value.best < 0 ||
+    typeof value.done !== "boolean"
+  ) {
+    return null;
+  }
+  return { best: Math.round(value.best), done: value.done };
+}
+
 // ---- 合并纯函数（可独立测试，不依赖 localStorage / Supabase）----
 
 /** 进度合并：并集（local ∪ cloud，按 chapter 分组） */
@@ -294,9 +385,9 @@ export async function hydrateFromCloud(id: string) {
   }
 
   // R9.6：捕获合并前的本地快照，用于计算"新增了多少"摘要
-  const preMergeProgress = readLocalJson<ProgressMap>("tb-progress", {});
-  const preMergeWrong = readLocalJson<Record<string, WrongEntry>>("tb-wrong", {});
-  const preMergeReplay = readLocalJson<ReplayRecord[]>("tb-replay-history", []);
+  const preMergeProgress = readLocalJson("tb-progress", {}, normalizeLocalProgress);
+  const preMergeWrong = readLocalJson("tb-wrong", {}, normalizeLocalWrong);
+  const preMergeReplay = readLocalJson("tb-replay-history", [], normalizeLocalReplay);
 
   if (progressRes?.data) {
     const merged = mergeProgress(
@@ -329,7 +420,7 @@ export async function hydrateFromCloud(id: string) {
   if (quizRes?.data) {
     for (const row of quizRes.data as CloudQuiz[]) {
       const key = `tb-quiz-${row.chapter_num}`;
-      writeLocalJson(key, mergeQuizScore(readLocalJson(key, null), row));
+      writeLocalJson(key, mergeQuizScore(readLocalJson(key, null, normalizeLocalQuiz), row));
     }
   }
 
@@ -375,7 +466,11 @@ export async function hydrateFromCloud(id: string) {
   const localQuiz: Record<string, { best: number; done: boolean }> = {};
   for (const row of (quizRes?.data as CloudQuiz[] | undefined) ?? []) {
     const key = `tb-quiz-${row.chapter_num}`;
-    localQuiz[row.chapter_num] = readLocalJson(key, { best: 0, done: false });
+    localQuiz[row.chapter_num] = readLocalJson(
+      key,
+      { best: 0, done: false },
+      normalizeLocalQuiz,
+    );
   }
   const summary = diffMergeSummary(
     preMergeProgress,
@@ -480,13 +575,12 @@ function emitMergeSummary(summary: MergeSummary): void {
 }
 
 // ---- localStorage JSON 读写辅助（合并专用，不参与事件）----
-function readLocalJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+function readLocalJson<T>(
+  key: string,
+  fallback: T,
+  normalize: (value: unknown) => T | null,
+): T {
+  return normalize(readStorageJson(key)) ?? fallback;
 }
 
 function writeLocalJson(key: string, value: unknown) {
