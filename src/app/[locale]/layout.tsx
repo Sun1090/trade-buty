@@ -50,7 +50,11 @@ export default async function LocaleLayout({
       <LearningSidebar locale={locale} labels={{ learn: t.nav.path, practice: t.nav.replay, review: t.nav.review, stats: t.stats.nav, bookmarks: t.bookmarks.nav, search: t.nav.search, ai: t.ai.nav }} />
       <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md" style={{ boxShadow: "inset 0 -1px 0 rgba(52,211,153,0.08)" }}>
         <div className="mx-auto max-w-6xl px-4 sm:px-5 h-14 sm:h-16 flex items-center justify-between">
-          <Link href={p("/")} className="flex items-center gap-2 font-bold tracking-tight">
+          <Link
+            href={p("/")}
+            aria-label={t.brand.name}
+            className="flex items-center gap-2 font-bold tracking-tight"
+          >
             <CandleMark />
             <span className="text-lg min-[420px]:inline hidden">{t.brand.name}</span>
             <span className="hidden lg:inline ml-1 px-2 py-0.5 rounded-full border border-[var(--accent)]/40 text-[11px] font-medium text-accent">

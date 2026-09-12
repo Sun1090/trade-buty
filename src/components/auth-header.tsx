@@ -48,6 +48,7 @@ export function AuthHeader({ locale, dict }: {
     return (
       <Link
         href={loginHref}
+        aria-label={dict.login}
         className="px-2 sm:px-3 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition whitespace-nowrap text-sm"
       >
         <span aria-hidden>👤</span>{" "}

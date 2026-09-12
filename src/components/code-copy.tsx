@@ -31,13 +31,13 @@ export function CodeCopy({
         const tag = document.createElement("span");
         tag.textContent = langMatch[1];
         tag.className =
-          "absolute left-3 top-2 text-[10px] font-mono uppercase text-white/30 pointer-events-none";
+          "absolute left-3 top-2 text-[10px] font-mono uppercase text-muted pointer-events-none";
         pre.appendChild(tag);
       }
       const btn = document.createElement("button");
       btn.textContent = copyLabel;
       btn.className =
-        "absolute right-2 top-2 text-[11px] px-2 py-1 rounded-md border border-white/15 text-white/60 hover:text-white hover:border-white/40 transition opacity-0 group-hover:opacity-100 focus:opacity-100";
+        "absolute right-2 top-2 text-[11px] px-2 py-1 rounded-md border border-[var(--border-strong)] text-muted hover:text-accent hover:border-accent transition opacity-0 group-hover:opacity-100 focus:opacity-100";
       pre.addEventListener("mouseenter", () => (btn.style.opacity = "1"));
       pre.addEventListener("mouseleave", () => (btn.style.opacity = "0"));
       btn.addEventListener("click", async () => {

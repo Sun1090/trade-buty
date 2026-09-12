@@ -32,6 +32,7 @@ describe("AuthHeader (未登录)", () => {
     mockPathname = "/en/replay";
     render(<AuthHeader locale="zh" dict={{ login: "登录", logout: "退出" }} />);
     expect(screen.getByText("登录")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "登录" })).toHaveAttribute("aria-label", "登录");
   });
 
   it("链接指向 auth 页并附带当前路径作 returnTo（en）", () => {

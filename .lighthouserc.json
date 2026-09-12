@@ -25,9 +25,12 @@
         "categories:accessibility": [
           "error",
           {
-            "minScore": 0.9
+            "minScore": 1
           }
         ],
+        "color-contrast": "error",
+        "link-name": "error",
+        "label-content-name-mismatch": "error",
         "categories:best-practices": [
           "error",
           {
