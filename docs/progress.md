@@ -2,13 +2,14 @@
 
 ## 外链巡检空集假绿修复（link-patrol fail closed）
 
-- 状态：VERIFYING
-- 工作分支：`codex/link-patrol-falsifiable`
-- PR：[#37](https://github.com/Sun1090/trade-buty/pull/37) · `OPEN`
-- PR 状态：CI 运行中
+- 状态：DONE（PR #37 已以 `--rebase` 合并进 main；PR CI run [34725572623](https://github.com/Sun1090/trade-buty/actions/runs/34725572623) 与合并后 main CI run [34725882320](https://github.com/Sun1090/trade-buty/actions/runs/34725882320) 均全绿）
+- 工作分支：`codex/link-patrol-falsifiable`（已删除）
+- PR：[#37](https://github.com/Sun1090/trade-buty/pull/37) · `MERGED`
+- PR 状态：MERGED
 - Base：`origin/main@c0321c7`
-- 已验证 Head：`cf033cc`（`793bac9` fix + `cf033cc` test；本进度文档随后提交）
-- 本地提交：`793bac9` `fix(ops): fail link patrol on empty inputs` + `cf033cc` `test(ops): cover link patrol empty and HTTP failures`
+- 合并提交：`04d09e4`
+- 已验证 Head：`f5afe09`
+- 本地提交：`793bac9` `fix(ops): fail link patrol on empty inputs` + `cf033cc` `test(ops): cover link patrol empty and HTTP failures` + `f5afe09` `docs(progress): record PR #37 for link patrol hardening`
 - 目标：`scripts/link-patrol.mjs` 对不存在的知识库目录静默返回空文件集，并在扫描结果为 0 个外链时输出“✅ 全部健康”且 exit 0。这样一旦 submodule 未初始化、目录结构漂移或链接提取器失效，月度巡检会把“根本没有执行任何有效检查”误报为通过。
 - 已完成：
   - 脚本改为 fail closed：知识库目录缺失、路径不是目录、目录内无 Markdown、零外链四种情况均返回可操作错误并 exit 1。
@@ -25,10 +26,12 @@
   - `npm run e2e` exit 0 → **93 用例**通过；`npm run lhci` exit 0。
   - `npm run audit:prod` / `npm run audit:all` exit 0（0 vulnerabilities）；`npm run check:secrets`（657 文本文件）exit 0。
   - 当前知识库实测：默认 `npm run ops:link-patrol` exit 1，明确报告 419 篇 Markdown / 0 外链；`LINK_PATROL_ALLOW_EMPTY=1 npm run ops:link-patrol` exit 0，并打印“显式放行空集”。
+  - PR CI run 34725572623 exit 0：`ci` 6m02s（lint / 1834 tests / typecheck / build / 内容门禁 / 93 e2e / Lighthouse）+ `db-tests` 42s；Vercel 预览 SUCCESS。
+  - 合并后 main CI run 34725882320 exit 0：`ci` 4m50s + `db-tests` 37s。
 - 上游依赖：无。
-- 未验证项：PR #37 的远端 CI 与合并后 main CI；合并前不标记 DONE。
-- 风险与回滚：修复后零外链状态会让月度巡检保持可见失败，这是刻意的信号而非误报；若内容团队确认长期不需要外链，只能在人工确认后使用环境变量显式豁免，不允许写进 CI。回滚 = 撤销 `793bac9` 与 `cf033cc`。
-- 下一步：PR CI 全绿后以 `--rebase --delete-branch` 合并；随后用一个 docs-only 收口提交记录 CI 与合并结果。
+- 未验证项：无。
+- 风险与回滚：修复后零外链状态会让月度巡检保持可见失败，这是刻意的信号而非误报；若内容团队确认长期不需要外链，只能在人工确认后使用环境变量显式豁免，不允许写进 CI。回滚 = 撤销 PR #37 的三个提交。
+- 下一步：无（已完成）。
 - 最后更新：2026-09-13
 
 ## 根级软 404 与分享落地页修复（proxy 静态表面显式放行）
