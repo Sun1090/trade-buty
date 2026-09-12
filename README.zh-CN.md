@@ -43,6 +43,8 @@ npm run dev         # 开发服务器
 npm run build       # 生产构建（prebuild 会同步资产/索引/契约校验）
 npm run lint        # ESLint
 npm run typecheck   # next typegen + tsc --noEmit
+npm test            # Vitest 单测/组件测试
+npm run check:bundle # 路由级首屏预算（需先 build）
 ```
 
 ## 项目结构

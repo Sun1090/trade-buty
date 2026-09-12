@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "description": "R13.15 route-group first-load gzip budgets. Every built /zh and /en HTML route must match exactly one entry. total = external JS + external CSS + HTML, each gzip-compressed.",
+  "budgets": [
+    {
+      "id": "home",
+      "description": "Locale home page and shared framework bootstrap.",
+      "match": "^(?:zh|en)$",
+      "maxGzipKB": { "js": 310, "css": 20, "html": 55, "total": 360 }
+    },
+    {
+      "id": "path",
+      "description": "Learning-path overview with progress data.",
+      "match": "^(?:zh|en)/path$",
+      "maxGzipKB": { "js": 310, "css": 20, "html": 55, "total": 365 }
+    },
+    {
+      "id": "knowledge-chapter",
+      "description": "Chapter index, including the generated table of contents.",
+      "match": "^(?:zh|en)/knowledge/[^/]+$",
+      "maxGzipKB": { "js": 300, "css": 20, "html": 70, "total": 370 }
+    },
+    {
+      "id": "knowledge-lesson",
+      "description": "Rendered lesson content; HTML budget covers long-form lesson output.",
+      "match": "^(?:zh|en)/knowledge/[^/]+/[^/]+$",
+      "maxGzipKB": { "js": 310, "css": 20, "html": 95, "total": 400 }
+    },
+    {
+      "id": "search",
+      "description": "Client-side search UI and build-time index loader.",
+      "match": "^(?:zh|en)/search$",
+      "maxGzipKB": { "js": 295, "css": 20, "html": 50, "total": 335 }
+    },
+    {
+      "id": "review",
+      "description": "Wrongbook/review client with question rendering.",
+      "match": "^(?:zh|en)/review$",
+      "maxGzipKB": { "js": 300, "css": 20, "html": 55, "total": 350 }
+    },
+    {
+      "id": "bookmarks",
+      "description": "Local bookmark list with auth/sync integration.",
+      "match": "^(?:zh|en)/bookmarks$",
+      "maxGzipKB": { "js": 295, "css": 20, "html": 45, "total": 335 }
+    },
+    {
+      "id": "stats",
+      "description": "Statistics dashboard, charts, heatmap, and radar components.",
+      "match": "^(?:zh|en)/stats$",
+      "maxGzipKB": { "js": 325, "css": 20, "html": 45, "total": 370 }
+    },
+    {
+      "id": "ai",
+      "description": "AI study companion; the only route allowed to include the AI chunk.",
+      "match": "^(?:zh|en)/ai$",
+      "maxGzipKB": { "js": 315, "css": 20, "html": 45, "total": 350 }
+    },
+    {
+      "id": "chart",
+      "description": "Live chart route with lightweight-charts.",
+      "match": "^(?:zh|en)/chart$",
+      "maxGzipKB": { "js": 350, "css": 20, "html": 45, "total": 390 }
+    },
+    {
+      "id": "replay",
+      "description": "Historical replay route with charting and controls.",
+      "match": "^(?:zh|en)/replay$",
+      "maxGzipKB": { "js": 355, "css": 20, "html": 45, "total": 400 }
+    },
+    {
+      "id": "privacy",
+      "description": "Privacy/data-control page.",
+      "match": "^(?:zh|en)/privacy$",
+      "maxGzipKB": { "js": 300, "css": 20, "html": 45, "total": 340 }
+    },
+    {
+      "id": "glossary",
+      "description": "Glossary index with term data.",
+      "match": "^(?:zh|en)/glossary$",
+      "maxGzipKB": { "js": 295, "css": 20, "html": 50, "total": 340 }
+    },
+    {
+      "id": "static-info",
+      "description": "About, terms, FAQ, calendar, and changelog static information pages.",
+      "match": "^(?:zh|en)/(?:about|terms|faq|calendar|changelog)$",
+      "maxGzipKB": { "js": 295, "css": 20, "html": 45, "total": 340 }
+    },
+    {
+      "id": "auth",
+      "description": "Login and OAuth callback routes.",
+      "match": "^(?:zh|en)/auth(?:/callback)?$",
+      "maxGzipKB": { "js": 295, "css": 20, "html": 45, "total": 340 }
+    }
+  ]
+}

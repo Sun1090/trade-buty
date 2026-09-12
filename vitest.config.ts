@@ -3,7 +3,7 @@ import path from "node:path";
 
 export default defineConfig({
   test: {
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.mjs"],
     environment: "node",
     // 组件测试文件用 // @vitest-environment jsdom 注释切换
     setupFiles: ["src/test-setup.ts"],

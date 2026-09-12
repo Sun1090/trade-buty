@@ -1,115 +1,164 @@
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
+import {
+  BUDGET_METRICS,
+  compileBudgetManifest,
+  formatKB,
+  matchRouteBudget,
+  measureRoute,
+  metricFailures,
+  staticAssetRepoPath,
+} from "./bundle-budget.mjs";
 
-/**
- * Bundle 体积预算：统计代表页面的首屏 JS（gzip），超预算则失败（CI 阻断）。
- * 用法: npm run build && npm run check:bundle
- */
 const root = process.cwd();
 const appOut = path.join(root, ".next/server/app");
-const staticDir = path.join(root, ".next/static");
+const chunksDir = path.join(root, ".next/static/chunks");
+const manifestPath = path.join(root, "scripts/bundle-budgets.json");
+const gzipCache = new Map();
 
-// 代表页面 → gzip 上限（KB）。chart/replay 含 lightweight-charts，预算放宽。
-// 基线说明（2026-09 实测）：Next/React 框架 chunk 约 217KB gzip，内容页 ~250KB。
-// 预算 = 实测 + 余量，目标是拦截"误把重库打进内容页"类回归，而非压基线。
-// R9.6：auth-provider 引入了 sync-layer + flushPersistedQueue 等登录态代码，
-// 即使按需 dynamic import，Next/React 框架 chunk 也会被带入；实测内容页 +12KB。
-const BUDGETS = [
-  { page: "zh", budgetKB: 300 }, // R12–R13：首页实测 296KB（隐私入口、分享组件可达性、移动端达标化）
-  { page: "en", budgetKB: 300 },
-  { page: "zh/knowledge/getting-started/market-overview", budgetKB: 305 },
-  { page: "zh/search", budgetKB: 295 },
-  // R12.22：统计页单独预算（2026-09 实测 306KB：图表/热力图/雷达组件 + stats 字典已拆分）
-  { page: "zh/stats", budgetKB: 320 },
-  { page: "zh/ai", budgetKB: 310 }, // R7.1：AI 页单独预算（问答 UI，无模型 SDK）
-  { page: "zh/chart", budgetKB: 360 },
-  { page: "zh/replay", budgetKB: 360 },
-];
+function readGzip(file) {
+  if (!gzipCache.has(file)) {
+    gzipCache.set(file, zlib.gzipSync(fs.readFileSync(file)).length);
+  }
+  return gzipCache.get(file);
+}
 
-// R7.1：AI 专属 chunk 不得进内容页——以 ai-chat 独有的 ASCII 字符串（配额头名）为指纹
-const CONTENT_PAGES = ["zh", "en", "zh/knowledge/getting-started/market-overview", "zh/search"];
+function listHtmlRoutes(dir = appOut) {
+  const routes = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const file = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      routes.push(...listHtmlRoutes(file));
+    } else if (entry.name.endsWith(".html")) {
+      routes.push(path.relative(appOut, file).split(path.sep).join("/").replace(/\.html$/, ""));
+    }
+  }
+  return routes.sort();
+}
+
 function findAiChunk() {
-  const chunksDir = path.join(root, ".next/static/chunks");
   if (!fs.existsSync(chunksDir)) return null;
   const stack = [chunksDir];
+  const matches = [];
   while (stack.length > 0) {
     const dir = stack.pop();
-    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-      const p = path.join(dir, e.name);
-      if (e.isDirectory()) stack.push(p);
-      else if (e.name.endsWith(".js")) {
-        const body = fs.readFileSync(p, "utf8");
-        if (body.includes("X-Quota-Limit")) return path.relative(root, p);
+    const entries = fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      const file = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(file);
+      } else if (entry.name.endsWith(".js") && fs.readFileSync(file, "utf8").includes("X-Quota-Limit")) {
+        matches.push(`/_next/${path.relative(path.join(root, ".next"), file).split(path.sep).join("/")}`);
       }
     }
   }
-  return null;
+  return matches.length > 0 ? matches[0] : null;
 }
 
-function pageJsGzip(rel) {
-  const html = fs.readFileSync(path.join(appOut, rel + ".html"), "utf8");
-  const files = new Set();
-  for (const m of html.matchAll(/_next\/static\/chunks\/[^"']+\.js/g)) {
-    files.add(m[0]);
+function printRouteFailure(measurement, budget, failedMetrics) {
+  console.error(
+    `[bundle]   ✗ ${measurement.route}: ${failedMetrics
+      .map(
+        (metric) =>
+          `${metric} ${formatKB(measurement.metrics[metric])}KB > ${budget.maxGzipKB[metric]}KB`
+      )
+      .join(", ")}`
+  );
+  const assets = [...measurement.assets.js, ...measurement.assets.css].sort((a, b) => b.bytes - a.bytes);
+  for (const asset of assets.slice(0, 10)) {
+    console.error(`[bundle]     ${formatKB(asset.bytes).padStart(6)}KB  ${asset.url}`);
   }
-  let total = 0;
-  for (const f of files) {
-    // _next/static/... → .next/static/...
-    const p = path.join(root, ".next", f.replace(/^_next\//, ""));
-    if (fs.existsSync(p)) total += zlib.gzipSync(fs.readFileSync(p)).length;
+  if (assets.length > 10) {
+    console.error(`[bundle]     … ${assets.length - 10} more assets`);
   }
-  void staticDir;
-  return {
-    chunks: files.size,
-    kb: Math.round(total / 1024),
-    leaked: typeof aiChunkRef !== "undefined" && aiChunkRef.value !== null && files.has(aiChunkRef.value),
-  };
 }
-
-// 供 pageJsGzip 引用的可变容器（findAiChunk 在 main 里赋值）
-const aiChunkRef = { value: null };
 
 function main() {
   if (!fs.existsSync(appOut)) {
     console.error("[bundle] 缺少构建产物：请先 npm run build");
     process.exit(1);
   }
+
+  let manifest;
+  try {
+    manifest = compileBudgetManifest(JSON.parse(fs.readFileSync(manifestPath, "utf8")));
+  } catch (error) {
+    console.error(`[bundle] 预算清单无效：${error instanceof Error ? error.message : String(error)}`);
+    process.exit(1);
+  }
+
+  const aiChunk = findAiChunk();
+  const measurements = [];
   let fail = false;
-  aiChunkRef.value = findAiChunk();
-  const aiChunkRel = aiChunkRef.value ? aiChunkRef.value.replace(/^\.next\//, "_next/") : null;
-  for (const { page, budgetKB } of BUDGETS) {
-    let info;
-    try {
-      info = pageJsGzip(page);
-    } catch {
-      console.error(`[bundle] ✗ ${page}: 页面产物缺失`);
+
+  for (const route of listHtmlRoutes().filter((route) => /^(?:zh|en)(?:\/|$)/.test(route))) {
+    const html = fs.readFileSync(path.join(appOut, route + ".html"), "utf8");
+    const measurement = measureRoute({
+      route,
+      html,
+      assetGzip: (url) => readGzip(path.join(root, staticAssetRepoPath(url))),
+      htmlGzip: (value) => zlib.gzipSync(value).length,
+    });
+    const match = matchRouteBudget(route, manifest.budgets);
+    if (match.error) {
+      console.error(`[bundle] ✗ ${match.error}`);
       fail = true;
       continue;
     }
-    const ok = info.kb <= budgetKB;
-    if (!ok) fail = true;
-    console.log(
-      `[bundle] ${ok ? "✓" : "✗"} ${page}: ${info.kb}KB gzip (${info.chunks} chunks, 上限 ${budgetKB}KB)`
-    );
-  }
-  // R7.1：AI chunk 泄漏检查——内容页的 script 集合不得包含 AI 专属 chunk
-  if (aiChunkRef.value && aiChunkRel) {
-    for (const page of CONTENT_PAGES) {
-      const html = fs.readFileSync(path.join(appOut, page + ".html"), "utf8");
-      if (html.includes(aiChunkRel)) {
-        console.error(`[bundle] ✗ AI chunk 泄漏进内容页 ${page}: ${aiChunkRef.value}`);
-        fail = true;
-      }
-    }
-    console.log(`[bundle] ✓ AI chunk 隔离检查（${path.basename(aiChunkRef.value)} 未进内容页）`);
+    measurement.budget = match.budget;
+    measurements.push(measurement);
   }
 
+  for (const budget of manifest.budgets) {
+    const group = measurements.filter((measurement) => measurement.budget.id === budget.id);
+    if (group.length === 0) {
+      console.error(`[bundle] ✗ ${budget.id}: 预算已定义但没有匹配任何构建路由`);
+      fail = true;
+      continue;
+    }
+
+    const failures = group
+      .map((measurement) => ({ measurement, failedMetrics: metricFailures(measurement, budget) }))
+      .filter(({ failedMetrics }) => failedMetrics.length > 0);
+    const worst = group.reduce((current, candidate) =>
+      candidate.metrics.total > current.metrics.total ? candidate : current
+    );
+    const ok = failures.length === 0;
+    if (!ok) fail = true;
+    console.log(
+      `[bundle] ${ok ? "✓" : "✗"} ${budget.id}: ${group.length} routes, max total ${formatKB(worst.metrics.total)}/${budget.maxGzipKB.total}KB (${worst.route})`
+    );
+    for (const { measurement, failedMetrics } of failures) {
+      printRouteFailure(measurement, budget, failedMetrics);
+    }
+  }
+
+  if (!aiChunk) {
+    console.error("[bundle] ✗ 未找到带 X-Quota-Limit 指纹的 AI 专属 chunk");
+    fail = true;
+  } else {
+    const leaks = measurements.filter(
+      (measurement) => measurement.budget.id !== "ai" && measurement.assets.js.some((asset) => asset.url === aiChunk)
+    );
+    for (const measurement of leaks) {
+      console.error(`[bundle] ✗ AI chunk 泄漏进 ${measurement.route}: ${aiChunk}`);
+      fail = true;
+    }
+    if (leaks.length === 0) {
+      const checked = measurements.length - measurements.filter((measurement) => measurement.budget.id === "ai").length;
+      console.log(`[bundle] ✓ AI chunk 隔离：${checked} 条非 AI 路由均未引用 ${path.basename(aiChunk)}`);
+    }
+  }
+
+  const unmatched = measurements.filter((measurement) => !measurement.budget);
+  if (unmatched.length > 0) fail = true;
+
   if (fail) {
-    console.error("[bundle] 超预算或 AI chunk 泄漏：请检查是否误把重库打进内容页");
+    console.error("[bundle] 超预算、路由缺预算或 AI chunk 泄漏：请检查 scripts/bundle-budgets.json");
     process.exit(1);
   }
-  console.log("[bundle] ✓ 体积预算全部通过");
+  console.log(`[bundle] ✓ 全部 ${measurements.length} 条 zh/en 路由通过 ${BUDGET_METRICS.join(" / ")} gzip 预算`);
 }
 
 main();
