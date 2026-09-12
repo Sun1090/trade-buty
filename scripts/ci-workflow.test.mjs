@@ -20,6 +20,7 @@ describe("CI workflow contract", () => {
     const names = steps.map((step) => step.name).filter(Boolean);
 
     for (const command of [
+      "npm run check:secrets",
       "npm run check:mobile",
       "npm run check:quiz-mounts",
       "npm run check:quiz-coverage",
