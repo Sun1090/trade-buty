@@ -72,7 +72,10 @@ export function buildQueueExecutor(uid: string) {
         }
         case "goal": {
           const payload = item.payload as { daily_goal_min?: number; weekly_goal_min?: number };
-          const row: Record<string, number | string> = { user_id: uid };
+          // 具名行类型而非泛化 Record：泛化类型在更严格的 TS 下会被 Supabase upsert 重载拒绝。
+          const row: { user_id: string; daily_goal_min?: number; weekly_goal_min?: number } = {
+            user_id: uid,
+          };
           if (typeof payload.daily_goal_min === "number") row.daily_goal_min = payload.daily_goal_min;
           if (typeof payload.weekly_goal_min === "number") row.weekly_goal_min = payload.weekly_goal_min;
           const { error } = await sb.from("user_settings").upsert(row, { onConflict: "user_id" });
