@@ -8,20 +8,22 @@
 - PR 状态：none
 - Base：`origin/main@53f7e01`
 - 远端 Head：none（`LOCAL_ONLY`，未推送）
-- 本地提交：`b65a733`、`4bc9575`
+- 本地提交：`b65a733`、`4bc9575`、`7e72d11`
 - 目标：清掉三处测验界面上“只支持鼠标点击”的真实无障碍缺陷，并修掉一条会随机挂 CI 的回放回归测试竞态。
 - 已完成：
   - 发现 `AiQuiz`、`AiChapterQuizCard`、错题本重答三处答案选项都是 `<li onClick>`，键盘用户无法聚焦、无法用 Enter/Space 作答，屏幕阅读器也拿不到可操作语义。
   - 三处均改为真正的 `<button>`，带 `aria-label="A. <选项>"`、`disabled={已作答}`、`focus-visible` 焦点环与 `w-full text-left` 布局；字母徽标 `aria-hidden` 以避免与 `aria-label` 重复播报。作答后禁用，防止二次提交。
   - 复用 `src/components/quiz.tsx` 已有的按钮化写法，保持四处测验交互一致。
   - 修复 `replay-trainer.test.tsx` 难度切换回归的真实竞态：`setData` 在被动态 `useEffect` 中执行，`waitFor` 可能在 DOM 文本已更新、effect 尚未刷新时返回，导致偶发读到旧的 30 根。将该断言包进 `waitFor` 等待 effect 刷新，杜绝随机失败。
+- 已完成（续）：
+  - 为错题本重答补真实浏览器回归 `e2e/full-site.spec.ts`「错题本重答选项可用键盘作答（R13.9）」：植入本机错题 → 随机抽题重答 → 聚焦选项 A → Enter 作答 → 断言 A/B 均禁用且出现正误反馈，锁死按钮语义在浏览器中的真实行为（此前仅单测覆盖）。
 - 验证命令与结果：
   - `npx vitest run src/components/ai-quiz.test.tsx src/components/ai-chapter-quiz.test.tsx src/components/review-client.test.tsx` → 3 文件 / 16 用例通过（新增 3 条按钮可聚焦 + 作答后禁用用例）。
   - `npm test` → 178 文件 / 1356 用例通过。
   - `npm run lint` → exit 0（0 error / 0 warning）。
   - `npm run typecheck` → exit 0。
   - `npm run build` → exit 0。
-  - `npm run e2e` → 57 passed。
+  - `npm run e2e` → 58 passed（含新增错题本键盘重答用例）。
   - `npm run check:mobile` → 14 个关键页面 320px 无溢出。
   - `npm run check:docs` → 通过（27 章 / 182 篇，zh/en 对齐）。
 - 风险与回滚：选项由 `<li>` 改为 `<button>` 只改变可交互语义与焦点行为，视觉类名保持不变；如需回滚，撤销 `b65a733` 即可。回放测试仅调整断言时机，不改生产代码。
