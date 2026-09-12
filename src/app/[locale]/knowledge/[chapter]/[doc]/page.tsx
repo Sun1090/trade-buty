@@ -41,6 +41,7 @@ import { ReadAloud } from "@/components/read-aloud";
 import { FocusMode } from "@/components/focus-mode";
 import { extractHeadings } from "@/lib/toc";
 import { KnowledgeMiss } from "@/components/knowledge-miss";
+import { estimateReadingMinutes } from "@/lib/estimated-reading-time";
 
 export function generateStaticParams() {
   const params: { locale: string; chapter: string; doc: string }[] = [];
@@ -133,6 +134,7 @@ export default async function DocPage({
   const chapterTitle = getChapterTitle(locale, chapterSlug);
   const aiEnabled = aiEnabledForPage();
   const headings = extractHeadings(doc.content);
+  const estimatedMinutes = estimateReadingMinutes(doc.content);
   const tools = t.docTools;
   const tocLabel = locale === "en" ? "On this page" : "本页目录";
 
@@ -207,7 +209,12 @@ export default async function DocPage({
           <CopyLinkButton label={locale === "en" ? "Copy link" : "复制链接"} copiedLabel={locale === "en" ? "Copied ✓" : "已复制 ✓"} testId="page-copy-link-btn" />
           <ReadAloud text={doc.content} label={locale === "en" ? "Read aloud" : "朗读"} playingLabel={locale === "en" ? "Stop" : "停止"} locale={locale} />
           <FocusMode label={locale === "en" ? "Focus" : "专注"} activeLabel={locale === "en" ? "Exit focus" : "退出专注"} />
-          <span className="ml-auto">
+          <span className="ml-auto flex items-center gap-3">
+            {estimatedMinutes > 0 && (
+              <span data-testid="estimated-reading-time" className="text-xs text-muted">
+                📖 {tools.estimatedReadingTime(estimatedMinutes)}
+              </span>
+            )}
             <ReadingTimeDisplay chapter={chapterSlug} doc={docSlug} label={locale === "en" ? "read" : "已读"} />
           </span>
         </div>
