@@ -18,6 +18,9 @@ const ROUTES = [
   "/zh/chart",
   "/zh/replay",
   "/zh/review",
+  // R12.21：统计页移动布局门禁（新趋势组件/时间范围筛选必须在 320px 不溢出）
+  "/zh/stats",
+  "/en/stats",
   "/zh/knowledge/getting-started",
   "/zh/knowledge/getting-started/market-overview",
   "/en/knowledge/getting-started/market-overview",

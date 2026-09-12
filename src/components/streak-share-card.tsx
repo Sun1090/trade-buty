@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CARD_SIZE, drawStreakCard, type ShareLocale } from "@/lib/share-card";
+import { CARD_SIZE, cardFontFor, drawStreakCard, type ShareLocale } from "@/lib/share-card";
 import { downloadCanvasAsPng } from "@/lib/download";
 import { CopyLinkButton } from "@/components/copy-link-button";
 
@@ -20,6 +20,7 @@ interface Props {
     download: string;
     copyLink: string;
     copiedLink: string;
+    downloadFailed: string;
   };
 }
 
@@ -38,7 +39,14 @@ export function StreakShareCard({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // R13.6：下载失败可见反馈（canvas 污染/toBlob 失败等）
+  const [downloadFailed, setDownloadFailed] = useState(false);
   const filename = `trade-buty-streak-${currentStreak}d.png`;
+  // R13.2：预览图 alt 描述连续天数与历史最长，读屏可复述
+  const contentAlt =
+    locale === "zh"
+      ? `${labels.previewAlt}：连续学习打卡卡，已连续 ${currentStreak} 天，历史最长 ${longestStreak} 天`
+      : `${labels.previewAlt}: study streak card, ${currentStreak} days in a row, longest ${longestStreak} days`;
   const disabled = currentStreak <= 0;
 
   useEffect(() => {
@@ -65,34 +73,55 @@ export function StreakShareCard({
       locale,
       theme: "dark",
       siteName,
-      font: locale === "zh" ? '"PingFang SC", "Microsoft YaHei", sans-serif' : "system-ui, sans-serif",
+      font: cardFontFor(locale),
     });
   }, [disabled, currentStreak, longestStreak, recentDays, locale, siteName]);
 
+  async function tryDownload() {
+    try {
+      await draw();
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      await downloadCanvasAsPng(canvas, filename);
+      setDownloadFailed(false);
+    } catch {
+      // R13.6：下载失败如实反馈，不假装成功
+      setDownloadFailed(true);
+    }
+  }
+
   async function handleShare() {
     if (disabled) return;
-    await draw();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    await downloadCanvasAsPng(canvas, filename);
+    await tryDownload();
   }
 
   async function handlePreview() {
     if (disabled) return;
-    await draw();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    const url = canvas.toDataURL("image/png");
-    setPreviewUrl(url);
+    try {
+      await draw();
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const url = canvas.toDataURL("image/png");
+      setPreviewUrl(url);
+      setDownloadFailed(false);
+    } catch {
+      setDownloadFailed(true);
+    }
   }
 
   async function handleDownload() {
     if (disabled) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (!previewUrl) await draw();
-    await downloadCanvasAsPng(canvas, filename);
+    if (!previewUrl) {
+      await tryDownload();
+      return;
+    }
+    try {
+      await downloadCanvasAsPng(canvasRef.current!, filename);
+      setDownloadFailed(false);
+    } catch {
+      setDownloadFailed(true);
+    }
   }
 
   return (
@@ -109,7 +138,7 @@ export function StreakShareCard({
         onClick={handleShare}
         data-testid="streak-share-btn"
         disabled={disabled}
-        className="rounded-full border border-accent/40 bg-accent-dim text-accent font-medium px-5 py-2 text-sm hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition disabled:opacity-40 disabled:cursor-not-allowed"
+        className="rounded-full border border-accent/40 bg-accent-dim text-accent font-medium px-5 py-2 text-sm min-h-10 hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition disabled:opacity-40 disabled:cursor-not-allowed"
       >
         📤 {labels.share}
       </button>
@@ -118,7 +147,7 @@ export function StreakShareCard({
         onClick={handlePreview}
         data-testid="streak-share-preview-btn"
         disabled={disabled}
-        className="rounded-full border border-border-strong text-muted font-medium px-5 py-2 text-sm hover:border-accent/50 hover:text-accent transition disabled:opacity-40 disabled:cursor-not-allowed"
+        className="rounded-full border border-border-strong text-muted font-medium px-5 py-2 text-sm min-h-10 hover:border-accent/50 hover:text-accent transition disabled:opacity-40 disabled:cursor-not-allowed"
       >
         👁 Preview
       </button>
@@ -130,12 +159,15 @@ export function StreakShareCard({
           testId="streak-share-link-btn"
         />
       )}
+      {downloadFailed && (
+        <p role="alert" className="basis-full mt-2 text-xs font-medium text-red-500">{labels.downloadFailed}</p>
+      )}
       {previewUrl && (
         <div className="basis-full mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <p className="text-xs text-faint mb-2 font-mono">{labels.previewAlt}</p>
           <img
             src={previewUrl}
-            alt={labels.previewAlt}
+            alt={contentAlt}
             width={CARD_SIZE / 2}
             height={CARD_SIZE / 2}
             className="block max-w-full h-auto rounded-lg border border-[var(--border)]"
@@ -143,7 +175,7 @@ export function StreakShareCard({
           <button
             type="button"
             onClick={handleDownload}
-            className="mt-3 rounded-full bg-accent-strong text-white dark:text-[#06281c] font-semibold px-5 py-2 text-sm hover:bg-accent transition"
+            className="mt-3 rounded-full bg-accent-strong text-white dark:text-[#06281c] font-semibold px-5 py-2 text-sm min-h-10 hover:bg-accent transition"
           >
             ⬇ {labels.download}
           </button>

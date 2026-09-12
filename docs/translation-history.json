@@ -171,5 +171,178 @@
         "overlap": 7
       }
     ]
+  },
+  {
+    "date": "2026-09-12",
+    "zhChapters": 27,
+    "zhDocs": 182,
+    "enDirs": 27,
+    "enDocs": 182,
+    "overlapChapters": 27,
+    "overlapDocs": 182,
+    "perChapter": [
+      {
+        "chapter": "behavioral-finance",
+        "zh": 5,
+        "en": 5,
+        "overlap": 5
+      },
+      {
+        "chapter": "bonds-rates",
+        "zh": 4,
+        "en": 4,
+        "overlap": 4
+      },
+      {
+        "chapter": "career",
+        "zh": 5,
+        "en": 5,
+        "overlap": 5
+      },
+      {
+        "chapter": "crypto-perpetuals",
+        "zh": 6,
+        "en": 6,
+        "overlap": 6
+      },
+      {
+        "chapter": "data-interpretation",
+        "zh": 5,
+        "en": 5,
+        "overlap": 5
+      },
+      {
+        "chapter": "financial-history",
+        "zh": 6,
+        "en": 6,
+        "overlap": 6
+      },
+      {
+        "chapter": "financial-statements",
+        "zh": 5,
+        "en": 5,
+        "overlap": 5
+      },
+      {
+        "chapter": "forex-trading",
+        "zh": 6,
+        "en": 6,
+        "overlap": 6
+      },
+      {
+        "chapter": "futures",
+        "zh": 7,
+        "en": 7,
+        "overlap": 7
+      },
+      {
+        "chapter": "getting-started",
+        "zh": 7,
+        "en": 7,
+        "overlap": 7
+      },
+      {
+        "chapter": "global-markets",
+        "zh": 5,
+        "en": 5,
+        "overlap": 5
+      },
+      {
+        "chapter": "industry-research",
+        "zh": 5,
+        "en": 5,
+        "overlap": 5
+      },
+      {
+        "chapter": "market-ecosystem",
+        "zh": 7,
+        "en": 7,
+        "overlap": 7
+      },
+      {
+        "chapter": "markets-instruments",
+        "zh": 16,
+        "en": 16,
+        "overlap": 16
+      },
+      {
+        "chapter": "options-strategies",
+        "zh": 5,
+        "en": 5,
+        "overlap": 5
+      },
+      {
+        "chapter": "pitfalls",
+        "zh": 3,
+        "en": 3,
+        "overlap": 3
+      },
+      {
+        "chapter": "quant-practice",
+        "zh": 5,
+        "en": 5,
+        "overlap": 5
+      },
+      {
+        "chapter": "reading-list",
+        "zh": 5,
+        "en": 5,
+        "overlap": 5
+      },
+      {
+        "chapter": "regulation-compliance",
+        "zh": 8,
+        "en": 8,
+        "overlap": 8
+      },
+      {
+        "chapter": "spot",
+        "zh": 7,
+        "en": 7,
+        "overlap": 7
+      },
+      {
+        "chapter": "stocks",
+        "zh": 8,
+        "en": 8,
+        "overlap": 8
+      },
+      {
+        "chapter": "system-integration",
+        "zh": 11,
+        "en": 11,
+        "overlap": 11
+      },
+      {
+        "chapter": "technical-analysis",
+        "zh": 13,
+        "en": 13,
+        "overlap": 13
+      },
+      {
+        "chapter": "tools-platforms",
+        "zh": 5,
+        "en": 5,
+        "overlap": 5
+      },
+      {
+        "chapter": "trading-practice",
+        "zh": 8,
+        "en": 8,
+        "overlap": 8
+      },
+      {
+        "chapter": "trading-system",
+        "zh": 8,
+        "en": 8,
+        "overlap": 8
+      },
+      {
+        "chapter": "wealth-allocation",
+        "zh": 7,
+        "en": 7,
+        "overlap": 7
+      }
+    ]
   }
 ]

@@ -4,6 +4,8 @@ import { getSupabaseBrowser } from "@/lib/supabase/client";
 // R9.6：sync-layer 仅在登录后才需要 enqueueWrite；改为通过独立模块动态 import
 // 避免 sync-queue-store 被打进 layout 的共享 chunk（每个内容页 -12KB gzip）。
 import { lazyEnqueueWrite as enqueueWriteLazy } from "./sync-layer-queue-fallback";
+import { recordCloudSync } from "./cloud-sync-meta";
+import { detectMergeConflicts, recordSyncConflicts } from "./sync-conflicts";
 import type { ProgressMap } from "./progress";
 import type { WrongEntry } from "./wrongbook";
 import type { ReplayRecord } from "./replay-store";
@@ -164,6 +166,18 @@ export function syncGoalUpsert(goalMin: number) {
     });
 }
 
+/** R12.19：每周目标档位云端同步 */
+export function syncWeeklyGoalUpsert(weeklyGoalMin: number) {
+  if (!authenticated || !userId) return;
+  void getSupabaseBrowser()
+    .from("user_settings")
+    .upsert({ user_id: userId, weekly_goal_min: weeklyGoalMin }, { onConflict: "user_id" })
+    .then(undefined, (err) => {
+      enqueueWriteLazy("goal", "weekly-goal", { weekly_goal_min: weeklyGoalMin });
+      if (process.env.NODE_ENV !== "production") console.warn("[sync] weekly goal upsert failed → queued", err);
+    });
+}
+
 // ---- 登录时从云端拉取并合并到本地 ----
 
 interface CloudProgress { chapter_num: string; doc_slug: string }
@@ -256,7 +270,7 @@ export async function hydrateFromCloud(id: string) {
   let quizRes: { data: CloudQuiz[] | null } | undefined;
   let replayRes: { data: CloudReplay[] | null } | undefined;
   let bestRes: { data: CloudReplayBest[] | null } | undefined;
-  let settingsRes: { data: { daily_goal_min: number }[] | null } | undefined;
+  let settingsRes: { data: { daily_goal_min: number; weekly_goal_min?: number | null }[] | null } | undefined;
   try {
     const results = await Promise.all([
       getSupabaseBrowser().from("progress").select("chapter_num, doc_slug").eq("user_id", id),
@@ -264,7 +278,7 @@ export async function hydrateFromCloud(id: string) {
       getSupabaseBrowser().from("quiz_scores").select("chapter_num, best, total, done").eq("user_id", id),
       getSupabaseBrowser().from("replay_history").select("symbol, interval, total, correct, best_streak, recorded_at").eq("user_id", id).order("recorded_at", { ascending: false }).limit(100),
       getSupabaseBrowser().from("replay_best").select("best_streak").eq("user_id", id),
-      getSupabaseBrowser().from("user_settings").select("daily_goal_min").eq("user_id", id),
+      getSupabaseBrowser().from("user_settings").select("daily_goal_min, weekly_goal_min").eq("user_id", id),
     ]);
     [progressRes, wrongRes, quizRes, replayRes, bestRes, settingsRes] = results as [typeof progressRes, typeof wrongRes, typeof quizRes, typeof replayRes, typeof bestRes, typeof settingsRes];
   } catch {
@@ -344,6 +358,16 @@ export async function hydrateFromCloud(id: string) {
         // ignore
       }
     }
+    // R12.19：每周目标同样的本地意图优先合并
+    const cloudWeekly = (settingsRes.data[0] as { weekly_goal_min?: number | null } | undefined)?.weekly_goal_min ?? 0;
+    const localWeekly = localStorage.getItem("tb-weekly-goal-min");
+    if (cloudWeekly && cloudWeekly > 0 && !localWeekly) {
+      try {
+        localStorage.setItem("tb-weekly-goal-min", String(cloudWeekly));
+      } catch {
+        // ignore
+      }
+    }
   }
 
   // R9.6：计算合并摘要并通知 UI（R9.7 登录引导卡片消费）
@@ -364,6 +388,30 @@ export async function hydrateFromCloud(id: string) {
     (replayRes?.data as CloudReplay[] | undefined) ?? [],
   );
   emitMergeSummary(summary);
+
+  // R12.9：多设备冲突检测——目标档位分歧 + 错题同键计划分歧，记录供统计页提示
+  try {
+    const localGoalRaw = localStorage.getItem("tb-daily-goal-min");
+    const localGoal = localGoalRaw !== null && Number(localGoalRaw) > 0 ? Number(localGoalRaw) : null;
+    const cloudGoal = settingsRes?.data?.[0]?.daily_goal_min ?? null;
+    const cloudWeeklyGoalRaw = (settingsRes?.data?.[0] as { weekly_goal_min?: number | null } | undefined)?.weekly_goal_min ?? null;
+    const localWeeklyGoalRaw = localStorage.getItem("tb-weekly-goal-min");
+    const localWeeklyGoal = localWeeklyGoalRaw !== null && Number(localWeeklyGoalRaw) > 0 ? Number(localWeeklyGoalRaw) : null;
+    const conflicts = detectMergeConflicts({
+      localGoalMin: localGoal,
+      cloudGoalMin: typeof cloudGoal === "number" && cloudGoal > 0 ? cloudGoal : null,
+      localWeeklyGoalMin: localWeeklyGoal,
+      cloudWeeklyGoalMin: typeof cloudWeeklyGoalRaw === "number" && cloudWeeklyGoalRaw > 0 ? cloudWeeklyGoalRaw : null,
+      localWrong: preMergeWrong,
+      cloudWrong: (wrongRes?.data as CloudWrong[] | undefined) ?? [],
+    });
+    recordSyncConflicts(conflicts);
+  } catch {
+    // 冲突提示是 best-effort，不影响合并
+  }
+
+  // R12.8：记录最近一次云端合并时间（统计页数据来源标识用）
+  recordCloudSync();
 
   // 一次性通知所有消费组件刷新
   try {

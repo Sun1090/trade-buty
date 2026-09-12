@@ -51,6 +51,13 @@ export function colorsFor(theme: CardTheme): CardColors {
   return theme === "light" ? COLORS_LIGHT : COLORS_DARK;
 }
 
+/** R13.2：分享卡字体统一（zh 用系统中文字体栈，en 用 system-ui） */
+export function cardFontFor(locale: ShareLocale): string {
+  return locale === "zh"
+    ? '"PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif'
+    : 'system-ui, -apple-system, "Segoe UI", sans-serif';
+}
+
 /** 把「答对百分比」映射到 S/A/B/C 评级。S=100% 满分；A=80+；B=60+；C=其余。 */
 export function gradeFromPercent(percent: number): Grade {
   if (!Number.isFinite(percent) || percent < 0) return "C";
@@ -124,6 +131,83 @@ export function drawBackground(
   ctx.restore();
 }
 
+/**
+ * R13.1 分享卡视觉模板统一：所有卡的纵向骨架从此处取数。
+ * 新卡必须复用 drawCardHeading / drawHeroValue / drawCardMetricLine，
+ * 禁止再散写手调坐标（本文件内历史坐标为基准样板）。
+ */
+export const CARD_LAYOUT = {
+  /** 页首小标题基线 y（textBaseline=top） */
+  headingY: 90,
+  /** 主元信息行 y（章节名 / symbol · interval 等） */
+  metaY: 160,
+  /** hero 大字垂直中心（字母评级/大数字，全卡统一锚点） */
+  heroCenterYFrac: 0.46,
+  /** 次级数值行 y（分数 3/10、命中 x/y 等；进度条/方格等部件在其下方） */
+  metricLineYFrac: 0.667,
+  /** 底部品牌水印内边距 */
+  footerPadX: 60,
+  footerPadY: 50,
+  /** 小标题字号 */ headingFontSize: 36,
+  /** 元信息字号（默认） */ metaFontSize: 56,
+  /** hero 最大字号（字母评级 420、数值类按需略小） */
+  heroFontSizeMax: 420,
+  /** 次级数值字号 */ metricFontSize: 72,
+} as const;
+
+/** R13.1：统一页首——小标题居中，字号/颜色/基线全卡一致。 */
+export function drawCardHeading(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  colors: CardColors,
+  font: string,
+  text: string,
+): void {
+  ctx.save();
+  ctx.fillStyle = colors.fgMuted;
+  ctx.font = `500 ${CARD_LAYOUT.headingFontSize}px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText(text, width / 2, CARD_LAYOUT.headingY);
+  ctx.restore();
+}
+
+/** R13.1：统一 hero 底座——评级/主数字居中，语义颜色单参数。 */
+export function drawHeroValue(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  font: string,
+  opts: { text: string; color: string; size: number; weight?: number },
+): void {
+  ctx.save();
+  ctx.fillStyle = opts.color;
+  ctx.font = `${opts.weight ?? 900} ${Math.min(opts.size, CARD_LAYOUT.heroFontSizeMax)}px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(opts.text, width / 2, Math.round(height * CARD_LAYOUT.heroCenterYFrac));
+  ctx.restore();
+}
+
+/** R13.1：统一次级数值行（成绩/准确率/天数等一行数据）。 */
+export function drawCardMetricLine(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  colors: CardColors,
+  font: string,
+  text: string,
+  opts?: { muted?: boolean; size?: number; baseline?: "middle" | "top" },
+): void {
+  ctx.save();
+  ctx.fillStyle = opts?.muted ? colors.fgMuted : colors.fg;
+  ctx.font = `${opts?.muted ? 500 : 700} ${opts?.size ?? CARD_LAYOUT.metricFontSize}px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = opts?.baseline ?? "middle";
+  ctx.fillText(text, width / 2, Math.round(height * CARD_LAYOUT.metricLineYFrac));
+  ctx.restore();
+}
+
 /** 在画布右下角画站点品牌水印（防截屏抹除 + 增加辨识度）。 */
 export function drawBrandFooter(
   ctx: CanvasRenderingContext2D,
@@ -138,7 +222,7 @@ export function drawBrandFooter(
   ctx.font = `600 28px ${font}`;
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "right";
-  ctx.fillText(siteName, width - 60, height - 50);
+  ctx.fillText(siteName, width - CARD_LAYOUT.footerPadX, height - CARD_LAYOUT.footerPadY);
   ctx.restore();
 }
 
@@ -202,38 +286,27 @@ export function drawQuizCard(args: QuizCardArgs): void {
 
   drawBackground(ctx, width, height, colors);
 
-  // 上：章节标题（限 2 行）
-  ctx.save();
-  ctx.fillStyle = colors.fgMuted;
-  ctx.font = `500 36px ${font}`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  const heading = locale === "zh" ? "随堂测成绩" : "Quiz Result";
-  ctx.fillText(heading, width / 2, 90);
+  // 上：章节标题（R13.1 统一模板骨架）
+  drawCardHeading(ctx, width, colors, font, locale === "zh" ? "随堂测成绩" : "Quiz Result");
 
+  ctx.save();
   ctx.fillStyle = colors.fg;
   ctx.font = `700 64px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
   const titleLines = wrapText(ctx, truncateForCanvas(chapterTitle, 24), width - 200);
-  let y = 160;
+  let y = CARD_LAYOUT.metaY;
   for (const line of titleLines.slice(0, 2)) {
     ctx.fillText(line, width / 2, y);
     y += 78;
   }
   ctx.restore();
 
-  // 中：大评级字母
-  ctx.fillStyle = gradeCol;
-  ctx.font = `900 420px ${font}`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(grade, width / 2, height / 2 - 20);
+  // 中：大评级字母（统一 hero 锚点）
+  drawHeroValue(ctx, width, height, font, { text: grade, color: gradeCol, size: 420 });
 
-  // 副：分数 / 总分
-  ctx.fillStyle = colors.fg;
-  ctx.font = `700 72px ${font}`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.fillText(`${score}/${total}`, width / 2, height - 360);
+  // 副：分数 / 总分（统一次级数值行）
+  drawCardMetricLine(ctx, width, height, colors, font, `${score}/${total}`, { size: 72 });
 
   // 副：正确率进度条
   const barW = 720;
@@ -319,31 +392,23 @@ export function drawReplayCard(args: ReplayCardArgs): void {
 
   drawBackground(ctx, width, height, colors);
 
-  // 上：标题 + 标的/周期
+  // 上：标题 + 标的/周期（R13.1 统一模板骨架）
+  drawCardHeading(ctx, width, colors, font, locale === "zh" ? "回放战绩" : "Replay Result");
+
   ctx.save();
-  ctx.fillStyle = colors.fgMuted;
-  ctx.font = `500 36px ${font}`;
+  ctx.fillStyle = colors.fg;
+  ctx.font = `700 ${CARD_LAYOUT.metaFontSize}px ${font}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  const heading = locale === "zh" ? "回放战绩" : "Replay Result";
-  ctx.fillText(heading, width / 2, 90);
-
-  ctx.fillStyle = colors.fg;
-  ctx.font = `700 56px ${font}`;
-  ctx.textAlign = "center";
   ctx.fillText(
     truncateForCanvas(`${symbol} · ${interval}`, 18),
     width / 2,
-    160,
+    CARD_LAYOUT.metaY,
   );
   ctx.restore();
 
   // 中：大评级字母 + 准确率
-  ctx.fillStyle = gradeCol;
-  ctx.font = `900 360px ${font}`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(grade, width / 2, height / 2 - 40);
+  drawHeroValue(ctx, width, height, font, { text: grade, color: gradeCol, size: 360 });
 
   ctx.fillStyle = colors.fg;
   ctx.font = `800 96px ${font}`;
@@ -351,15 +416,10 @@ export function drawReplayCard(args: ReplayCardArgs): void {
   ctx.textBaseline = "top";
   ctx.fillText(formatPercent(percent), width / 2, height - 460);
 
-  ctx.fillStyle = colors.fgMuted;
-  ctx.font = `500 32px ${font}`;
-  ctx.textAlign = "center";
-  ctx.fillText(
-    locale === "zh"
-      ? `${correct}/${total} 命中`
-      : `${correct}/${total} correct`,
-    width / 2,
-    height - 360,
+  // 副：命中数（统一次级数值行）
+  drawCardMetricLine(ctx, width, height, colors, font,
+    locale === "zh" ? `${correct}/${total} 命中` : `${correct}/${total} correct`,
+    { muted: true, size: 32 },
   );
 
   // 底：连胜 + 最佳连胜 双指标
@@ -476,16 +536,10 @@ export function drawStreakCard(args: StreakCardArgs): void {
 
   drawBackground(ctx, width, height, colors);
 
-  // 上：标题
-  ctx.save();
-  ctx.fillStyle = colors.fgMuted;
-  ctx.font = `500 36px ${font}`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  const heading = locale === "zh" ? "学习连续打卡" : "Study streak";
-  ctx.fillText(heading, width / 2, 90);
+  // 上：标题（R13.1 统一模板骨架）
+  drawCardHeading(ctx, width, colors, font, locale === "zh" ? "学习连续打卡" : "Study streak");
 
-  // 中：大火焰 + 天数
+  // 中：大火焰 + 天数（hero 锚点统一；火焰作为 hero 前导装饰保留）
   ctx.fillStyle = gradeCol;
   ctx.font = `900 200px ${font}`;
   ctx.textAlign = "center";

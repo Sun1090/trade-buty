@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   CARD_SIZE,
+  cardFontFor,
   drawQuizCard,
   drawReplayCard,
   drawStreakCard,
@@ -57,10 +58,7 @@ export function ShareCardPreview({ kind, path, locale, labels }: Props) {
     canvas.height = CARD_SIZE;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const font =
-      locale === "zh"
-        ? '"PingFang SC", "Microsoft YaHei", sans-serif'
-        : "system-ui, sans-serif";
+    const font = cardFontFor(locale);
 
     if (kind === "quiz") {
       const p = decodeQuiz(path);

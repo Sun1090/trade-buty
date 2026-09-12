@@ -1,17 +1,17 @@
 # 知识库中英翻译进度
 
-> 自动生成于 2026-09-06（npm run kb:translation-status），勿手改。
+> 自动生成于 2026-09-12（npm run kb:translation-status），勿手改。
 
-## 总览：27/27 章双语 · 173/173 篇 en 覆盖
+## 总览：27/27 章双语 · 182/182 篇 en 覆盖
 
 | 指标 | 值 |
 |---|---|
 | zh 章节 | 27 |
-| zh 课程 | 173 |
+| zh 课程 | 182 |
 | en 章节（含 en 目录） | 27 |
-| en 课程 | 173 |
+| en 课程 | 182 |
 | 双语章节 | 27/27 |
-| 双语课程覆盖 | 173/173（100%） |
+| 双语课程覆盖 | 182/182（100%） |
 
 ## 章节级：27/27 章有英文版
 
@@ -30,19 +30,19 @@
 | 25 · 全球市场地图篇 | global-markets | 5 | ✅ 5 篇 | 5/5 |
 | 19 · 行业研究篇 | industry-research | 5 | ✅ 5 篇 | 5/5 |
 | 12 · 市场生态篇 | market-ecosystem | 7 | ✅ 7 篇 | 7/7 |
-| 09 · 市场与品种专题篇 | markets-instruments | 15 | ✅ 15 篇 | 15/15 |
+| 09 · 市场与品种专题篇 | markets-instruments | 16 | ✅ 16 篇 | 16/16 |
 | 27 · 期权策略进阶篇 | options-strategies | 5 | ✅ 5 篇 | 5/5 |
 | 08 · 入土篇 | pitfalls | 3 | ✅ 3 篇 | 3/3 |
 | 15 · 量化实战篇 | quant-practice | 5 | ✅ 5 篇 | 5/5 |
 | 20 · 经典书单篇（读书指南） | reading-list | 5 | ✅ 5 篇 | 5/5 |
 | 16 · 监管与合规篇 | regulation-compliance | 8 | ✅ 8 篇 | 8/8 |
-| 02 · 现货篇 | spot | 6 | ✅ 6 篇 | 6/6 |
-| 04 · 股票篇 | stocks | 7 | ✅ 7 篇 | 7/7 |
+| 02 · 现货篇 | spot | 7 | ✅ 7 篇 | 7/7 |
+| 04 · 股票篇 | stocks | 8 | ✅ 8 篇 | 8/8 |
 | 10 · 系统对接篇 | system-integration | 11 | ✅ 11 篇 | 11/11 |
-| 06 · 技术分析篇 | technical-analysis | 9 | ✅ 9 篇 | 9/9 |
+| 06 · 技术分析篇 | technical-analysis | 13 | ✅ 13 篇 | 13/13 |
 | 17 · 工具与平台篇 | tools-platforms | 5 | ✅ 5 篇 | 5/5 |
 | 11 · 交易实战篇 | trading-practice | 8 | ✅ 8 篇 | 8/8 |
-| 07 · 交易系统篇 | trading-system | 6 | ✅ 6 篇 | 6/6 |
+| 07 · 交易系统篇 | trading-system | 8 | ✅ 8 篇 | 8/8 |
 | 14 · 理财配置篇 | wealth-allocation | 7 | ✅ 7 篇 | 7/7 |
 
 ## 翻译缺口

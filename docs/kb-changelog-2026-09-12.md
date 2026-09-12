@@ -1,0 +1,348 @@
+## 2026-09-12 知识库更新（自动）
+
+共 283 篇变化：新增 18 / 内容更新 265 / 移除 0。
+
+**新增（18）**
+- en/markets-instruments
+  - sentiment-indicators.md：16 · Sentiment Indicators Panorama: Fear & Greed, Long/Short Ratio, and PCR
+- en/spot
+  - dca-methodology.md：07 · DCA and Batch Accumulation Methodology
+- en/stocks
+  - adjusted-price-dividends.md：08 · Adjusted Prices, Ex-Dividend Days, and Indicator Distortion
+- en/technical-analysis
+  - indicators-advanced.md：12 · Advanced Indicators: DMI/ADX, Supertrend, BBW
+  - multi-timeframe.md：13 · Multi-Timeframe Analysis: Let Timeframes Cross-Examine Each Other
+  - orderbook-depth.md：10 · Order Book & Depth Chart: A Practical Guide
+  - replay-training.md：11 · The Replay Training Method
+- en/trading-system
+  - alert-discipline.md：08 · Price Alerts and Off-Screen Discipline
+  - paper-to-live.md：07 · From Paper Trading to Live: The Path to Real Money
+- zh/markets-instruments
+  - sentiment-indicators.md：16 · 情绪指标全景：恐贪指数、多空比与 PCR
+- zh/spot
+  - dca-methodology.md：07 · 定投与分批建仓方法论
+- zh/stocks
+  - adjusted-price-dividends.md：08 · 复权、除权除息与指标失真
+- zh/technical-analysis
+  - indicators-advanced.md：12 · 指标进阶补遗：DMI/ADX、Supertrend、BBW
+  - multi-timeframe.md：13 · 多周期分析：让周期之间互相证明
+  - orderbook-depth.md：10 · 订单簿与深度图解读
+  - replay-training.md：11 · 回放训练方法论
+- zh/trading-system
+  - alert-discipline.md：08 · 价格提醒与离盘纪律
+  - paper-to-live.md：07 · 模拟盘到实盘：进阶路径
+
+**内容更新（265）**
+- （根）
+  - README.md（章节导语）：交易知识库 · 从入门到入土
+- en/behavioral-finance
+  - README.md（章节导语）：21 · Behavioral Finance
+  - behavioral-finance-basics.md：01 · Foundations of Behavioral Finance
+  - behavioral-playbook.md：05 · Applying Behavioral Finance
+  - cognitive-biases.md：02 · A Field Guide to Cognitive Biases in Trading
+  - market-anomalies.md：03 · Market Anomalies: Evidence That Markets Are Less Efficient
+  - mental-accounts-framing.md：04 · Mental Accounting & Framing
+- en/bonds-rates
+  - README.md（章节导语）：22 · Bonds & Rates Deep Dive
+  - china-bond-market.md：02 · China Bond Market in Practice
+  - credit-high-yield.md：04 · Credit Bonds & High Yield
+  - treasuries-practice.md：01 · Treasury Investment in Practice
+  - yield-curve-trading.md：03 · Yield Curve Trading
+- en/career
+  - README.md（章节导语）：24 · Career Development
+  - content-creation.md：04 · Content Creation & Knowledge Sharing
+  - indie-startups.md：03 · Indie Development & Startups
+  - professional-trader-path.md：05 · Professional Trader Path
+  - quant-career-path.md：01 · Quant Career Path
+  - trading-careers.md：02 · Trading Careers Overview
+- en/crypto-perpetuals
+  - README.md（章节导语）：05 · Crypto Perpetuals
+  - crypto-derivatives.md：03 · Crypto Derivatives
+  - funding-rate.md：02 · Funding Rates
+  - leverage-math.md：05 · The Math of Leverage: Why 10x Is Not \"10x Profit\"
+  - liquidation-cases.md：06 · Perpetual Blow-Up Case Studies
+  - perp-trading-risk.md：04 · Perpetual Trading in Practice & Risk Control
+  - perpetuals.md：01 · Perpetual Swaps
+- en/data-interpretation
+  - README.md（章节导语）：26 · Data Interpretation in Practice
+  - central-bank-language.md：02 · Central Bank Language: Statement Translation and Policy Expectation-Gap Trading
+  - earnings-calls.md：03 · Earnings Calls: Guidance, Management Tone, and Corporate-Speak Translation
+  - economic-calendar.md：05 · Economic Calendar User Guide: Event Classification, Weekly Scheduling, and Event Trading
+  - industry-data.md：04 · Industry Data: Supply-Demand Analysis and Inventory-Cycle Reading
+  - macro-data.md：01 · Macro Data Reading: Expectation Gaps, Structure Breakdown, and a Complete Interpretation Template
+- en/financial-history
+  - README.md（章节导语）：13 · Financial History
+  - bubble-history.md：01 · A History of Financial Bubbles
+  - china-market-history.md：05 · A Brief History of China's Stock Market
+  - crypto-history.md：06 · Crypto History
+  - famous-crashes.md：02 · Famous Crashes and Black Swans
+  - trading-masters.md：03 · Trading Masters
+  - trading-philosophy.md：04 · Trading Schools and Philosophy
+- en/financial-statements
+  - README.md（章节导语）：18 · Financial Statements Deep Dive
+  - cash-flow-analysis.md：04 · Cash Flow Analysis
+  - earnings-analysis.md：05 · Financial Statement Analysis in Practice
+  - financial-metrics.md：02 · Financial Metrics in Practice
+  - fraud-detection.md：03 · Detecting Financial Fraud
+  - three-statements.md：01 · Reading the Three Statements Closely
+- en/forex-trading
+  - README.md（章节导语）：23 · Forex Trading in Practice
+  - carry-trade.md：02 · Carry Trade and Interest Rate Differentials: The Primary Driver of Exchange Rates
+  - central-bank-trading.md：06 · Central Bank Policy and Event Trading
+  - forex-ea.md：03 · Forex Automation (EAs) and Copy Trading: Holy Grail or Meat Grinder
+  - forex-leverage-risk.md：04 · Forex Leverage and Risk Management: Learn Not to Die Before Chasing Profit
+  - forex-practice.md：01 · Forex Trading Practice: Pair Personalities, Pip Value & P&L, and a Beginner Workflow
+  - forex-technicals.md：05 · Forex Technical Analysis and Practical Patterns
+- en/futures
+  - README.md（章节导语）：03 · Futures
+  - commodity-options.md：07 · Futures Options and Commodity Options: Contracts That Insure Your Futures
+  - delivery-rollover.md：03 · Delivery and Rollover: Which Side Is Time On
+  - futures-basics.md：01 · Futures Basics: What a Contract Is
+  - futures-products.md：04 · Futures Products Encyclopedia: Your Battlefield Map
+  - futures-strategies.md：05 · Futures Trading Strategies: From Hedging Risk to Trading Volatility
+  - margin-leverage-liquidation.md：02 · Margin, Leverage, and Forced Liquidation: A Trader's Lifeline
+  - otc-derivatives.md：06 · OTC Derivatives: The Dark Side of Custom Contracts
+- en/getting-started
+  - README.md（章节导语）：01 · Getting Started
+  - candlestick-basics.md：03 · Candlestick & Chart Basics
+  - core-concepts.md：02 · Trading Core Concepts
+  - first-trade.md：07 · Your First Trade: The Complete Flow from Account Setup to Order Placement
+  - market-overview.md：01 · Financial Market Overview
+  - order-types-execution.md：05 · Order Types and Execution Mechanics
+  - position-sizing.md：06 · Position Sizing and Money Management
+  - trading-hours.md：04 · Trading Hours Overview: When Every Market Opens and Closes
+- en/global-markets
+  - README.md（章节导语）：25 · Global Markets Map
+  - cross-border-investing.md：05 · Cross-Border Investing in Practice (Pragmatic Guide)
+  - emerging-markets.md：03 · Emerging Markets
+  - european-markets.md：02 · European Markets
+  - global-market-comparison.md：04 · Global Markets Comparison Overview
+  - japan-korea-markets.md：01 · Japan and Korea Markets
+- en/industry-research
+  - README.md（章节导语）：19 · Industry Research
+  - competitive-moats.md：03 · Competitive Landscape & Economic Moats
+  - industry-cycles.md：04 · Sector Prosperity & Cycles
+  - industry-methodology.md：01 · Industry Research Methodology
+  - new-themes-investing.md：05 · New Tracks & Theme Investing
+  - value-chain-analysis.md：02 · Value Chain Analysis
+- en/market-ecosystem
+  - README.md（章节导语）：12 · Market Ecosystem
+  - dark-pools-otc.md：07 · Dark Pools & OTC Markets
+  - high-frequency-trading.md：06 · High-Frequency Trading in Depth
+  - market-makers-liquidity.md：02 · Market Makers & Liquidity
+- en/markets-instruments
+  - README.md（章节导语）：09 · Markets and Instruments
+  - alternative-assets.md：12 · Alternative Asset Investing: Collectibles and \"Hobby Investing\"
+  - bonds-interest-rates.md：02 · Bonds and Interest Rates: The Pricing Anchor of Assets
+  - commodities-overview.md：06 · Commodity Panorama: Understanding Commodities Through Their Global Pricing Centers
+  - commodity-indices-cycles.md：14 · Commodity Indices and Cycles: Reading the Rhythm of an Era of Rising Prices
+  - crypto-landscape.md：07 · Crypto Landscape: From Digital Gold to the Map of Crypto
+  - defi-deep-dive.md：15 · DeFi and the On-Chain Ecosystem Deep Dive: From Yield Myths to a Risk Dissection
+  - forex-market.md：01 · Forex Market: The World's Largest Financial Battlefield
+  - funds-etf.md：03 · Funds and ETFs: The Ordinary Person's Asset Tool
+  - hk-us-ipo.md：10 · HK and US IPO Subscription: From Prospectus to First-Day Trading
+  - indices-sectors.md：05 · Indexes and Sectors: The Market's Ruler and Map
+  - macro-markets.md：08 · Macro Economy and Markets: Read the Big Picture Before Trading
+  - options-basics.md：04 · Options Basics: The Most Sophisticated Financial Instrument
+  - precious-metals-energy.md：09 · Precious Metals and Energy Spot: How to Participate in Gold, Silver, and Crude Oil
+  - reits-real-estate.md：11 · REITs and Real Estate Investing: From Buying a Home to Buying the Property Business
+  - volatility-vix.md：13 · Volatility and VIX: Fear Can Be Priced
+- en/options-strategies
+  - README.md（章节导语）：27 · Advanced Options Strategies
+  - greeks-in-practice.md：02 · The Greeks in Practice: Your Position Is a Risk Balance Sheet
+  - options-strategies.md：03 · The Complete Catalog of Option Combinations: Classified by Risk-Return Type
+  - options-tools-review.md：05 · Options Tools and Review: Master the Tools, Turn Experience into an Asset
+  - options-trading-risk.md：04 · Options in Practice and Risk Control: From Paper Trading to Real Money
+  - pricing-volatility.md：01 · Option Pricing and Volatility: Where Prices Come From, and How to Tell If They're Expensive
+- en/pitfalls
+  - README.md（章节导语）：08 · Pitfalls
+  - compliance-taxes.md：03 · Compliance and Taxes
+  - scam-detection.md：02 · Scam Detection
+  - why-traders-lose.md：01 · Why Traders Lose
+- en/quant-practice
+  - README.md（章节导语）：Quant Practice
+  - data-acquisition.md：02 · Data Acquisition in Practice
+  - first-backtest.md：03 · Your First Backtest
+  - live-automation.md：04 · Live Automation
+  - quant-toolchain.md：01 · Quant Toolchain
+  - strategy-coding.md：05 · Strategy Coding in Practice
+- en/reading-list
+  - README.md（章节导语）：Classic Reading List (Reading Guide)
+  - beginner-books.md：01 · Beginner Books
+  - how-to-read.md：05 · How to Read a Book Closely
+  - quant-psychology-books.md：04 · Quant & Trading Psychology
+  - ta-classics.md：02 · Technical Analysis Classics
+  - value-investing-classics.md：03 · Value Investing Classics
+- en/regulation-compliance
+  - README.md（章节导语）：16 · Regulation & Compliance
+  - algo-trading-compliance.md：05 · Algorithmic Trading and Compliance
+  - aml-compliance.md：08 · AML and Trading Compliance
+  - china-regulation.md：01 · China's Financial Regulatory System
+  - crypto-regulation.md：03 · Crypto Regulation
+  - licensing-access.md：04 · Licensing and Market Access
+  - market-data-compliance.md：07 · Market Data and Tooling Compliance
+  - platform-disclaimers.md：06 · Platform Disclaimers and Investor Suitability
+  - us-global-regulation.md：02 · US and Global Regulation
+- en/spot
+  - README.md（章节导语）：02 · Spot
+  - crypto-spot.md：03 · Crypto Spot Deep Dive
+  - portfolio-rebalancing.md：06 · Portfolio Management & Rebalancing
+  - spot-basics.md：01 · Spot Trading Basics
+  - spot-intermediate.md：02 · Spot Practice: Next Level
+  - spot-strategies.md：04 · Spot Trading Strategies
+  - wallet-security.md：05 · Secure Storage & Wallet Management
+- en/stocks
+  - README.md（章节导语）：04 · Stocks
+  - a-share-rules.md：02 · A-Share Trading Rules
+  - adr-cross-listing.md：05 · ADR and Cross-Border Listing
+  - etf-portfolio.md：07 · US and Global ETF Portfolio Construction
+  - hk-us-stocks.md：03 · HK and US Stocks
+  - stock-analysis.md：04 · Stock Analysis Methods
+  - stock-basics.md：01 · Stock Basics
+  - us-stock-options.md：06 · US Stock Options Primer
+- en/system-integration
+  - README.md（章节导语）：10 · System Integration
+  - ctp-integration.md：10 · CTP Integration in Practice: From Zero to First Order
+  - data-infrastructure.md：07 · Data and Infrastructure
+  - exchanges-oms.md：02 · Exchanges and OMSs: Which Layer Your System Actually Connects To
+  - fix-protocol.md：09 · FIX Protocol Deep Dive: The Common Language of Global Institutional Trading
+  - integration-overview.md：01 · Integration Overview and Role Division: Draw the Map Before Writing Code
+  - market-data-systems.md：03 · Market Data Systems: The Eyes of Trading Software
+  - matching-engine.md：11 · Matching Engine Principles: How Orders Become Fills
+  - order-lifecycle.md：04 · Trading Interfaces and Order Lifecycle: The Heart of the System
+  - risk-systems.md：05 · Risk Controls and Capital Management: The Last Line of Defense Must Be Your Own
+  - role-skills-map.md：08 · Role Skills Map
+  - strategy-backtest.md：06 · Quantitative Strategies and Backtesting
+- en/technical-analysis
+  - README.md（章节导语）：06 · Technical Analysis
+  - advanced-candles.md：04 · Advanced Candlesticks
+  - chart-patterns.md：01 · Candlestick Patterns
+  - drawing-tools.md：07 · Drawing Tools in Practice
+  - elliott-gann-chan.md：05 · Elliott Waves · Gann · Chan Theory
+  - gann-box-angles.md：08 · Gann Box and Angles in Practice
+  - indicators.md：02 · Technical Indicators in Depth
+  - order-flow-microstructure.md：09 · Order Flow and Market Microstructure
+  - ta-validation.md：06 · Technical Analysis: Critique and Validation
+  - volume-price.md：03 · Volume-Price Analysis
+- en/tools-platforms
+  - README.md（章节导语）：17 · Tools & Platforms
+  - analysis-scripting.md：04 · Analysis & Scripting
+  - automation-environment.md：05 · Runtime & Automation Environment
+  - broker-selection.md：03 · Broker & Futures Broker Selection
+  - charting-platforms.md：01 · A Panorama of Market Data Software
+  - research-platforms.md：02 · Data & Research Platforms
+- en/trading-practice
+  - README.md（章节导语）：11 · Trading Practice
+  - a-share-playbook.md：05 · A-Share Special Plays
+  - arbitrage-handbook.md：06 · Arbitrage in Practice
+  - crypto-airdrops.md：07 · Crypto Airdrops and Airdrop Farming
+  - day-trading.md：01 · Day Trading in Practice
+  - event-driven.md：04 · Event-Driven Trading
+  - onchain-data-trading.md：08 · On-chain Data Trading
+  - range-grid-trading.md：03 · Range Markets and Grid Trading in Practice
+  - swing-trend-trading.md：02 · Swing and Trend in Practice
+- en/trading-system
+  - README.md（章节导语）：07 · Trading Systems
+  - equity-curve-attribution.md：04 · Equity Curve and Performance Attribution
+  - journaling-checklists.md：06 · Trading Journal and Checklists
+  - risk-management.md：02 · Risk Management
+  - trade-review.md：05 · Advanced Trade Review
+  - trading-plan.md：01 · Trading Plan
+  - trading-psychology.md：03 · Trading Psychology
+- en/wealth-allocation
+  - README.md（章节导语）：14 · Wealth Allocation
+  - asset-allocation.md：01 · Asset Allocation Basics
+  - compounding-returns.md：02 · Compounding and Return Expectations
+  - family-financial-planning.md：03 · Family Financial Planning
+  - inflation-purchasing-power.md：04 · Inflation and Purchasing Power
+  - insurance-basics.md：05 · Insurance and Protection
+  - overseas-allocation.md：06 · Overseas Allocation in Practice
+  - tax-planning.md：07 · Tax Planning Basics
+- zh/bonds-rates
+  - china-bond-market.md：02 · 中国债市实操
+  - yield-curve-trading.md：03 · 收益率曲线交易
+- zh/crypto-perpetuals
+  - funding-rate.md：02 · 资金费率
+  - leverage-math.md：05 · 杠杆的数学：为什么 10 倍杠杆不等于「赚 10 倍」
+  - liquidation-cases.md：06 · 合约爆仓案例复盘
+  - perp-trading-risk.md：04 · 合约交易实战与风控
+- zh/financial-history
+  - crypto-history.md：06 · 加密货币历史
+  - trading-masters.md：03 · 交易大师
+- zh/forex-trading
+  - central-bank-trading.md：06 · 央行政策与事件交易
+  - forex-ea.md：03 · 外汇自动化（EA）与跟单：圣杯还是绞肉机
+  - forex-leverage-risk.md：04 · 外汇杠杆与风险管理：先学会死不了，再谈赚钱
+  - forex-practice.md：01 · 外汇交易实操：货币对性格、点值盈亏与入门工作流
+  - forex-technicals.md：05 · 外汇技术分析与实战形态
+- zh/futures
+  - commodity-options.md：07 · 期货期权与商品期权：给期货上保险的合约
+  - delivery-rollover.md：03 · 交割与展期：时间站在谁那边
+  - futures-strategies.md：05 · 期货交易策略：从对冲风险到博弈波动
+  - margin-leverage-liquidation.md：02 · 保证金、杠杆与强平：交易者的生死线
+- zh/getting-started
+  - core-concepts.md：02 · 交易核心概念
+  - position-sizing.md：06 · 仓位管理与资金管理
+- zh/market-ecosystem
+  - dark-pools-otc.md：07 · 暗池与场外市场
+  - high-frequency-trading.md：06 · 高频交易深度
+  - market-makers-liquidity.md：02 · 做市商与流动性
+- zh/markets-instruments
+  - README.md（章节导语）：09 · 市场与品种专题篇
+  - bonds-interest-rates.md：02 · 债券与利率：资产的定价之锚
+  - commodities-overview.md：06 · 商品品种全景：从「全球定价中心」看懂商品
+  - commodity-indices-cycles.md：14 · 大宗商品指数与周期：看懂「涨价时代」的节拍
+  - crypto-landscape.md：07 · 加密货币全景：从「数字黄金」到「币圈版图」
+  - defi-deep-dive.md：15 · DeFi 与链上生态深潜：从「收益神话」到「风险解剖」
+  - forex-market.md：01 · 外汇市场：全球最大的金融战场
+  - hk-us-ipo.md：10 · 港美股打新与 IPO：从招股书到首日交易
+  - options-basics.md：04 · 期权基础：最精密的金融工具
+  - precious-metals-energy.md：09 · 贵金属与能源现货：黄金、白银、原油的参与方式专题
+  - volatility-vix.md：13 · 波动率与 VIX：恐慌是能被定价的
+- zh/options-strategies
+  - README.md（章节导语）：27 · 期权策略进阶篇
+  - greeks-in-practice.md：02 · 希腊字母实操：你的持仓是一张「风险资产负债表」
+  - options-trading-risk.md：04 · 期权实战与风控：从纸上谈兵到真金白银
+  - pricing-volatility.md：01 · 期权定价与波动率：价格怎么来的，贵不贵怎么看
+- zh/pitfalls
+  - compliance-taxes.md：03 · 合规与税务
+  - scam-detection.md：02 · 骗局识别
+- zh/reading-list
+  - how-to-read.md：05 · 如何精读一本书
+  - quant-psychology-books.md：04 · 量化与交易心理
+- zh/regulation-compliance
+  - crypto-regulation.md：03 · 加密监管
+  - licensing-access.md：04 · 牌照与市场准入
+  - us-global-regulation.md：02 · 美国与全球监管
+- zh/spot
+  - crypto-spot.md：03 · 加密现货专题
+  - portfolio-rebalancing.md：06 · 组合管理与再平衡
+  - spot-basics.md：01 · 现货交易基础
+  - spot-intermediate.md：02 · 现货实务进阶
+  - spot-strategies.md：04 · 现货交易策略
+  - wallet-security.md：05 · 安全存储与钱包管理
+- zh/stocks
+  - etf-portfolio.md：07 · 美股与全球 ETF 组合构建
+  - us-stock-options.md：06 · 美股期权入门
+- zh/system-integration
+  - integration-overview.md：01 · 对接全景与角色分工：先画地图，再写代码
+  - matching-engine.md：11 · 撮合引擎原理：订单怎么变成成交
+  - order-lifecycle.md：04 · 交易接口与订单生命周期：系统的心脏
+  - risk-systems.md：05 · 风控与资金管理：最后一道防线必须是你自己
+- zh/technical-analysis
+  - chart-patterns.md：01 · K 线形态
+  - drawing-tools.md：07 · 画线工具实战
+  - indicators.md：02 · 技术指标详解
+  - order-flow-microstructure.md：09 · 订单流与市场微观结构
+- zh/tools-platforms
+  - broker-selection.md：03 · 券商与期货公司选择
+- zh/trading-practice
+  - a-share-playbook.md：05 · A 股特色玩法全解析
+  - arbitrage-handbook.md：06 · 套利实战手册
+  - event-driven.md：04 · 事件驱动交易
+  - onchain-data-trading.md：08 · 链上数据交易
+  - swing-trend-trading.md：02 · 波段与趋势实战
+- zh/trading-system
+  - risk-management.md：02 · 风险管理
+- zh/wealth-allocation
+  - compounding-returns.md：02 · 复利与收益率认知

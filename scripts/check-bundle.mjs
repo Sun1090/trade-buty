@@ -16,10 +16,12 @@ const staticDir = path.join(root, ".next/static");
 // R9.6：auth-provider 引入了 sync-layer + flushPersistedQueue 等登录态代码，
 // 即使按需 dynamic import，Next/React 框架 chunk 也会被带入；实测内容页 +12KB。
 const BUDGETS = [
-  { page: "zh", budgetKB: 295 },
-  { page: "en", budgetKB: 295 },
+  { page: "zh", budgetKB: 300 }, // R12–R13：首页实测 296KB（隐私入口、分享组件可达性、移动端达标化）
+  { page: "en", budgetKB: 300 },
   { page: "zh/knowledge/getting-started/market-overview", budgetKB: 305 },
   { page: "zh/search", budgetKB: 295 },
+  // R12.22：统计页单独预算（2026-09 实测 306KB：图表/热力图/雷达组件 + stats 字典已拆分）
+  { page: "zh/stats", budgetKB: 320 },
   { page: "zh/ai", budgetKB: 310 }, // R7.1：AI 页单独预算（问答 UI，无模型 SDK）
   { page: "zh/chart", budgetKB: 360 },
   { page: "zh/replay", budgetKB: 360 },

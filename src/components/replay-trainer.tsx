@@ -61,6 +61,7 @@ export interface ReplayDict {
   previewAlt: string;
   copyLink: string;
   copiedLink: string;
+  downloadFailed: string;
 }
 
 interface GuessState {
@@ -163,12 +164,14 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
         : 0;
       if (elapsed > 0) addStudyTime("replay", elapsed);
       roundStartRef.current = Date.now();
+      // R12.5：记录本轮耗时（秒），供回放练习时长统计；无起点计时不伪造
       saveReplayRecord({
         symbol,
         interval: interval_,
         total: guess.total,
         correct: guess.correct,
         bestStreak: guess.best,
+        ...(elapsed > 0 ? { durationSec: elapsed } : {}),
       });
     }
   }, [guessMode, klines, idx, guess.total, guess.correct, guess.best, round, symbol, interval_]);
@@ -493,6 +496,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
                       download: dict.download,
                       copyLink: dict.copyLink,
                       copiedLink: dict.copiedLink,
+                  downloadFailed: dict.downloadFailed,
                     }}
                     shareUrl={
                       !origin || guess.total <= 0

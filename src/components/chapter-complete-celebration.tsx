@@ -4,14 +4,28 @@ import { useEffect, useRef, useState } from "react";
 
 /**
  * 篇章完成庆祝：检测从「未完成→完成」的过渡，弹出 emoji confetti。
- * 用 progress map 对比判断是否刚完成。
+ *
+ * R12.18/内容宪法：庆祝只肯定「学习完成」这一事实——
+ * 不用 📈 💎 🚀 💰 等任何暗示行情上涨、暴富、持仓的符号，
+ * 也不提收益/胜率等交易结果话术。
  */
+
+const TITLES: Record<string, string> = {
+  zh: "篇章完成！",
+  en: "Chapter complete!",
+};
+
+/** 学习向中性符号（刻意排除交易/收益暗示 emoji） */
+export const CELEBRATION_EMOJIS = ["🎉", "📖", "✨", "✅", "📚", "🎓"] as const;
+
 export function ChapterCompleteCelebration({
   chapterSlug,
   docCount,
+  locale = "zh",
 }: {
   chapterSlug: string;
   docCount: number;
+  locale?: string;
 }) {
   const [show, setShow] = useState(false);
   const prevDoneRef = useRef(false);
@@ -38,14 +52,18 @@ export function ChapterCompleteCelebration({
 
   if (!show) return null;
 
-  const emojis = ["🎉", "🎊", "✨", "🚀", "📈", "💎"];
+  const title = TITLES[locale] ?? TITLES.zh;
   return (
-    <div className="fixed inset-0 pointer-events-none z-[100] flex items-center justify-center">
+    <div
+      className="fixed inset-0 pointer-events-none z-[100] flex items-center justify-center"
+      role="status"
+      aria-label={title}
+    >
       <div className="text-center">
-        <p className="text-6xl animate-bounce">🎉</p>
-        <p className="mt-4 text-xl font-bold text-accent">篇章完成！</p>
-        <div className="mt-2 flex justify-center gap-2">
-          {emojis.map((e, i) => (
+        <p className="text-6xl animate-bounce" aria-hidden>🎉</p>
+        <p className="mt-4 text-xl font-bold text-accent">{title}</p>
+        <div className="mt-2 flex justify-center gap-2" aria-hidden>
+          {CELEBRATION_EMOJIS.map((e, i) => (
             <span
               key={i}
               className="text-2xl"

@@ -19,7 +19,7 @@ export function MobileNav({ items, locale }: { items: NavItem[]; locale: string 
         onClick={() => setOpen((v) => !v)}
         aria-label="Menu"
         aria-expanded={open}
-        className="p-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition"
+        className="p-2 min-h-10 min-w-10 inline-flex items-center justify-center rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
           {open ? (

@@ -206,3 +206,47 @@ describe("gradeFromStreakDays", () => {
     expect(gradeFromStreakDays(Number.NaN)).toBe("none");
   });
 });
+// ── R13.1 分享卡视觉模板统一 ─────────────────────────────
+describe("CARD_LAYOUT template skeleton (R13.1)", () => {
+  it("anchors stay inside the card and in a sane top-to-bottom order", async () => {
+    const { CARD_LAYOUT } = await import("./share-card");
+    expect(CARD_LAYOUT.headingY).toBe(90);
+    expect(CARD_LAYOUT.metaY).toBe(160);
+    expect(CARD_LAYOUT.heroCenterYFrac).toBeGreaterThan(0);
+    expect(CARD_LAYOUT.heroCenterYFrac).toBeLessThan(1);
+    expect(CARD_LAYOUT.metricLineYFrac).toBeGreaterThan(CARD_LAYOUT.heroCenterYFrac);
+    expect(CARD_LAYOUT.metricLineYFrac).toBeLessThan(1);
+    expect(CARD_LAYOUT.footerPadX).toBeGreaterThan(0);
+    expect(CARD_LAYOUT.headingFontSize).toBeLessThan(CARD_LAYOUT.metaFontSize);
+    expect(CARD_LAYOUT.heroFontSizeMax).toBeGreaterThan(CARD_LAYOUT.metricFontSize);
+  });
+
+  it("drawCardHeading, drawHeroValue and drawCardMetricLine paint at the unified anchors", async () => {
+    const { CARD_LAYOUT, drawCardHeading, drawHeroValue, drawCardMetricLine, colorsFor } = await import("./share-card");
+    const calls: { text: string; x: number; y: number }[] = [];
+    const ctx = {
+      save: () => {}, restore: () => {},
+      fillText: (text: string, x: number, y: number) => calls.push({ text, x, y }),
+      fillStyle: "", font: "", textAlign: "", textBaseline: "",
+    } as unknown as CanvasRenderingContext2D;
+    const colors = colorsFor("dark");
+    drawCardHeading(ctx, 1080, colors, "system-ui", "测试标题");
+    drawHeroValue(ctx, 1080, 1080, "system-ui", { text: "S", color: "#fff", size: 420 });
+    drawCardMetricLine(ctx, 1080, 1080, colors, "system-ui", "3/10");
+    expect(calls[0]).toEqual({ text: "测试标题", x: 540, y: CARD_LAYOUT.headingY });
+    expect(calls[1]).toEqual({ text: "S", x: 540, y: Math.round(1080 * CARD_LAYOUT.heroCenterYFrac) });
+    expect(calls[2]).toEqual({ text: "3/10", x: 540, y: Math.round(1080 * CARD_LAYOUT.metricLineYFrac) });
+  });
+
+  it("drawHeroValue clamps oversized fonts to the template max", async () => {
+    const { CARD_LAYOUT, drawHeroValue } = await import("./share-card");
+    let recordedFont = "";
+    const ctx = {
+      save: () => {}, restore: () => {}, fillText: () => {},
+      set font(v: string) { recordedFont = v; },
+      fillStyle: "", textAlign: "", textBaseline: "",
+    } as unknown as CanvasRenderingContext2D;
+    drawHeroValue(ctx, 1080, 1080, "system-ui", { text: "999", color: "#fff", size: 9999 });
+    expect(recordedFont).toContain(`${CARD_LAYOUT.heroFontSizeMax}px`);
+  });
+});

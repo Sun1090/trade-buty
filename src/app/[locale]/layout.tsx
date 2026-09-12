@@ -169,6 +169,9 @@ export default async function LocaleLayout({
             <Link href={p("/stats")} className="block text-muted hover:text-accent transition">
               {t.stats.nav}
             </Link>
+            <Link href={p("/privacy")} className="block text-muted hover:text-accent transition">
+              {t.footer.privacy}
+            </Link>
             <a
               href="https://github.com/sun1090/kline-buty"
               target="_blank"

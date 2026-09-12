@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CARD_SIZE, drawQuizCard, type ShareLocale } from "@/lib/share-card";
+import { CARD_SIZE, cardFontFor, drawQuizCard, type ShareLocale } from "@/lib/share-card";
 import { downloadCanvasAsPng } from "@/lib/download";
 import { CopyLinkButton } from "@/components/copy-link-button";
 
@@ -21,6 +21,7 @@ interface Props {
     download: string;
     copyLink: string;
     copiedLink: string;
+    downloadFailed: string;
   };
 }
 
@@ -41,8 +42,16 @@ export function QuizShareCard({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // R13.6：下载失败可见反馈（canvas 污染/toBlob 失败等）
+  const [downloadFailed, setDownloadFailed] = useState(false);
   const percent = total > 0 ? (score / total) * 100 : 0;
   const filename = `trade-buty-quiz-${slugify(chapterTitle)}.png`;
+  // R13.2：预览图 alt 必须能被读屏复述出卡片内容，而不只是「预览图」
+  const pctText = Math.round(percent * 10) / 10;
+  const contentAlt =
+    locale === "zh"
+      ? `${labels.previewAlt}：随堂测成绩，章节「${chapterTitle}」，共 ${score}/${total}（${pctText}%）`
+      : `${labels.previewAlt}: quiz result card for "${chapterTitle}", ${score}/${total} (${pctText}%)`;
 
   // 卸载预览 URL 避免内存泄漏
   useEffect(() => {
@@ -69,31 +78,52 @@ export function QuizShareCard({
       locale,
       theme: "dark",
       siteName,
-      font: locale === "zh" ? '"PingFang SC", "Microsoft YaHei", sans-serif' : "system-ui, sans-serif",
+      font: cardFontFor(locale),
     });
   }, [chapterTitle, score, total, percent, locale, siteName]);
 
+  async function tryDownload() {
+    try {
+      await draw();
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      await downloadCanvasAsPng(canvas, filename);
+      setDownloadFailed(false);
+    } catch {
+      // R13.6：对「伪装的失败」诚实——拿到错误就反馈，不假装成功
+      setDownloadFailed(true);
+    }
+  }
+
   async function handleShare() {
-    await draw();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    await downloadCanvasAsPng(canvas, filename);
+    await tryDownload();
   }
 
   async function handlePreview() {
-    await draw();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    const url = canvas.toDataURL("image/png");
-    setPreviewUrl(url);
+    try {
+      await draw();
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const url = canvas.toDataURL("image/png");
+      setPreviewUrl(url);
+      setDownloadFailed(false);
+    } catch {
+      setDownloadFailed(true);
+    }
   }
 
   async function handleDownload() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (!previewUrl) await draw();
-    await downloadCanvasAsPng(canvas, filename);
+    if (!previewUrl) {
+      await tryDownload();
+      return;
+    }
+    try {
+      await downloadCanvasAsPng(canvasRef.current!, filename);
+      setDownloadFailed(false);
+    } catch {
+      setDownloadFailed(true);
+    }
   }
 
   return (
@@ -110,7 +140,7 @@ export function QuizShareCard({
         type="button"
         onClick={handleShare}
         data-testid="quiz-share-btn"
-        className="rounded-full border border-accent/40 bg-accent-dim text-accent font-medium px-5 py-2 text-sm hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition"
+        className="rounded-full border border-accent/40 bg-accent-dim text-accent font-medium px-5 py-2 text-sm min-h-10 hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition"
       >
         📤 {labels.share}
       </button>
@@ -118,7 +148,7 @@ export function QuizShareCard({
         type="button"
         onClick={handlePreview}
         data-testid="quiz-share-preview-btn"
-        className="rounded-full border border-border-strong text-muted font-medium px-5 py-2 text-sm hover:border-accent/50 hover:text-accent transition"
+        className="rounded-full border border-border-strong text-muted font-medium px-5 py-2 text-sm min-h-10 hover:border-accent/50 hover:text-accent transition"
       >
         👁 Preview
       </button>
@@ -130,12 +160,15 @@ export function QuizShareCard({
           testId="quiz-share-link-btn"
         />
       )}
+      {downloadFailed && (
+        <p role="alert" className="basis-full mt-2 text-xs font-medium text-red-500">{labels.downloadFailed}</p>
+      )}
       {previewUrl && (
         <div className="basis-full mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <p className="text-xs text-faint mb-2 font-mono">{labels.previewAlt}</p>
           <img
             src={previewUrl}
-            alt={labels.previewAlt}
+            alt={contentAlt}
             width={CARD_SIZE / 2}
             height={CARD_SIZE / 2}
             className="block max-w-full h-auto rounded-lg border border-[var(--border)]"
@@ -143,7 +176,7 @@ export function QuizShareCard({
           <button
             type="button"
             onClick={handleDownload}
-            className="mt-3 rounded-full bg-accent-strong text-white dark:text-[#06281c] font-semibold px-5 py-2 text-sm hover:bg-accent transition"
+            className="mt-3 rounded-full bg-accent-strong text-white dark:text-[#06281c] font-semibold px-5 py-2 text-sm min-h-10 hover:bg-accent transition"
           >
             ⬇ {labels.download}
           </button>

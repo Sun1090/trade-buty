@@ -96,6 +96,30 @@ function unpack(segment: string): unknown | null {
   }
 }
 
+// ────────── R13.3：字段白名单化与清洗 ──────────
+//
+// 守卫只校验「必填键存在且类型对」，不阻止额外键混入。
+// 分享链接本质是用户自报的不可信输入：解码时必须
+//   1) 只放行白名单键（将来新增的个人字段绝不能经 URL 回流到落地页/OG）
+//   2) 修剪文本（控制字符、长度上限）
+//   3) 钳制数值到展示友好范围
+
+/** 剥离控制字符 + 截断（React/canvas 都会原样渲染，长度是主要风险） */
+function sanitizeText(value: string, maxChars: number): string {
+  // eslint-disable-next-line no-control-regex
+  const cleaned = value.replace(/[\u0000-\u001F\u007F]/g, "").trim();
+  return cleaned.slice(0, maxChars);
+}
+
+const clampInt = (value: number, max: number): number =>
+  !Number.isFinite(value) || value < 0 ? 0 : Math.min(max, Math.round(value));
+
+const clampPercent = (value: number): number =>
+  !Number.isFinite(value) ? 0 : Math.min(200, Math.max(0, value));
+
+const sanitizeLocale = (value: unknown): "zh" | "en" =>
+  value === "en" ? "en" : "zh";
+
 // ────────── 类型守卫 ──────────
 
 function isQuizPayload(x: unknown): x is QuizPayload {
@@ -149,20 +173,42 @@ export function encodeStreak(p: StreakPayload): string {
   return pack(p);
 }
 
-/** 把 path 段解码成强类型 payload；非法输入返回 null。 */
+/** 把 path 段解码成强类型 payload；非法输入返回 null；返回对象只含白名单键。 */
 export function decodeQuiz(segment: string): QuizPayload | null {
   const x = unpack(segment);
-  return isQuizPayload(x) ? x : null;
+  if (!isQuizPayload(x)) return null;
+  return {
+    chapterTitle: sanitizeText(x.chapterTitle, 60),
+    score: clampInt(x.score, 100_000),
+    total: clampInt(x.total, 100_000),
+    percent: clampPercent(x.percent),
+    locale: sanitizeLocale(x.locale),
+  };
 }
 
 export function decodeReplay(segment: string): ReplayPayload | null {
   const x = unpack(segment);
-  return isReplayPayload(x) ? x : null;
+  if (!isReplayPayload(x)) return null;
+  return {
+    symbol: sanitizeText(x.symbol, 16),
+    interval: sanitizeText(x.interval, 8),
+    correct: clampInt(x.correct, 100_000),
+    total: clampInt(x.total, 100_000),
+    accuracyBps: clampInt(x.accuracyBps, 20_000),
+    bestStreak: clampInt(x.bestStreak, 100_000),
+    currentStreak: clampInt(x.currentStreak, 100_000),
+    locale: sanitizeLocale(x.locale),
+  };
 }
 
 export function decodeStreak(segment: string): StreakPayload | null {
   const x = unpack(segment);
-  return isStreakPayload(x) ? x : null;
+  if (!isStreakPayload(x)) return null;
+  return {
+    currentStreak: clampInt(x.currentStreak, 100_000),
+    longestStreak: clampInt(x.longestStreak, 100_000),
+    locale: sanitizeLocale(x.locale),
+  };
 }
 
 /** 推断 path 段属于哪种 share 类型；非法返回 null。 */

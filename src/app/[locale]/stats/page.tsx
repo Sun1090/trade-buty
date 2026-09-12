@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { getChapters } from "@/lib/content";
-import { getDict, isLocale, LOCALES } from "@/lib/i18n";
+import { getChapters, getDocMetas } from "@/lib/content";
+import { isLocale, LOCALES } from "@/lib/i18n";
+import { getStatsDict } from "@/lib/i18n-stats";
 import { buildPageMetadata } from "@/lib/metadata";
 import { StatsClient } from "@/components/stats-client";
 import { HeroCard } from "@/components/hero-card";
@@ -14,7 +15,7 @@ export async function generateMetadata({
 }: PageProps<"/[locale]/stats">) {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
-  const t = getDict(locale).stats;
+  const t = getStatsDict(locale);
   return buildPageMetadata({
     locale,
     title: t.title,
@@ -28,15 +29,20 @@ export default async function StatsPage({
 }: PageProps<"/[locale]/stats">) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const t = getDict(locale);
-  const chapters = getChapters(locale).map((c) => ({ slug: c.slug, docCount: c.docCount }));
+  const t = getStatsDict(locale);
+  const chapters = getChapters(locale).map((c) => ({
+    slug: c.slug,
+    title: c.title,
+    docCount: c.docCount,
+    docs: getDocMetas(locale, c.slug).map((d) => ({ slug: d.slug, title: d.title })),
+  }));
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-5 py-10 sm:py-14">
-      <HeroCard label={t.stats.label} title={t.stats.title}>
-        {t.stats.subtitle}
+      <HeroCard label={t.label} title={t.title}>
+        {t.subtitle}
       </HeroCard>
-      <StatsClient chapters={chapters} dict={t.stats} locale={locale} />
+      <StatsClient chapters={chapters} dict={t} locale={locale} />
     </div>
   );
 }

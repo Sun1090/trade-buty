@@ -7,16 +7,20 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const src = readFileSync(join(root, "src/lib/i18n.ts"), "utf8");
-
-// 取第二个顶层字典（en：`const en: Dict = {` 到下一个 `};`）
-const start = src.indexOf("const en: Dict = {");
-if (start === -1) {
-  console.error("❌ 未找到 en 字典");
-  process.exit(1);
+// R12.22：stats 字典已拆分到 i18n-stats.ts，两文件的 en 块都要扫描
+const files = ["src/lib/i18n.ts", "src/lib/i18n-stats.ts"];
+let enBlock = "";
+for (const file of files) {
+  const src = readFileSync(join(root, file), "utf8");
+  const match = /const en: [A-Za-z]+ = \{/.exec(src);
+  if (!match) {
+    console.error(`❌ ${file} 未找到 en 字典`);
+    process.exit(1);
+  }
+  const start = match.index;
+  const end = src.indexOf("};", start);
+  enBlock += src.slice(start, end) + "\n";
 }
-const end = src.indexOf("};", start);
-const enBlock = src.slice(start, end);
 
 // 所有单/双/反引号字符串字面量中的 CJK
 const violations = [];
