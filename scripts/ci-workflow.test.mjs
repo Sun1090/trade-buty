@@ -200,7 +200,11 @@ describe("GitHub Actions workflow contract", () => {
     expect(job, "缺少 patrol 作业").toBeTruthy();
     const checkout = (job.steps ?? []).find((step) => String(step.uses ?? "").startsWith("actions/checkout@"));
     expect(checkout?.with?.submodules, "checkout 必须递归拉取知识库子模块").toBe("recursive");
-    expect(jobCommands(job)).toContain("npm run ops:link-patrol");
+    const commands = jobCommands(job);
+    expect(commands).toContain("npm run ops:link-patrol");
+    expect(commands, "CI 不得把零外链豁免写死，否则空集又会假绿").not.toContain(
+      "LINK_PATROL_ALLOW_EMPTY",
+    );
   });
 });
 
