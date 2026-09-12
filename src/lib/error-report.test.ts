@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { reportError } from "./error-report";
+import { reportError, reportRouteError } from "./error-report";
 
 describe("reportError", () => {
   afterEach(() => {
@@ -35,5 +35,34 @@ describe("reportError", () => {
     });
 
     expect(() => reportError("fatal", "render", new Error("boom"))).not.toThrow();
+  });
+});
+
+describe("reportRouteError", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("reports at fatal level with the Next.js digest when present", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const error = Object.assign(new Error("render exploded"), { digest: "abc123" });
+    reportRouteError(error);
+
+    expect(spy).toHaveBeenCalledWith(
+      "[err:fatal] route-error: render exploded",
+      { digest: "abc123" }
+    );
+  });
+
+  it("omits empty digest metadata and honours a custom scope", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    reportRouteError(new Error("root layout exploded"), "global-error");
+
+    expect(spy).toHaveBeenCalledWith(
+      "[err:fatal] global-error: root layout exploded",
+      {}
+    );
   });
 });
