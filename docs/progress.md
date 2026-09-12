@@ -1,13 +1,46 @@
 # Progress
 
-## CI 并发收敛（被取代的 PR 运行自动取消）
+## 门禁表覆盖机检（docs/ops.md ↔ ci.yml）
 
 - 状态：VERIFYING
-- 工作分支：`codex/ci-concurrency`
+- 工作分支：`codex/ops-gate-coverage`
 - PR：待创建
 - PR 状态：none
-- Base：`origin/main@b2420bf`
+- Base：`origin/main@265dac3`
 - 已验证 Head：见 PR head
+- 本地提交：`docs(ops): register the db-tests gates and machine-check table coverage`
+- 目标：`docs/ops.md` 表头声称「下表覆盖 `.github/workflows/ci.yml` 的全部执行步骤，并按实际顺序排列」，但整张表漏掉了 `db-tests` 作业（`docker pull` / `node scripts/db-test.mjs` / `npm run backup:drill`），且 `npx playwright install` 行排在流水线最末（实际在 `build` 与 `check:mobile` 之间）。该声明此前无任何门禁守护，会随工作流演进而静默漂移。
+- 已完成：
+  - `docs/ops.md`：补登 `db-tests` 作业的三行门禁（以 `db-tests ·` 前缀标注）；把 `npx playwright install --with-deps chromium` 行移到 `build` 与 `check:mobile` 之间，恢复实际顺序；表头改写为覆盖 `ci` / `db-tests` 两个作业，并注明覆盖与顺序由测试机检。
+  - `scripts/ci-workflow.test.mjs` 新增两条守卫（共 15 用例）：
+    - **覆盖**：抽取 `ci.yml` 所有 `npm run X` / `node scripts/*.mjs` / `npx playwright install` / `docker pull <image>` 门禁标识，逐一要求出现在 `docs/ops.md`；漏登记即失败。
+    - **顺序**：解析质量门禁表首列命令的相对位置，要求与 `ci.yml` 的作业/步骤顺序单调一致。
+  - 负向验证：
+    - 删除 `db-tests · npm run backup:drill` 行 → 覆盖用例失败并报出 `backup:drill` 未登记；
+    - 把 `npx playwright install` 行移回流水线末尾 → 顺序用例失败并报出该行乱序。
+- 变更文件（关键）：`docs/ops.md`、`scripts/ci-workflow.test.mjs`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npx vitest run scripts/ci-workflow.test.mjs` exit 0 → 15 用例通过（原 13，新增覆盖与顺序两条）；负向验证见上。
+  - `npm run lint` exit 0；`npm run typecheck` exit 0。
+  - `npm test` exit 0 → 247 文件 / 1803 用例通过。
+  - `npm run build` exit 0 → 474 静态页面生成完成。
+  - `npm run audit:prod` / `npm run audit:all` exit 0 → 0 vulnerabilities。
+  - `npm run check:docs` / `npm run check:changelog` / `npm run check:secrets` exit 0。
+- 上游依赖：无。
+- 未验证项：远端 CI。
+- 风险与回滚：只改文档与新增测试守卫，回滚单个提交即可；覆盖/顺序守卫可能对工作表结构敏感，已在测试注释中固定「首列命令参与顺序校验」的约定。
+- 下一步：推送分支、开 PR、CI 全绿后 `gh pr merge --rebase`。
+- 最后更新：2026-09-13
+
+## CI 并发收敛（被取代的 PR 运行自动取消）
+
+- 状态：DONE（PR #31 已以 `--rebase` 合并进 main；PR CI 与合并后 main CI 均通过）
+- 工作分支：`codex/ci-concurrency`（分支保留，未删除）
+- PR：[#31](https://github.com/Sun1090/trade-buty/pull/31) · `MERGED`
+- PR 状态：MERGED
+- Base：`origin/main@b2420bf`
+- 合并提交：`265dac3`（PR CI run [34719607629](https://github.com/Sun1090/trade-buty/actions/runs/34719607629) `ci` + `db-tests` 全绿；合并后 main CI run [34719942378](https://github.com/Sun1090/trade-buty/actions/runs/34719942378) 全绿）
+- 已验证 Head：`3239b6f`（见 PR #31 head）
 - 本地提交：`ci(workflows): cancel superseded PR runs`
 - 目标：PR #30 收尾时同一分支连续 push 触发了 3 个并行 CI run（只保留最新一个，手动取消了 2 个）。根因是 `ci.yml` 没有 `concurrency`：既浪费 runner 分钟，也让「最新提交是否绿」被旧 run 的结果稀释。本次给 PR 事件加并发收敛，同时保证 main 的每次 push 仍有独立完整门禁。
 - 已完成：
@@ -23,9 +56,9 @@
   - `npm run audit:prod` / `npm run audit:all` exit 0 → 均 `found 0 vulnerabilities`。
   - `npm run check:docs` / `npm run check:changelog` / `npm run check:secrets` exit 0。
 - 上游依赖：无。
-- 未验证项：远端 CI。
+- 未验证项：无（PR #31 CI 与合并后 main CI 均绿）。
 - 风险与回滚：只在 `pull_request` 事件取消被取代的运行；main 的 push 分组不含任何取消语义。回滚即删除 `concurrency` 块与对应守卫。
-- 下一步：推送分支、开 PR、CI 全绿后 `gh pr merge --rebase`。
+- 下一步：无（已完成）。
 - 最后更新：2026-09-13
 
 ## CI actions 运行时对齐（workflow action parity）
