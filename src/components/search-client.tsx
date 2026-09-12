@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { highlight, snippetHtml } from "@/lib/search-utils";
 import { SYNONYM_GROUPS, scoreWithSynonyms } from "@/lib/search-synonyms";
 import { diagnoseNoResults } from "@/lib/search-diagnostics";
@@ -44,6 +44,7 @@ export function SearchClient({
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [suggestIdx, setSuggestIdx] = useState(-1);
   const [indexError, setIndexError] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(query), 200);
@@ -179,6 +180,7 @@ export function SearchClient({
     setQuery(value);
     setSuggestOpen(value.trim().length > 0);
     setSuggestIdx(-1);
+    setFocusIdx(-1);
     if (!entries) await loadIndex();
   }
 
@@ -200,20 +202,22 @@ export function SearchClient({
               );
             } else if (e.key === "Enter" && suggestOpen && suggestIdx >= 0) {
               const entry = suggestions[suggestIdx];
-              if (entry) window.location.href = entry.url;
+              if (entry) router.push(entry.url);
             } else if (e.key === "Escape") {
               setSuggestOpen(false);
+              setFocusIdx(-1);
             } else if (e.key === "ArrowDown") {
               e.preventDefault();
-              setFocusIdx((i) => Math.min(i + 1, results.length - 1));
+              if (filtered.length > 0) {
+                setFocusIdx((i) => Math.min(i + 1, filtered.length - 1));
+              }
             } else if (e.key === "ArrowUp") {
               e.preventDefault();
               setFocusIdx((i) => Math.max(i - 1, -1));
-            } else if (e.key === "Enter" && focusIdx >= 0) {
-              const entry = results[focusIdx];
-              if (entry) window.location.href = entry.url;
-            } else if (e.key === "Enter" && !focusIdx && results.length > 0) {
-              window.location.href = results[0].url;
+            } else if (e.key === "Enter" && filtered.length > 0) {
+              e.preventDefault();
+              const entry = filtered[focusIdx] ?? filtered[0];
+              if (entry) router.push(entry.url);
             }
           }}
           placeholder={dict.placeholder}
@@ -394,28 +398,36 @@ export function SearchClient({
             {chapter}
           </p>
           <ul className="space-y-2.5">
-            {items.map((r) => (
-              <li key={r.url}>
-                <a
-                  href={r.url}
-                  className="group block rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] hover:-translate-y-0.5 transition-all"
-                >
-                  <span className="font-medium group-hover:text-accent transition-colors [&>mark]:bg-accent/30 [&>mark]:text-accent [&>mark]:rounded-sm [&>mark]:px-0.5">
-                    <span
+            {items.map((r) => {
+              const resultIndex = filtered.indexOf(r);
+              return (
+                <li key={r.url}>
+                  <a
+                    href={r.url}
+                    data-search-result-index={resultIndex}
+                    className={`group block rounded-xl border bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] hover:-translate-y-0.5 transition-all ${
+                      resultIndex === focusIdx
+                        ? "border-accent ring-2 ring-[var(--accent-dim)]"
+                        : "border-[var(--border)]"
+                    }`}
+                  >
+                    <span className="font-medium group-hover:text-accent transition-colors [&>mark]:bg-accent/30 [&>mark]:text-accent [&>mark]:rounded-sm [&>mark]:px-0.5">
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: highlight(r.title, query.trim().toLowerCase()),
+                        }}
+                      />
+                    </span>
+                    <p
+                      className="mt-1 text-sm text-muted [&>mark]:bg-accent/30 [&>mark]:text-accent [&>mark]:rounded-sm [&>mark]:px-0.5"
                       dangerouslySetInnerHTML={{
-                        __html: highlight(r.title, query.trim().toLowerCase()),
+                        __html: snippetHtml(r.text, query.trim().toLowerCase()),
                       }}
                     />
-                  </span>
-                  <p
-                    className="mt-1 text-sm text-muted [&>mark]:bg-accent/30 [&>mark]:text-accent [&>mark]:rounded-sm [&>mark]:px-0.5"
-                    dangerouslySetInnerHTML={{
-                      __html: snippetHtml(r.text, query.trim().toLowerCase()),
-                    }}
-                  />
-                </a>
-              </li>
-            ))}
+                  </a>
+                </li>
+              );
+            })}
           </ul>
         </div>
       ))}
