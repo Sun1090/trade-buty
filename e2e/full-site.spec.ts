@@ -218,6 +218,33 @@ test.describe("R13.24 复习与统计本机闭环", () => {
     expect(wrong["getting-started:0"]).toBeUndefined();
   });
 
+  test("错题本重答选项可用键盘作答（R13.9）", async ({ page }) => {
+    await seedStorage(page, {
+      "tb-wrong": JSON.stringify({
+        "getting-started:0": {
+          chapterNum: "getting-started",
+          questionIdx: 0,
+          picked: 1,
+          at: Date.now(),
+        },
+      }),
+    });
+
+    await page.goto("/zh/review");
+    await page.getByRole("button", { name: "随机抽题重答", exact: true }).click();
+
+    // 重答选项必须是可聚焦的真实按钮，键盘即可作答
+    const optionA = page.getByRole("button", { name: /^A\./ });
+    await optionA.focus();
+    await expect(optionA).toBeFocused();
+    await page.keyboard.press("Enter");
+
+    const optionB = page.getByRole("button", { name: /^B\./ });
+    await expect(optionA).toBeDisabled();
+    await expect(optionB).toBeDisabled();
+    await expect(page.getByText(/✅ 正确|❌ 错误，正确答案是/)).toBeVisible();
+  });
+
   test("有本机学习数据时统计页不要求登录且标注本机来源", async ({ page }) => {
     const today = currentLocalDate();
     await seedStorage(page, {
