@@ -1,5 +1,30 @@
 # Progress
 
+## Lighthouse 无障碍全绿与零容忍门禁（Q2.4 / R13.25）
+
+- 状态：DONE（本地实现与全量验证完成；远端发布待授权）
+- 工作分支：`codex/zero-eslint-warnings`
+- PR：none
+- PR 状态：none
+- Base：`origin/main@53f7e01`
+- 远端 Head：none（`LOCAL_ONLY`，未推送）
+- 本地提交：`446900c`
+- 目标：清理 Lighthouse 13 真实采样暴露的核心无障碍缺陷，并把代表性页面的 a11y 从「90 分通过」收紧为 100 分与具体审计零失败的 CI 门禁。
+- 已完成：
+  - 修复窄屏首页品牌链接和未登录账户链接无可辨识名称的问题，为两者补本地化 `aria-label`。
+  - 定义暗色/亮色/护眼主题的 `--accent-on` 前景令牌，修复引导 CTA 在 `#34d399` 背景上仅 1.63:1 的对比度；当前暗色 8.23:1、亮色/护眼 5.48:1。
+  - 代码块语言标签与复制按钮从半透明白色改为主题 `text-muted`，同时修复亮色/护眼代码块上的可读性，默认暗色对比度由 2.65:1 提升到 7.13:1。
+  - 字号调节的 `aria-label` 纳入可见文本 `A-` / `A+`，并补齐本地化行距增减名称，满足 WCAG 2.5.3 标签名称一致要求。
+  - `.lighthouserc.json` 将 accessibility 从 `minScore 0.9` 收紧为 `1`，并把 `color-contrast`、`link-name`、`label-content-name-mismatch` 设为 error；新增/扩展单测锁定可访问名称、语言标签颜色和字号控件语义。
+- 验证命令与结果：
+  - `npm run lint` → exit 0（0 error / 0 warning）；`npm run typecheck` → exit 0。
+  - `npm test` → 178 文件 / 1350 用例通过；`npm run build` → 通过（473 静态页，搜索索引 418）。
+  - `npx lhci autorun --upload.target=filesystem --upload.outputDir=.lighthouseci-a11y-gate` → 3 URL × 2 次采样，6/6 通过；三页 accessibility 均为 100，指定三项审计零失败。
+  - 最新 6 次采样性能为 `/zh` 88、课程页 87、`/chart` 87；best-practices 为 96 / 100 / 100，SEO 全部 100。
+- 风险与回滚：a11y 分数 100 表示当前 Lighthouse 审计集通过，不替代真实屏幕阅读器与跨浏览器人工抽查；若新页面引入未覆盖组件，CI 仍只检查当前三个代表 URL，后续应扩充采样面。
+- 未验证项：远端 CI、PR 与 Vercel 部署（`LOCAL_ONLY`，尚未推送/未部署）。
+- 最后更新：2026-09-12
+
 ## 凭据扫描与依赖漏洞清零（Q5.3 / R13.25）
 
 - 状态：DONE（本地实现与全量验证完成；远端发布待授权）
