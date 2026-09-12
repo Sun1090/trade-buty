@@ -9,6 +9,8 @@ import { resolveQuizStrategy, normalizeQuizDifficulty } from "@/lib/quiz-strateg
 import { getChapterTitle } from "@/lib/ai/chapters";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { QUIZZES } from "@/lib/quizzes";
+import { parseJsonLoose } from "@/lib/ai/json-extract";
+import { BoundedMap, sweepExpired } from "@/lib/bounded-map";
 
 
 interface GenerateBody {
@@ -20,9 +22,16 @@ interface GenerateBody {
   difficulty?: "basic" | "advanced";
 }
 
-// R2.10 成本控制：同章节+语言+难度的题目缓存 24h（Node.js 实例级）
-const quizCache = new Map<string, { questions: unknown; at: number }>();
+// R2.10 成本控制：同章节+语言+难度的题目缓存 24h（Node.js 实例级）。
+// 章节数有限，但仍用带上限的表，避免未来章节/难度组合扩展后无限增长。
+const QUIZ_CACHE_MAX = 500;
+const quizCache = new BoundedMap<string, { questions: unknown; at: number }>(QUIZ_CACHE_MAX);
 const QUIZ_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+const MAX_CHAPTER_SLUG_CHARS = 64;
+/** 变体模式最多取 5 道原题；章节/题号形状与本地题库一致 */
+const MAX_VARIANT_ITEMS = 5;
+const CHAPTER_NUM_RE = /^\d{1,3}$/;
 
 /**
  * POST: 根据用户错题生成 AI 变体题。
@@ -38,20 +47,53 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Login required" }, { status: 401 });
   }
 
-  const body = (await req.json()) as GenerateBody;
+  let raw1: unknown;
+  try {
+    raw1 = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  if (typeof raw1 !== "object" || raw1 === null) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+  const body = raw1 as GenerateBody;
 
   // R2.1 章节出题模式：按章节 slug 基于知识库上下文出 5 道新题
-  if (body.chapter) {
-    return handleChapterQuiz(body);
+  if (body.chapter !== undefined) {
+    if (typeof body.chapter !== "string") {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+    const slug = body.chapter.trim();
+    if (!slug || slug.length > MAX_CHAPTER_SLUG_CHARS) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+    return handleChapterQuiz({ ...body, chapter: slug });
   }
 
-  if (!body.items?.length) {
+  if (!Array.isArray(body.items) || body.items.length === 0) {
     return NextResponse.json({ error: "No items" }, { status: 400 });
+  }
+
+  // 只取前 5 道（与旧行为一致），但形状必须合法，避免把任意文本/越界索引
+  // 拼进 prompt 或用来访问题库。
+  const items = body.items.slice(0, MAX_VARIANT_ITEMS);
+  if (
+    items.some(
+      (item) =>
+        typeof item !== "object" ||
+        item === null ||
+        typeof item.chapterNum !== "string" ||
+        !CHAPTER_NUM_RE.test(item.chapterNum) ||
+        !Number.isInteger(item.questionIdx) ||
+        item.questionIdx < 0,
+    )
+  ) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
   // 取原题
   const wrongQuestions: { question: string; explain: string }[] = [];
-  for (const item of body.items.slice(0, 5)) {
+  for (const item of items) {
     const quiz = QUIZZES[item.chapterNum];
     const q = quiz?.questions[item.questionIdx];
     if (q) {
@@ -86,9 +128,9 @@ const profile = getRetrievalProfile('quiz');
       maxTokens: variantStrategy.maxTokens,
     });
 
-    // 解析 JSON
-    const parsed = JSON.parse(raw);
-    if (!parsed.questions || !Array.isArray(parsed.questions)) {
+    // 解析 JSON（宽松：容忍 ```json 围栏与前后说明文字）
+    const parsed = parseJsonLoose<{ questions?: unknown }>(raw);
+    if (!parsed || !Array.isArray(parsed.questions)) {
       throw new Error("Invalid AI response");
     }
 
@@ -101,8 +143,9 @@ const profile = getRetrievalProfile('quiz');
 
     return NextResponse.json({ questions: valid });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "AI quiz error";
-    return NextResponse.json({ error: msg }, { status: 502 });
+    // 只留服务端日志，不把上游/内部错误文本回传客户端
+    console.error("[ai/quiz] variant generation failed:", e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: "AI 服务暂时不可用，请稍后再试。" }, { status: 502 });
   }
 }
 
@@ -120,8 +163,9 @@ async function handleChapterQuiz(body: GenerateBody): Promise<NextResponse> {
     return NextResponse.json({ error: "Unknown chapter" }, { status: 400 });
   }
 
-  // R2.10 缓存命中直接返回
+  // R2.10 缓存命中直接返回（顺带按需清掉过期条目）
   const cacheKey = `${PROMPT_VERSION}::${strategy.cacheKey}`;
+  sweepExpired(quizCache, (v) => Date.now() - v.at >= QUIZ_CACHE_TTL, 250);
   const cached = quizCache.get(cacheKey);
   if (cached && Date.now() - cached.at < QUIZ_CACHE_TTL) {
     return NextResponse.json({ questions: cached.questions, source: "ai", cached: true });
@@ -148,7 +192,11 @@ async function handleChapterQuiz(body: GenerateBody): Promise<NextResponse> {
       maxTokens: strategy.maxTokens,
     });
     const valid = filterDuplicateQuestions(
-      filterRelevantQuestions(validateAiQuestions(JSON.parse(raw), locale), ragContext, strategy.minRelevance),
+      filterRelevantQuestions(
+        validateAiQuestions(parseJsonLoose(raw), locale),
+        ragContext,
+        strategy.minRelevance,
+      ),
       existingQuestions,
     );
     if (valid.length === 0) throw new Error("No valid questions generated");
@@ -156,11 +204,11 @@ async function handleChapterQuiz(body: GenerateBody): Promise<NextResponse> {
     quizCache.set(cacheKey, { questions: valid, at: Date.now() });
     return NextResponse.json({ questions: valid, source: "ai" });
   } catch (e) {
+    console.error("[ai/quiz] chapter generation failed:", e instanceof Error ? e.message : e);
     // R2.5 降级：有固定题回退固定题，否则报错由前端提示
     if (fixedQuiz) {
       return NextResponse.json({ questions: fixedQuiz.questions, source: "fallback" });
     }
-    const msg = e instanceof Error ? e.message : "AI quiz error";
-    return NextResponse.json({ error: msg }, { status: 502 });
+    return NextResponse.json({ error: "AI 服务暂时不可用，请稍后再试。" }, { status: 502 });
   }
 }

@@ -3,12 +3,36 @@ import { chat } from "@/lib/ai/client";
 import { retrieve } from "@/lib/ai/rag";
 import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { parseJsonLoose } from "@/lib/ai/json-extract";
 
-
-interface SummaryBody {
+export interface SummaryBody {
   chapter: string;
   title: string;
-  locale?: string;
+  locale: "zh" | "en";
+}
+
+const MAX_SLUG_CHARS = 64;
+const MAX_TITLE_CHARS = 200;
+/** 兜底返回的模型原文上限 */
+const MAX_SUMMARY_CHARS = 800;
+
+/** 校验章节导语请求体；非法返回 null（调用方回 400）。导出便于单测。 */
+export function parseSummaryBody(value: unknown): SummaryBody | null {
+  if (typeof value !== "object" || value === null) return null;
+  const body = value as Record<string, unknown>;
+  if (typeof body.chapter !== "string") return null;
+  const chapter = body.chapter.trim();
+  if (!chapter || chapter.length > MAX_SLUG_CHARS) return null;
+
+  let title = chapter;
+  if (body.title !== undefined) {
+    if (typeof body.title !== "string") return null;
+    const trimmed = body.title.trim();
+    if (trimmed.length > MAX_TITLE_CHARS) return null;
+    if (trimmed) title = trimmed;
+  }
+
+  return { chapter, title, locale: body.locale === "en" ? "en" : "zh" };
 }
 
 /** POST: 生成章节摘要（RAG 取该章内容 → AI 总结） */
@@ -17,16 +41,23 @@ export async function POST(req: NextRequest) {
     const supabase = await createSupabaseServerClient();
     await supabase.auth.getUser();
 
-    const body = (await req.json()) as SummaryBody;
-    if (!body.chapter) {
-      return NextResponse.json({ error: "Missing chapter" }, { status: 400 });
+    let raw1: unknown;
+    try {
+      raw1 = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
+    const body = parseSummaryBody(raw1);
+    if (!body) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
     // RAG 用章节标题检索该章内容
     let ragContext = "";
     try {
-const profile = getRetrievalProfile('summary');
-      const results = await retrieve(body.title, body.locale || "zh", profile.topK, profile.threshold);
+      const profile = getRetrievalProfile("summary");
+      // 摘要只应检索本章内容，避免把别章内容混进导语
+      const results = await retrieve(body.title, body.locale, profile.topK, profile.threshold, body.chapter);
       if (results.length > 0) {
         ragContext = results
           .map((r) => `[${r.chapter}/${r.doc}] ${r.chunk}`)
@@ -57,9 +88,15 @@ ${ragContext || "（无检索内容）"}`,
       maxTokens: 300,
     });
 
-    const parsed = JSON.parse(raw);
-    return NextResponse.json({ summary: parsed.summary || raw || "" });
+    // 围栏/多余说明文字都不再导致 502；解析失败时退回模型原文
+    const parsed = parseJsonLoose<{ summary?: unknown }>(raw);
+    const summary =
+      parsed && typeof parsed.summary === "string" && parsed.summary.trim()
+        ? parsed.summary.trim()
+        : raw.trim().slice(0, MAX_SUMMARY_CHARS);
+    return NextResponse.json({ summary });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "AI error" }, { status: 502 });
+    console.error("[ai/summary] generation failed:", e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: "AI 服务暂时不可用，请稍后再试。" }, { status: 502 });
   }
 }
