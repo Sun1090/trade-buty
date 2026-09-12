@@ -3,9 +3,18 @@ import yaml from "js-yaml";
 import { describe, expect, it } from "vitest";
 
 const workflowPath = ".github/workflows/ci.yml";
+const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
 
 function loadWorkflow() {
   return yaml.loadAll(fs.readFileSync(workflowPath, "utf8"));
+}
+
+/** 收集单个 job 里所有 run 步骤拼成的 shell 文本 */
+function jobCommands(job) {
+  return (job.steps ?? [])
+    .map((step) => step.run)
+    .filter(Boolean)
+    .join("\n");
 }
 
 describe("CI workflow contract", () => {
@@ -16,10 +25,7 @@ describe("CI workflow contract", () => {
   it("keeps all post-dry-run quality gates in the workflow", () => {
     const [workflow] = loadWorkflow();
     const steps = workflow.jobs.ci.steps;
-    const commands = steps
-      .map((step) => step.run)
-      .filter(Boolean)
-      .join("\n");
+    const commands = jobCommands(workflow.jobs.ci);
     const names = steps.map((step) => step.name).filter(Boolean);
 
     for (const command of [
@@ -46,5 +52,41 @@ describe("CI workflow contract", () => {
     }
     expect(names).toContain("生成内容质量报告（R10.1–R10.6 / R10.17）");
     expect(names).toContain("内容质量报告归档（R10.17）");
+  });
+
+  it("db-tests 作业覆盖迁移门禁与备份恢复演练（Q2.8 / Q5.4）", () => {
+    const [workflow] = loadWorkflow();
+    const job = workflow.jobs["db-tests"];
+    expect(job, "缺少 db-tests 作业").toBeTruthy();
+    const commands = jobCommands(job);
+    expect(commands).toContain("node scripts/db-test.mjs");
+    expect(commands).toContain("npm run backup:drill");
+    expect(commands).toContain("docker pull supabase/postgres:17.6.1.155");
+  });
+
+  it("每个 run 步骤引用的 npm 脚本都真实存在（防重命名后静默失配）", () => {
+    const [workflow] = loadWorkflow();
+    const missing = [];
+    for (const [jobName, job] of Object.entries(workflow.jobs)) {
+      const commands = jobCommands(job);
+      for (const match of commands.matchAll(/npm run ([\w:-]+)/g)) {
+        const script = match[1];
+        if (!pkg.scripts?.[script]) missing.push(`${jobName}: npm run ${script}`);
+      }
+    }
+    expect(missing, `工作流引用了不存在的 npm 脚本：\n${missing.join("\n")}`).toEqual([]);
+  });
+
+  it("每个 run 步骤引用的 node scripts/*.mjs 文件都存在", () => {
+    const [workflow] = loadWorkflow();
+    const missing = [];
+    for (const [jobName, job] of Object.entries(workflow.jobs)) {
+      const commands = jobCommands(job);
+      for (const match of commands.matchAll(/node (scripts\/[\w.-]+\.mjs)/g)) {
+        const file = match[1];
+        if (!fs.existsSync(file)) missing.push(`${jobName}: node ${file}`);
+      }
+    }
+    expect(missing, `工作流引用了不存在的脚本文件：\n${missing.join("\n")}`).toEqual([]);
   });
 });
