@@ -1,115 +1,75 @@
 /**
- * R8.4 分享落地页单元测试：
- * - generateMetadata 在 kind/path 合法且 encode 合法时返回 OG 元数据
- * - kind 非法 / path 编码非法时返回 robots noindex
- * - detectKind 与 kind 不一致时返回 robots noindex
+ * R8.4 分享落地页单元测试。
+ *
+ * 早期版本把 page.tsx 的逻辑「复制」到测试里再断言，等于测试自己的副本 ——
+ * 页面真实分支（尤其是 percent 解码）从来没被覆盖过。现在直接测纯逻辑模块
+ * `@/lib/share-landing`，页面只做路由壳。
+ *
+ * 重点回归：路由动态段给到 page 的是**编码形态**的 path（`v1%7C...`），
+ * 而 generateMetadata 拿到已解码的形态。`resolveShareLanding` 必须两种都接受，
+ * 否则分享链接会 404（线上真实事故）。
  */
 import { describe, it, expect } from "vitest";
-import { encodeQuiz, encodeReplay, encodeStreak } from "@/lib/share-decode";
+import { encodeQuiz, encodeReplay, encodeStreak, detectKind } from "@/lib/share-decode";
+import {
+  normalizeShareSegment,
+  resolveShareLanding,
+  isShareKind,
+  summarizeForMeta,
+  kindToLocale,
+} from "@/lib/share-landing";
 
-// 内部辅助：从 page.tsx 导入会触发 next/navigation 的副作用；我们直接复制 generateMetadata 内的逻辑，
-// 用更简洁的实现做断言（在测试里这是允许的，因为同源）。
-import { getDict } from "@/lib/i18n";
-
-type Kind = "quiz" | "replay" | "streak";
-function isKind(s: string): s is Kind {
-  return s === "quiz" || s === "replay" || s === "streak";
-}
-
-function detect(kind: string, path: string): Kind | null {
-  // 简化版：必须 decode 成功 + kind 匹配
-  if (kind === "quiz") return decodeQuiz(path) ? "quiz" : null;
-  if (kind === "replay") return decodeReplay(path) ? "replay" : null;
-  if (kind === "streak") return decodeStreak(path) ? "streak" : null;
-  return null;
-}
-
-function decodeBase(p: string): unknown {
-  const seg = p.split("|")[1];
-  if (!seg) return null;
-  try {
-    return JSON.parse(Buffer.from(seg, "base64").toString("utf8"));
-  } catch {
-    return null;
-  }
-}
-function decodeQuiz(p: string) {
-  const x = decodeBase(p);
-  if (!x || typeof x !== "object") return null;
-  const o = x as Record<string, unknown>;
-  if (typeof o.chapterTitle !== "string") return null;
-  return x;
-}
-function decodeReplay(p: string) {
-  const x = decodeBase(p);
-  if (!x || typeof x !== "object") return null;
-  const o = x as Record<string, unknown>;
-  if (typeof o.symbol !== "string") return null;
-  return x;
-}
-function decodeStreak(p: string) {
-  const x = decodeBase(p);
-  if (!x || typeof x !== "object") return null;
-  const o = x as Record<string, unknown>;
-  if (typeof o.currentStreak !== "number") return null;
-  return x;
-}
-
-function summarizeForMeta(
-  kind: Kind,
-  path: string,
-): { title: string; description: string; locale: "zh" | "en" } | null {
-  if (kind === "quiz") {
-    const p = decodeQuiz(path) as
-      | { chapterTitle: string; score: number; total: number; percent: number; locale: "zh" | "en" }
-      | null;
-    if (!p || typeof p.chapterTitle !== "string") return null;
-    const t = getDict(p.locale === "en" ? "en" : "zh");
-    return {
-      title: t.share.quizTitleTpl
-        .replace("{chapter}", p.chapterTitle)
-        .replace("{grade}", "A")
-        .replace("{score}", `${p.score}`)
-        .replace("{total}", `${p.total}`),
-      description: t.share.quizDescTpl
-        .replace("{chapter}", p.chapterTitle)
-        .replace("{score}", `${p.score}`)
-        .replace("{total}", `${p.total}`)
-        .replace("{percent}", `${Math.round(p.percent)}`),
-      locale: p.locale === "en" ? "en" : "zh",
-    };
-  }
-  return null;
-}
-
-describe("share landing page metadata", () => {
-  it("kind 非法时判定失败", () => {
-    expect(isKind("garbage")).toBe(false);
+describe("normalizeShareSegment", () => {
+  it("解码 percent-encoded 段", () => {
+    expect(normalizeShareSegment("v1%7CeyJhIjoxfQ")).toBe("v1|eyJhIjoxfQ");
   });
 
-  it("quiz 合法 path 能 summarize 出 title/description", () => {
-    const path = encodeQuiz({
+  it("对已解码的段幂等", () => {
+    expect(normalizeShareSegment("v1|eyJhIjoxfQ")).toBe("v1|eyJhIjoxfQ");
+  });
+
+  it("畸形 percent 序列返回 null 而不是抛错", () => {
+    expect(normalizeShareSegment("v1%7C%")).toBeNull();
+    expect(normalizeShareSegment("%E0%A4%A")).toBeNull();
+  });
+});
+
+describe("resolveShareLanding", () => {
+  it("编码形态的 quiz 段能解析（回归：page 与 generateMetadata 解码不一致）", () => {
+    const segment = encodeQuiz({
       chapterTitle: "01 · 入门",
       score: 8,
       total: 10,
       percent: 80,
       locale: "zh",
     });
-    expect(isKind("quiz")).toBe(true);
-    const summary = summarizeForMeta("quiz", path);
-    expect(summary).not.toBeNull();
-    expect(summary?.title).toContain("01 · 入门");
-    expect(summary?.title).toContain("8/10");
+    // 前提：编码形态本身送进 detectKind 是解析不出来的 —— 这正是线上事故
+    expect(detectKind(encodeURIComponent(segment))).toBeNull();
+
+    const resolved = resolveShareLanding("quiz", encodeURIComponent(segment));
+    expect(resolved).not.toBeNull();
+    expect(resolved?.kind).toBe("quiz");
+    expect(resolved?.path).toBe(segment);
+    expect(resolved?.locale).toBe("zh");
+    expect(resolved?.title).toContain("01 · 入门");
+    expect(resolved?.title).toContain("8/10");
   });
 
-  it("乱写 path 无法 decode", () => {
-    const path = "garbage-no-prefix";
-    const summary = summarizeForMeta("quiz", path);
-    expect(summary).toBeNull();
+  it("已解码形态同样能解析", () => {
+    const segment = encodeQuiz({
+      chapterTitle: "Spot",
+      score: 5,
+      total: 5,
+      percent: 100,
+      locale: "en",
+    });
+    const resolved = resolveShareLanding("quiz", segment);
+    expect(resolved?.locale).toBe("en");
+    expect(resolved?.path).toBe(segment);
   });
 
-  it("replay 合法 path 能 summarize", () => {
-    const path = encodeReplay({
+  it("replay 编码形态解析出对应语言", () => {
+    const segment = encodeReplay({
       symbol: "BTCUSDT",
       interval: "1h",
       correct: 7,
@@ -119,29 +79,55 @@ describe("share landing page metadata", () => {
       currentStreak: 3,
       locale: "en",
     });
-    expect(summarizeForMeta("quiz", path)).toBeNull();
-    // summarizeForMeta 不区分 kind——这里给 quiz 但 encode 是 replay，detectKind 应失败
-    // 这里只是 sanity check encode 不抛
-    expect(path).toMatch(/^v1\|/);
-    expect(detect("replay", path)).toBe("replay");
+    const resolved = resolveShareLanding("replay", encodeURIComponent(segment));
+    expect(resolved?.locale).toBe("en");
+    expect(resolved?.title).toContain("BTCUSDT");
   });
 
-  it("streak 合法 path", () => {
-    const path = encodeStreak({ currentStreak: 5, longestStreak: 12, locale: "zh" });
-    expect(detect("streak", path)).toBe("streak");
+  it("streak 编码形态解析", () => {
+    const segment = encodeStreak({ currentStreak: 12, longestStreak: 30, locale: "zh" });
+    const resolved = resolveShareLanding("streak", encodeURIComponent(segment));
+    expect(resolved?.locale).toBe("zh");
+    expect(resolved?.title).toContain("12");
   });
 
-  it("detectKind 与 kind 不一致返回 null", () => {
-    const path = encodeQuiz({
+  it("未知 kind → null", () => {
+    expect(resolveShareLanding("garbage", "v1|x")).toBeNull();
+  });
+
+  it("kind 与载荷类型不符 → null", () => {
+    const quizSegment = encodeQuiz({
       chapterTitle: "x",
       score: 1,
       total: 1,
       percent: 100,
       locale: "zh",
     });
-    // path 是 quiz 编码——detect("streak", path) 内部检查的是 kind="streak" 的解码，
-    // 此 path 不满足 streak 字段，返回 null
-    expect(detect("streak", path)).toBeNull();
-    expect(detect("quiz", path)).toBe("quiz");
+    expect(resolveShareLanding("streak", quizSegment)).toBeNull();
+    expect(resolveShareLanding("quiz", quizSegment)).not.toBeNull();
+  });
+
+  it("畸形 percent 序列 → null（不抛 500）", () => {
+    expect(resolveShareLanding("quiz", "v1%7C%")).toBeNull();
+  });
+
+  it("乱写的段 → null", () => {
+    expect(resolveShareLanding("quiz", "garbage-no-prefix")).toBeNull();
+  });
+});
+
+describe("isShareKind", () => {
+  it("只认三种 kind", () => {
+    expect(isShareKind("quiz")).toBe(true);
+    expect(isShareKind("replay")).toBe(true);
+    expect(isShareKind("streak")).toBe(true);
+    expect(isShareKind("garbage")).toBe(false);
+  });
+});
+
+describe("kindToLocale / summarizeForMeta", () => {
+  it("非法载荷回退默认语言", () => {
+    expect(kindToLocale("quiz", "garbage")).toBeDefined();
+    expect(summarizeForMeta("quiz", "garbage").title).toBeTruthy();
   });
 });

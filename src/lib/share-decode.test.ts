@@ -275,3 +275,24 @@ describe("decode whitelisting and sanitization (R13.3/R13.4)", () => {
     expect(withLocale).toBeNull(); // locale 白名单在守卫层就拒绝
   });
 });
+
+describe("percent-encoded 段必须先归一化", () => {
+  // 回归：路由动态段给 page 的 params 是编码形态（`|` → `%7C`），而
+  // generateMetadata / opengraph-image 拿到已解码形态。detectKind 只认解码后的
+  // 形态，所以调用方必须先自己归一化，否则分享落地页会 404（线上事故根因）。
+  const segment = encodeQuiz({
+    chapterTitle: "K 线入门",
+    score: 4,
+    total: 5,
+    percent: 80,
+    locale: "zh",
+  });
+
+  it("编码形态直接送 detectKind 解析失败", () => {
+    expect(detectKind(encodeURIComponent(segment))).toBeNull();
+  });
+
+  it("decodeURIComponent 后 detectKind 正常", () => {
+    expect(detectKind(decodeURIComponent(encodeURIComponent(segment)))).toBe("quiz");
+  });
+});

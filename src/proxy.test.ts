@@ -1,6 +1,8 @@
+import { readdirSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
-import { config, proxy } from "./proxy";
+import { config, LOCALE_FREE_PREFIXES, proxy } from "./proxy";
 
 function request(path: string, cookie?: string): NextRequest {
   const headers = new Headers();
@@ -24,6 +26,16 @@ function matchesMatcher(pathname: string): boolean {
   const source = config.matcher[0];
   expect(source.startsWith("/")).toBe(true);
   return new RegExp(`^${source}$`).test(pathname);
+}
+
+/** 递归列出 `public/` 下的全部文件（相对仓库根、POSIX 分隔符）。 */
+function listPublicFiles(dir = "public"): string[] {
+  return readdirSync(dir, { withFileTypes: true })
+    .flatMap((entry) => {
+      const relative = path.posix.join(dir.split(path.sep).join("/"), entry.name);
+      return entry.isDirectory() ? listPublicFiles(path.join(dir, entry.name)) : [relative];
+    })
+    .sort();
 }
 
 describe("proxy 语言前缀重定向", () => {
@@ -80,45 +92,97 @@ describe("proxy 语言前缀重定向", () => {
   });
 
   it("重定向使用 307，保持方法与请求体语义", () => {
-    expect(redirectLocation(proxy(request("/share/lesson/abc")))).toBe(
-      "http://localhost/en/share/lesson/abc",
+    expect(redirectLocation(proxy(request("/replay/trend")))).toBe(
+      "http://localhost/en/replay/trend",
     );
+  });
+
+  /**
+   * R13.6 回归：分享链接由 `origin + /share/...` 拼成（载荷里自带 locale），
+   * 一旦被补上 `/en` 前缀就会落到不存在的 `/[locale]/share/...`，分享链接全站 404。
+   */
+  it("根级无语言前缀的真实页面（/share/...）不重定向", () => {
+    for (const prefix of LOCALE_FREE_PREFIXES) {
+      expect(proxy(request(`/${prefix}`)), `/${prefix}`).toBeUndefined();
+      expect(proxy(request(`/${prefix}/quiz/v1abc`)), `/${prefix}/quiz`).toBeUndefined();
+      expect(proxy(request(`/${prefix}/quiz/v1abc`, "zh")), `/${prefix}/quiz + zh`).toBeUndefined();
+    }
   });
 });
 
 describe("proxy matcher", () => {
   it("放行需要按语言重定向的页面路径", () => {
-    for (const path of ["/", "/knowledge/x", "/en/knowledge/x", "/stats?tab=1".split("?")[0], "/zh"]) {
+    for (const path of ["/", "/knowledge/x", "/en/knowledge/x", "/stats", "/zh"]) {
       expect(matchesMatcher(path)).toBe(true);
     }
   });
 
-  it("排除静态资源、内部路径与机器可读端点", () => {
+  it("放行真实静态表面——public 文件与 app 根级 file-route", () => {
     for (const path of [
       "/_next/static/chunk.js",
       "/_next/image",
       "/api/error-reports",
-      "/api",
       "/favicon.ico",
-      "/knowledge-assets/lesson/a.png",
-      "/sitemap.xml",
-      "/robots.txt",
-      "/search-index.json",
-      "/opengraph-image.png",
-      "/icon.svg",
       "/icon",
-      "/apple-icon",
+      "/manifest.webmanifest",
+      "/robots.txt",
+      "/sitemap.xml",
+      "/search-index.json",
+      "/sw.js",
+      "/offline.html",
+      "/knowledge-assets/zh/getting-started/kline-anatomy.svg",
     ]) {
-      expect(matchesMatcher(path)).toBe(false);
+      expect(matchesMatcher(path), path).toBe(false);
     }
   });
 
-  it("只排除精确的 icon 元数据路由，不误伤同前缀页面", () => {
-    expect(matchesMatcher("/iconography")).toBe(true);
+  it("放行根级无语言前缀的真实页面前缀（/share/）", () => {
+    for (const prefix of LOCALE_FREE_PREFIXES) {
+      expect(matchesMatcher(`/${prefix}/quiz/v1abc`), prefix).toBe(false);
+    }
   });
 
-  it("排除带扩展名的文件但保留同名路径段", () => {
-    expect(matchesMatcher("/knowledge/candlestick.md")).toBe(false);
-    expect(matchesMatcher("/knowledge/candlestick")).toBe(true);
+  /**
+   * 软 404 回归：以前 `.*\.\w+$` 会把不存在的类文件路径也放行，
+   * 它们落到 `/[locale]` 被当成非法 locale，渲染出 HTTP 200 的首页外壳。
+   * 现在这里不再按扩展名通配放行——由代理补前缀后交路由层处理，
+   * 真实路由（如 `/[locale]/opengraph-image.png`）照常 200，不存在的路径真实 404。
+   */
+  it("不再按扩展名通配放行（补前缀后由路由层定状态码）", () => {
+    for (const path of [
+      "/foo.png",
+      "/sitemap.json",
+      "/icon.svg",
+      "/apple-icon",
+      "/opengraph-image.png",
+      "/robots.txt.bak",
+      "/knowledge-assets",
+      "/sw.jsx",
+      "/api",
+      "/_next-ish",
+    ]) {
+      expect(matchesMatcher(path), path).toBe(true);
+    }
+  });
+
+  it("精确匹配根级 file-route，同前缀路径不被误放行", () => {
+    for (const path of ["/iconography", "/icons", "/favicon.icon", "/search-index.json5"]) {
+      expect(matchesMatcher(path), path).toBe(true);
+    }
+  });
+
+  /**
+   * 守卫：`public/` 下每个文件都必须被 matcher 放行，否则新增静态文件会静默 404。
+   * 注意 `public/knowledge-assets/` 与 `public/search-index.json` 是 prebuild 生成的，
+   * 全新检出时并不存在；枚举结果为空也要挡住（见下面的长度断言）。
+   */
+  it("public/ 下的每个文件都被 matcher 放行", () => {
+    const files = listPublicFiles();
+    expect(files.length, "public/ 下没有文件，守卫失去意义").toBeGreaterThan(0);
+    expect(files).toContain("public/offline.html");
+    for (const file of files) {
+      const pathname = `/${file.replace(/^public\//, "")}`;
+      expect(matchesMatcher(pathname), `${pathname} 会被语言代理重定向`).toBe(false);
+    }
   });
 });
