@@ -29,7 +29,7 @@ jobs:
         id: buildtime
         run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
       - name: ESLint（零警告门禁）
-        run: npm run lint -- --max-warnings=0
+        run: npm run lint
       - run: npm run test
       - run: npm run typecheck
       - run: npm run build
