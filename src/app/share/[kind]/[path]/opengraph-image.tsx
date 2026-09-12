@@ -93,15 +93,24 @@ export default async function Image({
 }: {
   params: Promise<{ kind: string; path: string }>;
 }) {
+  // R13.5：解析/解码异常只影响数据部分——统一降级到品牌卡，杜绝爬虫拿到 500。
+  // 注意：try 块内不放 JSX（react-hooks/error-boundaries 规则，运行时渲染错误
+  // 也抓不到；真实风险在 params 解包与 payload 解码）。
+  let info: ShareInfo | null = null;
   try {
     const { kind, path } = await params;
-    if (kind !== "quiz" && kind !== "replay" && kind !== "streak") return renderBrandFallback();
-    const info = summarize(kind as ShareKind, decodeURIComponent(path));
-    if (!info) return renderBrandFallback();
+    if (kind !== "quiz" && kind !== "replay" && kind !== "streak") {
+      return renderBrandFallback();
+    }
+    info = summarize(kind as ShareKind, decodeURIComponent(path));
+  } catch {
+    info = null;
+  }
+  if (!info) return renderBrandFallback();
 
-    return new ImageResponse(
-      (
-        <div
+  return new ImageResponse(
+    (
+      <div
           style={{
             width: "100%",
             height: "100%",
@@ -125,8 +134,4 @@ export default async function Image({
       ),
       { ...size },
     );
-  } catch {
-    // R13.5：任何解析/编码异常都落到品牌卡，绝不让社交抓取拿 500
-    return renderBrandFallback();
-  }
 }
