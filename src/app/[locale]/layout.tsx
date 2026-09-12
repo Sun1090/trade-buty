@@ -14,6 +14,7 @@ import { OnboardingTour } from "@/components/onboarding-tour";
 import { MobileNav } from "@/components/mobile-nav";
 import { BookmarkCount } from "@/components/bookmark-count";
 import { LearningSidebar } from "@/components/learning-sidebar";
+import { LocaleHtmlLang } from "@/components/locale-html-lang";
 import { JsonLd } from "@/components/json-ld";
 import { siteGraph } from "@/lib/jsonld";
 
@@ -43,6 +44,7 @@ export default async function LocaleLayout({
 
   return (
     <>
+      <LocaleHtmlLang />
       <JsonLd data={siteGraph(locale)} />
       <AuthProvider>
       <LearningSidebar locale={locale} labels={{ learn: t.nav.path, practice: t.nav.replay, review: t.nav.review, stats: t.stats.nav, bookmarks: t.bookmarks.nav, search: t.nav.search, ai: t.ai.nav }} />
