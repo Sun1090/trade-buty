@@ -168,7 +168,7 @@
 - [x] R7.3 低端机降级（perf.ts rAF 采样 1.5s，<24fps 只保留最近 150 根 K 线；3 单测）
 - [x] R7.4 虚拟化评审（docs/perf-notes.md：数据规模天然有界 ≤81 条，暂不引入；设重评触发条件）
 - [x] R7.5 上游超时重试（http.ts：30s AbortController + 429/5xx 重试 1 次；chat/streamChat/embed 全部接入；6 单测）
--[x] PLACEHOLDER
+- [x] R7.6 前端错误上报分级（fatal / recoverable / silent 三档；单测覆盖路由、非 Error 输入与上报自身失败）
 - [x] R7.7 E2E 冒烟（Playwright 7 用例：首页/路线/测验闭环/复习/回放/AI 页/软 404，进 CI；无 Supabase env 时降级本地模式）
 - [x] R7.8 视觉基线（5 页 toHaveScreenshot 基线入库，npm run e2e:visual 人工复核流程；不进 CI 因字体平台差异）
 - [x] R7.9 依赖评审（docs/deps.md：14 个运行时依赖逐个理由 + 明确不引入清单 + 审查流程）
