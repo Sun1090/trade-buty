@@ -6,6 +6,7 @@ import {
   stripLeadingH1,
   stripVitePressArtifacts,
 } from "./content";
+import { hasRiskWarningBlock, shouldShowRiskWarningFallback } from "./risk-warning";
 
 describe("convertContainers", () => {
   it("warning 容器转换为 callout 引用块（带标题）", () => {
@@ -151,5 +152,21 @@ describe("prepareForRender 端到端", () => {
     expect(out).toContain("⚠️ 风险提示");
     expect(out).toContain("/zh/knowledge/spot");
     expect(out).toContain("/zh/knowledge/getting-started/core-concepts#anchor");
+  });
+});
+
+describe("章节导语风险提示兜底", () => {
+  it("识别 VitePress 与行内引用两种合规风险块", () => {
+    expect(hasRiskWarningBlock("::: warning ⚠️ 风险提示\n内容\n:::")).toBe(true);
+    expect(hasRiskWarningBlock("> ⚠️ **Risk Warning**: Trading involves risk.")).toBe(true);
+  });
+
+  it("仅提及风险或完全缺失时要求展示兜底提示", () => {
+    expect(shouldShowRiskWarningFallback("本篇章涉及风险提示与风险管理。")).toBe(true);
+    expect(shouldShowRiskWarningFallback("只讲 K 线构成。")).toBe(true);
+  });
+
+  it("已有合规风险块时不重复展示兜底提示", () => {
+    expect(shouldShowRiskWarningFallback("::: warning ⚠️ 风险提示\n内容\n:::")).toBe(false);
   });
 });
