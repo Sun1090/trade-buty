@@ -194,3 +194,17 @@ test.describe("无结果页面 CTA（R13.18）", () => {
     await expect(page).toHaveURL(/\/zh\/path$/);
   });
 });
+
+test.describe("更新日志（发布说明一致）", () => {
+  test("中文页渲染策展版本记录", async ({ page }) => {
+    await page.goto("/zh/changelog");
+    await expect(page.getByRole("heading", { name: "最近更新" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /v0\.6\.0/ })).toBeVisible();
+    await expect(page.getByText("内容覆盖、AI 质量与学习留存")).toBeVisible();
+  });
+
+  test("英文页渲染对应语言的发布说明", async ({ page }) => {
+    await page.goto("/en/changelog");
+    await expect(page.getByText("Content coverage, AI quality, and learning retention")).toBeVisible();
+  });
+});
