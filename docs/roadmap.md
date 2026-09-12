@@ -22,7 +22,7 @@
 
 - [x] Q2.1 i18n 深层 parity 测试（全字典递归比对，CI 常驻）
 - [x] Q2.2 Bundle 体积预算（`npm run check:bundle`，内容页 280KB/chart 360KB，CI 阻断；基线 217KB 为框架固定成本）
-- [x] Q2.3 Lighthouse CI（三页门禁：a11y/bp/seo≥90 error，性能≥70 warn；实测首页87/课程95/图表65）
+- [x] Q2.3 Lighthouse CI（三页门禁：accessibility=100 error，并单独阻断 `color-contrast` / `link-name` / `label-content-name-mismatch`；best-practices/SEO≥90 error，性能≥70 warn。2026-09-13 实测 6/6 断言通过）
 - [x] Q2.4 a11y 抽查：键盘全程可操作（测验答题、回放控制、灯箱 Enter/Space/ESC）、全局 `:focus-visible` 焦点环、表单可访问名称；单测 + Playwright 回归见 `docs/accessibility-audit.md`
 - [x] Q2.5 320px 回归（`npm run check:mobile`，14 关键页，CI 在生产构建后执行并阻断；修掉 path/knowledge-graph 两处 grid truncate 溢出）
 - [x] Q2.6 错误边界覆盖率：图表/搜索/AI 三个外部依赖入口都有降级 UI（搜索索引加载失败/重试单测补齐）
