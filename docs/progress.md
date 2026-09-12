@@ -18,9 +18,11 @@
     - 所有工作流里的 `npm run <script>` 与 `node scripts/*.mjs` 引用必须真实存在；
     - 新增外链巡检专项：cron `0 3 1 * *`、`workflow_dispatch`、checkout 递归子模块、`ops:link-patrol` 不被删除。
   - 反向验证守卫有效：临时把 `link-patrol.yml` 退回 `@v4` 后测试确实失败（10 用例中 1 失败，报出 checkout/setup-node 两处 stale）。
-- 变更文件（关键）：`.github/workflows/link-patrol.yml`、`scripts/ci-workflow.test.mjs`、`docs/progress.md`。
+  - 权限与超时硬化：`.github/workflows/ci.yml` 与 `link-patrol.yml` 都显式声明顶层 `permissions: contents: read`（不依赖仓库默认值，防止以后默认放开为可写时被静默继承）；`ci` job 增 `timeout-minutes: 30`（正常约 6 分钟）、`patrol` job 增 `timeout-minutes: 15`，避免卡死吃满 runner 默认 6 小时上限。
+  - 新增两条对应守卫：每个工作流必须有显式 `contents: read` 且不多授予其它权限；每个 job 必须有 (0, 60] 区间内的数值 `timeout-minutes`。反向验证：临时移除 `link-patrol.yml` 的权限与超时后两条用例均失败并报出文件与 job 名。
+- 变更文件（关键）：`.github/workflows/ci.yml`、`.github/workflows/link-patrol.yml`、`scripts/ci-workflow.test.mjs`、`docs/progress.md`。
 - 验证命令与结果：
-  - `npx vitest run scripts/ci-workflow.test.mjs` exit 0 → 10 用例通过（原 7 用例）；反向验证：把 `link-patrol.yml` 临时退回 `@v4` 后该用例失败并列出 stale action。
+  - `npx vitest run scripts/ci-workflow.test.mjs` exit 0 → 12 用例通过（原 7 用例）；反向验证：把 `link-patrol.yml` 临时退回 `@v4`、以及临时移除其权限/超时声明，都会让对应用例失败。
   - `npm run lint` exit 0（零 warning）；`npm run typecheck` exit 0。
   - `npm test` exit 0 → 247 文件 / 1798 用例通过。
   - `npm run build` exit 0 → 474 静态页面生成完成。
