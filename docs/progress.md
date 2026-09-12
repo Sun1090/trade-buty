@@ -1,5 +1,35 @@
 # Progress
 
+## 工具链 major 升级（三个落地、两个按上游阻塞延期）
+
+- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 工作分支：`codex/deps-major-upgrades`
+- PR：[#29](https://github.com/Sun1090/trade-buty/pull/29)
+- Base：`origin/main@2828ef0`
+- 远端 Head：推送后跟踪（创建 PR 时为 `b934280`，回填进度后随本条 amend 更新）
+- 本地提交：`chore(deps): align @types/node with the Node 22 CI runtime`、`chore(deps): upgrade js-yaml to v5 and adopt its ESM named exports`、`chore(deps): upgrade vitest to v5`、`fix(sync): type the user_settings upsert row explicitly`、`docs(deps): record the toolchain major upgrade outcomes`、`docs(deps): reconcile the monthly audit dispositions`
+- 目标：把 2026-09-13 月度审计列出的五个 major 逐项实际安装并跑门禁，不把「可能不兼容」当结论；能升级的落地，不能升级的留下可复现阻塞证据，并修正审计表中的暂缓状态。
+- 已完成：
+  - `@types/node` 20.19.43 → **22.20.2**，与 CI 的 Node 22 运行时对齐。
+  - 直接依赖 `js-yaml` 4.3.2 → **5.4.1**。v5 是 ESM 包且只有具名导出；将 `scripts/ci-workflow.test.mjs` 改为 `import { loadAll } from "js-yaml"`，避免 default import 在运行时变成 `undefined`。`gray-matter` 的 `js-yaml@3.15.2` 与 `@eslint/eslintrc` 的 `js-yaml@4.3.2` 继续通过 `overrides` 固定。
+  - `vitest` 4.1.11 → **5.0.0**，全量测试通过。
+  - `eslint` 10.10.0 延期：实跑 `npm run lint` exit 2，`eslint-plugin-react` 的 `contextOrFilename.getFilename` 与 ESLint 10 不兼容，且当前 peer 范围只声明到 ESLint 9。
+  - `typescript` 7.0.2 延期：实跑 `npm run lint` exit 2，`typescript-eslint@8.70.0` 明确拒绝 TS 7；`tsc --noEmit` 本身可运行但不能单独代表整条工具链兼容。
+  - TS 7 暴露出 `src/lib/sync-queue-executor.ts` 的 `user_settings` upsert 行类型过宽（`Record<string, number | string>`），被 Supabase 重载拒绝；改为具名行类型 `{ user_id: string; daily_goal_min?: number; weekly_goal_min?: number }`，在 TS 5.9.3 与 7.0.2 下均通过类型检查，运行时行为不变。
+  - `docs/deps.md` 登记三个升级项的实测结果、两个延期项的可复现阻塞证据与解除条件，并把月度审计表中的「暂缓」状态改为最终处置。
+- 变更文件（关键）：`package.json`、`package-lock.json`、`scripts/ci-workflow.test.mjs`、`src/lib/sync-queue-executor.ts`、`docs/deps.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npm test` exit 0 → 247 文件 / 1795 用例通过（Vitest 5.0.0）。
+  - `npm run lint` exit 0（零 warning）；`npm run typecheck` exit 0；`npm ls --depth=0` exit 0。
+  - `npx vitest run scripts/ci-workflow.test.mjs` exit 0 → 7 用例通过。
+  - `npm run audit:prod` exit 0、`npm run audit:all` exit 0 → 均 `found 0 vulnerabilities`。
+  - `npm run check:secrets` exit 0（657 个文本文件无疑似凭据）；`npm run check:docs` exit 0。
+- 上游依赖：ESLint 10 依赖 `eslint-plugin-react` 先声明/实现支持；TypeScript 7 依赖 `typescript-eslint` 先放宽 peer 并完成兼容。
+- 未验证项：本分支远端 CI；本地已覆盖 lint、test、typecheck、审计与配置门禁。
+- 风险与回滚：`js-yaml` 的 ESM 具名导出已由专项测试锁定；若 CI 发现其它间接导入面，回滚对应单个依赖提交即可。ESLint/TypeScript 未升级，不扩大现有风险面。
+- 下一步：推送分支、开 PR，CI 全绿后 rebase 合并；随后进入 R13.9 移动端键盘与焦点管理。
+- 最后更新：2026-09-13
+
 ## 依赖月度审计记录（Q5.3 的 2026-09-13 快照）
 
 - 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
