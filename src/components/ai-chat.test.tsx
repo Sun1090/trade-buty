@@ -4,6 +4,15 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { AiChat } from "./ai-chat";
 import { SUGGESTED_QUESTIONS_ZH, SUGGESTED_QUESTIONS_EN } from "@/lib/ai/prompt";
 
+// Keep the streaming-state test deterministic: lazy chunk loading is covered in the
+// production build and E2E, while this unit test should only observe AiChat state.
+vi.mock("next/dynamic", () => ({
+  default: () =>
+    function MarkdownStub({ content }: { content?: string }) {
+      return <>{content}</>;
+    },
+}));
+
 // jsdom 没有 scrollTo，AiChat 挂载后会自动滚到底
 beforeAll(() => {
   Element.prototype.scrollTo = vi.fn();
