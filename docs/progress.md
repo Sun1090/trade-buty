@@ -1,5 +1,29 @@
 # Progress
 
+## 测验挂载点与题库覆盖率门禁修复（R6.3 / R6.4）
+
+- 状态：DONE
+- 工作分支：codex/r13-e2e-expansion
+- Base：origin/main@abe8106
+- 远端状态：未推送（LOCAL_ONLY）
+- 目标：修复内容门禁“命令成功但实际只检查少数题库”的静默失真，确保 CI 对全部 27 章验真。
+- 缺陷与修复：
+  - 原 `check-quiz-mounts` 用跨对象正则解析 `quizzes.ts`，生产文件实际只有 2/27 个对象能命中，却仍以 0 退出；其余 25 个 `QUIZZES["chapter"] = {...}` 挂载没有被真实验证。
+  - 原 `check-quiz-coverage` 同样只按旧对象字面量结构识别，固定题库被低报为 2/27。
+  - 新增 `scripts/quiz-source-lib.mjs`，使用仓库已安装的 TypeScript Compiler API 解析对象字面量与索引赋值两种挂载形式，不再依赖跨块正则。
+  - `check-quiz-mounts` 现在校验全部挂载的 `chapterNum`、`docSlug`、真实课程文件和每题至少 3 道固定题；同时拒绝重复键。
+  - `check-quiz-coverage` 现在按真实 `questions` 数组长度统计，缺章、题目非数组或少于 3 道都会阻断。
+- 变更文件：`scripts/quiz-source-lib.mjs`、`scripts/quiz-source-lib.test.mjs`、`scripts/check-quiz-mounts.mjs`、`scripts/check-quiz-coverage.mjs`、`docs/roadmap.md`、`docs/ops.md`。
+- 验证命令与结果：
+  - `npx vitest run scripts/quiz-source-lib.test.mjs` → 1 文件 / 3 用例通过，含生产源 27 挂载与 81 道题断言。
+  - `npm run check:quiz-mounts` → exit 0（27 章挂载，chapter/doc 均存在）。
+  - `npm run check:quiz-coverage` → exit 0（27/27 章，共 81 道固定题）。
+  - `npm test` → 165 文件 / 1289 用例通过。
+  - `npm run lint` → exit 0（0 error / 59 warning）。
+  - `npm run typecheck` → exit 0。
+- 未验证项：远端 CI 与部署（LOCAL_ONLY，未推送）。
+- 最后更新：2026-09-12
+
 ## 核心交互无障碍（Q2.4）
 
 - 状态：DONE

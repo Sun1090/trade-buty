@@ -6,21 +6,36 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { parseQuizMounts } from "./quiz-source-lib.mjs";
 
 const root = process.cwd();
 const KB = path.join(root, "content/kline-buty/docs/knowledge");
 const zhDir = path.join(KB, "zh");
 
 const src = fs.readFileSync(path.join(root, "src/lib/quizzes.ts"), "utf8");
-const entries = [...src.matchAll(/"([a-z-]+)":\s*\{[\s\S]*?chapterNum:\s*"([a-z-]+)",[\s\S]*?docSlug:\s*"([a-z-]+)"/g)];
+const entries = parseQuizMounts(src);
 
 if (entries.length === 0) {
-  console.error("❌ quizzes.ts 未解析到任何挂载点（正则失配？）");
+  console.error("❌ quizzes.ts 未解析到任何挂载点（AST 解析失配？）");
   process.exit(1);
 }
 
 const issues = [];
-for (const [, key, chapterNum, docSlug] of entries) {
+const seen = new Set();
+for (const { key, chapterNum, docSlug, questionCount } of entries) {
+  if (seen.has(key)) {
+    issues.push(`${key}: 测验挂载键重复`);
+    continue;
+  }
+  seen.add(key);
+  if (!chapterNum) {
+    issues.push(`${key}: 缺少 chapterNum`);
+    continue;
+  }
+  if (!docSlug) {
+    issues.push(`${key}: 缺少 docSlug`);
+    continue;
+  }
   if (key !== chapterNum) issues.push(`${key}: 键名与 chapterNum(${chapterNum}) 不一致`);
   const chapterDir = path.join(zhDir, chapterNum);
   if (!fs.existsSync(chapterDir)) {
@@ -29,6 +44,8 @@ for (const [, key, chapterNum, docSlug] of entries) {
   }
   const hasDoc = fs.existsSync(path.join(chapterDir, `${docSlug}.md`));
   if (!hasDoc) issues.push(`${chapterNum}: docSlug "${docSlug}" 不存在对应课程文件`);
+  if (questionCount === null) issues.push(`${key}: questions 不是数组`);
+  else if (questionCount < 3) issues.push(`${key}: 固定题仅 ${questionCount} 道（至少 3 道）`);
 }
 
 if (issues.length > 0) {
