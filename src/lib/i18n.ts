@@ -228,6 +228,10 @@ const zh = {
     chapterMissing: "这个篇章不存在",
     suggestTitle: "最接近的课程",
     suggestHint: "按你访问的地址猜的——如果不是你要的，用下面搜索：",
+    searchCta: "搜索课程",
+    homeCta: "返回首页",
+    pathCta: "从学习路线开始",
+    popularStarters: "热门入门课程",
   },
   review: {
     label: "复习",
@@ -289,8 +293,8 @@ const zh = {
     placeholder: "输入关键词，如：止损、保证金、K 线…",
     resultsTpl: "{n} 条结果",
     noResults: "没有匹配的结果",
-    emptyHint: "换个关键词试试，或者",
-    browseCta: "去学习路线逛逛 →",
+    emptyHint: "换个关键词试试，或者从学习路线开始。",
+    browseCta: "从学习路线开始 →",
     recentLabel: "最近搜索",
     suggestTitle: "相关课程",
     // R10.22：无结果诊断
@@ -601,6 +605,10 @@ const en: Dict = {
     chapterMissing: "This chapter doesn't exist",
     suggestTitle: "Closest lessons",
     suggestHint: "Guessed from the URL you visited — search below if none fit:",
+    searchCta: "Search lessons",
+    homeCta: "Go home",
+    pathCta: "Browse the learning path",
+    popularStarters: "Popular starters",
   },
   review: {
     label: "Review",
@@ -662,8 +670,8 @@ const en: Dict = {
     placeholder: "Type keywords, e.g. stop loss, margin…",
     resultsTpl: "{n} result(s)",
     noResults: "No matches",
-    emptyHint: "Try another keyword, or",
-    browseCta: "browse the learning path →",
+    emptyHint: "Try another keyword, or start from the learning path.",
+    browseCta: "Browse the learning path →",
     recentLabel: "Recent",
     suggestTitle: "Suggestions",
     // R10.22: no-results diagnosis

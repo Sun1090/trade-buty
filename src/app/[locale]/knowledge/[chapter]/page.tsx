@@ -23,6 +23,7 @@ import { Collapsible } from "@/components/collapsible";
 import { ChapterSummaryAi } from "@/components/chapter-summary-ai";
 import { aiEnabledForPage } from "@/lib/ai-toggle";
 import { TodayPick } from "@/components/today-pick";
+import { KnowledgeMiss } from "@/components/knowledge-miss";
 
 export function generateStaticParams() {
   return LOCALES.flatMap((locale) =>
@@ -74,30 +75,15 @@ export default async function ChapterPage({
     );
     const tc = getDict(locale);
     return (
-      <div className="mx-auto max-w-3xl px-4 sm:px-5 py-16">
-        <p className="font-mono text-4xl text-accent">404</p>
-        <h1 className="mt-4 text-2xl font-bold">{tc.notFound.chapterMissing}</h1>
-        {suggestions.length > 0 && (
-          <>
-            <p className="mt-8 text-xs font-semibold uppercase tracking-[0.2em] text-accent mb-3">
-              {tc.notFound.suggestTitle}
-            </p>
-            <ul className="grid gap-2.5 sm:grid-cols-2" data-testid="chapter-suggestions">
-              {suggestions.map((s) => (
-                <li key={s.href}>
-                  <Link
-                    href={s.href}
-                    className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-3 hover:border-[var(--accent)]/60 transition"
-                  >
-                    <span className="font-semibold">{s.title}</span>
-                    <span className="block text-xs text-faint font-mono mt-0.5">{s.slug}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
+      <KnowledgeMiss
+        locale={locale}
+        kind="chapter"
+        heading={tc.notFound.chapterMissing}
+        suggestTitle={tc.notFound.suggestTitle}
+        searchCta={tc.notFound.searchCta}
+        pathCta={tc.notFound.pathCta}
+        suggestions={suggestions}
+      />
     );
   }
   const docs = getDocMetas(locale, slug);

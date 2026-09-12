@@ -36,24 +36,24 @@ export default function NotFound() {
           市场永远都在，页面不一定。
         </span>
       </h1>
-      <div className="mt-10 flex flex-wrap justify-center gap-3">
+      <div className="mt-10 flex flex-wrap justify-center gap-3" data-testid="root-no-result-cta">
         <Link
           href={`/${DEFAULT_LOCALE}/search`}
           className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-7 py-3 transition"
         >
-          🔍 Search →
+          🔍 {t.notFound.searchCta}
         </Link>
         <Link
           href={`/${DEFAULT_LOCALE}`}
           className="rounded-full border border-border-strong px-7 py-3 font-medium hover:border-accent/60 transition"
         >
-          Home
+          {t.notFound.homeCta}
         </Link>
         <Link
           href={`/${DEFAULT_LOCALE}/path`}
           className="rounded-full border border-border-strong px-7 py-3 font-medium hover:border-accent/60 transition"
         >
-          Learning Path
+          {t.notFound.pathCta}
         </Link>
       </div>
 
@@ -67,7 +67,7 @@ export default function NotFound() {
       {starters.length > 0 && (
         <div className="mt-16">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-faint mb-6">
-            Popular starters
+            {t.notFound.popularStarters}
           </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {starters.map((c) => (
