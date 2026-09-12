@@ -106,9 +106,15 @@ describe("proxy matcher", () => {
       "/search-index.json",
       "/opengraph-image.png",
       "/icon.svg",
+      "/icon",
+      "/apple-icon",
     ]) {
       expect(matchesMatcher(path)).toBe(false);
     }
+  });
+
+  it("只排除精确的 icon 元数据路由，不误伤同前缀页面", () => {
+    expect(matchesMatcher("/iconography")).toBe(true);
   });
 
   it("排除带扩展名的文件但保留同名路径段", () => {
