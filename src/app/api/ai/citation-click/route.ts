@@ -38,19 +38,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  const { error } = await supabase.from("ai_citation_clicks").insert({
-    user_id: user?.id ?? null,
-    kind: parsed.kind,
-    chapter: parsed.chapter,
-    doc: parsed.doc ?? null,
-    question: parsed.question ?? null,
-  });
+    const { error } = await supabase.from("ai_citation_clicks").insert({
+      user_id: user?.id ?? null,
+      kind: parsed.kind,
+      chapter: parsed.chapter,
+      doc: parsed.doc ?? null,
+      question: parsed.question ?? null,
+    });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error("[ai/citation-click] insert failed:", error.message);
+      return NextResponse.json({ error: "Failed to record click" }, { status: 500 });
+    }
+  } catch (e) {
+    console.error(
+      "[ai/citation-click] unexpected failure:",
+      e instanceof Error ? e.message : e
+    );
+    return NextResponse.json({ error: "Failed to record click" }, { status: 500 });
   }
+
   return NextResponse.json({ ok: true });
 }

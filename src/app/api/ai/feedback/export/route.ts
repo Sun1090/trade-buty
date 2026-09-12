@@ -36,19 +36,29 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const q = parseExportQuery(new URL(req.url).searchParams);
-  const supabase = await createSupabaseServerClient();
 
-  let query = supabase
-    .from("ai_feedback")
-    .select("id, rating, question, answer, user_id, created_at")
-    .order("created_at", { ascending: false })
-    .limit(q.limit);
-  if (q.rating) query = query.eq("rating", q.rating);
-  if (q.since) query = query.gte("created_at", q.since);
+  try {
+    const supabase = await createSupabaseServerClient();
 
-  const { data, error } = await query;
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    let query = supabase
+      .from("ai_feedback")
+      .select("id, rating, question, answer, user_id, created_at")
+      .order("created_at", { ascending: false })
+      .limit(q.limit);
+    if (q.rating) query = query.eq("rating", q.rating);
+    if (q.since) query = query.gte("created_at", q.since);
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("[ai/feedback/export] select failed:", error.message);
+      return NextResponse.json({ error: "Failed to export feedback" }, { status: 500 });
+    }
+    return NextResponse.json({ count: data?.length ?? 0, items: data ?? [] });
+  } catch (e) {
+    console.error(
+      "[ai/feedback/export] unexpected failure:",
+      e instanceof Error ? e.message : e
+    );
+    return NextResponse.json({ error: "Failed to export feedback" }, { status: 500 });
   }
-  return NextResponse.json({ count: data?.length ?? 0, items: data ?? [] });
 }

@@ -7,9 +7,7 @@ export async function POST() {
     await supabase.auth.signOut();
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json(
-      { ok: false, error: e instanceof Error ? e.message : "signout error" },
-      { status: 500 },
-    );
+    console.error("[auth/signout] unexpected failure:", e instanceof Error ? e.message : e);
+    return NextResponse.json({ ok: false, error: "signout error" }, { status: 500 });
   }
 }
