@@ -53,6 +53,7 @@
 | `npm run lhci` | 关键 URL 的性能/可访问性/最佳实践/SEO 断言 | 修复真实退化；阈值调整必须附测量证据 |
 
 > 执行顺序注记：E2E 与 Lighthouse 排在所有产物校验之后（E2E 运行时向 `.next` 写 fallback 页，避免污染其后的 check 产物；顺序由 ci.yml 保证）。
+> 运行时注记：官方 actions（`checkout` ≥ v5 / `setup-node` ≥ v5 / `cache` ≥ v5 / `upload-artifact` ≥ v6）必须保持 node24 版本，避免 GitHub 逐步下线 Node.js 20 时报弃用注记；`scripts/ci-workflow.test.mjs` 会拦截回退。
 
 ## 知识库更新流水线（`npm run kb:update` 自动执行）
 
