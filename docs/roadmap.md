@@ -98,7 +98,7 @@
 - [x] R2.9 出题语言跟随 locale（buildChapterQuizPrompt 双语指令，en 出英文题；2 单测）
 - [x] R2.10 成本控制（maxTokens 3000 + 同章/语言/难度 24h 内存缓存；edge 实例级，跨实例去重靠 R2.3）
 - [x] R2.11 题目举报入口（review 变体题与章节 AI 题均有一键举报 → /api/ai/feedback unhelpful，单次去重）
-- [x] R2.12 覆盖率看板（scripts/quiz-coverage.mjs：27/27 可 AI 出题、固定题 2/27、en 元数据 27/27；npm run quiz:coverage）
+- [x] R2.12 覆盖率看板（27/27 可 AI 出题、固定题 27/27 共 81 道、en 元数据 27/27；npm run check:quiz-coverage）
 
 ## R3 课程内 AI 入口（R3.1–R3.12）
 
@@ -149,8 +149,8 @@
 
 - [ ] R6.1 kb:update 产物 diff 摘要（新增/删除课程列表输出）
 - [ ] R6.2 新课程自动进 sitemap 回归断言（已有对账，补新增冒烟）
-- [ ] R6.3 测验挂载点自动校验（每章 quiz.docSlug 必须存在，CI 阻断）
-- [ ] R6.4 题库覆盖率脚本（27 章 × 最少题数检查）
+- [x] R6.3 测验挂载点自动校验（AST 解析 27 个挂载，chapter/doc 存在且每题 ≥3 道；重复键阻断；CI 阻断）
+- [x] R6.4 题库覆盖率脚本（27/27 章，共 81 道；按真实 questions 数组计数并阻断缺口）
 - [ ] R6.5 frontmatter 描述长度检查（过短影响 SEO 报警）
 - [ ] R6.6 图片 alt 缺失检查（知识库图片批量扫描）
 - [ ] R6.7 中英标题对照表生成（翻译进度可视化数据源）
