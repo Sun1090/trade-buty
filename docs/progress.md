@@ -1,5 +1,24 @@
 # Progress
 
+## 图片资产审计真实验证（R6.6 / R10.12）
+
+- 状态：DONE
+- 工作分支：`codex/r13-e2e-expansion`
+- Base：`origin/main@abe8106`
+- 远端状态：未推送（LOCAL_ONLY）
+- 目标：修复 `check:image-alt` 宣称检查孤儿资产、实际只检查 zh/en 集合镜像的静默失真。
+- 已完成：
+  - 新增 `scripts/image-audit-lib.mjs`，把磁盘资产与 Markdown 实际引用分离，逐项报告孤儿资产和镜像漂移。
+  - `scripts/check-image-alt.mjs` 记录全部 `_assets` 引用后再调用审计函数；空 alt、引用不存在、孤儿资产、镜像漂移四类问题均以非零退出阻断。
+  - 新增 `scripts/image-audit-lib.test.mjs`，覆盖正常引用、双 locale 孤儿、单侧镜像漂移。
+- 变更文件：`scripts/check-image-alt.mjs`、`scripts/image-audit-lib.mjs`、`scripts/image-audit-lib.test.mjs`、`docs/roadmap.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npx vitest run scripts/image-audit-lib.test.mjs` → 1 文件 / 3 用例通过。
+  - `npm run check:image-alt` → exit 0（102 处图片、102 个资产引用、无孤儿/镜像漂移）。
+  - `node --check` 三个脚本与 `git diff --check` → 通过。
+- 未验证项：远端 CI 与部署（LOCAL_ONLY，未推送）。
+- 最后更新：2026-09-12
+
 ## 新章节上线四项核对（Q1.7）
 
 - 状态：DONE
