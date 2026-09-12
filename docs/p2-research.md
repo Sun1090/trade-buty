@@ -4,7 +4,7 @@
 > 前置原则：**P1 的 localStorage 体验必须无损保留**——未登录用户一切照旧。
 >
 > **实施更新（2026-09-12）**：最终采用 Supabase Auth（邮箱 OTP / 魔法链接），未安装或接入 Clerk。
-> 数据表以 `supabase/migrations/0001_init.sql` 为准，RLS 以 `auth.uid()` 为用户边界。
+> 数据表以 `supabase/migrations/` 的按序 SQL 为准，RLS 以 `auth.uid()` 为用户边界。
 
 ## 1. 技术选型
 

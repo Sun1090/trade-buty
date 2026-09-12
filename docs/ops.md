@@ -123,11 +123,20 @@ npm run ops:link-patrol
 HEAD（失败降级 GET）+ 10s 超时 + 一次重试；失效外链 exit 1。
 CI 里是**每月定时任务**（`.github/workflows/link-patrol.yml`，每月 1 日 03:00 UTC），也支持手动 workflow_dispatch 触发。
 
-## Supabase 迁移清单（控制台 SQL Editor 手动执行）
+## Supabase 迁移清单（按文件名顺序执行）
 
 | 迁移 | 内容 |
 |---|---|
-| 0002_ai.sql | kb_embeddings / ai_conversations / ai_feedback |
-| 0004_ai_citation_clicks.sql | 引用点击统计表（R1.13） |
-| 0005_user_settings.sql | 用户设置（每日目标档位，R4.7） |
-| 0006_wrongbook_srs.sql | 错题本 SRS 字段（R5.7） |
+| `0001_init.sql` | 学习进度、错题本、测验成绩、回放历史与最佳连击（P2） |
+| `0002_ai.sql` | pgvector / `kb_embeddings` / 对话历史 / AI 反馈（P3） |
+| `0003_vector_1024.sql` | 向量维度与检索函数切换到 1024 维 |
+| `0003b_fix_overload.sql` | 清除 `match_kb_embeddings` 历史重载 |
+| `0004_ai_citation_clicks.sql` | 引用点击统计表（R1.13） |
+| `0005_user_settings.sql` | 用户设置与每日目标档位（R4.7） |
+| `0006_wrongbook_srs.sql` | 错题本 SRS 字段（R5.7） |
+| `0007_weekly_goal_min.sql` | 每周目标档位（R12.19） |
+| `0008_goal_tier_constraints.sql` | 归一化并约束日/周目标合法档位 |
+
+迁移由 `src/lib/supabase/schema.test.ts` 做静态契约核对：Drizzle 镜像与迁移表/列一致，
+每张公开表必须开启 RLS 且具备显式策略。目标档位的回滚 SQL 位于
+[`supabase/rollback/`](../supabase/rollback/README.md)；回滚只逆迁移结构，不恢复被归一化的历史业务值。
