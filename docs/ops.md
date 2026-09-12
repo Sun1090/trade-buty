@@ -21,6 +21,7 @@
 | 构建耗时报警（CI 内联，R7.10） | lint→build 段超过 240 秒输出 warning | 检查大 chunk、缓存与依赖体积 |
 | `npm run check:ai-copy` | en 字典无中文残留（R3.12） | 修正 i18n.ts en 值 |
 | `npm run check:growth-event-privacy` | 增长事件只留在本机且不携带 URL/身份信息（R13.20） | 删除遥测外发或敏感字段；审计文档作废时重新评审 |
+| `npm run check:error-report-privacy` | 错误上报载荷只含白名单元数据、服务端有界读取 + 未知字段拒绝、日志无原始内容、隐私页双语披露（R7.6） | 修正 `src/lib/error-report.ts` / 路由或隐私页；不得放宽白名单或日志脱敏 |
 | `npm run check:dark-pattern-copy` | 增长表面均已登记，且无紧迫/恐吓/默认勾选等暗黑模式（R13.21–R13.22） | 修正 `growth-surfaces.json` 登记或用户文案 |
 | `npm run check:docs` | README/AGENTS/plan/About 的内容规模、技术栈与关键承诺一致 | 修正漂移文档；不得只改门禁快照 |
 | `npm run check:constitution` | 内容宪法：导流/荐股黑话、收益承诺表述（R6.11） | 默认报告式（教育语境豁免）；内容整改后可在 CI 加 `--strict` 升级阻断 |
