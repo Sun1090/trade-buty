@@ -114,7 +114,7 @@ ${examples}`,
 
 /**
  * R2.1/R2.9：按章节出题 prompt——基于该章知识库上下文生成新题，
- * 语言跟随 locale（en 出英文题），难度档预留（R2.2 接 UI）。
+ * 语言跟随 locale（en 出英文题），难度档由 QuizGenerationStrategy 注入并驱动出题深度。
  */
 export function buildChapterQuizPrompt(
   chapterTitle: string,
