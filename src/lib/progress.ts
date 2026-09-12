@@ -12,9 +12,43 @@ export type ProgressMap = Record<string, string[]>;
 export type ProgressCompletionEntry = { chapter?: string; doc?: string; at?: number };
 export type ProgressCompletionMap = Record<string, ProgressCompletionEntry>;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeProgress(value: unknown): ProgressMap {
+  if (!isRecord(value)) return {};
+
+  const entries: Array<[string, string[]]> = [];
+  for (const [chapter, docs] of Object.entries(value)) {
+    if (!Array.isArray(docs)) continue;
+    const unique = [
+      ...new Set(docs.filter((doc): doc is string => typeof doc === "string")),
+    ];
+    entries.push([chapter, unique]);
+  }
+  return Object.fromEntries(entries);
+}
+
+function normalizeCompletionEntry(
+  value: unknown,
+): ProgressCompletionEntry | null {
+  if (!isRecord(value)) return null;
+
+  const entry: ProgressCompletionEntry = {};
+  if (typeof value.chapter === "string") entry.chapter = value.chapter;
+  if (typeof value.doc === "string") entry.doc = value.doc;
+  if (typeof value.at === "number" && Number.isFinite(value.at)) {
+    entry.at = value.at;
+  }
+  return entry;
+}
+
 export function readProgress(): ProgressMap {
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "{}") as ProgressMap;
+    return normalizeProgress(
+      JSON.parse(localStorage.getItem(KEY) ?? "{}") as unknown,
+    );
   } catch {
     return {};
   }
@@ -23,8 +57,14 @@ export function readProgress(): ProgressMap {
 export function readProgressCompletions(): ProgressCompletionMap {
   try {
     const parsed = JSON.parse(localStorage.getItem(COMPLETIONS_KEY) ?? "{}") as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-    return parsed as ProgressCompletionMap;
+    if (!isRecord(parsed)) return {};
+
+    const entries: Array<[string, ProgressCompletionEntry]> = [];
+    for (const [key, value] of Object.entries(parsed)) {
+      const entry = normalizeCompletionEntry(value);
+      if (entry) entries.push([key, entry]);
+    }
+    return Object.fromEntries(entries);
   } catch {
     return {};
   }
