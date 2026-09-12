@@ -29,6 +29,7 @@ export function AuthCallbackClient({
 
   useEffect(() => {
     let settled = false;
+    let navigateTimer: ReturnType<typeof setTimeout> | null = null;
     const client = getSupabaseBrowser();
 
     // createBrowserClient 构造时 detectSessionInUrl 已自动交换 URL 里的 code/token。
@@ -52,7 +53,7 @@ export function AuthCallbackClient({
         settled = true;
         clearTimeout(failTimer);
         setState("success");
-        setTimeout(navigateAway, 800);
+        navigateTimer = setTimeout(navigateAway, 800);
       }
     });
 
@@ -63,13 +64,14 @@ export function AuthCallbackClient({
         clearTimeout(failTimer);
         setState("success");
         // hydrate 交给 AuthProvider 的 onAuthStateChange
-        setTimeout(navigateAway, 800);
+        navigateTimer = setTimeout(navigateAway, 800);
       }
     });
 
     return () => {
       settled = true;
       clearTimeout(failTimer);
+      if (navigateTimer) clearTimeout(navigateTimer);
       sub.subscription.unsubscribe();
     };
   }, [router, locale, returnTo]);
