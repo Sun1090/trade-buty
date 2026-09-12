@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-09-06",
+  "generatedAt": "2026-09-12",
   "counts": {
-    "pass": 58,
-    "review": 113,
-    "gap": 2
+    "pass": 62,
+    "review": 120,
+    "gap": 0
   },
   "results": [
     {
       "chapter": "behavioral-finance",
       "document": "behavioral-finance-basics",
       "zhTitle": "01 · 行为金融学基础",
-      "enTitle": "Foundations of Behavioral Finance",
+      "enTitle": "01 · Foundations of Behavioral Finance",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -19,7 +19,7 @@
       "chapter": "behavioral-finance",
       "document": "behavioral-playbook",
       "zhTitle": "05 · 行为金融的实战应用",
-      "enTitle": "Applying Behavioral Finance",
+      "enTitle": "05 · Applying Behavioral Finance",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -28,7 +28,7 @@
       "chapter": "behavioral-finance",
       "document": "cognitive-biases",
       "zhTitle": "02 · 交易中的认知偏差大全",
-      "enTitle": "A Field Guide to Cognitive Biases in Trading",
+      "enTitle": "02 · A Field Guide to Cognitive Biases in Trading",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -49,7 +49,7 @@
       "chapter": "behavioral-finance",
       "document": "market-anomalies",
       "zhTitle": "03 · 市场异象：市场不那么有效的证据",
-      "enTitle": "Market Anomalies: Evidence That Markets Are Less Efficient",
+      "enTitle": "03 · Market Anomalies: Evidence That Markets Are Less Efficient",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -58,7 +58,7 @@
       "chapter": "behavioral-finance",
       "document": "mental-accounts-framing",
       "zhTitle": "04 · 心理账户与框架效应",
-      "enTitle": "Mental Accounting & Framing",
+      "enTitle": "04 · Mental Accounting & Framing",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -67,7 +67,7 @@
       "chapter": "bonds-rates",
       "document": "china-bond-market",
       "zhTitle": "02 · 中国债市实操",
-      "enTitle": "China Bond Market in Practice",
+      "enTitle": "02 · China Bond Market in Practice",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -76,7 +76,7 @@
       "chapter": "bonds-rates",
       "document": "credit-high-yield",
       "zhTitle": "04 · 信用债与高收益债",
-      "enTitle": "Credit Bonds & High Yield",
+      "enTitle": "04 · Credit Bonds & High Yield",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -85,7 +85,7 @@
       "chapter": "bonds-rates",
       "document": "treasuries-practice",
       "zhTitle": "01 · 美债投资实操",
-      "enTitle": "Treasury Investment in Practice",
+      "enTitle": "01 · Treasury Investment in Practice",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -94,7 +94,7 @@
       "chapter": "bonds-rates",
       "document": "yield-curve-trading",
       "zhTitle": "03 · 收益率曲线交易",
-      "enTitle": "Yield Curve Trading",
+      "enTitle": "03 · Yield Curve Trading",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -115,7 +115,7 @@
       "chapter": "career",
       "document": "content-creation",
       "zhTitle": "04 · 内容创作与知识传播",
-      "enTitle": "Content Creation & Knowledge Sharing",
+      "enTitle": "04 · Content Creation & Knowledge Sharing",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -124,7 +124,7 @@
       "chapter": "career",
       "document": "indie-startups",
       "zhTitle": "03 · 独立开发与创业",
-      "enTitle": "Indie Development & Startups",
+      "enTitle": "03 · Indie Development & Startups",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -133,7 +133,7 @@
       "chapter": "career",
       "document": "professional-trader-path",
       "zhTitle": "05 · 职业交易者之路",
-      "enTitle": "Professional Trader Path",
+      "enTitle": "05 · Professional Trader Path",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -154,7 +154,7 @@
       "chapter": "career",
       "document": "quant-career-path",
       "zhTitle": "01 · 量化求职路径",
-      "enTitle": "Quant Career Path",
+      "enTitle": "01 · Quant Career Path",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -163,7 +163,7 @@
       "chapter": "career",
       "document": "trading-careers",
       "zhTitle": "02 · 交易职业全景",
-      "enTitle": "Trading Careers Overview",
+      "enTitle": "02 · Trading Careers Overview",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -184,7 +184,7 @@
       "chapter": "crypto-perpetuals",
       "document": "crypto-derivatives",
       "zhTitle": "03 · 加密衍生品",
-      "enTitle": "Crypto Derivatives",
+      "enTitle": "03 · Crypto Derivatives",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -193,7 +193,7 @@
       "chapter": "crypto-perpetuals",
       "document": "funding-rate",
       "zhTitle": "02 · 资金费率",
-      "enTitle": "Funding Rates",
+      "enTitle": "02 · Funding Rates",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -215,7 +215,7 @@
       "chapter": "crypto-perpetuals",
       "document": "leverage-math",
       "zhTitle": "05 · 杠杆的数学：为什么 10 倍杠杆不等于「赚 10 倍」",
-      "enTitle": "The Math of Leverage: Why 10x Is Not '10x Profit'",
+      "enTitle": "05 · The Math of Leverage: Why 10x Is Not \"10x Profit\"",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -235,7 +235,7 @@
       "chapter": "crypto-perpetuals",
       "document": "liquidation-cases",
       "zhTitle": "06 · 合约爆仓案例复盘",
-      "enTitle": "Perpetual Blow-Up Case Studies",
+      "enTitle": "06 · Perpetual Blow-Up Case Studies",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -269,7 +269,7 @@
       "chapter": "crypto-perpetuals",
       "document": "perp-trading-risk",
       "zhTitle": "04 · 合约交易实战与风控",
-      "enTitle": "Perpetual Trading in Practice & Risk Control",
+      "enTitle": "04 · Perpetual Trading in Practice & Risk Control",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -311,7 +311,7 @@
       "chapter": "crypto-perpetuals",
       "document": "perpetuals",
       "zhTitle": "01 · 永续合约",
-      "enTitle": "Perpetual Swaps",
+      "enTitle": "01 · Perpetual Swaps",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -342,7 +342,7 @@
       "chapter": "data-interpretation",
       "document": "central-bank-language",
       "zhTitle": "02 · 央行语言解读：声明翻译学与政策预期差交易",
-      "enTitle": "Central Bank Language: Statement Translation and Policy Expectation-Gap Trading",
+      "enTitle": "02 · Central Bank Language: Statement Translation and Policy Expectation-Gap Trading",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -363,7 +363,7 @@
       "chapter": "data-interpretation",
       "document": "earnings-calls",
       "zhTitle": "03 · 财报电话会解读：业绩指引、管理层语气与话术翻译",
-      "enTitle": "Earnings Calls: Guidance, Management Tone, and Corporate-Speak Translation",
+      "enTitle": "03 · Earnings Calls: Guidance, Management Tone, and Corporate-Speak Translation",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -372,7 +372,7 @@
       "chapter": "data-interpretation",
       "document": "economic-calendar",
       "zhTitle": "05 · 财经日历使用指南：事件分类、每周排期与事件交易",
-      "enTitle": "Economic Calendar User Guide: Event Classification, Weekly Scheduling, and Event Trading",
+      "enTitle": "05 · Economic Calendar User Guide: Event Classification, Weekly Scheduling, and Event Trading",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -393,7 +393,7 @@
       "chapter": "data-interpretation",
       "document": "industry-data",
       "zhTitle": "04 · 行业数据解读：供需数据实战与库存周期判断法",
-      "enTitle": "Industry Data: Supply-Demand Analysis and Inventory-Cycle Reading",
+      "enTitle": "04 · Industry Data: Supply-Demand Analysis and Inventory-Cycle Reading",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -402,7 +402,7 @@
       "chapter": "data-interpretation",
       "document": "macro-data",
       "zhTitle": "01 · 宏观数据解读：预期差、结构拆解与完整解读模板",
-      "enTitle": "Macro Data Reading: Expectation Gaps, Structure Breakdown, and a Complete Interpretation Template",
+      "enTitle": "01 · Macro Data Reading: Expectation Gaps, Structure Breakdown, and a Complete Interpretation Template",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -411,7 +411,7 @@
       "chapter": "financial-history",
       "document": "bubble-history",
       "zhTitle": "01 · 金融泡沫史",
-      "enTitle": "A History of Financial Bubbles",
+      "enTitle": "01 · A History of Financial Bubbles",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -420,7 +420,7 @@
       "chapter": "financial-history",
       "document": "china-market-history",
       "zhTitle": "05 · 中国股市简史",
-      "enTitle": "A Brief History of China's Stock Market",
+      "enTitle": "05 · A Brief History of China's Stock Market",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -429,7 +429,7 @@
       "chapter": "financial-history",
       "document": "crypto-history",
       "zhTitle": "06 · 加密货币历史",
-      "enTitle": "Crypto History",
+      "enTitle": "06 · Crypto History",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -438,7 +438,7 @@
       "chapter": "financial-history",
       "document": "famous-crashes",
       "zhTitle": "02 · 著名崩盘与黑天鹅",
-      "enTitle": "Famous Crashes and Black Swans",
+      "enTitle": "02 · Famous Crashes and Black Swans",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -447,7 +447,7 @@
       "chapter": "financial-history",
       "document": "trading-masters",
       "zhTitle": "03 · 交易大师",
-      "enTitle": "Trading Masters",
+      "enTitle": "03 · Trading Masters",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -468,7 +468,7 @@
       "chapter": "financial-history",
       "document": "trading-philosophy",
       "zhTitle": "04 · 交易流派与交易哲学",
-      "enTitle": "Trading Schools and Philosophy",
+      "enTitle": "04 · Trading Schools and Philosophy",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -489,7 +489,7 @@
       "chapter": "financial-statements",
       "document": "cash-flow-analysis",
       "zhTitle": "04 · 现金流分析",
-      "enTitle": "Cash Flow Analysis",
+      "enTitle": "04 · Cash Flow Analysis",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -498,7 +498,7 @@
       "chapter": "financial-statements",
       "document": "earnings-analysis",
       "zhTitle": "05 · 财报分析实战",
-      "enTitle": "Financial Statement Analysis in Practice",
+      "enTitle": "05 · Financial Statement Analysis in Practice",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -507,7 +507,7 @@
       "chapter": "financial-statements",
       "document": "financial-metrics",
       "zhTitle": "02 · 财务指标实战",
-      "enTitle": "Financial Metrics in Practice",
+      "enTitle": "02 · Financial Metrics in Practice",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -516,7 +516,7 @@
       "chapter": "financial-statements",
       "document": "fraud-detection",
       "zhTitle": "03 · 财务造假识别",
-      "enTitle": "Detecting Financial Fraud",
+      "enTitle": "03 · Detecting Financial Fraud",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -525,7 +525,7 @@
       "chapter": "financial-statements",
       "document": "three-statements",
       "zhTitle": "01 · 三张报表精读",
-      "enTitle": "Reading the Three Statements Closely",
+      "enTitle": "01 · Reading the Three Statements Closely",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -534,7 +534,7 @@
       "chapter": "forex-trading",
       "document": "carry-trade",
       "zhTitle": "02 · 套息交易与利差：汇率的第一驱动力",
-      "enTitle": "Carry Trade and Interest Rate Differentials: The Primary Driver of Exchange Rates",
+      "enTitle": "02 · Carry Trade and Interest Rate Differentials: The Primary Driver of Exchange Rates",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -554,8 +554,8 @@
     {
       "chapter": "forex-trading",
       "document": "central-bank-trading",
-      "zhTitle": "央行政策与事件交易",
-      "enTitle": "Central Bank Policy and Event Trading",
+      "zhTitle": "06 · 央行政策与事件交易",
+      "enTitle": "06 · Central Bank Policy and Event Trading",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -576,7 +576,7 @@
       "chapter": "forex-trading",
       "document": "forex-ea",
       "zhTitle": "03 · 外汇自动化（EA）与跟单：圣杯还是绞肉机",
-      "enTitle": "Forex Automation (EAs) and Copy Trading: Holy Grail or Meat Grinder",
+      "enTitle": "03 · Forex Automation (EAs) and Copy Trading: Holy Grail or Meat Grinder",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -585,7 +585,7 @@
       "chapter": "forex-trading",
       "document": "forex-leverage-risk",
       "zhTitle": "04 · 外汇杠杆与风险管理：先学会死不了，再谈赚钱",
-      "enTitle": "Forex Leverage and Risk Management: Learn Not to Die Before Chasing Profit",
+      "enTitle": "04 · Forex Leverage and Risk Management: Learn Not to Die Before Chasing Profit",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -614,7 +614,7 @@
       "chapter": "forex-trading",
       "document": "forex-practice",
       "zhTitle": "01 · 外汇交易实操：货币对性格、点值盈亏与入门工作流",
-      "enTitle": "Forex Trading Practice: Pair Personalities, Pip Value & P&L, and a Beginner Workflow",
+      "enTitle": "01 · Forex Trading Practice: Pair Personalities, Pip Value & P&L, and a Beginner Workflow",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -634,8 +634,8 @@
     {
       "chapter": "forex-trading",
       "document": "forex-technicals",
-      "zhTitle": "外汇技术分析与实战形态",
-      "enTitle": "Forex Technical Analysis and Practical Patterns",
+      "zhTitle": "05 · 外汇技术分析与实战形态",
+      "enTitle": "05 · Forex Technical Analysis and Practical Patterns",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -644,7 +644,7 @@
       "chapter": "futures",
       "document": "commodity-options",
       "zhTitle": "07 · 期货期权与商品期权：给期货上保险的合约",
-      "enTitle": "Futures Options and Commodity Options: Contracts That Insure Your Futures",
+      "enTitle": "07 · Futures Options and Commodity Options: Contracts That Insure Your Futures",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -676,7 +676,7 @@
       "chapter": "futures",
       "document": "delivery-rollover",
       "zhTitle": "03 · 交割与展期：时间站在谁那边",
-      "enTitle": "Delivery and Rollover: Which Side Is Time On",
+      "enTitle": "03 · Delivery and Rollover: Which Side Is Time On",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -685,7 +685,7 @@
       "chapter": "futures",
       "document": "futures-basics",
       "zhTitle": "01 · 期货入门：合约是什么",
-      "enTitle": "Futures Basics: What a Contract Is",
+      "enTitle": "01 · Futures Basics: What a Contract Is",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -717,7 +717,7 @@
       "chapter": "futures",
       "document": "futures-products",
       "zhTitle": "04 · 期货品种百科：你的战场地图",
-      "enTitle": "Futures Products Encyclopedia: Your Battlefield Map",
+      "enTitle": "04 · Futures Products Encyclopedia: Your Battlefield Map",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -737,7 +737,7 @@
       "chapter": "futures",
       "document": "futures-strategies",
       "zhTitle": "05 · 期货交易策略：从对冲风险到博弈波动",
-      "enTitle": "Futures Trading Strategies: From Hedging Risk to Trading Volatility",
+      "enTitle": "05 · Futures Trading Strategies: From Hedging Risk to Trading Volatility",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -776,7 +776,7 @@
       "chapter": "futures",
       "document": "margin-leverage-liquidation",
       "zhTitle": "02 · 保证金、杠杆与强平：交易者的生死线",
-      "enTitle": "Margin, Leverage & Forced Liquidation: A Trader's Lifeline",
+      "enTitle": "02 · Margin, Leverage, and Forced Liquidation: A Trader's Lifeline",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -815,7 +815,7 @@
       "chapter": "futures",
       "document": "otc-derivatives",
       "zhTitle": "06 · 场外衍生品：定制合同的暗面",
-      "enTitle": "OTC Derivatives: The Dark Side of Custom Contracts",
+      "enTitle": "06 · OTC Derivatives: The Dark Side of Custom Contracts",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -824,7 +824,7 @@
       "chapter": "getting-started",
       "document": "candlestick-basics",
       "zhTitle": "03 · K 线与图表入门",
-      "enTitle": "Candlestick & Chart Basics",
+      "enTitle": "03 · Candlestick & Chart Basics",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -833,7 +833,7 @@
       "chapter": "getting-started",
       "document": "core-concepts",
       "zhTitle": "02 · 交易核心概念",
-      "enTitle": "Trading Core Concepts",
+      "enTitle": "02 · Trading Core Concepts",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -854,7 +854,7 @@
       "chapter": "getting-started",
       "document": "first-trade",
       "zhTitle": "07 · 你的第一笔交易：从开户到下单的完整流程",
-      "enTitle": "Your First Trade: The Complete Flow from Account Setup to Order Placement",
+      "enTitle": "07 · Your First Trade: The Complete Flow from Account Setup to Order Placement",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -875,7 +875,7 @@
       "chapter": "getting-started",
       "document": "market-overview",
       "zhTitle": "01 · 金融市场全景",
-      "enTitle": "Financial Market Overview",
+      "enTitle": "01 · Financial Market Overview",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -884,7 +884,7 @@
       "chapter": "getting-started",
       "document": "order-types-execution",
       "zhTitle": "05 · 订单类型与执行机制",
-      "enTitle": "Order Types and Execution Mechanics",
+      "enTitle": "05 · Order Types and Execution Mechanics",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -904,7 +904,7 @@
       "chapter": "getting-started",
       "document": "position-sizing",
       "zhTitle": "06 · 仓位管理与资金管理",
-      "enTitle": "Position Sizing and Money Management",
+      "enTitle": "06 · Position Sizing and Money Management",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -924,7 +924,7 @@
       "chapter": "getting-started",
       "document": "trading-hours",
       "zhTitle": "04 · 交易时间全景：各市场几点开、几点休",
-      "enTitle": "Trading Hours Overview: When Every Market Opens and Closes",
+      "enTitle": "04 · Trading Hours Overview: When Every Market Opens and Closes",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -945,7 +945,7 @@
       "chapter": "global-markets",
       "document": "cross-border-investing",
       "zhTitle": "05 · 跨境投资实操（务实篇）",
-      "enTitle": "Cross-Border Investing in Practice (Pragmatic Guide)",
+      "enTitle": "05 · Cross-Border Investing in Practice (Pragmatic Guide)",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -954,7 +954,7 @@
       "chapter": "global-markets",
       "document": "emerging-markets",
       "zhTitle": "03 · 新兴市场",
-      "enTitle": "Emerging Markets",
+      "enTitle": "03 · Emerging Markets",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -963,7 +963,7 @@
       "chapter": "global-markets",
       "document": "european-markets",
       "zhTitle": "02 · 欧洲市场",
-      "enTitle": "European Markets",
+      "enTitle": "02 · European Markets",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -972,7 +972,7 @@
       "chapter": "global-markets",
       "document": "global-market-comparison",
       "zhTitle": "04 · 全球市场对比总览",
-      "enTitle": "Global Markets Comparison Overview",
+      "enTitle": "04 · Global Markets Comparison Overview",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -981,7 +981,7 @@
       "chapter": "global-markets",
       "document": "japan-korea-markets",
       "zhTitle": "01 · 日本与韩国市场",
-      "enTitle": "Japan and Korea Markets",
+      "enTitle": "01 · Japan and Korea Markets",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -990,7 +990,7 @@
       "chapter": "industry-research",
       "document": "competitive-moats",
       "zhTitle": "03 · 竞争格局与护城河",
-      "enTitle": "Competitive Landscape & Economic Moats",
+      "enTitle": "03 · Competitive Landscape & Economic Moats",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -999,7 +999,7 @@
       "chapter": "industry-research",
       "document": "industry-cycles",
       "zhTitle": "04 · 景气度与周期",
-      "enTitle": "Sector Prosperity & Cycles",
+      "enTitle": "04 · Sector Prosperity & Cycles",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1008,7 +1008,7 @@
       "chapter": "industry-research",
       "document": "industry-methodology",
       "zhTitle": "01 · 行业研究方法论",
-      "enTitle": "Industry Research Methodology",
+      "enTitle": "01 · Industry Research Methodology",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1017,7 +1017,7 @@
       "chapter": "industry-research",
       "document": "new-themes-investing",
       "zhTitle": "05 · 新赛道与主题投资",
-      "enTitle": "New Tracks & Theme Investing",
+      "enTitle": "05 · New Tracks & Theme Investing",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1026,7 +1026,7 @@
       "chapter": "industry-research",
       "document": "value-chain-analysis",
       "zhTitle": "02 · 产业链分析",
-      "enTitle": "Value Chain Analysis",
+      "enTitle": "02 · Value Chain Analysis",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1045,17 +1045,9 @@
       "document": "exchange-business-models",
       "zhTitle": "05 · 交易所商业模式",
       "enTitle": "05 · Exchange Business Models",
-      "status": "gap",
-      "reason": "missing-en-term",
+      "status": "pass",
+      "reason": "matched",
       "terms": [
-        {
-          "zh": "交易",
-          "en": [
-            "trading",
-            "trade"
-          ],
-          "matched": []
-        },
         {
           "zh": "交易所",
           "en": [
@@ -1066,15 +1058,7 @@
           ]
         }
       ],
-      "missingTerms": [
-        {
-          "zh": "交易",
-          "en": [
-            "trading",
-            "trade"
-          ]
-        }
-      ]
+      "missingTerms": []
     },
     {
       "chapter": "market-ecosystem",
@@ -1137,7 +1121,7 @@
       "chapter": "markets-instruments",
       "document": "alternative-assets",
       "zhTitle": "12 · 另类资产投资：收藏品与「兴趣投资」",
-      "enTitle": "Alternative Asset Investing: Collectibles and 'Hobby Investing'",
+      "enTitle": "12 · Alternative Asset Investing: Collectibles and \"Hobby Investing\"",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1146,7 +1130,7 @@
       "chapter": "markets-instruments",
       "document": "bonds-interest-rates",
       "zhTitle": "02 · 债券与利率：资产的定价之锚",
-      "enTitle": "Bonds and Interest Rates: The Pricing Anchor of Assets",
+      "enTitle": "02 · Bonds and Interest Rates: The Pricing Anchor of Assets",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1155,7 +1139,7 @@
       "chapter": "markets-instruments",
       "document": "commodities-overview",
       "zhTitle": "06 · 商品品种全景：从「全球定价中心」看懂商品",
-      "enTitle": "Commodity Panorama: Understanding Commodities Through Their Global Pricing Centers",
+      "enTitle": "06 · Commodity Panorama: Understanding Commodities Through Their Global Pricing Centers",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1164,7 +1148,7 @@
       "chapter": "markets-instruments",
       "document": "commodity-indices-cycles",
       "zhTitle": "14 · 大宗商品指数与周期：看懂「涨价时代」的节拍",
-      "enTitle": "Commodity Indices and Cycles: Reading the Rhythm of an Era of Rising Prices",
+      "enTitle": "14 · Commodity Indices and Cycles: Reading the Rhythm of an Era of Rising Prices",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1173,7 +1157,7 @@
       "chapter": "markets-instruments",
       "document": "crypto-landscape",
       "zhTitle": "07 · 加密货币全景：从「数字黄金」到「币圈版图」",
-      "enTitle": "Crypto Landscape: From Digital Gold to the Map of Crypto",
+      "enTitle": "07 · Crypto Landscape: From Digital Gold to the Map of Crypto",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1182,7 +1166,7 @@
       "chapter": "markets-instruments",
       "document": "defi-deep-dive",
       "zhTitle": "15 · DeFi 与链上生态深潜：从「收益神话」到「风险解剖」",
-      "enTitle": "DeFi and the On-Chain Ecosystem Deep Dive: From Yield Myths to a Risk Dissection",
+      "enTitle": "15 · DeFi and the On-Chain Ecosystem Deep Dive: From Yield Myths to a Risk Dissection",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1202,7 +1186,7 @@
       "chapter": "markets-instruments",
       "document": "forex-market",
       "zhTitle": "01 · 外汇市场：全球最大的金融战场",
-      "enTitle": "Forex Market: The World's Largest Financial Battlefield",
+      "enTitle": "01 · Forex Market: The World's Largest Financial Battlefield",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1211,7 +1195,7 @@
       "chapter": "markets-instruments",
       "document": "funds-etf",
       "zhTitle": "03 · 基金与 ETF：普通人的资产工具",
-      "enTitle": "Funds and ETFs: The Ordinary Person's Asset Tool",
+      "enTitle": "03 · Funds and ETFs: The Ordinary Person's Asset Tool",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1220,7 +1204,7 @@
       "chapter": "markets-instruments",
       "document": "hk-us-ipo",
       "zhTitle": "10 · 港美股打新与 IPO：从招股书到首日交易",
-      "enTitle": "HK and US IPO Subscription: From Prospectus to First-Day Trading",
+      "enTitle": "10 · HK and US IPO Subscription: From Prospectus to First-Day Trading",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1241,7 +1225,7 @@
       "chapter": "markets-instruments",
       "document": "indices-sectors",
       "zhTitle": "05 · 指数与板块：市场的「尺子」与「地图」",
-      "enTitle": "Indexes and Sectors: The Market's Ruler and Map",
+      "enTitle": "05 · Indexes and Sectors: The Market's Ruler and Map",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1250,7 +1234,7 @@
       "chapter": "markets-instruments",
       "document": "macro-markets",
       "zhTitle": "08 · 宏观经济与市场：看懂「大环境」再做交易",
-      "enTitle": "Macro Economy and Markets: Read the Big Picture Before Trading",
+      "enTitle": "08 · Macro Economy and Markets: Read the Big Picture Before Trading",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1271,7 +1255,7 @@
       "chapter": "markets-instruments",
       "document": "options-basics",
       "zhTitle": "04 · 期权基础：最精密的金融工具",
-      "enTitle": "Options Basics: The Most Sophisticated Financial Instrument",
+      "enTitle": "04 · Options Basics: The Most Sophisticated Financial Instrument",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1280,7 +1264,7 @@
       "chapter": "markets-instruments",
       "document": "precious-metals-energy",
       "zhTitle": "09 · 贵金属与能源现货：黄金、白银、原油的参与方式专题",
-      "enTitle": "Precious Metals and Energy Spot: How to Participate in Gold, Silver, and Crude Oil",
+      "enTitle": "09 · Precious Metals and Energy Spot: How to Participate in Gold, Silver, and Crude Oil",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1300,7 +1284,16 @@
       "chapter": "markets-instruments",
       "document": "reits-real-estate",
       "zhTitle": "11 · REITs 与房地产投资：从「买房」到「买房子」的生意",
-      "enTitle": "REITs and Real Estate Investing: From Buying a Home to Buying the Property Business",
+      "enTitle": "11 · REITs and Real Estate Investing: From Buying a Home to Buying the Property Business",
+      "status": "review",
+      "reason": "no-known-zh-term",
+      "terms": []
+    },
+    {
+      "chapter": "markets-instruments",
+      "document": "sentiment-indicators",
+      "zhTitle": "16 · 情绪指标全景：恐贪指数、多空比与 PCR",
+      "enTitle": "16 · Sentiment Indicators Panorama: Fear & Greed, Long/Short Ratio, and PCR",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1309,7 +1302,7 @@
       "chapter": "markets-instruments",
       "document": "volatility-vix",
       "zhTitle": "13 · 波动率与 VIX：恐慌是能被定价的",
-      "enTitle": "Volatility and VIX: Fear Can Be Priced",
+      "enTitle": "13 · Volatility and VIX: Fear Can Be Priced",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1318,7 +1311,7 @@
       "chapter": "options-strategies",
       "document": "greeks-in-practice",
       "zhTitle": "02 · 希腊字母实操：你的持仓是一张「风险资产负债表」",
-      "enTitle": "The Greeks in Practice: Your Position Is a Risk Balance Sheet",
+      "enTitle": "02 · The Greeks in Practice: Your Position Is a Risk Balance Sheet",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1338,7 +1331,7 @@
       "chapter": "options-strategies",
       "document": "options-strategies",
       "zhTitle": "03 · 期权组合策略大全：按风险收益类型分类",
-      "enTitle": "The Complete Catalog of Option Combinations: Classified by Risk-Return Type",
+      "enTitle": "03 · The Complete Catalog of Option Combinations: Classified by Risk-Return Type",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1358,7 +1351,7 @@
       "chapter": "options-strategies",
       "document": "options-tools-review",
       "zhTitle": "05 · 期权工具与复盘：会用工具，才能把经验变成资产",
-      "enTitle": "Options Tools and Review: Master the Tools, Turn Experience into an Asset",
+      "enTitle": "05 · Options Tools and Review: Master the Tools, Turn Experience into an Asset",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1367,7 +1360,7 @@
       "chapter": "options-strategies",
       "document": "options-trading-risk",
       "zhTitle": "04 · 期权实战与风控：从纸上谈兵到真金白银",
-      "enTitle": "Options in Practice and Risk Control: From Paper Trading to Real Money",
+      "enTitle": "04 · Options in Practice and Risk Control: From Paper Trading to Real Money",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1388,7 +1381,7 @@
       "chapter": "options-strategies",
       "document": "pricing-volatility",
       "zhTitle": "01 · 期权定价与波动率：价格怎么来的，贵不贵怎么看",
-      "enTitle": "Option Pricing and Volatility: Where Prices Come From, and How to Tell If They're Expensive",
+      "enTitle": "01 · Option Pricing and Volatility: Where Prices Come From, and How to Tell If They're Expensive",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1397,7 +1390,7 @@
       "chapter": "pitfalls",
       "document": "compliance-taxes",
       "zhTitle": "03 · 合规与税务",
-      "enTitle": "Compliance and Taxes",
+      "enTitle": "03 · Compliance and Taxes",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1406,7 +1399,7 @@
       "chapter": "pitfalls",
       "document": "scam-detection",
       "zhTitle": "02 · 骗局识别",
-      "enTitle": "Scam Detection",
+      "enTitle": "02 · Scam Detection",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1415,7 +1408,7 @@
       "chapter": "pitfalls",
       "document": "why-traders-lose",
       "zhTitle": "01 · 常见亏损原因",
-      "enTitle": "Why Traders Lose",
+      "enTitle": "01 · Why Traders Lose",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1424,7 +1417,7 @@
       "chapter": "quant-practice",
       "document": "data-acquisition",
       "zhTitle": "02 · 数据获取实战",
-      "enTitle": "Data Acquisition in Practice",
+      "enTitle": "02 · Data Acquisition in Practice",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1433,7 +1426,7 @@
       "chapter": "quant-practice",
       "document": "first-backtest",
       "zhTitle": "03 · 第一个回测",
-      "enTitle": "Your First Backtest",
+      "enTitle": "03 · Your First Backtest",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1442,7 +1435,7 @@
       "chapter": "quant-practice",
       "document": "live-automation",
       "zhTitle": "04 · 实盘自动化",
-      "enTitle": "Live Automation",
+      "enTitle": "04 · Live Automation",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1451,7 +1444,7 @@
       "chapter": "quant-practice",
       "document": "quant-toolchain",
       "zhTitle": "01 · 量化工具链",
-      "enTitle": "Quant Toolchain",
+      "enTitle": "01 · Quant Toolchain",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1460,7 +1453,7 @@
       "chapter": "quant-practice",
       "document": "strategy-coding",
       "zhTitle": "05 · 策略代码实战",
-      "enTitle": "Strategy Coding in Practice",
+      "enTitle": "05 · Strategy Coding in Practice",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1469,7 +1462,7 @@
       "chapter": "reading-list",
       "document": "beginner-books",
       "zhTitle": "01 · 入门书单",
-      "enTitle": "Beginner Books",
+      "enTitle": "01 · Beginner Books",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1477,8 +1470,8 @@
     {
       "chapter": "reading-list",
       "document": "how-to-read",
-      "zhTitle": "06 · 如何精读一本书",
-      "enTitle": "How to Read a Book Closely",
+      "zhTitle": "05 · 如何精读一本书",
+      "enTitle": "05 · How to Read a Book Closely",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1486,8 +1479,8 @@
     {
       "chapter": "reading-list",
       "document": "quant-psychology-books",
-      "zhTitle": "05 · 量化与交易心理",
-      "enTitle": "Quant & Trading Psychology",
+      "zhTitle": "04 · 量化与交易心理",
+      "enTitle": "04 · Quant & Trading Psychology",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1508,7 +1501,7 @@
       "chapter": "reading-list",
       "document": "ta-classics",
       "zhTitle": "02 · 技术分析经典",
-      "enTitle": "Technical Analysis Classics",
+      "enTitle": "02 · Technical Analysis Classics",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1517,7 +1510,7 @@
       "chapter": "reading-list",
       "document": "value-investing-classics",
       "zhTitle": "03 · 价值投资经典",
-      "enTitle": "Value Investing Classics",
+      "enTitle": "03 · Value Investing Classics",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1526,7 +1519,7 @@
       "chapter": "regulation-compliance",
       "document": "algo-trading-compliance",
       "zhTitle": "05 · 程序化交易与合规",
-      "enTitle": "Algorithmic Trading and Compliance",
+      "enTitle": "05 · Algorithmic Trading and Compliance",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1547,7 +1540,7 @@
       "chapter": "regulation-compliance",
       "document": "aml-compliance",
       "zhTitle": "08 · 反洗钱与交易合规",
-      "enTitle": "AML and Trading Compliance",
+      "enTitle": "08 · AML and Trading Compliance",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1568,7 +1561,7 @@
       "chapter": "regulation-compliance",
       "document": "china-regulation",
       "zhTitle": "01 · 中国金融监管体系",
-      "enTitle": "China's Financial Regulatory System",
+      "enTitle": "01 · China's Financial Regulatory System",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1577,7 +1570,7 @@
       "chapter": "regulation-compliance",
       "document": "crypto-regulation",
       "zhTitle": "03 · 加密监管",
-      "enTitle": "Crypto Regulation",
+      "enTitle": "03 · Crypto Regulation",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1586,7 +1579,7 @@
       "chapter": "regulation-compliance",
       "document": "licensing-access",
       "zhTitle": "04 · 牌照与市场准入",
-      "enTitle": "Licensing and Market Access",
+      "enTitle": "04 · Licensing and Market Access",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1595,7 +1588,7 @@
       "chapter": "regulation-compliance",
       "document": "market-data-compliance",
       "zhTitle": "07 · 行情数据与工具类应用合规",
-      "enTitle": "Market Data and Tooling Compliance",
+      "enTitle": "07 · Market Data and Tooling Compliance",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1604,7 +1597,7 @@
       "chapter": "regulation-compliance",
       "document": "platform-disclaimers",
       "zhTitle": "06 · 平台免责与投资者适当性",
-      "enTitle": "Platform Disclaimers and Investor Suitability",
+      "enTitle": "06 · Platform Disclaimers and Investor Suitability",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1613,7 +1606,7 @@
       "chapter": "regulation-compliance",
       "document": "us-global-regulation",
       "zhTitle": "02 · 美国与全球监管",
-      "enTitle": "US and Global Regulation",
+      "enTitle": "02 · US and Global Regulation",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1621,8 +1614,8 @@
     {
       "chapter": "spot",
       "document": "crypto-spot",
-      "zhTitle": "加密现货专题",
-      "enTitle": "Crypto Spot Deep Dive",
+      "zhTitle": "03 · 加密现货专题",
+      "enTitle": "03 · Crypto Spot Deep Dive",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1640,9 +1633,18 @@
     },
     {
       "chapter": "spot",
+      "document": "dca-methodology",
+      "zhTitle": "07 · 定投与分批建仓方法论",
+      "enTitle": "07 · DCA and Batch Accumulation Methodology",
+      "status": "review",
+      "reason": "no-known-zh-term",
+      "terms": []
+    },
+    {
+      "chapter": "spot",
       "document": "portfolio-rebalancing",
       "zhTitle": "06 · 组合管理与再平衡",
-      "enTitle": "Portfolio Management & Rebalancing",
+      "enTitle": "06 · Portfolio Management & Rebalancing",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1650,8 +1652,8 @@
     {
       "chapter": "spot",
       "document": "spot-basics",
-      "zhTitle": "现货交易基础",
-      "enTitle": "Spot Trading Basics",
+      "zhTitle": "01 · 现货交易基础",
+      "enTitle": "01 · Spot Trading Basics",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1680,8 +1682,8 @@
     {
       "chapter": "spot",
       "document": "spot-intermediate",
-      "zhTitle": "现货实务进阶",
-      "enTitle": "Spot Practice: Next Level",
+      "zhTitle": "02 · 现货实务进阶",
+      "enTitle": "02 · Spot Practice: Next Level",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1700,8 +1702,8 @@
     {
       "chapter": "spot",
       "document": "spot-strategies",
-      "zhTitle": "现货交易策略",
-      "enTitle": "Spot Trading Strategies",
+      "zhTitle": "04 · 现货交易策略",
+      "enTitle": "04 · Spot Trading Strategies",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1731,7 +1733,7 @@
       "chapter": "spot",
       "document": "wallet-security",
       "zhTitle": "05 · 安全存储与钱包管理",
-      "enTitle": "Secure Storage & Wallet Management",
+      "enTitle": "05 · Secure Storage & Wallet Management",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1740,7 +1742,7 @@
       "chapter": "stocks",
       "document": "a-share-rules",
       "zhTitle": "02 · A 股交易规则",
-      "enTitle": "A-Share Trading Rules",
+      "enTitle": "02 · A-Share Trading Rules",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1759,9 +1761,18 @@
     },
     {
       "chapter": "stocks",
+      "document": "adjusted-price-dividends",
+      "zhTitle": "08 · 复权、除权除息与指标失真",
+      "enTitle": "08 · Adjusted Prices, Ex-Dividend Days, and Indicator Distortion",
+      "status": "review",
+      "reason": "no-known-zh-term",
+      "terms": []
+    },
+    {
+      "chapter": "stocks",
       "document": "adr-cross-listing",
       "zhTitle": "05 · ADR 与跨境上市",
-      "enTitle": "ADR and Cross-Border Listing",
+      "enTitle": "05 · ADR and Cross-Border Listing",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1770,7 +1781,7 @@
       "chapter": "stocks",
       "document": "etf-portfolio",
       "zhTitle": "07 · 美股与全球 ETF 组合构建",
-      "enTitle": "US and Global ETF Portfolio Construction",
+      "enTitle": "07 · US and Global ETF Portfolio Construction",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1779,7 +1790,7 @@
       "chapter": "stocks",
       "document": "hk-us-stocks",
       "zhTitle": "03 · 港股与美股",
-      "enTitle": "HK and US Stocks",
+      "enTitle": "03 · HK and US Stocks",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1788,7 +1799,7 @@
       "chapter": "stocks",
       "document": "stock-analysis",
       "zhTitle": "04 · 股票分析方法",
-      "enTitle": "Stock Analysis Methods",
+      "enTitle": "04 · Stock Analysis Methods",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1797,7 +1808,7 @@
       "chapter": "stocks",
       "document": "stock-basics",
       "zhTitle": "01 · 股票基础",
-      "enTitle": "Stock Basics",
+      "enTitle": "01 · Stock Basics",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1806,7 +1817,7 @@
       "chapter": "stocks",
       "document": "us-stock-options",
       "zhTitle": "06 · 美股期权入门",
-      "enTitle": "US Stock Options Primer",
+      "enTitle": "06 · US Stock Options Primer",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1815,7 +1826,7 @@
       "chapter": "system-integration",
       "document": "ctp-integration",
       "zhTitle": "10 · CTP 对接实战：从零到能下单",
-      "enTitle": "CTP Integration in Practice: From Zero to First Order",
+      "enTitle": "10 · CTP Integration in Practice: From Zero to First Order",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1824,7 +1835,7 @@
       "chapter": "system-integration",
       "document": "data-infrastructure",
       "zhTitle": "07 · 数据与基础设施",
-      "enTitle": "Data and Infrastructure",
+      "enTitle": "07 · Data and Infrastructure",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1833,18 +1844,10 @@
       "chapter": "system-integration",
       "document": "exchanges-oms",
       "zhTitle": "02 · 交易所与柜台：你的系统到底接在哪一层",
-      "enTitle": "Exchanges and OMSs: Which Layer Your System Actually Connects To",
-      "status": "gap",
-      "reason": "missing-en-term",
+      "enTitle": "02 · Exchanges and OMSs: Which Layer Your System Actually Connects To",
+      "status": "pass",
+      "reason": "matched",
       "terms": [
-        {
-          "zh": "交易",
-          "en": [
-            "trading",
-            "trade"
-          ],
-          "matched": []
-        },
         {
           "zh": "交易所",
           "en": [
@@ -1855,21 +1858,13 @@
           ]
         }
       ],
-      "missingTerms": [
-        {
-          "zh": "交易",
-          "en": [
-            "trading",
-            "trade"
-          ]
-        }
-      ]
+      "missingTerms": []
     },
     {
       "chapter": "system-integration",
       "document": "fix-protocol",
       "zhTitle": "09 · FIX 协议详解：全球机构交易的通用语言",
-      "enTitle": "FIX Protocol Deep Dive: The Common Language of Global Institutional Trading",
+      "enTitle": "09 · FIX Protocol Deep Dive: The Common Language of Global Institutional Trading",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1890,7 +1885,7 @@
       "chapter": "system-integration",
       "document": "integration-overview",
       "zhTitle": "01 · 对接全景与角色分工：先画地图，再写代码",
-      "enTitle": "Integration Overview and Role Division: Draw the Map Before Writing Code",
+      "enTitle": "01 · Integration Overview and Role Division: Draw the Map Before Writing Code",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -1899,7 +1894,7 @@
       "chapter": "system-integration",
       "document": "market-data-systems",
       "zhTitle": "03 · 行情系统：交易软件的「眼睛」",
-      "enTitle": "Market Data Systems: The Eyes of Trading Software",
+      "enTitle": "03 · Market Data Systems: The Eyes of Trading Software",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1920,7 +1915,7 @@
       "chapter": "system-integration",
       "document": "matching-engine",
       "zhTitle": "11 · 撮合引擎原理：订单怎么变成成交",
-      "enTitle": "Matching Engine Principles: How Orders Become Fills",
+      "enTitle": "11 · Matching Engine Principles: How Orders Become Fills",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1940,7 +1935,7 @@
       "chapter": "system-integration",
       "document": "order-lifecycle",
       "zhTitle": "04 · 交易接口与订单生命周期：系统的心脏",
-      "enTitle": "Trading Interfaces and Order Lifecycle: The Heart of the System",
+      "enTitle": "04 · Trading Interfaces and Order Lifecycle: The Heart of the System",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1970,7 +1965,7 @@
       "chapter": "system-integration",
       "document": "risk-systems",
       "zhTitle": "05 · 风控与资金管理：最后一道防线必须是你自己",
-      "enTitle": "Risk Controls and Capital Management: The Last Line of Defense Must Be Your Own",
+      "enTitle": "05 · Risk Controls and Capital Management: The Last Line of Defense Must Be Your Own",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -1991,7 +1986,7 @@
       "chapter": "system-integration",
       "document": "role-skills-map",
       "zhTitle": "08 · 岗位技能地图",
-      "enTitle": "Role Skills Map",
+      "enTitle": "08 · Role Skills Map",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2000,7 +1995,7 @@
       "chapter": "system-integration",
       "document": "strategy-backtest",
       "zhTitle": "06 · 量化策略与回测",
-      "enTitle": "Quantitative Strategies and Backtesting",
+      "enTitle": "06 · Quantitative Strategies and Backtesting",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2009,7 +2004,7 @@
       "chapter": "technical-analysis",
       "document": "advanced-candles",
       "zhTitle": "04 · 蜡烛图高阶",
-      "enTitle": "Advanced Candlesticks",
+      "enTitle": "04 · Advanced Candlesticks",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2018,7 +2013,7 @@
       "chapter": "technical-analysis",
       "document": "chart-patterns",
       "zhTitle": "01 · K 线形态",
-      "enTitle": "Candlestick Patterns",
+      "enTitle": "01 · Candlestick Patterns",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2027,7 +2022,7 @@
       "chapter": "technical-analysis",
       "document": "drawing-tools",
       "zhTitle": "07 · 画线工具实战",
-      "enTitle": "Drawing Tools in Practice",
+      "enTitle": "07 · Drawing Tools in Practice",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2036,7 +2031,7 @@
       "chapter": "technical-analysis",
       "document": "elliott-gann-chan",
       "zhTitle": "05 · 波浪 · 江恩 · 缠论",
-      "enTitle": "Elliott Waves · Gann · Chan Theory",
+      "enTitle": "05 · Elliott Waves · Gann · Chan Theory",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2045,7 +2040,7 @@
       "chapter": "technical-analysis",
       "document": "gann-box-angles",
       "zhTitle": "08 · 江恩箱与角度线实战",
-      "enTitle": "Gann Box and Angles in Practice",
+      "enTitle": "08 · Gann Box and Angles in Practice",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2054,7 +2049,25 @@
       "chapter": "technical-analysis",
       "document": "indicators",
       "zhTitle": "02 · 技术指标详解",
-      "enTitle": "Technical Indicators in Depth",
+      "enTitle": "02 · Technical Indicators in Depth",
+      "status": "review",
+      "reason": "no-known-zh-term",
+      "terms": []
+    },
+    {
+      "chapter": "technical-analysis",
+      "document": "indicators-advanced",
+      "zhTitle": "12 · 指标进阶补遗：DMI/ADX、Supertrend、BBW",
+      "enTitle": "12 · Advanced Indicators: DMI/ADX, Supertrend, BBW",
+      "status": "review",
+      "reason": "no-known-zh-term",
+      "terms": []
+    },
+    {
+      "chapter": "technical-analysis",
+      "document": "multi-timeframe",
+      "zhTitle": "13 · 多周期分析：让周期之间互相证明",
+      "enTitle": "13 · Multi-Timeframe Analysis: Let Timeframes Cross-Examine Each Other",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2063,7 +2076,7 @@
       "chapter": "technical-analysis",
       "document": "order-flow-microstructure",
       "zhTitle": "09 · 订单流与市场微观结构",
-      "enTitle": "Order Flow and Market Microstructure",
+      "enTitle": "09 · Order Flow and Market Microstructure",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -2081,9 +2094,49 @@
     },
     {
       "chapter": "technical-analysis",
+      "document": "orderbook-depth",
+      "zhTitle": "10 · 订单簿与深度图解读",
+      "enTitle": "10 · Order Book & Depth Chart: A Practical Guide",
+      "status": "pass",
+      "reason": "matched",
+      "terms": [
+        {
+          "zh": "订单",
+          "en": [
+            "order"
+          ],
+          "matched": [
+            "order"
+          ]
+        }
+      ],
+      "missingTerms": []
+    },
+    {
+      "chapter": "technical-analysis",
+      "document": "replay-training",
+      "zhTitle": "11 · 回放训练方法论",
+      "enTitle": "11 · The Replay Training Method",
+      "status": "pass",
+      "reason": "matched",
+      "terms": [
+        {
+          "zh": "回放",
+          "en": [
+            "replay"
+          ],
+          "matched": [
+            "replay"
+          ]
+        }
+      ],
+      "missingTerms": []
+    },
+    {
+      "chapter": "technical-analysis",
       "document": "ta-validation",
       "zhTitle": "06 · 技术分析批判与验证",
-      "enTitle": "Technical Analysis: Critique and Validation",
+      "enTitle": "06 · Technical Analysis: Critique and Validation",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2092,7 +2145,7 @@
       "chapter": "technical-analysis",
       "document": "volume-price",
       "zhTitle": "03 · 量价分析",
-      "enTitle": "Volume-Price Analysis",
+      "enTitle": "03 · Volume-Price Analysis",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2101,7 +2154,7 @@
       "chapter": "tools-platforms",
       "document": "analysis-scripting",
       "zhTitle": "04 · 分析与脚本化",
-      "enTitle": "Analysis & Scripting",
+      "enTitle": "04 · Analysis & Scripting",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2110,7 +2163,7 @@
       "chapter": "tools-platforms",
       "document": "automation-environment",
       "zhTitle": "05 · 运行与自动化环境",
-      "enTitle": "Runtime & Automation Environment",
+      "enTitle": "05 · Runtime & Automation Environment",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2119,7 +2172,7 @@
       "chapter": "tools-platforms",
       "document": "broker-selection",
       "zhTitle": "03 · 券商与期货公司选择",
-      "enTitle": "Broker & Futures Broker Selection",
+      "enTitle": "03 · Broker & Futures Broker Selection",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -2139,7 +2192,7 @@
       "chapter": "tools-platforms",
       "document": "charting-platforms",
       "zhTitle": "01 · 行情软件全景",
-      "enTitle": "A Panorama of Market Data Software",
+      "enTitle": "01 · A Panorama of Market Data Software",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2148,7 +2201,7 @@
       "chapter": "tools-platforms",
       "document": "research-platforms",
       "zhTitle": "02 · 数据与研究平台",
-      "enTitle": "Data & Research Platforms",
+      "enTitle": "02 · Data & Research Platforms",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2157,7 +2210,7 @@
       "chapter": "trading-practice",
       "document": "a-share-playbook",
       "zhTitle": "05 · A 股特色玩法全解析",
-      "enTitle": "A-Share Special Plays",
+      "enTitle": "05 · A-Share Special Plays",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2166,7 +2219,7 @@
       "chapter": "trading-practice",
       "document": "arbitrage-handbook",
       "zhTitle": "06 · 套利实战手册",
-      "enTitle": "Arbitrage in Practice",
+      "enTitle": "06 · Arbitrage in Practice",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2175,7 +2228,7 @@
       "chapter": "trading-practice",
       "document": "crypto-airdrops",
       "zhTitle": "07 · 加密空投与「撸毛」实战",
-      "enTitle": "Crypto Airdrops and Airdrop Farming",
+      "enTitle": "07 · Crypto Airdrops and Airdrop Farming",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2184,7 +2237,7 @@
       "chapter": "trading-practice",
       "document": "day-trading",
       "zhTitle": "01 · 日内交易实战",
-      "enTitle": "Day Trading in Practice",
+      "enTitle": "01 · Day Trading in Practice",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -2205,7 +2258,7 @@
       "chapter": "trading-practice",
       "document": "event-driven",
       "zhTitle": "04 · 事件驱动交易",
-      "enTitle": "Event-Driven Trading",
+      "enTitle": "04 · Event-Driven Trading",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -2226,7 +2279,7 @@
       "chapter": "trading-practice",
       "document": "onchain-data-trading",
       "zhTitle": "08 · 链上数据交易",
-      "enTitle": "On-chain Data Trading",
+      "enTitle": "08 · On-chain Data Trading",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -2247,7 +2300,7 @@
       "chapter": "trading-practice",
       "document": "range-grid-trading",
       "zhTitle": "03 · 震荡市与网格实战",
-      "enTitle": "Range Markets and Grid Trading in Practice",
+      "enTitle": "03 · Range Markets and Grid Trading in Practice",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2256,7 +2309,16 @@
       "chapter": "trading-practice",
       "document": "swing-trend-trading",
       "zhTitle": "02 · 波段与趋势实战",
-      "enTitle": "Swing and Trend in Practice",
+      "enTitle": "02 · Swing and Trend in Practice",
+      "status": "review",
+      "reason": "no-known-zh-term",
+      "terms": []
+    },
+    {
+      "chapter": "trading-system",
+      "document": "alert-discipline",
+      "zhTitle": "08 · 价格提醒与离盘纪律",
+      "enTitle": "08 · Price Alerts and Off-Screen Discipline",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2265,7 +2327,7 @@
       "chapter": "trading-system",
       "document": "equity-curve-attribution",
       "zhTitle": "04 · 资金曲线与绩效归因",
-      "enTitle": "Equity Curve and Performance Attribution",
+      "enTitle": "04 · Equity Curve and Performance Attribution",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2274,7 +2336,7 @@
       "chapter": "trading-system",
       "document": "journaling-checklists",
       "zhTitle": "06 · 交易日志与检视清单",
-      "enTitle": "Trading Journal and Checklists",
+      "enTitle": "06 · Trading Journal and Checklists",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -2293,9 +2355,18 @@
     },
     {
       "chapter": "trading-system",
+      "document": "paper-to-live",
+      "zhTitle": "07 · 模拟盘到实盘：进阶路径",
+      "enTitle": "07 · From Paper Trading to Live: The Path to Real Money",
+      "status": "review",
+      "reason": "no-known-zh-term",
+      "terms": []
+    },
+    {
+      "chapter": "trading-system",
       "document": "risk-management",
       "zhTitle": "02 · 风险管理",
-      "enTitle": "Risk Management",
+      "enTitle": "02 · Risk Management",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -2315,7 +2386,7 @@
       "chapter": "trading-system",
       "document": "trade-review",
       "zhTitle": "05 · 交易复盘进阶",
-      "enTitle": "Advanced Trade Review",
+      "enTitle": "05 · Advanced Trade Review",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -2336,7 +2407,7 @@
       "chapter": "trading-system",
       "document": "trading-plan",
       "zhTitle": "01 · 交易计划",
-      "enTitle": "Trading Plan",
+      "enTitle": "01 · Trading Plan",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -2357,7 +2428,7 @@
       "chapter": "trading-system",
       "document": "trading-psychology",
       "zhTitle": "03 · 交易心理",
-      "enTitle": "Trading Psychology",
+      "enTitle": "03 · Trading Psychology",
       "status": "pass",
       "reason": "matched",
       "terms": [
@@ -2378,7 +2449,7 @@
       "chapter": "wealth-allocation",
       "document": "asset-allocation",
       "zhTitle": "01 · 资产配置基础",
-      "enTitle": "Asset Allocation Basics",
+      "enTitle": "01 · Asset Allocation Basics",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2387,7 +2458,7 @@
       "chapter": "wealth-allocation",
       "document": "compounding-returns",
       "zhTitle": "02 · 复利与收益率认知",
-      "enTitle": "Compounding and Return Expectations",
+      "enTitle": "02 · Compounding and Return Expectations",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2396,7 +2467,7 @@
       "chapter": "wealth-allocation",
       "document": "family-financial-planning",
       "zhTitle": "03 · 家庭理财规划",
-      "enTitle": "Family Financial Planning",
+      "enTitle": "03 · Family Financial Planning",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2405,7 +2476,7 @@
       "chapter": "wealth-allocation",
       "document": "inflation-purchasing-power",
       "zhTitle": "04 · 通胀与购买力",
-      "enTitle": "Inflation and Purchasing Power",
+      "enTitle": "04 · Inflation and Purchasing Power",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2414,7 +2485,7 @@
       "chapter": "wealth-allocation",
       "document": "insurance-basics",
       "zhTitle": "05 · 保险与保障",
-      "enTitle": "Insurance and Protection",
+      "enTitle": "05 · Insurance and Protection",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2423,7 +2494,7 @@
       "chapter": "wealth-allocation",
       "document": "overseas-allocation",
       "zhTitle": "06 · 海外资产配置实操",
-      "enTitle": "Overseas Allocation in Practice",
+      "enTitle": "06 · Overseas Allocation in Practice",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
@@ -2432,7 +2503,7 @@
       "chapter": "wealth-allocation",
       "document": "tax-planning",
       "zhTitle": "07 · 税务筹划基础",
-      "enTitle": "Tax Planning Basics",
+      "enTitle": "07 · Tax Planning Basics",
       "status": "review",
       "reason": "no-known-zh-term",
       "terms": []
