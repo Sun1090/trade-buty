@@ -104,4 +104,32 @@ describe("wrongbook storage", () => {
     store.set("tb-wrong", "not json");
     expect(readWrong()).toEqual({});
   });
+
+  it("合法 JSON 中的非对象结构返回空对象且可恢复写入", () => {
+    store.set("tb-wrong", "null");
+    expect(readWrong()).toEqual({});
+    recordWrong("spot", 1, 2);
+    expect(readWrong()["spot:1"]).toMatchObject({ questionIdx: 1, picked: 2 });
+  });
+
+  it("过滤字段和 SRS 字段损坏的错题条目", () => {
+    store.set(
+      "tb-wrong",
+      JSON.stringify({
+        "spot:1": {
+          chapterNum: "spot",
+          questionIdx: 1,
+          picked: 0,
+          at: 100,
+          srsStage: -1,
+          srsDue: "tomorrow",
+        },
+        "spot:2": { chapterNum: "spot", questionIdx: "2", picked: 0, at: 100 },
+        "spot:3": null,
+      }),
+    );
+    expect(readWrong()).toEqual({
+      "spot:1": { chapterNum: "spot", questionIdx: 1, picked: 0, at: 100 },
+    });
+  });
 });

@@ -4,6 +4,7 @@ import { syncWrongbookWrite, syncWrongbookDelete } from "./sync-layer";
 import { touchStreak } from "./streak";
 import { EBBINGHAUS_INTERVALS, srsOnAnswer, type SrsOutcome } from "./srs";
 import { writeReviewAttempt } from "./review-attempt-ledger";
+import { isRecord, readStorageJson } from "./storage-json";
 
 const KEY = "tb-wrong";
 
@@ -109,14 +110,36 @@ export function pruneOrphanWrong(validKeys: Set<string>): number {
 }
 
 export function readWrong(): Record<string, WrongEntry> {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "{}") as Record<
-      string,
-      WrongEntry
-    >;
-  } catch {
-    return {};
+  const parsed = readStorageJson(KEY);
+  if (!isRecord(parsed)) return {};
+
+  const out: Record<string, WrongEntry> = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    if (!isRecord(value)) continue;
+    const { chapterNum, questionIdx, picked, at, srsStage, srsDue } = value;
+    if (
+      typeof chapterNum !== "string" ||
+      typeof questionIdx !== "number" || !Number.isFinite(questionIdx) || questionIdx < 0 ||
+      typeof picked !== "number" || !Number.isFinite(picked) || picked < -1 ||
+      typeof at !== "number" || !Number.isFinite(at) || at < 0
+    ) {
+      continue;
+    }
+    const entry: WrongEntry = {
+      chapterNum,
+      questionIdx: Math.round(questionIdx),
+      picked: Math.round(picked),
+      at: Math.round(at),
+    };
+    if (typeof srsStage === "number" && Number.isFinite(srsStage) && srsStage >= 0) {
+      entry.srsStage = Math.round(srsStage);
+    }
+    if (typeof srsDue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(srsDue)) {
+      entry.srsDue = srsDue;
+    }
+    out[key] = entry;
   }
+  return out;
 }
 
 export function recordWrong(chapterNum: string, questionIdx: number, picked: number) {

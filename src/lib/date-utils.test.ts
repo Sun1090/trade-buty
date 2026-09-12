@@ -10,7 +10,7 @@ vi.stubGlobal("localStorage", {
 vi.stubGlobal("window", { dispatchEvent: () => {} });
 
 const { localDateStr, shiftDate, daysBetween } = await import("./date-utils");
-const { addStudyTime, getStudySeconds, getStudySeries } = await import("./study-time");
+const { addStudyTime, getStudySeconds, getStudySeries, getTotalStudySeconds } = await import("./study-time");
 
 describe("date-utils（R4.8）", () => {
   it("localDateStr 输出 YYYY-MM-DD", () => {
@@ -66,5 +66,27 @@ describe("study-time 台账（R4.2）", () => {
     expect(series.map((d) => d.date)).toEqual(["2026-09-04", "2026-09-05", "2026-09-06"]);
     expect(series[0].total).toBe(60);
     expect(series[1].total).toBe(0);
+  });
+
+  it("合法 JSON 中的非对象台账不会导致读写崩溃", () => {
+    store.set("tb-study-time", "null");
+    expect(getStudySeconds("2026-09-05").total).toBe(0);
+    addStudyTime("read", 60, "2026-09-05");
+    expect(getStudySeconds("2026-09-05").read).toBe(60);
+    expect(getTotalStudySeconds()).toBe(60);
+  });
+
+  it("过滤损坏日期、非对象日条目和非法时长", () => {
+    store.set(
+      "tb-study-time",
+      JSON.stringify({
+        "2026-09-05": { read: 120, quiz: -1, replay: "30" },
+        "not-a-date": { read: 500 },
+        "2026-09-06": null,
+        "2026-09-07": { read: Number.NaN, quiz: Infinity },
+      }),
+    );
+    expect(getStudySeconds("2026-09-05")).toMatchObject({ read: 120, quiz: 0, replay: 0, total: 120 });
+    expect(getTotalStudySeconds()).toBe(120);
   });
 });

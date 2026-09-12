@@ -2,6 +2,8 @@
  * 课程书签收藏：localStorage 存储 + 云端双写
  * key = chapterSlug/docSlug
  */
+import { isRecord, readStorageJson, readNonNegativeNumber } from "./storage-json";
+
 const KEY = "tb-bookmarks";
 
 export interface BookmarkEntry {
@@ -12,11 +14,29 @@ export interface BookmarkEntry {
 }
 
 export function readBookmarks(): Record<string, BookmarkEntry> {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "{}") as Record<string, BookmarkEntry>;
-  } catch {
-    return {};
+  const parsed = readStorageJson(KEY);
+  if (!isRecord(parsed)) return {};
+
+  const out: Record<string, BookmarkEntry> = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    if (!isRecord(value)) continue;
+    if (
+      typeof value.chapter !== "string" ||
+      typeof value.doc !== "string" ||
+      typeof value.title !== "string"
+    ) {
+      continue;
+    }
+    const at = readNonNegativeNumber(value.at, Number.NaN);
+    if (!Number.isFinite(at)) continue;
+    out[key] = {
+      chapter: value.chapter,
+      doc: value.doc,
+      title: value.title,
+      at,
+    };
   }
+  return out;
 }
 
 export function isBookmarked(chapter: string, doc: string): boolean {

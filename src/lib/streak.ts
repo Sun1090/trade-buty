@@ -6,6 +6,7 @@
  */
 import { readActivityDates, recordActivity } from "./activity-calendar";
 import { localDateStr, daysBetween } from "./date-utils";
+import { isRecord, readNonNegativeInteger, readStorageJson } from "./storage-json";
 
 const KEY = "tb-streak";
 
@@ -32,15 +33,18 @@ const GRACE_MS = 36 * 3600_000;
 
 /** 读取连续天数数据 */
 export function readStreak(): StreakData {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return { lastDate: "", current: 0, longest: 0, lastTs: 0 };
-    const parsed = JSON.parse(raw) as StreakData;
-    parsed.lastTs = parsed.lastTs ?? 0; // 旧数据迁移
-    return parsed;
-  } catch {
-    return { lastDate: "", current: 0, longest: 0, lastTs: 0 };
-  }
+  const empty = { lastDate: "", current: 0, longest: 0, lastTs: 0 };
+  const parsed = readStorageJson(KEY);
+  if (!isRecord(parsed)) return empty;
+
+  const lastDate =
+    typeof parsed.lastDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.lastDate)
+      ? parsed.lastDate
+      : "";
+  const current = readNonNegativeInteger(parsed.current);
+  const longest = Math.max(current, readNonNegativeInteger(parsed.longest));
+  const lastTs = readNonNegativeInteger(parsed.lastTs);
+  return { lastDate, current, longest, lastTs };
 }
 
 /**

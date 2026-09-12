@@ -4,6 +4,7 @@
 
 import { syncQuizUpsert } from "@/lib/sync-layer";
 import { writeQuizAttempt } from "@/lib/quiz-attempt-ledger";
+import { isRecord, readStorageJson } from "@/lib/storage-json";
 
 const KEY = (ch: string) => `tb-quiz-${ch}`;
 
@@ -13,12 +14,17 @@ export interface QuizProgress {
 }
 
 export function readQuizProgress(chapterNum: string): QuizProgress | null {
-  try {
-    const raw = localStorage.getItem(KEY(chapterNum));
-    return raw ? (JSON.parse(raw) as QuizProgress) : null;
-  } catch {
+  const parsed = readStorageJson(KEY(chapterNum));
+  if (!isRecord(parsed)) return null;
+  if (
+    typeof parsed.best !== "number" ||
+    !Number.isFinite(parsed.best) ||
+    parsed.best < 0 ||
+    typeof parsed.done !== "boolean"
+  ) {
     return null;
   }
+  return { best: Math.round(parsed.best), done: parsed.done };
 }
 
 /**

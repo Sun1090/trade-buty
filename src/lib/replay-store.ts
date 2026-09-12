@@ -1,5 +1,6 @@
 /** 回放训练历史 + 最佳连击：localStorage + 云端双写 */
 import { tryDispatchProgressEvent } from "./progress-helpers";
+import { isRecord, readStorageJson } from "./storage-json";
 import { syncReplayHistoryWrite, syncReplayBestUpsert } from "./sync-layer";
 
 const KEY = "tb-replay-history";
@@ -17,11 +18,46 @@ export interface ReplayRecord {
 }
 
 export function readReplayHistory(): ReplayRecord[] {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "[]") as ReplayRecord[];
-  } catch {
-    return [];
+  const parsed = readStorageJson(KEY);
+  if (!Array.isArray(parsed)) return [];
+
+  const out: ReplayRecord[] = [];
+  for (const value of parsed) {
+    if (!isRecord(value)) continue;
+    if (typeof value.symbol !== "string" || typeof value.interval !== "string") {
+      continue;
+    }
+    const at = value.at;
+    const total = value.total;
+    const correct = value.correct;
+    const bestStreak = value.bestStreak;
+    if (
+      typeof at !== "number" || !Number.isFinite(at) || at < 0 ||
+      typeof total !== "number" || !Number.isFinite(total) || total < 0 ||
+      typeof correct !== "number" || !Number.isFinite(correct) || correct < 0 ||
+      typeof bestStreak !== "number" || !Number.isFinite(bestStreak) || bestStreak < 0
+    ) {
+      continue;
+    }
+    const normalizedTotal = Math.round(total);
+    const record: ReplayRecord = {
+      at: Math.round(at),
+      symbol: value.symbol,
+      interval: value.interval,
+      total: normalizedTotal,
+      correct: Math.min(Math.round(correct), normalizedTotal),
+      bestStreak: Math.min(Math.round(bestStreak), normalizedTotal),
+    };
+    if (
+      typeof value.durationSec === "number" &&
+      Number.isFinite(value.durationSec) &&
+      value.durationSec >= 0
+    ) {
+      record.durationSec = Math.round(value.durationSec);
+    }
+    out.push(record);
   }
+  return out;
 }
 
 export function saveReplayRecord(rec: Omit<ReplayRecord, "at">) {
@@ -40,8 +76,8 @@ export function saveReplayRecord(rec: Omit<ReplayRecord, "at">) {
 /** 读取历史最佳连击 */
 export function readReplayBest(): number {
   try {
-    const n = parseInt(localStorage.getItem(BEST_KEY) ?? "0", 10);
-    return Number.isNaN(n) ? 0 : n;
+    const n = Number(localStorage.getItem(BEST_KEY) ?? "0");
+    return Number.isFinite(n) && n >= 0 ? Math.round(n) : 0;
   } catch {
     return 0;
   }
