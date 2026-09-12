@@ -8,7 +8,7 @@
 - PR 状态：none
 - Base：`origin/main@53f7e01`
 - 远端 Head：none（`LOCAL_ONLY`，未推送）
-- 本地提交：`9da8438`、`48630e2`
+- 本地提交：`9da8438`、`48630e2`、`710d38c`
 - 目标：修掉搜索结果键盘路径上的真实缺陷——未高亮任何结果时按回车无任何反应，并让高亮态与筛选、输入变化保持一致、可见。
 - 已完成：
   - 修复 Enter 判定：原条件 `!focusIdx` 在 `focusIdx === -1` 时为 `false`，导致输入后直接回车不打开任何结果；改为 `filtered[focusIdx] ?? filtered[0]`，未高亮时打开第一条。
@@ -16,12 +16,15 @@
   - 输入变化、Escape、篇章筛选切换都会重置 `focusIdx`，杜绝陈旧高亮指向错误结果。
   - 结果链接新增 `data-search-result-index`，高亮行使用 `border-accent ring-2 ring-[var(--accent-dim)]`，键盘用户能看到当前选中项。
   - 导航由 `window.location.href` 改为 `useRouter().push`，避免整页硬跳转、保持客户端路由语义。
+  - 搜索联想补 WAI-ARIA 语义：输入框加 `aria-autocomplete="list"`、`aria-controls`、`aria-activedescendant`，联想面板 `<ul>` 变为 `role="listbox"`，每一项 `role="option"` 且带 `aria-selected`；Escape 同时清空 `suggestIdx`，避免指向已卸载的 option。
 - 验证命令与结果：
   - `npx vitest run src/components/search-client.test.tsx` → 8/8 通过（新增 Enter 首条命中、ArrowDown 高亮与查询变化重置两条用例）。
   - `npm test` → 178 文件 / 1352 用例通过。
   - `npm run lint` → exit 0（0 error / 0 warning）；`npm run typecheck` → exit 0。
   - `npm run build` → 通过；`npm run check:mobile` → 14 个关键页面 320px 无溢出。
   - `npx playwright test e2e/full-site.spec.ts -g "键盘可高亮结果"` → 1 passed（真实浏览器中 Escape→ArrowDown 高亮、Enter 用 router 跳转到首条结果）。
+  - 全量回归：`npm test` 178 文件 / 1353 用例通过；`npm run lint` exit 0；`npm run build` 通过；`npm run e2e` 57 passed；`npm run check:mobile` 14 页 320px 无溢出。
+  - jest-axe/jsx-a11y：`npm run lint` 的 `jsx-a11y/role-supports-aria-props` 确认新增 ARIA 属性与 searchbox role 合法（不引入 aria-expanded，避免非法组合）。
 - 风险与回滚：高亮只作用于搜索结果列表，不影响鼠标点击与联想下拉；若需回滚，撤销 `9da8438`、`48630e2` 两个提交即可恢复到旧的 Enter 行为。
 - 未验证项：远端 CI、PR 与 Vercel 部署（`LOCAL_ONLY`，尚未推送/未部署）。
 - 最后更新：2026-09-13
