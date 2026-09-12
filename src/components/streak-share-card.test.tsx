@@ -2,6 +2,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { StreakShareCard } from "./streak-share-card";
+vi.mock("@/lib/growth-events", () => ({ trackGrowthEvent: vi.fn() }));
+import { trackGrowthEvent } from "@/lib/growth-events";
+
+const growthTrack = vi.mocked(trackGrowthEvent);
 
 /**
  * R8.3 连续学习分享卡组件测试。
@@ -62,6 +66,7 @@ const SEVEN_DAYS = Array.from({ length: 7 }, (_, i) => {
 describe("StreakShareCard", () => {
   beforeEach(() => {
     cleanup();
+    growthTrack.mockClear();
     installCanvasStub();
     installAnchorClickStub();
     if (!("createObjectURL" in URL)) {
@@ -119,6 +124,14 @@ describe("StreakShareCard", () => {
     await waitFor(
       () => {
         expect(HTMLCanvasElement.prototype.toBlob).toHaveBeenCalled();
+        expect(growthTrack).toHaveBeenCalledWith({
+          name: "share_card_download",
+          card: "streak",
+          locale: "zh",
+          surface: "owner",
+          trigger: "share",
+          outcome: "succeeded",
+        });
       },
       { timeout: 2000 },
     );
@@ -141,6 +154,11 @@ describe("StreakShareCard", () => {
         expect(img).toBeTruthy();
         expect(img?.getAttribute("alt")).toMatch(/^连续打卡卡预览：/);
         expect(img?.getAttribute("alt")).toContain("已连续 5 天");
+        expect(growthTrack).toHaveBeenCalledWith({
+          name: "share_preview_opened",
+          card: "streak",
+          locale: "zh",
+        });
       },
       { timeout: 2000 },
     );

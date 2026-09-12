@@ -2,6 +2,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { QuizShareCard } from "./quiz-share-card";
+vi.mock("@/lib/growth-events", () => ({ trackGrowthEvent: vi.fn() }));
+import { trackGrowthEvent } from "@/lib/growth-events";
+
+const growthTrack = vi.mocked(trackGrowthEvent);
 
 /**
  * R8.1 测验分享卡组件测试：
@@ -87,6 +91,7 @@ function installAnchorClickStub() {
 describe("QuizShareCard", () => {
   beforeEach(() => {
     cleanup();
+    growthTrack.mockClear();
     installCanvasStub();
     installAnchorClickStub();
     // URL.createObjectURL / revokeObjectURL stub
@@ -134,6 +139,14 @@ describe("QuizShareCard", () => {
     await waitFor(
       () => {
         expect(HTMLCanvasElement.prototype.toBlob).toHaveBeenCalled();
+        expect(growthTrack).toHaveBeenCalledWith({
+          name: "share_card_download",
+          card: "quiz",
+          locale: "zh",
+          surface: "owner",
+          trigger: "share",
+          outcome: "succeeded",
+        });
       },
       { timeout: 2000 },
     );
@@ -157,9 +170,41 @@ describe("QuizShareCard", () => {
         expect(img).toBeTruthy();
         expect(img?.getAttribute("alt")).toMatch(/^预览卡：/);
         expect(img?.getAttribute("alt")).toContain("入门基础");
+        expect(growthTrack).toHaveBeenCalledWith({
+          name: "share_preview_opened",
+          card: "quiz",
+          locale: "zh",
+        });
       },
       { timeout: 2000 },
     );
+  });
+
+  it("复制分享链接时只上报成功/失败枚举", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: vi.fn(async () => {}) },
+      configurable: true,
+    });
+    render(
+      <QuizShareCard
+        chapterTitle="入门基础"
+        score={3}
+        total={5}
+        locale="zh"
+        shareUrl="https://example.com/share/quiz/secret?ref=alice"
+        labels={{ share: "分享", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("quiz-share-link-btn"));
+    await waitFor(() =>
+      expect(growthTrack).toHaveBeenCalledWith({
+        name: "share_link_copy",
+        card: "quiz",
+        locale: "zh",
+        outcome: "succeeded",
+      }),
+    );
+    expect(JSON.stringify(growthTrack.mock.calls)).not.toContain("alice");
   });
 });
 
@@ -181,5 +226,13 @@ describe("QuizShareCard download failure feedback (R13.6)", () => {
     );
     fireEvent.click(screen.getByTestId("quiz-share-btn"));
     expect(await screen.findByRole("alert")).toHaveTextContent("下载失败，请重试");
+    expect(growthTrack).toHaveBeenCalledWith({
+      name: "share_card_download",
+      card: "quiz",
+      locale: "zh",
+      surface: "owner",
+      trigger: "share",
+      outcome: "failed",
+    });
   });
 });

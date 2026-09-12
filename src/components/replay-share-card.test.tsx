@@ -2,6 +2,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { ReplayShareCard } from "./replay-share-card";
+vi.mock("@/lib/growth-events", () => ({ trackGrowthEvent: vi.fn() }));
+import { trackGrowthEvent } from "@/lib/growth-events";
+
+const growthTrack = vi.mocked(trackGrowthEvent);
 
 /**
  * R8.2 回放分享卡组件测试：与 R8.1 QuizShareCard 测试结构对称。
@@ -54,6 +58,7 @@ function installAnchorClickStub() {
 describe("ReplayShareCard", () => {
   beforeEach(() => {
     cleanup();
+    growthTrack.mockClear();
     installCanvasStub();
     installAnchorClickStub();
     if (!("createObjectURL" in URL)) {
@@ -105,6 +110,14 @@ describe("ReplayShareCard", () => {
     await waitFor(
       () => {
         expect(HTMLCanvasElement.prototype.toBlob).toHaveBeenCalled();
+        expect(growthTrack).toHaveBeenCalledWith({
+          name: "share_card_download",
+          card: "replay",
+          locale: "zh",
+          surface: "owner",
+          trigger: "share",
+          outcome: "succeeded",
+        });
       },
       { timeout: 2000 },
     );
@@ -131,6 +144,11 @@ describe("ReplayShareCard", () => {
         expect(img).toBeTruthy();
         expect(img?.getAttribute("alt")).toMatch(/^回放卡预览：/);
         expect(img?.getAttribute("alt")).toContain("BTCUSDT");
+        expect(growthTrack).toHaveBeenCalledWith({
+          name: "share_preview_opened",
+          card: "replay",
+          locale: "zh",
+        });
       },
       { timeout: 2000 },
     );

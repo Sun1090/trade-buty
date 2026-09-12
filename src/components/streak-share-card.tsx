@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CARD_SIZE, cardFontFor, drawStreakCard, type ShareLocale } from "@/lib/share-card";
 import { downloadCanvasAsPng } from "@/lib/download";
 import { CopyLinkButton } from "@/components/copy-link-button";
+import { trackGrowthEvent, type ShareDownloadTrigger } from "@/lib/growth-events";
 
 interface Props {
   currentStreak: number;
@@ -77,22 +78,46 @@ export function StreakShareCard({
     });
   }, [disabled, currentStreak, longestStreak, recentDays, locale, siteName]);
 
-  async function tryDownload() {
+  async function tryDownload(trigger: ShareDownloadTrigger) {
+    trackGrowthEvent({
+      name: "share_card_download",
+      card: "streak",
+      locale,
+      surface: "owner",
+      trigger,
+      outcome: "started",
+    });
     try {
-      await draw();
+      if (trigger === "share") await draw();
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas) throw new Error("share canvas unavailable");
       await downloadCanvasAsPng(canvas, filename);
       setDownloadFailed(false);
+      trackGrowthEvent({
+        name: "share_card_download",
+        card: "streak",
+        locale,
+        surface: "owner",
+        trigger,
+        outcome: "succeeded",
+      });
     } catch {
       // R13.6：下载失败如实反馈，不假装成功
       setDownloadFailed(true);
+      trackGrowthEvent({
+        name: "share_card_download",
+        card: "streak",
+        locale,
+        surface: "owner",
+        trigger,
+        outcome: "failed",
+      });
     }
   }
 
   async function handleShare() {
     if (disabled) return;
-    await tryDownload();
+    await tryDownload("share");
   }
 
   async function handlePreview() {
@@ -105,6 +130,7 @@ export function StreakShareCard({
       const url = canvas.toDataURL("image/png");
       setPreviewUrl(url);
       setDownloadFailed(false);
+      trackGrowthEvent({ name: "share_preview_opened", card: "streak", locale });
     } catch {
       setDownloadFailed(true);
     }
@@ -113,15 +139,10 @@ export function StreakShareCard({
   async function handleDownload() {
     if (disabled) return;
     if (!previewUrl) {
-      await tryDownload();
+      await tryDownload("share");
       return;
     }
-    try {
-      await downloadCanvasAsPng(canvasRef.current!, filename);
-      setDownloadFailed(false);
-    } catch {
-      setDownloadFailed(true);
-    }
+    await tryDownload("preview");
   }
 
   return (
@@ -157,6 +178,14 @@ export function StreakShareCard({
           label={labels.copyLink}
           copiedLabel={labels.copiedLink}
           testId="streak-share-link-btn"
+          onOutcome={(outcome) =>
+            trackGrowthEvent({
+              name: "share_link_copy",
+              card: "streak",
+              locale,
+              outcome: outcome === "success" ? "succeeded" : "failed",
+            })
+          }
         />
       )}
       {downloadFailed && (

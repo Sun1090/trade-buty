@@ -13,6 +13,8 @@ interface Props {
   testId: string;
   /** 可选样式覆盖 */
   className?: string;
+  /** 可选结果回调；用于上层埋点，回调抛错不得影响复制主流程 */
+  onOutcome?: (outcome: "success" | "failure") => void;
 }
 
 /**
@@ -21,15 +23,24 @@ interface Props {
  * - 成功后切换文案 1.5s 给视觉反馈
  * - 失败时也反馈给用户（不可静默吞错——分享是用户主动操作）
  */
-export function CopyLinkButton({ url, label, copiedLabel, testId, className }: Props) {
+export function CopyLinkButton({ url, label, copiedLabel, testId, className, onOutcome }: Props) {
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
+
+  function notifyOutcome(outcome: "success" | "failure") {
+    try {
+      onOutcome?.(outcome);
+    } catch {
+      // 埋点失败不能影响复制主流程
+    }
+  }
 
   async function handleClick() {
     setFailed(false);
     const target = url ?? (typeof window !== "undefined" ? window.location.href : "");
     if (!target) {
       setFailed(true);
+      notifyOutcome("failure");
       setTimeout(() => setFailed(false), 2000);
       return;
     }
@@ -61,9 +72,11 @@ export function CopyLinkButton({ url, label, copiedLabel, testId, className }: P
     }
     if (ok) {
       setCopied(true);
+      notifyOutcome("success");
       setTimeout(() => setCopied(false), 1500);
     } else {
       setFailed(true);
+      notifyOutcome("failure");
       setTimeout(() => setFailed(false), 2000);
     }
   }
