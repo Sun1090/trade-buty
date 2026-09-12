@@ -67,11 +67,11 @@
 
 ## 依赖月度审计记录（Q5.3 的 2026-09-13 快照）
 
-- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 状态：DONE（PR #27 已以 `--rebase` 合并进 main；PR CI run [34717379666](https://github.com/Sun1090/trade-buty/actions/runs/34717379666) 与合并后 main CI run [34717692359](https://github.com/Sun1090/trade-buty/actions/runs/34717692359) 均通过）
 - 工作分支：`codex/deps-monthly-audit`
 - PR：[#27](https://github.com/Sun1090/trade-buty/pull/27)
 - Base：`origin/main@cf0f92a`
-- 远端 Head：见 PR #27 的 head（分支在合并前若再变基，SHA 会随之变化）
+- 远端 Head：`e3c930d`（PR 最终 head，CI 全绿）
 - 本地提交：`docs(deps): record the 2026-09-13 monthly dependency audit`
 - 目标：Q5.3 要求依赖月度审计，但 `docs/deps.md` 只有「安全基线」叙述，没有可回溯的月度日志；roadmap 里 2026-09-12 的记录也停留在文字上。补齐可审计的日志结构并刷新到 2026-09-13 的真实现状。
 - 已完成：
@@ -86,15 +86,15 @@
 - 上游依赖：无（纯文档记录）。
 - 未验证项：无（本分支两次推送的 CI 均 `ci` + `db-tests` 绿；Vercel 配额限流为已知外部因素，不阻塞合并）。
 - 风险与回滚：纯文档，无运行时影响；回滚即撤销本分支提交。
-- 下一步：推送、CI 全绿后按 rebase 合并；继续扫描其它真实缺口。
+- 下一步：无（已完成）。
 
 ## CI actions 升到 node24 运行时（清掉 GitHub 弃用注记）
 
-- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 状态：DONE（PR #26 已以 `--rebase` 合并进 main；PR CI run [34716936175](https://github.com/Sun1090/trade-buty/actions/runs/34716936175) 与合并后 main CI run [34717317958](https://github.com/Sun1090/trade-buty/actions/runs/34717317958) 均通过）
 - 工作分支：`codex/ci-actions-node24`
 - PR：[#26](https://github.com/Sun1090/trade-buty/pull/26)
 - Base：`origin/main@cf0f92a`
-- 远端 Head：`c6bdf3d`（rebase onto `main@cf0f92a` 后的 tip）
+- 远端 Head：`d9e61e0`（PR 最终 head，CI 全绿）
 - 本地提交：`ci(actions): run official actions on node24 and guard against regressions`
 - 目标：PR #24 的 CI 日志出现 GitHub 注记「Node.js 20 is deprecated…actions/checkout@v4、actions/setup-node@v4、actions/cache@v4、actions/upload-artifact@v4」。这些 v4 action 打包在 Node.js 20 上，被强制改用 Node.js 24 运行；GitHub 会逐步下线该兼容层，属于真实（非阻塞但有期限）的 CI 债务。
 - 已完成：
@@ -109,18 +109,19 @@
   - `npm test` → 242 文件 / 1759 用例通过（base `main@5bca7a6` 为 242 文件 / 1758 用例，本分支只多 1 例）。
   - `npm run check:secrets` exit 0；`npm run check:docs` exit 0。
 - 上游依赖：无（仅 action major 升级，未新增依赖）。四个 action 要求 runner ≥ 2.327.1，GitHub 托管 `ubuntu-latest` 已满足。
-- 未验证项：无（本 PR 的 CI 就是新版 action 的实跑验证：run `34716619164` → `ci` 5m+ pass、`db-tests` pass）。
+- 未验证项：无（本 PR 的 CI 就是新版 action 的实跑验证：run `34716936175` → `ci` + `db-tests` pass）。
 - 风险与回滚：若新版 action 的输入语义有变，PR 的 CI 会直接失败（不会静默通过）；回滚即把四个 `uses:` 改回原 major。
-- 下一步：推送、CI 全绿后按 rebase 合并；继续补齐 Q5.3 依赖月度审计的 2026-09-13 记录。
+- 下一步：无（已完成）。
 - 最后更新：2026-09-13
 
 ## 无专属单测模块补测（storage-json / lazy enqueue / network quality hook）
 
-- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 状态：DONE（PR #25 已以 `--rebase` 合并进 main；PR CI run [34716459119](https://github.com/Sun1090/trade-buty/actions/runs/34716459119) 与合并后 main CI run [34716756359](https://github.com/Sun1090/trade-buty/actions/runs/34716756359) 均通过）
 - 工作分支：`codex/test-coverage-gaps`
-- PR：推送后跟踪
+- PR：[#25](https://github.com/Sun1090/trade-buty/pull/25) · `MERGED`
+- 合并提交：`cf0f92a`
 - Base：`origin/main@5bca7a6`
-- 远端 Head：推送后跟踪
+- 远端 Head：`140a333`（PR 最终 head，CI 全绿）
 - 本地提交：`test(storage): cover localStorage JSON readers and fallbacks`、`test(sync): cover the lazy enqueue fallback boundary`、`test(network): cover the reactive network quality hook`
 - 目标：扫描「被间接覆盖但无专属单测」的模块，挑出三个有真实分支逻辑的补测：`src/lib/storage-json.ts`（SSR / 损坏数据 / 非法数值回退）、`src/lib/sync-layer-queue-fallback.ts`（R9.6 动态 import 边界）、`src/components/use-network-quality.ts`（在线/慢速/离线重算与退订）。
 - 已完成：
@@ -133,9 +134,9 @@
   - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0。
   - `npm test` → 245 文件 / 1778 用例通过（较 base `main@5bca7a6` 的 242 文件 / 1758 用例新增 3 文件 / 20 用例）。
 - 上游依赖：无（纯测试，未改运行时行为，未新增依赖）。
-- 未验证项：远端 CI 复跑结果。
+- 未验证项：无。
 - 风险与回滚：只新增测试文件，不动产品代码；若某条断言与既有实现不符即为真实回归信号。回滚即撤销本分支提交。
-- 下一步：推送、CI 全绿后按 rebase 合并；继续扫描其它缺口（依赖月度审计补记、CI actions 的 Node.js 20 弃用注记）。
+- 下一步：无（已完成）。
 - 最后更新：2026-09-13
 
 ## 环境变量文档门禁（docs/env.md ↔ 代码对账）
@@ -168,11 +169,12 @@
 
 ## 质量门禁覆盖补齐（R7.6 限流回归 + ops 门禁表）
 
-- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 状态：DONE（PR #23 已以 `--rebase` 合并进 main；PR CI run [34715525108](https://github.com/Sun1090/trade-buty/actions/runs/34715525108) 与合并后 main CI run [34715838100](https://github.com/Sun1090/trade-buty/actions/runs/34715838100) 均通过）
 - 工作分支：`codex/gate-coverage-followups`
-- PR：推送后跟踪
+- PR：[#23](https://github.com/Sun1090/trade-buty/pull/23) · `MERGED`
+- 合并提交：`f374570`
 - Base：`origin/main@80902f4`
-- 远端 Head：推送后跟踪
+- 远端 Head：`d18ee5a`（PR 最终 head，CI 全绿）
 - 本地提交：`test(errors): cover error report endpoint rate limiting`、`docs(ops): register the changelog gate in the quality gate table`
 - 目标：合并 R7.6 隐私门禁（PR #22）后继续扫描真实缺口，补两处：错误上报端点的按 IP 限流此前没有单测；`npm run check:changelog` 虽在 CI 阻断，却未登记在 `docs/ops.md` 的质量门禁表。
 - 已完成：
@@ -185,18 +187,19 @@
   - `npm test` → 241 文件 / 1749 用例通过（较 base `main@80902f4` 的 241 文件 / 1748 用例新增 1 例）。
   - `npm run check:changelog` exit 0；`npm run check:error-report-privacy` exit 0；`npm run check:docs` exit 0。
 - 上游依赖：无。
-- 未验证项：远端 CI 复跑结果。
+- 未验证项：无。
 - 风险与回滚：新增用例只做断言，不改运行时行为；文档行只描述既有门禁。回滚即撤销本分支提交。
-- 下一步：推送、CI 全绿后按 rebase 合并；再继续扫描未列出的真实技术缺口。
+- 下一步：无（已完成）。
 - 最后更新：2026-09-13
 
 ## 错误上报隐私门禁（R7.6 补口）
 
-- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 状态：DONE（PR #22 已以 `--rebase` 合并进 main；PR CI run [34715051077](https://github.com/Sun1090/trade-buty/actions/runs/34715051077) 与合并后 main CI run [34715323738](https://github.com/Sun1090/trade-buty/actions/runs/34715323738) 均通过）
 - 工作分支：`codex/error-report-privacy-gate`
-- PR：[#22](https://github.com/Sun1090/trade-buty/pull/22)
+- PR：[#22](https://github.com/Sun1090/trade-buty/pull/22) · `MERGED`
+- 合并提交：`80902f4`（PR CI run [34715051077](https://github.com/Sun1090/trade-buty/actions/runs/34715051077)，合并后 main CI run [34715323738](https://github.com/Sun1090/trade-buty/actions/runs/34715323738)）
 - Base：`origin/main@ec86526`
-- 远端 Head：`03414ef`（首推）
+- 远端 Head：`4b118a1`（PR 最终 head，CI 全绿）
 - 本地提交：`test(errors): gate error report payload privacy`
 - 目标：R7.6 的错误上报端点（PR #21 已合并）此前只有约定式隐私边界，没有可执行门禁。任何后续重构都可能悄悄把错误正文 / URL / 账号塞进上报载荷或服务端日志而不被发现，故把「诊断载荷只能是无身份白名单字段」固化为 CI 门禁。
 - 已完成：
@@ -212,18 +215,19 @@
   - `npm run check:error-report-privacy` exit 0（endpoint /api/error-reports，白名单字段、脱敏日志、隐私页双语披露全部命中）。
   - `npm run check:docs` exit 0（27 章 / 182 篇，zh/en 对齐）；`npm run check:secrets` exit 0（650 个文本文件无疑似凭据）；`npm run check:growth-event-privacy` exit 0；`npm run check:dark-pattern-copy` exit 0；`npm run check:changelog` exit 0。
 - 上游依赖：无（纯静态审计脚本，复用现有 vitest / js-yaml，未新增依赖）。
-- 未验证项：远端 CI 复跑结果。
+- 未验证项：无。
 - 风险与回滚：门禁为只读静态分析，最坏情况是误报阻断合并；回滚即撤销本分支提交。
-- 下一步：推送、CI 全绿后按 rebase 合并；再继续扫描 roadmap / progress 中未列出的真实技术缺口。
+- 下一步：无（已完成）。
 - 最后更新：2026-09-13
 
 ## 统一错误上报端点（R7.6 补口）
 
-- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 状态：DONE（PR #21 已以 `--rebase` 合并进 main；PR CI run [34714530667](https://github.com/Sun1090/trade-buty/actions/runs/34714530667) 与合并后 main CI run [34714863116](https://github.com/Sun1090/trade-buty/actions/runs/34714863116) 均通过）
 - 工作分支：`codex/error-reporting-endpoint`
-- PR：推送后跟踪
+- PR：[#21](https://github.com/Sun1090/trade-buty/pull/21) · `MERGED`
+- 合并提交：`ec86526`
 - Base：`origin/main@52732f7`（rebase 后）
-- 远端 Head：推送后跟踪
+- 远端 Head：`834cce6`（PR 最终 head，CI 全绿）
 - 本地提交：`feat(errors): report privacy-safe client diagnostics`、`docs(privacy): disclose error diagnostics and update roadmap`
 - 目标：R7.6 定义了 fatal / recoverable / silent 三档，但此前 `reportError` 只写本机 console，服务端收不到任何真实崩溃信号（PR #19 已把「统一上报端点」列为遗留项）。本次补齐同源端点，并把隐私约束固化成代码而非口头约定。
 - 已完成：
@@ -242,18 +246,19 @@
   - `npx playwright test e2e/smoke.spec.ts -g "错误上报端点" --reporter=line` → 3 用例通过（本地 `next start` 生产构建真实响应）。
   - `npm run check:docs` exit 0（27 章 / 182 篇，zh/en 对齐）；`npm run check:secrets` exit 0（648 个文本文件无疑似凭据）；`npm run check:growth-event-privacy` exit 0（8 个事件仍为 console-only，无网络/持久化 API）。
 - 上游依赖：无（复用 R7.12 的 `clientIp` / `createRateLimiter` 与 `BoundedMap`，未新增依赖；同源端点已被现有 CSP `connect-src 'self'` 放行，无需改 CSP）。
-- 未验证项：远端 CI 复跑结果；部署后线上端点真实可用性（Vercel 部署配额恢复后复核）。
+- 未验证项：部署后线上端点真实可用性（Vercel 部署配额恢复后复核）。
 - 风险与回滚：端点匿名、无鉴权但限流 + 输入白名单 + 有界 body，最坏情况只产生本站日志；客户端上报全程最佳努力，不影响任何成功路径与错误兜底渲染。回滚即撤销本分支提交。
-- 下一步：推送、CI 全绿后按 rebase 合并；再继续扫描 roadmap / progress 中未列出的真实技术缺口。
+- 下一步：无（已完成）。
 - 最后更新：2026-09-13
 
 ## 安全头补齐 HSTS（R7.12 补口）
 
-- 状态：DONE（本地实现与全量验证完成；远端 CI `ci` + `db-tests` 通过，待 rebase 合并）
-- 工作分支：`codex/security-headers`
-- PR：[#20](https://github.com/Sun1090/trade-buty/pull/20)
+- 状态：DONE（PR #20 已以 `--rebase` 合并进 main；合并后 main CI run [34714331437](https://github.com/Sun1090/trade-buty/actions/runs/34714331437) 通过）
+- 工作分支：`codex/security-headers`（合并后已删除）
+- PR：[#20](https://github.com/Sun1090/trade-buty/pull/20) · `MERGED`
+- 合并提交：`52732f7`
 - Base：`origin/main@160e34b`（rebase 至后续 main）
-- 远端 Head：`0fb9eb6`（rebase 前，已推送）
+- 远端 Head：`5bc6e7b`（PR 最终 head，CI 全绿）
 - 本地提交：`feat(security): send HSTS on all responses`、`docs(security): record HSTS header and gate`、`test(security): assert security headers on live responses`
 - 目标：`next.config.ts` 的 R7.12 安全头集合缺 `Strict-Transport-Security`。Vercel 不会自动下发 HSTS，站点此前没有任何强制 HTTPS 的声明，首访仍存在明文降级与 Cookie 剥离中间人风险。
 - 已完成：
@@ -358,11 +363,12 @@
 
 ## 亮色主题对比度回归修复（R13.10 / CI lhci 门禁）
 
-- 状态：DONE（本地实现与全量验证完成；已推送到 PR 功能分支，等待远端 CI 复核）
-- 工作分支：`codex/zero-eslint-warnings`
-- PR：[#16](https://github.com/Sun1090/trade-buty/pull/16)（OPEN，MERGEABLE）
+- 状态：DONE（PR #16 已以 `--rebase` 合并进 main；合并后 main CI run [34711721555](https://github.com/Sun1090/trade-buty/actions/runs/34711721555) 通过）
+- 工作分支：`codex/zero-eslint-warnings`（合并后已删除）
+- PR：[#16](https://github.com/Sun1090/trade-buty/pull/16) · `MERGED`
+- 合并提交：`b41e193`
 - Base：`origin/main@53f7e01`
-- 远端 Head：`a7c62d1`（推送前）
+- 远端 Head：`5bdd49d`（PR 最终 head，CI 全绿）
 - 本地提交：本条目随修复提交一起入库
 - 目标：修复 CI 中 `npm run lhci` 唯一失败步骤——亮色主题仍沿用暗色硬编码颜色，导致首页与课程正文页触发 Lighthouse/axe `color-contrast` 违规。
 - 已完成：
