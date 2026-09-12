@@ -92,9 +92,18 @@ test.describe("PWA 离线兜底", () => {
       page.getByRole("button", { name: /重新连接/ })
     ).toBeVisible();
 
-    // 网络恢复后，离线页的重试按钮应重新加载真实课程页。
+    // 仍在离线时点击重试，应重新请求当前地址并继续落到离线兜底页。
+    await Promise.all([
+      page.waitForEvent("framenavigated"),
+      page.getByRole("button", { name: /重新连接/ }).click(),
+    ]);
+    await expect(
+      page.getByRole("heading", { name: /你现在处于离线状态/ })
+    ).toBeVisible();
+
+    // 恢复网络会触发 offline.html 的 online 监听器自动重载真实页面。
     await context.setOffline(false);
-    await page.getByRole("button", { name: /重新连接/ }).click();
+    await expect(page).toHaveURL(/\/zh\/path$/);
     await expect(page.locator("a[href*='/knowledge/']").first()).toBeVisible({
       timeout: 20_000,
     });
