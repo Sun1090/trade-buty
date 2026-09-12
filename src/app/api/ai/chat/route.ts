@@ -16,34 +16,26 @@ import {
   type SourceLink,
 } from "@/lib/ai/sources";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { parseChatBody } from "@/lib/ai/chat-input";
+import { BoundedMap, sweepExpired } from "@/lib/bounded-map";
 
-
-interface ChatBody {
-  messages: { role: "user" | "assistant"; content: string }[];
-  locale?: string;
-  /** 续写：已有回答全文，服务端在其后继续生成（不再重复 RAG） */
-  continueFrom?: string;
-  /** R3.7：用户正在学习的章节 slug，system 注入「基于本章回答」上下文 */
-  contextChapter?: string;
-}
-
-// 简易内存 rate limit（Node.js 实例间相互独立，够用于防基础滥用）
-const ipHits = new Map<string, { count: number; reset: number }>();
+// 简易内存 rate limit（Node.js 实例间相互独立，够用于防基础滥用）。
+// 用 BoundedMap 而不是裸 Map：否则伪造 X-Forwarded-For 的攻击者可以每请求
+// 塞一个新 key，把常驻实例的内存吃满。
+const IP_HITS_MAX = 10_000;
+const ipHits = new BoundedMap<string, { count: number; reset: number }>(IP_HITS_MAX);
 const GUEST_LIMIT = 10; // 游客每小时 10 次
 const AUTHED_LIMIT = 50; // 登录每小时 50 次
 
-// 相同问题缓存（10 分钟 TTL，降低 AI API 消耗）
-const answerCache = new Map<string, { text: string; at: number }>();
+// 相同问题缓存（10 分钟 TTL，降低 AI API 消耗）；同样有容量上限，
+// 避免不同问题无限堆积。
+const ANSWER_CACHE_MAX = 500;
+const answerCache = new BoundedMap<string, { text: string; at: number }>(ANSWER_CACHE_MAX);
 const CACHE_TTL = 10 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
-  const body = (await req.json()) as ChatBody;
-  const lastUserMsg = [...body.messages].reverse().find((m) => m.role === "user");
-  if (!lastUserMsg) {
-    return NextResponse.json({ error: "No user message" }, { status: 400 });
-  }
-
-  // 鉴权（可选）
+  // 鉴权（可选）与限流放在解析 body 之前：这样畸形/超大 payload 也计入配额，
+  // 不会出现「先解析再限流」的绕过窗口。
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
@@ -51,6 +43,8 @@ export async function POST(req: NextRequest) {
   // rate limit（配额随响应头返回：游客前端展示剩余次数，429 附 Retry-After）
   const limit = user ? AUTHED_LIMIT : GUEST_LIMIT;
   const now = Date.now();
+  // 表变大时顺手清掉已过期窗口（按需触发，不做每请求全量扫描）
+  sweepExpired(ipHits, (v) => v.reset <= now, 5_000);
   const hit = ipHits.get(ip);
   let quotaRemaining: number;
   if (hit && now < hit.reset) {
@@ -62,6 +56,7 @@ export async function POST(req: NextRequest) {
       );
     }
     hit.count++;
+    ipHits.set(ip, hit);
     quotaRemaining = limit - hit.count;
   } else {
     ipHits.set(ip, { count: 1, reset: now + 3600_000 });
@@ -75,7 +70,21 @@ export async function POST(req: NextRequest) {
     }
   };
 
-  const locale = body.locale || "zh";
+  let rawBody: unknown;
+  try {
+    rawBody = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  const body = parseChatBody(rawBody);
+  if (!body) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+  const { messages: history, locale } = body;
+  const lastUserMsg = [...history].reverse().find((m) => m.role === "user");
+  if (!lastUserMsg) {
+    return NextResponse.json({ error: "No user message" }, { status: 400 });
+  }
 
   // 输入侧护栏（R1.8）：荐股/收益承诺直接拒绝，不调模型
   const guardHit = matchSensitiveRequest(lastUserMsg.content);
@@ -86,8 +95,7 @@ export async function POST(req: NextRequest) {
     withQuotaHeaders(headers);
     return new Response(getRefusalMessage(guardHit, locale), { headers, status: 200 });
   }
-  const isContinue =
-    typeof body.continueFrom === "string" && body.continueFrom.trim().length > 0;
+  const isContinue = Boolean(body.continueFrom);
 
   // RAG 检索（配置中心统一 topK/阈值；续写不再重复检索）
   const profile = getRetrievalProfile('chat');
@@ -119,10 +127,10 @@ export async function POST(req: NextRequest) {
   const HISTORY_KEEP = 10;
   const HISTORY_SUMMARIZE_AT = 14;
   let historySummary = "";
-  const recent = body.messages.slice(-HISTORY_KEEP);
-  if (!isContinue && body.messages.length > HISTORY_SUMMARIZE_AT) {
+  const recent = history.slice(-HISTORY_KEEP);
+  if (!isContinue && history.length > HISTORY_SUMMARIZE_AT) {
     try {
-      const overflow = body.messages.slice(0, -HISTORY_KEEP);
+      const overflow = history.slice(0, -HISTORY_KEEP);
       historySummary = await chat({
         messages: buildHistorySummaryPrompt(overflow, locale),
         temperature: 0.2,
@@ -141,7 +149,7 @@ export async function POST(req: NextRequest) {
       ? `\n\n## User context\nThe user is currently studying the chapter "${ctxTitle}". Prefer explanations grounded in this chapter's content.`
       : `\n\n## 用户上下文\n用户正在学习《${ctxTitle}》篇章，请优先结合该篇章内容进行解释。`)
     : "";
-  const messages = [
+  const llmMessages = [
     {
       role: "system" as const,
       content:
@@ -157,6 +165,7 @@ export async function POST(req: NextRequest) {
 
   // 相同问题缓存（去掉 RAG context 变体，只用用户问题 + locale；续写不读不写）
   const cacheKey = `${locale}::${lastUserMsg.content.trim().toLowerCase()}`;
+  sweepExpired(answerCache, (v) => Date.now() - v.at >= CACHE_TTL, 250);
   const cached = !isContinue ? answerCache.get(cacheKey) : undefined;
   if (cached && Date.now() - cached.at < CACHE_TTL) {
     const headers = new Headers();
@@ -172,7 +181,7 @@ export async function POST(req: NextRequest) {
   try {
     let finishReason: string | null = null;
     const rawStream = await streamChat({
-      messages,
+      messages: llmMessages,
       temperature: 0.3,
       maxTokens: 1500,
       onFinish: (r) => {
@@ -225,8 +234,11 @@ export async function POST(req: NextRequest) {
 
     return new Response(markedStream, { headers });
   } catch (e) {
-    return new Response(e instanceof Error ? e.message : "AI API error", {
+    // 不回传上游错误细节（可能含上游 URL/状态/内部标识），只留服务端日志
+    console.error("[ai/chat] generation failed:", e instanceof Error ? e.message : e);
+    return new Response("AI 服务暂时不可用，请稍后再试。", {
       status: 502,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   }
 }
