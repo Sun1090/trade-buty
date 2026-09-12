@@ -1,32 +1,37 @@
 # Progress
 
-## ESLint 零警告 + 320px 门禁入 CI（Q2.5 / 代码健康）
+## 零警告 CI、数据契约与本地全量验收（Q2.5 / R13.25）
 
-- 状态：DONE
+- 状态：DONE（本地实现与全量验证完成；远端发布待授权）
 - 工作分支：`codex/zero-eslint-warnings`
 - PR：none
 - PR 状态：none
 - Base：`origin/main@53f7e01`
-- 远端 Head：none（LOCAL_ONLY，未推送）
-- 本地提交：`dc5ecb6`、`5f90dd2`、`b55019d`
-- 目标：清零全仓库 ESLint 警告，并把「零警告」与「320px 移动端溢出」变成真正的 CI 阻断门禁。
+- 远端 Head：none（`LOCAL_ONLY`，未推送）
+- 本地提交：`dc5ecb6`、`5f90dd2`、`b55019d`、`6d220ab`、`a32e2c0`、`90de579`、`dc22107`、`0dbd75d`、`49b8204`、`2081717`、`8fe3759`、`f7b8992`
+- 目标：清零全仓库 ESLint 警告，把「零警告」与 320px 溢出变成 CI 阻断门禁，并修复门禁复核暴露的 UI、内容回退、AI 持久化、数据库约束和 PWA E2E 稳定性问题。
 - 已完成：
-  - 发现 `npm run check:mobile` 只存在于 `package.json`、文档和 R12.21 记录里，CI 从未执行——R12.21 新增的 `/zh/stats`、`/en/stats` 实际没有门禁。CI 现已在生产构建后执行该步骤（14 个关键页面）。
-  - CI lint 由 `npm run lint` 改为 `npm run lint -- --max-warnings=0`，堵住「警告不算失败」的静默回退；全仓库警告 59 → 0。
-  - 清理由未使用变量/参数、过期 `eslint-disable` 与 `next/image` 提示构成的警告；三处分享卡预览 `<img>`（canvas/object URL，`next/image` 无法优化）改为带理由的定向抑制而非全局关闭。
-  - 顺带修掉三个真实状态缺陷并以回归测试钉死：K线图 MA 关闭后 series 仍留在图上；回放训练器切换难度不重载历史窗口导致起点错位（15/285 而非 0/285）；搜索最近记录保存非 debounce 词且结果条数不变时漏记。
-- 变更文件：`.github/workflows/ci.yml`、`scripts/check-mobile.mjs`、`scripts/{check-nav-chain,summary-coverage}.mjs`、`src/app/**`、`src/components/**`、`src/lib/**`、新增 `src/components/{kline-chart,replay-trainer}.test.tsx`、`docs/roadmap.md`、`docs/progress.md`。
+  - `npm run lint` 固定为 `eslint --max-warnings=0`，59 条既有 warning 清零；CI 在生产构建后执行 `check:mobile`，覆盖 14 个关键 zh/en 页面的 320px 横向溢出回归。
+  - 修复 K 线 MA 关闭后残留 series、回放切换难度/上下文不重载历史、搜索最近记录保存非 debounce 词三个真实状态缺陷，并补回归测试。
+  - 章节页对上游缺失/不合规风险提示的 README 注入本地化兜底提示；不改 `content/kline-buty` 子模块原文，也不掩盖 `check:risk-warning` 的上游缺口统计。
+  - AI 对话保存接口新增请求体校验，`sources` 直接写为 JSONB；新增路由测试，避免 JSON 字符串与查询模型不一致。
+  - 新增 `0008_goal_tier_constraints.sql` 归一化并约束日/周目标档位，提供匹配回滚脚本；扩展 Drizzle schema 镜像与静态契约测试，覆盖表列、RLS、策略及约束。
+  - Playwright 使用独立端口避免复用陈旧本地服务；离线 E2E 先在线导航预热 service worker，再切换 CDP offline，消除冷启动竞态。
+  - 修复 CI 工作流中 heredoc 顶层 `---` 形成第二份 YAML document、导致 dry-run 之后质量门禁被静默跳过的问题；新增 workflow 契约测试锁定单文档和完整步骤，并让 CI 在当前提交重生成内容质量报告后再归档。
+- 变更文件：`.github/workflows/ci.yml`、`package.json`、`playwright.config.ts`、`scripts/**`、`src/components/**`、`src/lib/**`、`src/app/api/ai/conversations/**`、`supabase/migrations/0008_goal_tier_constraints.sql`、`supabase/rollback/**`、`e2e/pwa-offline.spec.ts`、`docs/**`。
 - 验证命令与结果：
-  - `npx eslint . --max-warnings=0` → exit 0（0 error / 0 warning）。
-  - `npm test` → 172 文件 / 1321 用例通过（新增 8 条回归用例）。
-  - `npm run typecheck` → 通过；`npm run build` → 通过。
+  - `npm run lint` → exit 0（0 error / 0 warning）。
+  - `npm test` → 176 文件 / 1338 用例通过；`npx vitest run scripts/ci-workflow.test.mjs` → 2/2 通过。
+  - `npm run typecheck` → 通过；`npm run build` → 通过（Next.js 16.3.5，465 静态页，搜索索引 418）。
+  - `npm run e2e` → 56/56 通过；`npm run lhci` → 3 URL × 2 次采样，6/6 断言通过。
   - `npm run check:mobile` → 14 个关键页面 320px 无溢出。
-  - 逐项反证：临时回退三处行为修复后，对应新测试分别失败（`removeSeries` 未调用 / `0/285` 未出现 / 第二次检索漏记），确认测试不是空跑。
-  - `git diff --check` → 通过。
-- 上游依赖：无新增；知识库仍为 `1ebbaef`，双语各 182 篇。
-- 未验证项：远端 CI、PR 与部署（LOCAL_ONLY，尚未推送）。
-- 风险与回滚：`--max-warnings=0` 会让新引入的警告直接阻断 CI，属预期收紧；回滚可按三个提交分别 revert，不涉及数据或迁移。
-- 下一步：推送 `codex/zero-eslint-warnings` 并开 PR 后观察 CI；本地继续巡检 roadmap 已勾选项中与实现漂移的条目（如门禁只在文档里宣称的情况）。
+  - 内容与产物门禁全部通过：docs、frontmatter、image-alt、glossary、slug-conflicts、description-dupes、kb-pointer（`a57d510`）、translation-history、kb-parity-budget、quiz-mounts、quiz-coverage、links、sitemap（418）、seo-surface（430/454）、search-index（418/418）、nav-chain、relative-links、bundle（454 路由）、structured-data（5656 实体）、ai-copy、growth-event-privacy、dark-pattern-copy。
+  - `npm run check:risk-warning` → 课程正文 364/364，通过；章节 README 40/54（12 review / 2 gap，上游缺口，见 `docs/risk-warning-coverage.md`）。
+  - `npm run audit:prod` → 0 漏洞；`git diff --check` → 通过。
+- 上游依赖：知识库指针 `a57d510`，zh/en 各 27 章 / 182 篇；README 风险提示剩余缺口需在 kline-buty 仓库修复。
+- 未验证项：远端 CI、PR 与 Vercel 部署（`LOCAL_ONLY`，尚未推送/未部署）。
+- 风险与回滚：`--max-warnings=0` 会让新增 warning 直接阻断 CI，属预期收紧；代码可按提交分别 revert。`0008` 回滚仅移除约束，不恢复被归一化的历史业务值，详见 `supabase/rollback/README.md`。
+- 下一步：获得 `PR_UPDATE` / `PR_CREATE` 授权后推送本分支并复核远端 CI；继续处理 roadmap 的外部阻塞与上游内容缺口。
 - 最后更新：2026-09-12
 
 ## 文档契约、内容报告与完整本地验收（Q5.1 / Q5.2 / R2.2）
