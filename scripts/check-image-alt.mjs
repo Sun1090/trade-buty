@@ -14,6 +14,7 @@ import path from "node:path";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import { resolveLinkTarget } from "./relative-link-lib.mjs";
+import { findAssetProblems } from "./image-audit-lib.mjs";
 
 const root = process.cwd();
 const KB = path.join(root, "content/kline-buty/docs/knowledge");
@@ -47,6 +48,7 @@ function main() {
     process.exit(1);
   }
   const byLocale = { zh: listAssets("zh"), en: listAssets("en") };
+  const referenced = { zh: {}, en: {} };
   const problems = [];
   const stats = { refs: 0, images: 0 };
 
@@ -65,10 +67,13 @@ function main() {
           const alt = (node.alt ?? "").trim();
           if (!alt) {
             problems.push(`${rel} → 空 alt：![](${node.url.slice(0, 60)})`);
-          } else if (node.url.includes("_assets")) {
+          }
+          if (node.url.includes("_assets")) {
             const target = resolveLinkTarget(node.url, chapter);
             if (target.kind === "asset") {
               stats.refs += 1;
+              const used = (referenced[locale][target.owner] ??= []);
+              if (!used.includes(target.file)) used.push(target.file);
               const files = byLocale[locale][target.owner] ?? [];
               if (!files.includes(target.file)) {
                 problems.push(
@@ -83,21 +88,7 @@ function main() {
     }
   }
 
-  // 孤儿资产 + zh/en 集合镜像
-  for (const [locale, byChapter] of Object.entries(byLocale)) {
-    for (const [chapter, files] of Object.entries(byChapter)) {
-      for (const f of files) {
-        const other = locale === "zh" ? byLocale.en[chapter] : byLocale.zh[chapter];
-        const ownerKey = `${locale}/${chapter}`;
-        void ownerKey;
-        if (other === undefined || !other.includes(f)) {
-          problems.push(
-            `${locale}/${chapter}/_assets/${f}：资产未在另一 locale 镜像（zh/en 需同步增删）`
-          );
-        }
-      }
-    }
-  }
+  problems.push(...findAssetProblems({ byLocale, referenced }));
 
   if (problems.length > 0) {
     console.error(`❌ 图片资产/alt 问题 ${problems.length} 处：`);

@@ -152,7 +152,7 @@
 - [x] R6.3 测验挂载点自动校验（AST 解析 27 个挂载，chapter/doc 存在且每题 ≥3 道；重复键阻断；CI 阻断）
 - [x] R6.4 题库覆盖率脚本（27/27 章，共 81 道；按真实 questions 数组计数并阻断缺口）
 - [ ] R6.5 frontmatter 描述长度检查（过短影响 SEO 报警）
-- [ ] R6.6 图片 alt 缺失检查（知识库图片批量扫描）
+- [x] R6.6 图片 alt 缺失检查（remark 全量扫描；同时阻断空 alt、引用缺失、孤儿资产与 zh/en 镜像漂移）
 - [ ] R6.7 中英标题对照表生成（翻译进度可视化数据源）
 - [x] R6.8 术语交叉覆盖（check:glossary：20 术语/孤儿 0 个 → docs/glossary-coverage.md）
 - [x] R6.9 FAQ 候选（ops:faq-candidates：近 30 天 unhelpful 聚类 → docs/faq-candidates.md；无 key 友好跳过）
