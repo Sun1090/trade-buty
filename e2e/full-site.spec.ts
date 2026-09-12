@@ -153,6 +153,26 @@ test.describe("R13.24 搜索与书签闭环", () => {
     await expect(page.locator("article")).toBeVisible();
   });
 
+  test("键盘可高亮结果并用回车打开", async ({ page }) => {
+    await page.goto("/zh/search");
+    const searchbox = page.getByRole("searchbox");
+    await searchbox.fill("市价单");
+
+    const firstResult = page.locator('a[data-search-result-index="0"]').first();
+    await expect(firstResult).toBeVisible();
+    const expected = await firstResult.getAttribute("href");
+    expect(expected).toBeTruthy();
+
+    // Esc 关闭联想，ArrowDown 才落到结果列表的高亮索引。
+    await searchbox.press("Escape");
+    await searchbox.press("ArrowDown");
+    await expect(firstResult).toHaveClass(/border-accent/);
+
+    await searchbox.press("Enter");
+    const escaped = (expected ?? "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    await expect(page).toHaveURL(new RegExp(`${escaped}$`));
+  });
+
   test("课程收藏写入本机并在收藏页回访", async ({ page }) => {
     await page.goto(LESSON_PATH);
     const bookmark = page.getByRole("button", { name: "收藏", exact: true }).first();
