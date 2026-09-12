@@ -330,6 +330,120 @@ describe("hydrateFromCloud", () => {
     expect(memStore.get("tb-replay-best")).toBe("12");
   });
 
+  it("本地回放快照为 null 时仍能合入云端历史", async () => {
+    memStore.set("tb-replay-history", "null");
+    mockReplaySelect.mockResolvedValueOnce({
+      data: [{
+        symbol: "BTCUSDT",
+        interval: "1h",
+        total: 10,
+        correct: 7,
+        best_streak: 3,
+        recorded_at: "2026-01-01T00:00:00Z",
+      }],
+    });
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await expect(hydrateFromCloud("user-123")).resolves.toBeUndefined();
+    expect(JSON.parse(memStore.get("tb-replay-history")!)).toHaveLength(1);
+  });
+
+  it("本地进度字段类型错误时不会被展开成字符数组", async () => {
+    memStore.set("tb-progress", JSON.stringify({ "getting-started": "doc-a" }));
+    mockProgressSelect.mockResolvedValueOnce({
+      data: [{ chapter_num: "getting-started", doc_slug: "doc-a" }],
+    });
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await hydrateFromCloud("user-123");
+    expect(JSON.parse(memStore.get("tb-progress")!)).toEqual({
+      "getting-started": ["doc-a"],
+    });
+  });
+
+  it("本地进度为 null 或含空标识时仍能合入云端", async () => {
+    memStore.set(
+      "tb-progress",
+      JSON.stringify({ "": ["empty-chapter"], futures: ["", "margin"], bad: "not-array" }),
+    );
+    mockProgressSelect.mockResolvedValueOnce({
+      data: [{ chapter_num: "futures", doc_slug: "leverage" }],
+    });
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await hydrateFromCloud("user-123");
+    expect(JSON.parse(memStore.get("tb-progress")!)).toEqual({
+      futures: ["margin", "leverage"],
+    });
+
+    memStore.set("tb-progress", "null");
+    mockProgressSelect.mockResolvedValueOnce({
+      data: [{ chapter_num: "getting-started", doc_slug: "intro" }],
+    });
+    await hydrateFromCloud("user-123");
+    expect(JSON.parse(memStore.get("tb-progress")!)).toEqual({
+      "getting-started": ["intro"],
+    });
+  });
+
+  it("本地错题字段损坏时只保留通过结构校验的条目", async () => {
+    memStore.set(
+      "tb-wrong",
+      JSON.stringify({
+        "ch1:0": "corrupt",
+        "ch1:1": { chapterNum: "ch1", questionIdx: 1, picked: 0, at: 100 },
+      }),
+    );
+    mockWrongSelect.mockResolvedValueOnce({ data: [] });
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await hydrateFromCloud("user-123");
+    expect(JSON.parse(memStore.get("tb-wrong")!)).toEqual({
+      "ch1:1": { chapterNum: "ch1", questionIdx: 1, picked: 0, at: 100 },
+    });
+  });
+
+  it("本地错题为 null、key 不一致或空章节时不会被写入合并结果", async () => {
+    memStore.set(
+      "tb-wrong",
+      JSON.stringify({
+        "wrong-key": { chapterNum: "ch1", questionIdx: 0, picked: 0, at: 100 },
+        "ch1:1": { chapterNum: "", questionIdx: 1, picked: 0, at: 100 },
+        "ch1:2": { chapterNum: "ch1", questionIdx: 2, picked: 0, at: 100 },
+      }),
+    );
+    mockWrongSelect.mockResolvedValueOnce({
+      data: [{
+        chapter_num: "ch2",
+        question_idx: 1,
+        picked: 3,
+        answered_at: "2026-01-01T00:00:00Z",
+      }],
+    });
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await hydrateFromCloud("user-123");
+    expect(JSON.parse(memStore.get("tb-wrong")!)).toEqual({
+      "ch1:2": { chapterNum: "ch1", questionIdx: 2, picked: 0, at: 100 },
+      "ch2:1": {
+        chapterNum: "ch2",
+        questionIdx: 1,
+        picked: 3,
+        at: Date.parse("2026-01-01T00:00:00Z"),
+      },
+    });
+
+    memStore.set("tb-wrong", "null");
+    mockWrongSelect.mockResolvedValueOnce({ data: [] });
+    await hydrateFromCloud("user-123");
+    expect(JSON.parse(memStore.get("tb-wrong")!)).toEqual({});
+  });
+
+  it("本地测验成绩损坏时用云端成绩恢复，不写成 NaN", async () => {
+    memStore.set("tb-quiz-ch1", JSON.stringify({ best: "9", done: true }));
+    mockQuizSelect.mockResolvedValueOnce({
+      data: [{ chapter_num: "ch1", best: 6, total: 10, done: true }],
+    });
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await hydrateFromCloud("user-123");
+    expect(JSON.parse(memStore.get("tb-quiz-ch1")!)).toEqual({ best: 6, done: true });
+  });
+
   it("本地已有 daily_goal 时，云端 goal 不覆盖（本地优先）", async () => {
     memStore.set("tb-daily-goal-min", "20");
     mockSettingsSelect.mockResolvedValueOnce({ data: [{ daily_goal_min: 30 }] });
