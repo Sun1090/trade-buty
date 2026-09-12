@@ -1,5 +1,30 @@
 # Progress
 
+## 核心交互无障碍（Q2.4）
+
+- 状态：DONE
+- 工作分支：codex/r13-e2e-expansion
+- Base：origin/main@abe8106
+- 远端状态：未推送（LOCAL_ONLY）
+- 目标：抽查核心学习路径能否只用键盘完成；焦点必须可见，表单/筛选控件必须有稳定可访问名称。
+- 已完成：
+  - 课程图片在交互模式下增加 `role="button"`、`tabIndex=0`、`aria-haspopup="dialog"`；Enter/Space 打开灯箱，Escape 关闭并把焦点归还图片。
+  - 随堂测选项覆盖 Enter/Space 键盘答题全路径；回放的速度、难度、盲盒/自定义、暂停与跳转控件补齐 `aria-pressed`、本地化名称和分组语义。
+  - 行情图的交易对/周期控件、自定义交易对输入、搜索篇章筛选和邮件订阅输入补齐可访问名称。
+  - 移除 6 个组件中会压制全局焦点环的 `outline-none` 类；测验选项、回放周期、图表自定义输入、订阅邮箱由 Playwright 断言 `:focus-visible` 的 2px solid ring。
+  - 新增 `docs/accessibility-audit.md`，记录检查范围、交互契约、证据和未覆盖的人工审计边界。
+- 变更文件：`src/components/{markdown,image-lightbox,replay-trainer,kline-chart,chart-embed,search-client,newsletter-signup}.tsx`、`src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx`、`src/app/[locale]/search/page.tsx`、`src/lib/i18n.ts`；对应单测与 `e2e/full-site.spec.ts`。
+- 验证命令与结果：
+  - `npx vitest run src/components/markdown.test.tsx src/components/image-lightbox.test.tsx src/components/newsletter-signup.test.tsx src/components/search-client.test.tsx src/lib/i18n.test.ts` → 5 文件 / 32 用例通过。
+  - `npm test` → 164 文件 / 1286 用例通过。
+  - `npm run lint` → exit 0（0 error / 59 warning）。
+  - `npm run typecheck` → exit 0。
+  - `npm run build` → exit 0（Next.js 16.3.5，465 静态页）。
+  - `npx playwright test e2e/full-site.spec.ts -g 'Q2.4'` → 3/3 通过。
+  - `npm run e2e` → 56/56 通过。
+- 未验证项：NVDA / VoiceOver 真机屏幕阅读器、Safari/Firefox 人工焦点走查、远端 CI 与部署（LOCAL_ONLY）。
+- 最后更新：2026-09-12
+
 ## 课程预计阅读时长（Q4.4）
 
 - 状态：DONE

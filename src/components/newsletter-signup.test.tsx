@@ -12,6 +12,7 @@ const labels = {
   title: "Newsletter (placeholder)",
   desc: "Email stays in this browser only.",
   placeholder: "your@example.com",
+  emailLabel: "Newsletter email",
   submit: "Save email (local)",
   saved: "Saved locally ✓ · ",
   change: "Change",
@@ -56,6 +57,7 @@ describe("NewsletterSignup", () => {
     render(<NewsletterSignup labels={labels} locale="en" />);
     await new Promise((r) => setTimeout(r, 30));
     expect(screen.getByTestId("newsletter-input")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: labels.emailLabel })).toBeInTheDocument();
     expect(screen.getByTestId("newsletter-submit")).toBeInTheDocument();
     expect(screen.queryByTestId("newsletter-saved")).toBeNull();
   });

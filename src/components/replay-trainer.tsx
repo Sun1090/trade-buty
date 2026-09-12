@@ -25,9 +25,9 @@ const SYMBOL_NAMES: Record<string, string> = {
 const INTERVALS = ["15m", "1h", "4h", "1d"] as const;
 const SPEEDS = [1, 2, 4] as const;
 const DIFFICULTIES = [
-  { label: "新手", context: 50 },
-  { label: "进阶", context: 30 },
-  { label: "挑战", context: 15 },
+  { labelKey: "difficultyNew", context: 50 },
+  { labelKey: "difficultyIntermediate", context: 30 },
+  { labelKey: "difficultyChallenge", context: 15 },
 ] as const;
 
 export interface ReplayDict {
@@ -36,6 +36,13 @@ export interface ReplayDict {
   pause: string;
   step: string;
   speed: string;
+  symbolLabel: string;
+  intervalLabel: string;
+  difficultyLabel: string;
+  difficultyNew: string;
+  difficultyIntermediate: string;
+  difficultyChallenge: string;
+  skipToEnd: string;
   modeFree: string;
   modeGuess: string;
   guessPrompt: string;
@@ -334,7 +341,8 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
         <select
           value={symbol}
           onChange={(e) => setSymbol(e.target.value)}
-          className="rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-2.5 py-1.5 font-mono text-xs outline-none focus:border-accent"
+          aria-label={dict.symbolLabel}
+          className="rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-2.5 py-1.5 font-mono text-xs focus:border-accent"
         >
           {SYMBOLS.map((s) => (
             <option key={s} value={s}>
@@ -345,7 +353,8 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
         <select
           value={interval_}
           onChange={(e) => setInterval_(e.target.value)}
-          className="rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-2.5 py-1.5 font-mono text-xs outline-none focus:border-accent"
+          aria-label={dict.intervalLabel}
+          className="rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-2.5 py-1.5 font-mono text-xs focus:border-accent"
         >
           {INTERVALS.map((i) => (
             <option key={i} value={i}>
@@ -353,18 +362,23 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
             </option>
           ))}
         </select>
-        <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border)] p-0.5">
+        <div
+          role="group"
+          aria-label={dict.difficultyLabel}
+          className="flex items-center gap-0.5 rounded-lg border border-[var(--border)] p-0.5"
+        >
           {DIFFICULTIES.map((d, i) => (
             <button
-              key={d.label}
+              key={d.labelKey}
               onClick={() => setDifficultyIdx(i)}
+              aria-pressed={i === difficultyIdx}
               className={`px-2 py-1 rounded text-[10px] font-medium transition ${
                 i === difficultyIdx
                   ? "bg-[var(--accent-dim)] text-accent"
                   : "text-faint hover:text-foreground"
               }`}
             >
-              {d.label}
+              {dict[d.labelKey]}
             </button>
           ))}
         </div>
@@ -376,6 +390,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
             <button
               key={m.label}
               onClick={m.set}
+              aria-pressed={m.on}
               className={`px-2 py-1 rounded text-[10px] font-medium transition ${
                 m.on
                   ? "bg-[var(--accent-dim)] text-accent"
@@ -395,7 +410,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
                 value={endDateInput}
                 max={new Date().toISOString().slice(0, 10)}
                 onChange={(e) => setEndDateInput(e.target.value)}
-                className="rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1.5 font-mono text-xs text-foreground outline-none focus:border-accent [color-scheme:dark]"
+                className="rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1.5 font-mono text-xs text-foreground focus:border-accent [color-scheme:dark]"
               />
             </label>
             <button
@@ -420,6 +435,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
         </button>
         <button
           onClick={() => setGuessMode((v) => !v)}
+          aria-pressed={guessMode}
           className={`px-3 py-1.5 rounded-lg text-xs border transition ${
             guessMode
               ? "border-accent/60 bg-accent-dim text-accent"
@@ -569,6 +585,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
             <button
               onClick={() => setPlaying((v) => !v)}
               disabled={!klines || finished}
+              aria-pressed={playing}
               className="rounded-full bg-accent-strong hover:bg-accent disabled:opacity-40 text-white dark:text-[#06281c] font-semibold px-6 py-2.5 transition"
             >
               {playing ? dict.pause : dict.play}
@@ -583,17 +600,19 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
             <button
               onClick={() => klines && setIdx(klines.length)}
               disabled={!klines || finished}
+              aria-label={dict.skipToEnd}
               className="rounded-full border border-border-strong px-5 py-2.5 text-sm font-medium disabled:opacity-40 hover:border-accent/60 transition"
-              title={dict.rounds}
+              title={dict.skipToEnd}
             >
               ⏭
             </button>
-            <div className="flex items-center gap-1.5 ml-auto">
+            <div role="group" aria-label={dict.speed} className="flex items-center gap-1.5 ml-auto">
               <span className="text-xs text-faint mr-1">{dict.speed}</span>
               {SPEEDS.map((s) => (
                 <button
                   key={s}
                   onClick={() => setSpeed(s)}
+                  aria-pressed={s === speed}
                   className={`px-2.5 py-1.5 rounded-lg font-mono text-xs transition ${
                     s === speed
                       ? "bg-accent-dim text-accent border border-accent/40"

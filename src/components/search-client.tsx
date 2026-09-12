@@ -30,6 +30,7 @@ export function SearchClient({
     gapHint: string;
     filterZeroTpl: string;
     filterZeroCta: string;
+    filterLabel: string;
     indexError: string;
     retry: string;
   };
@@ -223,7 +224,7 @@ export function SearchClient({
           onBlur={() => {
             setTimeout(() => setSuggestOpen(false), 150);
           }}
-          className="w-full rounded-xl border border-[var(--border-strong)] bg-transparent px-4 py-3 pr-16 outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-dim)] transition-shadow"
+          className="w-full rounded-xl border border-[var(--border-strong)] bg-transparent px-4 py-3 pr-16 focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-dim)] transition-shadow"
         />
         {!query && (
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 rounded border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-xs text-faint font-mono">
@@ -291,7 +292,8 @@ export function SearchClient({
           <select
             value={filterChapter}
             onChange={(e) => setFilterChapter(e.target.value)}
-            className="ml-auto rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+            aria-label={dict.filterLabel}
+            className="ml-auto rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs focus:border-accent"
           >
             <option value="">{locale === "en" ? "All chapters" : "全部篇章"}</option>
             {allChapters.map((c) => (

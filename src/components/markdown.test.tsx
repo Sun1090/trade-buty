@@ -39,4 +39,31 @@ describe("R7.2 图片懒加载", () => {
     expect(img?.getAttribute("loading")).toBe("lazy");
     expect(img?.getAttribute("alt")).toBe("示例");
   });
+
+  it("课程图片可按键盘打开，并保留 alt 作为可访问名称", () => {
+    const { container } = render(
+      <Markdown
+        content="![走势图](/knowledge-assets/x.png)"
+        interactiveImages
+        interactiveImageLabel="打开大图"
+      />,
+    );
+    const img = container.querySelector("img");
+    expect(img?.getAttribute("role")).toBe("button");
+    expect(img?.getAttribute("tabindex")).toBe("0");
+    expect(img?.getAttribute("aria-haspopup")).toBe("dialog");
+    expect(img?.getAttribute("aria-label")).toBeNull();
+    expect(screen.getByRole("button", { name: "走势图" })).toBe(img);
+  });
+
+  it("空 alt 课程图片使用本地化打开标签", () => {
+    render(
+      <Markdown
+        content="![](/knowledge-assets/x.png)"
+        interactiveImages
+        interactiveImageLabel="打开大图"
+      />,
+    );
+    expect(screen.getByRole("button", { name: "打开大图" })).toBeInTheDocument();
+  });
 });
