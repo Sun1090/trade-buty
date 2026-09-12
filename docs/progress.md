@@ -1,5 +1,29 @@
 # Progress
 
+## 质量门禁覆盖补齐（R7.6 限流回归 + ops 门禁表）
+
+- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 工作分支：`codex/gate-coverage-followups`
+- PR：推送后跟踪
+- Base：`origin/main@80902f4`
+- 远端 Head：推送后跟踪
+- 本地提交：`test(errors): cover error report endpoint rate limiting`、`docs(ops): register the changelog gate in the quality gate table`
+- 目标：合并 R7.6 隐私门禁（PR #22）后继续扫描真实缺口，补两处：错误上报端点的按 IP 限流此前没有单测；`npm run check:changelog` 虽在 CI 阻断，却未登记在 `docs/ops.md` 的质量门禁表。
+- 已完成：
+  - `src/app/api/error-reports/route.test.ts`：`request()` 辅助函数支持附加请求头，新增「同一 IP 超过每分钟配额返回 429 + Retry-After，不同 IP 不受牵连」用例——同一 `x-forwarded-for` 连打 101 次命中 429、`Retry-After > 0` 且响应不带 `Cache-Control`，另一个 IP 仍在独立窗口内返回 202。
+  - `docs/ops.md`：质量门禁表新增 `npm run check:changelog` 一行，说明它校验 `CHANGELOG.md` 与单一来源 `src/data/release-notes.json` 一致，失败处理为 `npm run changelog:generate` 重新生成。
+- 变更文件（关键）：`src/app/api/error-reports/route.test.ts`、`docs/ops.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npx vitest run src/app/api/error-reports/route.test.ts` → 15 用例通过（较 base 新增 1 例）。
+  - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0。
+  - `npm test` → 241 文件 / 1749 用例通过（较 base `main@80902f4` 的 241 文件 / 1748 用例新增 1 例）。
+  - `npm run check:changelog` exit 0；`npm run check:error-report-privacy` exit 0；`npm run check:docs` exit 0。
+- 上游依赖：无。
+- 未验证项：远端 CI 复跑结果。
+- 风险与回滚：新增用例只做断言，不改运行时行为；文档行只描述既有门禁。回滚即撤销本分支提交。
+- 下一步：推送、CI 全绿后按 rebase 合并；再继续扫描未列出的真实技术缺口。
+- 最后更新：2026-09-13
+
 ## 错误上报隐私门禁（R7.6 补口）
 
 - 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
