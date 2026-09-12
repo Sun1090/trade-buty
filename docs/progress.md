@@ -1,13 +1,44 @@
 # Progress
 
-## 根级路由被语言代理重定向的自动守卫（PR #33 回归）
+## 根级软 404 与分享落地页修复（proxy 静态表面显式放行）
 
 - 状态：VERIFYING
-- 工作分支：`codex/root-route-guard`
+- 工作分支：`codex/proxy-static-surface`
 - PR：待创建
 - PR 状态：none
-- Base：`origin/main@2369157`
+- Base：`origin/main@e65dc3a`
 - 已验证 Head：见 PR head
+- 本地提交：`fix(proxy): serve root static surface honestly`
+- 目标：`src/proxy.ts` 的 matcher 用 `.*\.\w+$` 兜住了所有带扩展名的路径，外加写得很宽的无扩展名白名单。副作用有两条相反的坏账：(1) **不存在的根级路径**（`/foo.png`、`/apple-icon`、`/sitemap.json`、`/knowledge-assets`）绕过代理直落根级动态段 `/[locale]`，被当成非法 locale 渲染出 HTTP 200 的首页外壳——一批既无 404 也无 `noindex` 的软 404；(2) **`/share/{kind}/{payload}` 分享落地页**本该原样放行（locale 编码在载荷里），却被补成 `/en/share/...` → 全站分享链接 404（生产线上 `https://trade-buty.vercel.app/share/quiz/v1abc` → 307 → 404 实测复现）。
+- 已完成：
+  - `src/proxy.ts`：matcher 改为**显式列举真实静态表面**并逐条锚定路径边界（`_next/`、`api/`、`favicon.ico$`、`icon$`、`manifest.webmanifest$`、`robots.txt$`、`sitemap.xml$`、`search-index.json$`、`sw.js$`、`offline.html$`、`knowledge-assets/`），新增导出 `LOCALE_FREE_PREFIXES = ["share"]` 并在 `proxy()` 里原样放行。
+  - **更深的第二个 bug**：即使绕过代理，`src/app/share/[kind]/[path]/page.tsx` 仍会渲染 404 外壳——page 拿到的 `params.path` 是 percent-encoded 形态（`v1%7CeyJ...`），而 `generateMetadata` / `opengraph-image` 拿到的是已解码形态 `v1|eyJ...`，`detectKind` 在页面里因此解析失败。新增纯逻辑模块 `src/lib/share-landing.ts`（`normalizeShareSegment` / `resolveShareLanding` / `summarizeForMeta` / `kindToLocale`），page 与 metadata 共用同一条归一化路径；畸形 percent 序列返回 null 而非抛 500。
+  - 删除 `public/` 下 5 个 Next 模板遗留 SVG（`file/globe/next/vercel/window.svg`，全仓无引用），让「`public/` 下的每个文件都必须被 matcher 放行」这条守卫只覆盖真实资产。
+  - 新增 `e2e/static-surface.spec.ts`（19 用例）：不存在的根级路径最终 404；根级静态表面直连 200；知识库资产真实文件 200；`/share/{quiz,replay,streak}` 直连 200 且不被补前缀、CTA 语言由载荷决定；未知知识库 slug 仍是 200 + noindex 的软 404（未被误伤）。
+  - `src/proxy.test.ts` 重写（17 用例）：含 `LOCALE_FREE_PREFIXES` 断言与 `public/` 全文件枚举守卫（`listPublicFiles()` 递归枚举 + 空集断言，新增静态文件漏登记即失败）。
+  - `src/app/share/[kind]/[path]/page.test.ts` 重写为直接测 `@/lib/share-landing`（此前是「把 page 逻辑复制到测试里」的自证）；`src/lib/share-decode.test.ts` 补 percent-encoded 回归用例。
+  - `package.json`：`e2e` 脚本登记新 spec；`docs/ops.md` 补「根级静态表面注记」；`docs/seo-surface.md` 补「软 404 与根级伪页面的边界」。
+- 变更文件（关键）：`src/proxy.ts`、`src/lib/share-landing.ts`、`src/app/share/[kind]/[path]/page.tsx`、`e2e/static-surface.spec.ts`、`src/proxy.test.ts`、`package.json`、`docs/ops.md`、`docs/seo-surface.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npm run build` exit 0（474 静态页）。
+  - `npx playwright test e2e/static-surface.spec.ts` exit 0 → 19 用例通过（修复前 share 组 3 条失败）。
+  - 生产构建实测：`/share/quiz/<encoded>` → 200，`NEXT_HTTP_ERROR_FALLBACK` 命中 0，title 正确解出载荷；`/foo.png`、`/apple-icon`、`/sitemap.json` 等最终 404；`/[locale]/opengraph-image.png` 真实路由仍 200。
+  - `npx vitest run "src/app/share" src/lib/share-decode.test.ts` exit 0 → 42 用例通过。
+- 上游依赖：无。
+- 未验证项：远端 PR CI 与合并后 main CI；Vercel 生产环境复核（配额外部阻塞）。
+- 风险与回滚：matcher 由通配改为显式清单后，**新增根级静态文件必须同步进 matcher**，否则会被补语言前缀而 404——这条由 `src/proxy.test.ts` 的 `public/` 全文件枚举守卫强制。回滚 = 撤销本提交。
+- 下一步：推送分支、开 PR、CI 全绿后 `gh pr merge --rebase --delete-branch`，然后按 roadmap 做 R13.9 移动端键盘与焦点管理。
+- 最后更新：2026-09-13
+
+## 根级路由被语言代理重定向的自动守卫（PR #33 回归）
+
+- 状态：DONE（PR #35 已以 `--rebase` 合并进 main；PR CI 与合并后 main CI 均通过）
+- 工作分支：`codex/root-route-guard`（分支保留，未删除）
+- PR：[#35](https://github.com/Sun1090/trade-buty/pull/35) · `MERGED`
+- PR 状态：MERGED
+- Base：`origin/main@2369157`
+- 已验证 Head：`3337fae`
+- 合并提交：`e65dc3a`（PR CI run [34721908148](https://github.com/Sun1090/trade-buty/actions/runs/34721908148) `ci` + `db-tests` 全绿；合并后 main CI run [34722802083](https://github.com/Sun1090/trade-buty/actions/runs/34722802083) `ci` + `db-tests` 全绿）
 - 本地提交：`test(e2e): guard root metadata routes against locale redirects`
 - 目标：PR #33 修掉了 `/icon` 被语言代理 307 到 `/en/icon` → 404 的缺陷，但当时只有 manifest 图标间接覆盖这一个地址。`src/proxy.ts` 的 matcher 排除的是「带扩展名的静态文件 + 显式列举的几个根级路由」，而 Next 在根级暴露的元数据路由恰好**没有扩展名**（`/icon`、`/apple-icon`、`/opengraph-image`、`/twitter-image`…）。将来新增任何一个，同一类 404 会静默复发；此外 `npm run e2e` 用显式 spec 白名单驱动 Playwright，新增 `e2e/*.spec.ts` 若忘记登记会**不进 CI 且不报错**。
 - 已完成：

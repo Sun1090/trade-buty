@@ -50,7 +50,7 @@
 | `npm run check:structured-data` | 全站 JSON-LD 结构化数据回归：实体类型/`@id` 唯一性、绝对 URL、语言、博客/课程/FAQ 页面身份（R13.16，需先 build） | 修正 `src/lib/jsonld.ts` 或页面注入；不得为通过直接放宽断言 |
 | 生成内容质量报告（R10.1–R10.6 / R10.17） | 在当前提交上按序重跑 `kb:inventory`、`kb:gap-priority`、`kb:accept`、`kb:translation-status`、`check:title-terminology`、`check:description-quality`、`check:risk-warning` 七份内容报告 | 按脚本报告修复内容或契约；报告式命令不会用人工旧快照替代当前结果 |
 | 内容质量报告归档（CI artifact，R10.17） | 上述当前提交报告及 docs/*.json 随 CI 归档 7 天 | 下载 artifact 分派人工整改；不得只更新 artifact 而不提交内容源修复 |
-| `npm run e2e` | 全站、320px 移动端、PWA 离线、根级元数据路由与扩展核心闭环（R13.24） | 修复可访问性、响应式或交互回归；不得只重跑忽略 flaky |
+| `npm run e2e` | 全站、320px 移动端、PWA 离线、根级元数据路由、根级静态表面/软 404 契约与分享落地页、扩展核心闭环（R13.24） | 修复可访问性、响应式或交互回归；不得只重跑忽略 flaky |
 | `npm run lhci` | 关键 URL 的性能/可访问性/最佳实践/SEO 断言 | 修复真实退化；阈值调整必须附测量证据 |
 | `db-tests` · `docker pull supabase/postgres:17.6.1.155` | 拉取与线上一致的 Supabase Postgres 17 镜像，供迁移/RLS/同步门禁使用（Q2.8 / Q5.4） | 核对镜像 tag 是否仍在；不要改用本地随意镜像绕过 |
 | `db-tests` · `node scripts/db-test.mjs` | 在真实 Postgres 镜像里应用全部迁移、跑 RLS 越权与双设备同步 pgTAP 测试，并执行 `0008` 回滚 → 重放演练（Q2.8） | 修正迁移/策略/回滚脚本；不得跳过 pgTAP 断言或改用内存库伪造通过 |
@@ -59,6 +59,7 @@
 > 执行顺序注记：E2E 与 Lighthouse 排在所有产物校验之后（E2E 运行时向 `.next` 写 fallback 页，避免污染其后的 check 产物；顺序由 ci.yml 保证）。
 > 运行时注记：官方 actions（`checkout` ≥ v5 / `setup-node` ≥ v5 / `cache` ≥ v5 / `upload-artifact` ≥ v6）必须保持 node24 版本，避免 GitHub 逐步下线 Node.js 20 时报弃用注记；`scripts/ci-workflow.test.mjs` 会拦截回退。
 > 工作流结构注记：每个工作流都显式声明 `permissions: contents: read`（不继承仓库默认值），每个 job 都有 (0, 60] 区间的数值型 `timeout-minutes`；`scripts/ci-workflow.test.mjs` 遍历 `.github/workflows/*.{yml,yaml}` 拦截权限放开、缺少超时上界、action 运行时回退、`setup-node` 配置漂移与 npm 脚本/`scripts/*.mjs` 引用失配。
+> 根级静态表面注记：`e2e/static-surface.spec.ts` 钉住 `src/proxy.ts` matcher 的两侧契约——(1) 不存在的根级路径必须落到真 404，不得被 `/[locale]` 渲染成 200 首页外壳；(2) `/share/{kind}/{payload}` 是根级真实路由，**不得**被补语言前缀（载荷里自带 locale，补前缀后全站分享链接 404）。`src/proxy.test.ts` 另有一条守卫枚举 `public/` 下全部文件，新增静态文件忘记加进 matcher 会失败。
 > E2E 套件注记：`npm run e2e` 用**显式 spec 清单**驱动 Playwright（不是 `playwright test e2e/`），保证 CI 跑的是确定清单；代价是新增 `e2e/*.spec.ts` 若忘记登记就会静默不进 CI。`scripts/e2e-suite.test.mjs` 要求 `e2e/` 下每个 spec 都被某个 `e2e*` 脚本登记，并固定视觉基线 spec 只走 `npm run e2e:visual`（R7.8，不进 CI）。
 > 并发注记：`ci.yml` 用 `concurrency` 收敛同一 PR 的连续 push（`cancel-in-progress` 只在 `pull_request` 事件为真，被取代的运行自动取消）；main 的 push 以 `github.run_id` 分组，保证每次提交都有独立的完整门禁结果。
 
