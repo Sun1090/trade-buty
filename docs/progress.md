@@ -1,5 +1,33 @@
 # Progress
 
+## 文档契约、内容报告与完整本地验收（Q5.1 / Q5.2 / R2.2）
+
+- 状态：DONE
+- 工作分支：`codex/r13-e2e-expansion`
+- PR：none
+- PR 状态：none
+- Base：`origin/main@abe8106`
+- 远端 Head：none（LOCAL_ONLY，未推送）
+- 本地提交：`ff0013b`、`76174c2`、`34635c3`
+- 目标：清除 README/AGENTS/plan/research/p2-research 中与当前实现不一致的契约，加入可回归的文档一致性门禁，并刷新真实内容报告。
+- 已完成：
+  - 新增 `check:docs`：核对双语 README 的 27 章 / 182 篇、AGENTS 的 `{zh,en}` 与 English-slug 契约、plan 当前技术栈，以及 README 与 About 页“不接受广告/捐赠”的同一承诺；CI 已阻断。
+  - 修正历史文档口径：移除 README 赞助入口与二维码；将 Clerk、Pagefind、Claude API、shadcn/lucide 明示为历史/已作废选型；补充 Supabase Auth、构建时 JSON 索引、OpenAI 兼容端点和当前内容规模。
+  - 按现有脚本重生成 `content-inventory` 与 `new-course-acceptance`：182/182 双语覆盖；364 项验收全部 ok，旧存量的 6 个必过失败已清除。
+  - 更新 roadmap 中已有真实验证的 Q1.3–Q1.6、Q5.1–Q5.3、R2.2、R6.1–R6.2、R6.5、R6.7、R6.10–R6.11 状态与证据。
+- 变更文件：`AGENTS.md`、双 README、`.github/workflows/ci.yml`、`package.json`、`scripts/*docs-consistency*`、`docs/{plan,research,p2-research,roadmap,growth-checklist,growth-copy-policy}.md`、`docs/{content-inventory,new-course-acceptance}.{json,md}`、`src/lib/ai/prompt.ts`、两枚捐赠二维码。
+- 验证命令与结果：
+  - `npx vitest run scripts/docs-consistency-lib.test.mjs scripts/sitemap-lib.test.mjs scripts/content-changelog-lib.test.mjs` → 3 文件 / 14 用例通过。
+  - CI 等价全门禁 → `lint` 0 error，170 文件 / 1315 用例通过，`typecheck` 通过。
+  - 干净生产构建 → 465 静态页；死链 454 页 / 8958 链接 0；sitemap 418；搜索索引 418/418；结构化数据 454 页 / 5656 实体；全部 bundle 预算通过。
+  - `npm run e2e` → 56/56 通过；`npm run lhci` → 3 URL × 2 次采样断言通过。
+  - `npm run audit:prod` → 0 漏洞；`git diff --check` → 通过。
+- 上游依赖：无新增；知识库保持本地提交 `1ebbaef`，双语均 182 篇。
+- 未验证项：远端 CI、PR 状态与部署（LOCAL_ONLY；当前远端不存在该 head 的 PR，且未推送）。
+- 风险与回滚：`check:docs` 会故意锁住少数稳定文案，若页面承诺变化需同步 About 与 checker；回滚可按三个提交分别 revert，不涉及远端或数据迁移。
+- 下一步：执行可回滚的补丁/minor 依赖升级并重跑全门禁；其余 roadmap 未勾选项均需外部账号、人工发布或真实用户证据。
+- 最后更新：2026-09-12
+
 ## 图片资产审计真实验证（R6.6 / R10.12）
 
 - 状态：DONE
