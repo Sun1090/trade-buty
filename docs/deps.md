@@ -37,11 +37,11 @@
 
 | 包 | 当前 | 最新 | 处理 |
 |---|---|---|---|
-| `@types/node` | 20.19.43 | 22.20.2 | 暂缓：等 TypeScript 主版本升级时一并跟到 Node 22 类型面，避免与 `tsconfig` 的 lib/target 设定错配 |
-| `eslint` | 9.39.5 | 10.10.0 | 暂缓：等 10.x 的 flat-config 生态（含各插件 peer 范围）稳定后再升，避免 0 warning 门禁被插件兼容问题带崩 |
-| `js-yaml` | 4.3.2 | 5.4.1 | 暂缓：当前 4.3.2 由 `overrides` 固定在 `gray-matter` 与 ESLint 配置链上；升级 5.x 需先验证两处调用方 API 兼容 |
-| `typescript` | 5.9.3 | 7.0.2 | 暂缓：跨两个 major，需先单独开分支跑 `tsc --noEmit` + 全量测试评估破坏面 |
-| `vitest` | 4.1.11 | 5.0.0 | 暂缓：等 5.x 对 React 19 / jsdom 环境的支持矩阵明确后再升 |
+| `@types/node` | 20.19.43 | 22.20.2 | 已升级到 `22.20.2`；全量测试、lint、typecheck 实测见「工具链 major 升级」 |
+| `eslint` | 9.39.5 | 10.10.0 | 延期：`eslint-plugin-react` 尚未支持 ESLint 10，实跑 `npm run lint` 崩溃；证据见「工具链 major 升级」 |
+| `js-yaml` | 4.3.2 | 5.4.1 | 已升级直接依赖到 `5.4.1` 并改用具名导出；`gray-matter` 与 ESLint 配置链继续由 `overrides` 固定到各自兼容版本 |
+| `typescript` | 5.9.3 | 7.0.2 | 延期：`typescript-eslint` peer 尚未支持 TS 7，实跑 `npm run lint` 失败；证据见「工具链 major 升级」 |
+| `vitest` | 4.1.11 | 5.0.0 | 已升级到 `5.0.0`；全量测试、lint、typecheck 实测见「工具链 major 升级」 |
 
 > 判断依据：`npm outdated` 只把「latest 领先 wanted」的包列出来；本仓库锁文件已把想要的版本都拉到锁内，因此本表只讨论 major 迁移。
 
