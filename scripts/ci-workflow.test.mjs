@@ -16,10 +16,15 @@ describe("CI workflow contract", () => {
   it("keeps all post-dry-run quality gates in the workflow", () => {
     const [workflow] = loadWorkflow();
     const steps = workflow.jobs.ci.steps;
-    const commands = steps.map((step) => step.run).filter(Boolean).join("\n");
+    const commands = steps
+      .map((step) => step.run)
+      .filter(Boolean)
+      .join("\n");
     const names = steps.map((step) => step.name).filter(Boolean);
 
     for (const command of [
+      "npm run audit:prod",
+      "npm run audit:all",
       "npm run check:secrets",
       "npm run check:mobile",
       "npm run check:quiz-mounts",
