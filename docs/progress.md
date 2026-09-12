@@ -6,14 +6,14 @@
 - 工作分支：`codex/security-headers`
 - PR：[#20](https://github.com/Sun1090/trade-buty/pull/20)
 - Base：`origin/main@160e34b`（rebase 至后续 main）
-- 远端 Head：`0fb9eb6`（rebase 前）
+- 远端 Head：`0fb9eb6`（rebase 前，已推送）
 - 本地提交：`feat(security): send HSTS on all responses`、`docs(security): record HSTS header and gate`、`test(security): assert security headers on live responses`
 - 目标：`next.config.ts` 的 R7.12 安全头集合缺 `Strict-Transport-Security`。Vercel 不会自动下发 HSTS，站点此前没有任何强制 HTTPS 的声明，首访仍存在明文降级与 Cookie 剥离中间人风险。
 - 已完成：
   - `next.config.ts` 在 `/:path*` 通配规则新增 `Strict-Transport-Security: max-age=63072000; includeSubDomains`，并把取值导出为 `HSTS_VALUE`。
   - 刻意不加 `preload`：preload 列表是不可逆的浏览器硬编码，未来若新增仅 HTTP 的子域会被锁死。
   - `src/lib/next-config.test.ts`：安全头 key 断言补上 `Strict-Transport-Security`，并新增一条锁定「值与 `HSTS_VALUE` 一致且 max-age ≥ 63072000」的回归，防止未来被误删或调成 0 后静默失去保护。
-  - `e2e/smoke.spec.ts`：对 HTML 路由与 `/search-index.json` 的线上响应增加 HSTS、CSP、nosniff、referrer/permissions policy、缓存策略断言。
+  - `e2e/smoke.spec.ts` 新增「安全响应头」×2：对 `next start` 真实响应断言全套安全头（CSP 关键指令、nosniff、DENY、HSTS 两年期 + `includeSubDomains` 且不含 `preload`、Referrer-Policy、Permissions-Policy），以及对 `/search-index.json` 断言安全头 + `public, max-age=0, must-revalidate`（R10.24）。此前只有配置级单测，没有验证响应真的带上这些头。
 - 变更文件（关键）：`next.config.ts`、`src/lib/next-config.test.ts`、`e2e/smoke.spec.ts`、`docs/roadmap.md`、`docs/progress.md`。
 - 验证命令与结果：
   - `npx vitest run src/lib/next-config.test.ts` → 5 用例通过（新增 1 例）。
@@ -21,6 +21,7 @@
   - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0。
   - `npm test` → 238 文件 / 1712 用例通过（较本分支 base `main@160e34b` 的 238 文件 / 1711 用例新增 1 例）。
   - `npm run build` exit 0（473 静态页）。
+  - `npx playwright test e2e/smoke.spec.ts -g "安全响应头" --reporter=line` → 2 用例通过（本地 `next start` 生产构建真实响应）。
   - 远端 GitHub Actions run `34713680267`：`ci` pass（4m11s）、`db-tests` pass（40s）；Vercel 仅因账号部署配额 `Deployment rate limited` 失败。
 - 上游依赖：无。
 - 未验证项：线上响应头实际下发（部署配额恢复后 `curl -I https://trade-buty.vercel.app` 复核）。

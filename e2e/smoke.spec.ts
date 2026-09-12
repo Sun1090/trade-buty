@@ -208,3 +208,37 @@ test.describe("更新日志（发布说明一致）", () => {
     await expect(page.getByText("Content coverage, AI quality, and learning retention")).toBeVisible();
   });
 });
+
+test.describe("安全响应头（R7.12）", () => {
+  test("HTML 路由下发完整安全头集合", async ({ request }) => {
+    const res = await request.get("/zh");
+    expect(res.status()).toBe(200);
+    const headers = res.headers();
+
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["x-frame-options"]).toBe("DENY");
+    expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+    expect(headers["permissions-policy"]).toBe(
+      "camera=(), microphone=(), geolocation=(), payment=()"
+    );
+
+    const csp = headers["content-security-policy"];
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("connect-src 'self'");
+
+    // 2026-09 HSTS 补口：两年期 + includeSubDomains，刻意不含不可逆的 preload。
+    const hsts = headers["strict-transport-security"] ?? "";
+    expect(hsts).toContain("includeSubDomains");
+    expect(hsts).not.toContain("preload");
+    expect(Number(/max-age=(\d+)/.exec(hsts)?.[1])).toBeGreaterThanOrEqual(63072000);
+  });
+
+  test("静态内容产物同样带安全头与重验证缓存（R10.24）", async ({ request }) => {
+    const res = await request.get("/search-index.json");
+    expect(res.status()).toBe(200);
+    const headers = res.headers();
+    expect(headers["strict-transport-security"]).toContain("includeSubDomains");
+    expect(headers["cache-control"]).toBe("public, max-age=0, must-revalidate");
+  });
+});
