@@ -9,7 +9,7 @@
     "build": "next build",
     "start": "next start",
     "audit:prod": "npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org",
-    "lint": "eslint",
+    "lint": "eslint --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit",
     "kb:update": "bash scripts/update-knowledge.sh",
     "test": "vitest run",
