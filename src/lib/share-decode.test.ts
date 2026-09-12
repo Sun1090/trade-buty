@@ -225,3 +225,53 @@ describe("buildSharePath", () => {
     expect(b64).toMatch(/^[A-Za-z0-9_-]+$/);
   });
 });
+
+// ── R13.3 分享参数白名单 + R13.4 落地页脱敏 ─────────────
+describe("decode whitelisting and sanitization (R13.3/R13.4)", () => {
+  it("strips foreign keys from quiz payloads (guards alone would pass them through)", () => {
+    const evil = {
+      chapterTitle: "Chapter X",
+      score: 8,
+      total: 10,
+      percent: 80,
+      locale: "zh" as const,
+      email: "attacker@example.com",
+      deviceId: "abc",
+      utm_source: "evil",
+    };
+    const decoded = decodeQuiz(encodeQuiz(evil as Parameters<typeof encodeQuiz>[0]));
+    expect(decoded).not.toBeNull();
+    expect(Object.keys(decoded!).sort()).toEqual(["chapterTitle", "locale", "percent", "score", "total"]);
+    expect(JSON.stringify(decoded)).not.toContain("attacker");
+  });
+
+  it("caps text length, strips control characters and clamps numbers", () => {
+    const long = "A".repeat(500) + "";
+    const decoded = decodeQuiz(encodeQuiz({ chapterTitle: long, score: -5, total: 10, percent: 9999, locale: "zh" }));
+    expect(decoded!.chapterTitle.length).toBe(60);
+    expect(decoded!.chapterTitle).not.toMatch(/[]/);
+    expect(decoded!.score).toBe(0);
+    expect(decoded!.percent).toBe(200); // 钳到上限（封顶上限，避免荒谬百分比把卡面画爆）
+  });
+
+  it("replays strip foreign keys and clamp symbol/interval text", () => {
+    const decoded = decodeReplay(encodeReplay({
+      symbol: "BTCUSDT".padEnd(40, "X"),
+      interval: "1h".padEnd(30, "Y"),
+      correct: 7, total: 10, accuracyBps: 7000, bestStreak: 4, currentStreak: 2, locale: "en",
+      pii: "nope",
+    } as unknown as Parameters<typeof encodeReplay>[0]));
+    expect(Object.keys(decoded!).sort()).toEqual(
+      ["accuracyBps", "bestStreak", "correct", "currentStreak", "interval", "locale", "symbol", "total"],
+    );
+    expect(decoded!.symbol.length).toBe(16);
+    expect(decoded!.interval.length).toBe(8);
+  });
+
+  it("streak decode whitelists keys while preserving valid round trips", () => {
+    const ok = decodeStreak(encodeStreak({ currentStreak: 7, longestStreak: 30, locale: "zh" }));
+    expect(ok).toEqual({ currentStreak: 7, longestStreak: 30, locale: "zh" });
+    const withLocale = decodeQuiz(encodeQuiz({ chapterTitle: "x", score: 1, total: 2, percent: 50, locale: "fr" as unknown as "zh" }));
+    expect(withLocale).toBeNull(); // locale 白名单在守卫层就拒绝
+  });
+});

@@ -1,5 +1,46 @@
 # Progress
 
+## 2026-09-11 — R13.5 Share OG image with error degradation + R13.6 Download failure feedback
+
+- Added `src/app/share/[kind]/[path]/opengraph-image.tsx`: a 1200×630 social card per share kind (quiz/replay/streak) rendered from whitelisted decoded payloads via `next/og` — every failure path (unknown kind, garbage/base64-broken path, zero-total payloads, any render exception) degrades to a branded fallback card instead of a 500 for crawlers. Tests cover the degrade matrix and the happy path (200 + image/png).
+- All three share card components now surface download failures: `draw`/`toBlob`/download errors set `downloadFailed` and render an `role="alert"` message (in-site labels `downloadFailed` added to quiz, replay-trainer, stats-streak dicts in both locales; fabricate-success is never allowed). Preview path recovered state clears the message.
+- Quiz test suites gained a failure-path spec (toBlob → null renders the alert).
+
+Verification recorded:
+
+- Targeted Vitest suites: share OG image (3 tests), all share component tests incl. the new failure spec passed.
+- Full suite: `npm test` passed with 141 test files and 1073 tests.
+- Lint gate: `npm run lint -- --quiet` passed; typecheck gate passed; `npm run check:ai-copy` passed.
+
+Next queue:
+
+1. GitHub auth may need reconnecting again (push failed once more); keep batching locally otherwise.
+2. Continue R13: R13.7 320px core-path regression expansion, R13.8 touch-target audit, R13.9 mobile keyboard/focus, R13.10 table/code horizontal scroll, R13.11 chart degradation, R13.12 slow-network UX, R13.13 PWA offline review, R13.14 install prompt close state.
+
+## 2026-09-11 — R13.3 Share param whitelist + R13.4 Share landing privacy
+
+## 2026-09-11 — R13.3 Share param whitelist + R13.4 Share landing privacy
+
+Hardened the share pipeline against self-attested URL payloads:
+
+- `share-decode.ts` decoders now return objects containing ONLY whitelisted keys (previously any extra JSON keys passed the type guards and flowed into the SSR landing page + OG metadata). Text fields are control-character stripped and length-capped (chapterTitle 60, symbol 16, interval 8), numbers are clamped to display-safe ranges, and locale stays a two-value whitelist.
+- R13.4 audit of the landing page (`src/app/share/[kind]/[path]/page.tsx`): renders only self-reported game stats — no dates, no device identifiers, no account fields — with React-escaped text nodes; the whitelist change turns that invariant into enforced code (future personal fields cannot leak through share URLs).
+- Tests: foreign keys (`email`, `deviceId`, `utm_source`) provably stripped; control bytes removed; counters clamped; valid round trips preserved.
+- Incident during implementation: a control-regex literal was saved as raw bytes making the file binary; repaired to escaped `\u0000` form and verified via typecheck + tests.
+
+Verification recorded:
+
+- Targeted Vitest suite: `src/lib/share-decode.test.ts` (26 tests) passed.
+- Full suite: `npm test` passed with 140 test files and 1069 tests.
+- Lint gate: `npm run lint -- --quiet` passed; typecheck gate passed.
+
+Next queue:
+
+1. Watch PR #1 CI after this push.
+2. Continue R13: R13.5 OG image error degradation, R13.6 share download failure feedback, then R13.7–R13.14 mobile batch.
+
+## 2026-09-11 — R13.1 Unified share-card template + R13.2 Shared fonts and accessible alt text
+
 ## 2026-09-11 — R13.1 Unified share-card template + R13.2 Shared fonts and accessible alt text
 
 Started the R13 share/mobile/growth suite with the two card-system foundations:
