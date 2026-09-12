@@ -77,13 +77,42 @@ describe("buildPrivacyExport (R9.9)", () => {
     recordWrong("01", 1, 3);
     const exp = buildPrivacyExport(1_700_000_000_000);
     expect(exp.progress.wrongCount).toBe(2);
-    expect(exp.progress.srsStages).toEqual({ none: 2 });
+    // R5 修复后：新记录的错题即带 stage 0 计划（不再是 none），跨设备才能保留真实排期。
+    expect(exp.progress.srsStages).toEqual({ s0: 2 });
     expect(exp.progress.wrongDetails).toHaveLength(2);
     expect(exp.progress.wrongDetails[0]).toMatchObject({
       key: "01:0",
       chapterNum: "01",
       questionIdx: 0,
       picked: 2,
+      srsStage: 0,
+    });
+    expect(exp.progress.wrongDetails[0].srsDue).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    for (const d of exp.progress.wrongDetails) {
+      expect(d.srsStage).toBe(0);
+      expect(typeof d.srsDue).toBe("string");
+    }
+  });
+
+  it("旧数据无 srs 字段时归入 none", () => {
+    // 模拟 R5 之前的历史错题条目（无 srsStage / srsDue）。
+    localStorage.setItem(
+      "tb-wrong",
+      JSON.stringify({
+        "02:1": {
+          chapterNum: "02",
+          questionIdx: 1,
+          picked: 0,
+          at: 1_700_000_000_000,
+        },
+      }),
+    );
+    const exp = buildPrivacyExport(1_700_000_000_000);
+    expect(exp.progress.srsStages).toEqual({ none: 1 });
+    expect(exp.progress.wrongDetails[0]).toMatchObject({
+      key: "02:1",
+      srsStage: null,
+      srsDue: null,
     });
   });
 
