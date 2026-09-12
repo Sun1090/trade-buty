@@ -16,6 +16,7 @@
     "summary:coverage": "node scripts/summary-coverage.mjs",
     "check:ai-copy": "node scripts/check-ai-copy.mjs",
     "check:growth-event-privacy": "node scripts/growth-event-privacy.mjs",
+    "check:dark-pattern-copy": "node scripts/check-dark-pattern-copy.mjs",
     "check:constitution": "node scripts/check-constitution.mjs",
     "check:frontmatter": "node scripts/check-frontmatter.mjs",
     "check:image-alt": "node scripts/check-image-alt.mjs",
