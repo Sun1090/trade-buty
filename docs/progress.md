@@ -1,5 +1,36 @@
 # Progress
 
+## 根级路由被语言代理重定向的自动守卫（PR #33 回归）
+
+- 状态：VERIFYING
+- 工作分支：`codex/root-route-guard`
+- PR：待创建
+- PR 状态：none
+- Base：`origin/main@2369157`
+- 已验证 Head：见 PR head
+- 本地提交：`test(e2e): guard root metadata routes against locale redirects`
+- 目标：PR #33 修掉了 `/icon` 被语言代理 307 到 `/en/icon` → 404 的缺陷，但当时只有 manifest 图标间接覆盖这一个地址。`src/proxy.ts` 的 matcher 排除的是「带扩展名的静态文件 + 显式列举的几个根级路由」，而 Next 在根级暴露的元数据路由恰好**没有扩展名**（`/icon`、`/apple-icon`、`/opengraph-image`、`/twitter-image`…）。将来新增任何一个，同一类 404 会静默复发；此外 `npm run e2e` 用显式 spec 白名单驱动 Playwright，新增 `e2e/*.spec.ts` 若忘记登记会**不进 CI 且不报错**。
+- 已完成：
+  - 新增 `e2e/metadata-routes.spec.ts`：从构建产物 `.next/app-path-routes-manifest.json` 枚举全部根级单段路由（跳过 `_` 内部路由与 `[dynamic]` 模板），逐个以 `maxRedirects: 0` 断言「本站直接 200」且未被重定向到 `/{locale}<route>`；另有一条用例钉住已知路由集合，防止枚举出空集后测试静默变绿。
+  - 负向验证（有牙齿）：临时从 `src/proxy.ts` matcher 摘掉 `(?:apple-)?icon(?:/|$)|` 并重建，新用例精确失败并报出 `/icon 被语言代理重定向到 /en/icon`；恢复后 6 条全绿。
+  - 新增 `scripts/e2e-suite.test.mjs`（3 用例）：`e2e/` 下每个 `*.spec.ts` 必须被某个 `e2e` / `e2e:*` 脚本登记；登记的 spec 文件必须真实存在；视觉基线 `visual.spec.ts` 固定不进 CI 套件（R7.8）。
+  - `package.json`：`e2e` 脚本登记新 spec（68 → 74 条 Playwright 用例）。
+  - `docs/ops.md`：`npm run e2e` 行补「根级元数据路由」，并新增「E2E 套件注记」说明显式清单的代价与对应机检。
+- 变更文件（关键）：`e2e/metadata-routes.spec.ts`、`scripts/e2e-suite.test.mjs`、`package.json`、`docs/ops.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npx playwright test e2e/metadata-routes.spec.ts` exit 0 → 6 用例通过；负向验证见上（修复前形态精确失败）。
+  - `npx vitest run scripts/e2e-suite.test.mjs` exit 0 → 3 用例通过；负向验证：从脚本摘掉 `metadata-routes.spec.ts` 后报出「CI 静默不跑」并失败。
+  - `npm run e2e` exit 0 → **74** 用例通过（此前 68）。
+  - `npm run lint` / `npm run typecheck` / `npm run build`（474 静态页）exit 0。
+  - `npm test` exit 0 → **248 文件 / 1807 用例**通过（此前 247/1804）。
+  - `npm run check:docs` / `check:changelog` / `check:secrets`（659 文本文件）exit 0；`audit:prod` / `audit:all` exit 0（0 vulnerabilities）。
+- 上游依赖：无。
+- 未验证项：远端 PR CI 与合并后 main CI。
+- 风险与回滚：新 spec 依赖 `.next/app-path-routes-manifest.json`（E2E 本来就要求先 build，缺失时抛带指引的错误）；若 Next 更换清单文件名，改一处路径常量即可。回滚 = 撤销本提交。
+- 下一步：推送分支、开 PR、CI 全绿后 `gh pr merge --rebase`。
+- 最后更新：2026-09-13
+
+
 ## PWA 图标元数据路由被语言代理重定向
 
 - 状态：DONE（PR #33 已以 `--rebase` 合并进 main；PR CI 与合并后 main CI 均通过）
