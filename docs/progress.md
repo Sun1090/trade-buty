@@ -1,5 +1,32 @@
 # Progress
 
+## 凭据扫描与依赖漏洞清零（Q5.3 / R13.25）
+
+- 状态：DONE（本地实现与全量验证完成；远端发布待授权）
+- 工作分支：`codex/zero-eslint-warnings`
+- PR：none
+- PR 状态：none
+- Base：`origin/main@53f7e01`
+- 远端 Head：none（`LOCAL_ONLY`，未推送）
+- 本地提交：`cd8c3c2`、`bc24769`
+- 目标：把密钥泄漏和依赖漏洞从人工抽查升级为 CI 阻断门禁，并清零当前全量依赖审计告警。
+- 已完成：
+  - 新增 `npm run check:secrets`：扫描受版本控制及未忽略的新文本文件，覆盖私钥、AWS/GitHub/OpenAI/Stripe/Google/Slack token、JWT 与硬编码密钥赋值；命中日志只输出文件、行列和规则名，不回显疑似值，测试值与环境变量占位符有明确豁免。
+  - CI 在 `npm ci` 后执行 `audit:prod`、新增的 `audit:all` 与 `check:secrets`；workflow 契约测试锁定三个安全步骤，避免后续 YAML 改动静默漏跑。
+  - 新增 secret-scan 单元测试与 CLI 负向测试：临时 Git 仓库写入伪造密钥时退出码为 1，且 stdout/stderr 均不包含命中值。
+  - 通过 npm `overrides` 将 Lighthouse/Puppeteer 工具链修复到 `lighthouse@13.4.1`、`tmp@0.2.7`、`uuid@11.1.1`、`qs@6.16.0`；完整依赖审计由 13 项（2 low / 4 moderate / 7 high）降为 0。
+- 变更文件：`.github/workflows/ci.yml`、`package.json`、`package-lock.json`、`scripts/check-secrets.mjs`、`scripts/secret-scan-lib.mjs`、`scripts/secret-scan.test.mjs`、`scripts/ci-workflow.test.mjs`、`docs/ops.md`、`docs/deps.md`。
+- 验证命令与结果：
+  - `npm ci` → exit 0；`npm run audit:all` → found 0 vulnerabilities；`npm run audit:prod` → found 0 vulnerabilities。
+  - `npm run check:secrets` → 扫描 569 个文本文件、跳过 10 个非文本项、0 findings；CLI 负向测试确认退出码和脱敏输出。
+  - `npm run lint` → exit 0（0 error / 0 warning）；`npm run typecheck` → exit 0。
+  - `npm test` → 178 文件 / 1348 用例通过；`npm run build` → 通过（Next.js 16.3.5，473 静态页，搜索索引 418）。
+  - `npx lhci autorun --upload.target=filesystem --upload.outputDir=.lighthouseci` → 3 URL × 2 次采样，6/6 断言通过；证明 Lighthouse 13 override 与现有 LHCI 命令兼容。
+  - `git diff --check` → 通过。
+- 风险与回滚：Lighthouse override 跨越 `@lhci/cli` 声明的版本范围；已用 clean install、build、全量单测和真实 LHCI 采样验证。上游发布兼容版后应移除 override 并再次审计；密钥扫描命中任何值都应先吊销再修代码/历史。
+- 未验证项：远端 CI、PR 与 Vercel 部署（`LOCAL_ONLY`，尚未推送/未部署）。
+- 最后更新：2026-09-12
+
 ## 零警告 CI、数据契约与本地全量验收（Q2.5 / R13.25）
 
 - 状态：DONE（本地实现与全量验证完成；远端发布待授权）
@@ -249,6 +276,7 @@
 - `gray-matter` 的 `js-yaml@3.15.1` 与 ESLint 配置链的 `js-yaml@4.3.1` 通过 npm `overrides` 固定到修复版本 `3.15.2` / `4.3.2`。
 - 新增 `npm run audit:prod`，只用 `--omit=dev --audit-level=high` 阻断实际部署依赖的 high / critical 漏洞，并加入 CI 的 `npm ci` 后。
 - 完整开发依赖审计剩余 13 项来自 `@lhci/cli@0.15.1` 的 Lighthouse / Puppeteer 工具链；截至审计无可用修复版且不进入生产产物，已记录在 `docs/deps.md`。生产依赖审计为 0。
+- 后续 `bc24769` 已通过经过验证的 overrides 将该全量审计告警清零；当前状态以文首「凭据扫描与依赖漏洞清零」为准。
 
 Verification recorded:
 
