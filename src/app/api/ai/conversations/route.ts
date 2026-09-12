@@ -9,6 +9,33 @@ interface SaveBody {
   sources?: { chapter: string; doc: string }[];
 }
 
+/** 解析并校验一轮对话；导出以便 Route Handler 回归测试覆盖。 */
+export function parseSaveBody(value: unknown): SaveBody | null {
+  if (typeof value !== "object" || value === null) return null;
+  const body = value as Record<string, unknown>;
+  if (typeof body.userMessage !== "string" || !body.userMessage.trim()) return null;
+  if (typeof body.assistantMessage !== "string" || !body.assistantMessage.trim()) return null;
+
+  let sources: SaveBody["sources"];
+  if (body.sources !== undefined) {
+    if (!Array.isArray(body.sources)) return null;
+    sources = [];
+    for (const source of body.sources) {
+      if (typeof source !== "object" || source === null) return null;
+      const row = source as Record<string, unknown>;
+      if (typeof row.chapter !== "string" || !row.chapter.trim()) return null;
+      if (typeof row.doc !== "string" || !row.doc.trim()) return null;
+      sources.push({ chapter: row.chapter.trim(), doc: row.doc.trim() });
+    }
+  }
+
+  return {
+    userMessage: body.userMessage,
+    assistantMessage: body.assistantMessage,
+    ...(sources ? { sources } : {}),
+  };
+}
+
 /** GET: 拉取登录用户最近对话（用于进入 AI 页时恢复历史） */
 export async function GET() {
   try {
@@ -43,12 +70,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await req.json()) as SaveBody;
-  if (!body.userMessage || !body.assistantMessage) {
-    return NextResponse.json({ error: "Missing messages" }, { status: 400 });
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-
-  const sourcesJson = body.sources ? JSON.stringify(body.sources) : null;
+  const body = parseSaveBody(raw);
+  if (!body) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
 
   // 批量插入两条
   const { error } = await supabase.from("ai_conversations").insert([
@@ -57,7 +88,8 @@ export async function POST(req: NextRequest) {
       user_id: user.id,
       role: "assistant",
       content: body.assistantMessage,
-      sources: sourcesJson,
+      // jsonb 列交给 Supabase 序列化；再次 JSON.stringify 会写入 JSON 字符串。
+      sources: body.sources ?? null,
     },
   ]);
 
