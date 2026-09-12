@@ -1,13 +1,36 @@
 # Progress
 
+## 文档事实校正（roadmap Q2.3 + v0.6 复盘状态）
+
+- 状态：DONE（本地验证完成；已推送分支并纳入远端 CI 复核）
+- 工作分支：`codex/docs-freshness`
+- PR：[#18](https://github.com/Sun1090/trade-buty/pull/18)
+- Base：`origin/main@b41e193`
+- 远端 Head：推送后跟踪
+- 本地提交：`docs(roadmap): align Q2.3 with enforced Lighthouse gates`、`docs(release-review): record post-closure push and merge status`，本条目随 docs 提交入库
+- 目标：审计仓库文档中与当前事实不符的陈述并如实更正；不改产品代码。
+- 已完成：
+  - `docs/roadmap.md` Q2.3：原文写的是旧版 Lighthouse 门槛与旧实测分数，与 `.lighthouserc.json` 实际强制执行的门禁不一致；更正为 `categories:accessibility` minScore=1 error + 单独阻断 `color-contrast` / `link-name` / `label-content-name-mismatch`，`best-practices` / `seo` ≥ 0.9 error，`performance` ≥ 0.7 warn。
+  - `docs/v0.6-release-review.md`：头部仍写 `LOCAL_ONLY`（未推送/未改 PR/未部署），但该分支随后获授权并以 PR #16 rebase 合入 `main`；新增「§0 关账后状态更新」记录 PR #16（tip `5bdd49d`）远端 CI run `34711354683` 全绿（`ci` + `db-tests`）并合入 `main@b41e193`，把 178 文件 / 1350 用例 / 56 e2e 标注为已被 237 文件 / 1701 用例 / 61 e2e 超越的快照数字；§6、§8 的「待授权」条目改为已完成。
+- 变更文件（关键）：`docs/roadmap.md`、`docs/v0.6-release-review.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npm run check:docs` exit 0（README/AGENTS/plan 与知识库一致：27 章 / 182 篇）。
+  - `npm run check:secrets` exit 0（扫描 639 个文本文件，无疑似凭据）。
+  - 引用数字均可复现：`.lighthouserc.json`、`gh run view 34711354683`（237 文件 / 1701 用例 / 61 e2e）、`gh pr view 16`（mergeCommit `b41e193`）。
+- 上游依赖：无。
+- 未验证项：远端 CI 复跑结果（推送后跟踪）。
+- 风险与回滚：纯文档更正，无运行时影响；回滚即撤销本分支提交。
+- 下一步：CI 全绿后按 rebase 合并，继续审计其余文档与可执行缺口。
+- 最后更新：2026-09-13
+
 ## 策展式发布说明（更新日志）与 CHANGELOG 门禁
 
-- 状态：DONE（本地实现与全量验证完成；已推送功能分支并纳入远端 CI 复核）
+- 状态：DONE（已合并）
 - 工作分支：`codex/release-notes-changelog`
-- PR：none（本地提交完成后按 rebase 策略合并）
-- PR 状态：none
+- PR：[#17](https://github.com/Sun1090/trade-buty/pull/17)（MERGED，rebase）
+- PR 状态：MERGED 2026-09-12
 - Base：`origin/main@b41e193`
-- 远端 Head：none（推送前）
+- 远端 Head：`221383d`（已随 rebase 合入 `main@cb97095`）
 - 本地提交：本条目随 docs 提交入库
 - 目标：修掉 `/[locale]/changelog` 只靠构建机 `git log` 取数的问题（Vercel/浅克隆下只能拿到 1 条提交或直接为空），改为策展式双语发布说明；同时补上仓库一直缺失的根级 `CHANGELOG.md`。
 - 已完成：
@@ -24,9 +47,9 @@
   - `npm run check:changelog` → 通过（4 条记录：未发布 + 3 个已发布版本）。
   - `check:docs` / `check:bundle` / `check:seo-surface` / `check:structured-data` / `check:links` / `check:sitemap` / `check:mobile` 全部通过。
 - 上游依赖：无。
-- 未验证项：远端 CI 复跑结果（推送后跟踪）。
+- 未验证项：无（远端 CI run `34712342862` 全绿：`ci` + `db-tests`）。
 - 风险与回滚：页面从「git 提交列表」改为「策展发布说明 + 次要提交列表」，信息只增不减；回滚可撤销本分支提交。
-- 下一步：推送功能分支、CI 全绿后按 rebase 合并，再继续审计剩余可执行缺口。
+- 下一步：已完成合并，后续审计见上方「文档事实校正」条目。
 - 最后更新：2026-09-13
 
 ## 亮色主题对比度回归修复（R13.10 / CI lhci 门禁）
