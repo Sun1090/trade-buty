@@ -1,5 +1,21 @@
 # Progress
 
+## 2026-09-12 — 生产依赖安全修复
+
+在 v0.6 发布关账审计中发现并在发布前修复 critical 生产漏洞：
+
+- `next@16.3.1` 命中 GHSA-p293-qw3h-jr36 / GHSA-2xp9-vwfh-vxw4，升级到 `16.3.5`；`eslint-config-next` 同步到 `16.3.5`，Next 自带 `sharp` 更新到 `0.35.4`。
+- `gray-matter` 的 `js-yaml@3.15.1` 与 ESLint 配置链的 `js-yaml@4.3.1` 通过 npm `overrides` 固定到修复版本 `3.15.2` / `4.3.2`。
+- 新增 `npm run audit:prod`，只用 `--omit=dev --audit-level=high` 阻断实际部署依赖的 high / critical 漏洞，并加入 CI 的 `npm ci` 后。
+- 完整开发依赖审计剩余 13 项来自 `@lhci/cli@0.15.1` 的 Lighthouse / Puppeteer 工具链；截至审计无可用修复版且不进入生产产物，已记录在 `docs/deps.md`。生产依赖审计为 0。
+
+Verification recorded:
+
+- `npm run audit:prod`：`found 0 vulnerabilities`。
+- 全量 Vitest：163 文件 / 1270 用例通过；lint 0 error（59 条既有 warning）；typecheck 通过。
+- 干净构建：Next.js 16.3.5，465 静态页，搜索索引 418 条。
+- 全量 Playwright：53/53 通过；Lighthouse CI 三页各 2 次、共 6 次采样全部通过断言。
+
 ## 2026-09-12 — R13.24 v0.6 全站 E2E 冒烟扩展
 
 把 v0.6 已有的单点回归串成可重复执行的双语全站用户闭环，并修复浏览器回归暴露出的真实语言语义缺陷：
