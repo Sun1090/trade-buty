@@ -1,12 +1,41 @@
 # Progress
 
+## CI 并发收敛（被取代的 PR 运行自动取消）
+
+- 状态：VERIFYING
+- 工作分支：`codex/ci-concurrency`
+- PR：待创建
+- PR 状态：none
+- Base：`origin/main@b2420bf`
+- 已验证 Head：见 PR head
+- 本地提交：`ci(workflows): cancel superseded PR runs`
+- 目标：PR #30 收尾时同一分支连续 push 触发了 3 个并行 CI run（只保留最新一个，手动取消了 2 个）。根因是 `ci.yml` 没有 `concurrency`：既浪费 runner 分钟，也让「最新提交是否绿」被旧 run 的结果稀释。本次给 PR 事件加并发收敛，同时保证 main 的每次 push 仍有独立完整门禁。
+- 已完成：
+  - `.github/workflows/ci.yml` 新增根级 `concurrency`：`group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.run_id }}`，`cancel-in-progress: ${{ github.event_name == 'pull_request' }}`。PR 连推自动取消被取代的运行；main 的 push 以 `github.run_id` 分组，每个提交都有独立的完整门禁结果，不会被取消。
+  - `scripts/ci-workflow.test.mjs` 新增守卫：`ci.yml` 必须声明 `concurrency`、`cancel-in-progress` 表达式含 `pull_request`、`group` 同时含 `github.head_ref` 与 `github.run_id`。负向验证：临时删除 `concurrency` 块后该用例失败并报出「ci.yml 缺少 concurrency 配置」。
+  - `docs/ops.md` 门禁表下补「并发注记」。
+- 变更文件（关键）：`.github/workflows/ci.yml`、`scripts/ci-workflow.test.mjs`、`docs/ops.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npx vitest run scripts/ci-workflow.test.mjs` exit 0 → 13 用例通过；反向验证：临时删除 `concurrency` 块后该用例失败并报出「ci.yml 缺少 concurrency 配置」。
+  - `npm run lint` exit 0；`npm run typecheck` exit 0。
+  - `npm test` exit 0 → 247 文件 / 1801 用例通过。
+  - `npm run build` exit 0 → 474 静态页面生成完成。
+  - `npm run audit:prod` / `npm run audit:all` exit 0 → 均 `found 0 vulnerabilities`。
+  - `npm run check:docs` / `npm run check:changelog` / `npm run check:secrets` exit 0。
+- 上游依赖：无。
+- 未验证项：远端 CI。
+- 风险与回滚：只在 `pull_request` 事件取消被取代的运行；main 的 push 分组不含任何取消语义。回滚即删除 `concurrency` 块与对应守卫。
+- 下一步：推送分支、开 PR、CI 全绿后 `gh pr merge --rebase`。
+- 最后更新：2026-09-13
+
 ## CI actions 运行时对齐（workflow action parity）
 
-- 状态：VERIFYING（本地全绿 + PR CI 全绿；等待 rebase 合并后回填合并提交）
-- 工作分支：`codex/ci-action-parity`
-- PR：[#30](https://github.com/Sun1090/trade-buty/pull/30) · `MERGEABLE`
-- PR 状态：OPEN
+- 状态：DONE（PR #30 已以 `--rebase` 合并进 main；PR CI 与合并后 main CI 均通过）
+- 工作分支：`codex/ci-action-parity`（分支保留，未删除）
+- PR：[#30](https://github.com/Sun1090/trade-buty/pull/30) · `MERGED`
+- PR 状态：MERGED
 - Base：`origin/main@e8be59c`
+- 合并提交：`b2420bf`（rebase 后 main 上的 4 个提交：`7e9ef5a` / `6506301` / `27f1964` / `b2420bf`，合并后 main CI run [34719210967](https://github.com/Sun1090/trade-buty/actions/runs/34719210967) 全绿）
 - 已验证 Head：`6fd15fa`（PR CI run [34718615164](https://github.com/Sun1090/trade-buty/actions/runs/34718615164) → `ci` 5m23s、`db-tests` 54s 全绿；Vercel 仍为平台 `Deployment rate limited`，外部因素）
 - 本地提交：`ci(workflows): align link-patrol action runtimes and guard every workflow`、`docs(progress): backfill merged PR evidence for the 2026-09-12 batch`、`ci(workflows): pin least-privilege permissions and job timeouts`
 - 目标：`ci.yml` 已升到 `actions/checkout@v7` / `actions/setup-node@v7`，但 `.github/workflows/link-patrol.yml` 仍停留在 `@v4`，会继续在月度巡检里触发 Node.js 20 弃用并漂移工具链。对齐后把结构守卫从只测 `ci.yml` 扩到全工作流，防止以后再漏。
@@ -29,7 +58,7 @@
   - `npm run audit:prod` / `npm run audit:all` exit 0 → 均 `found 0 vulnerabilities`。
   - `npm run check:docs` / `npm run check:changelog` / `npm run check:secrets` exit 0。
 - 上游依赖：无。
-- 未验证项：合并后 main CI（合并后回填）。
+- 未验证项：无。
 - 风险与回滚：仅改 action major、工作流权限/超时与测试，回滚单个提交即可；`link-patrol` 是月度定时任务，不阻塞主流水线。
 - 下一步：`gh pr merge 30 --rebase`；随后单独开分支处理下拉后的新发现——同一 PR 连续 push 会并行起多个 workflow（本次 3 个 run 同时在跑，已手动取消 2 个），考虑给 PR 事件加 `concurrency` 自动取消被取代的运行。
 - 最后更新：2026-09-13

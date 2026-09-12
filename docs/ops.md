@@ -55,6 +55,7 @@
 > 执行顺序注记：E2E 与 Lighthouse 排在所有产物校验之后（E2E 运行时向 `.next` 写 fallback 页，避免污染其后的 check 产物；顺序由 ci.yml 保证）。
 > 运行时注记：官方 actions（`checkout` ≥ v5 / `setup-node` ≥ v5 / `cache` ≥ v5 / `upload-artifact` ≥ v6）必须保持 node24 版本，避免 GitHub 逐步下线 Node.js 20 时报弃用注记；`scripts/ci-workflow.test.mjs` 会拦截回退。
 > 工作流结构注记：每个工作流都显式声明 `permissions: contents: read`（不继承仓库默认值），每个 job 都有 (0, 60] 区间的数值型 `timeout-minutes`；`scripts/ci-workflow.test.mjs` 遍历 `.github/workflows/*.{yml,yaml}` 拦截权限放开、缺少超时上界、action 运行时回退、`setup-node` 配置漂移与 npm 脚本/`scripts/*.mjs` 引用失配。
+> 并发注记：`ci.yml` 用 `concurrency` 收敛同一 PR 的连续 push（`cancel-in-progress` 只在 `pull_request` 事件为真，被取代的运行自动取消）；main 的 push 以 `github.run_id` 分组，保证每次提交都有独立的完整门禁结果。
 
 ## 知识库更新流水线（`npm run kb:update` 自动执行）
 
