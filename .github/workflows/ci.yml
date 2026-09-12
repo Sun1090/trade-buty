@@ -35,6 +35,8 @@ jobs:
       - run: npm run test
       - run: npm run typecheck
       - run: npm run build
+      # R12.21 / R13.10 与 E2E 共用 Playwright Chromium；必须早于首个浏览器门禁安装。
+      - run: npx playwright install --with-deps chromium
       - name: 320px 移动端溢出回归（R12.21 / R13.10）
         run: npm run check:mobile
       - name: 构建耗时核对（R7.10）
@@ -111,7 +113,6 @@ jobs:
             docs/new-course-acceptance.md
           retention-days: 7
       # E2E 放最后：运行时会向 .next 写入动态 fallback 页，避免污染产物校验
-      - run: npx playwright install --with-deps chromium
       - run: npm run e2e
       - run: npm run lhci
 
