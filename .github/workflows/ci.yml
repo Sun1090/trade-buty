@@ -129,3 +129,5 @@ jobs:
         run: docker pull supabase/postgres:17.6.1.155
       - name: 数据库门禁（迁移 / RLS 越权 / 双设备同步 / 回滚演练）
         run: node scripts/db-test.mjs
+      - name: 备份恢复演练（Q5.4：dump / 全新实例恢复 / 指纹 / RLS 重跑）
+        run: npm run backup:drill

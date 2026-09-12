@@ -19,7 +19,7 @@ values
 
 -- authenticated 对 kb_embeddings 只读：预置一行（由 postgres 角色写入）验证可读
 insert into kb_embeddings (chunk, chapter, doc, locale, embedding)
-values ('rls fixture', 'ch', 'doc', 'zh', ('[' || repeat('0.1,', 1023) || '0.1]')::vector);
+values ('rls fixture', 'rls-fixture', 'doc', 'zh', ('[' || repeat('0.1,', 1023) || '0.1]')::vector);
 
 -- ------------------------------------------------------------
 -- 用户 A：以自己的身份写入各表自有行
@@ -44,7 +44,7 @@ select is((select count(*) from wrongbook), 1::bigint, 'A 能读到自己的 wro
 select is((select count(*) from quiz_scores), 1::bigint, 'A 能读到自己的 quiz_scores');
 select is((select count(*) from replay_best), 1::bigint, 'A 能读到自己的 replay_best');
 select is((select count(*) from user_settings), 1::bigint, 'A 能读到自己的 user_settings');
-select is((select count(*) from kb_embeddings), 1::bigint, 'A 能读到公开的 kb_embeddings');
+select is((select count(*) from kb_embeddings where chapter = 'rls-fixture'), 1::bigint, 'A 能读到公开的 kb_embeddings fixture');
 
 reset role;
 
@@ -136,7 +136,7 @@ reset role;
 set local role authenticated;
 set local request.jwt.claim.sub = 'bbbbbbbb-0000-0000-0000-000000000002';
 
-select is((select count(*) from kb_embeddings), 1::bigint, 'authenticated 可读 kb_embeddings');
+select is((select count(*) from kb_embeddings where chapter = 'rls-fixture'), 1::bigint, 'authenticated 可读 kb_embeddings fixture');
 select throws_ok(
   $$ insert into kb_embeddings (chunk, chapter, doc, locale, embedding) values ('x','ch','doc','zh', ('[' || repeat('0.1,', 1023) || '0.1]')::vector) $$,
   42501, NULL, 'authenticated 不能写 kb_embeddings（仅 service_role）');
