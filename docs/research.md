@@ -1,6 +1,10 @@
 # Trade Buty · 市场调研报告
 
 > 调研时间：2026-08-22 · 共六轮 · 结论已互相印证，作为产品立项依据。
+>
+> **实施更新（2026-09-12）**：以下保留立项期调研原文。当前内容为 27 章 / 182 篇且 zh/en 对齐；
+> 搜索已采用构建时 JSON 索引；账号实际选用 Supabase Auth；LLM 使用任意 OpenAI 兼容端点。
+> 原文中的 Pagefind、Clerk、Claude API 均已由这些当前选型取代。
 
 ## 0. 一句话定位
 
@@ -42,7 +46,7 @@
 
 ### 我们的两块现成资产
 
-- `kline-buty` 知识库 27 篇章 / 201 篇 → 课程内容草稿 + SEO 弹药库
+- `kline-buty` 知识库（立项时 27 篇章 / 201 篇，当前 27 章 / 182 篇）→ 课程内容草稿 + SEO 弹药库
 - `kline-buty` 图表层 + 市场回放引擎 → 练习端核心能力（回放训练是别人要从零写的）
 
 ## 3. 变现与合规
@@ -85,7 +89,7 @@ kline-buty 知识库天生合规：每篇有风险提示块、数字用虚构数
 - Khanmigo 实测：AI 出题使练习量提升 **3.2 倍**，单次讲解成本 **$0.04**
 - 关键洞察：**错题驱动的自适应出题**（针对每个学生的薄弱概念无限变体出题）才是 AI 陪学的真正卖点，不是通用聊天问答
 
-→ P3 形态定为「错题驱动的自适应出题 + RAG 检索知识库」，向量检索用 Supabase pgvector（201 篇量级足够，不上独立向量库）。
+→ P3 形态定为「错题驱动的自适应出题 + RAG 检索知识库」，向量检索用 Supabase pgvector（当前 182 篇量级足够，不上独立向量库）。
 
 ## 5. 中文用户需求侧
 
@@ -99,7 +103,7 @@ kline-buty 知识库天生合规：每篇有风险提示块、数字用虚构数
 - 教育站案例实测：内容集群（content cluster）策略 6 个月自然曝光 **+2105%**，关键词覆盖 600+
 - BabyPips 护城河排序：SEO 内容库 > 论坛社区 > 工具
 
-**增长剧本**：201 篇知识库天然构成 SEO 内容集群（每篇一个长尾词："什么是止损""如何计算盈亏比"）→ 图表工具做外链诱饵 → 社区放最后。
+**增长剧本**：当前 182 篇知识库天然构成 SEO 内容集群（每篇一个长尾词："什么是止损""如何计算盈亏比"）→ 图表工具做外链诱饵 → 社区放最后。
 
 ## 7. 服务清单裁决
 
@@ -108,13 +112,13 @@ kline-buty 知识库天生合规：每篇有风险提示块、数字用虚构数
 | 服务 | 归宿 |
 |---|---|
 | GitHub / Vercel / Cloudflare DNS | ✅ 全程在用 |
-| Clerk / Supabase | ✅ P2 起（账号、进度、pgvector） |
-| Claude API | ⚠️ P3 起（AI 出题判答） |
+| Supabase（立项期曾并列评估 Clerk） | ✅ P2 起：Supabase Auth、进度、pgvector |
+| OpenAI 兼容端点（立项期曾写 Claude API） | ✅ P3 起：AI 出题判答，不锁厂商 |
 | PostHog / Sentry / Resend | 🤷 P4 按数据决定 |
 | Upstash Redis / Pinecone | ❌ 正式砍掉（无缓存层需求 / pgvector 替代） |
 | ProductBridge | ❌ 反馈走 GitHub Issue |
 
-补充引入：Tailwind CSS + shadcn/ui、Pagefind（站内搜索）、Drizzle ORM、Vitest + Playwright、GitHub Actions。
+立项期补充引入：Tailwind CSS、Drizzle ORM、Vitest + Playwright、GitHub Actions；搜索最终为构建时 JSON 索引，未引入 Pagefind。
 
 ## 8. 遗留风险与开放问题
 

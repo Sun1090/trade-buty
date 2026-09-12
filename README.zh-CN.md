@@ -10,7 +10,7 @@
 
 ## 产品形态
 
-- **学**：27 篇章 / 173 篇课程的系统化交易知识库（源自开源项目 [kline-buty](https://github.com/sun1090/kline-buty)），三站式学习路线
+- **学**：27 篇章 / 182 篇课程的系统化交易知识库（源自开源项目 [kline-buty](https://github.com/sun1090/kline-buty)），三站式学习路线
 - **练**：真实行情 K 线图（币安 REST + WebSocket）、盲盒式历史回放训练、猜涨跌考核
 - **测**：27 章随堂测验（81 题全解析）、阅读进度追踪
 - **双语**：中英 UI 全覆盖（`/zh` `/en`），移动端 320px 适配
@@ -80,9 +80,9 @@ content/kline-buty/        # 知识库 submodule（只读）
 
 - ✅ P0 骨架：站点上线、搜索、SEO、CI/CD
 - ✅ P1 边学边练：行情图表、回放训练、测验体系、双语
-- ⬜ P2 账号与云端进度（见 `docs/p2-research.md`）
-- ⬜ P3 AI 陪学（错题驱动出题 + RAG）
-- ⬜ P4 打磨与增长
+- ✅ P2 账号与云端进度（Supabase Auth + 云端学习数据）
+- ✅ P3 AI 陪学（错题驱动出题 + RAG）
+- 🔄 P4 打磨与增长（监控、分发与社区评估仍属人工/持续事项）
 
 ## 免责声明
 
@@ -91,14 +91,3 @@ content/kline-buty/        # 知识库 submodule（只读）
 ## 许可
 
 MIT © sun1090（知识库内容版权归 kline-buty 项目所有）
-
-## 赞助
-
-如果这个项目对你有帮助，可以请作者喝杯咖啡，支持持续更新 ☕
-
-<table>
-  <tr>
-    <td align="center"><img src="public/donate-alipay.jpg" width="200" alt="支付宝赞赏码" /><br/>支付宝</td>
-    <td align="center"><img src="public/donate-wechat.jpg" width="200" alt="微信赞赏码" /><br/>微信</td>
-  </tr>
-</table>

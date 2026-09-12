@@ -10,7 +10,7 @@ A free, neutral trading-education platform for Chinese-speaking users worldwide:
 
 ## Product
 
-- **Learn**: 27 chapters / 173 lessons in a systematic trading knowledge base (sourced from the open-source [kline-buty](https://github.com/sun1090/kline-buty)), with a three-stage learning path.
+- **Learn**: 27 chapters / 182 lessons in a systematic trading knowledge base (sourced from the open-source [kline-buty](https://github.com/sun1090/kline-buty)), with a three-stage learning path.
 - **Practice**: real market K-line charts (Binance REST + WebSocket), blind-box historical replay training, up/down quizzes.
 - **Test**: 27 chapter quizzes (81 questions, all explained), reading-progress tracking.
 - **Bilingual**: full Chinese/English UI (`/zh` `/en`), mobile 320px-adapted.
@@ -80,9 +80,9 @@ content/kline-buty/        # knowledge base submodule (read-only)
 
 - ✅ P0 Skeleton: site launch, search, SEO, CI/CD
 - ✅ P1 Learn + Practice: market charts, replay training, quiz system, bilingual
-- ⬜ P2 Account & cloud progress (see `docs/p2-research.md`)
-- ⬜ P3 AI study companion (wrong-question-driven quizzing + RAG)
-- ⬜ P4 Polish & growth
+- ✅ P2 Account & cloud progress (Supabase Auth + synced learning data)
+- ✅ P3 AI study companion (wrong-question-driven quizzing + RAG)
+- 🔄 P4 Polish & growth (monitoring, distribution, and community evaluation remain manual/ongoing)
 
 ## Disclaimer
 
@@ -91,14 +91,3 @@ All content on this site is for learning and research only and does not constitu
 ## License
 
 MIT © sun1090 (knowledge-base content is copyrighted by the kline-buty project)
-
-## Sponsor
-
-If you find this project helpful, consider buying the author a coffee to support ongoing development ☕
-
-<table>
-  <tr>
-    <td align="center"><img src="public/donate-alipay.jpg" width="200" alt="Alipay QR" /><br/>Alipay</td>
-    <td align="center"><img src="public/donate-wechat.jpg" width="200" alt="WeChat QR" /><br/>WeChat</td>
-  </tr>
-</table>
