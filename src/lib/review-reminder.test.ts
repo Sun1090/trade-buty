@@ -5,6 +5,7 @@ import {
   getLastShownKey,
   getReminderSettings,
   inDndWindow,
+  parseReminderSettings,
   localWeekStr,
   markReminderShown,
   reminderPeriodKey,
@@ -47,6 +48,15 @@ describe("reminder settings storage", () => {
     expect(s.cadence).toBe("daily");
     expect(s.dndStartHour).toBe(3); // 99 % 24
     expect(s.dndEndHour).toBe(21); // (-3 % 24 + 24) % 24
+  });
+});
+
+describe("parseReminderSettings (stats-client 快照解析)", () => {
+  it("解析 localStorage 快照字符串，损坏/空值回落默认", () => {
+    expect(parseReminderSettings(null)).toEqual(DEFAULT_REMINDER_SETTINGS);
+    expect(parseReminderSettings("{bad")).toEqual(DEFAULT_REMINDER_SETTINGS);
+    expect(parseReminderSettings(JSON.stringify({ cadence: "weekly", dndStartHour: 23, dndEndHour: 7 })))
+      .toEqual({ cadence: "weekly", dndStartHour: 23, dndEndHour: 7 });
   });
 });
 

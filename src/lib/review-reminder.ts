@@ -34,10 +34,10 @@ const clampHour = (n: unknown, fallback: number): number => {
   return ((v % 24) + 24) % 24;
 };
 
-export function getReminderSettings(storage: Storage = globalThis.localStorage): ReminderSettings {
+/** 将 localStorage 原始快照解析为合法设置；损坏数据回落默认值。 */
+export function parseReminderSettings(raw: string | null): ReminderSettings {
+  if (!raw) return { ...DEFAULT_REMINDER_SETTINGS };
   try {
-    const raw = storage.getItem(SETTINGS_KEY);
-    if (!raw) return { ...DEFAULT_REMINDER_SETTINGS };
     const parsed = JSON.parse(raw) as Partial<ReminderSettings>;
     const cadence: ReminderCadence =
       parsed.cadence === "off" || parsed.cadence === "weekly" || parsed.cadence === "daily" ? parsed.cadence : "daily";
@@ -46,6 +46,14 @@ export function getReminderSettings(storage: Storage = globalThis.localStorage):
       dndStartHour: clampHour(parsed.dndStartHour, DEFAULT_REMINDER_SETTINGS.dndStartHour),
       dndEndHour: clampHour(parsed.dndEndHour, DEFAULT_REMINDER_SETTINGS.dndEndHour),
     };
+  } catch {
+    return { ...DEFAULT_REMINDER_SETTINGS };
+  }
+}
+
+export function getReminderSettings(storage: Storage = globalThis.localStorage): ReminderSettings {
+  try {
+    return parseReminderSettings(storage.getItem(SETTINGS_KEY));
   } catch {
     return { ...DEFAULT_REMINDER_SETTINGS };
   }

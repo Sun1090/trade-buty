@@ -32,9 +32,8 @@ import { auditStatsConsistency } from "@/lib/stats-consistency";
 import { dismissSyncConflicts, readSyncConflicts } from "@/lib/sync-conflicts";
 import { buildStatsExport, downloadStatsExport } from "@/lib/stats-export";
 import {
-  DEFAULT_REMINDER_SETTINGS,
   getLastShownKey,
-  getReminderSettings,
+  parseReminderSettings,
   markReminderShown,
   reminderPeriodKey,
   saveReminderSettings,
@@ -227,7 +226,7 @@ export function StatsClient({
     () => (typeof window === "undefined" ? null : localStorage.getItem("tb-review-reminder-settings")),
     () => null,
   );
-  const reminderSettings = useMemo(() => getReminderSettings(), [reminderSettingsRaw]);
+  const reminderSettings = useMemo(() => parseReminderSettings(reminderSettingsRaw), [reminderSettingsRaw]);
   const reminderLastShown = useSyncExternalStore(
     (cb) => {
       window.addEventListener("tb-reminder", cb);

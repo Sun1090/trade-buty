@@ -207,7 +207,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
     return () => {
       cancelled = true;
     };
-  }, [symbol, interval_, round, customMode, customEnd]);
+  }, [symbol, interval_, round, customMode, customEnd, context]);
 
   // 图表初始化
   useEffect(() => {

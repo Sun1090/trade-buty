@@ -143,3 +143,50 @@ describe("SearchClient accessibility (Q2.4)", () => {
     expect(screen.getByRole("option", { name: "全部篇章" })).toBeInTheDocument();
   });
 });
+
+describe("SearchClient 最近搜索（回归：与 debounce 后的检索词对齐）", () => {
+  const entry = [
+    {
+      url: "/zh/knowledge/spot/order-types",
+      title: "订单类型",
+      chapter: "spot",
+      text: "限价单 市价单 保证金",
+    },
+  ];
+
+  const recents = () => JSON.parse(storage.getItem("tb-recent-search") ?? "[]");
+
+  beforeEach(() => {
+    storage.clear();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => entry }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("debounce 完成后记录检索词，且不因结果条数相同而漏记", async () => {
+    render(<SearchClient dict={dict} />);
+    const box = screen.getByRole("searchbox");
+
+    fireEvent.change(box, { target: { value: "限价单" } });
+    await waitFor(() => expect(recents()).toEqual(["限价单"]));
+
+    // 第二次检索结果条数仍是 1——旧实现依赖 results.length，会漏记这一次
+    fireEvent.change(box, { target: { value: "市价单" } });
+    await waitFor(() => expect(recents()).toEqual(["市价单", "限价单"]));
+
+    // 重复检索只做去重前置，不产生重复条目
+    fireEvent.change(box, { target: { value: "限价单" } });
+    await waitFor(() => expect(recents()).toEqual(["限价单", "市价单"]));
+  });
+
+  it("没有命中的检索词不进入最近搜索", async () => {
+    render(<SearchClient dict={dict} />);
+    fireEvent.change(screen.getByRole("searchbox"), {
+      target: { value: "完全不存在的课程关键词" },
+    });
+    await waitFor(() => expect(screen.getByTestId("search-empty-cta")).toBeInTheDocument());
+    expect(recents()).toEqual([]);
+  });
+});
