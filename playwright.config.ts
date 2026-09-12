@@ -9,6 +9,10 @@ export default defineConfig({
   testDir: "./e2e",
   timeout: 60_000,
   fullyParallel: false,
+  // Chromium 的离线模拟会停掉空闲 Service Worker；多个 worker 并发运行
+  // 同一来源的 SW 生命周期测试时，导航会偶发绕过 worker 直接进入错误页。
+  // E2E 套件本身很小，串行执行换取稳定、真实的离线路径验证。
+  workers: 1,
   retries: process.env.CI ? 1 : 0,
   projects: [
     {

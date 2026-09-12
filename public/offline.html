@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-CN" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="dark light" />
+    <title>离线 · Trade Buty</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --background: #0a0d14;
+        --surface: #121722;
+        --border: #232b3b;
+        --foreground: #e6eaf2;
+        --muted: #9aa4b8;
+        --faint: #6b7488;
+        --accent: #34d399;
+        --accent-strong: #10b981;
+        --on-accent: #06281c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: var(--background);
+        color: var(--foreground);
+        font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        line-height: 1.6;
+      }
+      main {
+        width: 100%;
+        max-width: 560px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--surface);
+        padding: 32px 28px;
+      }
+      .brand {
+        margin: 0 0 20px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      h1 {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.3;
+      }
+      .en {
+        color: var(--muted);
+      }
+      p {
+        margin: 12px 0 0;
+        font-size: 15px;
+      }
+      ul {
+        margin: 16px 0 0;
+        padding-left: 20px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .actions {
+        margin-top: 24px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+      button,
+      a.home {
+        min-height: 44px;
+        padding: 11px 20px;
+        border-radius: 999px;
+        font: inherit;
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+      }
+      button {
+        border: 0;
+        background: var(--accent-strong);
+        color: var(--on-accent);
+      }
+      button:hover {
+        background: var(--accent);
+      }
+      a.home {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--border);
+        color: var(--foreground);
+        text-decoration: none;
+      }
+      a.home:hover {
+        border-color: var(--accent);
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      #status {
+        margin-top: 16px;
+        font-size: 13px;
+        color: var(--faint);
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          color-scheme: light;
+          --background: #f6f8fb;
+          --surface: #ffffff;
+          --border: #dfe4ec;
+          --foreground: #131a26;
+          --muted: #4d5766;
+          --faint: #6b7488;
+          --on-accent: #06281c;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="brand">Trade Buty</p>
+      <h1>你现在处于离线状态</h1>
+      <p class="en" lang="en">You are offline.</p>
+      <p>
+        已读进度、错题本和练习记录保存在本机，不会因为断网丢失。课程内容、搜索、AI
+        答疑和行情图表需要联网后才能继续。
+      </p>
+      <ul>
+        <li>检查 Wi-Fi 或移动数据是否可用</li>
+        <li>连接恢复后点击下方按钮重新加载</li>
+      </ul>
+      <div class="actions">
+        <button type="button" id="retry">重新连接 / Retry</button>
+        <a class="home" href="/zh">返回首页（需联网）</a>
+      </div>
+      <p id="status" role="status" aria-live="polite">
+        等待网络恢复，恢复后会自动重新加载。
+      </p>
+    </main>
+    <script>
+      (function () {
+        var status = document.getElementById("status");
+        var retry = document.getElementById("retry");
+        retry.addEventListener("click", function () {
+          status.textContent = "正在重试… / Retrying…";
+          location.reload();
+        });
+        window.addEventListener("online", function () {
+          status.textContent = "网络已恢复，正在重新加载… / Back online, reloading…";
+          location.reload();
+        });
+      })();
+    </script>
+  </body>
+</html>

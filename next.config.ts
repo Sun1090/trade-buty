@@ -38,7 +38,18 @@ export const CONTENT_CACHE_POLICIES = [
     source: "/knowledge-assets/:path*",
     headers: [contentCacheHeader],
   },
+  {
+    // R13.13：离线兜底页是 name-stable 应用壳，必须每次回源验证。
+    source: "/offline.html",
+    headers: [contentCacheHeader],
+  },
 ] as const;
+
+// R13.13：Service Worker 脚本永远重新验证，避免旧 worker 拖住离线策略更新。
+export const SERVICE_WORKER_CACHE_POLICY = {
+  source: "/sw.js",
+  headers: [{ key: "Cache-Control", value: "no-cache" }],
+} as const;
 
 const nextConfig = {
   async headers() {
@@ -58,6 +69,8 @@ const nextConfig = {
       },
       // R10.24：内容产物缓存策略（详见 docs/caching.md §4）
       ...CONTENT_CACHE_POLICIES,
+      // R13.13：PWA 离线兜底 worker
+      SERVICE_WORKER_CACHE_POLICY,
     ];
   },
 };

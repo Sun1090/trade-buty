@@ -1,5 +1,24 @@
 # Progress
 
+## 2026-09-12 — R13.13 PWA offline fallback review
+
+Implemented a deliberately minimal PWA offline fallback and audited the install/manifest surface:
+
+- Added a bilingual static `public/offline.html` with no external assets, a retry action, and automatic reload when connectivity returns; it is `noindex` and states that local learning data remains while online-only features pause.
+- Added `public/sw.js`: install precaches only `/offline.html`; navigation requests fall back to that shell when the network fails; non-navigation requests, APIs, search index, and knowledge assets are never intercepted or cached. The worker clears old caches, claims clients, and has a last-resort 503 response.
+- Added production-only registration after `window load`; unsupported or failed registration degrades silently without affecting the site.
+- Hardened the web manifest with stable `id`, explicit `/` scope, Chinese locale/direction, education/finance categories, and corrected `start_url` to `/zh`. Added a `no-cache` policy for `/sw.js`, revalidation for `/offline.html`, and excluded the shell from robots.
+- Added VM-driven behavior tests for install/activate/fetch boundaries and the offline-page hash guard, manifest/robots/cache tests, registrar tests, and browser E2E for the fallback plus the no-content-cache boundary. Set Playwright to one worker because Chromium's offline emulation can stop an idle Service Worker and race with other workers sharing the origin.
+
+Verification recorded:
+
+- Focused Vitest: 4 files / 26 tests passed.
+- Full suite: 147 files / 1111 tests passed; `npm run lint` 0 errors (59 pre-existing warnings); typecheck passed.
+- Production build passed with 465 static pages; bundle budgets passed (largest checked route 334KB/360KB).
+- Playwright full suite: 27/27 passed with the offline suite repeated 3× serial (9/9), including real offline navigation, retry recovery, and cache-boundary assertions.
+- Content gates passed: sitemap 418 pages, search index 418/418, 455 pages / 8975 links with no dead links, KB pointer `1ebbaef`, quiz coverage, relative links, image alt, frontmatter, glossary, and constitution audits.
+- Lighthouse CI passed performance/accessibility/best-practices/SEO assertions across `/zh`, a knowledge page, and `/chart`.
+
 ## 2026-09-12 — R13.12 slow-network and offline loading experience
 
 Implemented a shared, SSR-safe network-quality contract for data-heavy mobile flows:
