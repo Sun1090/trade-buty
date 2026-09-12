@@ -1,5 +1,33 @@
 # Progress
 
+## 环境变量文档门禁（docs/env.md ↔ 代码对账）
+
+- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 工作分支：`codex/env-docs-completeness`
+- PR：推送后跟踪
+- Base：`origin/main@f374570`
+- 远端 Head：推送后跟踪
+- 本地提交：`docs(env): complete the environment variable reference`、`test(env): gate the environment variable docs against code`
+- 目标：`docs/env.md` 自称「唯一受版本控制的环境变量说明」，但此前没有任何门禁保证它与真实 `process.env.*` 用法一致；同时发现 `NEXT_PUBLIC_AI_ENABLED`（R3.10 紧急总开关）根本没登记。补齐文档并把对账关系固化为 CI 门禁。
+- 已完成：
+  - `docs/env.md`：补登 `NEXT_PUBLIC_AI_ENABLED`（字符串 `false` 隐藏全部 AI 入口，构建期内联）与「紧急关闭」操作段；顶部补 `NEXT_PUBLIC_` 暴露语义说明，点名四个绝不许加公共前缀的服务端密钥。
+  - 新增 `scripts/env-docs.mjs`：扫描 `src/**` + `next.config.ts` 的 `process.env.NAME` / `process.env["NAME"]`，做三项对账 —— (1) 代码读到的运行时变量必须写进 `docs/env.md`；(2) 文档登记的变量必须真的被读（幽灵条目）；(3) 服务端密钥（`SUPABASE_SERVICE_ROLE_KEY` / `ADMIN_TOKEN` / `AI_API_KEY` / `AI_EMBEDDING_KEY`）不得出现在 `"use client"` 模块。框架变量 `NODE_ENV` 与运维脚本变量（`DB_TEST_*` / `BACKUP_DRILL_*`）按前缀豁免。
+  - 新增 `scripts/env-docs.test.mjs`：9 例，覆盖真实仓库通过、点号/方括号两种写法、代码片段解析（排除 `R3.10` 之类编号）、漏登记被拒、幽灵条目被拒、客户端读密钥被拒、服务端/测试读密钥不误报、缺 `NEXT_PUBLIC_` 语义说明被拒、运维变量豁免。
+  - `package.json` 新增 `check:env-docs`；`.github/workflows/ci.yml` 紧邻 `check:error-report-privacy` 加入该步骤；`scripts/ci-workflow.test.mjs` 必检列表同步。
+  - `docs/ops.md` 门禁表新增 `check:env-docs` 行；并把「生成内容质量报告」行的七个命令名写实（`kb:inventory` / `kb:gap-priority` / `kb:accept` / `kb:translation-status` / `check:title-terminology` / `check:description-quality` / `check:risk-warning`）。
+- 变更文件（关键）：`docs/env.md`、`scripts/env-docs.mjs`、`scripts/env-docs.test.mjs`、`package.json`、`.github/workflows/ci.yml`、`scripts/ci-workflow.test.mjs`、`docs/ops.md`。
+- 验证命令与结果：
+  - `npm run check:env-docs` exit 0（13 个运行时变量全部登记，无幽灵条目，无客户端密钥泄漏）。
+  - `npx vitest run scripts/env-docs.test.mjs` → 9 用例通过；`npx vitest run scripts/ci-workflow.test.mjs` → 6 用例通过。
+  - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0。
+  - `npm test` → 242 文件 / 1758 用例通过（较 base `main@f374570` 的 241 文件 / 1749 用例新增 1 文件 / 9 用例）。
+  - `npm run check:docs` exit 0（27 章 / 182 篇，zh/en 对齐）；`npm run check:secrets` exit 0（652 个文本文件无疑似凭据）；`npm run check:changelog` exit 0。
+- 上游依赖：无（纯静态审计脚本，复用现有 vitest，未新增依赖）。
+- 未验证项：远端 CI 复跑结果。
+- 风险与回滚：门禁为只读静态分析，最坏情况是误报阻断合并；回滚即撤销本分支提交。
+- 下一步：推送、CI 全绿后按 rebase 合并；再继续扫描未列出的真实技术缺口。
+- 最后更新：2026-09-13
+
 ## 质量门禁覆盖补齐（R7.6 限流回归 + ops 门禁表）
 
 - 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
