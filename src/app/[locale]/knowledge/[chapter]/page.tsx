@@ -23,6 +23,8 @@ import { ChapterSummaryAi } from "@/components/chapter-summary-ai";
 import { aiEnabledForPage } from "@/lib/ai-toggle";
 import { TodayPick } from "@/components/today-pick";
 import { KnowledgeMiss } from "@/components/knowledge-miss";
+import { RiskWarningNotice } from "@/components/risk-warning-notice";
+import { shouldShowRiskWarningFallback } from "@/lib/risk-warning";
 
 export function generateStaticParams() {
   return LOCALES.flatMap((locale) =>
@@ -88,6 +90,7 @@ export default async function ChapterPage({
   const docs = getDocMetas(locale, slug);
   const { chapter, introContent } = data;
   const { next: nextChapter } = getAdjacentChapters(locale, slug);
+  const showRiskWarningFallback = shouldShowRiskWarningFallback(introContent);
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-5 py-10 sm:py-14">
@@ -168,6 +171,8 @@ export default async function ChapterPage({
         hint={locale === "en" ? "Next lesson" : "下一节课程"}
         done={locale === "en" ? "Course complete" : "本章已完成"}
       />
+
+      {showRiskWarningFallback && <RiskWarningNotice locale={locale} />}
 
       {introContent && (
         <section className="mt-8 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">

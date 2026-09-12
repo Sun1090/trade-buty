@@ -89,6 +89,7 @@ export function renderRiskWarningMarkdown({ generatedAt, results }) {
     "> 产品红线（docs/plan.md）：每篇内容必须带「⚠️ 风险提示 / Risk Warning」块。",
     "> pass = 有合规块；review = 仅提及「风险提示」字样或存在未装箱风险句，需人工补成标准块；",
     "> gap = 完全缺失。报告不阻断（知识库内容改动需在 kline-buty 仓库进行）。",
+    "> 章节页会对不合规 README 展示本地化兜底提示；本表仍统计上游原文，避免把未修复内容误报为 pass。",
     "",
     "## 课程正文（lesson）",
     ...lessonByLocale,
