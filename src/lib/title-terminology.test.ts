@@ -13,6 +13,12 @@ describe("title terminology (R10.3)", () => {
     expect((result as { missingTerms?: Array<{ zh: string }> }).missingTerms?.map((term) => term.zh)).toEqual(["杠杆"]);
   });
 
+  it("subsumes a shorter term when a longer dictionary term already matched", () => {
+    const result = checkTitlePair({ chapter: "market-ecosystem", document: "exchange-business-models", zhTitle: "05 · 交易所商业模式", enTitle: "05 · Exchange Business Models" });
+    expect(result.status).toBe("pass");
+    expect((result as { terms?: Array<{ zh: string }> }).terms?.map((term) => term.zh)).toEqual(["交易所"]);
+  });
+
   it("marks titles with no known dictionary term for human review", () => {
     const result = checkTitlePair({ chapter: "basics", document: "intro", zhTitle: "从零开始的学习路线", enTitle: "A Learning Path from Zero" });
     expect(result).toMatchObject({ status: "review", reason: "no-known-zh-term" });

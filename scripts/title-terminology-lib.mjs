@@ -34,7 +34,9 @@ export function stripTitleOrder(title) {
 
 export function findTitleTerms(zhTitle, terms = TITLE_TERMS) {
   const title = String(zhTitle ?? "");
-  return terms.filter(({ zh }) => title.includes(zh));
+  const matched = terms.filter(({ zh }) => title.includes(zh));
+  // 抑制被更长术语包含的短术语（如「交易」⊂「交易所」），避免要求英文标题重复表达同一概念。
+  return matched.filter(({ zh }) => !matched.some((other) => other.zh !== zh && other.zh.includes(zh)));
 }
 
 export function checkTitlePair({ chapter, document, zhTitle, enTitle, terms = TITLE_TERMS }) {
