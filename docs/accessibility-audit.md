@@ -2,7 +2,7 @@
 
 日期：2026-09-12  
 范围：课程阅读、随堂测、行情图、回放训练、搜索筛选、邮件订阅占位  
-基线：`codex/r13-e2e-expansion`，`origin/main@abe8106`
+基线：`codex/zero-eslint-warnings`，`origin/main@53f7e01`，最近验证 `446900c`
 
 ## 结论
 
@@ -18,6 +18,9 @@
 | 行情图 | 交易对/周期按钮与自定义交易对输入有可访问名称；周期切换可被键盘触发 | `kline-chart.tsx`、`e2e/full-site.spec.ts` |
 | 搜索筛选 | 篇章下拉框有本地化 `aria-label`，不依赖视觉位置 | `search-client.test.tsx` |
 | 邮件订阅 | 邮箱输入有本地化可访问名称；保存仍保持本机存储约定 | `newsletter-signup.test.tsx` |
+| 全局页头 | 窄屏只显示图标时，首页品牌与登录链接仍有本地化可访问名称 | Lighthouse `link-name`、`auth-header.test.tsx` |
+| 引导与代码块 | 引导 CTA 使用主题对比色；代码块语言/复制控件在暗色、亮色、护眼主题均使用可读 `text-muted` | `color-contrast`、`markdown.test.tsx`、`code-copy.test.tsx` |
+| 阅读设置 | `A-` / `A+` 可访问名称包含可见文本；行距增减按钮有本地化名称，满足 WCAG 2.5.3 | `label-content-name-mismatch`、`font-size-control.test.tsx` |
 | 全站焦点样式 | `src/app/globals.css` 的 `:focus-visible` 提供 2px solid 主题色 outline 和 2px offset；组件不得用裸 `outline-none` 抑制 | Playwright 计算样式断言覆盖测验、回放、图表、订阅 |
 
 ## 验证
@@ -25,6 +28,9 @@
 ```bash
 npx vitest run \
   src/components/markdown.test.tsx \
+  src/components/code-copy.test.tsx \
+  src/components/font-size-control.test.tsx \
+  src/components/auth-header.test.tsx \
   src/components/image-lightbox.test.tsx \
   src/components/newsletter-signup.test.tsx \
   src/components/search-client.test.tsx \
@@ -38,18 +44,16 @@ npx playwright test e2e/full-site.spec.ts -g 'Q2.4'
 npm run e2e
 ```
 
-结果（2026-09-12）：
+结果（2026-09-12，`446900c`）：
 
-- 定向 Vitest：5 文件 / 32 用例通过。
-- 全量 Vitest：164 文件 / 1286 用例通过。
-- lint：0 error / 59 条既有 warning。
-- typecheck、build：通过；构建 465 个静态页。
-- Q2.4 Playwright：3/3 通过。
+- 全量 Vitest：178 文件 / 1350 用例通过。
+- lint：0 error / 0 warning；typecheck、build：通过；构建 473 个静态页。
 - 完整 Playwright：56/56 通过。
+- Lighthouse 13：`/zh`、课程页、`/chart` 各 2 次采样，accessibility 全部 100；`color-contrast`、`link-name`、`label-content-name-mismatch` 零失败，CI 已按零容忍阻断。
 
 ## 未覆盖边界
 
 - 未做 NVDA / VoiceOver 真机屏幕阅读器走查。
 - 未做 Safari / Firefox 的人工键盘焦点走查。
-- Lighthouse 的 a11y 分数仍以既有 CI 阈值为准，本文件不把自动分数等同于人工合规结论。
+- Lighthouse 三个代表页面已通过当前审计集并将门槛提升到 100，但仍只覆盖三个 URL；本文件不把自动分数等同于完整人工合规结论。
 - 本周期权限为 `LOCAL_ONLY`，远端 CI、PR 与部署不在本审计声明内。
