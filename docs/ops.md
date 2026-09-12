@@ -22,6 +22,7 @@
 | `npm run check:ai-copy` | en 字典无中文残留（R3.12） | 修正 i18n.ts en 值 |
 | `npm run check:growth-event-privacy` | 增长事件只留在本机且不携带 URL/身份信息（R13.20） | 删除遥测外发或敏感字段；审计文档作废时重新评审 |
 | `npm run check:error-report-privacy` | 错误上报载荷只含白名单元数据、服务端有界读取 + 未知字段拒绝、日志无原始内容、隐私页双语披露（R7.6） | 修正 `src/lib/error-report.ts` / 路由或隐私页；不得放宽白名单或日志脱敏 |
+| `npm run check:env-docs` | `docs/env.md` 与代码对账：`process.env.*` 读到的运行时变量全部登记、文档无幽灵条目、服务端密钥不出现在 `"use client"` 模块 | 补写 `docs/env.md` 或清理死变量；密钥前缀/暴露面错误必须改代码而不是改文档 |
 | `npm run check:dark-pattern-copy` | 增长表面均已登记，且无紧迫/恐吓/默认勾选等暗黑模式（R13.21–R13.22） | 修正 `growth-surfaces.json` 登记或用户文案 |
 | `npm run check:docs` | README/AGENTS/plan/About 的内容规模、技术栈与关键承诺一致 | 修正漂移文档；不得只改门禁快照 |
 | `npm run check:changelog` | `CHANGELOG.md` 与单一来源 `src/data/release-notes.json`（站点 `/changelog` 页同源）一致：版本/日期格式、新旧排序与双语条目 | 跑 `npm run changelog:generate` 重新生成并提交；不得手工编辑 `CHANGELOG.md` |
@@ -45,7 +46,7 @@
 | `npm run check:relative-links` | 相对链接跨语言解析：目标在当前 locale 真实存在（R10.11） | 修正 md 内相对链接/资产引用 |
 | `npm run check:bundle` | 全部 zh/en 路由的 JS/CSS/HTML/total gzip 预算（R13.15）+ AI chunk 隔离（R7.1，需先 build） | 调整 `scripts/bundle-budgets.json` 或拆分/按需加载超预算 chunk（不得为掩盖回归直接放宽） |
 | `npm run check:structured-data` | 全站 JSON-LD 结构化数据回归：实体类型/`@id` 唯一性、绝对 URL、语言、博客/课程/FAQ 页面身份（R13.16，需先 build） | 修正 `src/lib/jsonld.ts` 或页面注入；不得为通过直接放宽断言 |
-| 生成内容质量报告（R10.1–R10.6 / R10.17） | 在当前提交上重跑 inventory、gap priority、新增课程验收、翻译状态、标题术语、描述质量与风险提示报告 | 按脚本报告修复内容或契约；报告式命令不会用人工旧快照替代当前结果 |
+| 生成内容质量报告（R10.1–R10.6 / R10.17） | 在当前提交上按序重跑 `kb:inventory`、`kb:gap-priority`、`kb:accept`、`kb:translation-status`、`check:title-terminology`、`check:description-quality`、`check:risk-warning` 七份内容报告 | 按脚本报告修复内容或契约；报告式命令不会用人工旧快照替代当前结果 |
 | 内容质量报告归档（CI artifact，R10.17） | 上述当前提交报告及 docs/*.json 随 CI 归档 7 天 | 下载 artifact 分派人工整改；不得只更新 artifact 而不提交内容源修复 |
 | `npx playwright install --with-deps chromium` | 安装 E2E 所需的固定 Chromium 运行时 | 检查 CI runner 系统依赖与 Playwright 版本 |
 | `npm run e2e` | 全站、320px 移动端、PWA 离线与扩展核心闭环（R13.24） | 修复可访问性、响应式或交互回归；不得只重跑忽略 flaky |
