@@ -33,6 +33,7 @@ describe("CI workflow contract", () => {
       "npm run audit:all",
       "npm run check:secrets",
       "npm run check:error-report-privacy",
+      "npm run check:env-docs",
       "npm run check:mobile",
       "npm run check:quiz-mounts",
       "npm run check:quiz-coverage",
