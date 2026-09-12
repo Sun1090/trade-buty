@@ -15,7 +15,7 @@
 - [x] Q1.4 搜索索引对账（`npm run check:search-index`，400/400 对账通过，CI 阻断）
 - [ ] Q1.5 frontmatter 质量门禁已在 prebuild（缺 title/description 报警）——确认 CI 日志可见
 - [ ] Q1.6 KB 更新演练月度化：每月跑一次 kb:update 并记录变更（docs 下 changelog 片段）
-- [ ] Q1.7 新章节上线清单（索引/sitemap/测验挂载点/路径分组四项核对）
+- [x] Q1.7 新章节上线清单（dry-run 输出索引/sitemap/测验挂载点/路径分组四项核对；流程见 docs/new-chapter-release-checklist.md，单测覆盖）
 - [x] Q1.8 kline-buty 侧 en 翻译收官（27 章全齐，已上线）
 
 ## Q2 质量门禁（Q2.1–Q2.8）

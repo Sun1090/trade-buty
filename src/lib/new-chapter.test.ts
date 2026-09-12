@@ -5,7 +5,11 @@ import {
   validateLesson,
   findOrderDuplicates,
   planIntegration,
+  parseStageSlugs,
+  buildReleaseChecklist,
 } from "../../scripts/new-chapter-lib.mjs";
+import fs from "node:fs";
+import path from "node:path";
 
 describe("new-chapter lib (R10.16)", () => {
   it("chapterNameIssue 只放行合法 slug", () => {
@@ -58,5 +62,59 @@ describe("new-chapter lib (R10.16)", () => {
     });
     expect(notes.join("\n")).toContain("未收录");
     expect(notes.join("\n")).toContain("27 变为 28");
+  });
+
+  it("parseStageSlugs 从真实 path.ts 提取 27 章且无重复", () => {
+    const source = fs.readFileSync(path.join(process.cwd(), "src/lib/path.ts"), "utf8");
+    const slugs = parseStageSlugs(source);
+    expect(slugs).toHaveLength(27);
+    expect(new Set(slugs).size).toBe(27);
+    expect(slugs).toContain("getting-started");
+    expect(slugs).toContain("options-strategies");
+  });
+
+  it("buildReleaseChecklist 固定题挂载指向草稿课程时四项就绪/可见", () => {
+    const items = buildReleaseChecklist({
+      chapter: "new-chapter",
+      lessons: [{ slug: "intro", title: "01 · 入门" }],
+      hasReadme: true,
+      chapterOrder: ["new-chapter"],
+      stageSlugs: ["new-chapter"],
+      quizMount: { docSlug: "intro" },
+    });
+    expect(items.map((item) => item.id)).toEqual([
+      "search-index",
+      "sitemap",
+      "quiz-mount",
+      "path-group",
+    ]);
+    expect(items.every((item) => !item.blocking)).toBe(true);
+    expect(items[2].status).toBe("ready");
+    expect(items[3].status).toBe("ready");
+  });
+
+  it("buildReleaseChecklist 识别坏测验挂载与未分组章节", () => {
+    const items = buildReleaseChecklist({
+      chapter: "new-chapter",
+      lessons: ["intro"],
+      hasReadme: true,
+      chapterOrder: ["new-chapter"],
+      stageSlugs: [],
+      quizMount: { docSlug: "missing" },
+    });
+    const quiz = items.find((item) => item.id === "quiz-mount");
+    const group = items.find((item) => item.id === "path-group");
+    expect(quiz).toMatchObject({ status: "block", blocking: true });
+    expect(quiz?.detail).toContain("missing");
+    expect(group).toMatchObject({ status: "action", blocking: false });
+    expect(group?.detail).toContain("STAGES");
+  });
+
+  it("buildReleaseChecklist 未挂固定题时提示 AI 回退而非误报成功", () => {
+    const items = buildReleaseChecklist({ chapter: "new-chapter", lessons: ["intro"], hasReadme: true });
+    expect(items.find((item) => item.id === "quiz-mount")).toMatchObject({
+      status: "action",
+      blocking: false,
+    });
   });
 });

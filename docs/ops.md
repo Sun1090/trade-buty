@@ -19,7 +19,7 @@
 | `npm run check:kb-pointer` | 上游版本指针一致：gitlink = 工作区 submodule = kb-manifest 快照（R10.18） | 跑 `npm run kb:update` 并同 commit 提交指针 + `scripts/kb-manifest.json` |
 | `npm run check:translation-history` | 翻译历史快照为最新：当前 KB 覆盖与 docs/translation-history.json 最近快照一致（R10.19） | `npm run kb:translation-status` 重生成并连同两个产物提交 |
 | `npm run check:kb-parity-budget` | 关键章节英文 parity ≥ 预算（docs/kb-parity-budget.json，默认 1.0，R10.20） | 补齐关键章节 en 译文，或先下调预算并说明理由 |
-| 新章节 dry-run 冒烟（CI 内联，R10.16） | `node scripts/dry-run-new-chapter.mjs --draft` 对草稿章节预检 | 按脚本报错补全目录/README/课程结构 |
+| 新章节 dry-run 冒烟（CI 内联，R10.16 / Q1.7） | `node scripts/dry-run-new-chapter.mjs --draft` 预检契约，并输出索引/sitemap/测验挂载/路径分组四项上线核对 | 按脚本报错补结构；按 checklist 决策固定题和 STAGES 分组 |
 | `npm run check:quiz-mounts` | AST 核验 quizzes.ts 全部挂载的 chapter/docSlug 与最少题数（R6.3） | 修正 chapterNum、docSlug、重复键或题量 |
 | `npm run check:quiz-coverage` | 固定题库覆盖率：27 章 × 每章至少 3 道（R6.4） | 补固定题库或 kb-titles 缺失元数据 |
 | `npm run check:links` | 死链：扫描构建产物 HTML 与构建输出交叉验证（需先 build） | 修正站内错误链接 |
