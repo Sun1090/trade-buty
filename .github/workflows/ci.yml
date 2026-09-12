@@ -73,6 +73,7 @@ MD
       - run: npm run check:quiz-coverage
       - run: npm run check:links
       - run: npm run check:sitemap
+      - run: npm run check:seo-surface
       - run: npm run check:search-index
       - run: npm run check:nav-chain
       - run: npm run check:relative-links

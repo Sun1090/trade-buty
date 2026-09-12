@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getDict } from "./i18n";
 import { SITE_URL } from "./site";
 
 /**
@@ -102,4 +103,21 @@ export function buildPageMetadata({
 /** 把 `zh` / `en` 收敛成字面量，避免传任意字符串。 */
 export function isOgLocale(v: string): v is "zh" | "en" {
   return v === "zh" || v === "en";
+}
+
+/**
+ * R13.17：软 404（HTTP 200 + 404 文案）的 metadata。
+ *
+ * 章节/课程 slug 不存在时页面仍会渲染带推荐的 404 文案，但状态码是 200。
+ * 这类页面必须自报 `noindex`，否则搜索引擎会当成真实页面收录；
+ * 同时保留 `follow`，让爬虫继续沿推荐位抓到有效课程。
+ * 不产出 canonical——指向一个不存在的 URL 只会制造重复信号。
+ */
+export function buildSoftNotFoundMetadata(locale: LocaleArg): Metadata {
+  const t = getDict(locale);
+  return {
+    title: t.notFound.metaTitle,
+    description: t.notFound.metaDescription,
+    robots: { index: false, follow: true },
+  };
 }
