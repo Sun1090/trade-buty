@@ -11,6 +11,7 @@
 |---|---|---|
 | `actions/checkout` + `actions/setup-node` + `npm ci` | 递归检出知识库子模块；固定 Node.js 22；按 lockfile 做干净依赖安装 | 检查子模块权限/指针；不要用 `npm install` 改写锁文件绕过 |
 | `npm run audit:prod` | 生产依赖高危及以上漏洞审计（npm 官方 registry） | 升级/替换受影响依赖；不得通过降低 audit level 掩盖 |
+| `npm run check:secrets` | 扫描受版本控制与未忽略的新文本文件，阻断私钥、平台 token 和疑似硬编码密钥；输出不包含命中值 | 吊销并移除泄露凭据，改用环境变量/密钥管理；测试夹具使用明确占位值 |
 | `npm run lint` | 全仓库 ESLint，**0 error / 0 warning** | 修复规则报告；定向例外必须附理由，脚本本身固定 `--max-warnings=0` |
 | `npm test` | Vitest 单元、组件、脚本契约与集成测试 | 修复失败用例；不得跳过或删除断言来伪造通过 |
 | `npm run typecheck` | Next.js 16 路由类型生成 + `tsc --noEmit` | 修复类型错误；不得用 `any`/忽略指令掩盖真实不匹配 |
