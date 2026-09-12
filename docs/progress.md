@@ -1,5 +1,37 @@
 # Progress
 
+## 生成式 AI 路由限流 + 未覆盖模块单测（R7.12 / R9 / R13）
+
+- 状态：DONE（本地实现与全量验证完成；远端发布待授权）
+- 工作分支：`codex/zero-eslint-warnings`
+- PR：none
+- PR 状态：none
+- Base：`origin/main@53f7e01`
+- 远端 Head：none（`LOCAL_ONLY`，未推送）
+- 本地提交：`2ed2a55`、`0b83db1`、`0b4ad8d`
+- 目标：补上三类此前无单测保障的运行时模块（离线同步队列执行器、学习时长账本、活动日历保留策略 + RAG 章节过滤），并修掉一个真实花费/安全缺口——三个生成式 AI 路由（plan/summary/quiz）此前对 LLM 调用零配额。
+- 已完成：
+  - 新增 `src/lib/ai/rate-limit.ts`：`createRateLimiter({guestLimit, authedLimit, windowMs, maxKeys, sweepThreshold})` 建立在 `BoundedMap` 之上，惰性清扫过期键；导出 `clientIp(req)`。返回 `{allowed, limit, remaining, retryAfterSec}`。
+  - `POST /api/ai/plan`（30/30 每小时，用户维度，未鉴权先 401）、`/summary`（游客 20 / 鉴权 60 每小时，IP 或用户 id 维度）、`/quiz`（40/40 每小时，用户维度）全部接入限流，超限返回 `429 + Retry-After`。
+  - `POST /api/ai/chat` 改为复用同一 limiter，行为保持不变（游客 10/时、鉴权 50/时、仅游客返回 `X-Quota-Limit`/`X-Quota-Remaining`），既有断言 `X-Quota-Limit === "10"` 仍通过。
+  - 新增 `src/lib/sync-queue-executor.test.ts`（10 例）：按 kind 映射 Supabase 表与 `onConflict`、delete 的 `.eq()` 主键链、RLS 错误 → 返回 `false` 保留队列项、未知 kind → `false`、客户端抛错 → `false`。
+  - 新增 `src/lib/study-time.test.ts`（5 例）：损坏 JSON 回退、单来源 8 小时上限、90 天保留、累加、`getTodayStudySeconds`。
+  - 新增 `src/lib/activity-calendar.test.ts`（5 例）：损坏 JSON、同日去重、跨日、365 天上限（`vi.useFakeTimers`）。
+  - 新增 `src/lib/ai/rag.test.ts`（6 例）：空 embedding 短路、参数透传、字段投影、chapterFilter 过采样（`topK*4`）后 slice、RPC 报错/null 数据降级。
+  - 重写 `scripts/ci-workflow.test.mjs`（5 例）：覆盖**全部**作业（含 `db-tests`）并把工作流里出现的每个 `npm run <script>`（41 个）与 `node scripts/*.mjs`（2 个）逐一对照 `package.json` / 磁盘校验（打印抽取结果证明非空跑）。
+- 验证命令与结果：
+  - `npm test` → 193 文件 / 1470 用例全部通过（本轮由 188/1428 增至 193/1470）。
+  - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0；`npm run build` exit 0（473 静态页）。
+  - 内容/SEO 门禁全绿：`check:mobile`（14 页 @320px）、`check:docs`、`check:constitution`、`check:frontmatter`、`check:image-alt`、`check:glossary`、`check:slug-conflicts`、`check:description-dupes`、`check:kb-pointer`（a57d510）、`check:translation-history`、`check:kb-parity-budget`、`check:quiz-mounts`、`check:quiz-coverage`、`check:links`、`check:sitemap`（418 知识页）、`check:seo-surface`（430 sitemap / 454 页面）、`check:search-index`、`check:nav-chain`、`check:relative-links`、`check:bundle`（454 路由）、`check:structured-data`（454 页 / 5656 实体）全部 exit 0。
+  - 数据与安全：`npm run db:test` exit 0（迁移 9/9、RLS 38、同步 26、`0008_*` 回滚→重放）；`npm run backup:drill` exit 0（30963 bytes，恢复库重跑 pgTAP 38+26 通过）；`npm run check:secrets` exit 0（587 文件无凭据）；`npm run audit:prod`、`npm run audit:all` → 0 vulnerabilities。
+  - E2E 与性能：`npm run e2e` → 58 passed；`npm run lhci` exit 0（3 URL × 2 次，断言全过；无 GitHub token，跳过 status check）。
+- 变更文件（关键）：`src/lib/ai/rate-limit.ts`、`src/app/api/ai/{chat,plan,summary,quiz}/route.ts` 及其 `route.test.ts`、`src/lib/{sync-queue-executor,study-time,activity-calendar}.test.ts`、`src/lib/ai/{rag,rate-limit}.test.ts`、`scripts/ci-workflow.test.mjs`。
+- 上游依赖：无（纯站内 API/库层）。
+- 未验证项：远端 CI / Vercel 部署（`LOCAL_ONLY`，未推送、未部署）；`db-tests` 作业（含备份恢复步骤）从未在 GitHub Actions 上运行过。
+- 风险与回滚：限流为进程内缓存，多实例部署下每实例独立计数（非分布式配额，已在此记录权衡）；正常请求路径行为不变。回滚可分别撤销 `0b4ad8d`（限流）与 `2ed2a55`、`0b83db1`（测试）。
+- 下一步：roadmap 剩余项均为外部依赖（Sentry、Supabase 云联调、GSC/Bing、Vercel Analytics、PostHog、OG 卡片人工渲染、冷启动分发、云备份）。
+- 最后更新：2026-09-13
+
 ## API 路由输入校验与内部错误收敛（R7.12 / R9）
 
 - 状态：DONE（本地实现与全量验证完成；远端发布待授权）
