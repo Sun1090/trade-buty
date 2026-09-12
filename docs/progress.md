@@ -1,5 +1,30 @@
 # Progress
 
+## 本地进度存储结构校验（Q2.4 / R12 数据韧性）
+
+- 状态：DONE（本地实现与全量验证完成；远端发布待授权）
+- 工作分支：`codex/zero-eslint-warnings`
+- PR：none
+- PR 状态：none
+- Base：`origin/main@53f7e01`
+- 远端 Head：none（`LOCAL_ONLY`，未推送）
+- 本地提交：`8709741`
+- 目标：修复 `tb-progress` 为合法 JSON 但结构错误（尤为 `null` / 数组）时，学习进度读取与写入可能直接抛错的问题。
+- 已完成：
+  - `src/lib/progress.ts` 对顶层对象、章节数组和文档字符串做结构校验；过滤非法值并对重复文档去重。
+  - completion ledger 同样清洗非对象条目、非字符串字段和非有限时间戳，避免损坏数据进入趋势与隐私导出。
+  - 新增 5 个边界用例，覆盖 `null` / 数组 / 原始值、字段清洗、结构损坏后的 `markRead` 恢复。
+- 验证命令与结果：
+  - `npx vitest run src/lib/progress.test.ts` → 1 文件 / 12 用例通过。
+  - `npm test` → 237 文件 / 1677 用例全部通过。
+  - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0；`npm run build` exit 0（473 个静态页面）。
+- 变更文件：`src/lib/progress.ts`、`src/lib/progress.test.ts`。
+- 上游依赖：无。
+- 未验证项：远端 CI / Vercel 部署（`LOCAL_ONLY`，未推送、未部署）。
+- 风险与回滚：仅收紧损坏数据的读取结果，合法数据保持不变；回滚可撤销 `8709741`。
+- 下一步：继续审计其余 localStorage 读取器的合法但错误结构输入，优先 streak、bookmarks、study-time、replay/wrongbook。
+- 最后更新：2026-09-13
+
 ## 章节导航与关联课程单测 + 未读开关无障碍修复（R7.12 / R13.9）
 
 - 状态：DONE（本地实现与全量验证完成；远端发布待授权）
