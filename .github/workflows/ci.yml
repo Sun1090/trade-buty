@@ -114,3 +114,18 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
       - run: npm run lhci
+
+  # 数据层门禁（Q2.8 / Q5.4）：在真实 Supabase Postgres 镜像里应用迁移、跑 RLS 越权与
+  # 双设备同步 pgTAP 测试，并执行 0008 回滚 → 重放演练。与 ci 作业并行，失败即阻断。
+  db-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 拉取 Supabase Postgres 镜像
+        run: docker pull supabase/postgres:17.6.1.155
+      - name: 数据库门禁（迁移 / RLS 越权 / 双设备同步 / 回滚演练）
+        run: node scripts/db-test.mjs
