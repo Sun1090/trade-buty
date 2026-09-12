@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-09-06",
+  "generatedAt": "2026-09-12",
   "locales": {
     "zh": {
       "chapters": 27,
-      "documents": 173
+      "documents": 182
     },
     "en": {
       "chapters": 27,
-      "documents": 173
+      "documents": 182
     }
   },
   "coverage": {
@@ -17,8 +17,8 @@
       "percent": 100
     },
     "document": {
-      "translated": 173,
-      "total": 173,
+      "translated": 182,
+      "total": 182,
       "percent": 100
     }
   },
