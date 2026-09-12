@@ -38,6 +38,8 @@ const dict = {
   gapHint: "该主题可能尚未收录。",
   filterZeroTpl: "「{chapter}」暂无匹配，站内共有 {n} 条相关结果",
   filterZeroCta: "查看全部结果",
+  indexError: "搜索索引暂时加载失败，请检查网络后重试。",
+  retry: "重试",
 };
 
 describe("SearchClient no-results CTA (R13.18)", () => {
@@ -68,5 +70,50 @@ describe("SearchClient no-results CTA (R13.18)", () => {
       },
       { timeout: 2_000 }
     );
+  });
+});
+
+describe("SearchClient index failure fallback (Q2.6 / R13.25)", () => {
+  beforeEach(() => {
+    storage.clear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("shows a retry fallback instead of a false no-results state when the index fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+    render(<SearchClient dict={dict} />);
+
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "保证金" } });
+
+    const alert = await screen.findByTestId("search-index-error");
+    expect(alert).toHaveTextContent(dict.indexError);
+    expect(screen.queryByTestId("search-empty-cta")).toBeNull();
+  });
+
+  it("recovers once the retry succeeds", async () => {
+    const entry = [
+      { url: "/zh/knowledge/spot/order-types", title: "订单类型", chapter: "spot", text: "限价单 市价单" },
+    ];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockRejectedValueOnce(new Error("offline"))
+        .mockResolvedValueOnce({ ok: true, json: async () => entry })
+    );
+    render(<SearchClient dict={dict} />);
+
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "限价单" } });
+    await screen.findByTestId("search-index-error");
+
+    fireEvent.click(screen.getByRole("button", { name: dict.retry }));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("search-index-error")).toBeNull();
+      expect(screen.queryByTestId("search-empty-cta")).toBeNull();
+    });
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 });

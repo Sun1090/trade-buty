@@ -42,6 +42,8 @@ export default async function SearchPage({
     gapHint: search.gapHint,
     filterZeroTpl: search.filterZeroTpl,
     filterZeroCta: search.filterZeroCta,
+    indexError: search.indexError,
+    retry: search.retry,
   };
 
   return (

@@ -303,6 +303,9 @@ const zh = {
     gapHint: "这些说法均无对应课程——该主题可能尚未收录，或换个关键词试试。",
     filterZeroTpl: "「{chapter}」暂无匹配，站内共有 {n} 条相关结果",
     filterZeroCta: "查看全部结果",
+    // R13.25 / Q2.6：搜索索引加载失败的降级文案
+    indexError: "搜索索引暂时加载失败，请检查网络后重试。",
+    retry: "重试",
   },
   newsletter: {
     title: "邮件订阅（占位）",
@@ -680,6 +683,9 @@ const en: Dict = {
     gapHint: "No course covers these terms — this topic may not be published yet.",
     filterZeroTpl: "No match in “{chapter}”, but {n} result(s) exist",
     filterZeroCta: "Show all results",
+    // R13.25 / Q2.6: search index load failure fallback copy
+    indexError: "The search index failed to load. Check your connection and retry.",
+    retry: "Retry",
   },
   newsletter: {
     title: "Newsletter (placeholder)",
