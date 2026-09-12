@@ -94,11 +94,13 @@ export function ChapterRail({
         {unread.length > 0 && (
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
             <button
+              type="button"
               onClick={() => setShowUnread((v) => !v)}
+              aria-expanded={showUnread}
               className="flex items-center justify-between w-full text-xs font-semibold uppercase tracking-widest text-faint hover:text-accent transition"
             >
               <span>{dict.unreadLabel} ({unread.length})</span>
-              <span className={`transition-transform ${showUnread ? "rotate-90" : ""}`}>▸</span>
+              <span aria-hidden className={`transition-transform ${showUnread ? "rotate-90" : ""}`}>▸</span>
             </button>
             {showUnread && (
               <ul className="mt-3 space-y-1">
