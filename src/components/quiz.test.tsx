@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Quiz } from "./quiz";
 import type { ChapterQuiz } from "@/lib/quiz-types";
+
+const { saveQuizProgress } = vi.hoisted(() => ({
+  saveQuizProgress: vi.fn(),
+}));
 
 vi.mock("@/lib/wrongbook", () => ({
   recordWrong: vi.fn(),
@@ -10,7 +14,7 @@ vi.mock("@/lib/wrongbook", () => ({
 }));
 vi.mock("@/lib/quiz-store", () => ({
   readQuizProgress: () => null,
-  saveQuizProgress: vi.fn(),
+  saveQuizProgress,
 }));
 
 const quiz: ChapterQuiz = {
@@ -28,7 +32,21 @@ const dict = {
   shareQuiz: "分享", previewQuiz: "预览", download: "下载", previewAlt: "预览", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败",
 };
 
+const multiQuestionQuiz: ChapterQuiz = {
+  chapterNum: "getting-started",
+  title: "入门测验",
+  questions: [
+    { question: "第 1 题", options: ["A", "B", "C"], answer: 0, explain: "A" },
+    { question: "第 2 题", options: ["A", "B", "C"], answer: 1, explain: "B" },
+    { question: "第 3 题", options: ["A", "B", "C"], answer: 1, explain: "B" },
+  ],
+};
+
 describe("Quiz", () => {
+  beforeEach(() => {
+    saveQuizProgress.mockClear();
+  });
+
   it("未开始显示标题和开始按钮", () => {
     render(<Quiz quiz={quiz} dict={dict} locale="zh" />);
     expect(screen.getByText(/现货测验/)).toBeInTheDocument();
@@ -60,5 +78,23 @@ describe("Quiz", () => {
     expect(first.hasAttribute("disabled")).toBe(false);
     first.focus();
     expect(document.activeElement).toBe(first);
+  });
+
+  it("最后一题答对时保存满分而不是少一分", () => {
+    render(<Quiz quiz={multiQuestionQuiz} dict={dict} locale="zh" />);
+    fireEvent.click(screen.getByRole("button", { name: "开始" }));
+
+    fireEvent.click(screen.getByRole("button", { name: /A\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "下一题" }));
+    fireEvent.click(screen.getByRole("button", { name: /B\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "下一题" }));
+    fireEvent.click(screen.getByRole("button", { name: /B\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "完成" }));
+
+    expect(saveQuizProgress).toHaveBeenCalledWith(
+      "getting-started",
+      { best: 3, done: true },
+      3,
+    );
   });
 });

@@ -47,7 +47,7 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-const themeInitScript = `(function(){try{var t=localStorage.getItem("tb-theme");if(t==="light"||t==="dark"||t==="sepia"){document.documentElement.dataset.theme=t;}else{var d=window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=d;}}catch(e){}})();`;
+const documentInitScript = `(function(){try{var p=location.pathname.split("/")[1];document.documentElement.lang=p==="en"?"en":"zh-CN";}catch(e){}try{var t=localStorage.getItem("tb-theme");if(t==="light"||t==="dark"||t==="sepia"){document.documentElement.dataset.theme=t;}else{var d=window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=d;}}catch(e){}})();`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -57,7 +57,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: documentInitScript }} />
       </head>
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
         {children}
