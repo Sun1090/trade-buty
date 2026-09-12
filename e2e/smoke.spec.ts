@@ -242,3 +242,32 @@ test.describe("安全响应头（R7.12）", () => {
     expect(headers["cache-control"]).toBe("public, max-age=0, must-revalidate");
   });
 });
+
+test.describe("错误上报端点（R7.6）", () => {
+  test("合法匿名诊断返回 202 且不缓存", async ({ request }) => {
+    const res = await request.post("/api/error-reports", {
+      data: { level: "fatal", scope: "route-error", kind: "Error", digest: "abc123" },
+    });
+    expect(res.status()).toBe(202);
+    expect(res.headers()["cache-control"]).toBe("no-store");
+  });
+
+  test("未知字段整包拒绝，不记录也不透传", async ({ request }) => {
+    const res = await request.post("/api/error-reports", {
+      data: {
+        level: "fatal",
+        scope: "route-error",
+        kind: "Error",
+        message: "token=secret-13800138000",
+      },
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test("超长 body 被有界读取拒绝", async ({ request }) => {
+    const res = await request.post("/api/error-reports", {
+      data: { level: "fatal", scope: "a".repeat(3000), kind: "Error" },
+    });
+    expect(res.status()).toBe(413);
+  });
+});
