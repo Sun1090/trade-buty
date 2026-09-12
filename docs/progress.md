@@ -1,5 +1,34 @@
 # Progress
 
+## 策展式发布说明（更新日志）与 CHANGELOG 门禁
+
+- 状态：DONE（本地实现与全量验证完成；已推送功能分支并纳入远端 CI 复核）
+- 工作分支：`codex/release-notes-changelog`
+- PR：none（本地提交完成后按 rebase 策略合并）
+- PR 状态：none
+- Base：`origin/main@b41e193`
+- 远端 Head：none（推送前）
+- 本地提交：本条目随 docs 提交入库
+- 目标：修掉 `/[locale]/changelog` 只靠构建机 `git log` 取数的问题（Vercel/浅克隆下只能拿到 1 条提交或直接为空），改为策展式双语发布说明；同时补上仓库一直缺失的根级 `CHANGELOG.md`。
+- 已完成：
+  - 新增单一数据源 `src/data/release-notes.json`（未发布变更 + v0.6.0 / v0.5.0 / v0.4.0，中英双语条目数强一致）。
+  - 新增 `src/lib/release-notes.ts`：版本排序（同日按语义版本）、ISO 日期校验、按 ISO 字符串直接格式化日期（不因时区偏移到前一天）。
+  - `/[locale]/changelog` 改为渲染策展发布说明（版本、日期、亮点、发布复盘链接），`git log` 降级为次要的「最近提交」区块，取不到就不渲染。
+  - 新增 `npm run changelog:generate` / `npm run check:changelog`：从同一份 JSON 生成根级 `CHANGELOG.md` 并在 CI 阻断漂移；校验版本语义化、唯一、日期合法、按日期倒序、中英条目数一致、`docs` 引用存在。
+  - `README.md` / `README.zh-CN.md` 文档索引补上 CHANGELOG 入口。
+- 变更文件（关键）：`src/data/release-notes.json`、`src/lib/release-notes.ts`、`src/lib/release-notes.test.ts`、`src/app/[locale]/changelog/page.tsx`、`scripts/generate-changelog.mjs`、`CHANGELOG.md`、`e2e/smoke.spec.ts`、`package.json`、`.github/workflows/ci.yml`、两份 README。
+- 验证命令与结果：
+  - `npm run lint` exit 0；`npm run typecheck` exit 0；`git diff --check` clean。
+  - `npm test` → 238 文件 / 1711 用例通过（新增 `release-notes.test.ts` 10 例）。
+  - `npm run build` exit 0；`npx playwright test e2e/smoke.spec.ts -g "更新日志"` → 2 用例通过。
+  - `npm run check:changelog` → 通过（4 条记录：未发布 + 3 个已发布版本）。
+  - `check:docs` / `check:bundle` / `check:seo-surface` / `check:structured-data` / `check:links` / `check:sitemap` / `check:mobile` 全部通过。
+- 上游依赖：无。
+- 未验证项：远端 CI 复跑结果（推送后跟踪）。
+- 风险与回滚：页面从「git 提交列表」改为「策展发布说明 + 次要提交列表」，信息只增不减；回滚可撤销本分支提交。
+- 下一步：推送功能分支、CI 全绿后按 rebase 合并，再继续审计剩余可执行缺口。
+- 最后更新：2026-09-13
+
 ## 亮色主题对比度回归修复（R13.10 / CI lhci 门禁）
 
 - 状态：DONE（本地实现与全量验证完成；已推送到 PR 功能分支，等待远端 CI 复核）

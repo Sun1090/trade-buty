@@ -74,6 +74,7 @@ content/kline-buty/        # 知识库 submodule（只读）
 - [`docs/plan.md`](docs/plan.md)：产品定位、内容宪法、分期路线（P0–P4）
 - [`docs/research.md`](docs/research.md)：六轮市场调研
 - [`docs/p2-research.md`](docs/p2-research.md)：账号与云端进度预研
+- [`CHANGELOG.md`](CHANGELOG.md)：按版本记录的发布说明（与站内 `/[locale]/changelog` 同源）
 - [`AGENTS.md`](AGENTS.md)：Agent 工作规范与知识库契约
 
 ## 路线图

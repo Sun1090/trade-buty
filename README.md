@@ -74,6 +74,7 @@ content/kline-buty/        # knowledge base submodule (read-only)
 - [`docs/plan.md`](docs/plan.md) — product positioning, content constitution, roadmap (P0–P4)
 - [`docs/research.md`](docs/research.md) — six rounds of market research
 - [`docs/p2-research.md`](docs/p2-research.md) — account & cloud progress pre-research
+- [`CHANGELOG.md`](CHANGELOG.md) — versioned release notes, same data as the in-site `/[locale]/changelog` page
 - [`AGENTS.md`](AGENTS.md) — agent guidelines and knowledge-base contract
 
 ## Roadmap
