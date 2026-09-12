@@ -2,12 +2,13 @@
 
 ## PWA 图标元数据路由被语言代理重定向
 
-- 状态：VERIFYING
-- 工作分支：`codex/icon-metadata-route`
-- PR：待创建
-- PR 状态：none
+- 状态：DONE（PR #33 已以 `--rebase` 合并进 main；PR CI 与合并后 main CI 均通过）
+- 工作分支：`codex/icon-metadata-route`（分支保留，未删除）
+- PR：[#33](https://github.com/Sun1090/trade-buty/pull/33) · `MERGED`
+- PR 状态：MERGED
 - Base：`origin/main@8ce77a6`
-- 已验证 Head：见 PR head
+- 合并提交：`534c5fb`（PR CI run [34721000419](https://github.com/Sun1090/trade-buty/actions/runs/34721000419) `ci` + `db-tests` 全绿；合并后 main CI run [34721304452](https://github.com/Sun1090/trade-buty/actions/runs/34721304452) `ci` + `db-tests` 全绿）
+- 已验证 Head：`21d4ca9`（见 PR #33 head）
 - 本地提交：`fix(proxy): preserve Next icon metadata routes`（分支另含前置 `docs(progress): close out the ops gate coverage work` 收口提交）
 - 目标：`src/app/icon.tsx` 由 Next 暴露为根级动态元数据路由 `/icon`，manifest 的两枚 512×512 图标与页面自动 `<link rel="icon">` 都直接引用该无扩展名地址；但 `src/proxy.ts` 的 matcher 只排除了带扩展名的静态文件，导致 `/icon` 被语言代理 307 到 `/en/icon`，最终返回 404 HTML。已用生产构建实测复现：修复前 `/icon` → `307 /en/icon` → `404 text/html`。
 - 已完成：
@@ -21,9 +22,9 @@
   - `npm run build` exit 0 → 474 静态页面生成完成。
   - `npx eslint src/proxy.ts src/proxy.test.ts e2e/pwa-offline.spec.ts` exit 0。
 - 上游依赖：无。
-- 未验证项：远端 CI 与 Vercel 预览。
+- 未验证项：无（Vercel 预览检查因账号构建配额 `upgradeToPro=build-rate-limit` 报 FAILURE，属外部配额而非代码问题；合并门禁以 GitHub Actions 全绿为准）。
 - 风险与回滚：matcher 改动只放行两个精确路径；若需回滚，恢复单条 matcher 字符串并撤销对应测试即可。
-- 下一步：跑全量本地门禁、推送分支、开 PR、CI 全绿后 `gh pr merge --rebase`。
+- 下一步：无（已完成）。
 - 最后更新：2026-09-13
 
 ## 门禁表覆盖机检（docs/ops.md ↔ ci.yml）
