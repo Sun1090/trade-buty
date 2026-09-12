@@ -1,5 +1,29 @@
 # Progress
 
+## 章节导航与关联课程单测 + 未读开关无障碍修复（R7.12 / R13.9）
+
+- 状态：DONE（本地实现与全量验证完成；远端发布待授权）
+- 工作分支：`codex/zero-eslint-warnings`
+- PR：none
+- PR 状态：none
+- Base：`origin/main@53f7e01`
+- 远端 Head：none（`LOCAL_ONLY`，未推送）
+- 本地提交：`e76074b`
+- 目标：为 `chapter-rail`、`related-courses` 两个此前无单测的交互组件补回归保护，并修掉章节导航“隐藏已读”开关缺失展开状态这一无障碍缺陷。
+- 已完成：
+  - `src/components/chapter-rail.test.tsx`（8 例）：章节/课程渲染、当前课程高亮、未读切换按钮按压后隐藏已读课程、进度文案、语言路由前缀、空数据不崩。
+  - `src/components/related-courses.test.tsx`（4 例）：按当前章节过滤关联课程、上限截断、空态隐藏、链接指向对应 slug。
+  - `e76074b` 源码修复：`chapter-rail.tsx` 的“显示/隐藏已读”按钮补 `type="button"`、`aria-expanded={showUnread}`，并把纯装饰的 `▸` 字形标 `aria-hidden`，让屏幕阅读器能感知折叠状态且不朗读装饰字符。
+- 验证命令与结果：
+  - `npm test` → 209 文件 / 1550 用例全部通过。
+  - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0；`npm run build` exit 0。
+- 变更文件（关键）：`src/components/chapter-rail.tsx`、`src/components/chapter-rail.test.tsx`、`src/components/related-courses.test.tsx`。
+- 上游依赖：无（纯站内组件）。
+- 未验证项：远端 CI / Vercel 部署（`LOCAL_ONLY`，未推送、未部署）。
+- 风险与回滚：仅新增属性与测试，无行为变更；回滚可撤销 `e76074b`。
+- 下一步：继续补齐剩余无单测运行时模块（auth-provider、theme-selector、focus-mode、service-worker-registrar 等）。
+- 最后更新：2026-09-13
+
 ## 未覆盖模块单测扩面 + 折叠组件可访问性（R7.12 / R13.9）
 
 - 状态：DONE（本地实现与全量验证完成；远端发布待授权）
