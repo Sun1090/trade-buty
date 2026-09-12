@@ -4,11 +4,11 @@
 
 - 状态：VERIFYING
 - 工作分支：`codex/proxy-static-surface`
-- PR：待创建
-- PR 状态：none
+- PR：[#36](https://github.com/Sun1090/trade-buty/pull/36) · `OPEN`
+- PR 状态：CI 运行中
 - Base：`origin/main@e65dc3a`
-- 已验证 Head：见 PR head
-- 本地提交：`fix(proxy): serve root static surface honestly`
+- 已验证 Head：`591525d`（两个提交：`1aa74f1` fix + `591525d` e2e/docs）
+- 本地提交：`1aa74f1` `fix(proxy): serve the root static surface honestly` + `591525d` `test(e2e): guard the root static surface contract`
 - 目标：`src/proxy.ts` 的 matcher 用 `.*\.\w+$` 兜住了所有带扩展名的路径，外加写得很宽的无扩展名白名单。副作用有两条相反的坏账：(1) **不存在的根级路径**（`/foo.png`、`/apple-icon`、`/sitemap.json`、`/knowledge-assets`）绕过代理直落根级动态段 `/[locale]`，被当成非法 locale 渲染出 HTTP 200 的首页外壳——一批既无 404 也无 `noindex` 的软 404；(2) **`/share/{kind}/{payload}` 分享落地页**本该原样放行（locale 编码在载荷里），却被补成 `/en/share/...` → 全站分享链接 404（生产线上 `https://trade-buty.vercel.app/share/quiz/v1abc` → 307 → 404 实测复现）。
 - 已完成：
   - `src/proxy.ts`：matcher 改为**显式列举真实静态表面**并逐条锚定路径边界（`_next/`、`api/`、`favicon.ico$`、`icon$`、`manifest.webmanifest$`、`robots.txt$`、`sitemap.xml$`、`search-index.json$`、`sw.js$`、`offline.html$`、`knowledge-assets/`），新增导出 `LOCALE_FREE_PREFIXES = ["share"]` 并在 `proxy()` 里原样放行。
@@ -27,7 +27,7 @@
 - 上游依赖：无。
 - 未验证项：远端 PR CI 与合并后 main CI；Vercel 生产环境复核（配额外部阻塞）。
 - 风险与回滚：matcher 由通配改为显式清单后，**新增根级静态文件必须同步进 matcher**，否则会被补语言前缀而 404——这条由 `src/proxy.test.ts` 的 `public/` 全文件枚举守卫强制。回滚 = 撤销本提交。
-- 下一步：推送分支、开 PR、CI 全绿后 `gh pr merge --rebase --delete-branch`，然后按 roadmap 做 R13.9 移动端键盘与焦点管理。
+- 下一步：等 PR #36 CI 全绿后 `gh pr merge --rebase --delete-branch`，然后按 roadmap 做 R13.9 移动端键盘与焦点管理。
 - 最后更新：2026-09-13
 
 ## 根级路由被语言代理重定向的自动守卫（PR #33 回归）
