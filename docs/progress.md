@@ -1,12 +1,45 @@
 # Progress
 
+## CI actions 运行时对齐（workflow action parity）
+
+- 状态：VERIFYING
+- 工作分支：`codex/ci-action-parity`
+- PR：待创建
+- PR 状态：none
+- Base：`origin/main@e8be59c`
+- 远端 Head：见本 PR 的 head（提交内容自引用，SHA 不写回自身）
+- 本地提交：`ci(workflows): align link-patrol action runtimes and guard every workflow`
+- 目标：`ci.yml` 已升到 `actions/checkout@v7` / `actions/setup-node@v7`，但 `.github/workflows/link-patrol.yml` 仍停留在 `@v4`，会继续在月度巡检里触发 Node.js 20 弃用并漂移工具链。对齐后把结构守卫从只测 `ci.yml` 扩到全工作流，防止以后再漏。
+- 已完成：
+  - `.github/workflows/link-patrol.yml`：`actions/checkout@v4 → v7`、`actions/setup-node@v4 → v7`（Node 22 / npm cache 保持）。
+  - `scripts/ci-workflow.test.mjs` 重构为发现并遍历 `.github/workflows/*.{yml,yaml}`：
+    - 官方 actions 的 Node 24 最低 major 守卫覆盖所有工作流（含 `link-patrol.yml`）；
+    - `setup-node` 统一 Node 22，凡执行 `npm ci` 的 job 必须 `cache: npm`；
+    - 所有工作流里的 `npm run <script>` 与 `node scripts/*.mjs` 引用必须真实存在；
+    - 新增外链巡检专项：cron `0 3 1 * *`、`workflow_dispatch`、checkout 递归子模块、`ops:link-patrol` 不被删除。
+  - 反向验证守卫有效：临时把 `link-patrol.yml` 退回 `@v4` 后测试确实失败（10 用例中 1 失败，报出 checkout/setup-node 两处 stale）。
+- 变更文件（关键）：`.github/workflows/link-patrol.yml`、`scripts/ci-workflow.test.mjs`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npx vitest run scripts/ci-workflow.test.mjs` exit 0 → 10 用例通过（原 7 用例）；反向验证：把 `link-patrol.yml` 临时退回 `@v4` 后该用例失败并列出 stale action。
+  - `npm run lint` exit 0（零 warning）；`npm run typecheck` exit 0。
+  - `npm test` exit 0 → 247 文件 / 1798 用例通过。
+  - `npm run build` exit 0 → 474 静态页面生成完成。
+  - `npm run audit:prod` / `npm run audit:all` exit 0 → 均 `found 0 vulnerabilities`。
+  - `npm run check:docs` / `npm run check:changelog` / `npm run check:secrets` exit 0。
+- 上游依赖：无。
+- 未验证项：远端 CI。
+- 风险与回滚：仅改 action major 与测试，回滚单个提交即可；`link-patrol` 是月度定时任务，不阻塞主流水线。
+- 下一步：推送分支、开 PR、CI 全绿后 `gh pr merge --rebase`。
+- 最后更新：2026-09-13
+
 ## 工具链 major 升级（三个落地、两个按上游阻塞延期）
 
-- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
-- 工作分支：`codex/deps-major-upgrades`
-- PR：[#29](https://github.com/Sun1090/trade-buty/pull/29)
+- 状态：DONE（PR #29 已以 `--rebase` 合并进 main，PR CI 与合并后 main CI 均通过）
+- 工作分支：`codex/deps-major-upgrades`（合并后已删除）
+- PR：[#29](https://github.com/Sun1090/trade-buty/pull/29) · `MERGED`
 - Base：`origin/main@2828ef0`
-- 远端 Head：推送后跟踪（创建 PR 时为 `b934280`，回填进度后随本条 amend 更新）
+- 远端 Head：`0d2b171`（PR CI run [34717899716](https://github.com/Sun1090/trade-buty/actions/runs/34717899716) 全绿）
+- 合并提交：`e8be59c`（合并后 main CI run [34718207878](https://github.com/Sun1090/trade-buty/actions/runs/34718207878)）
 - 本地提交：`chore(deps): align @types/node with the Node 22 CI runtime`、`chore(deps): upgrade js-yaml to v5 and adopt its ESM named exports`、`chore(deps): upgrade vitest to v5`、`fix(sync): type the user_settings upsert row explicitly`、`docs(deps): record the toolchain major upgrade outcomes`、`docs(deps): reconcile the monthly audit dispositions`
 - 目标：把 2026-09-13 月度审计列出的五个 major 逐项实际安装并跑门禁，不把「可能不兼容」当结论；能升级的落地，不能升级的留下可复现阻塞证据，并修正审计表中的暂缓状态。
 - 已完成：
@@ -17,17 +50,19 @@
   - `typescript` 7.0.2 延期：实跑 `npm run lint` exit 2，`typescript-eslint@8.70.0` 明确拒绝 TS 7；`tsc --noEmit` 本身可运行但不能单独代表整条工具链兼容。
   - TS 7 暴露出 `src/lib/sync-queue-executor.ts` 的 `user_settings` upsert 行类型过宽（`Record<string, number | string>`），被 Supabase 重载拒绝；改为具名行类型 `{ user_id: string; daily_goal_min?: number; weekly_goal_min?: number }`，在 TS 5.9.3 与 7.0.2 下均通过类型检查，运行时行为不变。
   - `docs/deps.md` 登记三个升级项的实测结果、两个延期项的可复现阻塞证据与解除条件，并把月度审计表中的「暂缓」状态改为最终处置。
+  - 首次 PR CI 40s 失败：本机 npm 11 生成的锁文件缺失 14 个传递依赖，CI 的 Node 22 / npm 10.9.9 严格校验拒绝。改用 `npx --yes npm@10 install --package-lock-only --ignore-scripts` 重建锁文件（commit `e8be59c`），并新增约定：改依赖后必须用 `npx --yes npm@10 ci` 复验。
 - 变更文件（关键）：`package.json`、`package-lock.json`、`scripts/ci-workflow.test.mjs`、`src/lib/sync-queue-executor.ts`、`docs/deps.md`、`docs/progress.md`。
 - 验证命令与结果：
   - `npm test` exit 0 → 247 文件 / 1795 用例通过（Vitest 5.0.0）。
   - `npm run lint` exit 0（零 warning）；`npm run typecheck` exit 0；`npm ls --depth=0` exit 0。
-  - `npx vitest run scripts/ci-workflow.test.mjs` exit 0 → 7 用例通过。
+  - `npx vitest run scripts/ci-workflow.test.mjs` exit 0。
+  - `npx --yes npm@10 ci` exit 0（复现 CI 的 Node 22 / npm 10 环境，确认锁文件修复有效）。
   - `npm run audit:prod` exit 0、`npm run audit:all` exit 0 → 均 `found 0 vulnerabilities`。
   - `npm run check:secrets` exit 0（657 个文本文件无疑似凭据）；`npm run check:docs` exit 0。
 - 上游依赖：ESLint 10 依赖 `eslint-plugin-react` 先声明/实现支持；TypeScript 7 依赖 `typescript-eslint` 先放宽 peer 并完成兼容。
-- 未验证项：本分支远端 CI；本地已覆盖 lint、test、typecheck、审计与配置门禁。
+- 未验证项：无。PR 流水线（`ci` 6m04s、`db-tests` 45s）与合并后 main 流水线均已通过；Vercel 预览因平台 `Deployment rate limited` 未产出，属外部限制，不阻塞合并。
 - 风险与回滚：`js-yaml` 的 ESM 具名导出已由专项测试锁定；若 CI 发现其它间接导入面，回滚对应单个依赖提交即可。ESLint/TypeScript 未升级，不扩大现有风险面。
-- 下一步：推送分支、开 PR，CI 全绿后 rebase 合并；随后进入 R13.9 移动端键盘与焦点管理。
+- 下一步：无（已完成）。后续工具链升级见 `docs/deps.md` 的解除条件。
 - 最后更新：2026-09-13
 
 ## 依赖月度审计记录（Q5.3 的 2026-09-13 快照）
