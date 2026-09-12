@@ -56,6 +56,23 @@ describe("CI workflow contract", () => {
     expect(names).toContain("内容质量报告归档（R10.17）");
   });
 
+  it("官方 actions 使用 Node.js 24 运行时（不残留 Node.js 20 弃用版本）", () => {
+    const [workflow] = loadWorkflow();
+    // 各 action 切换到 node24 的第一个 major；低于它仍会在 CI 里触发 Node.js 20 弃用注记。
+    const minMajor = { checkout: 5, "setup-node": 5, cache: 5, "upload-artifact": 6 };
+    const stale = [];
+    for (const [jobName, job] of Object.entries(workflow.jobs)) {
+      for (const step of job.steps ?? []) {
+        const match = /^actions\/([\w-]+)@v(\d+)$/.exec(step.uses ?? "");
+        if (!match) continue;
+        const [, name, major] = match;
+        const min = minMajor[name];
+        if (min !== undefined && Number(major) < min) stale.push(`${jobName}: ${step.uses}`);
+      }
+    }
+    expect(stale, `以下 action 仍跑在 Node.js 20 上，需升级 major：\n${stale.join("\n")}`).toEqual([]);
+  });
+
   it("db-tests 作业覆盖迁移门禁与备份恢复演练（Q2.8 / Q5.4）", () => {
     const [workflow] = loadWorkflow();
     const job = workflow.jobs["db-tests"];
