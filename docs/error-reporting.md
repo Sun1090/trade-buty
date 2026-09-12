@@ -71,3 +71,5 @@ URL 里写的任何自由文本都不会离开浏览器。
   非法 scope/kind/digest、超长 body、错误媒体类型、日志不含原始内容。
 - `src/lib/error-report.test.ts`：白名单载荷不含 message/stack/URL/meta、silent 不上报、
   sendBeacon 优先与回退、两种传输抛错均不外抛。
+- `scripts/error-report-privacy.test.mjs`：审计器对客户端载荷 / 服务端路由 / 隐私页漂移的失败用例。
+- `npm run check:error-report-privacy`：CI 读取真实源码、路由与隐私页，验证白名单字段、有界读取与双语披露。

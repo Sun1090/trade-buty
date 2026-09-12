@@ -1,5 +1,32 @@
 # Progress
 
+## 错误上报隐私门禁（R7.6 补口）
+
+- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 工作分支：`codex/error-report-privacy-gate`
+- PR：[#22](https://github.com/Sun1090/trade-buty/pull/22)
+- Base：`origin/main@ec86526`
+- 远端 Head：`03414ef`（首推）
+- 本地提交：`test(errors): gate error report payload privacy`
+- 目标：R7.6 的错误上报端点（PR #21 已合并）此前只有约定式隐私边界，没有可执行门禁。任何后续重构都可能悄悄把错误正文 / URL / 账号塞进上报载荷或服务端日志而不被发现，故把「诊断载荷只能是无身份白名单字段」固化为 CI 门禁。
+- 已完成：
+  - 新增 `scripts/error-report-privacy.mjs`（与 `growth-event-privacy.mjs` 同构）：静态审计客户端 `buildErrorReportPayload`（敏感标识符黑名单 + `ErrorReportPayload` 接口字段白名单）、`ERROR_REPORT_ENDPOINT` 与真实 Route Handler 目录一致、服务端路由必须拒绝未知字段（`ERROR_REPORT_ALLOWED_KEYS`）且经 `readBoundedBody` 有界读取、不得调用 `req.json()`、不得回显原始载荷、文档与隐私页必须披露端点和「绝不发送」清单。注释先剥离，避免「禁止发送 message」的描述误报。
+  - 新增 `scripts/error-report-privacy.test.mjs`：7 例，覆盖真实实现通过、注释不误报、载荷泄漏 message/URL 被拒、非白名单字段被拒、无界读取 / 丢白名单被拒、隐私页漂移被拒、文档漏字段被拒。
+  - `package.json` 新增 `check:error-report-privacy` 脚本；`.github/workflows/ci.yml` 紧邻 `check:growth-event-privacy` 加入该步骤；`scripts/ci-workflow.test.mjs` 的必检列表与「引用的 npm 脚本必须存在」契约同步覆盖。
+  - `docs/ops.md` 门禁表新增一行；`docs/error-reporting.md` §已验证 补充本条门禁与测试。
+- 变更文件（关键）：`scripts/error-report-privacy.mjs`、`scripts/error-report-privacy.test.mjs`、`scripts/ci-workflow.test.mjs`、`package.json`、`.github/workflows/ci.yml`、`docs/ops.md`、`docs/error-reporting.md`。
+- 验证命令与结果：
+  - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0。
+  - `npm test` → 241 文件 / 1748 用例通过（较 base `main@ec86526` 的 240 文件 / 1741 用例新增 1 文件 / 7 用例）。
+  - `npx vitest run scripts/error-report-privacy.test.mjs` → 7 用例通过；`npx vitest run scripts/ci-workflow.test.mjs` → 6 用例通过。
+  - `npm run check:error-report-privacy` exit 0（endpoint /api/error-reports，白名单字段、脱敏日志、隐私页双语披露全部命中）。
+  - `npm run check:docs` exit 0（27 章 / 182 篇，zh/en 对齐）；`npm run check:secrets` exit 0（650 个文本文件无疑似凭据）；`npm run check:growth-event-privacy` exit 0；`npm run check:dark-pattern-copy` exit 0；`npm run check:changelog` exit 0。
+- 上游依赖：无（纯静态审计脚本，复用现有 vitest / js-yaml，未新增依赖）。
+- 未验证项：远端 CI 复跑结果。
+- 风险与回滚：门禁为只读静态分析，最坏情况是误报阻断合并；回滚即撤销本分支提交。
+- 下一步：推送、CI 全绿后按 rebase 合并；再继续扫描 roadmap / progress 中未列出的真实技术缺口。
+- 最后更新：2026-09-13
+
 ## 统一错误上报端点（R7.6 补口）
 
 - 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）

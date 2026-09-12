@@ -19,6 +19,7 @@
     "summary:coverage": "node scripts/summary-coverage.mjs",
     "check:ai-copy": "node scripts/check-ai-copy.mjs",
     "check:growth-event-privacy": "node scripts/growth-event-privacy.mjs",
+    "check:error-report-privacy": "node scripts/error-report-privacy.mjs",
     "check:dark-pattern-copy": "node scripts/check-dark-pattern-copy.mjs",
     "check:docs": "node scripts/check-docs-consistency.mjs",
     "check:changelog": "node scripts/generate-changelog.mjs --check",
