@@ -1,13 +1,41 @@
 # Progress
 
+## 安全头补齐 HSTS（R7.12 补口）
+
+- 状态：DONE（本地实现与全量验证完成；远端 CI `ci` + `db-tests` 通过，待 rebase 合并）
+- 工作分支：`codex/security-headers`
+- PR：[#20](https://github.com/Sun1090/trade-buty/pull/20)
+- Base：`origin/main@160e34b`（rebase 至后续 main）
+- 远端 Head：`0fb9eb6`（rebase 前）
+- 本地提交：`feat(security): send HSTS on all responses`、`docs(security): record HSTS header and gate`、`test(security): assert security headers on live responses`
+- 目标：`next.config.ts` 的 R7.12 安全头集合缺 `Strict-Transport-Security`。Vercel 不会自动下发 HSTS，站点此前没有任何强制 HTTPS 的声明，首访仍存在明文降级与 Cookie 剥离中间人风险。
+- 已完成：
+  - `next.config.ts` 在 `/:path*` 通配规则新增 `Strict-Transport-Security: max-age=63072000; includeSubDomains`，并把取值导出为 `HSTS_VALUE`。
+  - 刻意不加 `preload`：preload 列表是不可逆的浏览器硬编码，未来若新增仅 HTTP 的子域会被锁死。
+  - `src/lib/next-config.test.ts`：安全头 key 断言补上 `Strict-Transport-Security`，并新增一条锁定「值与 `HSTS_VALUE` 一致且 max-age ≥ 63072000」的回归，防止未来被误删或调成 0 后静默失去保护。
+  - `e2e/smoke.spec.ts`：对 HTML 路由与 `/search-index.json` 的线上响应增加 HSTS、CSP、nosniff、referrer/permissions policy、缓存策略断言。
+- 变更文件（关键）：`next.config.ts`、`src/lib/next-config.test.ts`、`e2e/smoke.spec.ts`、`docs/roadmap.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npx vitest run src/lib/next-config.test.ts` → 5 用例通过（新增 1 例）。
+  - `npx playwright test e2e/smoke.spec.ts --grep '安全响应头'` → 2 用例通过。
+  - `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0。
+  - `npm test` → 238 文件 / 1712 用例通过（较本分支 base `main@160e34b` 的 238 文件 / 1711 用例新增 1 例）。
+  - `npm run build` exit 0（473 静态页）。
+  - 远端 GitHub Actions run `34713680267`：`ci` pass（4m11s）、`db-tests` pass（40s）；Vercel 仅因账号部署配额 `Deployment rate limited` 失败。
+- 上游依赖：无。
+- 未验证项：线上响应头实际下发（部署配额恢复后 `curl -I https://trade-buty.vercel.app` 复核）。
+- 风险与回滚：HSTS 只在 HTTPS 响应上下发；不含 preload，回滚 = 撤销本分支提交。已确认站点生产域为 `trade-buty.vercel.app`，其子域由 Vercel 管理，`includeSubDomains` 无现存冲突。
+- 下一步：rebase 至 `main@4077e14` 后合并，部署后补一次线上响应头复核。
+- 最后更新：2026-09-13
+
 ## 路由级错误上报接线（R7.6 补口）
 
-- 状态：DONE（本地实现与全量验证完成；待推送后由远端 CI 复核）
+- 状态：DONE（已 rebase 合并）
 - 工作分支：`codex/route-error-reporting`
-- PR：[#19](https://github.com/Sun1090/trade-buty/pull/19)
+- PR：[#19](https://github.com/Sun1090/trade-buty/pull/19)（MERGED，rebase）
 - Base：`origin/main@160e34b`（rebase 后）
-- 远端 Head：推送后跟踪
-- 本地提交：`fix(errors): report route crashes through the fatal channel`、本 `docs(errors)` 提交
+- 远端 Head：`903f10f`（已 rebase 合入 `main@4077e14`）
+- 本地提交：`fix(errors): report route crashes through the fatal channel`、`docs(errors): record route error reporting wiring`
 - 目标：修掉「定义了 fatal 档但没有任何路由调用方」的真实缺口 —— `src/app/error.tsx` 只渲染兜底 UI，从不调用 `reportError`；全仓库此前只有 `ai-chat.tsx` 用到 `reportError`（recoverable）。
 - 已完成：
   - `src/lib/error-report.ts` 新增 `reportRouteError(error, scope = "route-error")`：统一按 `fatal` 上报，带上 Next.js 的 `error.digest`（无 digest 时不塞空 meta，保持控制台输出可断言）。
@@ -21,10 +49,12 @@
   - `npm test` → 239 文件 / 1715 用例通过（较 base `main@160e34b` 的 238 文件 / 1711 用例新增 1 文件 / 4 用例，无 `global-error.test.tsx`）。
   - `npm run build` exit 0（473 静态页，与 base 一致，未新增路由）。
   - `npm run check:bundle` exit 0（15 组预算全部通过；`drawing-tools` 最紧：392.3/400KB）。
+  - 远端 GitHub Actions run `34713543522`：`ci` pass（5m39s）、`db-tests` pass（43s）；Vercel 仅因账号部署配额 `Deployment rate limited` 失败。
 - 上游依赖：无。
-- 未验证项：远端 CI 复跑结果（推送后跟踪）。
+- 未验证项：无（已 rebase 合并为 `main@4077e14`）。
 - 风险与回滚：只在错误路径增加一次 console 上报，不触碰成功路径；首屏 JS 零增长（`zh` 301.7KB 与 base 同量级）。回滚即撤销本分支提交。
-- 下一步：推送、CI 全绿后按 rebase 合并；再评估「统一上报端点 + CSP `connect-src`」是否值得进首屏预算。
+- 下一步：再评估「统一上报端点 + CSP `connect-src`」是否值得进首屏预算。
+- 最后更新：2026-09-13
 - 最后更新：2026-09-13
 
 ## 文档事实校正（roadmap Q2.3 + v0.6 复盘状态）

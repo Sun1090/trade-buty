@@ -174,7 +174,7 @@
 - [x] R7.9 依赖评审（docs/deps.md：14 个运行时依赖逐个理由 + 明确不引入清单 + 审查流程）
 - [x] R7.10 构建时间监控（CI 计时步骤，>4 分钟 warning 注解）
 - [x] R7.11 缓存文档（docs/caching.md：页面层/localStorage/edge 内存三层 + 云端合并规则）
-- [x] R7.12 安全头（next.config：CSP（Supabase connect/wss 白名单）/nosniff/DENY/Referrer-Policy/Permissions-Policy）
+- [x] R7.12 安全头（next.config：CSP（Supabase connect/wss 白名单）/nosniff/DENY/HSTS（`max-age=63072000; includeSubDomains`，含 max-age 下限单测）/Referrer-Policy/Permissions-Policy）
 
 ## R8 增长与分享（R8.1–R8.12）
 
