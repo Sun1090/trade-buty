@@ -14,9 +14,7 @@ export async function GET() {
       user: { id: user.id, email: user.email ?? null },
     });
   } catch (e) {
-    return NextResponse.json(
-      { user: null, error: e instanceof Error ? e.message : "session error" },
-      { status: 500 },
-    );
+    console.error("[auth/session] unexpected failure:", e instanceof Error ? e.message : e);
+    return NextResponse.json({ user: null, error: "session error" }, { status: 500 });
   }
 }

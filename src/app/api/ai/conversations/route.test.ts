@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { parseSaveBody, POST } from "./route";
+import {
+  MAX_ASSISTANT_MESSAGE_CHARS,
+  MAX_SOURCES,
+  MAX_USER_MESSAGE_CHARS,
+  parseSaveBody,
+  POST,
+} from "./route";
 
 const getUser = vi.fn();
 const insert = vi.fn();
@@ -37,6 +43,24 @@ describe("parseSaveBody", () => {
       assistantMessage: "回答",
       sources: [{ chapter: "spot", doc: "order-types" }],
     });
+  });
+
+  it("拒绝超长正文与超量来源（R7.12）", () => {
+    expect(
+      parseSaveBody({ userMessage: "x".repeat(MAX_USER_MESSAGE_CHARS + 1), assistantMessage: "回答" }),
+    ).toBeNull();
+    expect(
+      parseSaveBody({ userMessage: "问题", assistantMessage: "x".repeat(MAX_ASSISTANT_MESSAGE_CHARS + 1) }),
+    ).toBeNull();
+    const many = Array.from({ length: MAX_SOURCES + 1 }, () => ({ chapter: "spot", doc: "order" }));
+    expect(parseSaveBody({ userMessage: "问题", assistantMessage: "回答", sources: many })).toBeNull();
+    expect(
+      parseSaveBody({
+        userMessage: "问题",
+        assistantMessage: "回答",
+        sources: [{ chapter: "x".repeat(101), doc: "order" }],
+      }),
+    ).toBeNull();
   });
 
   it("拒绝空消息、非数组来源和残缺来源", () => {
