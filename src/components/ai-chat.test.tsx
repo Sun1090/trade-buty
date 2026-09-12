@@ -185,7 +185,8 @@ describe("AiChat 加载态（R1.10）", () => {
   });
 
   it("非流式响应（无 body reader）回退为一次性读取全文", async () => {
-    const fetchMock = vi.fn(async (url: string) => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      void init; // preserve the real fetch signature for typed mock call assertions
       if (url === "/api/ai/conversations") {
         return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
       }
@@ -348,6 +349,7 @@ describe("AiChat 引用点击统计（R1.13）", () => {
   it("点击来源引用上报 citation-click，携带章节与问题", async () => {
     const sources = [{ chapter: "spot", doc: "order-types", title: "订单类型" }];
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      void init; // preserve the real fetch signature for typed mock call assertions
       if (url === "/api/ai/conversations") {
         return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
       }

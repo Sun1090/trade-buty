@@ -406,7 +406,6 @@ export function ReviewClient({
           <AiQuiz
             aiEnabled={aiEnabled}
             wrongItems={items.map((i) => ({ chapterNum: i.chapterNum, questionIdx: i.questionIdx }))}
-            quizzes={quizzes}
             dict={{
               generate: locale === "en" ? "AI quiz from your wrong answers" : "AI 针对错题出变体题",
               generating: locale === "en" ? "Generating…" : "正在生成…",

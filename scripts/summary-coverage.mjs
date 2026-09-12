@@ -5,7 +5,7 @@
  * 覆盖缺口主要在 en 语言根目录（zh 必有全部 27 章）。
  * 运行：npm run summary:coverage
  */
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 

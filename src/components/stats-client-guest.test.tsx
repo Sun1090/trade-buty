@@ -85,7 +85,7 @@ describe("R12.24 guest-mode stats degradation", () => {
     const origCreate = document.createElement.bind(document);
     const createSpy = vi
       .spyOn(document, "createElement")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       .mockImplementation(((tag: string, ...rest: unknown[]) =>
         tag === "a" ? anchor : (origCreate as unknown as (...args: unknown[]) => Node)(tag, ...rest)) as never);
 

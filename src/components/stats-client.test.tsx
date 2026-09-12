@@ -11,8 +11,7 @@ vi.stubGlobal("localStorage", {
   clear: () => store.clear(),
 });
 
-const { localDateStr, shiftDate } = await import("@/lib/date-utils");
-const { buildLearningOverview } = await import("@/lib/learning-overview");
+const { localDateStr } = await import("@/lib/date-utils");
 
 const chapters = [{ slug: "getting-started", docCount: 2 }];
 
@@ -466,7 +465,7 @@ describe("StatsClient review reminder banner + settings (R12.15–R12.17)", () =
   it("never shows the banner with cadence off, no due reviews, or inside the DND window", async () => {
     overdueWrong();
     localStorage.setItem("tb-review-reminder-settings", JSON.stringify({ cadence: "off", dndStartHour: 22, dndEndHour: 8 }));
-    const first = render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
     await screen.findByRole("button", { name: "Last 7 days" });
     expect(screen.queryByLabelText("Review reminder")).not.toBeInTheDocument();
     cleanup();

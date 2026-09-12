@@ -16,7 +16,7 @@ interface SummaryBody {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.auth.getUser();
 
     const body = (await req.json()) as SummaryBody;
     if (!body.chapter) {

@@ -68,7 +68,7 @@ async function generateQuestions() {
 describe("AiQuiz 错题本打通与幂等（R2.6/R2.8/R2.11）", () => {
   it("R5.5：答错变体题重置 SRS 阶段并排到明天", async () => {
     vi.stubGlobal("fetch", setup());
-    render(<AiQuiz wrongItems={wrongItems} quizzes={[]} dict={dict} />);
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
     await generateQuestions();
     fireEvent.click(screen.getByText("预测走势"));
     const w = readWrong();
@@ -84,7 +84,7 @@ describe("AiQuiz 错题本打通与幂等（R2.6/R2.8/R2.11）", () => {
       "getting-started:2": { chapterNum: "getting-started", questionIdx: 2, picked: 1, at: 1, srsStage: 4, srsDue: "2020-01-01" },
     }));
     vi.stubGlobal("fetch", setup());
-    render(<AiQuiz wrongItems={wrongItems} quizzes={[]} dict={dict} />);
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
     await generateQuestions();
     fireEvent.click(screen.getByText("限制单笔亏损"));
     expect(readWrong()["getting-started:2"]).toBeUndefined();
@@ -95,7 +95,7 @@ describe("AiQuiz 错题本打通与幂等（R2.6/R2.8/R2.11）", () => {
       "getting-started:2": { chapterNum: "getting-started", questionIdx: 2, picked: 1, at: 1, srsStage: 1, srsDue: "2020-01-01" },
     }));
     vi.stubGlobal("fetch", setup());
-    render(<AiQuiz wrongItems={wrongItems} quizzes={[]} dict={dict} />);
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
     await generateQuestions();
     fireEvent.click(screen.getByText("限制单笔亏损"));
     const entry = readWrong()["getting-started:2"];
@@ -106,7 +106,7 @@ describe("AiQuiz 错题本打通与幂等（R2.6/R2.8/R2.11）", () => {
 
   it("重复作答被阻止（幂等）：已作答后再次点击不改变 SRS 状态", async () => {
     vi.stubGlobal("fetch", setup());
-    render(<AiQuiz wrongItems={wrongItems} quizzes={[]} dict={dict} />);
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
     await generateQuestions();
     fireEvent.click(screen.getByText("限制单笔亏损"));
     const first = readWrong()["getting-started:2"];
@@ -121,7 +121,7 @@ describe("AiQuiz 错题本打通与幂等（R2.6/R2.8/R2.11）", () => {
   it("举报按钮调用 feedback API 且只报一次", async () => {
     const fetchMock = setup();
     vi.stubGlobal("fetch", fetchMock);
-    render(<AiQuiz wrongItems={wrongItems} quizzes={[]} dict={dict} />);
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
     await generateQuestions();
     fireEvent.click(screen.getByText("限制单笔亏损"));
     const reportBtn = screen.getByText(`⚑ ${dict.report}`);

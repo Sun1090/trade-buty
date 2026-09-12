@@ -35,12 +35,12 @@ function setupChat(ok = true, text = "止损是限制单笔亏损的订单。") 
 
 describe("shouldExplain", () => {
   it("长度 2–30 且在文章内通过", () => {
-    const inside = (n: Node) => true;
+    const inside = () => true;
     expect(shouldExplain("止损", {} as Node, inside)).toBe("止损");
     expect(shouldExplain("a".repeat(30), {} as Node, inside)).toHaveLength(30);
   });
   it("过短/过长/不在文章内/空选区拒绝", () => {
-    const inside = (n: Node) => true;
+    const inside = () => true;
     expect(shouldExplain("止", {} as Node, inside)).toBeNull();
     expect(shouldExplain("a".repeat(31), {} as Node, inside)).toBeNull();
     expect(shouldExplain("止损", null, inside)).toBeNull();

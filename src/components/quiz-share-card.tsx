@@ -195,6 +195,7 @@ export function QuizShareCard({
       {previewUrl && (
         <div className="basis-full mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <p className="text-xs text-faint mb-2 font-mono">{labels.previewAlt}</p>
+          {/* eslint-disable-next-line @next/next/no-img-element -- generated object URL is not optimizable by next/image */}
           <img
             src={previewUrl}
             alt={contentAlt}

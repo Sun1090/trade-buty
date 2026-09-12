@@ -63,6 +63,7 @@ export function isSrsOverdue(due: string | undefined, today: string = localDateS
 
 /** R5.6：旧错题回填——按入库时间推算到期日 */
 export function backfillSrs(createdAt: number, today: string = localDateStr()): SrsState {
+  void today; // kept for the shared effectiveSrs date-injection API
   const createdAtDay = localDateStr(new Date(createdAt));
   return { stage: 0, due: shiftDate(createdAtDay, EBBINGHAUS_INTERVALS[0]) };
 }

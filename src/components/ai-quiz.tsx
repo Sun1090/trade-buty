@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import type { ChapterQuiz } from "@/lib/quiz-types";
 import { applySrsResult } from "@/lib/wrongbook";
 import { addStudyTime } from "@/lib/study-time";
 import { isAiGloballyDisabled } from "@/lib/ai-toggle";
@@ -9,7 +8,6 @@ import { isAiGloballyDisabled } from "@/lib/ai-toggle";
 interface AiQuizProps {
   /** 用户错题列表（篇章+题号） */
   wrongItems: { chapterNum: string; questionIdx: number }[];
-  quizzes: ChapterQuiz[];
   dict: {
     generate: string; generating: string; error: string; question: string; explain: string;
     report: string; reported: string; badge: string; correct: string; wrong: string; next: string; done: string;
@@ -26,7 +24,7 @@ interface AiQuestion {
 /**
  * AI 自适应出题组件：根据错题调用 AI 生成变体题，就地答题+解析。
  */
-export function AiQuiz({ wrongItems, quizzes, dict, aiEnabled = true }: AiQuizProps & { aiEnabled?: boolean }) {
+export function AiQuiz({ wrongItems, dict, aiEnabled = true }: AiQuizProps & { aiEnabled?: boolean }) {
   const [questions, setQuestions] = useState<AiQuestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

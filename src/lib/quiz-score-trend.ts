@@ -82,9 +82,6 @@ export function readQuizLedger(storage: Storage = globalThis.localStorage): Reco
 const dateOfTimestamp = (value: unknown, fallback: string): string =>
   Number.isFinite(safeNonNegative(value)) && safeNonNegative(value) > 0 ? localDateStr(new Date(safeNonNegative(value))) : fallback;
 
-const scoreText = (best: number, total: number): string | null =>
-  best > 0 && total > 0 ? `${best}/${total}` : null;
-
 export function buildQuizScoreTrend(input: {
   chapters: QuizChapterInput[];
   progress?: Record<string, QuizProgressInput | null | undefined>;
