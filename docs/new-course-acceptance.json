@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-06",
+  "generatedAt": "2026-09-12",
   "counts": {
-    "ok": 340,
+    "ok": 364,
     "warn": 0,
-    "fail": 6
+    "fail": 0
   },
   "results": [
     {
@@ -954,7 +954,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 80/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
@@ -1018,7 +1018,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -1089,7 +1089,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "杠杆的数学：为什么 10 倍杠杆不等于「赚 10 倍」"
+          "detail": "05 · 杠杆的数学：为什么 10 倍杠杆不等于「赚 10 倍」"
         }
       ],
       "status": "ok"
@@ -1153,7 +1153,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "合约爆仓案例复盘"
+          "detail": "06 · 合约爆仓案例复盘"
         }
       ],
       "status": "ok"
@@ -1274,7 +1274,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -1594,7 +1594,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 85/100 · pass"
+          "detail": "score 87/100 · pass"
         },
         {
           "id": "h1",
@@ -1850,7 +1850,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 80/100 · pass"
         },
         {
           "id": "h1",
@@ -1914,7 +1914,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 80/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
@@ -2362,7 +2362,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 87/100 · pass"
+          "detail": "score 80/100 · pass"
         },
         {
           "id": "h1",
@@ -2398,7 +2398,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "央行政策与事件交易"
+          "detail": "06 · 央行政策与事件交易"
         },
         {
           "id": "description-present",
@@ -2411,8 +2411,8 @@
           "id": "zh-title-numbered",
           "label": "zh title 带「NN · 」前导序号",
           "level": "blocking",
-          "pass": false,
-          "detail": "央行政策与事件交易 — 无前导序号，将排在 999 位"
+          "pass": true,
+          "detail": "06 · 央行政策与事件交易"
         },
         {
           "id": "risk-block",
@@ -2433,10 +2433,10 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "央行政策与事件交易"
+          "detail": "06 · 央行政策与事件交易"
         }
       ],
-      "status": "fail"
+      "status": "ok"
     },
     {
       "locale": "zh",
@@ -2490,7 +2490,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 84/100 · pass"
+          "detail": "score 85/100 · pass"
         },
         {
           "id": "h1",
@@ -2654,7 +2654,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "外汇技术分析与实战形态"
+          "detail": "05 · 外汇技术分析与实战形态"
         },
         {
           "id": "description-present",
@@ -2667,8 +2667,8 @@
           "id": "zh-title-numbered",
           "label": "zh title 带「NN · 」前导序号",
           "level": "blocking",
-          "pass": false,
-          "detail": "外汇技术分析与实战形态 — 无前导序号，将排在 999 位"
+          "pass": true,
+          "detail": "05 · 外汇技术分析与实战形态"
         },
         {
           "id": "risk-block",
@@ -2689,10 +2689,10 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "外汇技术分析与实战形态"
+          "detail": "05 · 外汇技术分析与实战形态"
         }
       ],
-      "status": "fail"
+      "status": "ok"
     },
     {
       "locale": "zh",
@@ -2746,7 +2746,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 87/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
@@ -2810,14 +2810,14 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 87/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "03 · 交割与**<mark>展期</mark>**：时间站在谁那边"
+          "detail": "03 · 交割与展期：时间站在谁那边"
         }
       ],
       "status": "ok"
@@ -2938,7 +2938,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 77/100 · review"
+          "detail": "score 80/100 · pass"
         },
         {
           "id": "h1",
@@ -3002,14 +3002,14 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 87/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "05 · 期货交易策略：从**<mark>对冲</mark>**风险到博弈波动"
+          "detail": "05 · 期货交易策略：从对冲风险到博弈波动"
         }
       ],
       "status": "ok"
@@ -3066,14 +3066,14 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 85/100 · pass"
+          "detail": "score 87/100 · pass"
         },
         {
           "id": "h1",
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "02 · **<mark>保证金</mark>**、**<mark>杠杆</mark>**与**<mark>强平</mark>**：交易者的生死线"
+          "detail": "02 · 保证金、杠杆与强平：交易者的生死线"
         }
       ],
       "status": "ok"
@@ -3130,7 +3130,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 87/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
@@ -3194,7 +3194,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -3578,7 +3578,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 85/100 · pass"
+          "detail": "score 87/100 · pass"
         },
         {
           "id": "h1",
@@ -3706,7 +3706,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -3770,7 +3770,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -4474,7 +4474,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 80/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
@@ -4538,7 +4538,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 80/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
@@ -4609,7 +4609,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "02 · **做市商**与**流动性**"
+          "detail": "02 · 做市商与流动性"
         }
       ],
       "status": "ok"
@@ -4730,7 +4730,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 75/100 · review"
+          "detail": "score 77/100 · review"
         },
         {
           "id": "h1",
@@ -4773,7 +4773,7 @@
           "label": "frontmatter description",
           "level": "blocking",
           "pass": true,
-          "detail": "债券与利率详解——债券定价、收益率曲线、无风险利率、美债10Y定价锚与加息降息对各类资产的传导路径"
+          "detail": "债券与利率导读——债券品种全景速览、票息与到期收益率、无风险利率、收益率曲线倒挂与美债10Y定价锚，深度内容见 22 章债券与利率深潜篇"
         },
         {
           "id": "zh-title-numbered",
@@ -4794,7 +4794,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 87/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
@@ -4858,7 +4858,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 93/100 · pass"
         },
         {
           "id": "h1",
@@ -4922,7 +4922,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 84/100 · pass"
+          "detail": "score 85/100 · pass"
         },
         {
           "id": "h1",
@@ -4986,7 +4986,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 93/100 · pass"
         },
         {
           "id": "h1",
@@ -5050,7 +5050,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 74/100 · review"
+          "detail": "score 75/100 · review"
         },
         {
           "id": "h1",
@@ -5093,7 +5093,7 @@
           "label": "frontmatter description",
           "level": "blocking",
           "pass": true,
-          "detail": "外汇市场全解——货币对、美元指数DXY、报价机制、Pip点值计算、四城交易时间、杠杆特色与汇率驱动"
+          "detail": "外汇市场导读卡——市场全景速览（规模、货币对、交易时段）、核心概念五条与外汇交易专章（23 章）导航"
         },
         {
           "id": "zh-title-numbered",
@@ -5114,7 +5114,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 87/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
@@ -5178,7 +5178,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 93/100 · pass"
         },
         {
           "id": "h1",
@@ -5242,7 +5242,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 93/100 · pass"
         },
         {
           "id": "h1",
@@ -5306,7 +5306,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 84/100 · pass"
+          "detail": "score 85/100 · pass"
         },
         {
           "id": "h1",
@@ -5370,7 +5370,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 84/100 · pass"
+          "detail": "score 85/100 · pass"
         },
         {
           "id": "h1",
@@ -5413,7 +5413,7 @@
           "label": "frontmatter description",
           "level": "blocking",
           "pass": true,
-          "detail": "期权基础——Call与Put、四要素、实值平值虚值、买卖方权利义务、内在时间价值、隐含波动率IV与希腊字母"
+          "detail": "期权入门导读卡——期权是什么、权利金/行权价/到期日、四种基础头寸与买卖双方义务不对称，最短路径搞懂期权，再进阶期权策略篇"
         },
         {
           "id": "zh-title-numbered",
@@ -5434,7 +5434,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 87/100 · pass"
+          "detail": "score 80/100 · pass"
         },
         {
           "id": "h1",
@@ -5498,7 +5498,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 74/100 · review"
+          "detail": "score 75/100 · review"
         },
         {
           "id": "h1",
@@ -5562,7 +5562,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 92/100 · pass"
         },
         {
           "id": "h1",
@@ -5570,6 +5570,70 @@
           "level": "advisory",
           "pass": true,
           "detail": "11 · REITs 与房地产投资：从「买房」到「买房子」的生意"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "zh",
+      "chapter": "markets-instruments",
+      "document": "sentiment-indicators",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "sentiment-indicators"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "16 · 情绪指标全景：恐贪指数、多空比与 PCR"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "情绪指标全景——恐贪指数的构成与反向参考、合约多空比与持仓比的区别、PCR 认沽认购比的期权市场含义，以及只调仓位不做择时的正确用法"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "16 · 情绪指标全景：恐贪指数、多空比与 PCR"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 100/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "16 · 情绪指标全景：恐贪指数、多空比与 PCR"
         }
       ],
       "status": "ok"
@@ -5626,14 +5690,14 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 93/100 · pass"
         },
         {
           "id": "h1",
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "13 · **<mark>波动率</mark>**与 VIX：恐慌是能被定价的"
+          "detail": "13 · 波动率与 VIX：恐慌是能被定价的"
         }
       ],
       "status": "ok"
@@ -5989,7 +6053,7 @@
           "label": "frontmatter description",
           "level": "blocking",
           "pass": true,
-          "detail": "交易合规与税务——平台合规、出入金渠道、冻卡风险、税务申报与资产性质等监管法律常识整理"
+          "detail": "聚焦交易渠道、跨境出入金、冻卡与反洗钱风险，并说明何时需要转入税务申报与专业咨询。"
         },
         {
           "id": "zh-title-numbered",
@@ -6010,7 +6074,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 80/100 · pass"
         },
         {
           "id": "h1",
@@ -6067,14 +6131,14 @@
           "label": "「⚠️ 风险提示/Risk Warning」块",
           "level": "blocking",
           "pass": true,
-          "detail": "容器 1 / 行内 0"
+          "detail": "容器 1 / 行内 1"
         },
         {
           "id": "description-quality",
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -6138,7 +6202,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -6558,7 +6622,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "06 · 如何精读一本书"
+          "detail": "05 · 如何精读一本书"
         },
         {
           "id": "description-present",
@@ -6572,7 +6636,7 @@
           "label": "zh title 带「NN · 」前导序号",
           "level": "blocking",
           "pass": true,
-          "detail": "06 · 如何精读一本书"
+          "detail": "05 · 如何精读一本书"
         },
         {
           "id": "risk-block",
@@ -6593,7 +6657,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "06 · 如何精读一本书"
+          "detail": "05 · 如何精读一本书"
         }
       ],
       "status": "ok"
@@ -6622,7 +6686,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "05 · 量化与交易心理"
+          "detail": "04 · 量化与交易心理"
         },
         {
           "id": "description-present",
@@ -6636,7 +6700,7 @@
           "label": "zh title 带「NN · 」前导序号",
           "level": "blocking",
           "pass": true,
-          "detail": "05 · 量化与交易心理"
+          "detail": "04 · 量化与交易心理"
         },
         {
           "id": "risk-block",
@@ -6657,7 +6721,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "05 · 量化与交易心理"
+          "detail": "04 · 量化与交易心理"
         }
       ],
       "status": "ok"
@@ -7034,7 +7098,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 80/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
@@ -7326,7 +7390,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "加密现货专题"
+          "detail": "03 · 加密现货专题"
         },
         {
           "id": "description-present",
@@ -7339,8 +7403,8 @@
           "id": "zh-title-numbered",
           "label": "zh title 带「NN · 」前导序号",
           "level": "blocking",
-          "pass": false,
-          "detail": "加密现货专题 — 无前导序号，将排在 999 位"
+          "pass": true,
+          "detail": "03 · 加密现货专题"
         },
         {
           "id": "risk-block",
@@ -7361,10 +7425,74 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "加密现货专题"
+          "detail": "03 · 加密现货专题"
         }
       ],
-      "status": "fail"
+      "status": "ok"
+    },
+    {
+      "locale": "zh",
+      "chapter": "spot",
+      "document": "dca-methodology",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "dca-methodology"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "07 · 定投与分批建仓方法论"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "定投与分批建仓方法论——用时间分散替代择时、定投均价低于算术平均的数学与边界、等额定投金字塔网格三种建仓对比、止盈纪律与停投条件、与再平衡的衔接"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "07 · 定投与分批建仓方法论"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 100/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "07 · 定投与分批建仓方法论"
+        }
+      ],
+      "status": "ok"
     },
     {
       "locale": "zh",
@@ -7425,7 +7553,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "组合管理与再平衡"
+          "detail": "06 · 组合管理与再平衡"
         }
       ],
       "status": "ok"
@@ -7454,7 +7582,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "现货交易基础"
+          "detail": "01 · 现货交易基础"
         },
         {
           "id": "description-present",
@@ -7467,8 +7595,8 @@
           "id": "zh-title-numbered",
           "label": "zh title 带「NN · 」前导序号",
           "level": "blocking",
-          "pass": false,
-          "detail": "现货交易基础 — 无前导序号，将排在 999 位"
+          "pass": true,
+          "detail": "01 · 现货交易基础"
         },
         {
           "id": "risk-block",
@@ -7489,10 +7617,10 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "现货交易基础"
+          "detail": "01 · 现货交易基础"
         }
       ],
-      "status": "fail"
+      "status": "ok"
     },
     {
       "locale": "zh",
@@ -7518,7 +7646,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "现货实务进阶"
+          "detail": "02 · 现货实务进阶"
         },
         {
           "id": "description-present",
@@ -7531,8 +7659,8 @@
           "id": "zh-title-numbered",
           "label": "zh title 带「NN · 」前导序号",
           "level": "blocking",
-          "pass": false,
-          "detail": "现货实务进阶 — 无前导序号，将排在 999 位"
+          "pass": true,
+          "detail": "02 · 现货实务进阶"
         },
         {
           "id": "risk-block",
@@ -7553,10 +7681,10 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "现货实务进阶"
+          "detail": "02 · 现货实务进阶"
         }
       ],
-      "status": "fail"
+      "status": "ok"
     },
     {
       "locale": "zh",
@@ -7582,7 +7710,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "现货交易策略"
+          "detail": "04 · 现货交易策略"
         },
         {
           "id": "description-present",
@@ -7595,8 +7723,8 @@
           "id": "zh-title-numbered",
           "label": "zh title 带「NN · 」前导序号",
           "level": "blocking",
-          "pass": false,
-          "detail": "现货交易策略 — 无前导序号，将排在 999 位"
+          "pass": true,
+          "detail": "04 · 现货交易策略"
         },
         {
           "id": "risk-block",
@@ -7617,10 +7745,10 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "现货交易策略"
+          "detail": "04 · 现货交易策略"
         }
       ],
-      "status": "fail"
+      "status": "ok"
     },
     {
       "locale": "zh",
@@ -7681,7 +7809,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "安全存储与钱包管理"
+          "detail": "05 · 安全存储与钱包管理"
         }
       ],
       "status": "ok"
@@ -7738,7 +7866,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -7746,6 +7874,70 @@
           "level": "advisory",
           "pass": true,
           "detail": "02 · A 股交易规则"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "zh",
+      "chapter": "stocks",
+      "document": "adjusted-price-dividends",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "adjusted-price-dividends"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "08 · 复权、除权除息与指标失真"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "复权与除权除息——除权参考价原理、前复权后复权不复权三种口径的选择、除权跳空对均线与 MACD 等指标的破坏、实操清单与高分红股注意事项"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "08 · 复权、除权除息与指标失真"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 90/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "08 · 复权、除权除息与指标失真"
         }
       ],
       "status": "ok"
@@ -7802,7 +7994,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 93/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -7866,7 +8058,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 95/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -7994,7 +8186,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -8058,7 +8250,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -8186,7 +8378,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 75/100 · review"
+          "detail": "score 77/100 · review"
         },
         {
           "id": "h1",
@@ -8378,7 +8570,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 75/100 · review"
+          "detail": "score 77/100 · review"
         },
         {
           "id": "h1",
@@ -8506,7 +8698,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 75/100 · review"
+          "detail": "score 77/100 · review"
         },
         {
           "id": "h1",
@@ -8890,7 +9082,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -8954,7 +9146,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -9018,7 +9210,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 80/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
@@ -9082,7 +9274,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 95/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -9146,7 +9338,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -9154,6 +9346,70 @@
           "level": "advisory",
           "pass": true,
           "detail": "08 · 江恩箱与角度线实战"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "zh",
+      "chapter": "technical-analysis",
+      "document": "indicators-advanced",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "indicators-advanced"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "12 · 指标进阶补遗：DMI/ADX、Supertrend、BBW"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "指标进阶补遗——DMI/ADX 把方向与趋势强度分离、Supertrend 的 ATR 棘轮轨道与翻转止损、BBW 的波动挤压与扩张周期，以及三者的组合定位"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "12 · 指标进阶补遗：DMI/ADX、Supertrend、BBW"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 100/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "12 · 指标进阶补遗：DMI/ADX、Supertrend、BBW"
         }
       ],
       "status": "ok"
@@ -9189,7 +9445,7 @@
           "label": "frontmatter description",
           "level": "blocking",
           "pass": true,
-          "detail": "技术指标详解——均线MACDKDJ等趋势与震荡指标的原料加工原理公式参数设置与失行情境全解析"
+          "detail": "技术指标详解——均线、MACD、KDJ 等趋势与震荡指标的原理、公式、参数设置与失真情境全解析"
         },
         {
           "id": "zh-title-numbered",
@@ -9210,7 +9466,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 80/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -9218,6 +9474,70 @@
           "level": "advisory",
           "pass": true,
           "detail": "02 · 技术指标详解"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "zh",
+      "chapter": "technical-analysis",
+      "document": "multi-timeframe",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "multi-timeframe"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "13 · 多周期分析：让周期之间互相证明"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "多周期分析——单周期为何会骗人、相邻 4–6 倍的周期选择、大周期定方向/中周期定结构/小周期定入场的三层框架，以及跨周期冲突与常见错误的处理"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "13 · 多周期分析：让周期之间互相证明"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 90/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "13 · 多周期分析：让周期之间互相证明"
         }
       ],
       "status": "ok"
@@ -9274,7 +9594,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -9282,6 +9602,134 @@
           "level": "advisory",
           "pass": true,
           "detail": "09 · 订单流与市场微观结构"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "zh",
+      "chapter": "technical-analysis",
+      "document": "orderbook-depth",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "orderbook-depth"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "10 · 订单簿与深度图解读"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "订单簿与深度图解读——盘口五档十档读法、挂单结构分析、深度图识别支撑阻力、大单博弈与挂单撤单策略识别"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "10 · 订单簿与深度图解读"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 100/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "10 · 订单簿与深度图解读"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "zh",
+      "chapter": "technical-analysis",
+      "document": "replay-training",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "replay-training"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "11 · 回放训练方法论"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "回放训练方法论——用历史 K 线逐根推进压缩经验时间，设计专项训练计划、掌握「盲推-验证」循环，并认清回放与模拟盘的分工与局限"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "11 · 回放训练方法论"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 100/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "11 · 回放训练方法论"
         }
       ],
       "status": "ok"
@@ -9338,7 +9786,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -9402,7 +9850,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -9857,7 +10305,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "06 · **套利**实战手册"
+          "detail": "06 · 套利实战手册"
         }
       ],
       "status": "ok"
@@ -9914,7 +10362,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 80/100 · pass"
+          "detail": "score 83/100 · pass"
         },
         {
           "id": "h1",
@@ -10042,7 +10490,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 80/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
@@ -10249,6 +10697,70 @@
     {
       "locale": "zh",
       "chapter": "trading-system",
+      "document": "alert-discipline",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "alert-discipline"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "08 · 价格提醒与离盘纪律"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "价格提醒与离盘纪律——盯盘的注意力代价、把「条件→行动」外包给提醒系统、绑定交易计划关键位的设置方法，以及提醒过载与触发后的应对"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "08 · 价格提醒与离盘纪律"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 100/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "08 · 价格提醒与离盘纪律"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "zh",
+      "chapter": "trading-system",
       "document": "equity-curve-attribution",
       "checks": [
         {
@@ -10298,7 +10810,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -10362,7 +10874,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -10370,6 +10882,70 @@
           "level": "advisory",
           "pass": true,
           "detail": "06 · 交易日志与检视清单"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "zh",
+      "chapter": "trading-system",
+      "document": "paper-to-live",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "paper-to-live"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "07 · 模拟盘到实盘：进阶路径"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "模拟盘到实盘的进阶路径——模拟盘的价值与边界、该练什么与三个陷阱、毕业标准、实盘切换的最小仓位原则与前 30 天降速规则"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "07 · 模拟盘到实盘：进阶路径"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 100/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "07 · 模拟盘到实盘：进阶路径"
         }
       ],
       "status": "ok"
@@ -10426,7 +11002,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -10490,7 +11066,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -10554,7 +11130,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -10618,7 +11194,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -11102,7 +11678,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Foundations of Behavioral Finance"
+          "detail": "01 · Foundations of Behavioral Finance"
         },
         {
           "id": "description-present",
@@ -11137,7 +11713,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Foundations of Behavioral Finance"
+          "detail": "01 · Foundations of Behavioral Finance"
         }
       ],
       "status": "ok"
@@ -11166,7 +11742,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Applying Behavioral Finance"
+          "detail": "05 · Applying Behavioral Finance"
         },
         {
           "id": "description-present",
@@ -11201,7 +11777,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Applying Behavioral Finance"
+          "detail": "05 · Applying Behavioral Finance"
         }
       ],
       "status": "ok"
@@ -11230,7 +11806,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "A Field Guide to Cognitive Biases in Trading"
+          "detail": "02 · A Field Guide to Cognitive Biases in Trading"
         },
         {
           "id": "description-present",
@@ -11265,7 +11841,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "A Field Guide to Cognitive Biases in Trading"
+          "detail": "02 · A Field Guide to Cognitive Biases in Trading"
         }
       ],
       "status": "ok"
@@ -11294,7 +11870,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Market Anomalies: Evidence That Markets Are Less Efficient"
+          "detail": "03 · Market Anomalies: Evidence That Markets Are Less Efficient"
         },
         {
           "id": "description-present",
@@ -11329,7 +11905,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Market Anomalies: Evidence That Markets Are Less Efficient"
+          "detail": "03 · Market Anomalies: Evidence That Markets Are Less Efficient"
         }
       ],
       "status": "ok"
@@ -11358,7 +11934,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Mental Accounting & Framing"
+          "detail": "04 · Mental Accounting & Framing"
         },
         {
           "id": "description-present",
@@ -11393,7 +11969,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Mental Accounting & Framing"
+          "detail": "04 · Mental Accounting & Framing"
         }
       ],
       "status": "ok"
@@ -11422,7 +11998,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "China Bond Market in Practice"
+          "detail": "02 · China Bond Market in Practice"
         },
         {
           "id": "description-present",
@@ -11457,7 +12033,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "China Bond Market in Practice"
+          "detail": "02 · China Bond Market in Practice"
         }
       ],
       "status": "ok"
@@ -11486,7 +12062,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Credit Bonds & High Yield"
+          "detail": "04 · Credit Bonds & High Yield"
         },
         {
           "id": "description-present",
@@ -11521,7 +12097,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Credit Bonds & High Yield"
+          "detail": "04 · Credit Bonds & High Yield"
         }
       ],
       "status": "ok"
@@ -11550,7 +12126,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Treasury Investment in Practice"
+          "detail": "01 · Treasury Investment in Practice"
         },
         {
           "id": "description-present",
@@ -11585,7 +12161,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Treasury Investment in Practice"
+          "detail": "01 · Treasury Investment in Practice"
         }
       ],
       "status": "ok"
@@ -11614,7 +12190,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Yield Curve Trading"
+          "detail": "03 · Yield Curve Trading"
         },
         {
           "id": "description-present",
@@ -11649,7 +12225,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Yield Curve Trading"
+          "detail": "03 · Yield Curve Trading"
         }
       ],
       "status": "ok"
@@ -11678,7 +12254,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Content Creation & Knowledge Sharing"
+          "detail": "04 · Content Creation & Knowledge Sharing"
         },
         {
           "id": "description-present",
@@ -11713,7 +12289,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Content Creation & Knowledge Sharing"
+          "detail": "04 · Content Creation & Knowledge Sharing"
         }
       ],
       "status": "ok"
@@ -11742,7 +12318,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Indie Development & Startups"
+          "detail": "03 · Indie Development & Startups"
         },
         {
           "id": "description-present",
@@ -11777,7 +12353,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Indie Development & Startups"
+          "detail": "03 · Indie Development & Startups"
         }
       ],
       "status": "ok"
@@ -11806,7 +12382,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Professional Trader Path"
+          "detail": "05 · Professional Trader Path"
         },
         {
           "id": "description-present",
@@ -11841,7 +12417,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Professional Trader Path"
+          "detail": "05 · Professional Trader Path"
         }
       ],
       "status": "ok"
@@ -11870,7 +12446,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Quant Career Path"
+          "detail": "01 · Quant Career Path"
         },
         {
           "id": "description-present",
@@ -11905,7 +12481,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Quant Career Path"
+          "detail": "01 · Quant Career Path"
         }
       ],
       "status": "ok"
@@ -11934,7 +12510,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Trading Careers Overview"
+          "detail": "02 · Trading Careers Overview"
         },
         {
           "id": "description-present",
@@ -11969,7 +12545,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Trading Careers Overview"
+          "detail": "02 · Trading Careers Overview"
         }
       ],
       "status": "ok"
@@ -11998,7 +12574,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Crypto Derivatives"
+          "detail": "03 · Crypto Derivatives"
         },
         {
           "id": "description-present",
@@ -12033,7 +12609,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Crypto Derivatives"
+          "detail": "03 · Crypto Derivatives"
         }
       ],
       "status": "ok"
@@ -12062,7 +12638,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Funding Rates"
+          "detail": "02 · Funding Rates"
         },
         {
           "id": "description-present",
@@ -12097,7 +12673,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Funding Rates"
+          "detail": "02 · Funding Rates"
         }
       ],
       "status": "ok"
@@ -12126,7 +12702,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "The Math of Leverage: Why 10x Is Not '10x Profit'"
+          "detail": "05 · The Math of Leverage: Why 10x Is Not \\\"10x Profit\\\""
         },
         {
           "id": "description-present",
@@ -12161,7 +12737,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "The Math of Leverage: Why 10x Is Not \"10x Profit\""
+          "detail": "05 · The Math of Leverage: Why 10x Is Not \"10x Profit\""
         }
       ],
       "status": "ok"
@@ -12190,7 +12766,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Perpetual Blow-Up Case Studies"
+          "detail": "06 · Perpetual Blow-Up Case Studies"
         },
         {
           "id": "description-present",
@@ -12225,7 +12801,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Perpetual Blow-Up Case Studies"
+          "detail": "06 · Perpetual Blow-Up Case Studies"
         }
       ],
       "status": "ok"
@@ -12254,7 +12830,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Perpetual Trading in Practice & Risk Control"
+          "detail": "04 · Perpetual Trading in Practice & Risk Control"
         },
         {
           "id": "description-present",
@@ -12289,7 +12865,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Perpetual Trading in Practice & Risk Control"
+          "detail": "04 · Perpetual Trading in Practice & Risk Control"
         }
       ],
       "status": "ok"
@@ -12318,7 +12894,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Perpetual Swaps"
+          "detail": "01 · Perpetual Swaps"
         },
         {
           "id": "description-present",
@@ -12353,7 +12929,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Perpetual Swaps"
+          "detail": "01 · Perpetual Swaps"
         }
       ],
       "status": "ok"
@@ -12382,7 +12958,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Central Bank Language: Statement Translation and Policy Expectation-Gap Trading"
+          "detail": "02 · Central Bank Language: Statement Translation and Policy Expectation-Gap Trading"
         },
         {
           "id": "description-present",
@@ -12417,7 +12993,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Central Bank Language: Statement Translation and Policy Expectation-Gap Trading"
+          "detail": "02 · Central Bank Language: Statement Translation and Policy Expectation-Gap Trading"
         }
       ],
       "status": "ok"
@@ -12446,7 +13022,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Earnings Calls: Guidance, Management Tone, and Corporate-Speak Translation"
+          "detail": "03 · Earnings Calls: Guidance, Management Tone, and Corporate-Speak Translation"
         },
         {
           "id": "description-present",
@@ -12481,7 +13057,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Earnings Calls: Guidance, Management Tone, and Corporate-Speak Translation"
+          "detail": "03 · Earnings Calls: Guidance, Management Tone, and Corporate-Speak Translation"
         }
       ],
       "status": "ok"
@@ -12510,7 +13086,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Economic Calendar User Guide: Event Classification, Weekly Scheduling, and Event Trading"
+          "detail": "05 · Economic Calendar User Guide: Event Classification, Weekly Scheduling, and Event Trading"
         },
         {
           "id": "description-present",
@@ -12545,7 +13121,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Economic Calendar User Guide: Event Classification, Weekly Scheduling, and Event Trading"
+          "detail": "05 · Economic Calendar User Guide: Event Classification, Weekly Scheduling, and Event Trading"
         }
       ],
       "status": "ok"
@@ -12574,7 +13150,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Industry Data: Supply-Demand Analysis and Inventory-Cycle Reading"
+          "detail": "04 · Industry Data: Supply-Demand Analysis and Inventory-Cycle Reading"
         },
         {
           "id": "description-present",
@@ -12609,7 +13185,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Industry Data: Supply-Demand Analysis and Inventory-Cycle Reading"
+          "detail": "04 · Industry Data: Supply-Demand Analysis and Inventory-Cycle Reading"
         }
       ],
       "status": "ok"
@@ -12638,7 +13214,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Macro Data Reading: Expectation Gaps, Structure Breakdown, and a Complete Interpretation Template"
+          "detail": "01 · Macro Data Reading: Expectation Gaps, Structure Breakdown, and a Complete Interpretation Template"
         },
         {
           "id": "description-present",
@@ -12673,7 +13249,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Macro Data Reading: Expectation Gaps, Structure Breakdown, and a Complete Interpretation Template"
+          "detail": "01 · Macro Data Reading: Expectation Gaps, Structure Breakdown, and a Complete Interpretation Template"
         }
       ],
       "status": "ok"
@@ -12702,7 +13278,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "A History of Financial Bubbles"
+          "detail": "01 · A History of Financial Bubbles"
         },
         {
           "id": "description-present",
@@ -12737,7 +13313,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "A History of Financial Bubbles"
+          "detail": "01 · A History of Financial Bubbles"
         }
       ],
       "status": "ok"
@@ -12766,7 +13342,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "A Brief History of China's Stock Market"
+          "detail": "05 · A Brief History of China's Stock Market"
         },
         {
           "id": "description-present",
@@ -12801,7 +13377,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "A Brief History of China's Stock Market"
+          "detail": "05 · A Brief History of China's Stock Market"
         }
       ],
       "status": "ok"
@@ -12830,7 +13406,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Crypto History"
+          "detail": "06 · Crypto History"
         },
         {
           "id": "description-present",
@@ -12865,7 +13441,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Crypto History"
+          "detail": "06 · Crypto History"
         }
       ],
       "status": "ok"
@@ -12894,7 +13470,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Famous Crashes and Black Swans"
+          "detail": "02 · Famous Crashes and Black Swans"
         },
         {
           "id": "description-present",
@@ -12929,7 +13505,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Famous Crashes and Black Swans"
+          "detail": "02 · Famous Crashes and Black Swans"
         }
       ],
       "status": "ok"
@@ -12958,7 +13534,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Trading Masters"
+          "detail": "03 · Trading Masters"
         },
         {
           "id": "description-present",
@@ -12993,7 +13569,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Trading Masters"
+          "detail": "03 · Trading Masters"
         }
       ],
       "status": "ok"
@@ -13022,7 +13598,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Trading Schools and Philosophy"
+          "detail": "04 · Trading Schools and Philosophy"
         },
         {
           "id": "description-present",
@@ -13057,7 +13633,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Trading Schools and Philosophy"
+          "detail": "04 · Trading Schools and Philosophy"
         }
       ],
       "status": "ok"
@@ -13086,7 +13662,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Cash Flow Analysis"
+          "detail": "04 · Cash Flow Analysis"
         },
         {
           "id": "description-present",
@@ -13121,7 +13697,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Cash Flow Analysis"
+          "detail": "04 · Cash Flow Analysis"
         }
       ],
       "status": "ok"
@@ -13150,7 +13726,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Financial Statement Analysis in Practice"
+          "detail": "05 · Financial Statement Analysis in Practice"
         },
         {
           "id": "description-present",
@@ -13185,7 +13761,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Financial Statement Analysis in Practice"
+          "detail": "05 · Financial Statement Analysis in Practice"
         }
       ],
       "status": "ok"
@@ -13214,7 +13790,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Financial Metrics in Practice"
+          "detail": "02 · Financial Metrics in Practice"
         },
         {
           "id": "description-present",
@@ -13249,7 +13825,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Financial Metrics in Practice"
+          "detail": "02 · Financial Metrics in Practice"
         }
       ],
       "status": "ok"
@@ -13278,7 +13854,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Detecting Financial Fraud"
+          "detail": "03 · Detecting Financial Fraud"
         },
         {
           "id": "description-present",
@@ -13313,7 +13889,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Detecting Financial Fraud"
+          "detail": "03 · Detecting Financial Fraud"
         }
       ],
       "status": "ok"
@@ -13342,7 +13918,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Reading the Three Statements Closely"
+          "detail": "01 · Reading the Three Statements Closely"
         },
         {
           "id": "description-present",
@@ -13377,7 +13953,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Reading the Three Statements Closely"
+          "detail": "01 · Reading the Three Statements Closely"
         }
       ],
       "status": "ok"
@@ -13406,7 +13982,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Carry Trade and Interest Rate Differentials: The Primary Driver of Exchange Rates"
+          "detail": "02 · Carry Trade and Interest Rate Differentials: The Primary Driver of Exchange Rates"
         },
         {
           "id": "description-present",
@@ -13441,7 +14017,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Carry Trade and Interest Rate Differentials: The Primary Driver of Exchange Rates"
+          "detail": "02 · Carry Trade and Interest Rate Differentials: The Primary Driver of Exchange Rates"
         }
       ],
       "status": "ok"
@@ -13470,7 +14046,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Central Bank Policy and Event Trading"
+          "detail": "06 · Central Bank Policy and Event Trading"
         },
         {
           "id": "description-present",
@@ -13505,7 +14081,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Central Bank Policy and Event Trading"
+          "detail": "06 · Central Bank Policy and Event Trading"
         }
       ],
       "status": "ok"
@@ -13534,7 +14110,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Forex Automation (EAs) and Copy Trading: Holy Grail or Meat Grinder"
+          "detail": "03 · Forex Automation (EAs) and Copy Trading: Holy Grail or Meat Grinder"
         },
         {
           "id": "description-present",
@@ -13569,7 +14145,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Forex Automation (EAs) and Copy Trading: Holy Grail or Meat Grinder"
+          "detail": "03 · Forex Automation (EAs) and Copy Trading: Holy Grail or Meat Grinder"
         }
       ],
       "status": "ok"
@@ -13598,7 +14174,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Forex Leverage and Risk Management: Learn Not to Die Before Chasing Profit"
+          "detail": "04 · Forex Leverage and Risk Management: Learn Not to Die Before Chasing Profit"
         },
         {
           "id": "description-present",
@@ -13633,7 +14209,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Forex Leverage and Risk Management: Learn Not to Die Before Chasing Profit"
+          "detail": "04 · Forex Leverage and Risk Management: Learn Not to Die Before Chasing Profit"
         }
       ],
       "status": "ok"
@@ -13662,7 +14238,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Forex Trading Practice: Pair Personalities, Pip Value & P&L, and a Beginner Workflow"
+          "detail": "01 · Forex Trading Practice: Pair Personalities, Pip Value & P&L, and a Beginner Workflow"
         },
         {
           "id": "description-present",
@@ -13697,7 +14273,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Forex Trading Practice: Pair Personalities, Pip Value & P&L, and a Beginner Workflow"
+          "detail": "01 · Forex Trading Practice: Pair Personalities, Pip Value & P&L, and a Beginner Workflow"
         }
       ],
       "status": "ok"
@@ -13726,7 +14302,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Forex Technical Analysis and Practical Patterns"
+          "detail": "05 · Forex Technical Analysis and Practical Patterns"
         },
         {
           "id": "description-present",
@@ -13761,7 +14337,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Forex Technical Analysis and Practical Patterns"
+          "detail": "05 · Forex Technical Analysis and Practical Patterns"
         }
       ],
       "status": "ok"
@@ -13790,7 +14366,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Futures Options and Commodity Options: Contracts That Insure Your Futures"
+          "detail": "07 · Futures Options and Commodity Options: Contracts That Insure Your Futures"
         },
         {
           "id": "description-present",
@@ -13825,7 +14401,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Futures Options and Commodity Options: Contracts That Insure Your Futures"
+          "detail": "07 · Futures Options and Commodity Options: Contracts That Insure Your Futures"
         }
       ],
       "status": "ok"
@@ -13854,7 +14430,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Delivery and Rollover: Which Side Is Time On"
+          "detail": "03 · Delivery and Rollover: Which Side Is Time On"
         },
         {
           "id": "description-present",
@@ -13889,7 +14465,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Delivery and **<mark>Rollover</mark>**: Which Side Is Time On"
+          "detail": "03 · Delivery and Rollover: Which Side Is Time On"
         }
       ],
       "status": "ok"
@@ -13918,7 +14494,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Futures Basics: What a Contract Is"
+          "detail": "01 · Futures Basics: What a Contract Is"
         },
         {
           "id": "description-present",
@@ -13953,7 +14529,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Futures Basics: What a Contract Is"
+          "detail": "01 · Futures Basics: What a Contract Is"
         }
       ],
       "status": "ok"
@@ -13982,7 +14558,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Futures Products Encyclopedia: Your Battlefield Map"
+          "detail": "04 · Futures Products Encyclopedia: Your Battlefield Map"
         },
         {
           "id": "description-present",
@@ -14017,7 +14593,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Futures Products Encyclopedia: Your Battlefield Map"
+          "detail": "04 · Futures Products Encyclopedia: Your Battlefield Map"
         }
       ],
       "status": "ok"
@@ -14046,7 +14622,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Futures Trading Strategies: From Hedging Risk to Trading Volatility"
+          "detail": "05 · Futures Trading Strategies: From Hedging Risk to Trading Volatility"
         },
         {
           "id": "description-present",
@@ -14081,7 +14657,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Futures Trading Strategies: From **<mark>Hedging</mark>** Risk to Trading Volatility"
+          "detail": "05 · Futures Trading Strategies: From Hedging Risk to Trading Volatility"
         }
       ],
       "status": "ok"
@@ -14110,7 +14686,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Margin, Leverage & Forced Liquidation: A Trader's Lifeline"
+          "detail": "02 · Margin, Leverage, and Forced Liquidation: A Trader's Lifeline"
         },
         {
           "id": "description-present",
@@ -14138,14 +14714,14 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 83/100 · pass"
+          "detail": "score 84/100 · pass"
         },
         {
           "id": "h1",
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "**<mark>Margin</mark>**, **<mark>Leverage</mark>**, and **<mark>Forced Liquidation</mark>**: A Trader's Lifeline"
+          "detail": "02 · Margin, Leverage, and Forced Liquidation: A Trader's Lifeline"
         }
       ],
       "status": "ok"
@@ -14174,7 +14750,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "OTC Derivatives: The Dark Side of Custom Contracts"
+          "detail": "06 · OTC Derivatives: The Dark Side of Custom Contracts"
         },
         {
           "id": "description-present",
@@ -14209,7 +14785,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "OTC Derivatives: The Dark Side of Custom Contracts"
+          "detail": "06 · OTC Derivatives: The Dark Side of Custom Contracts"
         }
       ],
       "status": "ok"
@@ -14238,7 +14814,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Candlestick & Chart Basics"
+          "detail": "03 · Candlestick & Chart Basics"
         },
         {
           "id": "description-present",
@@ -14302,7 +14878,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Trading Core Concepts"
+          "detail": "02 · Trading Core Concepts"
         },
         {
           "id": "description-present",
@@ -14366,7 +14942,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Your First Trade: The Complete Flow from Account Setup to Order Placement"
+          "detail": "07 · Your First Trade: The Complete Flow from Account Setup to Order Placement"
         },
         {
           "id": "description-present",
@@ -14401,7 +14977,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Your First Trade: The Complete Flow from Account Setup to Order Placement"
+          "detail": "07 · Your First Trade: The Complete Flow from Account Setup to Order Placement"
         }
       ],
       "status": "ok"
@@ -14430,7 +15006,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Financial Market Overview"
+          "detail": "01 · Financial Market Overview"
         },
         {
           "id": "description-present",
@@ -14494,7 +15070,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Order Types and Execution Mechanics"
+          "detail": "05 · Order Types and Execution Mechanics"
         },
         {
           "id": "description-present",
@@ -14529,7 +15105,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Order Types and Execution Mechanics"
+          "detail": "05 · Order Types and Execution Mechanics"
         }
       ],
       "status": "ok"
@@ -14558,7 +15134,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Position Sizing and Money Management"
+          "detail": "06 · Position Sizing and Money Management"
         },
         {
           "id": "description-present",
@@ -14593,7 +15169,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Position Sizing and Money Management"
+          "detail": "06 · Position Sizing and Money Management"
         }
       ],
       "status": "ok"
@@ -14622,7 +15198,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Trading Hours Overview: When Every Market Opens and Closes"
+          "detail": "04 · Trading Hours Overview: When Every Market Opens and Closes"
         },
         {
           "id": "description-present",
@@ -14657,7 +15233,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Trading Hours Overview: When Every Market Opens and Closes"
+          "detail": "04 · Trading Hours Overview: When Every Market Opens and Closes"
         }
       ],
       "status": "ok"
@@ -14686,7 +15262,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Cross-Border Investing in Practice (Pragmatic Guide)"
+          "detail": "05 · Cross-Border Investing in Practice (Pragmatic Guide)"
         },
         {
           "id": "description-present",
@@ -14721,7 +15297,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Cross-Border Investing in Practice (Pragmatic Guide)"
+          "detail": "05 · Cross-Border Investing in Practice (Pragmatic Guide)"
         }
       ],
       "status": "ok"
@@ -14750,7 +15326,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Emerging Markets"
+          "detail": "03 · Emerging Markets"
         },
         {
           "id": "description-present",
@@ -14785,7 +15361,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Emerging Markets"
+          "detail": "03 · Emerging Markets"
         }
       ],
       "status": "ok"
@@ -14814,7 +15390,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "European Markets"
+          "detail": "02 · European Markets"
         },
         {
           "id": "description-present",
@@ -14849,7 +15425,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "European Markets"
+          "detail": "02 · European Markets"
         }
       ],
       "status": "ok"
@@ -14878,7 +15454,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Global Markets Comparison Overview"
+          "detail": "04 · Global Markets Comparison Overview"
         },
         {
           "id": "description-present",
@@ -14913,7 +15489,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Global Markets Comparison Overview"
+          "detail": "04 · Global Markets Comparison Overview"
         }
       ],
       "status": "ok"
@@ -14942,7 +15518,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Japan and Korea Markets"
+          "detail": "01 · Japan and Korea Markets"
         },
         {
           "id": "description-present",
@@ -14977,7 +15553,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Japan and Korea Markets"
+          "detail": "01 · Japan and Korea Markets"
         }
       ],
       "status": "ok"
@@ -15006,7 +15582,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Competitive Landscape & Economic Moats"
+          "detail": "03 · Competitive Landscape & Economic Moats"
         },
         {
           "id": "description-present",
@@ -15041,7 +15617,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Competitive Landscape & Economic Moats"
+          "detail": "03 · Competitive Landscape & Economic Moats"
         }
       ],
       "status": "ok"
@@ -15070,7 +15646,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Sector Prosperity & Cycles"
+          "detail": "04 · Sector Prosperity & Cycles"
         },
         {
           "id": "description-present",
@@ -15105,7 +15681,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Sector Prosperity & Cycles"
+          "detail": "04 · Sector Prosperity & Cycles"
         }
       ],
       "status": "ok"
@@ -15134,7 +15710,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Industry Research Methodology"
+          "detail": "01 · Industry Research Methodology"
         },
         {
           "id": "description-present",
@@ -15169,7 +15745,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Industry Research Methodology"
+          "detail": "01 · Industry Research Methodology"
         }
       ],
       "status": "ok"
@@ -15198,7 +15774,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "New Tracks & Theme Investing"
+          "detail": "05 · New Tracks & Theme Investing"
         },
         {
           "id": "description-present",
@@ -15233,7 +15809,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "New Tracks & Theme Investing"
+          "detail": "05 · New Tracks & Theme Investing"
         }
       ],
       "status": "ok"
@@ -15262,7 +15838,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Value Chain Analysis"
+          "detail": "02 · Value Chain Analysis"
         },
         {
           "id": "description-present",
@@ -15297,7 +15873,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Value Chain Analysis"
+          "detail": "02 · Value Chain Analysis"
         }
       ],
       "status": "ok"
@@ -15354,7 +15930,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 92/100 · pass"
+          "detail": "score 95/100 · pass"
         },
         {
           "id": "h1",
@@ -15418,7 +15994,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 85/100 · pass"
+          "detail": "score 87/100 · pass"
         },
         {
           "id": "h1",
@@ -15482,7 +16058,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 87/100 · pass"
+          "detail": "score 88/100 · pass"
         },
         {
           "id": "h1",
@@ -15546,7 +16122,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 95/100 · pass"
+          "detail": "score 100/100 · pass"
         },
         {
           "id": "h1",
@@ -15610,7 +16186,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 93/100 · pass"
         },
         {
           "id": "h1",
@@ -15674,14 +16250,14 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 93/100 · pass"
         },
         {
           "id": "h1",
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "02 · **Market Makers** & **Liquidity**"
+          "detail": "02 · Market Makers & Liquidity"
         }
       ],
       "status": "ok"
@@ -15738,7 +16314,7 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 88/100 · pass"
+          "detail": "score 90/100 · pass"
         },
         {
           "id": "h1",
@@ -15774,7 +16350,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Alternative Asset Investing: Collectibles and 'Hobby Investing'"
+          "detail": "12 · Alternative Asset Investing: Collectibles and \\\"Hobby Investing\\\""
         },
         {
           "id": "description-present",
@@ -15809,7 +16385,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Alternative Asset Investing: Collectibles and \"Hobby Investing\""
+          "detail": "12 · Alternative Asset Investing: Collectibles and \"Hobby Investing\""
         }
       ],
       "status": "ok"
@@ -15838,14 +16414,14 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Bonds and Interest Rates: The Pricing Anchor of Assets"
+          "detail": "02 · Bonds and Interest Rates: The Pricing Anchor of Assets"
         },
         {
           "id": "description-present",
           "label": "frontmatter description",
           "level": "blocking",
           "pass": true,
-          "detail": "Bonds and interest rates explained — bond pricing, the yield curve, the risk-free rate, the US 10-year pricing anchor, and how hikes and cuts transmit to every asset class"
+          "detail": "Bonds and interest rates at a glance — an instrument map of bond types, coupon vs. YTM, the risk-free rate, yield-curve inversion, and the US 10-year pricing anchor; the deep dives live in Chapter 22, Bonds & Rates Deep Dive"
         },
         {
           "id": "zh-title-numbered",
@@ -15866,14 +16442,14 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 96/100 · pass"
+          "detail": "score 88/100 · pass"
         },
         {
           "id": "h1",
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Bonds and Interest Rates: The Pricing Anchor of Assets"
+          "detail": "02 · Bonds and Interest Rates: The Pricing Anchor of Assets"
         }
       ],
       "status": "ok"
@@ -15902,7 +16478,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Commodity Panorama: Understanding Commodities Through Their Global Pricing Centers"
+          "detail": "06 · Commodity Panorama: Understanding Commodities Through Their Global Pricing Centers"
         },
         {
           "id": "description-present",
@@ -15937,7 +16513,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Commodity Panorama: Understanding Commodities Through Their Global Pricing Centers"
+          "detail": "06 · Commodity Panorama: Understanding Commodities Through Their Global Pricing Centers"
         }
       ],
       "status": "ok"
@@ -15966,7 +16542,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Commodity Indices and Cycles: Reading the Rhythm of an Era of Rising Prices"
+          "detail": "14 · Commodity Indices and Cycles: Reading the Rhythm of an Era of Rising Prices"
         },
         {
           "id": "description-present",
@@ -16001,7 +16577,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Commodity Indices and Cycles: Reading the Rhythm of an Era of Rising Prices"
+          "detail": "14 · Commodity Indices and Cycles: Reading the Rhythm of an Era of Rising Prices"
         }
       ],
       "status": "ok"
@@ -16030,7 +16606,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Crypto Landscape: From Digital Gold to the Map of Crypto"
+          "detail": "07 · Crypto Landscape: From Digital Gold to the Map of Crypto"
         },
         {
           "id": "description-present",
@@ -16065,7 +16641,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Crypto Landscape: From Digital Gold to the Map of Crypto"
+          "detail": "07 · Crypto Landscape: From Digital Gold to the Map of Crypto"
         }
       ],
       "status": "ok"
@@ -16094,7 +16670,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "DeFi and the On-Chain Ecosystem Deep Dive: From Yield Myths to a Risk Dissection"
+          "detail": "15 · DeFi and the On-Chain Ecosystem Deep Dive: From Yield Myths to a Risk Dissection"
         },
         {
           "id": "description-present",
@@ -16129,7 +16705,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "DeFi and the On-Chain Ecosystem Deep Dive: From Yield Myths to a Risk Dissection"
+          "detail": "15 · DeFi and the On-Chain Ecosystem Deep Dive: From Yield Myths to a Risk Dissection"
         }
       ],
       "status": "ok"
@@ -16158,14 +16734,14 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Forex Market: The World's Largest Financial Battlefield"
+          "detail": "01 · Forex Market: The World's Largest Financial Battlefield"
         },
         {
           "id": "description-present",
           "label": "frontmatter description",
           "level": "blocking",
           "pass": true,
-          "detail": "Forex market explained — currency pairs, the US Dollar Index DXY, quote mechanics, pip value calculation, four-city trading sessions, leverage characteristics, and what drives exchange rates"
+          "detail": "Forex market primer card — panoramic overview (size, currency pairs, sessions), five core concepts, and navigation into Chapter 23 · Forex Trading in Practice"
         },
         {
           "id": "zh-title-numbered",
@@ -16186,14 +16762,14 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 79/100 · review"
+          "detail": "score 86/100 · pass"
         },
         {
           "id": "h1",
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Forex Market: The World's Largest Financial Battlefield"
+          "detail": "01 · Forex Market: The World's Largest Financial Battlefield"
         }
       ],
       "status": "ok"
@@ -16222,7 +16798,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Funds and ETFs: The Ordinary Person's Asset Tool"
+          "detail": "03 · Funds and ETFs: The Ordinary Person's Asset Tool"
         },
         {
           "id": "description-present",
@@ -16257,7 +16833,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Funds and ETFs: The Ordinary Person's Asset Tool"
+          "detail": "03 · Funds and ETFs: The Ordinary Person's Asset Tool"
         }
       ],
       "status": "ok"
@@ -16286,7 +16862,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "HK and US IPO Subscription: From Prospectus to First-Day Trading"
+          "detail": "10 · HK and US IPO Subscription: From Prospectus to First-Day Trading"
         },
         {
           "id": "description-present",
@@ -16321,7 +16897,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "HK and US IPO Subscription: From Prospectus to First-Day Trading"
+          "detail": "10 · HK and US IPO Subscription: From Prospectus to First-Day Trading"
         }
       ],
       "status": "ok"
@@ -16350,7 +16926,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Indexes and Sectors: The Market's Ruler and Map"
+          "detail": "05 · Indexes and Sectors: The Market's Ruler and Map"
         },
         {
           "id": "description-present",
@@ -16385,7 +16961,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Indexes and Sectors: The Market's Ruler and Map"
+          "detail": "05 · Indexes and Sectors: The Market's Ruler and Map"
         }
       ],
       "status": "ok"
@@ -16414,7 +16990,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Macro Economy and Markets: Read the Big Picture Before Trading"
+          "detail": "08 · Macro Economy and Markets: Read the Big Picture Before Trading"
         },
         {
           "id": "description-present",
@@ -16449,7 +17025,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Macro Economy and Markets: Read the Big Picture Before Trading"
+          "detail": "08 · Macro Economy and Markets: Read the Big Picture Before Trading"
         }
       ],
       "status": "ok"
@@ -16478,14 +17054,14 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Options Basics: The Most Sophisticated Financial Instrument"
+          "detail": "04 · Options Basics: The Most Sophisticated Financial Instrument"
         },
         {
           "id": "description-present",
           "label": "frontmatter description",
           "level": "blocking",
           "pass": true,
-          "detail": "Options basics — Call and Put, the four elements, ITM/ATM/OTM, buyer vs seller rights and obligations, intrinsic and time value, implied volatility IV, and the Greeks"
+          "detail": "Options quick-start card — what an option is, premium/strike/expiry, the four basic positions, and buyer-seller obligation asymmetry; the shortest path into options, then on to the Options Strategies chapter"
         },
         {
           "id": "zh-title-numbered",
@@ -16506,14 +17082,14 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 89/100 · pass"
+          "detail": "score 76/100 · review"
         },
         {
           "id": "h1",
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Options Basics: The Most Sophisticated Financial Instrument"
+          "detail": "04 · Options Basics: The Most Sophisticated Financial Instrument"
         }
       ],
       "status": "ok"
@@ -16542,7 +17118,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Precious Metals and Energy Spot: How to Participate in Gold, Silver, and Crude Oil"
+          "detail": "09 · Precious Metals and Energy Spot: How to Participate in Gold, Silver, and Crude Oil"
         },
         {
           "id": "description-present",
@@ -16577,7 +17153,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Precious Metals and Energy Spot: How to Participate in Gold, Silver, and Crude Oil"
+          "detail": "09 · Precious Metals and Energy Spot: How to Participate in Gold, Silver, and Crude Oil"
         }
       ],
       "status": "ok"
@@ -16606,7 +17182,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "REITs and Real Estate Investing: From Buying a Home to Buying the Property Business"
+          "detail": "11 · REITs and Real Estate Investing: From Buying a Home to Buying the Property Business"
         },
         {
           "id": "description-present",
@@ -16641,7 +17217,71 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "REITs and Real Estate Investing: From Buying a Home to Buying the Property Business"
+          "detail": "11 · REITs and Real Estate Investing: From Buying a Home to Buying the Property Business"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "en",
+      "chapter": "markets-instruments",
+      "document": "sentiment-indicators",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "sentiment-indicators"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "16 · Sentiment Indicators Panorama: Fear & Greed, Long/Short Ratio, and PCR"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "A panorama of sentiment indicators — how the Fear & Greed Index is built and read in reverse, account-based vs position-based long/short ratios, the options-market meaning of the Put/Call Ratio, and the correct use of sentiment: sizing positions, never timing entries"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "en 按设计无序号，跳过"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 88/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "16 · Sentiment Indicators Panorama: Fear & Greed, Long/Short Ratio, and PCR"
         }
       ],
       "status": "ok"
@@ -16670,7 +17310,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Volatility and VIX: Fear Can Be Priced"
+          "detail": "13 · Volatility and VIX: Fear Can Be Priced"
         },
         {
           "id": "description-present",
@@ -16705,7 +17345,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "**<mark>Volatility</mark>** and VIX: Fear Can Be Priced"
+          "detail": "13 · Volatility and VIX: Fear Can Be Priced"
         }
       ],
       "status": "ok"
@@ -16734,7 +17374,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "The Greeks in Practice: Your Position Is a Risk Balance Sheet"
+          "detail": "02 · The Greeks in Practice: Your Position Is a Risk Balance Sheet"
         },
         {
           "id": "description-present",
@@ -16769,7 +17409,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "The Greeks in Practice: Your Position Is a Risk Balance Sheet"
+          "detail": "02 · The Greeks in Practice: Your Position Is a Risk Balance Sheet"
         }
       ],
       "status": "ok"
@@ -16798,7 +17438,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "The Complete Catalog of Option Combinations: Classified by Risk-Return Type"
+          "detail": "03 · The Complete Catalog of Option Combinations: Classified by Risk-Return Type"
         },
         {
           "id": "description-present",
@@ -16833,7 +17473,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "The Complete Catalog of Option Combinations: Classified by Risk-Return Type"
+          "detail": "03 · The Complete Catalog of Option Combinations: Classified by Risk-Return Type"
         }
       ],
       "status": "ok"
@@ -16862,7 +17502,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Options Tools and Review: Master the Tools, Turn Experience into an Asset"
+          "detail": "05 · Options Tools and Review: Master the Tools, Turn Experience into an Asset"
         },
         {
           "id": "description-present",
@@ -16897,7 +17537,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Options Tools and Review: Master the Tools, Turn Experience into an Asset"
+          "detail": "05 · Options Tools and Review: Master the Tools, Turn Experience into an Asset"
         }
       ],
       "status": "ok"
@@ -16926,7 +17566,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Options in Practice and Risk Control: From Paper Trading to Real Money"
+          "detail": "04 · Options in Practice and Risk Control: From Paper Trading to Real Money"
         },
         {
           "id": "description-present",
@@ -16961,7 +17601,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Options in Practice and Risk Control: From Paper Trading to Real Money"
+          "detail": "04 · Options in Practice and Risk Control: From Paper Trading to Real Money"
         }
       ],
       "status": "ok"
@@ -16990,7 +17630,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Option Pricing and Volatility: Where Prices Come From, and How to Tell If They're Expensive"
+          "detail": "01 · Option Pricing and Volatility: Where Prices Come From, and How to Tell If They're Expensive"
         },
         {
           "id": "description-present",
@@ -17025,7 +17665,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Option Pricing and Volatility: Where Prices Come From, and How to Tell If They're Expensive"
+          "detail": "01 · Option Pricing and Volatility: Where Prices Come From, and How to Tell If They're Expensive"
         }
       ],
       "status": "ok"
@@ -17054,14 +17694,14 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Compliance and Taxes"
+          "detail": "03 · Compliance and Taxes"
         },
         {
           "id": "description-present",
           "label": "frontmatter description",
           "level": "blocking",
           "pass": true,
-          "detail": "Trading compliance and taxes — platform regulation, deposit and withdrawal channels, bank account freeze risk, tax filing, and asset classification: a summary of regulatory and legal essentials"
+          "detail": "Focuses on trading channels, cross-border funding, account freezes, and AML risk, then shows when tax filing requires verification or professional advice."
         },
         {
           "id": "zh-title-numbered",
@@ -17082,14 +17722,14 @@
           "label": "description 质量（R10.4）",
           "level": "advisory",
           "pass": true,
-          "detail": "score 90/100 · pass"
+          "detail": "score 87/100 · pass"
         },
         {
           "id": "h1",
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Compliance and Taxes"
+          "detail": "03 · Compliance and Taxes"
         }
       ],
       "status": "ok"
@@ -17118,7 +17758,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Scam Detection"
+          "detail": "02 · Scam Detection"
         },
         {
           "id": "description-present",
@@ -17139,7 +17779,7 @@
           "label": "「⚠️ 风险提示/Risk Warning」块",
           "level": "blocking",
           "pass": true,
-          "detail": "容器 1 / 行内 0"
+          "detail": "容器 1 / 行内 1"
         },
         {
           "id": "description-quality",
@@ -17153,7 +17793,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Scam Detection"
+          "detail": "02 · Scam Detection"
         }
       ],
       "status": "ok"
@@ -17182,7 +17822,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Why Traders Lose"
+          "detail": "01 · Why Traders Lose"
         },
         {
           "id": "description-present",
@@ -17217,7 +17857,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Why Traders Lose"
+          "detail": "01 · Why Traders Lose"
         }
       ],
       "status": "ok"
@@ -17246,7 +17886,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Data Acquisition in Practice"
+          "detail": "02 · Data Acquisition in Practice"
         },
         {
           "id": "description-present",
@@ -17281,7 +17921,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Data Acquisition in Practice"
+          "detail": "02 · Data Acquisition in Practice"
         }
       ],
       "status": "ok"
@@ -17310,7 +17950,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Your First Backtest"
+          "detail": "03 · Your First Backtest"
         },
         {
           "id": "description-present",
@@ -17345,7 +17985,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Your First Backtest"
+          "detail": "03 · Your First Backtest"
         }
       ],
       "status": "ok"
@@ -17374,7 +18014,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Live Automation"
+          "detail": "04 · Live Automation"
         },
         {
           "id": "description-present",
@@ -17409,7 +18049,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Live Automation"
+          "detail": "04 · Live Automation"
         }
       ],
       "status": "ok"
@@ -17438,7 +18078,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Quant Toolchain"
+          "detail": "01 · Quant Toolchain"
         },
         {
           "id": "description-present",
@@ -17473,7 +18113,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Quant Toolchain"
+          "detail": "01 · Quant Toolchain"
         }
       ],
       "status": "ok"
@@ -17502,7 +18142,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Strategy Coding in Practice"
+          "detail": "05 · Strategy Coding in Practice"
         },
         {
           "id": "description-present",
@@ -17537,7 +18177,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Strategy Coding in Practice"
+          "detail": "05 · Strategy Coding in Practice"
         }
       ],
       "status": "ok"
@@ -17566,7 +18206,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Beginner Books"
+          "detail": "01 · Beginner Books"
         },
         {
           "id": "description-present",
@@ -17601,7 +18241,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Beginner Books"
+          "detail": "01 · Beginner Books"
         }
       ],
       "status": "ok"
@@ -17630,7 +18270,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "How to Read a Book Closely"
+          "detail": "05 · How to Read a Book Closely"
         },
         {
           "id": "description-present",
@@ -17665,7 +18305,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "How to Read a Book Closely"
+          "detail": "05 · How to Read a Book Closely"
         }
       ],
       "status": "ok"
@@ -17694,7 +18334,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Quant & Trading Psychology"
+          "detail": "04 · Quant & Trading Psychology"
         },
         {
           "id": "description-present",
@@ -17729,7 +18369,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Quant & Trading Psychology"
+          "detail": "04 · Quant & Trading Psychology"
         }
       ],
       "status": "ok"
@@ -17758,7 +18398,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Technical Analysis Classics"
+          "detail": "02 · Technical Analysis Classics"
         },
         {
           "id": "description-present",
@@ -17793,7 +18433,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Technical Analysis Classics"
+          "detail": "02 · Technical Analysis Classics"
         }
       ],
       "status": "ok"
@@ -17822,7 +18462,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Value Investing Classics"
+          "detail": "03 · Value Investing Classics"
         },
         {
           "id": "description-present",
@@ -17857,7 +18497,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Value Investing Classics"
+          "detail": "03 · Value Investing Classics"
         }
       ],
       "status": "ok"
@@ -17886,7 +18526,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Algorithmic Trading and Compliance"
+          "detail": "05 · Algorithmic Trading and Compliance"
         },
         {
           "id": "description-present",
@@ -17921,7 +18561,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Algorithmic Trading and Compliance"
+          "detail": "05 · Algorithmic Trading and Compliance"
         }
       ],
       "status": "ok"
@@ -17950,7 +18590,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "AML and Trading Compliance"
+          "detail": "08 · AML and Trading Compliance"
         },
         {
           "id": "description-present",
@@ -17985,7 +18625,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "AML and Trading Compliance"
+          "detail": "08 · AML and Trading Compliance"
         }
       ],
       "status": "ok"
@@ -18014,7 +18654,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "China's Financial Regulatory System"
+          "detail": "01 · China's Financial Regulatory System"
         },
         {
           "id": "description-present",
@@ -18049,7 +18689,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "China's Financial Regulatory System"
+          "detail": "01 · China's Financial Regulatory System"
         }
       ],
       "status": "ok"
@@ -18078,7 +18718,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Crypto Regulation"
+          "detail": "03 · Crypto Regulation"
         },
         {
           "id": "description-present",
@@ -18113,7 +18753,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Crypto Regulation"
+          "detail": "03 · Crypto Regulation"
         }
       ],
       "status": "ok"
@@ -18142,7 +18782,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Licensing and Market Access"
+          "detail": "04 · Licensing and Market Access"
         },
         {
           "id": "description-present",
@@ -18177,7 +18817,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Licensing and Market Access"
+          "detail": "04 · Licensing and Market Access"
         }
       ],
       "status": "ok"
@@ -18206,7 +18846,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Market Data and Tooling Compliance"
+          "detail": "07 · Market Data and Tooling Compliance"
         },
         {
           "id": "description-present",
@@ -18241,7 +18881,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Market Data and Tooling Compliance"
+          "detail": "07 · Market Data and Tooling Compliance"
         }
       ],
       "status": "ok"
@@ -18270,7 +18910,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Platform Disclaimers and Investor Suitability"
+          "detail": "06 · Platform Disclaimers and Investor Suitability"
         },
         {
           "id": "description-present",
@@ -18305,7 +18945,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Platform Disclaimers and Investor Suitability"
+          "detail": "06 · Platform Disclaimers and Investor Suitability"
         }
       ],
       "status": "ok"
@@ -18334,7 +18974,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "US and Global Regulation"
+          "detail": "02 · US and Global Regulation"
         },
         {
           "id": "description-present",
@@ -18369,7 +19009,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "US and Global Regulation"
+          "detail": "02 · US and Global Regulation"
         }
       ],
       "status": "ok"
@@ -18398,7 +19038,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Crypto Spot Deep Dive"
+          "detail": "03 · Crypto Spot Deep Dive"
         },
         {
           "id": "description-present",
@@ -18433,7 +19073,71 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Crypto Spot Deep Dive"
+          "detail": "03 · Crypto Spot Deep Dive"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "en",
+      "chapter": "spot",
+      "document": "dca-methodology",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "dca-methodology"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "07 · DCA and Batch Accumulation Methodology"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "DCA and batch accumulation methodology — replacing timing with time diversification, the math and limits of why the DCA average cost sits below the arithmetic mean, comparing equal-amount DCA, pyramiding, and grid strategies, take-profit discipline, when to stop, and the link to portfolio rebalancing"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "en 按设计无序号，跳过"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 90/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "07 · DCA and Batch Accumulation Methodology"
         }
       ],
       "status": "ok"
@@ -18462,7 +19166,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Portfolio Management & Rebalancing"
+          "detail": "06 · Portfolio Management & Rebalancing"
         },
         {
           "id": "description-present",
@@ -18497,7 +19201,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Portfolio Management & Rebalancing"
+          "detail": "06 · Portfolio Management & Rebalancing"
         }
       ],
       "status": "ok"
@@ -18526,7 +19230,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Spot Trading Basics"
+          "detail": "01 · Spot Trading Basics"
         },
         {
           "id": "description-present",
@@ -18561,7 +19265,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Spot Trading Basics"
+          "detail": "01 · Spot Trading Basics"
         }
       ],
       "status": "ok"
@@ -18590,7 +19294,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Spot Practice: Next Level"
+          "detail": "02 · Spot Practice: Next Level"
         },
         {
           "id": "description-present",
@@ -18625,7 +19329,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Spot Practice: Next Level"
+          "detail": "02 · Spot Practice: Next Level"
         }
       ],
       "status": "ok"
@@ -18654,7 +19358,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Spot Trading Strategies"
+          "detail": "04 · Spot Trading Strategies"
         },
         {
           "id": "description-present",
@@ -18689,7 +19393,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Spot Trading Strategies"
+          "detail": "04 · Spot Trading Strategies"
         }
       ],
       "status": "ok"
@@ -18718,7 +19422,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Secure Storage & Wallet Management"
+          "detail": "05 · Secure Storage & Wallet Management"
         },
         {
           "id": "description-present",
@@ -18753,7 +19457,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Secure Storage & Wallet Management"
+          "detail": "05 · Secure Storage & Wallet Management"
         }
       ],
       "status": "ok"
@@ -18782,7 +19486,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "A-Share Trading Rules"
+          "detail": "02 · A-Share Trading Rules"
         },
         {
           "id": "description-present",
@@ -18817,7 +19521,71 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "A-Share Trading Rules"
+          "detail": "02 · A-Share Trading Rules"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "en",
+      "chapter": "stocks",
+      "document": "adjusted-price-dividends",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "adjusted-price-dividends"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "08 · Adjusted Prices, Ex-Dividend Days, and Indicator Distortion"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "Adjusted prices and ex-dividend/ex-rights mechanics — the ex-price formula, choosing among pre-adjusted, post-adjusted, and unadjusted data, how ex-day gaps corrupt moving averages, MACD, and Fibonacci retracements, a practical checklist, and special notes for high-dividend stocks"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "en 按设计无序号，跳过"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 83/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "08 · Adjusted Prices, Ex-Dividend Days, and Indicator Distortion"
         }
       ],
       "status": "ok"
@@ -18846,7 +19614,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "ADR and Cross-Border Listing"
+          "detail": "05 · ADR and Cross-Border Listing"
         },
         {
           "id": "description-present",
@@ -18881,7 +19649,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "ADR and Cross-Border Listing"
+          "detail": "05 · ADR and Cross-Border Listing"
         }
       ],
       "status": "ok"
@@ -18910,7 +19678,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "US and Global ETF Portfolio Construction"
+          "detail": "07 · US and Global ETF Portfolio Construction"
         },
         {
           "id": "description-present",
@@ -18945,7 +19713,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "US and Global ETF Portfolio Construction"
+          "detail": "07 · US and Global ETF Portfolio Construction"
         }
       ],
       "status": "ok"
@@ -18974,7 +19742,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "HK and US Stocks"
+          "detail": "03 · HK and US Stocks"
         },
         {
           "id": "description-present",
@@ -19009,7 +19777,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "HK and US Stocks"
+          "detail": "03 · HK and US Stocks"
         }
       ],
       "status": "ok"
@@ -19038,7 +19806,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Stock Analysis Methods"
+          "detail": "04 · Stock Analysis Methods"
         },
         {
           "id": "description-present",
@@ -19073,7 +19841,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Stock Analysis Methods"
+          "detail": "04 · Stock Analysis Methods"
         }
       ],
       "status": "ok"
@@ -19102,7 +19870,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Stock Basics"
+          "detail": "01 · Stock Basics"
         },
         {
           "id": "description-present",
@@ -19137,7 +19905,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Stock Basics"
+          "detail": "01 · Stock Basics"
         }
       ],
       "status": "ok"
@@ -19166,7 +19934,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "US Stock Options Primer"
+          "detail": "06 · US Stock Options Primer"
         },
         {
           "id": "description-present",
@@ -19201,7 +19969,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "US Stock Options Primer"
+          "detail": "06 · US Stock Options Primer"
         }
       ],
       "status": "ok"
@@ -19230,7 +19998,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "CTP Integration in Practice: From Zero to First Order"
+          "detail": "10 · CTP Integration in Practice: From Zero to First Order"
         },
         {
           "id": "description-present",
@@ -19265,7 +20033,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "CTP Integration in Practice: From Zero to First Order"
+          "detail": "10 · CTP Integration in Practice: From Zero to First Order"
         }
       ],
       "status": "ok"
@@ -19294,7 +20062,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Data and Infrastructure"
+          "detail": "07 · Data and Infrastructure"
         },
         {
           "id": "description-present",
@@ -19329,7 +20097,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Data and Infrastructure"
+          "detail": "07 · Data and Infrastructure"
         }
       ],
       "status": "ok"
@@ -19358,7 +20126,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Exchanges and OMSs: Which Layer Your System Actually Connects To"
+          "detail": "02 · Exchanges and OMSs: Which Layer Your System Actually Connects To"
         },
         {
           "id": "description-present",
@@ -19393,7 +20161,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Exchanges and OMSs: Which Layer Your System Actually Connects To"
+          "detail": "02 · Exchanges and OMSs: Which Layer Your System Actually Connects To"
         }
       ],
       "status": "ok"
@@ -19422,7 +20190,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "FIX Protocol Deep Dive: The Common Language of Global Institutional Trading"
+          "detail": "09 · FIX Protocol Deep Dive: The Common Language of Global Institutional Trading"
         },
         {
           "id": "description-present",
@@ -19457,7 +20225,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "FIX Protocol Deep Dive: The Common Language of Global Institutional Trading"
+          "detail": "09 · FIX Protocol Deep Dive: The Common Language of Global Institutional Trading"
         }
       ],
       "status": "ok"
@@ -19486,7 +20254,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Integration Overview and Role Division: Draw the Map Before Writing Code"
+          "detail": "01 · Integration Overview and Role Division: Draw the Map Before Writing Code"
         },
         {
           "id": "description-present",
@@ -19521,7 +20289,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Integration Overview and Role Division: Draw the Map Before Writing Code"
+          "detail": "01 · Integration Overview and Role Division: Draw the Map Before Writing Code"
         }
       ],
       "status": "ok"
@@ -19550,7 +20318,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Market Data Systems: The Eyes of Trading Software"
+          "detail": "03 · Market Data Systems: The Eyes of Trading Software"
         },
         {
           "id": "description-present",
@@ -19585,7 +20353,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Market Data Systems: The Eyes of Trading Software"
+          "detail": "03 · Market Data Systems: The Eyes of Trading Software"
         }
       ],
       "status": "ok"
@@ -19614,7 +20382,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Matching Engine Principles: How Orders Become Fills"
+          "detail": "11 · Matching Engine Principles: How Orders Become Fills"
         },
         {
           "id": "description-present",
@@ -19649,7 +20417,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Matching Engine Principles: How Orders Become Fills"
+          "detail": "11 · Matching Engine Principles: How Orders Become Fills"
         }
       ],
       "status": "ok"
@@ -19678,7 +20446,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Trading Interfaces and Order Lifecycle: The Heart of the System"
+          "detail": "04 · Trading Interfaces and Order Lifecycle: The Heart of the System"
         },
         {
           "id": "description-present",
@@ -19713,7 +20481,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Trading Interfaces and Order Lifecycle: The Heart of the System"
+          "detail": "04 · Trading Interfaces and Order Lifecycle: The Heart of the System"
         }
       ],
       "status": "ok"
@@ -19742,7 +20510,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Risk Controls and Capital Management: The Last Line of Defense Must Be Your Own"
+          "detail": "05 · Risk Controls and Capital Management: The Last Line of Defense Must Be Your Own"
         },
         {
           "id": "description-present",
@@ -19777,7 +20545,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Risk Controls and Capital Management: The Last Line of Defense Must Be Your Own"
+          "detail": "05 · Risk Controls and Capital Management: The Last Line of Defense Must Be Your Own"
         }
       ],
       "status": "ok"
@@ -19806,7 +20574,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Role Skills Map"
+          "detail": "08 · Role Skills Map"
         },
         {
           "id": "description-present",
@@ -19841,7 +20609,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Role Skills Map"
+          "detail": "08 · Role Skills Map"
         }
       ],
       "status": "ok"
@@ -19870,7 +20638,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Quantitative Strategies and Backtesting"
+          "detail": "06 · Quantitative Strategies and Backtesting"
         },
         {
           "id": "description-present",
@@ -19905,7 +20673,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Quantitative Strategies and Backtesting"
+          "detail": "06 · Quantitative Strategies and Backtesting"
         }
       ],
       "status": "ok"
@@ -19934,7 +20702,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Advanced Candlesticks"
+          "detail": "04 · Advanced Candlesticks"
         },
         {
           "id": "description-present",
@@ -19969,7 +20737,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Advanced Candlesticks"
+          "detail": "04 · Advanced Candlesticks"
         }
       ],
       "status": "ok"
@@ -19998,7 +20766,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Candlestick Patterns"
+          "detail": "01 · Candlestick Patterns"
         },
         {
           "id": "description-present",
@@ -20033,7 +20801,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Candlestick Patterns"
+          "detail": "01 · Candlestick Patterns"
         }
       ],
       "status": "ok"
@@ -20062,7 +20830,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Drawing Tools in Practice"
+          "detail": "07 · Drawing Tools in Practice"
         },
         {
           "id": "description-present",
@@ -20097,7 +20865,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Drawing Tools in Practice"
+          "detail": "07 · Drawing Tools in Practice"
         }
       ],
       "status": "ok"
@@ -20126,7 +20894,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Elliott Waves · Gann · Chan Theory"
+          "detail": "05 · Elliott Waves · Gann · Chan Theory"
         },
         {
           "id": "description-present",
@@ -20161,7 +20929,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Elliott Waves · Gann · Chan Theory"
+          "detail": "05 · Elliott Waves · Gann · Chan Theory"
         }
       ],
       "status": "ok"
@@ -20190,7 +20958,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Gann Box and Angles in Practice"
+          "detail": "08 · Gann Box and Angles in Practice"
         },
         {
           "id": "description-present",
@@ -20225,7 +20993,71 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Gann Box and Angles in Practice"
+          "detail": "08 · Gann Box and Angles in Practice"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "en",
+      "chapter": "technical-analysis",
+      "document": "indicators-advanced",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "indicators-advanced"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "12 · Advanced Indicators: DMI/ADX, Supertrend, BBW"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "Advanced indicators — DMI/ADX separating direction from trend strength, Supertrend's ATR ratchet band and flip-stop, BBW's volatility squeeze-and-expansion cycle, and how the three combine with existing indicators"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "en 按设计无序号，跳过"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 90/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "12 · Advanced Indicators: DMI/ADX, Supertrend, BBW"
         }
       ],
       "status": "ok"
@@ -20254,7 +21086,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Technical Indicators in Depth"
+          "detail": "02 · Technical Indicators in Depth"
         },
         {
           "id": "description-present",
@@ -20289,7 +21121,71 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Technical Indicators in Depth"
+          "detail": "02 · Technical Indicators in Depth"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "en",
+      "chapter": "technical-analysis",
+      "document": "multi-timeframe",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "multi-timeframe"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "13 · Multi-Timeframe Analysis: Let Timeframes Cross-Examine Each Other"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "Multi-timeframe analysis — why a single timeframe deceives, choosing adjacent 4–6x timeframes, the three-layer framework of direction/structure/entry, handling conflicts between timeframes, the fallacy of translating indicator parameters across timeframes, and common errors"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "en 按设计无序号，跳过"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 81/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "13 · Multi-Timeframe Analysis: Let Timeframes Cross-Examine Each Other"
         }
       ],
       "status": "ok"
@@ -20318,7 +21214,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Order Flow and Market Microstructure"
+          "detail": "09 · Order Flow and Market Microstructure"
         },
         {
           "id": "description-present",
@@ -20353,7 +21249,135 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Order Flow and Market Microstructure"
+          "detail": "09 · Order Flow and Market Microstructure"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "en",
+      "chapter": "technical-analysis",
+      "document": "orderbook-depth",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "orderbook-depth"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "10 · Order Book & Depth Chart: A Practical Guide"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "Order book and depth chart interpretation — reading the bid/ask spread, analyzing order book structure, identifying support/resistance from depth curves, spotting iceberg orders and spoofing, and combining order book signals with price action."
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "en 按设计无序号，跳过"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 83/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "10 · Order Book & Depth Chart: A Practical Guide"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "en",
+      "chapter": "technical-analysis",
+      "document": "replay-training",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "replay-training"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "11 · The Replay Training Method"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "The replay training method — compressing experience by stepping through historical candlesticks with future data hidden, designing focused training plans, mastering the blind-forecast-and-verify loop, and understanding replay's limits and its division of labor with paper trading"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "en 按设计无序号，跳过"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 90/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "11 · The Replay Training Method"
         }
       ],
       "status": "ok"
@@ -20382,7 +21406,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Technical Analysis: Critique and Validation"
+          "detail": "06 · Technical Analysis: Critique and Validation"
         },
         {
           "id": "description-present",
@@ -20417,7 +21441,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Technical Analysis: Critique and Validation"
+          "detail": "06 · Technical Analysis: Critique and Validation"
         }
       ],
       "status": "ok"
@@ -20446,7 +21470,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Volume-Price Analysis"
+          "detail": "03 · Volume-Price Analysis"
         },
         {
           "id": "description-present",
@@ -20481,7 +21505,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Volume-Price Analysis"
+          "detail": "03 · Volume-Price Analysis"
         }
       ],
       "status": "ok"
@@ -20510,7 +21534,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Analysis & Scripting"
+          "detail": "04 · Analysis & Scripting"
         },
         {
           "id": "description-present",
@@ -20545,7 +21569,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Analysis & Scripting"
+          "detail": "04 · Analysis & Scripting"
         }
       ],
       "status": "ok"
@@ -20574,7 +21598,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Runtime & Automation Environment"
+          "detail": "05 · Runtime & Automation Environment"
         },
         {
           "id": "description-present",
@@ -20609,7 +21633,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Runtime & Automation Environment"
+          "detail": "05 · Runtime & Automation Environment"
         }
       ],
       "status": "ok"
@@ -20638,7 +21662,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Broker & Futures Broker Selection"
+          "detail": "03 · Broker & Futures Broker Selection"
         },
         {
           "id": "description-present",
@@ -20673,7 +21697,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Broker & Futures Broker Selection"
+          "detail": "03 · Broker & Futures Broker Selection"
         }
       ],
       "status": "ok"
@@ -20702,7 +21726,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "A Panorama of Market Data Software"
+          "detail": "01 · A Panorama of Market Data Software"
         },
         {
           "id": "description-present",
@@ -20737,7 +21761,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "A Panorama of Market Data Software"
+          "detail": "01 · A Panorama of Market Data Software"
         }
       ],
       "status": "ok"
@@ -20766,7 +21790,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Data & Research Platforms"
+          "detail": "02 · Data & Research Platforms"
         },
         {
           "id": "description-present",
@@ -20801,7 +21825,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Data & Research Platforms"
+          "detail": "02 · Data & Research Platforms"
         }
       ],
       "status": "ok"
@@ -20830,7 +21854,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "A-Share Special Plays"
+          "detail": "05 · A-Share Special Plays"
         },
         {
           "id": "description-present",
@@ -20865,7 +21889,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "A-Share Special Plays"
+          "detail": "05 · A-Share Special Plays"
         }
       ],
       "status": "ok"
@@ -20894,7 +21918,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Arbitrage in Practice"
+          "detail": "06 · Arbitrage in Practice"
         },
         {
           "id": "description-present",
@@ -20929,7 +21953,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Arbitrage in Practice"
+          "detail": "06 · Arbitrage in Practice"
         }
       ],
       "status": "ok"
@@ -20958,7 +21982,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Crypto Airdrops and Airdrop Farming"
+          "detail": "07 · Crypto Airdrops and Airdrop Farming"
         },
         {
           "id": "description-present",
@@ -20993,7 +22017,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Crypto Airdrops and Airdrop Farming"
+          "detail": "07 · Crypto Airdrops and Airdrop Farming"
         }
       ],
       "status": "ok"
@@ -21022,7 +22046,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Day Trading in Practice"
+          "detail": "01 · Day Trading in Practice"
         },
         {
           "id": "description-present",
@@ -21057,7 +22081,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Day Trading in Practice"
+          "detail": "01 · Day Trading in Practice"
         }
       ],
       "status": "ok"
@@ -21086,7 +22110,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Event-Driven Trading"
+          "detail": "04 · Event-Driven Trading"
         },
         {
           "id": "description-present",
@@ -21121,7 +22145,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Event-Driven Trading"
+          "detail": "04 · Event-Driven Trading"
         }
       ],
       "status": "ok"
@@ -21150,7 +22174,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "On-chain Data Trading"
+          "detail": "08 · On-chain Data Trading"
         },
         {
           "id": "description-present",
@@ -21185,7 +22209,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "On-chain Data Trading"
+          "detail": "08 · On-chain Data Trading"
         }
       ],
       "status": "ok"
@@ -21214,7 +22238,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Range Markets and Grid Trading in Practice"
+          "detail": "03 · Range Markets and Grid Trading in Practice"
         },
         {
           "id": "description-present",
@@ -21249,7 +22273,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Range Markets and Grid Trading in Practice"
+          "detail": "03 · Range Markets and Grid Trading in Practice"
         }
       ],
       "status": "ok"
@@ -21278,7 +22302,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Swing and Trend in Practice"
+          "detail": "02 · Swing and Trend in Practice"
         },
         {
           "id": "description-present",
@@ -21313,7 +22337,71 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Swing and Trend in Practice"
+          "detail": "02 · Swing and Trend in Practice"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "en",
+      "chapter": "trading-system",
+      "document": "alert-discipline",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "alert-discipline"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "08 · Price Alerts and Off-Screen Discipline"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "Price alerts and off-screen discipline — the attention cost of watching charts, outsourcing the \"condition→action\" trigger to the system, binding alerts to trading-plan key levels, alert overload, and what to do after an alert fires"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "en 按设计无序号，跳过"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 90/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "08 · Price Alerts and Off-Screen Discipline"
         }
       ],
       "status": "ok"
@@ -21342,7 +22430,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Equity Curve and Performance Attribution"
+          "detail": "04 · Equity Curve and Performance Attribution"
         },
         {
           "id": "description-present",
@@ -21377,7 +22465,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Equity Curve and Performance Attribution"
+          "detail": "04 · Equity Curve and Performance Attribution"
         }
       ],
       "status": "ok"
@@ -21406,7 +22494,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Trading Journal and Checklists"
+          "detail": "06 · Trading Journal and Checklists"
         },
         {
           "id": "description-present",
@@ -21441,7 +22529,71 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Trading Journal and Checklists"
+          "detail": "06 · Trading Journal and Checklists"
+        }
+      ],
+      "status": "ok"
+    },
+    {
+      "locale": "en",
+      "chapter": "trading-system",
+      "document": "paper-to-live",
+      "checks": [
+        {
+          "id": "file-slug",
+          "label": "文件名英文 slug",
+          "level": "blocking",
+          "pass": true,
+          "detail": "paper-to-live"
+        },
+        {
+          "id": "frontmatter",
+          "label": "frontmatter 完整（--- 围栏）",
+          "level": "blocking",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "id": "title-present",
+          "label": "frontmatter title",
+          "level": "blocking",
+          "pass": true,
+          "detail": "07 · From Paper Trading to Live: The Path to Real Money"
+        },
+        {
+          "id": "description-present",
+          "label": "frontmatter description",
+          "level": "blocking",
+          "pass": true,
+          "detail": "The path from paper trading to live trading — what simulation can and cannot teach, what to practice and the three traps, graduation criteria, switching to live with minimum size, and the first-30-days slow-down rules"
+        },
+        {
+          "id": "zh-title-numbered",
+          "label": "zh title 带「NN · 」前导序号",
+          "level": "blocking",
+          "pass": true,
+          "detail": "en 按设计无序号，跳过"
+        },
+        {
+          "id": "risk-block",
+          "label": "「⚠️ 风险提示/Risk Warning」块",
+          "level": "blocking",
+          "pass": true,
+          "detail": "容器 1 / 行内 0"
+        },
+        {
+          "id": "description-quality",
+          "label": "description 质量（R10.4）",
+          "level": "advisory",
+          "pass": true,
+          "detail": "score 86/100 · pass"
+        },
+        {
+          "id": "h1",
+          "label": "正文 H1 标题",
+          "level": "advisory",
+          "pass": true,
+          "detail": "07 · From Paper Trading to Live: The Path to Real Money"
         }
       ],
       "status": "ok"
@@ -21470,7 +22622,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Risk Management"
+          "detail": "02 · Risk Management"
         },
         {
           "id": "description-present",
@@ -21505,7 +22657,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Risk Management"
+          "detail": "02 · Risk Management"
         }
       ],
       "status": "ok"
@@ -21534,7 +22686,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Advanced Trade Review"
+          "detail": "05 · Advanced Trade Review"
         },
         {
           "id": "description-present",
@@ -21569,7 +22721,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Advanced Trade Review"
+          "detail": "05 · Advanced Trade Review"
         }
       ],
       "status": "ok"
@@ -21598,7 +22750,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Trading Plan"
+          "detail": "01 · Trading Plan"
         },
         {
           "id": "description-present",
@@ -21633,7 +22785,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Trading Plan"
+          "detail": "01 · Trading Plan"
         }
       ],
       "status": "ok"
@@ -21662,7 +22814,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Trading Psychology"
+          "detail": "03 · Trading Psychology"
         },
         {
           "id": "description-present",
@@ -21697,7 +22849,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Trading Psychology"
+          "detail": "03 · Trading Psychology"
         }
       ],
       "status": "ok"
@@ -21726,7 +22878,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Asset Allocation Basics"
+          "detail": "01 · Asset Allocation Basics"
         },
         {
           "id": "description-present",
@@ -21761,7 +22913,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Asset Allocation Basics"
+          "detail": "01 · Asset Allocation Basics"
         }
       ],
       "status": "ok"
@@ -21790,7 +22942,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Compounding and Return Expectations"
+          "detail": "02 · Compounding and Return Expectations"
         },
         {
           "id": "description-present",
@@ -21825,7 +22977,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Compounding and Return Expectations"
+          "detail": "02 · Compounding and Return Expectations"
         }
       ],
       "status": "ok"
@@ -21854,7 +23006,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Family Financial Planning"
+          "detail": "03 · Family Financial Planning"
         },
         {
           "id": "description-present",
@@ -21889,7 +23041,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Family Financial Planning"
+          "detail": "03 · Family Financial Planning"
         }
       ],
       "status": "ok"
@@ -21918,7 +23070,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Inflation and Purchasing Power"
+          "detail": "04 · Inflation and Purchasing Power"
         },
         {
           "id": "description-present",
@@ -21953,7 +23105,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Inflation and Purchasing Power"
+          "detail": "04 · Inflation and Purchasing Power"
         }
       ],
       "status": "ok"
@@ -21982,7 +23134,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Insurance and Protection"
+          "detail": "05 · Insurance and Protection"
         },
         {
           "id": "description-present",
@@ -22017,7 +23169,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Insurance and Protection"
+          "detail": "05 · Insurance and Protection"
         }
       ],
       "status": "ok"
@@ -22046,7 +23198,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Overseas Allocation in Practice"
+          "detail": "06 · Overseas Allocation in Practice"
         },
         {
           "id": "description-present",
@@ -22081,7 +23233,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Overseas Allocation in Practice"
+          "detail": "06 · Overseas Allocation in Practice"
         }
       ],
       "status": "ok"
@@ -22110,7 +23262,7 @@
           "label": "frontmatter title",
           "level": "blocking",
           "pass": true,
-          "detail": "Tax Planning Basics"
+          "detail": "07 · Tax Planning Basics"
         },
         {
           "id": "description-present",
@@ -22145,7 +23297,7 @@
           "label": "正文 H1 标题",
           "level": "advisory",
           "pass": true,
-          "detail": "Tax Planning Basics"
+          "detail": "07 · Tax Planning Basics"
         }
       ],
       "status": "ok"
