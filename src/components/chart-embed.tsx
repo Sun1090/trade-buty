@@ -17,6 +17,9 @@ export interface ChartEmbedDict {
   fullNote: string;
   showFull: string;
   showCompact: string;
+  slowNetwork: string;
+  offline: string;
+  timeout: string;
   disclaimer: string;
 }
 
@@ -54,6 +57,9 @@ export function LazyChartEmbed({ dict }: { dict: ChartEmbedDict }) {
             fullNote: dict.fullNote,
             showFull: dict.showFull,
             showCompact: dict.showCompact,
+            slowNetwork: dict.slowNetwork,
+            offline: dict.offline,
+            timeout: dict.timeout,
             disclaimer: dict.disclaimer,
           }}
         />

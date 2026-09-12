@@ -1,5 +1,25 @@
 # Progress
 
+## 2026-09-12 — R13.12 slow-network and offline loading experience
+
+Implemented a shared, SSR-safe network-quality contract for data-heavy mobile flows:
+
+- Added `network-quality.ts`: normalized `online | slow | offline` state from `navigator.onLine`, Network Information `effectiveType`, and `saveData`; slow-mode and offline polling policies are pure and unit tested. Unknown/unsupported browser metadata fails open to online.
+- Added `use-network-quality.ts` using `useSyncExternalStore`, so chart and ticker UI react to `online`/`offline` and connection-change events without polling.
+- `KlineChart` now uses 180 candles and the compact renderer on slow/offline links, suppresses the full-view opt-in and WebSocket live stream, aborts requests after 12s (20s on slow links), and shows explicit slow/offline/timeout states. Offline mode sends no Binance request and retries automatically when connectivity returns. The retry action now uses a real state nonce instead of setting the same interval value (the old no-op path is fixed).
+- `MarketTicker` now shows loading/error states instead of disappearing, polls at 5s online and 60s on slow links, pauses entirely offline, preserves the last successful values with a stale label, and aborts in-flight work on cleanup.
+- `fetchKlines` accepts an `AbortSignal`, and zh/en chart copy documents compact, offline, and timeout behavior.
+
+Verification recorded:
+
+- Focused Vitest: network-quality + chart-density 2 files / 8 tests passed.
+- Full suite: `npm test` passed with 144 test files and 1088 tests.
+- `npm run lint`: 0 errors (59 existing warnings); `npm run typecheck`: passed.
+- Production build: passed with 465 static pages.
+- `npm run e2e`: 24/24 passed, including real-browser 2G emulation proving one `limit=180` request, no full-view toggle/live stream, market-ticker 60s mode, and offline mode proving zero kline requests with auto-retry copy.
+
+Next queue: R13.13 offline PWA review, R13.14 install prompt/dismissal state, then R13.15–R13.18 performance/SEO.
+
 ## 2026-09-12 — R13.11 mobile chart degradation + Binance CSP repair
 
 Shipped the mobile chart density contract and fixed a production-blocking CSP gap found by the browser regression:

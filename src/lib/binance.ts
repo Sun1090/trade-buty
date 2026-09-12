@@ -19,7 +19,7 @@ const INTERVAL_MS: Record<string, number> = {
 export async function fetchKlines(
   symbol: string,
   interval: string,
-  opts?: { endTime?: number; limit?: number }
+  opts?: { endTime?: number; limit?: number; signal?: AbortSignal }
 ): Promise<Kline[]> {
   const params = new URLSearchParams({
     symbol,
@@ -28,7 +28,8 @@ export async function fetchKlines(
   });
   if (opts?.endTime) params.set("endTime", String(opts.endTime));
   const res = await fetch(
-    `https://api.binance.com/api/v3/klines?${params.toString()}`
+    `https://api.binance.com/api/v3/klines?${params.toString()}`,
+    { signal: opts?.signal },
   );
   if (!res.ok) throw new Error(`行情请求失败 (${res.status})`);
   const raw = (await res.json()) as unknown[][];
