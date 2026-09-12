@@ -70,6 +70,13 @@ test.describe("PWA 离线兜底", () => {
     await expect(page).toHaveTitle(/Trade Buty/);
     await waitForServiceWorkerControl(page);
 
+    // Chromium 在全新上下文里可能已暴露 controller，但首次导航仍绕过刚
+    // 启动的 worker。先用一次在线导航让 fetch handler 真正运行，再模拟断网，
+    // 避免把浏览器冷启动竞态误判成应用层离线兜底失败。
+    await page.goto("/zh/path");
+    await page.goto("/zh");
+    await waitForServiceWorkerControl(page);
+
     // 先唤醒已安装的 worker，再启用 CDP 离线模式。若 worker 已空闲，
     // Chromium 的离线模拟可能让 SW 启动请求也直接失败，页面就绕过兜底页。
     await page.evaluate(() => {
