@@ -1,0 +1,25 @@
+{
+  "indexable": [
+    { "path": "", "changeFrequency": "daily", "priority": 1 },
+    { "path": "/path", "changeFrequency": "weekly", "priority": 0.9 },
+    { "path": "/chart", "changeFrequency": "weekly", "priority": 0.5 },
+    { "path": "/replay", "changeFrequency": "weekly", "priority": 0.5 },
+    { "path": "/review", "changeFrequency": "monthly", "priority": 0.3 },
+    { "path": "/search", "changeFrequency": "monthly", "priority": 0.3 }
+  ],
+  "noindex": [
+    "/about",
+    "/ai",
+    "/auth",
+    "/auth/callback",
+    "/bookmarks",
+    "/calendar",
+    "/changelog",
+    "/faq",
+    "/glossary",
+    "/privacy",
+    "/stats",
+    "/terms"
+  ],
+  "robotsDisallow": ["/api/", "/*/auth", "/offline.html"]
+}

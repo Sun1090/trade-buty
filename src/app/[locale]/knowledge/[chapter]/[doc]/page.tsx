@@ -15,7 +15,7 @@ import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
 import { JsonLd } from "@/components/json-ld";
 import { article, breadcrumbList } from "@/lib/jsonld";
 import { getDict, isLocale, type Locale } from "@/lib/i18n";
-import { buildPageMetadata } from "@/lib/metadata";
+import { buildPageMetadata, buildSoftNotFoundMetadata } from "@/lib/metadata";
 import { QUIZZES } from "@/lib/quizzes";
 import { Markdown } from "@/components/markdown";
 import { ChapterExamCard } from "@/components/chapter-exam-card";
@@ -60,7 +60,8 @@ export async function generateMetadata({
   if (!isLocale(locale)) return {};
   // R10.23：metadata 按当前 locale 取正文（此前硬编码 zh，en 页标题/描述是中文）
   const doc = getDoc(locale, chapter, docSlug);
-  if (!doc) return {};
+  // R13.17：章节在、课程不存在时同样是软 404，需要 noindex（章节也不存在则走 404 分支）。
+  if (!doc) return buildSoftNotFoundMetadata(locale);
   const other: Locale = locale === "zh" ? "en" : "zh";
   const languages: Partial<Record<"zh" | "en", string>> = {
     [locale]: `/${locale}/knowledge/${chapter}/${docSlug}`,

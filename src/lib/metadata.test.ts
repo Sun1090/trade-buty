@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildPageMetadata } from "./metadata";
+import { buildPageMetadata, buildSoftNotFoundMetadata } from "./metadata";
 
 describe("buildPageMetadata", () => {
   it("zh：openGraph locale = zh_CN，alternateLocale = en_US", () => {
@@ -141,5 +141,27 @@ describe("buildPageMetadata alternates.languages（R10.23 hreflang）", () => {
     });
     expect(m.alternates?.canonical).toBe("/en");
     expect(m.alternates?.languages).toBeUndefined();
+  });
+});
+
+describe("buildSoftNotFoundMetadata（R13.17）", () => {
+  it("软 404 自报 noindex 但保留 follow", () => {
+    const m = buildSoftNotFoundMetadata("zh");
+    expect(m.robots).toEqual({ index: false, follow: true });
+  });
+
+  it("不产出 canonical —— 指向不存在的 URL 只会制造重复信号", () => {
+    for (const locale of ["zh", "en"] as const) {
+      const m = buildSoftNotFoundMetadata(locale);
+      expect(m.alternates).toBeUndefined();
+    }
+  });
+
+  it("标题/描述按 locale 取，不回落成站点默认文案", () => {
+    const zh = buildSoftNotFoundMetadata("zh");
+    const en = buildSoftNotFoundMetadata("en");
+    expect(typeof zh.title).toBe("string");
+    expect(zh.title).not.toEqual(en.title);
+    expect(String(en.title).toLowerCase()).toContain("not found");
   });
 });

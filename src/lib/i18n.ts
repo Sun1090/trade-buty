@@ -221,6 +221,8 @@ const zh = {
     bookmarked: "已收藏",
   },
   notFound: {
+    metaTitle: "页面不存在",
+    metaDescription: "这个地址没有对应内容，下面是站内知识库中最接近的课程。",
     docMissing: "这一节不存在",
     docHint: "可能尚未翻译或链接有误——本章现有课程如下：",
     chapterMissing: "这个篇章不存在",
@@ -592,6 +594,8 @@ const en: Dict = {
     bookmarked: "Bookmarked",
   },
   notFound: {
+    metaTitle: "Page not found",
+    metaDescription: "No content matches this URL. Below are the closest lessons from the knowledge base.",
     docMissing: "This lesson doesn't exist",
     docHint: "It may not be translated yet, or the link is off — available lessons in this chapter:",
     chapterMissing: "This chapter doesn't exist",

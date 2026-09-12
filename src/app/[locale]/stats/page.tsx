@@ -21,6 +21,8 @@ export async function generateMetadata({
     title: t.title,
     description: t.subtitle,
     path: `/${locale}/stats`,
+    // R13.17：学习仪表盘全部数据来自本地存储，爬虫只能看到空壳；不进 sitemap、不参与收录。
+    noindex: true,
   });
 }
 

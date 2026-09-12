@@ -46,6 +46,7 @@ npm run typecheck   # next typegen + tsc --noEmit
 npm test            # Vitest unit/component tests
 npm run check:bundle # route-level first-load budgets (after build)
 npm run check:structured-data # JSON-LD regression across all pages (after build)
+npm run check:seo-surface # sitemap / robots / robots-meta consistency (after build)
 ```
 
 ## Project Structure
