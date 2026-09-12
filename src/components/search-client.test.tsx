@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { SearchClient } from "./search-client";
 
 const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
@@ -210,6 +210,31 @@ describe("SearchClient keyboard navigation", () => {
       expect(resultLink()?.textContent).toContain("期货订单"),
     );
     expect(resultLink()?.className).not.toContain("border-accent");
+  });
+
+  it("exposes the suggestion listbox and active option to assistive technology", async () => {
+    render(<SearchClient dict={dict} />);
+    const box = screen.getByRole("searchbox");
+    fireEvent.change(box, { target: { value: "限价单" } });
+
+    const listbox = await screen.findByRole("listbox");
+    expect(box).toHaveAttribute("aria-controls", "search-suggestions");
+    expect(box).toHaveAttribute("aria-autocomplete", "list");
+    expect(box).not.toHaveAttribute("aria-activedescendant");
+
+    fireEvent.keyDown(box, { key: "ArrowDown" });
+    expect(box).toHaveAttribute(
+      "aria-activedescendant",
+      "search-suggestion-0",
+    );
+    expect(within(listbox).getAllByRole("option")[0]).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    fireEvent.keyDown(box, { key: "Escape" });
+    expect(box).not.toHaveAttribute("aria-activedescendant");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   });
 });
 

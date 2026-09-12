@@ -205,6 +205,7 @@ export function SearchClient({
               if (entry) router.push(entry.url);
             } else if (e.key === "Escape") {
               setSuggestOpen(false);
+              setSuggestIdx(-1);
               setFocusIdx(-1);
             } else if (e.key === "ArrowDown") {
               e.preventDefault();
@@ -222,6 +223,13 @@ export function SearchClient({
           }}
           placeholder={dict.placeholder}
           aria-label={dict.placeholder}
+          aria-autocomplete="list"
+          aria-controls="search-suggestions"
+          aria-activedescendant={
+            suggestOpen && suggestIdx >= 0
+              ? `search-suggestion-${suggestIdx}`
+              : undefined
+          }
           autoFocus
           onFocus={() => {
             if (query.trim() && suggestions.length > 0) setSuggestOpen(true);
@@ -241,11 +249,19 @@ export function SearchClient({
             <p className="px-4 pt-2.5 text-[11px] uppercase tracking-widest text-faint">
               {dict.suggestTitle}
             </p>
-            <ul className="py-1.5">
+            <ul
+              id="search-suggestions"
+              role="listbox"
+              aria-label={dict.suggestTitle}
+              className="py-1.5"
+            >
               {suggestions.map((s, i) => (
-                <li key={s.url}>
+                <li key={s.url} role="presentation">
                   <a
                     href={s.url}
+                    id={`search-suggestion-${i}`}
+                    role="option"
+                    aria-selected={i === suggestIdx}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => setSuggestOpen(false)}
                     onMouseEnter={() => setSuggestIdx(i)}
