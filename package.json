@@ -58,7 +58,8 @@
     "kb:dry-run": "node scripts/dry-run-new-chapter.mjs",
     "check:kb-pointer": "node scripts/check-kb-pointer.mjs",
     "check:translation-history": "node scripts/check-translation-history.mjs",
-    "check:kb-parity-budget": "node scripts/check-kb-parity-budget.mjs"
+    "check:kb-parity-budget": "node scripts/check-kb-parity-budget.mjs",
+    "db:test": "node scripts/db-test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
