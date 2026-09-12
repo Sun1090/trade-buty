@@ -26,17 +26,17 @@
 - [x] Q2.4 a11y 抽查：键盘全程可操作（测验答题、回放控制、灯箱 Enter/Space/ESC）、全局 `:focus-visible` 焦点环、表单可访问名称；单测 + Playwright 回归见 `docs/accessibility-audit.md`
 - [x] Q2.5 320px 回归（`npm run check:mobile`，14 关键页，CI 在生产构建后执行并阻断；修掉 path/knowledge-graph 两处 grid truncate 溢出）
 - [x] Q2.6 错误边界覆盖率：图表/搜索/AI 三个外部依赖入口都有降级 UI（搜索索引加载失败/重试单测补齐）
-- [ ] Q2.7 [手动] Sentry（或同类）错误监控接入 + 告警通道
-- [ ] Q2.8 [手动] RLS/越权/双设备同步线上联调（需 Supabase keys）
+- [ ] Q2.7 [手动] Sentry（或同类）错误监控接入 + 告警通道 — `BLOCKED_EXTERNAL`：需 Sentry 账号、生产 DSN 与告警通道（邮件/Slack）凭据，无凭据无法接入或验证告警送达。
+- [ ] Q2.8 [手动] RLS/越权/双设备同步线上联调（需 Supabase keys）— 本地半边已完成：`npm run db:test` 在真实 `supabase/postgres:17.6.1.155` 镜像上应用 9 个迁移，跑通 RLS 越权 38 断言 + 双设备同步/约束 26 断言 + `0008_*` 回滚 → 重放演练（见 docs/database-testing.md）；`BLOCKED_EXTERNAL`：Supabase 云项目 keys、线上数据与真实两台设备联调无法在本地完成。
 
 ## Q3 增长收尾（Q3.1–Q3.6）
 
-- [ ] Q3.1 [手动] Google Search Console 提交 sitemap + 请求编入索引
-- [ ] Q3.2 [手动] Bing Webmaster（可从 GSC 导入）
-- [ ] Q3.3 [手动] Vercel Analytics 开启（免费档）
-- [ ] Q3.4 [手动] PostHog 事件埋点评审（P4 按流量决定是否接入）
-- [ ] Q3.5 分享链路走查：OG 卡片在微信/X/Telegram 的实际渲染抽查
-- [ ] Q3.6 [手动] 冷启动内容分发（知乎/B站/雪球，见 docs/growth-checklist.md）
+- [ ] Q3.1 [手动] Google Search Console 提交 sitemap + 请求编入索引 — `BLOCKED_EXTERNAL`：需站点域名已在生产解析且维护者持有 GSC 账号。
+- [ ] Q3.2 [手动] Bing Webmaster（可从 GSC 导入）— `BLOCKED_EXTERNAL`：需 Bing Webmaster 账号，依赖 Q3.1 先完成。
+- [ ] Q3.3 [手动] Vercel Analytics 开启（免费档）— `BLOCKED_EXTERNAL`：需 Vercel 项目写权限；接入后需重新部署才能采数。
+- [ ] Q3.4 [手动] PostHog 事件埋点评审（P4 按流量决定是否接入）— `BLOCKED_EXTERNAL`：需真实流量数据与 PostHog 账号，属 P4 决策项。
+- [ ] Q3.5 分享链路走查：OG 卡片在微信/X/Telegram 的实际渲染抽查 — 本地半边已覆盖：`src/app/share/[kind]/[path]/opengraph-image.test.tsx` 断言 1200×630 / `image/png` 与无效载荷降级，`e2e/smoke.spec.ts`（R13.17）覆盖 canonical/noindex；`BLOCKED_EXTERNAL`：真实客户端抓取渲染需人工在微信/X/Telegram 抽查。
+- [ ] Q3.6 [手动] 冷启动内容分发（知乎/B站/雪球，见 docs/growth-checklist.md）— `BLOCKED_EXTERNAL`：需维护者账号与人工发布。
 
 ## Q4 体验 backlog（按需认领，非阻塞）
 
@@ -51,7 +51,7 @@
 - [x] Q5.1 docs 与实现一致性走查（plan/research/p2-research 已区分历史选型与当前实现；新增 `check:docs` 校验课程数、当前技术栈与中立承诺）
 - [x] Q5.2 AGENTS.md 契约段复核（删除旧 `NN-*`/数字文件名描述，统一为 `{zh,en}/English-slug`；`check:docs` 防回归）
 - [x] Q5.3 依赖月度审计（2026-09-12：`audit:prod` 0 漏洞；`npm outdated` 记录 React/Supabase/Playwright/Testing Library 等补丁或 minor，ESLint 10 / TypeScript 7 / Vitest 5 等 major 暂缓并单独评估）
-- [ ] Q5.4 [手动] 备份演练：Supabase 数据导出 + 仓库镜像确认
+- [ ] Q5.4 [手动] 备份演练：Supabase 数据导出 + 仓库镜像确认 — 本地半边已完成：`npm run backup:drill` 全自动跑「迁移 → 全业务表灌数据 → `pg_dump -Fc`(30,963 bytes) → 销毁源库 → 全新实例 `pg_restore` → 数据/schema/RLS/约束指纹比对 → 重跑 pgTAP(38+26 断言)」，脚本与边界见 docs/database-testing.md 第 4 节；`BLOCKED_EXTERNAL`：Supabase 云导出（auth/Storage/项目配置）、定时备份与仓库镜像确认需云控制台权限。
 
 ## 版本关账标准
 
