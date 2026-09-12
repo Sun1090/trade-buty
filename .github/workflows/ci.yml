@@ -42,6 +42,7 @@ jobs:
       - run: npm run check:ai-copy
       - run: npm run check:growth-event-privacy
       - run: npm run check:dark-pattern-copy
+      - run: npm run check:docs
       - run: npm run check:constitution
       - run: npm run check:frontmatter
       - run: npm run check:image-alt

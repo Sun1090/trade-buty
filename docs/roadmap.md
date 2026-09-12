@@ -11,10 +11,10 @@
 
 - [x] Q1.1 `kb:update` 一条龙（拉取 + 契约校验 + 索引/资产同步 + 构建回归）
 - [x] Q1.2 en 中英 parity 跟踪脚本（`npm run kb:parity`，--strict 可做门禁；当前 27/27 全齐）
-- [x] Q1.3 死链检查脚本（`npm run check:links`，436 页/8052 链接零死链，CI 阻断；2 处 en 锚点告警已定位为上游翻译遗留）
-- [x] Q1.4 搜索索引对账（`npm run check:search-index`，400/400 对账通过，CI 阻断）
-- [ ] Q1.5 frontmatter 质量门禁已在 prebuild（缺 title/description 报警）——确认 CI 日志可见
-- [ ] Q1.6 KB 更新演练月度化：每月跑一次 kb:update 并记录变更（docs 下 changelog 片段）
+- [x] Q1.3 死链检查脚本（`npm run check:links` 扫全量构建产物，CI 阻断；en 锚点告警记入产物并作为上游翻译遗留跟踪）
+- [x] Q1.4 搜索索引对账（`npm run check:search-index` 与知识库逐条双向对账，CI 阻断）
+- [x] Q1.5 frontmatter 质量门禁：CI 阻断 `npm run check:frontmatter`（title/description 齐全且描述 ≥15 字符）；prebuild 的 `validate-knowledge-contract` 仅告警，不混淆两者
+- [x] Q1.6 KB 更新演练月度化：2026-09-12 已同步 `kline-buty@a57d510`，双语各 182 篇；变更记录见 `docs/kb-changelog-draft.md` / `docs/kb-changelog-2026-09-12.md`，历史由 `check:translation-history` 核对
 - [x] Q1.7 新章节上线清单（dry-run 输出索引/sitemap/测验挂载点/路径分组四项核对；流程见 docs/new-chapter-release-checklist.md，单测覆盖）
 - [x] Q1.8 kline-buty 侧 en 翻译收官（27 章全齐，已上线）
 
@@ -48,9 +48,9 @@
 
 ## Q5 工程卫生（Q5.1–Q5.4）
 
-- [ ] Q5.1 docs 与实现一致性走查（plan/research/p2-research 过时段落更新）
-- [ ] Q5.2 AGENTS.md 契约段复核（KB 结构若再变，同步更新）
-- [ ] Q5.3 依赖月度审计（npm outdated + 安全通告）
+- [x] Q5.1 docs 与实现一致性走查（plan/research/p2-research 已区分历史选型与当前实现；新增 `check:docs` 校验课程数、当前技术栈与中立承诺）
+- [x] Q5.2 AGENTS.md 契约段复核（删除旧 `NN-*`/数字文件名描述，统一为 `{zh,en}/English-slug`；`check:docs` 防回归）
+- [x] Q5.3 依赖月度审计（2026-09-12：`audit:prod` 0 漏洞；`npm outdated` 记录 React/Supabase/Playwright/Testing Library 等补丁或 minor，ESLint 10 / TypeScript 7 / Vitest 5 等 major 暂缓并单独评估）
 - [ ] Q5.4 [手动] 备份演练：Supabase 数据导出 + 仓库镜像确认
 
 ## 版本关账标准
@@ -88,7 +88,7 @@
 ## R2 AI 出题与测验生成（R2.1–R2.12）
 
 - [x] R2.1 章节出题覆盖全部 27 章（quiz 路由新增 chapter 模式：kb-titles 章名 + RAG 章节过滤上下文出 5 题；无固定题的 25 章课末显示 AiChapterQuizCard；quiz-gen.ts 校验/去重纯函数 + prompt/组件 17 单测）
-- [ ] R2.2 难度档（入门/进阶）影响出题深度与选项迷惑度
+- [x] R2.2 难度档（入门/进阶）影响出题深度与选项迷惑度（`quiz-strategy` 注入 temperature/token/相关性阈值与难度规则，UI 选择按 locale 持久化并随请求发送；策略/prompt/组件 38 项定向测试通过）
 - [x] R2.3 生成题去重（bigram Jaccard 与固定题库及同批新题互去重，阈值 0.6，3 单测）
 - [x] R2.4 解析质量写入章节出题 prompt（须引用章节概念、禁止空话、无依据不编造）
 - [x] R2.5 出题失败降级（服务端 AI 失败回退本章固定题带 fallback 标识；前端错误文案兜底不白屏；2 单测）
@@ -147,17 +147,17 @@
 
 ## R6 内容运营自动化（R6.1–R6.13）
 
-- [ ] R6.1 kb:update 产物 diff 摘要（新增/删除课程列表输出）
-- [ ] R6.2 新课程自动进 sitemap 回归断言（已有对账，补新增冒烟）
+- [x] R6.1 kb:update 产物 diff 摘要（`scripts/kb-diff.mjs` 输出文件新增/删除/内容修改，并写入带 hash 和上游指针的 manifest）
+- [x] R6.2 新课程自动进 sitemap 回归断言（双向对账阻断 missing/stale；新增/删除课程用例见 `scripts/sitemap-lib.test.mjs`）
 - [x] R6.3 测验挂载点自动校验（AST 解析 27 个挂载，chapter/doc 存在且每题 ≥3 道；重复键阻断；CI 阻断）
 - [x] R6.4 题库覆盖率脚本（27/27 章，共 81 道；按真实 questions 数组计数并阻断缺口）
-- [ ] R6.5 frontmatter 描述长度检查（过短影响 SEO 报警）
+- [x] R6.5 frontmatter 描述长度检查（`npm run check:frontmatter`：缺 title/description 或 description <15 字符均退出 1，CI 阻断）
 - [x] R6.6 图片 alt 缺失检查（remark 全量扫描；同时阻断空 alt、引用缺失、孤儿资产与 zh/en 镜像漂移）
-- [ ] R6.7 中英标题对照表生成（翻译进度可视化数据源）
+- [x] R6.7 中英标题对照表生成（`npm run kb:translation-status` 产出 `docs/translation-status.md` 与历史快照，CI 校验快照新鲜度）
 - [x] R6.8 术语交叉覆盖（check:glossary：20 术语/孤儿 0 个 → docs/glossary-coverage.md）
 - [x] R6.9 FAQ 候选（ops:faq-candidates：近 30 天 unhelpful 聚类 → docs/faq-candidates.md；无 key 友好跳过）
-- [ ] R6.10 changelog 自动片段（kb:update 产物变更写入 changelog 草稿）
-- [ ] R6.11 内容宪法扫描（“保证收益/稳赚”等违禁表述正则巡检）
+- [x] R6.10 changelog 自动片段（`check-kb-changelog` + `content-changelog-lib` 识别新增/内容更新/移除并按章节渲染；5 项回归测试通过）
+- [x] R6.11 内容宪法扫描（默认报告式巡检并豁免明确教育语境，`--strict` 可升级阻断；当前零未豁免命中）
 - [x] R6.12 外链巡检（ops:link-patrol：HEAD 降级 GET + 超时重试；.github/workflows/link-patrol.yml 每月定时 + 手动触发）
 - [x] R6.13 运营手册（docs/ops.md：门禁/流水线/运营工具/迁移清单全覆盖）
 

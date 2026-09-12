@@ -62,8 +62,9 @@ Site URLs use the slug directly: `/[locale]/knowledge/{chapter}/{doc}`. Legacy n
 
 ## Content Rendering Contract (with the knowledge base)
 
-- Chapter directories: `docs/knowledge/NN-*/`; the chapter intro is the directory's `README.md`, body lessons are numbered `.md` files.
-- Frontmatter contract fields: `title` (`NN · 标题`), `description`; missing fields degrade to filename / first H1.
+- Language roots are `docs/knowledge/{zh,en}/`; each chapter is an English-slug directory with a `README.md` intro.
+- Lesson filenames are English slugs (for example `candlestick-basics.md`), ordered by the leading number in frontmatter `title`.
+- Frontmatter contract fields: `title`, `description`; missing fields degrade to filename / first H1.
 - VitePress container syntax (`::: warning 标题 ... :::`) is converted to callout blocks in the render pipeline.
 - Relative links and `_assets/` image paths are rewritten to in-site routes; assets are copied to `public/knowledge-assets/` by a prebuild script.
 - Anchor links must scroll the page to the real target heading.

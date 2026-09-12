@@ -1,6 +1,9 @@
 # Trade Buty · 产品规划
 
 > 依据：[市场调研报告](research.md)。定位：全球中文用户的免费中立交易教育平台。
+>
+> 当前实现口径（2026-09-12）：知识库 27 章 / 182 篇且中英对齐；搜索为构建时 JSON 索引；
+> 认证是 Supabase Auth；LLM 客户端通过 `AI_API_URL` / `AI_API_KEY` 接入任何 OpenAI 格式端点。
 
 ## 产品一句话
 
@@ -10,18 +13,18 @@
 
 1. 不承诺、不暗示任何收益；数字示例一律虚构并注明
 2. 不荐股荐基，不做投顾业务
-3. 不做券商开户导流
+3. 不做券商开户导流，不接受广告或捐赠
 4. 每篇内容必须带「⚠️ 风险提示」块（继承 kline-buty 知识库规范）
-5. P0–P3 全程免费；未来变现仅限 Affiliate / 高阶订阅，且基础课程永远免费
+5. P0–P3 全程免费；任何未来方案都必须先证明不会破坏中立性，基础课程永远免费
 
 ## 分期路线
 
 ### P0 骨架（1–2 周）
 
-- Next.js + TypeScript + Tailwind CSS + shadcn/ui 初始化
+- Next.js + TypeScript + Tailwind CSS 初始化（CSS-first，不引入组件库）
 - kline-buty 知识库以 git submodule 接入，Markdown 渲染（宽容模式：缺字段告警不构建失败）
 - 学习路线图首页（27 篇章分级导航）
-- Pagefind 站内搜索
+- 构建时 JSON 索引 + 客户端检索
 - GitHub Actions CI + Vercel 自动部署
 
 验收标准：有一个能看、能搜、能学的完整站点上线。
@@ -51,7 +54,7 @@
 
 - ~~RAG 检索知识库~~ Supabase pgvector ✓
 - AI 对话：流式 + RAG context + 来源引用 ✓
-- 错题驱动的自适应出题（针对薄弱概念生成变体题）——进行中
+- 错题驱动的自适应出题（针对薄弱概念生成变体题）✓
 - 通用 LLM 客户端：原生 fetch，兼容任何 OpenAI 格式端点（不锁厂商）✓
 
 设计原则：AI 出题判答，不是通用聊天机器人。
@@ -70,7 +73,7 @@
 | 框架 | Next.js | P1 起全是真交互，避免中途迁移 |
 | 知识库接入 | git submodule 引用 kline-buty | 内容源唯一，两边节奏解耦 |
 | 渲染解析 | 宽容模式 | 吸取 SVG 未落盘打挂构建的教训，半成品不打挂站点 |
-| 向量检索 | Supabase pgvector | 201 篇量级不需要独立向量库 |
+| 向量检索 | Supabase pgvector | 182 篇量级不需要独立向量库 |
 | 部署受众 | 全球中文用户，Vercel 免备案 | 金融内容备案风险高 |
 | 图表能力 | 直接复用 kline-buty 数据层/渲染层解耦架构 | 最大资产复用 |
 
@@ -79,14 +82,14 @@
 | 层 | 选择 | 引入时机 |
 |---|---|---|
 | 框架 | Next.js + TypeScript | P0 |
-| UI | Tailwind CSS + shadcn/ui + lucide-react | P0 |
-| 搜索 | Pagefind | P0 |
+| UI | Tailwind CSS v4（CSS-first） | P0 |
+| 搜索 | 构建时 JSON 索引 + 客户端检索 | P0 |
 | 测试 | Vitest + Playwright | P0 |
 | CI/CD | GitHub Actions + Vercel | P0 |
 | 行情数据 | 币安公开 API（复用 kline-buty 封装） | P1 |
 | 认证 | Supabase Auth（邮箱魔法链接） | P2（砍掉 Clerk，少一个服务） |
 | 数据库 | Supabase PostgreSQL + Drizzle ORM | P2 |
-| LLM | Claude API + pgvector | P3 |
+| LLM | 任意 OpenAI 格式端点 + pgvector | P3 |
 
 ## 成功指标（参考）
 
