@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { fetchKlines, fetchRandomHistoryWindow } from "./binance";
 
+type FetchFn = (url: string, init?: RequestInit) => Promise<unknown>;
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -25,7 +27,7 @@ describe("fetchKlines", () => {
   });
 
   it("默认 limit=500，指定 endTime 时带上查询参数", async () => {
-    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => [] }));
+    const fetchMock = vi.fn<FetchFn>(async () => ({ ok: true, status: 200, json: async () => [] }));
     vi.stubGlobal("fetch", fetchMock);
     await fetchKlines("BTCUSDT", "4h", { endTime: 123456 });
     const url = new URL(String(fetchMock.mock.calls[0][0]));
@@ -43,7 +45,7 @@ describe("fetchKlines", () => {
 
 describe("fetchRandomHistoryWindow", () => {
   it("请求历史窗口：limit=count 且 endTime 落在过去 180 天内", async () => {
-    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => [] }));
+    const fetchMock = vi.fn<FetchFn>(async () => ({ ok: true, status: 200, json: async () => [] }));
     vi.stubGlobal("fetch", fetchMock);
     const now = Date.now();
     await fetchRandomHistoryWindow("BTCUSDT", "1h", 300);
