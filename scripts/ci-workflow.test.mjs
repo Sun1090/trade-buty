@@ -26,6 +26,41 @@ function jobCommands(job) {
     .join("\n");
 }
 
+const opsPath = "docs/ops.md";
+
+/**
+ * 抽取 ci.yml 里可机检的门禁标识，按作业定义顺序（ci → db-tests）：
+ * `npm run X` → X；`node scripts/X.mjs` → scripts/X.mjs；
+ * `npx playwright install …` → "playwright install"；`docker pull <image>` → <image>。
+ * 行内 shell（echo / printf / ELAPSED 等）不产出标识，由表中具名行覆盖。
+ */
+function ciGateIdentifiers(workflow) {
+  const ids = [];
+  for (const job of Object.values(workflow.jobs ?? {})) {
+    for (const step of job.steps ?? []) {
+      if (!step.run) continue;
+      for (const raw of step.run.split("\n")) {
+        const line = raw.trim();
+        let match;
+        if ((match = /^npm run ([\w:-]+)$/.exec(line))) ids.push(match[1]);
+        else if ((match = /^node (scripts\/[\w.-]+\.mjs)/.exec(line))) ids.push(match[1]);
+        else if (line.startsWith("npx playwright install")) ids.push("playwright install");
+        else if ((match = /^docker pull ([\w./:@-]+)/.exec(line))) ids.push(match[1]);
+      }
+    }
+  }
+  return ids;
+}
+
+/** docs/ops.md 质量门禁表的正文行（到首个非表格行为止） */
+function opsGateRows() {
+  const lines = fs.readFileSync(opsPath, "utf8").split("\n");
+  const header = lines.findIndex((line) => line.startsWith("| CI 步骤"));
+  const rows = [];
+  for (let i = header + 1; i < lines.length && lines[i].startsWith("|"); i += 1) rows.push(lines[i]);
+  return rows;
+}
+
 /** 遍历所有工作流的所有 job，产出 [文件, job 名, job] */
 function allJobs() {
   const jobs = [];
@@ -213,6 +248,33 @@ describe("CI workflow contract", () => {
     expect(commands).toContain("node scripts/db-test.mjs");
     expect(commands).toContain("npm run backup:drill");
     expect(commands).toContain("docker pull supabase/postgres:17.6.1.155");
+  });
+
+  it("docs/ops.md 门禁表登记 ci.yml 的每一道门禁（防漏登记）", () => {
+    const ops = fs.readFileSync(opsPath, "utf8");
+    const missing = [...new Set(ciGateIdentifiers(workflow))].filter((id) => !ops.includes(id));
+    expect(
+      missing,
+      `docs/ops.md 未登记以下 ci.yml 门禁（新增步骤时需同步门禁表）：\n${missing.join("\n")}`,
+    ).toEqual([]);
+  });
+
+  it("docs/ops.md 门禁表首列命令的相对顺序与 ci.yml 一致", () => {
+    const firstCol = opsGateRows().map((row) => row.split("|")[1] ?? "");
+    const escape = (value) => value.replace(/[.*+?^$()|[\]\\]/g, "\\$&");
+    let last = -1;
+    const outOfOrder = [];
+    for (const id of [...new Set(ciGateIdentifiers(workflow))]) {
+      const pattern = new RegExp(`(?<![\\w:-])${escape(id)}(?![\\w:-])`);
+      const idx = firstCol.findIndex((cell) => pattern.test(cell));
+      if (idx === -1) continue; // 仅在首列登记的命令参与顺序校验
+      if (idx < last) outOfOrder.push(`${id}（门禁表第 ${idx + 1} 行）`);
+      last = idx;
+    }
+    expect(
+      outOfOrder,
+      `docs/ops.md 门禁表顺序与 ci.yml 不一致（应按流水线实际顺序排列）：\n${outOfOrder.join("\n")}`,
+    ).toEqual([]);
   });
 
   it("Playwright Chromium 在移动端门禁和 E2E 之前安装", () => {

@@ -3,7 +3,8 @@
 > v0.6 内容运营手册：覆盖 R6（内容运营自动化）与 R10（内容扩产与双语覆盖）全部质量门禁。
 > 所有命令在仓库根目录执行；`npm run check:*` 为内容/产物质量门禁，
 > `npm run ops:*` / `npm run kb:*` 为运营工具。
-> 下表覆盖 `.github/workflows/ci.yml` 的全部执行步骤，并按实际顺序排列。
+> 下表覆盖 `.github/workflows/ci.yml` 的两个作业（`ci` / `db-tests`）的全部执行步骤，并按实际顺序排列；`db-tests` 作业的步骤以 `db-tests ·` 前缀标注。
+> 覆盖与顺序由 `scripts/ci-workflow.test.mjs` 机检：每个 `npm run` / `node scripts` 门禁必须在表中登记（漏登记即失败），首列命令的相对顺序必须与工作流一致。
 
 ## 质量门禁（CI 自动运行，失败阻断合并）
 
@@ -17,6 +18,7 @@
 | `npm test` | Vitest 单元、组件、脚本契约与集成测试 | 修复失败用例；不得跳过或删除断言来伪造通过 |
 | `npm run typecheck` | Next.js 16 路由类型生成 + `tsc --noEmit` | 修复类型错误；不得用 `any`/忽略指令掩盖真实不匹配 |
 | `npm run build` | prebuild 契约/资产/搜索索引/标题同步 + 生产构建 | 按构建错误修内容契约或代码；宽松渲染应 warn+skip，不能静默发布空站 |
+| `npx playwright install --with-deps chromium` | 安装 E2E 所需的固定 Chromium 运行时 | 检查 CI runner 系统依赖与 Playwright 版本 |
 | `npm run check:mobile` | 14 个关键 zh/en 页面在 320px 下无横向溢出（含 R12.21 / R13.10） | 修正布局/滚动容器；不得只放宽测试阈值 |
 | 构建耗时报警（CI 内联，R7.10） | lint→build 段超过 240 秒输出 warning | 检查大 chunk、缓存与依赖体积 |
 | `npm run check:ai-copy` | en 字典无中文残留（R3.12） | 修正 i18n.ts en 值 |
@@ -48,9 +50,11 @@
 | `npm run check:structured-data` | 全站 JSON-LD 结构化数据回归：实体类型/`@id` 唯一性、绝对 URL、语言、博客/课程/FAQ 页面身份（R13.16，需先 build） | 修正 `src/lib/jsonld.ts` 或页面注入；不得为通过直接放宽断言 |
 | 生成内容质量报告（R10.1–R10.6 / R10.17） | 在当前提交上按序重跑 `kb:inventory`、`kb:gap-priority`、`kb:accept`、`kb:translation-status`、`check:title-terminology`、`check:description-quality`、`check:risk-warning` 七份内容报告 | 按脚本报告修复内容或契约；报告式命令不会用人工旧快照替代当前结果 |
 | 内容质量报告归档（CI artifact，R10.17） | 上述当前提交报告及 docs/*.json 随 CI 归档 7 天 | 下载 artifact 分派人工整改；不得只更新 artifact 而不提交内容源修复 |
-| `npx playwright install --with-deps chromium` | 安装 E2E 所需的固定 Chromium 运行时 | 检查 CI runner 系统依赖与 Playwright 版本 |
 | `npm run e2e` | 全站、320px 移动端、PWA 离线与扩展核心闭环（R13.24） | 修复可访问性、响应式或交互回归；不得只重跑忽略 flaky |
 | `npm run lhci` | 关键 URL 的性能/可访问性/最佳实践/SEO 断言 | 修复真实退化；阈值调整必须附测量证据 |
+| `db-tests` · `docker pull supabase/postgres:17.6.1.155` | 拉取与线上一致的 Supabase Postgres 17 镜像，供迁移/RLS/同步门禁使用（Q2.8 / Q5.4） | 核对镜像 tag 是否仍在；不要改用本地随意镜像绕过 |
+| `db-tests` · `node scripts/db-test.mjs` | 在真实 Postgres 镜像里应用全部迁移、跑 RLS 越权与双设备同步 pgTAP 测试，并执行 `0008` 回滚 → 重放演练（Q2.8） | 修正迁移/策略/回滚脚本；不得跳过 pgTAP 断言或改用内存库伪造通过 |
+| `db-tests` · `npm run backup:drill` | 备份恢复演练：`pg_dump` 源库 → 全新实例恢复 → 数据/schema/RLS 指纹对比 → 恢复库重跑 pgTAP（Q5.4） | 按 `scripts/backup-drill.mjs` 报错修备份/恢复路径或表覆盖；不得缩小 `DATA_TABLES` 覆盖面 |
 
 > 执行顺序注记：E2E 与 Lighthouse 排在所有产物校验之后（E2E 运行时向 `.next` 写 fallback 页，避免污染其后的 check 产物；顺序由 ci.yml 保证）。
 > 运行时注记：官方 actions（`checkout` ≥ v5 / `setup-node` ≥ v5 / `cache` ≥ v5 / `upload-artifact` ≥ v6）必须保持 node24 版本，避免 GitHub 逐步下线 Node.js 20 时报弃用注记；`scripts/ci-workflow.test.mjs` 会拦截回退。
