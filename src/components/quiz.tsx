@@ -89,8 +89,6 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
       const q = quiz.questions[current];
       if (picked === null) {
         // 选答案：1-4 或 A-D
-        const idx = "1234".indexOf(e.key);
-        const idxAlpha = "abcdABCD".indexOf(e.key.toUpperCase() !== e.key ? e.key : e.key.toUpperCase());
         const map = { "1": 0, "2": 1, "3": 2, "4": 3, a: 0, b: 1, c: 2, d: 3, A: 0, B: 1, C: 2, D: 3 } as Record<string, number>;
         const i = map[e.key];
         if (i !== undefined && i < q.options.length) {

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getChapters, getDocMetas } from "@/lib/content";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";

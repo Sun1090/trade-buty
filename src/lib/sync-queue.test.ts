@@ -108,7 +108,7 @@ describe("flushQueue (sync executor)", () => {
 describe("flushQueueAsync", () => {
   it("全部成功（async executor） → 队列清空", async () => {
     const q = [mk(1, "progress", "a"), mk(2, "progress", "b")];
-    const out = await flushQueueAsync(q, async (item) => {
+    const out = await flushQueueAsync(q, async () => {
       await new Promise((r) => setTimeout(r, 1));
       return true;
     });

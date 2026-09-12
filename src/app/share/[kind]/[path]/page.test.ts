@@ -119,7 +119,7 @@ describe("share landing page metadata", () => {
       currentStreak: 3,
       locale: "en",
     });
-    const summary = summarizeForMeta("quiz", path);
+    expect(summarizeForMeta("quiz", path)).toBeNull();
     // summarizeForMeta 不区分 kind——这里给 quiz 但 encode 是 replay，detectKind 应失败
     // 这里只是 sanity check encode 不抛
     expect(path).toMatch(/^v1\|/);

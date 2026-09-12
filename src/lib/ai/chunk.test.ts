@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from "vitest";
-import * as fs from "node:fs";
 
 // Mock fs + content 模块（避免读取真实知识库）
 vi.mock("node:fs", () => ({

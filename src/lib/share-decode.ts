@@ -106,7 +106,7 @@ function unpack(segment: string): unknown | null {
 
 /** 剥离控制字符 + 截断（React/canvas 都会原样渲染，长度是主要风险） */
 function sanitizeText(value: string, maxChars: number): string {
-  // eslint-disable-next-line no-control-regex
+
   const cleaned = value.replace(/[\u0000-\u001F\u007F]/g, "").trim();
   return cleaned.slice(0, maxChars);
 }

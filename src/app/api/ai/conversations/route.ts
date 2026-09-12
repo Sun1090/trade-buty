@@ -10,7 +10,7 @@ interface SaveBody {
 }
 
 /** GET: 拉取登录用户最近对话（用于进入 AI 页时恢复历史） */
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();

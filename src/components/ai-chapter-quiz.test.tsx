@@ -57,7 +57,7 @@ interface FetchMockCall {
 }
 
 function setup(status = 200, body: unknown = { questions, source: "ai" }) {
-  const mock = vi.fn(async (_input: RequestInfo | URL, _init?: FetchMockCall) => ({
+  const mock = vi.fn(async () => ({
     ok: status < 400,
     status,
     json: async () => body,

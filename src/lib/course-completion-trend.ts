@@ -168,7 +168,6 @@ export function buildCourseCompletionTrend(input: {
     });
   }
 
-  const latest = buckets[buckets.length - 1]!;
   const currentDoneChapters = chapters.filter((chapter) => (currentChapterCounts.get(chapter.slug) ?? 0) >= safeNonNegative(chapter.docCount) && safeNonNegative(chapter.docCount) > 0).length;
 
   return {

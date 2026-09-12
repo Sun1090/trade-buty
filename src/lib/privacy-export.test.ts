@@ -147,7 +147,6 @@ describe("buildPrivacyExport (R9.9)", () => {
 
 describe("downloadPrivacyExport (R9.9)", () => {
   it("浏览器侧触发下载（不抛错）", () => {
-    const exp = buildPrivacyExport(1_700_000_000_000);
     // mock createObjectURL / Blob / a.click
     const createObjectURL = vi.fn(() => "blob:mock");
     const revokeObjectURL = vi.fn();
@@ -163,9 +162,8 @@ describe("downloadPrivacyExport (R9.9)", () => {
     const aEl = origCreate("a");
     const setDownload = vi.fn();
     Object.defineProperty(aEl, "download", { set: setDownload, configurable: true });
-    let capturedEl: HTMLAnchorElement | null = null;
     const spy = vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
-      if (tag === "a") { capturedEl = aEl as HTMLAnchorElement; return aEl; }
+      if (tag === "a") return aEl;
       return origCreate(tag);
     });
     Object.defineProperty(URL, "createObjectURL", { value: () => "blob:mock", configurable: true, writable: true });

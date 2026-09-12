@@ -29,7 +29,6 @@ import {
 
 const root = process.cwd();
 const KB = path.join(root, "content/kline-buty/docs/knowledge");
-const LOCALES = ["zh", "en"];
 const CHAPTER_RANK = new Map(CHAPTER_ORDER.map((slug, i) => [slug, i]));
 
 if (!fs.existsSync(KB)) {

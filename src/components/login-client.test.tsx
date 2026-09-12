@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 // supabase client mock —— 用共享 spy 实例（类型放宽到 any 以接受任意 { error }）
-const signInSpy = vi.fn(async (_args?: unknown): Promise<{ error: unknown }> => ({ error: null }));
+const signInSpy = vi.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
 vi.mock("@/lib/supabase/client", () => ({
   getSupabaseBrowser: () => ({
     auth: { signInWithOtp: signInSpy },

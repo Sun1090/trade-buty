@@ -23,7 +23,7 @@ export function FontSizeControl({ labels }: { labels: { smaller: string; larger:
       }
       const lhv = parseFloat(localStorage.getItem(LH_KEY) ?? "1.85");
       if (!isNaN(lhv)) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+
         setLh(lhv);
         applyLh(lhv);
       }

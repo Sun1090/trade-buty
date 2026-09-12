@@ -34,8 +34,6 @@ const QUIZ_CACHE_TTL = 24 * 60 * 60 * 1000;
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
-
   // 登录用户才可用（消耗较大）
   if (!user) {
     return NextResponse.json({ error: "Login required" }, { status: 401 });
@@ -45,7 +43,7 @@ export async function POST(req: NextRequest) {
 
   // R2.1 章节出题模式：按章节 slug 基于知识库上下文出 5 道新题
   if (body.chapter) {
-    return handleChapterQuiz(body, user.id);
+    return handleChapterQuiz(body);
   }
 
   if (!body.items?.length) {
@@ -113,10 +111,7 @@ const profile = getRetrievalProfile('quiz');
  * R2.1：章节出题。RAG 限定该章内容 → AI 生成 5 道题 → 与固定题库去重。
  * 失败降级（R2.5）：AI 出题失败时回退本章固定题（若有），绝不白屏。
  */
-async function handleChapterQuiz(
-  body: GenerateBody,
-  userId: string,
-): Promise<NextResponse> {
+async function handleChapterQuiz(body: GenerateBody): Promise<NextResponse> {
   const locale = body.locale === "en" ? "en" : "zh";
   const difficulty = normalizeQuizDifficulty(body.difficulty);
   const chapter = body.chapter as string;
