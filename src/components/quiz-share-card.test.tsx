@@ -109,7 +109,7 @@ describe("QuizShareCard", () => {
         score={4}
         total={5}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制" }}
+        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     expect(screen.getByTestId("quiz-share-btn")).toBeInTheDocument();
@@ -123,7 +123,7 @@ describe("QuizShareCard", () => {
         score={5}
         total={5}
         locale="zh"
-        labels={{ share: "分享我的成绩", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制" }}
+        labels={{ share: "分享我的成绩", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     // canvas 存在但隐藏
@@ -146,7 +146,7 @@ describe("QuizShareCard", () => {
         score={3}
         total={5}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制" }}
+        labels={{ share: "分享", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     fireEvent.click(screen.getByTestId("quiz-share-preview-btn"));
@@ -160,5 +160,26 @@ describe("QuizShareCard", () => {
       },
       { timeout: 2000 },
     );
+  });
+});
+
+describe("QuizShareCard download failure feedback (R13.6)", () => {
+  it("shows the failure message when canvas.toBlob yields null", async () => {
+    installCanvasStub();
+    installAnchorClickStub();
+    HTMLCanvasElement.prototype.toBlob = vi.fn(function (cb: (b: Blob | null) => void) {
+      cb(null);
+    }) as unknown as typeof HTMLCanvasElement.prototype.toBlob;
+    render(
+      <QuizShareCard
+        chapterTitle="入门基础"
+        score={8}
+        total={10}
+        locale="zh"
+        labels={{ share: "分享", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败，请重试" }}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("quiz-share-btn"));
+    expect(await screen.findByRole("alert")).toHaveTextContent("下载失败，请重试");
   });
 });

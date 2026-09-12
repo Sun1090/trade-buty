@@ -23,6 +23,7 @@ interface Props {
     download: string;
     copyLink: string;
     copiedLink: string;
+    downloadFailed: string;
   };
 }
 
@@ -44,6 +45,8 @@ export function ReplayShareCard({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // R13.6：下载失败可见反馈（canvas 污染/toBlob 失败等）
+  const [downloadFailed, setDownloadFailed] = useState(false);
   const filename = `trade-buty-replay-${slugify(symbol)}-${slugify(interval)}.png`;
   // R13.2：预览图 alt 描述卡片内容（准确率/命中/连胜），读屏可复述
   const contentAlt =
@@ -82,27 +85,48 @@ export function ReplayShareCard({
     });
   }, [symbol, interval, correct, total, accuracy, bestStreak, currentStreak, locale, siteName]);
 
+  async function tryDownload() {
+    try {
+      await draw();
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      await downloadCanvasAsPng(canvas, filename);
+      setDownloadFailed(false);
+    } catch {
+      // R13.6：对「伪装的失败」诚实——拿到错误就反馈，不假装成功
+      setDownloadFailed(true);
+    }
+  }
+
   async function handleShare() {
-    await draw();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    await downloadCanvasAsPng(canvas, filename);
+    await tryDownload();
   }
 
   async function handlePreview() {
-    await draw();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    const url = canvas.toDataURL("image/png");
-    setPreviewUrl(url);
+    try {
+      await draw();
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const url = canvas.toDataURL("image/png");
+      setPreviewUrl(url);
+      setDownloadFailed(false);
+    } catch {
+      setDownloadFailed(true);
+    }
   }
 
   async function handleDownload() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (!previewUrl) await draw();
-    await downloadCanvasAsPng(canvas, filename);
+    if (!previewUrl) {
+      await tryDownload();
+      return;
+    }
+    try {
+      await downloadCanvasAsPng(canvasRef.current!, filename);
+      setDownloadFailed(false);
+    } catch {
+      setDownloadFailed(true);
+    }
   }
 
   return (
@@ -118,7 +142,7 @@ export function ReplayShareCard({
         type="button"
         onClick={handleShare}
         data-testid="replay-share-btn"
-        className="rounded-full border border-accent/40 bg-accent-dim text-accent font-medium px-5 py-2 text-sm hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition"
+        className="rounded-full border border-accent/40 bg-accent-dim text-accent font-medium px-5 py-2 text-sm min-h-10 hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition"
       >
         📤 {labels.share}
       </button>
@@ -126,7 +150,7 @@ export function ReplayShareCard({
         type="button"
         onClick={handlePreview}
         data-testid="replay-share-preview-btn"
-        className="rounded-full border border-border-strong text-muted font-medium px-5 py-2 text-sm hover:border-accent/50 hover:text-accent transition"
+        className="rounded-full border border-border-strong text-muted font-medium px-5 py-2 text-sm min-h-10 hover:border-accent/50 hover:text-accent transition"
       >
         👁 Preview
       </button>
@@ -137,6 +161,9 @@ export function ReplayShareCard({
           copiedLabel={labels.copiedLink}
           testId="replay-share-link-btn"
         />
+      )}
+      {downloadFailed && (
+        <p role="alert" className="basis-full mt-2 text-xs font-medium text-red-500">{labels.downloadFailed}</p>
       )}
       {previewUrl && (
         <div className="basis-full mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
@@ -151,7 +178,7 @@ export function ReplayShareCard({
           <button
             type="button"
             onClick={handleDownload}
-            className="mt-3 rounded-full bg-accent-strong text-white dark:text-[#06281c] font-semibold px-5 py-2 text-sm hover:bg-accent transition"
+            className="mt-3 rounded-full bg-accent-strong text-white dark:text-[#06281c] font-semibold px-5 py-2 text-sm min-h-10 hover:bg-accent transition"
           >
             ⬇ {labels.download}
           </button>

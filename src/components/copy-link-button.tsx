@@ -75,7 +75,7 @@ export function CopyLinkButton({ url, label, copiedLabel, testId, className }: P
       data-testid={testId}
       className={
         className ??
-        "rounded-full border border-[var(--accent)]/40 bg-[var(--surface)] hover:border-accent/60 text-accent font-medium px-5 py-2 text-sm transition"
+        "rounded-full border border-[var(--accent)]/40 bg-[var(--surface)] hover:border-accent/60 text-accent font-medium px-5 py-2 text-sm min-h-10 transition"
       }
     >
       {failed ? "⚠️ Copy failed" : copied ? `✓ ${copiedLabel}` : `🔗 ${label}`}

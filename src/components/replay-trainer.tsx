@@ -61,6 +61,7 @@ export interface ReplayDict {
   previewAlt: string;
   copyLink: string;
   copiedLink: string;
+  downloadFailed: string;
 }
 
 interface GuessState {
@@ -495,6 +496,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
                       download: dict.download,
                       copyLink: dict.copyLink,
                       copiedLink: dict.copiedLink,
+                  downloadFailed: dict.downloadFailed,
                     }}
                     shareUrl={
                       !origin || guess.total <= 0
