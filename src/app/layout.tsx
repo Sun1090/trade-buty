@@ -1,17 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { SITE_URL } from "@/lib/site";
 
-const geistSans = Geist({
+// 自托管 Geist（OFL 授权，见 src/fonts/GEIST-LICENSE.txt）——构建期不依赖外网，
+// 离线 CI/沙箱可复现构建，同时消除 Google Fonts 往返。
+const geistSans = localFont({
+  src: "../fonts/Geist-Variable.woff2",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: "../fonts/GeistMono-Variable.woff2",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
   display: "swap",
 });
 
