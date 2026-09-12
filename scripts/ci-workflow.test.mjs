@@ -1,12 +1,12 @@
 import fs from "node:fs";
-import yaml from "js-yaml";
+import { loadAll } from "js-yaml";
 import { describe, expect, it } from "vitest";
 
 const workflowPath = ".github/workflows/ci.yml";
 const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
 
 function loadWorkflow() {
-  return yaml.loadAll(fs.readFileSync(workflowPath, "utf8"));
+  return loadAll(fs.readFileSync(workflowPath, "utf8"));
 }
 
 /** 收集单个 job 里所有 run 步骤拼成的 shell 文本 */
