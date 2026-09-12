@@ -131,6 +131,14 @@ const dict = {
   replayNoDurations: "No replay durations",
   weeklyTitle: "Weekly",
   weeklySummaryTpl: "Weekly summary",
+  milestoneShare: {
+    title: "Milestone",
+    button: "Share milestone",
+    copied: "Copied",
+    copyFailed: "Copy failed",
+    empty: "Finish your first lesson",
+    textTpl: "Read {read}/{total} lessons and {done}/{chapters} chapters.",
+  },
   emptyTitle: "Empty",
   emptyBody: "Empty body",
   emptyCta: "Start",
@@ -163,6 +171,24 @@ describe("StatsClient course completion trend", () => {
   });
 });
 
+
+describe("StatsClient milestone sharing (R13.22)", () => {
+  it("renders one opt-in share action after a milestone is reached", async () => {
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+
+    expect(await screen.findByTestId("milestone-share")).toBeInTheDocument();
+    expect(screen.getByTestId("milestone-share-btn")).toHaveTextContent("Share milestone");
+  });
+
+  it("does not render a share prompt before the first lesson", async () => {
+    store.delete("tb-progress");
+    store.delete("tb-progress-completions");
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+
+    expect(await screen.findByText("Empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("milestone-share")).not.toBeInTheDocument();
+  });
+});
 
 describe("StatsClient quiz score trend", () => {
   it("renders the quiz trend section and no-date notice when only current quiz progress exists", async () => {

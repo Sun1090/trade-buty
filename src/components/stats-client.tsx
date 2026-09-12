@@ -62,6 +62,7 @@ import { RadarChart } from "@/components/radar-chart";
 import { WeekMiniBar } from "@/components/week-mini-bar";
 import { WeeklyReport } from "@/components/weekly-report";
 import { StreakShareCard } from "@/components/streak-share-card";
+import { MilestoneShareButton } from "@/components/milestone-share-button";
 import { encodeStreak } from "@/lib/share-decode";
 import type { StatsDict } from "@/lib/i18n-stats";
 import { getRecentDays } from "@/lib/streak";
@@ -788,6 +789,18 @@ export function StatsClient({
               shareUrl={streakShareUrl ?? undefined}
             />
           </div>
+          {/* R13.22：用户主动发起的学习里程碑分享（无进度时不渲染） */}
+          <MilestoneShareButton
+            stats={{
+              readDocs: stats.readDocs,
+              totalDocs: stats.totalDocs,
+              doneChapters: stats.doneChapters,
+              totalChapters: stats.totalChapters,
+              currentStreak: stats.currentStreak,
+            }}
+            locale={locale === "zh" ? "zh" : "en"}
+            labels={dict.milestoneShare}
+          />
         </div>
         <StatCard value={stats.avgQuizScore !== null ? `${stats.avgQuizScore}%` : "—"} label={dict.accuracy} />
         <StatCard value={stats.replayAccuracy !== null ? `${stats.replayAccuracy}%` : "—"} label={`${dict.replay} ${dict.accuracy}`} />
