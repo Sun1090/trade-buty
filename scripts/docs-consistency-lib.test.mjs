@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   auditAgentsContract,
+  auditArchitectureContract,
+  auditContributingContract,
   auditNeutrality,
   auditPlanContract,
   auditReadmeCounts,
+  auditReadmeImplementationReferences,
   extractReadmeCounts,
 } from "./docs-consistency-lib.mjs";
 
@@ -12,6 +15,53 @@ const validReadmes = {
   en: "**Learn**: 27 chapters / 182 lessons",
   zh: "**学**：27 篇章 / 182 篇课程",
 };
+const validReadmeReferences = {
+  "README.md": "src/proxy.ts CONTRIBUTING.md docs/architecture.md Vitest Playwright",
+  "README.zh-CN.md": "src/proxy.ts CONTRIBUTING.md docs/architecture.md Vitest Playwright",
+};
+const validContributing = [
+  "Node.js 22",
+  "git submodule update --init",
+  "npm ci",
+  "npm run dev",
+  "npm run lint",
+  "npm run typecheck",
+  "npm test",
+  "npm run build",
+  "npm run e2e",
+  "npm run db:test",
+  "npm run check:docs",
+  "npm run check:secrets",
+  "npm run kb:update",
+  "Angular Convention",
+  "Co-Authored-By",
+  "禁止直接向 `main` 推送",
+  "codex/topic",
+  "content/kline-buty",
+  "只读 git submodule",
+  "⚠️ 风险提示",
+  "不承诺收益",
+  "不荐股荐基",
+  "不做券商开户导流",
+  "不接受广告或捐赠",
+].join("\n");
+const validArchitecture = [
+  "Next.js 16",
+  "App Router",
+  "src/proxy.ts",
+  "content/kline-buty",
+  "npm run kb:update",
+  "构建时 JSON 索引",
+  "Supabase Auth",
+  "RLS",
+  "pgvector",
+  "任意 OpenAI 格式端点",
+  "POST /api/error-reports",
+  "/share/[kind]/[path]",
+  "Playwright",
+  "Lighthouse CI",
+  "db-tests",
+].join("\n");
 
 describe("docs-consistency-lib", () => {
   it("extracts and validates bilingual README counts", () => {
@@ -59,6 +109,35 @@ describe("docs-consistency-lib", () => {
     const issues = auditPlanContract("Pagefind · shadcn/ui · Claude API + pgvector", 182);
     expect(issues.some((issue) => issue.includes("Pagefind"))).toBe(true);
     expect(issues.some((issue) => issue.includes("Claude API + pgvector"))).toBe(true);
+  });
+
+  it("catches README references to removed modules and stale test-stack wording", () => {
+    expect(auditReadmeImplementationReferences(validReadmeReferences)).toEqual([]);
+    const issues = auditReadmeImplementationReferences({
+      "README.md": "middleware.ts is Vitest-ready",
+      "README.zh-CN.md": "src/proxy.ts Vitest Playwright",
+    });
+    expect(issues).toContain("README.md: 缺少当前实现/文档引用「CONTRIBUTING.md」");
+    expect(issues).toContain("README.md: 缺少当前实现/文档引用「docs/architecture.md」");
+    expect(issues).toContain("README.md: 仍残留历史实现描述「middleware.ts」");
+    expect(issues).toContain("README.md: 仍残留历史实现描述「Vitest-ready」");
+  });
+
+  it("guards the contribution workflow and content constitution", () => {
+    expect(auditContributingContract(validContributing)).toEqual([]);
+    const issues = auditContributingContract("npm ci");
+    expect(issues).toContain("CONTRIBUTING.md: 缺少贡献契约「Node.js 22」");
+    expect(issues).toContain("CONTRIBUTING.md: 缺少贡献契约「⚠️ 风险提示」");
+    expect(issues).toContain("CONTRIBUTING.md: 缺少贡献契约「禁止直接向 `main` 推送」");
+  });
+
+  it("guards architecture facts and rejects historical stacks", () => {
+    expect(auditArchitectureContract(validArchitecture)).toEqual([]);
+    const issues = auditArchitectureContract("Vitest-ready · Pagefind · Clerk 注册登录");
+    expect(issues).toContain("docs/architecture.md: 缺少当前架构事实「Next.js 16」");
+    expect(issues).toContain("docs/architecture.md: 仍残留历史架构描述「Vitest-ready」");
+    expect(issues).toContain("docs/architecture.md: 仍残留历史架构描述「Pagefind」");
+    expect(issues).toContain("docs/architecture.md: 仍残留历史架构描述「Clerk 注册登录」");
   });
 
   it("catches sponsor sections that conflict with the no-donation promise", () => {

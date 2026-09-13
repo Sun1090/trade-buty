@@ -24,7 +24,7 @@ A free, neutral trading-education platform for Chinese-speaking users worldwide:
 | Charts | lightweight-charts v5 |
 | Content | kline-buty knowledge base as a git submodule, lenient rendering pipeline |
 | Search | build-time JSON index + client-side retrieval |
-| Quality | ESLint · tsc · Vitest-ready · Playwright visual audit · GitHub Actions CI |
+| Quality | ESLint · tsc · Vitest · Playwright E2E + visual audit · GitHub Actions CI |
 
 ## Quick Start
 
@@ -63,14 +63,16 @@ src/
 │   └── sitemap.ts robots.ts
 ├── components/            # chart / quiz / progress components
 ├── lib/                   # content (rendering pipeline) i18n quizzes progress binance
-├── middleware.ts          # locale redirect
+├── proxy.ts               # locale / root static-surface proxy
 scripts/                   # asset sync / search index / contract checks
-docs/                      # plan.md research.md p2-research.md
+docs/                      # plan / architecture / operations / research
 content/kline-buty/        # knowledge base submodule (read-only)
 ```
 
 ## Docs
 
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — local setup, tests, commit/PR rules, and content boundaries
+- [`docs/architecture.md`](docs/architecture.md) — runtime topology, content pipeline, data sync, AI/RAG, and CI gates
 - [`docs/plan.md`](docs/plan.md) — product positioning, content constitution, roadmap (P0–P4)
 - [`docs/research.md`](docs/research.md) — six rounds of market research
 - [`docs/p2-research.md`](docs/p2-research.md) — account & cloud progress pre-research

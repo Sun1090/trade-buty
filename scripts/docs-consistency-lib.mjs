@@ -69,6 +69,83 @@ export function auditPlanContract(markdown, expectedLessons) {
   return issues;
 }
 
+export function auditReadmeImplementationReferences(readmes) {
+  const issues = [];
+  const required = ["proxy.ts", "CONTRIBUTING.md", "docs/architecture.md", "Vitest", "Playwright"];
+  for (const [file, markdown] of Object.entries(readmes)) {
+    const text = String(markdown);
+    for (const marker of required) {
+      if (!text.includes(marker)) issues.push(`${file}: 缺少当前实现/文档引用「${marker}」`);
+    }
+    for (const stale of ["middleware.ts", "Vitest-ready"]) {
+      if (text.includes(stale)) issues.push(`${file}: 仍残留历史实现描述「${stale}」`);
+    }
+  }
+  return issues;
+}
+
+export function auditContributingContract(markdown) {
+  const text = String(markdown);
+  const issues = [];
+  for (const required of [
+    "Node.js 22",
+    "git submodule update --init",
+    "npm ci",
+    "npm run dev",
+    "npm run lint",
+    "npm run typecheck",
+    "npm test",
+    "npm run build",
+    "npm run e2e",
+    "npm run db:test",
+    "npm run check:docs",
+    "npm run check:secrets",
+    "npm run kb:update",
+    "Angular Convention",
+    "Co-Authored-By",
+    "禁止直接向 `main` 推送",
+    "codex/",
+    "content/kline-buty",
+    "只读 git submodule",
+    "⚠️ 风险提示",
+    "不承诺收益",
+    "不荐股荐基",
+    "不做券商开户导流",
+    "不接受广告或捐赠",
+  ]) {
+    if (!text.includes(required)) issues.push(`CONTRIBUTING.md: 缺少贡献契约「${required}」`);
+  }
+  return issues;
+}
+
+export function auditArchitectureContract(markdown) {
+  const text = String(markdown);
+  const issues = [];
+  for (const required of [
+    "Next.js 16",
+    "App Router",
+    "src/proxy.ts",
+    "content/kline-buty",
+    "npm run kb:update",
+    "构建时 JSON 索引",
+    "Supabase Auth",
+    "RLS",
+    "pgvector",
+    "任意 OpenAI",
+    "POST /api/error-reports",
+    "/share/[kind]/[path]",
+    "Playwright",
+    "Lighthouse CI",
+    "db-tests",
+  ]) {
+    if (!text.includes(required)) issues.push(`docs/architecture.md: 缺少当前架构事实「${required}」`);
+  }
+  for (const stale of ["Vitest-ready", "Pagefind", "Clerk 注册登录"]) {
+    if (text.includes(stale)) issues.push(`docs/architecture.md: 仍残留历史架构描述「${stale}」`);
+  }
+  return issues;
+}
+
 export function auditNeutrality(readmes, aboutPage) {
   const issues = [];
   const about = String(aboutPage);

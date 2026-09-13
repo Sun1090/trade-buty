@@ -24,7 +24,7 @@
 | 图表 | lightweight-charts v5 |
 | 内容 | kline-buty 知识库以 git submodule 引用，宽容模式渲染管线 |
 | 搜索 | 构建时 JSON 索引 + 客户端检索 |
-| 质量 | ESLint · tsc · Vitest-ready · Playwright 视觉审计 · GitHub Actions CI |
+| 质量 | ESLint · tsc · Vitest · Playwright E2E + 视觉审计 · GitHub Actions CI |
 
 ## 快速开始
 
@@ -63,14 +63,16 @@ src/
 │   └── sitemap.ts robots.ts
 ├── components/            # 图表 / 测验 / 进度等组件
 ├── lib/                   # content(渲染管线) i18n quizzes progress binance
-├── middleware.ts          # 语言重定向
+├── proxy.ts               # 语言代理 / 根级静态表面放行
 scripts/                   # 资产同步 / 搜索索引 / 契约校验
-docs/                      # plan.md research.md p2-research.md
+docs/                      # plan / architecture / operations / research
 content/kline-buty/        # 知识库 submodule（只读）
 ```
 
 ## 文档
 
+- [`CONTRIBUTING.md`](CONTRIBUTING.md)：本地开发、测试、提交/PR 规范与内容边界
+- [`docs/architecture.md`](docs/architecture.md)：运行拓扑、内容管线、数据同步、AI/RAG 与 CI 门禁
 - [`docs/plan.md`](docs/plan.md)：产品定位、内容宪法、分期路线（P0–P4）
 - [`docs/research.md`](docs/research.md)：六轮市场调研
 - [`docs/p2-research.md`](docs/p2-research.md)：账号与云端进度预研
