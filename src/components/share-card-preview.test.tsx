@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ShareCardPreview } from "./share-card-preview";
-import { encodeQuiz } from "@/lib/share-decode";
+import { encodeQuiz, encodeReplay, encodeStreak } from "@/lib/share-decode";
 
 vi.mock("@/lib/growth-events", () => ({ trackGrowthEvent: vi.fn() }));
 import { trackGrowthEvent } from "@/lib/growth-events";
@@ -38,8 +38,10 @@ function installCanvasStub(toBlobResult: Blob | null = new Blob(["png"], { type:
     save: () => {},
     restore: () => {},
     createLinearGradient: () => ({ addColorStop: () => {} }),
+    strokeRect: () => {},
     fillStyle: "",
     strokeStyle: "",
+    lineWidth: 1,
     font: "",
     textAlign: "left",
     textBaseline: "alphabetic",
@@ -124,4 +126,143 @@ describe("ShareCardPreview growth events", () => {
       }),
     );
   });
+});
+
+describe("ShareCardPreview replay / streak rendering", () => {
+  beforeEach(() => {
+    cleanup();
+    growthTrack.mockClear();
+    installCanvasStub();
+  });
+
+  afterEach(cleanup);
+
+  it("replay 类型渲染回放文案并画布就绪", async () => {
+    const path = encodeReplay({
+      symbol: "BTCUSDT",
+      interval: "1h",
+      correct: 8,
+      total: 10,
+      accuracyBps: 8000,
+      bestStreak: 5,
+      currentStreak: 3,
+      locale: "en",
+    });
+    render(<ShareCardPreview kind="replay" path={path} locale="en" labels={LABELS} />);
+
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      "BTCUSDT 1h S 8/10",
+    );
+    expect(screen.getByText("BTCUSDT 8/10 80%")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId("share-download-btn-replay")).toBeEnabled(),
+    );
+  });
+
+  it("streak 类型渲染连续天数文案并画布就绪", async () => {
+    const path = encodeStreak({ currentStreak: 12, longestStreak: 30, locale: "zh" });
+    render(<ShareCardPreview kind="streak" path={path} locale="zh" labels={LABELS} />);
+
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("12 days");
+    expect(screen.getByText("12 / 30")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId("share-download-btn-streak")).toBeEnabled(),
+    );
+  });
+});
+
+describe("ShareCardPreview invalid payloads stay un-downloadable", () => {
+  beforeEach(() => {
+    cleanup();
+    growthTrack.mockClear();
+    installCanvasStub();
+  });
+
+  afterEach(cleanup);
+
+  it.each([
+    ["quiz", "Invalid quiz"],
+    ["replay", "Invalid replay"],
+    ["streak", "Invalid streak"],
+  ] as const)("%s 非法载荷显示提示且按钮保持禁用", (kind, title) => {
+    render(<ShareCardPreview kind={kind} path="garbage" locale="en" labels={LABELS} />);
+
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(title);
+    expect(screen.getByText("Invalid body")).toBeInTheDocument();
+    expect(screen.getByTestId(`share-download-btn-${kind}`)).toBeDisabled();
+    expect(screen.getByText("Rendering…")).toBeInTheDocument();
+  });
+
+  it("画布上下文不可用时不置就绪", () => {
+    HTMLCanvasElement.prototype.getContext = vi.fn(
+      () => null,
+    ) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+    const path = encodeQuiz({
+      chapterTitle: "Risk",
+      score: 4,
+      total: 5,
+      percent: 80,
+      locale: "en",
+    });
+    render(<ShareCardPreview kind="quiz" path={path} locale="en" labels={LABELS} />);
+
+    expect(screen.getByTestId("share-download-btn-quiz")).toBeDisabled();
+    expect(screen.getByText("Rendering…")).toBeInTheDocument();
+  });
+});
+
+describe("ShareCardPreview grade thresholds", () => {
+  beforeEach(() => {
+    cleanup();
+    installCanvasStub();
+  });
+
+  afterEach(cleanup);
+
+  it.each([
+    [100, "S"],
+    [80, "A"],
+    [60, "B"],
+    [59.9, "C"],
+  ] as const)("quiz percent %s 映射为等级 %s", (percent, grade) => {
+    const path = encodeQuiz({
+      chapterTitle: "Risk",
+      score: 1,
+      total: 1,
+      percent,
+      locale: "en",
+    });
+    render(<ShareCardPreview kind="quiz" path={path} locale="en" labels={LABELS} />);
+
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      `Risk · ${grade} · 1/1`,
+    );
+  });
+
+  it.each([
+    [8000, 10, "S"],
+    [6500, 10, "A"],
+    [5500, 10, "B"],
+    [4000, 10, "C"],
+    [9000, 2, "C"],
+  ] as const)(
+    "replay accuracyBps=%s total=%s 映射为等级 %s",
+    (accuracyBps, total, grade) => {
+      const path = encodeReplay({
+        symbol: "ETHUSDT",
+        interval: "4h",
+        correct: 1,
+        total,
+        accuracyBps,
+        bestStreak: 1,
+        currentStreak: 1,
+        locale: "en",
+      });
+      render(<ShareCardPreview kind="replay" path={path} locale="en" labels={LABELS} />);
+
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+        `ETHUSDT 4h ${grade} 1/${total}`,
+      );
+    },
+  );
 });
