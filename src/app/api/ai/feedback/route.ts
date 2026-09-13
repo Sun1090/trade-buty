@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
 
 export interface FeedbackBody {
   rating: "helpful" | "unhelpful";
@@ -10,6 +11,19 @@ export interface FeedbackBody {
 /** 反馈文本长度上限：匿名也能写库，必须有界，避免单请求塞入任意大内容 */
 export const MAX_QUESTION_CHARS = 2_000;
 export const MAX_ANSWER_CHARS = 8_000;
+
+// R7.12：端点是「匿名可写库」的——RLS 放行 `user_id is null` 的插入，
+// 因此应用层是唯一的闸门。没有配额时，伪造请求即可无上限往 ai_feedback
+// 堆行（单条约 10KB），既是存储成本也是导出/巡检噪声。
+// 与 /api/error-reports 同一套进程内限流：只做基础滥用防护，不追求分布式精确。
+const WINDOW_MS = 60_000;
+/** 每 IP 每分钟上限：真人反馈最多几次，20 次足够宽松 */
+export const PER_MINUTE_LIMIT = 20;
+const feedbackLimiter = createRateLimiter({
+  guestLimit: PER_MINUTE_LIMIT,
+  authedLimit: PER_MINUTE_LIMIT,
+  windowMs: WINDOW_MS,
+});
 
 /** 校验反馈请求体；非法返回 null（调用方回 400）。导出便于单测。 */
 export function parseFeedbackBody(value: unknown): FeedbackBody | null {
@@ -25,6 +39,14 @@ export function parseFeedbackBody(value: unknown): FeedbackBody | null {
 
 /** POST: 存 AI 回答反馈（登录用户署名，游客匿名） */
 export async function POST(req: NextRequest) {
+  const decision = feedbackLimiter.check(clientIp(req), false);
+  if (!decision.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded" },
+      { status: 429, headers: { "Retry-After": String(decision.retryAfterSec) } },
+    );
+  }
+
   let raw: unknown;
   try {
     raw = await req.json();
