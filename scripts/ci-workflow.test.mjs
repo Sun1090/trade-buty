@@ -86,22 +86,33 @@ describe("GitHub Actions workflow contract", () => {
     }
   });
 
-  it("所有工作流的官方 actions 都使用 Node.js 24 运行时（不残留 Node.js 20 弃用版本）", () => {
+  it("所有工作流的官方 actions 都固定到完整 commit SHA，并保持 Node.js 24 运行时", () => {
     // 各 action 切换到 node24 的第一个 major；低于它仍会在 CI 里触发 Node.js 20 弃用注记。
     const minMajor = { checkout: 5, "setup-node": 5, cache: 5, "upload-artifact": 6 };
-    const stale = [];
+    const problems = [];
     for (const { workflowPath, jobName, job } of allJobs()) {
       for (const step of job.steps ?? []) {
-        const match = /^actions\/([\w-]+)@v(\d+)$/.exec(step.uses ?? "");
-        if (!match) continue;
-        const [, name, major] = match;
+        const uses = String(step.uses ?? "");
+        if (!uses.startsWith("actions/")) continue;
+        const match = /^(actions\/[\w-]+)@([0-9a-f]{40})$/.exec(uses);
+        if (!match) {
+          problems.push(`${workflowPath} · ${jobName}: 未固定到 40 位 commit SHA：${uses}`);
+          continue;
+        }
+        const [, action, sha] = match;
+        const name = action.slice("actions/".length);
         const min = minMajor[name];
-        if (min !== undefined && Number(major) < min) {
-          stale.push(`${workflowPath} · ${jobName}: ${step.uses}`);
+        const comments = fs
+          .readFileSync(workflowPath, "utf8")
+          .split("\n")
+          .filter((line) => line.includes(`${action}@${sha}`));
+        const major = Number(/ # v(\d+)\s*$/.exec(comments[0] ?? "")?.[1]);
+        if (min !== undefined && (!Number.isInteger(major) || major < min)) {
+          problems.push(`${workflowPath} · ${jobName}: ${action} 缺少 >= v${min} 的可追踪版本注释`);
         }
       }
     }
-    expect(stale, `以下 action 仍跑在 Node.js 20 上，需升级 major：\n${stale.join("\n")}`).toEqual([]);
+    expect(problems, `官方 action 供应链约束不满足：\n${problems.join("\n")}`).toEqual([]);
   });
 
   it("使用 setup-node 的工作流统一 Node 22；跑 npm ci 的 job 必须缓存 npm", () => {
@@ -189,6 +200,23 @@ describe("GitHub Actions workflow contract", () => {
       }
     }
     expect(missing, `工作流引用了不存在的脚本文件：\n${missing.join("\n")}`).toEqual([]);
+  });
+
+  it("Dependabot 每周跟踪 npm 与 GitHub Actions，低风险 npm 更新分组", () => {
+    const [config] = loadWorkflow(path.join(".github", "dependabot.yml"));
+    expect(config.version).toBe(2);
+    const updates = config.updates ?? [];
+    const npm = updates.find((entry) => entry["package-ecosystem"] === "npm");
+    const actions = updates.find((entry) => entry["package-ecosystem"] === "github-actions");
+    expect(npm, "缺少 npm Dependabot 配置").toBeTruthy();
+    expect(actions, "缺少 github-actions Dependabot 配置").toBeTruthy();
+    expect(npm.schedule?.interval).toBe("weekly");
+    expect(actions.schedule?.interval).toBe("weekly");
+    expect(npm.directory).toBe("/");
+    expect(actions.directory).toBe("/");
+    const minorPatch = npm.groups?.["npm-minor-and-patch"];
+    expect(minorPatch?.patterns).toContain("*");
+    expect(minorPatch?.["update-types"]).toEqual(["minor", "patch"]);
   });
 
   it("外链巡检保留月度定时与手动触发，并递归拉取子模块", () => {
