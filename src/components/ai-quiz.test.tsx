@@ -131,6 +131,21 @@ describe("AiQuiz 错题本打通与幂等（R2.6/R2.8/R2.11）", () => {
     expect(screen.getByRole("button", { name: "B. 预测走势" })).toBeDisabled();
   });
 
+  it("R2.6 契约：变体模式把错题的篇章 slug 原样发给 /api/ai/quiz", async () => {
+    // 服务端 QUIZZES 的键是英文 slug（getting-started…），客户端必须传同一种形状。
+    // 曾经服务端拿 /^\d{1,3}$/ 校验 chapterNum，把这条通路整段打死。
+    const fetchMock = setup();
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
+    await generateQuestions();
+
+    const quizCalls = fetchMock.mock.calls.filter((c) => c[0] === "/api/ai/quiz") as unknown as [string, RequestInit][];
+    expect(quizCalls).toHaveLength(1);
+    expect(JSON.parse(quizCalls[0][1].body as string)).toEqual({
+      items: [{ chapterNum: "getting-started", questionIdx: 2 }],
+    });
+  });
+
   it("举报按钮调用 feedback API 且只报一次", async () => {
     const fetchMock = setup();
     vi.stubGlobal("fetch", fetchMock);
