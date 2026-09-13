@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ReplayTrainer, type ReplayDict } from "./replay-trainer";
 
@@ -7,8 +7,8 @@ import { ReplayTrainer, type ReplayDict } from "./replay-trainer";
 const store = new Map<string, string>();
 vi.stubGlobal("localStorage", {
   getItem: (k: string) => store.get(k) ?? null,
-  setItem: (k: string, v: string) => store.set(k, v),
-  removeItem: (k: string) => store.delete(k),
+  setItem: (k: string, v: string) => void store.set(k, v),
+  removeItem: (k: string) => void store.delete(k),
   clear: () => store.clear(),
   key: (i: number) => Array.from(store.keys())[i] ?? null,
   get length() {
@@ -36,6 +36,13 @@ const mocks = vi.hoisted(() => {
     CandlestickSeries: { __kind: "candlestick" },
     fetchKlines: vi.fn(),
     fetchRandomHistoryWindow: vi.fn(),
+    measureFps: vi.fn(),
+    LOW_END_FPS_THRESHOLD: 24,
+    REPLAY_REDUCED_CANDLES: 5,
+    saveReplayRecord: vi.fn(),
+    saveReplayBest: vi.fn(),
+    addStudyTime: vi.fn(),
+    shareCard: vi.fn(() => null),
   };
 });
 
@@ -50,20 +57,37 @@ vi.mock("@/lib/binance", () => ({
 }));
 
 vi.mock("@/lib/perf", () => ({
-  measureFps: () => Promise.resolve(60),
-  LOW_END_FPS_THRESHOLD: 24,
-  REPLAY_REDUCED_CANDLES: 150,
+  measureFps: mocks.measureFps,
+  LOW_END_FPS_THRESHOLD: mocks.LOW_END_FPS_THRESHOLD,
+  REPLAY_REDUCED_CANDLES: mocks.REPLAY_REDUCED_CANDLES,
 }));
 
-function makeKlines(count = 300) {
-  return Array.from({ length: count }, (_, i) => ({
-    time: 1_700_000_000 + i * 3600,
-    open: 100 + i,
-    high: 102 + i,
-    low: 99 + i,
-    close: 101 + i,
-    volume: 10 + i,
-  }));
+vi.mock("@/lib/replay-store", () => ({
+  saveReplayRecord: mocks.saveReplayRecord,
+  saveReplayBest: mocks.saveReplayBest,
+}));
+
+vi.mock("@/lib/study-time", () => ({ addStudyTime: mocks.addStudyTime }));
+
+vi.mock("@/components/replay-share-card", () => ({
+  ReplayShareCard: mocks.shareCard,
+}));
+
+function makeKlines(count = 300, opts: { rise?: boolean } = {}) {
+  const rise = opts.rise ?? true;
+  return Array.from({ length: count }, (_, i) => {
+    const base = 100 + i;
+    const open = base;
+    const close = rise ? base + 1 : base - 1;
+    return {
+      time: 1_700_000_000 + i * 3600,
+      open,
+      high: Math.max(open, close) + 1,
+      low: Math.min(open, close) - 1,
+      close,
+      volume: 10 + i,
+    };
+  });
 }
 
 const dict: ReplayDict = {
@@ -107,14 +131,29 @@ const dict: ReplayDict = {
   downloadFailed: "下载失败",
 };
 
-describe("ReplayTrainer 难度切换（回归：难度变更必须重置上下文）", () => {
-  beforeEach(() => {
-    store.clear();
-    mocks.series.setData.mockClear();
-    mocks.fetchRandomHistoryWindow.mockReset();
-    mocks.fetchRandomHistoryWindow.mockImplementation(async () => makeKlines());
-  });
+beforeEach(() => {
+  store.clear();
+  mocks.series.setData.mockClear();
+  mocks.series.update.mockClear();
+  mocks.createChart.mockClear();
+  mocks.chart.remove.mockClear();
+  mocks.fetchRandomHistoryWindow.mockReset();
+  mocks.fetchRandomHistoryWindow.mockImplementation(async () => makeKlines());
+  mocks.fetchKlines.mockReset();
+  mocks.fetchKlines.mockImplementation(async () => makeKlines());
+  mocks.measureFps.mockReset();
+  mocks.measureFps.mockResolvedValue(60);
+  mocks.saveReplayRecord.mockClear();
+  mocks.saveReplayBest.mockClear();
+  mocks.addStudyTime.mockClear();
+  mocks.shareCard.mockClear();
+});
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe("ReplayTrainer 难度切换（回归：难度变更必须重置上下文）", () => {
   it("切换难度会重新载入历史窗口并把起点对齐到新的上下文根数", async () => {
     render(<ReplayTrainer dict={dict} locale="zh" />);
 
@@ -128,9 +167,274 @@ describe("ReplayTrainer 难度切换（回归：难度变更必须重置上下�
     await waitFor(() => expect(screen.getByText(/0\/285/)).toBeInTheDocument());
     expect(screen.queryByText(/15\/285/)).toBeNull();
     expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(2);
-    // 图表只渲染到新的起点位置（setData 在被动 effect 中执行，需等待其刷新）
-    await waitFor(() =>
-      expect(mocks.series.setData.mock.lastCall?.[0]).toHaveLength(15)
+    await waitFor(() => expect(mocks.series.setData.mock.lastCall?.[0]).toHaveLength(15));
+  });
+});
+
+describe("ReplayTrainer 难度持久化与脏数据兜底", () => {
+  it("记住用户选择的难度", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "新手" }));
+    await waitFor(() => expect(store.get("tb-replay-difficulty")).toBe("0"));
+    expect(screen.getByRole("button", { name: "新手" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("读取已保存的合法难度", async () => {
+    store.set("tb-replay-difficulty", "2");
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/285/)).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "挑战" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("脏数据（非数字）不会让组件崩溃，回退到默认难度", async () => {
+    store.set("tb-replay-difficulty", "abc");
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/270/)).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "进阶" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("越界索引不会让组件崩溃，回退到默认难度", async () => {
+    store.set("tb-replay-difficulty", "9");
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/270/)).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "进阶" })).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("ReplayTrainer 数据加载", () => {
+  it("切换交易对与周期都会重新拉取历史窗口", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(1));
+    expect(mocks.fetchRandomHistoryWindow).toHaveBeenLastCalledWith("BTCUSDT", "1h");
+
+    fireEvent.change(screen.getByLabelText("交易对"), { target: { value: "ETHUSDT" } });
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(2));
+    expect(mocks.fetchRandomHistoryWindow).toHaveBeenLastCalledWith("ETHUSDT", "1h");
+
+    fireEvent.change(screen.getByLabelText("周期"), { target: { value: "4h" } });
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(3));
+    expect(mocks.fetchRandomHistoryWindow).toHaveBeenLastCalledWith("ETHUSDT", "4h");
+  });
+
+  it("拉取失败时显示不可用提示", async () => {
+    mocks.fetchRandomHistoryWindow.mockRejectedValueOnce(new Error("boom"));
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText("Binance API unreachable")).toBeInTheDocument());
+  });
+
+  it("自定义截止日期走 fetchKlines 并开启新回合", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: "自定义" }));
+    const dateInput = screen.getByLabelText("截止日期") as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: "2024-01-15" } });
+    fireEvent.click(screen.getByRole("button", { name: "开始" }));
+
+    await waitFor(() => expect(mocks.fetchKlines).toHaveBeenCalledTimes(1));
+    const [symbol, interval, opts] = mocks.fetchKlines.mock.calls[0];
+    expect(symbol).toBe("BTCUSDT");
+    expect(interval).toBe("1h");
+    expect(opts).toMatchObject({ limit: 300 });
+    expect(opts.endTime).toBe(Date.parse("2024-01-15T00:00:00Z"));
+    // 无效日期不触发新回合
+    fireEvent.change(screen.getByLabelText("截止日期"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "开始" }));
+    expect(mocks.fetchKlines).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("ReplayTrainer 自由模式控制", () => {
+  it("下一根推进一根 K 线，跳过直接到底", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/270/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "下一根" }));
+    expect(screen.getByText(/1\/270/)).toBeInTheDocument();
+    expect(mocks.series.update).toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "跳到结尾" }));
+    expect(screen.getByText(/270\/270/)).toBeInTheDocument();
+    // 到底后播放按钮禁用
+    expect(screen.getByRole("button", { name: "播放" })).toBeDisabled();
+  });
+
+  it("播放/暂停切换，暂停后不再自动推进", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/270/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "4x" }));
+    fireEvent.click(screen.getByRole("button", { name: "播放" }));
+    expect(screen.getByRole("button", { name: "暂停" })).toHaveAttribute("aria-pressed", "true");
+
+    await waitFor(() => expect(screen.getByText(/[1-9]\d*\/270/)).toBeInTheDocument(), {
+      timeout: 3000,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "暂停" }));
+    expect(screen.getByRole("button", { name: "播放" })).toHaveAttribute("aria-pressed", "false");
+    const progressed = screen.getByText(/进度: \d+\/270/).textContent;
+    await new Promise((r) => setTimeout(r, 700));
+    expect(screen.getByText(/进度: \d+\/270/).textContent).toBe(progressed);
+  });
+
+  it("切换倍速只改变选中态", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/270/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "2x" }));
+    expect(screen.getByRole("button", { name: "2x" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "1x" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("页面隐藏时自动暂停", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/270/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "播放" }));
+    expect(screen.getByRole("button", { name: "暂停" })).toBeInTheDocument();
+
+    Object.defineProperty(document, "hidden", { configurable: true, value: true });
+    fireEvent(document, new Event("visibilitychange"));
+    expect(screen.getByRole("button", { name: "播放" })).toBeInTheDocument();
+    Object.defineProperty(document, "hidden", { configurable: true, value: false });
+  });
+});
+
+describe("ReplayTrainer 低端机降级（R7.3）", () => {
+  it("帧率不达标时只渲染最近 REPLAY_REDUCED_CANDLES 根", async () => {
+    mocks.measureFps.mockResolvedValue(10);
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => {
+      const last = mocks.series.setData.mock.lastCall?.[0] as unknown[] | undefined;
+      expect(Array.isArray(last)).toBe(true);
+      expect(last).toHaveLength(mocks.REPLAY_REDUCED_CANDLES);
+    });
+  });
+});
+
+describe("ReplayTrainer 竞猜模式与战绩", () => {
+  beforeEach(() => {
+    mocks.fetchRandomHistoryWindow.mockImplementation(async () => makeKlines(32));
+  });
+
+  it("猜中累计连击，答错清零", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/上涨 · ✅/)).toBeInTheDocument());
+    expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument();
+  });
+
+  it("答错时给出下跌反馈并清零连击", async () => {
+    mocks.fetchRandomHistoryWindow.mockImplementation(async () => makeKlines(32, { rise: false }));
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/下跌 · ❌/)).toBeInTheDocument());
+  });
+
+  it("完成整轮后给出评价、记录战绩并交给分享卡", async () => {
+    let tick = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => 1_700_000_000_000 + tick++ * 1000);
+    mocks.shareCard.mockImplementation(() => null);
+
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 2\/2/)).toBeInTheDocument());
+
+    // 全对 → S 评价
+    expect(screen.getByText("本轮总结")).toBeInTheDocument();
+    expect(screen.getByText("S")).toBeInTheDocument();
+
+    // 首轮（round=0）就必须入库，且只入库一次
+    await waitFor(() => expect(mocks.saveReplayRecord).toHaveBeenCalledTimes(1));
+    expect(mocks.saveReplayRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ symbol: "BTCUSDT", interval: "1h", total: 2, correct: 2, bestStreak: 2 }),
     );
+    await waitFor(() => expect(mocks.addStudyTime).toHaveBeenCalledWith("replay", expect.any(Number)));
+
+    const [props] = mocks.shareCard.mock.calls.at(-1) as unknown as [
+      { shareUrl?: string; correct: number; total: number },
+    ];
+    expect(props.correct).toBe(2);
+    expect(props.total).toBe(2);
+    expect(props.shareUrl).toMatch(/^http:\/\/localhost:\d+\/share\/replay\//);
+  });
+
+  it("全错时评价为 C 且最佳连击为 0", async () => {
+    mocks.fetchRandomHistoryWindow.mockImplementation(async () => makeKlines(32, { rise: false }));
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 2\/2/)).toBeInTheDocument());
+
+    expect(screen.getByText("C")).toBeInTheDocument();
+    // 答错时也会把最新最佳连击（0）写回
+    expect(mocks.saveReplayBest).toHaveBeenCalledWith(0);
+  });
+
+  it("连胜两轮各入一条记录，不多不少", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 2\/2/)).toBeInTheDocument());
+    await waitFor(() => expect(mocks.saveReplayRecord).toHaveBeenCalledTimes(1));
+
+    // 第二轮（完成后总结区也会出现「新一轮」，取顶栏那个）
+    fireEvent.click(screen.getAllByRole("button", { name: "新一轮" })[0]);
+    await waitFor(() => expect(screen.getByText(/进度: 0\/2/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 2\/2/)).toBeInTheDocument());
+    await waitFor(() => expect(mocks.saveReplayRecord).toHaveBeenCalledTimes(2));
+  });
+
+  it("竞猜模式下按空格等非预测操作不推进，必须先预测", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    // 竞猜模式下没有「下一根」按钮
+    expect(screen.queryByRole("button", { name: "下一根" })).toBeNull();
+    expect(screen.getByText(/进度: 0\/2/)).toBeInTheDocument();
+  });
+
+  it("新一轮会清空上一轮反馈并重置进度", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/上涨 · ✅/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "新一轮" }));
+    await waitFor(() => expect(screen.getByText(/进度: 0\/2/)).toBeInTheDocument());
+    expect(screen.queryByText(/上涨 · ✅/)).toBeNull();
+  });
+});
+
+describe("ReplayTrainer 图表生命周期", () => {
+  it("挂载时创建图表、卸载时销毁", async () => {
+    const { unmount } = render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(mocks.createChart).toHaveBeenCalledTimes(1));
+    unmount();
+    expect(mocks.chart.remove).toHaveBeenCalledTimes(1);
   });
 });
