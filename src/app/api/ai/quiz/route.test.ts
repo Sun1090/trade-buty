@@ -47,15 +47,20 @@ describe("POST /api/ai/quiz 输入校验（R7.12）", () => {
 
   it("items 元素形状非法时返回 400，不调模型", async () => {
     const bad = [
-      [{ chapterNum: "01", questionIdx: -1 }],
-      [{ chapterNum: "01", questionIdx: 1.5 }],
-      [{ chapterNum: "abc", questionIdx: 0 }],
+      [{ chapterNum: "getting-started", questionIdx: -1 }],
+      [{ chapterNum: "getting-started", questionIdx: 1.5 }],
+      // 篇章 slug 形状非法：路径穿越字符、大写、超长、首尾连字符
+      [{ chapterNum: "../etc/passwd", questionIdx: 0 }],
+      [{ chapterNum: "Getting-Started", questionIdx: 0 }],
+      [{ chapterNum: "x".repeat(65), questionIdx: 0 }],
+      [{ chapterNum: "-leading", questionIdx: 0 }],
       [{ chapterNum: 1, questionIdx: 0 }],
       [null],
     ];
     for (const items of bad) {
       const res = await POST(request({ items }));
       expect(res.status).toBe(400);
+      expect((await res.json()).error).toBe("Invalid payload");
     }
     expect(chat).not.toHaveBeenCalled();
   });
@@ -68,11 +73,46 @@ describe("POST /api/ai/quiz 输入校验（R7.12）", () => {
     expect(chat).not.toHaveBeenCalled();
   });
 
-  it("变体模式：题库里不存在的篇章/题号返回 400，不调模型", async () => {
-    const res = await POST(request({ items: [{ chapterNum: "999", questionIdx: 0 }] }));
-    expect(res.status).toBe(400);
-    expect((await res.json()).error).toBe("No matching questions");
+  it("变体模式：形状合法但题库里没有的篇章/题号返回 400，不调模型", async () => {
+    // 回归：曾经用 /^\d{1,3}$/ 校验 chapterNum，而 QUIZZES 的键其实是英文 slug，
+    // 于是真实客户端（错题本）传来的 slug 一律被判非法 400。这里锁定住两种情形。
+    const unknownChapter = await POST(request({ items: [{ chapterNum: "999", questionIdx: 0 }] }));
+    expect(unknownChapter.status).toBe(400);
+    expect((await unknownChapter.json()).error).toBe("No matching questions");
+
+    const outOfRange = await POST(request({ items: [{ chapterNum: "getting-started", questionIdx: 999 }] }));
+    expect(outOfRange.status).toBe(400);
+    expect((await outOfRange.json()).error).toBe("No matching questions");
     expect(chat).not.toHaveBeenCalled();
+  });
+
+  it("变体模式：真实篇章 slug 能取到原题并调用模型（回归保护）", async () => {
+    retrieve.mockResolvedValue([
+      { chapter: "getting-started", doc: "first-trade", chunk: "止损纪律与仓位管理", similarity: 0.9 },
+    ]);
+    chat.mockResolvedValue(
+      JSON.stringify({
+        questions: [
+          {
+            question: "止损纪律的核心作用是什么？",
+            options: ["限定单笔亏损上限", "保证每次盈利", "提高胜率上限", "消除滑点影响"],
+            answer: 0,
+            explain: "止损纪律把单笔亏损限定在可承受范围内，避免一次失误击穿账户。",
+            source: { none: true },
+          },
+        ],
+      }),
+    );
+
+    const res = await POST(request({ items: [{ chapterNum: "getting-started", questionIdx: 0 }] }));
+    expect(res.status).toBe(200);
+    expect(chat).toHaveBeenCalledTimes(1);
+    const body = await res.json();
+    expect(body.questions).toHaveLength(1);
+    expect(body.questions[0].question).toContain("止损");
+    // 原题内容确实进了 prompt（错题变体的输入）
+    const sent = chat.mock.calls[0][0].messages as { content: string }[];
+    expect(sent.some((m) => m.content.includes("K 线图中"))).toBe(true);
   });
 });
 

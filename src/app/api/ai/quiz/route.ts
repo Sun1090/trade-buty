@@ -33,9 +33,11 @@ const quizCache = new BoundedMap<string, { questions: unknown; at: number }>(QUI
 const QUIZ_CACHE_TTL = 24 * 60 * 60 * 1000;
 
 const MAX_CHAPTER_SLUG_CHARS = 64;
-/** 变体模式最多取 5 道原题；章节/题号形状与本地题库一致 */
+/** 变体模式最多取 5 道原题 */
 const MAX_VARIANT_ITEMS = 5;
-const CHAPTER_NUM_RE = /^\d{1,3}$/;
+// QUIZZES 的键是英文篇章 slug（getting-started / technical-analysis …），不是数字。
+// 这里只校验 slug 形状，真正的存在性由下面的 QUIZZES 查找兜底：取不到原题即 400。
+const CHAPTER_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /**
  * POST: 根据用户错题生成 AI 变体题。
@@ -95,7 +97,8 @@ export async function POST(req: NextRequest) {
         typeof item !== "object" ||
         item === null ||
         typeof item.chapterNum !== "string" ||
-        !CHAPTER_NUM_RE.test(item.chapterNum) ||
+        item.chapterNum.length > MAX_CHAPTER_SLUG_CHARS ||
+        !CHAPTER_SLUG_RE.test(item.chapterNum) ||
         !Number.isInteger(item.questionIdx) ||
         item.questionIdx < 0,
     )
