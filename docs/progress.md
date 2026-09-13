@@ -1,5 +1,60 @@
 # Progress
 
+## 覆盖率批次 3：回放训练器两个生产回归 + 四条热点路径补测（`codex/coverage-batch-3`）
+
+- 状态：DONE（本地全部门禁绿灯，待 push + PR）
+- 工作分支：`codex/coverage-batch-3`（基于 `origin/main@6994f2d`）
+- 提交：`d3d081e` `fix(replay): stop dropping the first round and reject corrupt difficulty state` · `c1c618b` `test: lift coverage on review client, conversations route, OG card and download`
+- 目标：按上一轮「优先补客户端 → 路由契约类用例」的结论继续补覆盖率地板，重点盯 `replay-trainer.tsx`（语句 53%）。补测过程中又挖出两个「构建/测试全绿、线上路径不可用」的真实缺陷。
+- 检查结论：`docs/roadmap.md` 剩余 10 项仍**全部** `BLOCKED_EXTERNAL`；源码内无 `TODO`/`FIXME`。可执行工作 = 覆盖率批次 3。
+
+### 缺陷 A：首轮回放战绩被静默丢弃（生产回归）
+
+- 问题：`replay-trainer.tsx` 用 `const savedRoundRef = useRef(0)` 记录「已保存到第几轮」，而 `round` 状态也从 `0` 起，于是守卫 `savedRoundRef.current !== round` 在**第 0 轮恒为假**——**每个用户的第一个回放回合都不会写入训练历史**，第二轮回合才被记下来。
+- 回归来源：`749c594`（`feat(replay): training log with per-round history`）引入该 ref 的初值。
+- 修复：哨兵改为 `useRef(-1)`（`round` 永远取不到的值），并加注释说明为什么不能用 0。
+
+### 缺陷 B：localStorage 脏数据打崩整个训练器
+
+- 问题：难度下标 `useState(() => { const saved = localStorage.getItem(...); return saved ? parseInt(saved, 10) : 1 })` 只兜了「读不到」，没兜「读到但非法」：`parseInt("abc")` → `NaN`、`parseInt("9")` → 越界，随后 `DIFFICULTIES[difficultyIdx].context` 抛 `TypeError: Cannot read properties of undefined (reading 'context')`，**整个 `ReplayTrainer` 白屏**。手改过 localStorage、或旧版本写入过不同档位数的用户都会命中。
+- 修复：抽出 `initialDifficultyIdx()`，用 `Number.isInteger(n) && n >= 0 && n < DIFFICULTIES.length` 收敛，非法值回退默认「进阶」；`context` 取值处再加一层 `?? DIFFICULTIES[1]` 兜底，防止未来新入口绕过校验。
+- 反证（关键证据）：把两处修复临时还原后，新增的 4 条用例**全部失败**（2 条 `TypeError`、2 条 `saveReplayRecord` 未被调用）；恢复后全绿。
+
+### 覆盖率提升（单文件实测）
+
+| 文件 | 语句 | 分支 | 函数 | 行 |
+|---|---|---|---|---|
+| `replay-trainer.tsx` | 53.14 → **89.94** | 34.5 → **85.23** | 47.36 → **92.98** | 59.06 → **93.42** |
+| `review-client.tsx` | 54.09 → **98.36** | 43.06 → **89.05** | 50 → **100** | 52.77 → **100** |
+| `conversations/route.ts` | 66.15 → **95.38** | 70.68 → **91.37** | 66.66 → **100** | 67.92 → **100** |
+| `opengraph-image.tsx` | 62.5 → **100** | 35.89 → **89.74** | 100 → **100** | 64.28 → **100** |
+| `download.ts` | 91.3 → **100** | 90 → **100** | 83.33 → **100** | 94.73 → **100** |
+
+- 全局：语句 **90.11** / 分支 **83.65** / 函数 **88.69** / 行 **92.68**（阈值 84 / 77 / 83 / 87）。
+
+### 变更文件（关键）
+
+- `src/components/replay-trainer.tsx`、`src/components/replay-trainer.test.tsx`（1 → 21 例）
+- `src/components/review-client.test.tsx`（3 → 22 例）：空态、孤儿清理、到期/过期提示、SRS 开关、复习应答、导出/清空、快速重答、AI 契约、分组跳转
+- `src/app/api/ai/conversations/route.test.ts`（6 → 15 例）：GET 全分支 + POST 错误分支
+- `src/app/share/[kind]/[path]/opengraph-image.tsx` + `.test.tsx`（3 → 14 例）：`summarize` 加 `export` 以便直接断言各 kind 取值（零行为改动）
+- `src/lib/download.test.ts`（6 → 9 例）：非浏览器环境、延迟回收 ObjectURL
+- `src/data/release-notes.json`、`CHANGELOG.md`：用户可见修复进未发布条目
+
+### 验证命令与结果（本地）
+
+- `npm test` exit 0 → **252 文件 / 1999 用例**通过。
+- `npm run test:coverage` exit 0 → 语句 90.11 / 分支 83.65 / 函数 88.69 / 行 92.68，阈值全过。
+- `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0；`npm run build` exit 0。
+- 内容门禁：`check:ai-copy` / `check:growth-event-privacy` / `check:error-report-privacy` / `check:env-docs` / `check:dark-pattern-copy` / `check:docs` / `check:changelog` / `check:constitution` / `check:frontmatter` / `check:image-alt` / `check:glossary` / `check:slug-conflicts` / `check:description-dupes` / `check:kb-pointer` / `check:kb-changelog` / `check:translation-history` / `check:kb-parity-budget` / `check:quiz-mounts` / `check:quiz-coverage` / `check:links` / `check:sitemap` / `check:seo-surface` / `check:search-index` / `check:nav-chain` / `check:relative-links` / `check:bundle` / `check:structured-data` / `check:secrets` 全部 PASS；`git diff --check` exit 0。
+
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 未验证项：E2E / Lighthouse 依赖浏览器与线上环境，交由 CI 复核。
+- 风险与回滚：两处修复都是局部状态收敛，无 schema、无迁移、无对外接口变化；`opengraph-image.tsx` 只加 `export`。回滚 = 撤销 `d3d081e` / `c1c618b`。
+- 下一步：`ai-quiz.tsx` 仍是低覆盖热点（74.19 / 67.34 / 66.66 / 82.69），补 error / next / report 边界；以及同类「形状假设错误」审计（如 `summary/route.ts` 的 `parseSummaryBody` 只校验长度不校验 slug 形状）。
+- 最后更新：2026-09-13
+
+
 ## 自主开发续跑：lockfile 复现门禁、覆盖率批次与两个生产回归修复（PR #56–#60）
 
 - 状态：DONE（#56–#60 全部以 `--rebase` 合并进 main；main 推进到 `bb0893b`）
