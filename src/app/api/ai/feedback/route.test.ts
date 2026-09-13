@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { MAX_ANSWER_CHARS, MAX_QUESTION_CHARS, parseFeedbackBody, POST } from "./route";
+import {
+  MAX_ANSWER_CHARS,
+  MAX_QUESTION_CHARS,
+  PER_MINUTE_LIMIT,
+  parseFeedbackBody,
+  POST,
+} from "./route";
 
 const getUser = vi.fn();
 const insert = vi.fn();
@@ -8,10 +14,16 @@ vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(async () => ({ auth: { getUser }, from: () => ({ insert }) })),
 }));
 
-function request(raw: string): NextRequest {
+let ipCounter = 0;
+/** 每个请求默认换一个 IP：限流表是模块级进程内状态，用例之间不能互相扣配额。 */
+function request(raw: string, ip?: string): NextRequest {
+  ipCounter += 1;
   return new NextRequest("http://localhost/api/ai/feedback", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-forwarded-for": ip ?? `198.51.100.${ipCounter % 250}`,
+    },
     body: raw,
   });
 }
@@ -78,5 +90,24 @@ describe("POST /api/ai/feedback", () => {
     const res = await POST(request(JSON.stringify({ rating: "helpful", question: "q", answer: "a" })));
     expect(res.status).toBe(500);
     expect((await res.json()).error).toBe("Failed to save feedback");
+  });
+
+  it("单 IP 超过每分钟配额返回 429 且不再写库，其他 IP 不受影响", async () => {
+    const body = JSON.stringify({ rating: "helpful", question: "q", answer: "a" });
+    const flooder = "203.0.113.99";
+    let last: Awaited<ReturnType<typeof POST>> | undefined;
+    for (let i = 0; i < PER_MINUTE_LIMIT + 1; i++) {
+      last = await POST(request(body, flooder));
+    }
+    expect(last!.status).toBe(429);
+    expect(Number(last!.headers.get("Retry-After"))).toBeGreaterThan(0);
+    // 超限那次没有落库
+    expect(insert).toHaveBeenCalledTimes(PER_MINUTE_LIMIT);
+
+    // 同实例内另一个 IP 仍有自己的配额（限流按 IP 分桶，不是全局计数器）
+    insert.mockClear();
+    const other = await POST(request(body, "203.0.113.100"));
+    expect(other.status).toBe(200);
+    expect(insert).toHaveBeenCalledTimes(1);
   });
 });

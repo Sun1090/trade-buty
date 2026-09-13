@@ -7,14 +7,18 @@
         "本地进度/错题/回放/测验快照在登录合并前统一做结构校验，损坏快照回退为空而不写回异常值",
         "CI 门禁稳定性：移动端溢出回归改为确定性执行，Playwright 浏览器安装前置到浏览器门禁之前",
         "工具链升级到 TypeScript 6.0.3：`typescript-eslint` peer 允许区间内，CI 用同版本 npm 重新生成 lockfile，lint / typecheck / 1862 例测试 / 构建全绿",
-        "新增 `check:lockfile-repro` 门禁：用 `devEngines.packageManager` 钉住的 npm（10.x，对齐 CI 的 Node 22）重新生成 `package-lock.json` 并逐条目比对；npm 10/11 形状漂移会在 CI 早期以可读原因红灯，脚本始终从备份恢复 lockfile"
+        "新增 `check:lockfile-repro` 门禁：用 `devEngines.packageManager` 钉住的 npm（10.x，对齐 CI 的 Node 22）重新生成 `package-lock.json` 并逐条目比对；npm 10/11 形状漂移会在 CI 早期以可读原因红灯，脚本始终从备份恢复 lockfile",
+        "AI 变体题回归修复：`/api/ai/quiz` 曾按数字校验篇章号，错题本入口对所有真实用户固定返回 400；现改为校验篇章 slug，并补上能复现该 bug 的正向用例",
+        "匿名写库端点补齐配额：`/api/ai/feedback` 与 `/api/ai/citation-click` 此前可被无限灌库，现与错误上报同一套按 IP 限流（分别 20 / 30 次每分钟）"
       ],
       "en": [
         "Fixed light-theme contrast: lesson body, callouts, and index numerals no longer reuse dark-theme hard-coded colors; a new axe light-theme contrast regression runs in CI",
         "Local progress, wrongbook, replay, and quiz snapshots are structurally validated before cloud merge, so corrupted snapshots fall back to empty instead of writing back invalid values",
         "Stabilized CI gates: the mobile overflow regression is now deterministic and Playwright browser installation precedes browser gates",
         "Toolchain bumped to TypeScript 6.0.3 within the `typescript-eslint` peer range; the lockfile is regenerated with the same npm major as CI, with lint, typecheck, 1862 tests, and build all green",
-        "Added a `check:lockfile-repro` gate: it regenerates `package-lock.json` with the npm major pinned via `devEngines.packageManager` (10.x, matching CI's Node 22) and diffs it entry-by-entry; npm 10/11 lockfile drift now fails early in CI with a readable reason, and the script always restores the lockfile from backup"
+        "Added a `check:lockfile-repro` gate: it regenerates `package-lock.json` with the npm major pinned via `devEngines.packageManager` (10.x, matching CI's Node 22) and diffs it entry-by-entry; npm 10/11 lockfile drift now fails early in CI with a readable reason, and the script always restores the lockfile from backup",
+        "Fixed an AI variant-quiz regression: `/api/ai/quiz` validated a numeric chapter id, so the wrongbook entry point returned 400 for every real user; it now validates the chapter slug, with a positive regression test",
+        "Added quotas to anonymous write endpoints: `/api/ai/feedback` and `/api/ai/citation-click` could previously be flooded into the database without limit; both are now IP rate limited (20 / 30 per minute), sharing the error-reporting limiter"
       ]
     }
   },

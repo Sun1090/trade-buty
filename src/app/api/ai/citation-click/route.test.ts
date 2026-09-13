@@ -1,6 +1,6 @@
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { parseCitationClick, POST } from "./route";
+import { PER_MINUTE_LIMIT, parseCitationClick, POST } from "./route";
 
 const getUser = vi.fn();
 const insert = vi.fn();
@@ -8,10 +8,16 @@ vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(async () => ({ auth: { getUser }, from: () => ({ insert }) })),
 }));
 
-function request(raw: string): NextRequest {
+let ipCounter = 0;
+/** 每个请求默认换一个 IP：限流表是模块级进程内状态，用例之间不能互相扣配额。 */
+function request(raw: string, ip?: string): NextRequest {
+  ipCounter += 1;
   return new NextRequest("http://localhost/api/ai/citation-click", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-forwarded-for": ip ?? `198.51.100.${ipCounter % 250}`,
+    },
     body: raw,
   });
 }
@@ -99,5 +105,22 @@ describe("POST /api/ai/citation-click", () => {
     const body = await res.json();
     expect(body.error).toBe("Failed to record click");
     expect(JSON.stringify(body)).not.toContain("permission denied");
+  });
+
+  it("单 IP 超过每分钟配额返回 429 且不再写库，其他 IP 不受影响", async () => {
+    const body = JSON.stringify({ kind: "source", chapter: "spot", doc: "order-types" });
+    const flooder = "203.0.113.77";
+    let last: Awaited<ReturnType<typeof POST>> | undefined;
+    for (let i = 0; i < PER_MINUTE_LIMIT + 1; i++) {
+      last = await POST(request(body, flooder));
+    }
+    expect(last!.status).toBe(429);
+    expect(Number(last!.headers.get("Retry-After"))).toBeGreaterThan(0);
+    expect(insert).toHaveBeenCalledTimes(PER_MINUTE_LIMIT);
+
+    insert.mockClear();
+    const other = await POST(request(body, "203.0.113.78"));
+    expect(other.status).toBe(200);
+    expect(insert).toHaveBeenCalledTimes(1);
   });
 });
