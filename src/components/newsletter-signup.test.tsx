@@ -19,6 +19,7 @@ const labels = {
   clear: "Clear",
   copy: "Copy JSON",
   copied: "Copied",
+  copyFailed: "Copy failed — please copy manually",
   exportLabel: "Export my subscription record",
 };
 
@@ -45,7 +46,13 @@ beforeAll(() => {
 beforeEach(() => {
   cleanup();
   localStorage.clear();
-  writeText.mockClear();
+  writeText.mockReset();
+  writeText.mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", {
+    value: { writeText },
+    configurable: true,
+    writable: true,
+  });
 });
 
 afterEach(() => {
@@ -95,6 +102,57 @@ describe("NewsletterSignup", () => {
     expect(writeText).toHaveBeenCalled();
     const arg = writeText.mock.calls[0][0];
     expect(JSON.parse(arg).email).toBe("x@y.z");
+  });
+
+  it("剪贴板失败但 execCommand 兜底成功时显示已复制", async () => {
+    memStore["tb-newsletter-email"] = JSON.stringify({ email: "x@y.z", recordedAt: 1 });
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+      configurable: true,
+      writable: true,
+    });
+    document.execCommand = vi.fn(() => true) as unknown as typeof document.execCommand;
+    render(<NewsletterSignup labels={labels} locale="en" />);
+    await screen.findByTestId("newsletter-saved");
+    fireEvent.click(screen.getByTestId("newsletter-copy"));
+    await waitFor(() =>
+      expect(screen.getByTestId("newsletter-copy").textContent).toContain("Copied"),
+    );
+  });
+
+  it("主副剪贴板都失败时显示失败而不是伪装成功", async () => {
+    memStore["tb-newsletter-email"] = JSON.stringify({ email: "x@y.z", recordedAt: 1 });
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+      configurable: true,
+      writable: true,
+    });
+    document.execCommand = vi.fn(() => false) as unknown as typeof document.execCommand;
+    render(<NewsletterSignup labels={labels} locale="en" />);
+    await screen.findByTestId("newsletter-saved");
+    fireEvent.click(screen.getByTestId("newsletter-copy"));
+    await waitFor(() =>
+      expect(screen.getByTestId("newsletter-copy").textContent).toContain("Copy failed"),
+    );
+    expect(screen.getByTestId("newsletter-copy").textContent).not.toContain("Copied");
+  });
+
+  it("execCommand 兜底抛错时也收敛为可见失败", async () => {
+    memStore["tb-newsletter-email"] = JSON.stringify({ email: "x@y.z", recordedAt: 1 });
+    Object.defineProperty(navigator, "clipboard", {
+      value: undefined,
+      configurable: true,
+      writable: true,
+    });
+    document.execCommand = vi.fn(() => {
+      throw new Error("execCommand unsupported");
+    }) as unknown as typeof document.execCommand;
+    render(<NewsletterSignup labels={labels} locale="en" />);
+    await screen.findByTestId("newsletter-saved");
+    fireEvent.click(screen.getByTestId("newsletter-copy"));
+    await waitFor(() =>
+      expect(screen.getByTestId("newsletter-copy").textContent).toContain("Copy failed"),
+    );
   });
 
   it("点击 Clear 清除 storage 并切回表单", async () => {
