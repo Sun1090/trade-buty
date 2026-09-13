@@ -5,15 +5,24 @@ import {
   MAX_SOURCES,
   MAX_USER_MESSAGE_CHARS,
   parseSaveBody,
+  GET,
   POST,
 } from "./route";
 
-const getUser = vi.fn();
-const insert = vi.fn();
-const from = vi.fn(() => ({ insert }));
+const db = vi.hoisted(() => {
+  const getUser = vi.fn();
+  const insert = vi.fn();
+  const limit = vi.fn();
+  const order = vi.fn(() => ({ limit }));
+  const eq = vi.fn(() => ({ order }));
+  const select = vi.fn(() => ({ eq }));
+  const from = vi.fn(() => ({ insert, select }));
+  const createSupabaseServerClient = vi.fn(async () => ({ auth: { getUser }, from }));
+  return { getUser, insert, limit, order, eq, select, from, createSupabaseServerClient };
+});
 
 vi.mock("@/lib/supabase/server", () => ({
-  createSupabaseServerClient: vi.fn(async () => ({ auth: { getUser }, from })),
+  createSupabaseServerClient: db.createSupabaseServerClient,
 }));
 
 function request(body: unknown): NextRequest {
@@ -26,8 +35,13 @@ function request(body: unknown): NextRequest {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  getUser.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
-  insert.mockResolvedValue({ error: null });
+  db.createSupabaseServerClient.mockImplementation(async () => ({
+    auth: { getUser: db.getUser },
+    from: db.from,
+  }));
+  db.getUser.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
+  db.insert.mockResolvedValue({ error: null });
+  db.limit.mockResolvedValue({ data: [], error: null });
 });
 
 describe("parseSaveBody", () => {
@@ -70,6 +84,60 @@ describe("parseSaveBody", () => {
       parseSaveBody({ userMessage: "问题", assistantMessage: "回答", sources: [{ chapter: "spot" }] }),
     ).toBeNull();
   });
+
+  it("非对象与 null 入参直接判非法", () => {
+    expect(parseSaveBody(null)).toBeNull();
+    expect(parseSaveBody("nope")).toBeNull();
+    expect(parseSaveBody({ userMessage: 1, assistantMessage: "回答" })).toBeNull();
+    expect(parseSaveBody({ userMessage: "问题", assistantMessage: 2 })).toBeNull();
+  });
+});
+
+describe("GET /api/ai/conversations", () => {
+  it("未登录返回空列表而不是报错（首访用户不该看到错误）", async () => {
+    db.getUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ messages: [] });
+    expect(db.select).not.toHaveBeenCalled();
+  });
+
+  it("按时间升序取最近 50 条返回给客户端", async () => {
+    const rows = [
+      { role: "user", content: "hi", sources: null, created_at: "2026-01-01T00:00:00Z" },
+      { role: "assistant", content: "yo", sources: [{ chapter: "spot", doc: "order" }], created_at: "2026-01-01T00:00:01Z" },
+    ];
+    db.limit.mockResolvedValueOnce({ data: rows, error: null });
+
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ messages: rows });
+    // 只取自己的会话，且按时间正序 + 限额
+    expect(db.from).toHaveBeenCalledWith("ai_conversations");
+    expect(db.eq).toHaveBeenCalledWith("user_id", "user-1");
+    expect(db.order).toHaveBeenCalledWith("created_at", { ascending: true });
+    expect(db.limit).toHaveBeenCalledWith(50);
+  });
+
+  it("无数据时返回空数组而不是 null（客户端 data.messages?.length 才不会炸）", async () => {
+    db.limit.mockResolvedValueOnce({ data: null, error: null });
+    const res = await GET();
+    expect(await res.json()).toEqual({ messages: [] });
+  });
+
+  it("查询失败返回 500", async () => {
+    db.limit.mockResolvedValueOnce({ data: null, error: { message: "boom" } });
+    const res = await GET();
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Failed to load conversations" });
+  });
+
+  it("Supabase 客户端本身抛错时降级为空历史（不阻断聊天页）", async () => {
+    db.createSupabaseServerClient.mockRejectedValueOnce(new Error("no env"));
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ messages: [] });
+  });
 });
 
 describe("POST /api/ai/conversations", () => {
@@ -81,7 +149,7 @@ describe("POST /api/ai/conversations", () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ ok: true });
-    expect(insert).toHaveBeenCalledWith([
+    expect(db.insert).toHaveBeenCalledWith([
       { user_id: "user-1", role: "user", content: "什么是市价单？" },
       {
         user_id: "user-1",
@@ -90,14 +158,14 @@ describe("POST /api/ai/conversations", () => {
         sources,
       },
     ]);
-    expect(typeof insert.mock.calls[0][0][1].sources).not.toBe("string");
+    expect(typeof db.insert.mock.calls[0][0][1].sources).not.toBe("string");
   });
 
   it("没有来源时写入 null", async () => {
     const response = await POST(request({ userMessage: "问题", assistantMessage: "回答" }));
 
     expect(response.status).toBe(200);
-    expect(insert.mock.calls[0][0][1].sources).toBeNull();
+    expect(db.insert.mock.calls[0][0][1].sources).toBeNull();
   });
 
   it("拒绝非法 JSON 和登录用户之外的请求", async () => {
@@ -108,8 +176,29 @@ describe("POST /api/ai/conversations", () => {
     });
     expect((await POST(invalid)).status).toBe(400);
 
-    getUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+    db.getUser.mockResolvedValueOnce({ data: { user: null }, error: null });
     expect((await POST(request({ userMessage: "问题", assistantMessage: "回答" }))).status).toBe(401);
-    expect(insert).not.toHaveBeenCalled();
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("非法载荷（形状不符）返回 400 且不写库", async () => {
+    const res = await POST(request({ userMessage: "", assistantMessage: "回答" }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Invalid payload" });
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("insert 报错返回 500", async () => {
+    db.insert.mockResolvedValueOnce({ error: { message: "boom" } });
+    const res = await POST(request({ userMessage: "问题", assistantMessage: "回答" }));
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Failed to save conversation" });
+  });
+
+  it("认证阶段抛错也被兜住返回 500", async () => {
+    db.getUser.mockRejectedValueOnce(new Error("bad jwt"));
+    const res = await POST(request({ userMessage: "问题", assistantMessage: "回答" }));
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Failed to save conversation" });
   });
 });

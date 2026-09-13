@@ -20,8 +20,9 @@ interface ShareInfo {
   subline: string;
 }
 
-/** 仅自报的分享数据渲染社交卡；沿 R13.3 白名单清洗后的字段。 */
-function summarize(kind: ShareKind, path: string): ShareInfo | null {
+/** 仅自报的分享数据渲染社交卡；沿 R13.3 白名单清洗后的字段。
+ *  导出以便回归测试直接断言各 kind 的取值（与 conversations parseSaveBody 同例）。 */
+export function summarize(kind: ShareKind, path: string): ShareInfo | null {
   if (kind === "quiz") {
     const p = decodeQuiz(path);
     if (!p || p.total <= 0) return null;
