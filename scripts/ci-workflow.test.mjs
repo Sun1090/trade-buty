@@ -249,6 +249,7 @@ describe("CI workflow contract", () => {
       "npm run audit:prod",
       "npm run audit:all",
       "npm run check:secrets",
+      "npm run test:coverage",
       "npm run check:error-report-privacy",
       "npm run check:env-docs",
       "npm run check:kb-changelog",
@@ -319,5 +320,25 @@ describe("CI workflow contract", () => {
     expect(installIndex, "缺少 Playwright 浏览器安装步骤").toBeGreaterThanOrEqual(0);
     expect(installIndex, "浏览器安装必须早于移动端门禁").toBeLessThan(mobileIndex);
     expect(installIndex, "浏览器安装必须早于 E2E").toBeLessThan(e2eIndex);
+  });
+
+  it("覆盖度回归门禁存在：test:coverage 有预生成、阈值非零、CI 实跑", () => {
+    expect(pkg.scripts?.["test:coverage"], "缺少 test:coverage 脚本").toContain("--coverage");
+    expect(pkg.scripts?.["pretest:coverage"], "test:coverage 缺少 kb-titles 预生成").toBeTruthy();
+    const config = fs.readFileSync("vitest.config.mts", "utf8");
+    expect(config, "coverage provider 必须为 v8").toContain('provider: "v8"');
+    const block = /thresholds:\s*\{([\s\S]*?)\}/.exec(config)?.[1] ?? "";
+    for (const metric of ["statements", "branches", "functions", "lines"]) {
+      const value = Number(new RegExp(metric + ":\\s*([0-9]+(?:\\.[0-9]+)?)").exec(block)?.[1]);
+      expect(Number.isFinite(value), `覆盖度阈值缺少 ${metric}`).toBe(true);
+      expect(value, `${metric} 阈值过低`).toBeGreaterThan(0);
+    }
+    expect(jobCommands(workflow.jobs.ci), "CI 必须实跑 test:coverage").toContain(
+      "npm run test:coverage",
+    );
+    expect(
+      fs.readFileSync("eslint.config.mjs", "utf8"),
+      "coverage 产物必须对 ESLint 全局忽略，否则跑过覆盖率后 lint 会误报",
+    ).toContain("coverage/**");
   });
 });

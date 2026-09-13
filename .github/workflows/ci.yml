@@ -44,7 +44,7 @@ jobs:
         run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
       - name: ESLint（零警告门禁）
         run: npm run lint
-      - run: npm run test
+      - run: npm run test:coverage
       - run: npm run typecheck
       - run: npm run build
       # R12.21 / R13.10 与 E2E 共用 Playwright Chromium；必须早于首个浏览器门禁安装。
