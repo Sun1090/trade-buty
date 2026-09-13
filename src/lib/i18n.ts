@@ -334,6 +334,7 @@ const zh = {
     clear: "清除",
     copy: "复制 JSON",
     copied: "已复制",
+    copyFailed: "复制失败，请手动选择复制",
     exportLabel: "导出我的订阅记录",
   },
   onboarding: {
@@ -731,6 +732,7 @@ const en: Dict = {
     clear: "Clear",
     copy: "Copy JSON",
     copied: "Copied",
+    copyFailed: "Copy failed — please copy manually",
     exportLabel: "Export my subscription record",
   },
   onboarding: {

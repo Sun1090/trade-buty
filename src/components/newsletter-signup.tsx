@@ -20,6 +20,7 @@ interface Labels {
   clear: string;
   copy: string;
   copied: string;
+  copyFailed: string;
   exportLabel: string;
 }
 
@@ -32,6 +33,7 @@ export function NewsletterSignup({ labels, locale }: { labels: Labels; locale: "
   const [email, setEmail] = useState("");
   const [saved, setSaved] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -60,19 +62,47 @@ export function NewsletterSignup({ labels, locale }: { labels: Labels; locale: "
     setSaved(null);
   }
 
-  async function handleCopy() {
-    const json = exportNewsletter();
-    if (!json) return;
+  function showCopyFailure() {
+    setCopied(false);
+    setCopyFailed(true);
+    setTimeout(() => setCopyFailed(false), 2000);
+  }
+
+  /** execCommand 兜底；返回真实结果，不把失败伪装成已复制。 */
+  function fallbackCopy(text: string): boolean {
     try {
-      await navigator.clipboard.writeText(json);
-    } catch {
-      // execCommand 兜底
       const ta = document.createElement("textarea");
-      ta.value = json;
+      ta.value = text;
       document.body.appendChild(ta);
       ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async function handleCopy() {
+    setCopyFailed(false);
+    const json = exportNewsletter();
+    if (!json) {
+      showCopyFailure();
+      return;
+    }
+    let ok = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(json);
+        ok = true;
+      }
+    } catch {
+      ok = false;
+    }
+    if (!ok) ok = fallbackCopy(json);
+    if (!ok) {
+      showCopyFailure();
+      return;
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -107,7 +137,7 @@ export function NewsletterSignup({ labels, locale }: { labels: Labels; locale: "
               data-testid="newsletter-copy"
               className="rounded-full border border-[var(--accent)]/40 hover:border-accent/60 px-3 py-1 text-xs transition"
             >
-              {copied ? labels.copied : labels.copy}
+              {copyFailed ? `⚠️ ${labels.copyFailed}` : copied ? labels.copied : labels.copy}
             </button>
             <button
               type="button"
