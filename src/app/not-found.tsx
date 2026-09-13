@@ -71,9 +71,9 @@ export default function NotFound() {
             {t.notFound.popularStarters}
           </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {starters.map((c) => (
+            {starters.map((c, index) => (
               <Link
-                key={c.slug}
+                key={index}
                 href={knowledgeHref(DEFAULT_LOCALE, c.slug)}
                 className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 text-left hover:border-[var(--accent)]/50 transition"
               >
