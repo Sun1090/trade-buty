@@ -1,9 +1,55 @@
 # Progress
 
-## 覆盖率批次 5：回放分享评级单位回归修复 + 五个热点补测（`codex/coverage-batch-5`）
+## 覆盖率批次 6：邮件订阅复制诚实性修复 + 回放分享卡补测（`codex/coverage-batch-6`）
 
 - 状态：DONE（本地全部门禁绿灯，待 push + PR）
-- 工作分支：`codex/coverage-batch-5`（基于 `origin/main@139d257`）
+- 工作分支：`codex/coverage-batch-6`（基于 `origin/main@f114a41`）
+- 提交：`b1471af` `fix(newsletter): report copy failure instead of faking success` · `3f3617c` `test: cover replay share card and stabilize streak preview assertion`
+- 目标：先清理批次 5 全量回归暴露的偶发失败，再按「真实缺陷 > 覆盖率」继续核查分享链路中与批次 5 同类的诚实性与单位语义问题。
+
+### 生产回归：邮件订阅复制失败仍显示「已复制」
+
+- 问题：`handleCopy` 在 `navigator.clipboard.writeText` 失败后进入 `execCommand` 兜底，但从不检查兜底返回值，随后无条件 `setCopied(true)`；主副路径都失败时按钮仍显示「已复制」。另外 `document.execCommand` 不存在或抛错时，异常会逃出 async 事件处理器，变成未处理的 Promise rejection。
+- 修复：抽出 `fallbackCopy()` 返回真实布尔结果；两条路径都失败时显示本地化 `copyFailed` 文案（zh/en 已补），不再伪装成功。
+- 反证：新增「主副剪贴板都失败」「execCommand 抛错」用例在修复前分别无法断言到失败文案或会产生未处理拒绝；修复后通过。
+
+### 测试稳定性与覆盖率
+
+- 批次 5 的「连续学习分享卡重复预览回收 URL」用例把 `waitFor(() => expect(revoke).toHaveBeenCalledTimes(0))` 当等待条件——该断言恒真，高负载下第二次点击可能发生在首张预览写入 state 之前，导致全量回归偶发失败（本批首次全量跑即复现）。现改为等待 `<img>` 真正渲染，再断言回收调用次数与目标 data URL。
+- `replay-share-card.tsx`：3 → 13 例，语句 75 → **90.38**，分支 51.72 → **86.2**，函数 80 → **100**，行 82.22 → **95.55**。新增中文/英文 alt、预览后按 `preview` 触发下载、下载失败与预览失败的可见反馈、复制链接成功/失败埋点、重复预览与卸载回收、无 2D 上下文仍可下载、文件名清洗与空值回退。
+- 全局：**252 文件 / 2094 用例**通过；语句 **91.71** / 分支 **85.96** / 函数 **91.27** / 行 **94.13**（阈值 84 / 77 / 83 / 87）。
+
+### 同类缺陷核查结论
+
+逐一核对 `accuracyBps`（万分比）到评级的全部消费方：`share-landing.ts`（本批之前已修为 `/10_000` 传 0–1）、`opengraph-image.tsx`（同样 `/10000`）、`share-card-preview.tsx`（本地 `replayGradeLetter` 明确按 0–100 百分数比较）、`share-card.ts::drawReplayCard`（入参本身是 0–1）语义一致，未发现新的单位错配。`replay-share-card.tsx` 接收的 `accuracy` 也是 0–1，预览 alt 与画布均正确乘 100 展示。
+
+### 变更文件
+
+- `src/components/newsletter-signup.tsx`：复制结果诚实化 + 兜底异常收敛。
+- `src/lib/i18n.ts`：新增 zh/en `newsletter.copyFailed`。
+- `src/components/newsletter-signup.test.tsx`：3 条复制失败/兜底用例。
+- `src/components/replay-share-card.test.tsx`：13 例分享卡回归与分支用例。
+- `src/components/streak-share-card.test.tsx`：修正重复预览等待条件。
+- `src/data/release-notes.json`、`CHANGELOG.md`：登记批次 6。
+
+### 验证命令与结果（本地，全部以退出码判定）
+
+- `npm run test:coverage` exit 0 → **252 文件 / 2094 用例**通过；语句 91.71 / 分支 85.96 / 函数 91.27 / 行 94.13，阈值全过。
+- `npm run lint` / `npm run typecheck` / `npm run build` exit 0；生产构建 **474 静态页**。
+- 28 项内容/SEO/构建产物门禁（含 `check:changelog`、`check:dark-pattern-copy`、`check:structured-data`、`check:secrets` 等）exit 0。
+- `npm run audit:prod` / `npm run audit:all` exit 0 → 0 vulnerabilities；`npm run check:lockfile-repro` exit 0（npm 10.9.4 复现 981 个包条目，无差异）。
+- `git diff --check` exit 0。
+
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 风险与回滚：只改复制结果判断与失败文案，不改本地存储/导出协议；回滚 = 撤销 `b1471af`；测试与文档可独立撤销。
+- 下一步：push 分支、创建 PR、等待全绿后以 `--rebase` 合并；随后继续补 `ai-quiz.tsx`、`search-hotkey.tsx` 与 `i18n.ts` 热点，并继续核查分享链路单位语义。
+- 最后更新：2026-09-13
+
+
+## 覆盖率批次 5：回放分享评级单位回归修复 + 五个热点补测（`codex/coverage-batch-5`）
+
+- 状态：MERGED（PR [#64](https://github.com/Sun1090/trade-buty/pull/64)，`--rebase` 合入 main，main 到 `f114a41`）
+- 工作分支：`codex/coverage-batch-5`（基于 `origin/main@139d257`；合入后删除远端分支）
 - 提交：`28b184e` `fix(share): grade replay landing from accuracy basis points` · `26cf871` `test: lift coverage on doc list, chart, streak card, login and share landing`
 - 目标：继续抬高客户端覆盖率地板，优先处理 `doc-list.tsx`、`kline-chart.tsx`、`streak-share-card.tsx`、`login-client.tsx` 与刚刚从批次 4 结论上锁定的 `share-landing.ts`。
 
