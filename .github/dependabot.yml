@@ -9,6 +9,15 @@ updates:
       timezone: Asia/Shanghai
     open-pull-requests-limit: 5
     versioning-strategy: increase-if-necessary
+    # 上游尚未支持、已实测失败的 major 暂缓自动升级，避免每周重复开出必然红灯的 PR。
+    # 证据与解除条件见 docs/deps.md「工具链 major 升级 → 延期（上游尚未支持，附实测证据）」。
+    ignore:
+      # eslint-plugin-react（经 eslint-config-next 引入）peer 仍为 eslint ^9，装 10 后 lint 直接崩溃。
+      - dependency-name: "eslint"
+        versions: ["10.x"]
+      # typescript-eslint peer 为 typescript <6.1.0，装 7 后 lint 报 does not support TS 7.0.
+      - dependency-name: "typescript"
+        versions: ["7.x"]
     groups:
       npm-minor-and-patch:
         patterns:
