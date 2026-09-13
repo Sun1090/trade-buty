@@ -1,10 +1,22 @@
 // @vitest-environment jsdom
+import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 let pathname = "/zh/path";
 vi.mock("next/navigation", () => ({
   usePathname: () => pathname,
+}));
+
+// 单元测试只关心侧栏自身的分组/高亮逻辑：把 next/link 降级成纯 <a>。
+// 真 next/link 在 jsdom 里仍会跑 prefetch/router 的异步链路（实测单文件
+// ~3.9s），在满载 CI 上会撞 5s 默认超时造成偶发红灯。
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...rest }: { href: string; children: ReactNode }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
 }));
 
 import { LearningSidebar } from "./learning-sidebar";
