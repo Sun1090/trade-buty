@@ -46,7 +46,7 @@
 | `@types/node` | 20.19.43 | 22.20.2 | 已升级到 `22.20.2`；全量测试、lint、typecheck 实测见「工具链 major 升级」 |
 | `eslint` | 9.39.5 | 10.10.0 | 延期：`eslint-plugin-react` 尚未支持 ESLint 10，实跑 `npm run lint` 崩溃；证据见「工具链 major 升级」 |
 | `js-yaml` | 4.3.2 | 5.4.2 | 已升级直接依赖到 `5.4.2` 并改用具名导出；`gray-matter` 与 ESLint 配置链继续由 `overrides` 固定到各自兼容版本 |
-| `typescript` | 5.9.3 | 7.0.2 | 延期：`typescript-eslint` peer 尚未支持 TS 7，实跑 `npm run lint` 失败；证据见「工具链 major 升级」 |
+| `typescript` | 5.9.3 | 6.0.3（7.0.2 延期） | 已升级到 `6.0.3`（`typescript-eslint` peer `<6.1.0` 允许）；TS 7 仍延期，实跑 `npm run lint` 失败；证据见「工具链 major 升级」 |
 | `vitest` | 4.1.11 | 5.0.0 | 已升级到 `5.0.0`；全量测试、lint、typecheck 实测见「工具链 major 升级」 |
 
 > 判断依据：`npm outdated` 只把「latest 领先 wanted」的包列出来；本仓库锁文件已把想要的版本都拉到锁内，因此本表只讨论 major 迁移。
@@ -65,7 +65,7 @@
 
 ## 工具链 major 升级（2026-09-13 实测）
 
-`npm outdated` 当时列出五个 major（见「月度审计日志」）：本轮逐个实际安装并跑门禁，**落地三个、延期两个**，延期项附可复现证据而不是只写理由。
+`npm outdated` 当时列出五个 major（见「月度审计日志」）：本轮逐个实际安装并跑门禁，**落地四个、延期两个**，延期项附可复现证据而不是只写理由。
 
 ### 已落地
 
@@ -74,6 +74,7 @@
 | `@types/node` | 20.19.43 → 22.20.2 | CI 与本地运行时都是 Node 22，类型包落后两个 major 会掩盖真实 API 差异 | `npm run typecheck` exit 0；`npm run lint` exit 0；`npm test` 247 文件 / 1795 例通过 |
 | `js-yaml` | 4.3.2 → 5.4.2 | v5 改为 ESM 原生包、**只有具名导出**（无 default export），属于会直接崩测试的破坏性变更；随后跟进 5.4.2 patch | `scripts/ci-workflow.test.mjs` 通过；`npm test` 251 文件 / 1845 例通过；lockfile 干净安装和构建通过 |
 | `vitest` | 4.1.11 → 5.0.0 | 与 Vite/Node 22 对齐，避免测试运行器落后主版本 | `npm test` 247 文件 / 1795 例通过；`npm run lint`、`npm run typecheck` exit 0 |
+| `typescript` | 5.9.3 → 6.0.3 | `typescript-eslint@8.70.0` 的 peer 是 `typescript >=4.8.4 <6.1.0`，6.0.3 落在允许区间内（越界的是 TS 7），因此这个 major 可以安全落地 | `npx npm@10.9.4 ci` exit 0；`tsc --version` → `6.0.3`；`npm run typecheck` / `npm run lint` / `npm test`（251 文件 / 1862 例）/ `npm run build` 全部 exit 0 |
 
 `js-yaml` 只在 `scripts/ci-workflow.test.mjs` 里被直接使用（解析 `.github/workflows/ci.yml`），因此升级面很窄；`gray-matter` 依赖的 `js-yaml@3.15.2` 与 `@eslint/eslintrc` 依赖的 `js-yaml@4.3.2` 仍由 `overrides` 固定，未随直接依赖变化。
 
@@ -87,6 +88,19 @@
 为避免 Dependabot 每周重复开出这两个必然红灯的 major PR，`.github/dependabot.yml` 的 npm 条目已对 `eslint@10.x` 与 `typescript@7.x` 建了 `ignore` 规则（仅挡这两个 major，不挡 11.x / 8.x，也不影响 minor/patch 分组）；`scripts/ci-workflow.test.mjs` 有回归用例锁定该忽略，解除条件是上表「解除条件」列成立后先删掉对应 ignore 再升级。
 
 两项目前都**不能**通过 `overrides` 绕过：强行替换 `eslint-plugin-react` / `typescript-eslint` 会让 ESLint 配置链与 Next 官方配置发生版本错配，风险高于收益。
+
+### lockfile 工具链漂移（npm 10 vs npm 11）
+
+Dependabot 的 TS 6 PR 第一次 CI 红灯并不是类型错误，而是 **生成 lockfile 的 npm 主版本和 CI 使用的 npm 主版本不一致**：本地 / Dependabot 侧是 npm 11，CI（Node 22 自带）是 npm 10。npm 11 会重排 root `devDependencies` 并删掉 14 条 `puppeteer-core` 下的嵌套 optional-peer 条目（`proxy-agent-negotiate`、`get-uri` 等），npm 10 的 `npm ci` 随即报 `Missing: get-uri@8.0.1 from lock file` 而非直接安装失败。
+
+复核方式：显式用 CI 的 npm 主版本重新生成 lockfile，把 diff 压到最小。
+
+```bash
+npx --yes npm@10.9.4 install --package-lock-only --registry=https://registry.npmjs.org
+npx --yes npm@10.9.4 ci --registry=https://registry.npmjs.org
+```
+
+按此流程生成的 diff 只有 6 增 6 删（root `devDependencies` 排序归一 + `node_modules/typescript` 换到 6.0.3），没有改动任何其他包。**约定：改动 `package-lock.json` 时必须用与 CI 相同的 npm 主版本生成，并在 PR 里贴出 `npm ci` 的退出码。**
 
 ### 顺带修复
 

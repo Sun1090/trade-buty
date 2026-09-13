@@ -12,12 +12,14 @@
 - 亮色主题对比度修复：课程正文、callout 与序号不再沿用暗色硬编码颜色，CI 新增 axe 亮色对比度回归
 - 本地进度/错题/回放/测验快照在登录合并前统一做结构校验，损坏快照回退为空而不写回异常值
 - CI 门禁稳定性：移动端溢出回归改为确定性执行，Playwright 浏览器安装前置到浏览器门禁之前
+- 工具链升级到 TypeScript 6.0.3：`typescript-eslint` peer 允许区间内，CI 用同版本 npm 重新生成 lockfile，lint / typecheck / 1862 例测试 / 构建全绿
 
 ### English
 
 - Fixed light-theme contrast: lesson body, callouts, and index numerals no longer reuse dark-theme hard-coded colors; a new axe light-theme contrast regression runs in CI
 - Local progress, wrongbook, replay, and quiz snapshots are structurally validated before cloud merge, so corrupted snapshots fall back to empty instead of writing back invalid values
 - Stabilized CI gates: the mobile overflow regression is now deterministic and Playwright browser installation precedes browser gates
+- Toolchain bumped to TypeScript 6.0.3 within the `typescript-eslint` peer range; the lockfile is regenerated with the same npm major as CI, with lint, typecheck, 1862 tests, and build all green
 
 ## [0.6.0] - 2026-09-12
 
