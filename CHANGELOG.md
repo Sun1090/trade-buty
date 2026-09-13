@@ -19,6 +19,8 @@
 - 新增 `check:lockfile-repro` 门禁：用 `devEngines.packageManager` 钉住的 npm（10.x，对齐 CI 的 Node 22）重新生成 `package-lock.json` 并逐条目比对；npm 10/11 形状漂移会在 CI 早期以可读原因红灯，脚本始终从备份恢复 lockfile
 - AI 变体题回归修复：`/api/ai/quiz` 曾按数字校验篇章号，错题本入口对所有真实用户固定返回 400；现改为校验篇章 slug，并补上能复现该 bug 的正向用例
 - 匿名写库端点补齐配额：`/api/ai/feedback` 与 `/api/ai/citation-click` 此前可被无限灌库，现与错误上报同一套按 IP 限流（分别 20 / 30 次每分钟）
+- AI 对话复制反馈修复：复制回答成功但按钮一直不显示「已复制」，原因是 React 合成事件的 `currentTarget` 在 `await` 后已被清空并被 catch 静默吞掉；现于异步边界前捕获按钮
+- 补齐登录头、回放历史与 AI 对话操作（反馈、清空、复制、续写）的回归用例；全局语句覆盖率提升至 90.68% / 分支 84.21% / 函数 90.06% / 行 93.22%
 
 ### English
 
@@ -32,6 +34,8 @@
 - Added a `check:lockfile-repro` gate: it regenerates `package-lock.json` with the npm major pinned via `devEngines.packageManager` (10.x, matching CI's Node 22) and diffs it entry-by-entry; npm 10/11 lockfile drift now fails early in CI with a readable reason, and the script always restores the lockfile from backup
 - Fixed an AI variant-quiz regression: `/api/ai/quiz` validated a numeric chapter id, so the wrongbook entry point returned 400 for every real user; it now validates the chapter slug, with a positive regression test
 - Added quotas to anonymous write endpoints: `/api/ai/feedback` and `/api/ai/citation-click` could previously be flooded into the database without limit; both are now IP rate limited (20 / 30 per minute), sharing the error-reporting limiter
+- Fixed AI chat copy feedback: the copy action succeeded but the button never showed “Copied” because React’s synthetic-event `currentTarget` is cleared after `await` and the resulting error was swallowed by catch; the button is now captured before the async boundary
+- Added regression coverage for the auth header, replay history, and AI chat actions (feedback, clear, copy, and continuation); global coverage is now 90.68% statements / 84.21% branches / 90.06% functions / 93.22% lines
 
 ## [0.6.0] - 2026-09-12
 
