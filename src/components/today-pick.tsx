@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLocalProgress } from "@/components/use-local-progress";
+import { knowledgeHref } from "@/lib/hrefs";
 
 interface DocMeta { slug: string; title: string; }
 interface Chapter { slug: string; title: string; docs: DocMeta[]; }
@@ -44,7 +45,7 @@ export function TodayPick({
 
   return (
     <Link
-      href={`/${locale}/knowledge/${pick.chapter}/${pick.doc}`}
+      href={knowledgeHref(locale, pick.chapter, pick.doc)}
       className="mt-6 block rounded-2xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-5 hover:border-accent/50 transition"
     >
       <p className="text-xs font-semibold uppercase tracking-widest text-accent">

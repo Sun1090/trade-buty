@@ -50,8 +50,28 @@ export function extractDocumentedVars(docs) {
   return names;
 }
 
-function isClientModule(source) {
-  return /^\s*(?:\/\/.*\n|\/\*[\s\S]*?\*\/\s*)*["']use client["']/.test(source);
+export function isClientModule(source) {
+  let cursor = 0;
+  while (cursor < source.length) {
+    while (cursor < source.length && /\s/.test(source[cursor])) cursor += 1;
+
+    if (source.startsWith("//", cursor)) {
+      const lineEnd = source.indexOf("\n", cursor + 2);
+      cursor = lineEnd === -1 ? source.length : lineEnd + 1;
+      continue;
+    }
+
+    if (source.startsWith("/*", cursor)) {
+      const commentEnd = source.indexOf("*/", cursor + 2);
+      if (commentEnd === -1) return false;
+      cursor = commentEnd + 2;
+      continue;
+    }
+
+    break;
+  }
+
+  return source.startsWith('"use client"', cursor) || source.startsWith("'use client'", cursor);
 }
 
 /**

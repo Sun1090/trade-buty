@@ -48,6 +48,7 @@ import { effectiveSrs, isSrsDue } from "@/lib/srs";
 import { localDateStr } from "@/lib/date-utils";
 import { readReplayHistory, readReplayBest } from "@/lib/replay-store";
 import { readProgressCompletions } from "@/lib/progress";
+import { knowledgeHref } from "@/lib/hrefs";
 import { readQuizAttemptLedger } from "@/lib/quiz-attempt-ledger";
 import { readReviewAttemptLedger } from "@/lib/review-attempt-ledger";
 import { readWrong } from "@/lib/wrongbook";
@@ -564,7 +565,7 @@ export function StatsClient({
         {/* R12.11：分区空态 CTA——从未完成过任何测验时给出行动入口 */}
         {quizTrend!.latest.doneQuizzes === 0 && chapters[0] && (
           <p className="mt-3 text-xs text-muted">
-            <a className="text-accent hover:underline" href={`/${locale}/knowledge/${chapters[0].slug}`}>{dict.ctaQuiz} →</a>
+            <a className="text-accent hover:underline" href={knowledgeHref(locale, chapters[0].slug)}>{dict.ctaQuiz} →</a>
           </p>
         )}
       </section>
@@ -597,7 +598,7 @@ export function StatsClient({
         {/* R12.11：错题本为空时引导先去做测验收集错题 */}
         {reviewTrend!.latest.pending === 0 && reviewTrend!.summary.reviewsInRange === 0 && chapters[0] && (
           <p className="mt-3 text-xs text-muted">
-            <a className="text-accent hover:underline" href={`/${locale}/knowledge/${chapters[0].slug}`}>{dict.ctaReview} →</a>
+            <a className="text-accent hover:underline" href={knowledgeHref(locale, chapters[0].slug)}>{dict.ctaReview} →</a>
           </p>
         )}
       </section>
