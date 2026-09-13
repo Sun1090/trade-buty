@@ -39,6 +39,29 @@ describe("downloadCanvasAsPng", () => {
       /toBlob returned null/,
     );
   });
+
+  it("非浏览器环境（无 document）时明确抛错而不是静默失败", async () => {
+    vi.stubGlobal("document", undefined);
+    await expect(downloadCanvasAsPng(fakeCanvas(new Blob(["x"])), "x.png")).rejects.toThrow(
+      /only works in the browser/,
+    );
+  });
+
+  it("延迟回收 ObjectURL，避免下载被提前打断", async () => {
+    vi.useFakeTimers();
+    try {
+      const revokeObjectURL = vi.fn();
+      vi.stubGlobal("URL", { createObjectURL: () => "blob:later", revokeObjectURL });
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+
+      await downloadCanvasAsPng(fakeCanvas(new Blob(["x"])), "x.png");
+      expect(revokeObjectURL).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1000);
+      expect(revokeObjectURL).toHaveBeenCalledWith("blob:later");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("canWebShare", () => {
