@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeAll, afterEach, beforeEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { AiChat } from "./ai-chat";
 import { SUGGESTED_QUESTIONS_ZH, SUGGESTED_QUESTIONS_EN } from "@/lib/ai/prompt";
 
@@ -456,5 +456,134 @@ describe("AiChat 追问链与课程上下文（R3.4/R3.7）", () => {
     render(<AiChat locale="zh" dict={dict} />);
     expect(await screen.findByText("📖 正在基于《现货基础》篇章回答")).toBeInTheDocument();
     window.history.replaceState({}, "", "/zh/ai");
+  });
+});
+
+describe("AiChat 回答操作与对话管理", () => {
+  function suggestedButtons(container: HTMLElement) {
+    return [...container.querySelectorAll("button")].filter((b) =>
+      SUGGESTED_QUESTIONS_ZH.includes(b.textContent ?? "")
+    );
+  }
+
+  async function ask(answer: string) {
+    vi.stubGlobal("fetch", mockFetch(answer));
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    const button = suggestedButtons(container)[0];
+    const question = button.textContent as string;
+    fireEvent.click(button);
+    await screen.findByText(answer);
+    return { container, question };
+  }
+
+  it("反馈只提交一次，并携带配对的用户问题与回答", async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/ai/conversations" && !init) {
+        return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+      }
+      if (url === "/api/ai/chat") {
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+          body: makeStreamBody("可反馈的回答"),
+        } as unknown as Response;
+      }
+      if (url === "/api/ai/feedback") {
+        return { ok: true, status: 200, json: async () => ({ ok: true }) } as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    const button = suggestedButtons(container)[0];
+    const question = button.textContent as string;
+    fireEvent.click(button);
+    await screen.findByText("可反馈的回答");
+
+    const helpful = screen.getByRole("button", { name: dict.helpful });
+    fireEvent.click(helpful);
+    await waitFor(() => expect(helpful).toHaveClass("font-medium"));
+
+    const feedbackCalls = fetchMock.mock.calls.filter(([url]) => url === "/api/ai/feedback");
+    expect(feedbackCalls).toHaveLength(1);
+    expect(JSON.parse((feedbackCalls[0][1] as RequestInit).body as string)).toEqual({
+      rating: "helpful",
+      question,
+      answer: "可反馈的回答",
+    });
+
+    fireEvent.click(helpful);
+    fireEvent.click(screen.getByRole("button", { name: dict.unhelpful }));
+    expect(fetchMock.mock.calls.filter(([url]) => url === "/api/ai/feedback")).toHaveLength(1);
+  });
+
+  it("清空对话先确认：取消时保留，确认后回到空状态", async () => {
+    const { question } = await ask("待清空回答");
+    const clearButton = screen.getByRole("button", { name: dict.clear });
+    const confirm = vi.fn().mockReturnValue(false);
+    vi.spyOn(window, "confirm").mockImplementation(confirm);
+
+    fireEvent.click(clearButton);
+    expect(confirm).toHaveBeenCalledWith("清空所有对话？");
+    expect(screen.getByText(question)).toBeInTheDocument();
+
+    confirm.mockReturnValue(true);
+    fireEvent.click(clearButton);
+    expect(screen.queryByRole("button", { name: dict.clear })).not.toBeInTheDocument();
+    expect(screen.getByText(dict.title)).toBeInTheDocument();
+  });
+
+  it("复制回答后短暂显示已复制，再恢复按钮文案", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    await ask("可复制的回答");
+
+    fireEvent.click(screen.getByRole("button", { name: dict.copy }));
+    expect(writeText).toHaveBeenCalledWith("可复制的回答");
+    expect(await screen.findByText(dict.copied)).toBeInTheDocument();
+    await waitFor(
+      () => expect(screen.getByRole("button", { name: dict.copy })).toHaveTextContent(dict.copy),
+      { timeout: 2000 }
+    );
+  });
+
+  it("续写被截断的回答：原文追加内容，并提交 continueFrom 上下文", async () => {
+    let chatCount = 0;
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/ai/conversations" && !init) {
+        return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+      }
+      if (url === "/api/ai/chat") {
+        chatCount += 1;
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+          body: makeStreamBody(chatCount === 1 ? "第一段<!--TRUNCATED-->" : "，第二段"),
+        } as unknown as Response;
+      }
+      if (url === "/api/ai/conversations" && init?.method === "POST") {
+        return { ok: true, status: 200, json: async () => ({ ok: true }) } as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    const button = suggestedButtons(container)[0];
+    fireEvent.click(button);
+    await screen.findByText("第一段");
+
+    fireEvent.click(screen.getByRole("button", { name: `${dict.continueLabel} →` }));
+    expect(await screen.findByText("第一段，第二段")).toBeInTheDocument();
+
+    const chatCalls = fetchMock.mock.calls.filter(([url]) => url === "/api/ai/chat");
+    const body = JSON.parse((chatCalls[1][1] as RequestInit).body as string);
+    expect(body.continueFrom).toBe("第一段");
+    expect(body.messages.at(-1)).toEqual({ role: "assistant", content: "第一段" });
+    expect(screen.queryByRole("button", { name: `${dict.continueLabel} →` })).not.toBeInTheDocument();
   });
 });
