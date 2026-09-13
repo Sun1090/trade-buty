@@ -1,5 +1,14 @@
 # Progress
 
+## 2026-09-13 — 覆盖率批次 8：隐私审计边界补强
+
+- 扩展 `scripts/growth-event-privacy.test.mjs`，覆盖缺失 console sink、缺失禁止字段文档，以及缺失 `normalizeGrowthEvent` 规范化边界。
+- 目标测试通过：`npx vitest run scripts/growth-event-privacy.test.mjs`（7 tests）。
+- 全量覆盖率基线保持：91.95% statements / 86.13% branches / 91.82% functions / 94.45% lines。
+
+下一项：继续处理低覆盖率的错误上报隐私审计与内容工具边界，优先补充失败输入和脚本契约测试。
+
+
 ## 2026-09-13 — 覆盖率批次 8：网络质量与 i18n 边界回归
 
 - 为 `useNetworkQuality` 增加 SSR 快照和缺少可选连接方法的回归覆盖，确保服务端输出稳定且卸载不抛错。
