@@ -1,5 +1,24 @@
 # Progress
 
+## 2026-09-13 — 覆盖率批次 8：网络质量与 i18n 边界回归
+
+- 为 `useNetworkQuality` 增加 SSR 快照和缺少可选连接方法的回归覆盖，确保服务端输出稳定且卸载不抛错。
+- 为 i18n 增加默认 locale 回退、双语插值和阅读时长文案断言。
+- 修正错题复习效率组件测试使用固定历史日期导致在 7 天默认窗口外失效的问题，改为使用当前时间保持测试稳定。
+
+验证：
+
+- 目标测试：`npx vitest run src/components/use-network-quality.test.tsx src/lib/i18n.test.ts` 通过（2 文件 / 22 tests）。
+- StatsClient 回归：`npx vitest run src/components/stats-client.test.tsx` 通过（1 文件 / 27 tests）。
+- `npm run lint -- --quiet` 通过。
+- `npm run typecheck` 通过。
+
+下一项：
+
+1. 继续覆盖率批次 8，优先检查剩余低覆盖率组件和日期相关脆弱测试。
+2. 完成全量测试与构建回归后提交并同步进度。
+
+
 ## 覆盖率批次 7：剪贴板助手统一与复制诚实性修复（`codex/coverage-batch-7`）
 
 - 状态：DONE（本地全部门禁绿灯，待 push + PR）
