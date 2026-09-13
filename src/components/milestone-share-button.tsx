@@ -8,6 +8,7 @@ import {
   type MilestoneStats,
 } from "@/lib/milestone-share";
 import { trackGrowthEvent } from "@/lib/growth-events";
+import { copyText } from "@/lib/clipboard";
 
 export interface MilestoneShareLabels {
   title: string;
@@ -41,31 +42,6 @@ export function MilestoneShareButton({
 
   if (!milestone) return null;
 
-  async function copyToClipboard(text: string): Promise<boolean> {
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch {
-      // 继续尝试 textarea 降级
-    }
-    try {
-      const area = document.createElement("textarea");
-      area.value = text;
-      area.setAttribute("readonly", "");
-      area.style.position = "fixed";
-      area.style.opacity = "0";
-      document.body.appendChild(area);
-      area.select();
-      const ok = document.execCommand("copy");
-      area.remove();
-      return ok;
-    } catch {
-      return false;
-    }
-  }
-
   async function handleShare() {
     setFailed(false);
     const text = fillShareText(labels.textTpl, stats);
@@ -87,7 +63,7 @@ export function MilestoneShareButton({
       }
     }
 
-    const ok = await copyToClipboard(`${text} ${url}`);
+    const ok = await copyText(`${text} ${url}`);
     if (ok) {
       setCopied(true);
       trackGrowthEvent({ name: "milestone_share", locale, channel: "clipboard", outcome: "succeeded" });

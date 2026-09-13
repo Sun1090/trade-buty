@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { copyText } from "@/lib/clipboard";
 
 interface Props {
   /** 完整可分享 URL（含 origin）。不传则复制当前页面 URL。 */
@@ -44,32 +45,8 @@ export function CopyLinkButton({ url, label, copiedLabel, testId, className, onO
       setTimeout(() => setFailed(false), 2000);
       return;
     }
-    let ok = false;
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(target);
-        ok = true;
-      }
-    } catch {
-      ok = false;
-    }
-    if (!ok) {
-      // 降级路径：构造临时 textarea + execCommand
-      try {
-        if (typeof document !== "undefined") {
-          const ta = document.createElement("textarea");
-          ta.value = target;
-          ta.style.position = "fixed";
-          ta.style.opacity = "0";
-          document.body.appendChild(ta);
-          ta.select();
-          ok = document.execCommand("copy");
-          ta.remove();
-        }
-      } catch {
-        ok = false;
-      }
-    }
+    // 主路径 navigator.clipboard → execCommand 兜底，统一走助手拿真实结果
+    const ok = await copyText(target);
     if (ok) {
       setCopied(true);
       notifyOutcome("success");
