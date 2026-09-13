@@ -170,4 +170,66 @@ describe("LoginClient", () => {
     expect(screen.getByText("After login you'll return to")).toBeInTheDocument();
     expect(screen.getByText("📍 /en/path")).toBeInTheDocument();
   });
+
+  it("fetch 抛错时归类为网络异常", async () => {
+    signInSpy.mockRejectedValue(new TypeError("Failed to fetch"));
+    render(<LoginClient dict={dict} locale="zh" />);
+    fireEvent.change(screen.getByPlaceholderText("邮箱"), { target: { value: "a@b.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "发送链接" }));
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+    expect(screen.getByText("网络异常")).toBeInTheDocument();
+  });
+
+  it("冷却期内再次提交显示限流提示且不重复请求", async () => {
+    const { container } = render(<LoginClient dict={dict} locale="zh" />);
+    fireEvent.change(screen.getByPlaceholderText("邮箱"), { target: { value: "a@b.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "发送链接" }));
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+    expect(signInSpy).toHaveBeenCalledTimes(1);
+
+    // 按钮此时已禁用，直接提交表单走客户端冷却守卫
+    const form = container.querySelector("form") as HTMLFormElement;
+    fireEvent.submit(form);
+    expect(screen.getByText("请求过于频繁")).toBeInTheDocument();
+    expect(signInSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("冷却倒计时归零后恢复按钮并清掉限流态", async () => {
+    signInSpy.mockResolvedValue({ error: { status: 429, message: "rate limit" } });
+    render(<LoginClient dict={dict} locale="zh" />);
+    fireEvent.change(screen.getByPlaceholderText("邮箱"), { target: { value: "a@b.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "发送链接" }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByText("请求过于频繁")).toBeInTheDocument();
+    expect(screen.getByRole("button")).toBeDisabled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(61_000);
+    });
+    expect(screen.queryByText("请求过于频繁")).toBeNull();
+    const btn = screen.getByRole("button", { name: "发送链接" });
+    expect(btn).toBeEnabled();
+  });
+
+  it("冷却倒计时未归零时按钮文案持续刷新", async () => {
+    render(<LoginClient dict={dict} locale="zh" />);
+    fireEvent.change(screen.getByPlaceholderText("邮箱"), { target: { value: "a@b.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "发送链接" }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    const first = screen.getByRole("button").textContent ?? "";
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    const second = screen.getByRole("button").textContent ?? "";
+    expect(first).not.toBe(second);
+    expect(second).toMatch(/s 后重发/);
+  });
 });

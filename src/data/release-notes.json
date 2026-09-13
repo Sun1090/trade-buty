@@ -3,6 +3,8 @@
     "date": "2026-09-13",
     "highlights": {
       "zh": [
+        "回放分享页评级单位回归修复：`accuracyBps` 是万分比却被当作百分数传给分级函数，导致所有非「总题数不足 3」的回放分享页恒显示最高评级；改为传入 0–1 比例后恢复正常",
+        "补齐课程目录、K 线图、连续学习分享卡、登录表单与分享落地页的分支用例（单文件语句覆盖率 68→100 / 72→98 / 70→85 / 72→94 / 74→95）；全局语句覆盖率提升至 91.55% / 分支 85.77% / 函数 91.2% / 行 93.99%",
         "回放训练器首轮战绩丢失修复：`savedRoundRef` 以 0 作哨兵，而 `round` 也从 0 起，守卫 `current !== round` 在第一轮恒为假，导致每个用户的第一个回放回合都不写入训练历史",
         "回放训练器脏数据白屏修复：`localStorage` 里的难度下标未校验形状，`NaN`/越界值会让 `DIFFICULTIES[idx].context` 抛 `TypeError` 打崩整个训练器；现收敛非法值并在取值处兜底",
         "补齐 `review-client`、`/api/ai/conversations`、分享 OG 卡与 `lib/download` 的分支用例（语句覆盖率 54→98 / 66→95 / 62→100 / 91→100）",
@@ -17,6 +19,8 @@
         "补齐登录头、回放历史与 AI 对话操作（反馈、清空、复制、续写）的回归用例；全局语句覆盖率提升至 90.68% / 分支 84.21% / 函数 90.06% / 行 93.22%"
       ],
       "en": [
+        "Fixed the replay share-landing grade scale: `accuracyBps` (basis points) was passed to the grading helper as a percentage, so every replay share page with 3+ questions showed the top grade; the helper now receives a 0–1 ratio",
+        "Added branch coverage for the course list, K-line chart, streak share card, login form, and share landing page (single-file statements 68→100 / 72→98 / 70→85 / 72→94 / 74→95); global coverage is now 91.55% statements / 85.77% branches / 91.2% functions / 93.99% lines",
         "Fixed the replay trainer dropping the first round: `savedRoundRef` used 0 as its sentinel while `round` also starts at 0, so `current !== round` was always false on round one and every user’s first replay round was silently left out of training history",
         "Fixed a replay-trainer crash on corrupt state: the difficulty index from `localStorage` was never shape-checked, so `NaN`/out-of-range values made `DIFFICULTIES[idx].context` throw a `TypeError` and blank the whole trainer; invalid values now fall back to the default",
         "Added branch coverage for `review-client`, `/api/ai/conversations`, the share OG card, and `lib/download` (statements 54→98 / 66→95 / 62→100 / 91→100)",
