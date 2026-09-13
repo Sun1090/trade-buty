@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { copyText } from "@/lib/clipboard";
 
 /**
  * 代码块复制按钮（事件委托挂在容器上，无需改造 Markdown 渲染树）
@@ -42,12 +43,10 @@ export function CodeCopy({
       pre.addEventListener("mouseleave", () => (btn.style.opacity = "0"));
       btn.addEventListener("click", async () => {
         const code = pre.querySelector("code")?.textContent ?? "";
-        try {
-          await navigator.clipboard.writeText(code);
-          btn.textContent = copiedLabel;
-        } catch {
-          btn.textContent = "✕";
-        }
+        // 统一助手：异步剪贴板不可用（微信内置浏览器等）时退回 execCommand；
+        // 两条路径都失败才显示 ✕，不把失败伪装成「已复制」。
+        const ok = await copyText(code);
+        btn.textContent = ok ? copiedLabel : "✕";
         setTimeout(() => (btn.textContent = copyLabel), 1500);
       });
       pre.appendChild(btn);

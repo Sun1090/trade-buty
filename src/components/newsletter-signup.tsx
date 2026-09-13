@@ -8,6 +8,7 @@ import {
   clearNewsletter,
   exportNewsletter,
 } from "@/lib/newsletter";
+import { copyText } from "@/lib/clipboard";
 
 interface Labels {
   title: string;
@@ -68,21 +69,6 @@ export function NewsletterSignup({ labels, locale }: { labels: Labels; locale: "
     setTimeout(() => setCopyFailed(false), 2000);
   }
 
-  /** execCommand 兜底；返回真实结果，不把失败伪装成已复制。 */
-  function fallbackCopy(text: string): boolean {
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand("copy");
-      ta.remove();
-      return ok;
-    } catch {
-      return false;
-    }
-  }
-
   async function handleCopy() {
     setCopyFailed(false);
     const json = exportNewsletter();
@@ -90,17 +76,8 @@ export function NewsletterSignup({ labels, locale }: { labels: Labels; locale: "
       showCopyFailure();
       return;
     }
-    let ok = false;
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(json);
-        ok = true;
-      }
-    } catch {
-      ok = false;
-    }
-    if (!ok) ok = fallbackCopy(json);
-    if (!ok) {
+    // 复用统一剪贴板助手：主路径 + execCommand 兜底，返回真实结果
+    if (!(await copyText(json))) {
       showCopyFailure();
       return;
     }

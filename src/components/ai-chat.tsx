@@ -15,6 +15,7 @@ const Markdown = dynamic(() => import("@/components/markdown").then((m) => m.Mar
 import { SUGGESTED_QUESTIONS_ZH, SUGGESTED_QUESTIONS_EN, pickRandomQuestions } from "@/lib/ai/prompt";
 import { hasTruncatedMarker, stripTruncatedMarker } from "@/lib/ai/streaming";
 import { reportError } from "@/lib/error-report";
+import { copyText } from "@/lib/clipboard";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -36,6 +37,7 @@ interface AiDict {
   clear: string;
   copy: string;
   copied: string;
+  copyFailed: string;
   continueLabel: string;
   sourcesLabel: string;
   suggestedLabel: string;
@@ -348,16 +350,14 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   }
 
   async function copyMsg(text: string, e: React.MouseEvent) {
-    // React 合成事件在 await 之后会清空 currentTarget，必须在异步边界前捕获按钮。
+    // React 合成事件在 await 之后会清空 currentTarget，必须在异步边界前捕获按钮与原始文案。
     const btn = e.currentTarget as HTMLButtonElement;
-    try {
-      await navigator.clipboard.writeText(text);
-      const orig = btn.textContent;
-      btn.textContent = dict.copied;
-      setTimeout(() => (btn.textContent = orig), 1500);
-    } catch {
-      // ignore
-    }
+    const orig = btn.textContent;
+    // 复制是用户主动操作：失败必须可见，不能静默什么都不发生（微信内置浏览器无
+    // 异步剪贴板 API 时尤其明显）。统一助手负责主路径 + execCommand 兜底并返回真实结果。
+    const ok = await copyText(text);
+    btn.textContent = ok ? dict.copied : dict.copyFailed;
+    setTimeout(() => (btn.textContent = orig), 1500);
   }
 
   const p = (path: string) => `/${locale}${path}`;
