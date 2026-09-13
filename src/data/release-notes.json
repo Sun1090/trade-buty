@@ -3,6 +3,9 @@
     "date": "2026-09-13",
     "highlights": {
       "zh": [
+        "回放训练器首轮战绩丢失修复：`savedRoundRef` 以 0 作哨兵，而 `round` 也从 0 起，守卫 `current !== round` 在第一轮恒为假，导致每个用户的第一个回放回合都不写入训练历史",
+        "回放训练器脏数据白屏修复：`localStorage` 里的难度下标未校验形状，`NaN`/越界值会让 `DIFFICULTIES[idx].context` 抛 `TypeError` 打崩整个训练器；现收敛非法值并在取值处兜底",
+        "补齐 `review-client`、`/api/ai/conversations`、分享 OG 卡与 `lib/download` 的分支用例（语句覆盖率 54→98 / 66→95 / 62→100 / 91→100）",
         "亮色主题对比度修复：课程正文、callout 与序号不再沿用暗色硬编码颜色，CI 新增 axe 亮色对比度回归",
         "本地进度/错题/回放/测验快照在登录合并前统一做结构校验，损坏快照回退为空而不写回异常值",
         "CI 门禁稳定性：移动端溢出回归改为确定性执行，Playwright 浏览器安装前置到浏览器门禁之前",
@@ -12,6 +15,9 @@
         "匿名写库端点补齐配额：`/api/ai/feedback` 与 `/api/ai/citation-click` 此前可被无限灌库，现与错误上报同一套按 IP 限流（分别 20 / 30 次每分钟）"
       ],
       "en": [
+        "Fixed the replay trainer dropping the first round: `savedRoundRef` used 0 as its sentinel while `round` also starts at 0, so `current !== round` was always false on round one and every user’s first replay round was silently left out of training history",
+        "Fixed a replay-trainer crash on corrupt state: the difficulty index from `localStorage` was never shape-checked, so `NaN`/out-of-range values made `DIFFICULTIES[idx].context` throw a `TypeError` and blank the whole trainer; invalid values now fall back to the default",
+        "Added branch coverage for `review-client`, `/api/ai/conversations`, the share OG card, and `lib/download` (statements 54→98 / 66→95 / 62→100 / 91→100)",
         "Fixed light-theme contrast: lesson body, callouts, and index numerals no longer reuse dark-theme hard-coded colors; a new axe light-theme contrast regression runs in CI",
         "Local progress, wrongbook, replay, and quiz snapshots are structurally validated before cloud merge, so corrupted snapshots fall back to empty instead of writing back invalid values",
         "Stabilized CI gates: the mobile overflow regression is now deterministic and Playwright browser installation precedes browser gates",
