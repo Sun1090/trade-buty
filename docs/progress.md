@@ -1,5 +1,36 @@
 # Progress
 
+## 知识库内容 hash 基线门禁（R10.7 fail closed）
+
+- 状态：DONE（PR #39 已以 `--rebase` 合并进 main；PR CI run [34727201817](https://github.com/Sun1090/trade-buty/actions/runs/34727201817) 与合并后 main CI run [34727434239](https://github.com/Sun1090/trade-buty/actions/runs/34727434239) 均全绿）
+- 工作分支：`codex/kb-hash-baseline-gate`（已删除）
+- PR：[#39](https://github.com/Sun1090/trade-buty/pull/39) · `MERGED`
+- PR 状态：MERGED
+- Base：`origin/main@6e66db0`
+- 合并提交：`23e3ebe`
+- 已验证 Head：`32c78b3`
+- 本地提交：`32c78b3` `feat(ops): gate knowledge base hash drift`
+- 目标：`check:kb-pointer` 只能证明 gitlink、工作区 submodule 与 manifest 的 commit 指针一致，不能证明 manifest 中逐文件 sha256 真的对应当前内容。若基线缺失或内容在快照外漂移，既有 changelog 脚本会生成文件而不是稳定阻断，CI 存在假绿空间。
+- 已完成：
+  - `scripts/check-kb-changelog.mjs` 新增只读 `--check` 模式：内容新增、修改或删除时打印具体路径并 exit 1；hash 基线缺失时 fail closed，exit 1；普通模式继续保留生成 `docs/kb-changelog-YYYY-MM-DD.md` 的运营行为。
+  - `package.json` 新增 `check:kb-changelog`，CI 在 `check:kb-pointer` 后执行；CI 路径不会写文件，漂移必须由 `npm run kb:update` 完整同步并提交 submodule 指针、manifest 与变更记录。
+  - `scripts/check-kb-changelog.test.mjs` 增加 3 条 CLI 回归：一致通过且不写产物、内容漂移阻断并列出路径、缺失基线阻断；`scripts/ci-workflow.test.mjs` 锁定 CI 必须调用该门禁。
+  - `docs/ops.md` 登记门禁语义及与 `check:kb-pointer` 的分工；`docs/roadmap.md` 的 Q1.6 同步说明 hash 基线已由 CI 核对。
+  - 未把 `kb:parity --strict` 接入 CI：`AGENTS.md` 明确 en 可逐步补齐翻译；当前 zh/en 各 27 章全齐只是运营事实，不能把它伪装成与知识库契约冲突的长期全量阻断门禁，`kb:parity` 继续作为人工运营检查。
+- 变更文件（关键）：`scripts/check-kb-changelog.mjs`、`scripts/check-kb-changelog.test.mjs`、`scripts/ci-workflow.test.mjs`、`package.json`、`.github/workflows/ci.yml`、`docs/ops.md`、`docs/roadmap.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npx vitest run scripts/check-kb-changelog.test.mjs scripts/ci-workflow.test.mjs` exit 0 → 2 文件 / 18 用例通过。
+  - `npm run lint` / `npm run typecheck` exit 0；`npm test` exit 0 → **250 文件 / 1837 用例**通过。
+  - `npm run build` exit 0 → 474 静态页；`npm run e2e` exit 0 → **93/93** 通过。
+  - `check:kb-changelog` / `check:kb-pointer` / `check:translation-history` / `check:kb-parity-budget` / `check:docs` / `check:changelog` / `check:seo-surface` / `check:search-index` 全部 exit 0。
+  - `npm run kb:parity` exit 0：zh/en 各 27 章，缺失 0；当前 submodule `a57d510`，419 篇 Markdown，manifest 419 个 hash，漂移 0。
+  - PR CI run 34727201817 exit 0：`ci` 5m02s + `db-tests` 41s；Vercel Preview pass。合并后 main CI run 34727434239 exit 0：`ci` 5m43s + `db-tests` 39s。
+- 上游依赖：`kline-buty@a57d510`；本轮无上游更新。
+- 未验证项：无。
+- 风险与回滚：新增门禁会把未同步的 KB 内容漂移变成显式红灯，这是预期信号；修复必须走完整 `kb:update` 流程，不允许手改 hash 或让 CI 自动写快照。回滚 = 撤销 PR #39。
+- 下一步：无（已完成）。
+- 最后更新：2026-09-13
+
 ## 外链巡检空集假绿修复（link-patrol fail closed）
 
 - 状态：DONE（PR #37 已以 `--rebase` 合并进 main；PR CI run [34725572623](https://github.com/Sun1090/trade-buty/actions/runs/34725572623) 与合并后 main CI run [34725882320](https://github.com/Sun1090/trade-buty/actions/runs/34725882320) 均全绿）
