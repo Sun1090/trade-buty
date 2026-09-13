@@ -1,5 +1,62 @@
 # Progress
 
+## 自主开发续跑：lockfile 复现门禁、覆盖率批次与两个生产回归修复（PR #56–#60）
+
+- 状态：DONE（#56–#60 全部以 `--rebase` 合并进 main；main 推进到 `bb0893b`）
+- 工作分支：#56 `codex/lockfile-repro-gate` · #57 `codex/ui-coverage` · #58 `codex/coverage-batch-2` · #59 `codex/fix-quiz-variant-slug` · #60 `codex/progress-sweep-2`（均已删除）
+- 目标：上一轮把「npm 主版本必须对齐 CI」写成了人工约定，需要机器门禁；同时按覆盖率地板继续补测，并在补测过程中把「测试全绿但线上路径不可用」的盲区找出来。
+- 检查结论：`docs/roadmap.md` 剩余 10 项**全部** `BLOCKED_EXTERNAL`（Sentry/Supabase 线上联调/GSC/Bing/Vercel Analytics/PostHog/分享链路人工抽查/冷启动分发/云备份演练/R13.23 用户研究），源码内无 `TODO`/`FIXME`，因此本轮可执行工作集中在「门禁 + 回归网 + 真实缺陷」。
+
+### #56 `ci(lockfile): gate package-lock reproducibility against the pinned npm major`（合并 `74f9197`）
+
+- 问题：PR #54 的根因是「本地 npm 11 / CI npm 10」生成出形状不同的 lockfile，而当时只把「用对齐的 npm 生成」写进 `docs/deps.md`，靠人工复核。
+- 已落地：`npm run check:lockfile-repro` —— 用 `devEngines.packageManager` 钉住的 npm 主版本在临时副本里重新生成 `package-lock.json`，再与仓库条目逐条比对，**脚本始终从备份恢复 lockfile**，失败也不会污染工作树；`scripts/lockfile-repro-lib.mjs` 带 171 行单测，CI 在早期阶段接入。
+- 变更文件（关键）：`scripts/check-lockfile-reproducibility.mjs`、`scripts/lockfile-repro-lib.mjs`(+test)、`.github/workflows/ci.yml`、`package.json`、`docs/deps.md`、`docs/ops.md`、`src/data/release-notes.json`、`CHANGELOG.md`。
+- 远端验证：CI run [34741576237](https://github.com/Sun1090/trade-buty/actions/runs/34741576237) `ci` + `db-tests` 全绿。
+
+### #57 `test(ui): cover untested toggle/registrar paths and de-flake the sidebar test`（合并 `9316ec9`）
+
+- 已完成：补 `theme-toggle` / `language-toggle` / `service-worker-registrar` 的未覆盖分支（分别到 100/100/100/100、100/91.7/100/100、96.3/85.7/100/100）；`service-worker-registrar` 用例从 `.ts` 挪到 `.tsx`（原文件不渲染 JSX）；`learning-sidebar` 测试把 `next/link` mock 成纯 `<a>`，去掉 prefetch 抖动窗口，单文件 3.9s → 1.07s。
+- 变更文件（关键）：`src/components/theme-toggle.test.tsx`、`src/components/language-toggle.test.tsx`、`src/components/service-worker-registrar.test.tsx`、`src/components/learning-sidebar.test.tsx`。
+- 远端验证：CI run [34742273114](https://github.com/Sun1090/trade-buty/actions/runs/34742273114) 全绿。
+
+### #58 `test: lift coverage on share-card preview, toc and reading-time`（合并 `0d65a89`）
+
+- 已完成（纯测试新增，零运行时改动）：`share-card-preview.tsx` 语句 47.2 → **95.8** / 分支 26.2 → 95.2（2 → 17 例）；`toc.tsx` 语句 55.6 → **100** / 分支 68.8 → 93.8（5 → 11 例）；`reading-time.ts` 语句 66.7 → **100** / 分支 60 → 100（9 → 15 例）。
+- 变更文件（关键）：`src/components/share-card-preview.test.tsx`、`src/components/toc.test.tsx`、`src/lib/reading-time.test.ts`。
+- 记录到的测试环境事实：同一 tick 内并发调用 `addReadingTime` 会让动态 `import("./study-time")` 在 Vitest SSR runner 里判重入（浏览器同 specifier 会去重），因此按 5s tick 的真实节奏串行化。
+- 远端验证：CI run [34743280152](https://github.com/Sun1090/trade-buty/actions/runs/34743280152) 全绿。
+
+### #59 `fix(ai): accept real chapter slugs in quiz variant mode`（合并 `ef4fa30`）—— 生产回归
+
+- 问题：`POST /api/ai/quiz` 的**变体模式**（错题本 → AI 变体题）对所有真实客户端**固定返回 400**，`chat` 从未被调用。成因是路由用 `/^\d{1,3}$/` 校验 `item.chapterNum`，而 `QUIZZES` 的键是英文篇章 slug（27 个，与 `kb-titles.json` 一致）；错题本链路（`review-client.tsx` → `ai-quiz.tsx`）传的正是 slug，于是在校验处就被判非法。
+- 回归来源：`a969a6c`（`fix(ai): validate request bodies and parse LLM JSON leniently`）——当时只补了形状校验，测试又全部使用 `"01"` / `"999"` 这类数字样例，于是**CI 全绿而线上路径不可用**。
+- 修复：改为校验 slug 形状（`/^[a-z0-9]+(?:-[a-z0-9]+)*$/`，≤64 字符），保留 R7.12 的原始安全意图（不把任意文本/越界索引拼进 prompt 或用于访问题库）；存在性仍由 `QUIZZES` 查找兜底，取不到原题即 400。
+- 测试：新增正向用例（真实 slug → 取出原题 → 调用模型 → 返回题目，并断言原题内容确实进了 prompt）与形状非法用例（路径穿越字符、大写、超长、首尾连字符）；另补一条**客户端契约用例**钉住 `ai-quiz.tsx` 发给 `/api/ai/quiz` 的请求体形状。
+- 反证：把 `route.ts` 临时还原成旧实现后，新增的两条用例**均失败**（`expected 400 to be 200`、`expected 'Invalid payload' to be 'No matching questions'`），确认测试真的锁住了这个回归。
+- 变更文件（关键）：`src/app/api/ai/quiz/route.ts`、`src/app/api/ai/quiz/route.test.ts`、`src/components/ai-quiz.test.tsx`。
+- 远端验证：CI run [34743550007](https://github.com/Sun1090/trade-buty/actions/runs/34743550007) `ci` 6m26s + `db-tests` 全绿。
+
+### #60 `fix(api): rate limit the anonymous feedback and citation-click writes`（合并 `bb0893b`）—— 同批次发现的安全缺口
+
+- 问题：`/api/ai/feedback` 与 `/api/ai/citation-click` 是**匿名可写库**端点——迁移里 RLS 明确放行匿名插入（`0002_ai.sql` 的 `user_id is null`、`0004_ai_citation_clicks.sql` 的 `anon_or_self_insert_citation_clicks`），所以应用层是唯一闸门，而这两个路由**一次配额都没有**：脚本可无上限往 `ai_feedback`（单条约 10KB）和 `ai_citation_clicks` 堆行。同一轮加固里 `/api/error-reports` 已加每 IP 限流，这两个漏掉了。
+- 修复：两路由接入同一套 `createRateLimiter`（`BoundedMap` 兜底内存上限、按需清扫过期窗口），**在解析 body 之前**判定，超限返回 `429` + `Retry-After`；配额按真人上限定为反馈 20 次/分钟、引用点击 30 次/分钟。两个调用点都是 `void fetch(...)` fire-and-forget，超限只丢遥测，不影响任何用户路径。
+- 测试：新增「同 IP 超过配额返回 429 且不再写库（写库次数正好等于配额）」「另一个 IP 仍有独立配额」；`request()` 辅助函数改为按请求轮换 `x-forwarded-for`——限流表是模块级进程内状态，用例之间不能互相扣配额。
+- 变更文件（关键）：`src/app/api/ai/feedback/route.ts`(+test)、`src/app/api/ai/citation-click/route.ts`(+test)、`src/data/release-notes.json`、`CHANGELOG.md`。
+- 远端验证：CI run [34744119227](https://github.com/Sun1090/trade-buty/actions/runs/34744119227) `ci` 6m9s + `db-tests` 全绿；本次 Vercel 预览也恢复可用（此前为账号构建配额 `Deployment rate limited`）。
+
+### 验证命令与结果（本地，main@`bb0893b`）
+
+- `npm test` exit 0 → **252 文件 / 1938 用例**通过。
+- `npm run lint` exit 0（`--max-warnings=0`）；`npm run typecheck` exit 0。
+- `npm run check:docs` exit 0；`npm run check:changelog` exit 0；`git diff --check` exit 0。
+
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 未验证项：无。
+- 风险与回滚：三个修复都是「局部形状/闸门」改动，无 schema、无迁移、无对外接口破坏；`#60` 的限流是进程内按 IP 分桶，多实例不共享配额（与既有 `chat`/`error-reports` 同一取舍），已在代码注释与本文件记录。回滚 = 分别撤销该 PR 的提交。
+- 下一步：覆盖率批次 3 —— `replay-trainer.tsx` / `review-client.tsx` / `api/ai/conversations` / `lib/download.ts` 四个低覆盖热点，优先补「客户端 → 路由」契约类用例（本轮两次真实缺陷都出在契约盲区）。
+- 最后更新：2026-09-13
+
 ## 工具链升级到 TypeScript 6.0.3 与 npm 10/11 lockfile 漂移（PR #54）
 
 - 状态：DONE（PR #54 已以 `--rebase` 合并进 main；PR CI run [34740352348](https://github.com/Sun1090/trade-buty/actions/runs/34740352348) 全绿）
