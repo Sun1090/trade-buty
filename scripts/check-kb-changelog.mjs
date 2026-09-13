@@ -9,6 +9,7 @@
  * 只读快照；建立/刷新 hash 基线请走 kb:update（或 npm run kb:diff）。
  * 用法：
  *   node scripts/check-kb-changelog.mjs            # 对比并写今日片段
+ *   node scripts/check-kb-changelog.mjs --check    # CI 只读门禁：有漂移即失败
  *   node scripts/check-kb-changelog.mjs --out tmp/x.md --date 2026-09-06
  *   node scripts/check-kb-changelog.mjs --kb <dir> --manifest <file>   # 测试用
  */
@@ -27,6 +28,7 @@ const KB_DIR = arg("--kb") ?? path.join(root, "content/kline-buty/docs/knowledge
 const MANIFEST = arg("--manifest") ?? path.join(root, "scripts/kb-manifest.json");
 const DATE = arg("--date") ?? new Date().toISOString().slice(0, 10);
 const OUT = arg("--out") ?? path.join(root, `docs/kb-changelog-${DATE}.md`);
+const CHECK = process.argv.includes("--check");
 
 function sha256File(file) {
   return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
@@ -46,7 +48,14 @@ function walk(dir, base = dir, out = {}) {
 const manifest = fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, "utf8")) : null;
 const prev = manifest?.hashes ?? null;
 if (!prev || Object.keys(prev).length === 0) {
-  console.log("⚠️  kb-manifest.json 尚无内容 hash 基线（旧版快照只有文件清单）。");
+  const message =
+    "kb-manifest.json 尚无内容 hash 基线（旧版快照只有文件清单）。";
+  if (CHECK) {
+    console.error(`❌ 知识库 hash 基线检查失败：${message}`);
+    console.error("  处理：运行 npm run kb:update（或 kb:diff）刷新快照并提交。");
+    process.exit(1);
+  }
+  console.log(`⚠️  ${message}`);
   console.log("    先运行 npm run kb:diff（或 kb:update）刷新快照建立基线。");
   process.exit(0);
 }
@@ -55,8 +64,31 @@ const current = walk(KB_DIR);
 const changes = compareKnowledge({ prev, current });
 const total = changes.added.length + changes.changed.length + changes.removed.length;
 if (total === 0) {
-  console.log(`✅ 知识库无内容变更（${Object.keys(current).length} 个文件，快照基线 ${Object.keys(prev).length} 个）`);
+  console.log(
+    `✅ 知识库 hash 基线一致（${Object.keys(current).length} 个文件，快照基线 ${Object.keys(prev).length} 个）`,
+  );
   process.exit(0);
+}
+
+if (CHECK) {
+  console.error(
+    `❌ 知识库内容 hash 基线不一致：新增 ${changes.added.length} / 内容更新 ${changes.changed.length} / 移除 ${changes.removed.length}`,
+  );
+  for (const [label, files] of [
+    ["新增", changes.added],
+    ["更新", changes.changed],
+    ["移除", changes.removed],
+  ]) {
+    if (files.length === 0) continue;
+    console.error(`  ${label}（${files.length}）：`);
+    for (const file of files.slice(0, 50)) console.error(`    ${file}`);
+    if (files.length > 50) console.error(`    …另有 ${files.length - 50} 个`);
+  }
+  console.error(
+    "  处理：运行 npm run kb:update 完整同步，提交 submodule 指针、" +
+      "scripts/kb-manifest.json 与 changelog 变更记录；CI 不会自动写快照。",
+  );
+  process.exit(1);
 }
 
 const titleOf = (rel) => {

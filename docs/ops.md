@@ -35,6 +35,7 @@
 | `npm run check:slug-conflicts` | 中英 slug 冲突：slug 小写连字符、跨 locale 不撞身份（R10.14） | 改 slug 或拒绝冲突路径 |
 | `npm run check:description-dupes` | 课程摘要与 SEO description 去重（同 locale 内不得相同，R10.15） | 改写重复 description |
 | `npm run check:kb-pointer` | 上游版本指针一致：gitlink = 工作区 submodule = kb-manifest 快照（R10.18） | 跑 `npm run kb:update` 并同 commit 提交指针 + `scripts/kb-manifest.json` |
+| `npm run check:kb-changelog` | `kb-manifest.json` 中每篇 sha256 与当前子模块内容逐文件一致；只读、有新增/修改/删除即失败（R10.7） | 跑 `npm run kb:update` 刷新快照与 changelog，同 commit 提交；不得手改 hash 或让 CI 写快照 |
 | `npm run check:translation-history` | 翻译历史快照为最新：当前 KB 覆盖与 docs/translation-history.json 最近快照一致（R10.19） | `npm run kb:translation-status` 重生成并连同两个产物提交 |
 | `npm run check:kb-parity-budget` | 关键章节英文 parity ≥ 预算（docs/kb-parity-budget.json，默认 1.0，R10.20） | 补齐关键章节 en 译文，或先下调预算并说明理由 |
 | 新章节 dry-run 冒烟（CI 内联，R10.16 / Q1.7） | `node scripts/dry-run-new-chapter.mjs --draft` 预检契约，并输出索引/sitemap/测验挂载/路径分组四项上线核对 | 按脚本报错补结构；按 checklist 决策固定题和 STAGES 分组 |
@@ -115,6 +116,15 @@ npm run check:kb-parity-budget
 发布后 name-stable 内容产物（`public/search-index.json`、`public/knowledge-assets/**`）按
 `Cache-Control: public, max-age=0, must-revalidate` 每次回源验证，内容立即可见；策略显式声明在
 `next.config.ts`（`CONTENT_CACHE_POLICIES`，单测锁定），完整失效矩阵见 [`docs/caching.md`](caching.md) §4。
+
+## 知识库 hash 基线与 changelog（R10.7）
+```bash
+npm run kb:changelog
+```
+
+对比 `scripts/kb-manifest.json` 的上次 sha256 快照与当前知识库内容；有新增、内容修改或移除时生成 `docs/kb-changelog-YYYY-MM-DD.md`，供人工复核后入库。CI 使用只读的 `npm run check:kb-changelog`：有漂移即失败且不写文件；缺少 hash 基线也不允许放行，必须走 `npm run kb:update` 完整同步。
+
+> 与 `check:kb-pointer` 的分工：指针门禁只核对 gitlink / 工作区 / manifest `pointer` 是否同一 commit；本门禁进一步核对 manifest 里的逐文件 hash 是否真的对应该内容。
 
 ## 翻译进度（R6.7 / R10.19）
 

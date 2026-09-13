@@ -73,6 +73,8 @@ jobs:
       - run: npm run check:description-dupes
       - name: 上游版本指针核对（R10.18：指针/工作区/快照三者一致）
         run: npm run check:kb-pointer
+      - name: 知识库内容 hash 基线核对（R10.7：只读，有漂移即失败）
+        run: npm run check:kb-changelog
       - name: 翻译状态历史快照核对（R10.19）
         run: npm run check:translation-history
       - name: 关键章节英文 parity 预算（R10.20）

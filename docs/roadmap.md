@@ -14,7 +14,7 @@
 - [x] Q1.3 死链检查脚本（`npm run check:links` 扫全量构建产物，CI 阻断；en 锚点告警记入产物并作为上游翻译遗留跟踪）
 - [x] Q1.4 搜索索引对账（`npm run check:search-index` 与知识库逐条双向对账，CI 阻断）
 - [x] Q1.5 frontmatter 质量门禁：CI 阻断 `npm run check:frontmatter`（title/description 齐全且描述 ≥15 字符）；prebuild 的 `validate-knowledge-contract` 仅告警，不混淆两者
-- [x] Q1.6 KB 更新演练月度化：2026-09-12 已同步 `kline-buty@a57d510`，双语各 182 篇；变更记录见 `docs/kb-changelog-draft.md` / `docs/kb-changelog-2026-09-12.md`，历史由 `check:translation-history` 核对
+- [x] Q1.6 KB 更新演练月度化：2026-09-12 已同步 `kline-buty@a57d510`，双语各 182 篇；变更记录见 `docs/kb-changelog-draft.md` / `docs/kb-changelog-2026-09-12.md`；hash 基线由 CI `check:kb-changelog` 阻断，翻译历史由 `check:translation-history` 核对
 - [x] Q1.7 新章节上线清单（dry-run 输出索引/sitemap/测验挂载点/路径分组四项核对；流程见 docs/new-chapter-release-checklist.md，单测覆盖）
 - [x] Q1.8 kline-buty 侧 en 翻译收官（27 章全齐，已上线）
 
