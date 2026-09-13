@@ -15,7 +15,7 @@ Trade Buty 是面向全球中文用户的免费中立交易教育平台。贡献
 
 ## Prerequisites
 
-- Node.js 22 或更新版本；CI 固定使用 Node.js 22。
+- Node.js 22 或更新版本（根 `package.json` 的 `engines.node` 声明 `>=22`）；CI 固定使用 Node.js 22。
 - npm（仓库以 `package-lock.json` 为准）。
 - 运行数据层门禁时需要 Docker daemon。
 - 运行 E2E 和 Lighthouse 时按脚本要求安装/启动 Chromium。

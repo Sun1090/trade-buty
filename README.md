@@ -28,11 +28,13 @@ A free, neutral trading-education platform for Chinese-speaking users worldwide:
 
 ## Quick Start
 
+> Requires Node.js 22 or newer (`package.json` `engines.node`).
+
 ```bash
 git clone https://github.com/Sun1090/trade-buty.git
 cd trade-buty
 git submodule update --init   # pull the knowledge base content
-npm install
+npm ci
 npm run dev                   # http://localhost:3000
 ```
 
