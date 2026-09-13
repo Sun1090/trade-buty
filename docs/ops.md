@@ -58,7 +58,7 @@
 | `db-tests` · `npm run backup:drill` | 备份恢复演练：`pg_dump` 源库 → 全新实例恢复 → 数据/schema/RLS 指纹对比 → 恢复库重跑 pgTAP（Q5.4） | 按 `scripts/backup-drill.mjs` 报错修备份/恢复路径或表覆盖；不得缩小 `DATA_TABLES` 覆盖面 |
 
 > 执行顺序注记：E2E 与 Lighthouse 排在所有产物校验之后（E2E 运行时向 `.next` 写 fallback 页，避免污染其后的 check 产物；顺序由 ci.yml 保证）。
-> 运行时注记：官方 actions（`checkout` ≥ v5 / `setup-node` ≥ v5 / `cache` ≥ v5 / `upload-artifact` ≥ v6）必须保持 node24 版本，避免 GitHub 逐步下线 Node.js 20 时报弃用注记；`scripts/ci-workflow.test.mjs` 会拦截回退。
+> 供应链注记：官方 actions（`checkout` ≥ v5 / `setup-node` ≥ v5 / `cache` ≥ v5 / `upload-artifact` ≥ v6）必须固定到 40 位 commit SHA 并保留 `# vN` 注释，既避免 Node.js 20 弃用回退，也避免可变 tag 被重写；Dependabot 每周跟踪 npm 与 GitHub Actions，`scripts/ci-workflow.test.mjs` 会拦截未固定 action 和配置漂移。
 > 工作流结构注记：每个工作流都显式声明 `permissions: contents: read`（不继承仓库默认值），每个 job 都有 (0, 60] 区间的数值型 `timeout-minutes`；`scripts/ci-workflow.test.mjs` 遍历 `.github/workflows/*.{yml,yaml}` 拦截权限放开、缺少超时上界、action 运行时回退、`setup-node` 配置漂移与 npm 脚本/`scripts/*.mjs` 引用失配。
 > 根级静态表面注记：`e2e/static-surface.spec.ts` 钉住 `src/proxy.ts` matcher 的两侧契约——(1) 不存在的根级路径必须落到真 404，不得被 `/[locale]` 渲染成 200 首页外壳；(2) `/share/{kind}/{payload}` 是根级真实路由，**不得**被补语言前缀（载荷里自带 locale，补前缀后全站分享链接 404）。`src/proxy.test.ts` 另有一条守卫枚举 `public/` 下全部文件，新增静态文件忘记加进 matcher 会失败。
 > E2E 套件注记：`npm run e2e` 用**显式 spec 清单**驱动 Playwright（不是 `playwright test e2e/`），保证 CI 跑的是确定清单；代价是新增 `e2e/*.spec.ts` 若忘记登记就会静默不进 CI。`scripts/e2e-suite.test.mjs` 要求 `e2e/` 下每个 spec 都被某个 `e2e*` 脚本登记，并固定视觉基线 spec 只走 `npm run e2e:visual`（R7.8，不进 CI）。
