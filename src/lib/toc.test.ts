@@ -56,6 +56,7 @@ describe("extractHeadings", () => {
   it("不会把畸形 HTML/script 片段带入标题和 slug", () => {
     const md = '## <scr<script>ipt>alert(1)</script>';
     const heading = extractHeadings(md)[0];
+    expect(heading.text).toBe("alert(1)");
     expect(heading.text).not.toContain("<");
     expect(heading.text).not.toContain(">");
     expect(heading.id).not.toContain("script");
