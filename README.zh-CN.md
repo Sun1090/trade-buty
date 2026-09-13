@@ -28,11 +28,13 @@
 
 ## 快速开始
 
+> 需要 Node.js 22 或更新版本（见 `package.json` 的 `engines.node`）。
+
 ```bash
 git clone https://github.com/Sun1090/trade-buty.git
 cd trade-buty
 git submodule update --init   # 拉取知识库内容
-npm install
+npm ci
 npm run dev                   # http://localhost:3000
 ```
 

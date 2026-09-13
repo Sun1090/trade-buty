@@ -95,7 +95,7 @@
     "axe-core": "^4.13.0",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.5",
-    "js-yaml": "^5.4.1",
+    "js-yaml": "^5.4.2",
     "jsdom": "^30.0.1",
     "tailwindcss": "^4",
     "typescript": "^5",
@@ -112,5 +112,8 @@
     "uuid": "11.1.1",
     "qs": "6.16.0",
     "lighthouse": "13.4.1"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
