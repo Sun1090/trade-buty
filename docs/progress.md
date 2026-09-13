@@ -1,5 +1,34 @@
 # Progress
 
+## 贡献与架构文档收口（Q5.1/Q5.2 文档一致性）
+
+- 状态：DONE（PR #41 已以 `--rebase` 合并进 main；PR CI run [34728712232](https://github.com/Sun1090/trade-buty/actions/runs/34728712232) 与合并后 main CI run [34728985414](https://github.com/Sun1090/trade-buty/actions/runs/34728985414) 均全绿）
+- 工作分支：`codex/docs-contributing-architecture`（已删除）；本轮记录分支：`codex/progress-doc-guides`
+- PR：[#41](https://github.com/Sun1090/trade-buty/pull/41) · `MERGED`
+- PR 状态：MERGED
+- Base：`origin/main@da815ae`
+- 合并提交：`e551cde`
+- 已验证 Head：`58185d0`
+- 本地提交：`58185d0` `docs(project): add contribution and architecture guides`
+- 目标：README 仍把已接入的 Vitest 写成 `Vitest-ready`，并引用已不存在的 `middleware.ts`；仓库缺少统一的贡献/发布入口和当前架构事实索引，文档会继续随实现漂移且新贡献者没有可执行的 PR、知识库、数据库与安全检查清单。
+- 已完成：
+  - 新增 `CONTRIBUTING.md`：覆盖 Node.js 22、submodule、`npm ci`、开发/测试/构建命令、Angular Convention、一提交一主题、禁止 AI sign-off、`codex/` 分支、禁止直推 main、rebase merge、知识库只读与 `kb:update` 流程、内容宪法、数据库/RLS/安全/隐私要求及 PR 清单。
+  - 新增 `docs/architecture.md`：记录 Next.js 16 App Router、语言/根级静态代理、知识库 prebuild 与搜索索引、Supabase Auth/Postgres/RLS 和本地优先双写、OpenAI 格式 AI/RAG、分享/PWA/缓存/安全/可观测性，以及 Vitest、Playwright、Lighthouse 和 db-tests 的 CI 分层。
+  - 双语 README 将 `Vitest-ready` 修正为实际 Vitest，将 `middleware.ts` 修正为 `src/proxy.ts`，更新 docs 结构并链接贡献指南与架构文档。
+  - `check:docs` 新增 README 实现引用、贡献契约和架构事实审计；缺失/过时描述会 exit 1，并新增正向与失败用例锁定审计器。
+- 变更文件（关键）：`CONTRIBUTING.md`、`docs/architecture.md`、`README.md`、`README.zh-CN.md`、`scripts/check-docs-consistency.mjs`、`scripts/docs-consistency-lib.mjs`、`scripts/docs-consistency-lib.test.mjs`。
+- 验证命令与结果：
+  - `npx vitest run scripts/docs-consistency-lib.test.mjs` exit 0 → 1 文件 / 8 用例通过。
+  - `npm run check:docs` / `npm run lint` / `npm run typecheck` / `npm run check:changelog` / `npm run check:secrets` exit 0；secrets 扫描 660 个文本文件。
+  - `npm test` exit 0 → **250 文件 / 1840 用例**通过；`npm run build` exit 0 → 418 个搜索索引条目、364 个标题、474 个静态页。
+  - `npm run audit:prod` / `npm run audit:all` exit 0 → 均 0 vulnerabilities；`git diff --check` exit 0。
+  - PR CI run 34728712232 exit 0：`ci` 5m50s + `db-tests` 47s；Vercel Preview pass。合并后 main CI run 34728985414 exit 0：`ci` 5m57s + `db-tests` 42s。
+- 上游依赖：无；`content/kline-buty@a57d510` 未变更。
+- 未验证项：无。
+- 风险与回滚：文档与审计器变更，不改变运行时行为；新增门禁按 fail-closed 设计，文档缺失或残留历史实现都会阻断 CI。回滚 = 撤销 PR #41。
+- 下一步：无（已完成）。
+- 最后更新：2026-09-13
+
 ## 知识库内容 hash 基线门禁（R10.7 fail closed）
 
 - 状态：DONE（PR #39 已以 `--rebase` 合并进 main；PR CI run [34727201817](https://github.com/Sun1090/trade-buty/actions/runs/34727201817) 与合并后 main CI run [34727434239](https://github.com/Sun1090/trade-buty/actions/runs/34727434239) 均全绿）
