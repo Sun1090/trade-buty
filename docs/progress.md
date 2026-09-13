@@ -12,11 +12,13 @@
 - StatsClient 回归：`npx vitest run src/components/stats-client.test.tsx` 通过（1 文件 / 27 tests）。
 - `npm run lint -- --quiet` 通过。
 - `npm run typecheck` 通过。
+- 全量测试：`npx vitest run --maxWorkers=4` 通过（253 文件 / 2126 tests）。
+- 构建：`npm run build` 通过（474 个静态页面）。
 
 下一项：
 
 1. 继续覆盖率批次 8，优先检查剩余低覆盖率组件和日期相关脆弱测试。
-2. 完成全量测试与构建回归后提交并同步进度。
+2. 已完成全量测试与构建回归；继续检查剩余低覆盖率组件和日期相关脆弱测试。
 
 
 ## 覆盖率批次 7：剪贴板助手统一与复制诚实性修复（`codex/coverage-batch-7`）
