@@ -16,6 +16,21 @@ import path from "node:path";
 
 const KB_RELATIVE_DIR = path.join("content", "kline-buty");
 
+/** 可注入的副作用，让「拿不到 git 信息」的每条分支都能被单测覆盖。 */
+export interface KbFreshnessDeps {
+  /** 目录是否存在，默认 node:fs 的 existsSync */
+  exists?: (target: string) => boolean;
+  /** 在 dir 里跑 git 并返回 stdout，失败时抛错（默认 execFileSync 封装） */
+  execGit?: (dir: string, args: string[]) => string;
+}
+
+function defaultExecGit(dir: string, args: string[]): string {
+  return execFileSync("git", ["-C", dir, ...args], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+}
+
 /** 解析 `git log -1 --format=%cI` 的输出；非法输入返回 null。 */
 export function parseKbCommitDate(raw: string | undefined | null): Date | null {
   if (!raw) return null;
@@ -24,32 +39,39 @@ export function parseKbCommitDate(raw: string | undefined | null): Date | null {
   return parsed;
 }
 
-function readKbCommitDate(dir: string): Date | null {
-  if (!existsSync(dir)) return null;
+/**
+ * 读取目录所属 git 仓库的 HEAD 提交时间。
+ *
+ * 必须是「知识库自己的」git 仓库：父仓库根目录不等于子模块目录时视为不可信，
+ * 否则会把站点仓库的提交时间误当成内容更新。任何异常都收敛成 null。
+ */
+export function readKbCommitDate(dir: string, deps: KbFreshnessDeps = {}): Date | null {
+  const exists = deps.exists ?? existsSync;
+  const execGit = deps.execGit ?? defaultExecGit;
+  if (!exists(dir)) return null;
   try {
-    // 必须是「知识库自己的」git 仓库：父仓库根目录不等于子模块目录时视为不可信，
-    // 否则会把站点仓库的提交时间误当成内容更新。
-    const toplevel = execFileSync("git", ["-C", dir, "rev-parse", "--show-toplevel"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
+    const toplevel = execGit(dir, ["rev-parse", "--show-toplevel"]).trim();
     if (path.resolve(toplevel) !== path.resolve(dir)) return null;
-    const raw = execFileSync("git", ["-C", dir, "log", "-1", "--format=%cI"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-    return parseKbCommitDate(raw);
+    return parseKbCommitDate(execGit(dir, ["log", "-1", "--format=%cI"]));
   } catch {
     return null;
   }
 }
 
-let cached: Date | null | undefined;
+/**
+ * 带进程内缓存的读取器。生产直接用下面的 `kbLastModified`；
+ * 测试可注入目录与副作用，不必依赖真实 git 仓库或模块级缓存重置钩子。
+ */
+export function createKbLastModifiedReader(
+  resolveDir: () => string = () => path.join(process.cwd(), KB_RELATIVE_DIR),
+  deps: KbFreshnessDeps = {},
+): () => Date | null {
+  let cached: Date | null | undefined;
+  return () => {
+    if (cached === undefined) cached = readKbCommitDate(resolveDir(), deps);
+    return cached;
+  };
+}
 
 /** 知识库最近一次提交时间；不可用时返回 null。结果在进程内缓存。 */
-export function kbLastModified(): Date | null {
-  if (cached === undefined) {
-    cached = readKbCommitDate(path.join(process.cwd(), KB_RELATIVE_DIR));
-  }
-  return cached;
-}
+export const kbLastModified = createKbLastModifiedReader();
