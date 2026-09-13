@@ -64,6 +64,7 @@ const dict = {
   clear: "清空对话",
   copy: "复制",
   copied: "已复制",
+  copyFailed: "复制失败",
   continueLabel: "继续生成",
   sourcesLabel: "来源",
   suggestedLabel: "相关章节",
@@ -549,6 +550,43 @@ describe("AiChat 回答操作与对话管理", () => {
       () => expect(screen.getByRole("button", { name: dict.copy })).toHaveTextContent(dict.copy),
       { timeout: 2000 }
     );
+  });
+
+  it("复制失败时显示失败文案，不静默吞错", async () => {
+    const origExec = document.execCommand;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+    });
+    document.execCommand = vi.fn(() => false) as unknown as typeof document.execCommand;
+    try {
+      await ask("复制会失败的答案");
+      fireEvent.click(screen.getByRole("button", { name: dict.copy }));
+      expect(await screen.findByText(dict.copyFailed)).toBeInTheDocument();
+      // 1.5s 后恢复按钮原始文案
+      await waitFor(
+        () => expect(screen.getByRole("button", { name: dict.copy })).toHaveTextContent(dict.copy),
+        { timeout: 2000 }
+      );
+    } finally {
+      document.execCommand = origExec;
+    }
+  });
+
+  it("异步剪贴板缺失时用 execCommand 兜底，仍算复制成功", async () => {
+    const origExec = document.execCommand;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: undefined,
+    });
+    document.execCommand = vi.fn(() => true) as unknown as typeof document.execCommand;
+    try {
+      await ask("没有异步剪贴板的答案");
+      fireEvent.click(screen.getByRole("button", { name: dict.copy }));
+      expect(await screen.findByText(dict.copied)).toBeInTheDocument();
+    } finally {
+      document.execCommand = origExec;
+    }
   });
 
   it("续写被截断的回答：原文追加内容，并提交 continueFrom 上下文", async () => {

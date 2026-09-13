@@ -121,6 +121,26 @@ describe("CopyLinkButton", () => {
     expect(onOutcome).toHaveBeenCalledTimes(1);
   });
 
+  it("空 url 直接判失败：不碰剪贴板、提示失败并上报 failure", async () => {
+    const writeText = stubClipboard({ ok: true });
+    const onOutcome = vi.fn();
+    render(
+      <CopyLinkButton
+        url=""
+        label="copy"
+        copiedLabel="ok"
+        testId="copy-btn7"
+        onOutcome={onOutcome}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("copy-btn7"));
+    await waitFor(() => {
+      expect(screen.getByTestId("copy-btn7").textContent).toContain("Copy failed");
+    });
+    expect(writeText).not.toHaveBeenCalled();
+    expect(onOutcome).toHaveBeenCalledWith("failure");
+  });
+
   it("onOutcome 抛错时复制仍成功", async () => {
     stubClipboard({ ok: true });
     render(
