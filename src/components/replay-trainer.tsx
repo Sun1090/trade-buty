@@ -81,6 +81,23 @@ interface GuessState {
   lastFeedback: string | null;
 }
 
+/**
+ * 读取记忆的难度下标。
+ * 该值来自 localStorage，可能被用户手改、被旧版本写入（档数不同）或被截断——
+ * 任何非法值都回退到默认「进阶」，不让坏数据把整个训练器打崩。
+ */
+function initialDifficultyIdx(): number {
+  const DEFAULT_IDX = 1;
+  try {
+    const saved = localStorage.getItem("tb-replay-difficulty");
+    if (!saved) return DEFAULT_IDX;
+    const n = Number.parseInt(saved, 10);
+    return Number.isInteger(n) && n >= 0 && n < DIFFICULTIES.length ? n : DEFAULT_IDX;
+  } catch {
+    return DEFAULT_IDX;
+  }
+}
+
 function gradeOf(total: number, correct: number): string {
   if (total === 0) return "-";
   const acc = correct / total;
@@ -129,19 +146,13 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
     };
   }, []);
   const [klines, setKlines] = useState<Kline[] | null>(null);
-  const [difficultyIdx, setDifficultyIdx] = useState(() => {
-    try {
-      const saved = localStorage.getItem("tb-replay-difficulty");
-      return saved ? parseInt(saved, 10) : 1;
-    } catch {
-      return 1;
-    }
-  });
+  const [difficultyIdx, setDifficultyIdx] = useState(initialDifficultyIdx);
   // 记忆难度选择
   useEffect(() => {
     try { localStorage.setItem("tb-replay-difficulty", String(difficultyIdx)); } catch { }
   }, [difficultyIdx]);
-  const context = DIFFICULTIES[difficultyIdx].context;
+  // 下标已由 initialDifficultyIdx 收敛，这里再兜一层，避免任何未来入口绕过校验
+  const context = (DIFFICULTIES[difficultyIdx] ?? DIFFICULTIES[1]).context;
   const [idx, setIdx] = useState<number>(context);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<number>(1);
@@ -155,7 +166,9 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
     lastFeedback: null,
   });
   const [error, setError] = useState(false);
-  const savedRoundRef = useRef(0);
+  // 哨兵必须是 round 永远取不到的值：round 从 0 起，用 0 会让「第 0 轮」永远
+  // 命中 savedRoundRef.current !== round 为假，导致首轮战绩被静默丢弃。
+  const savedRoundRef = useRef(-1);
 
   useEffect(() => {
     if (
