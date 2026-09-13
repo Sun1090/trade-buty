@@ -1,11 +1,14 @@
-/** Q5.1/Q5.2：阻断 README、AGENTS、plan 与当前知识库和实现再次漂移。 */
+/** Q5.1/Q5.2：阻断 README、贡献指南、架构文档、AGENTS、plan 与当前实现再次漂移。 */
 import fs from "node:fs";
 import path from "node:path";
 import {
   auditAgentsContract,
+  auditArchitectureContract,
+  auditContributingContract,
   auditNeutrality,
   auditPlanContract,
   auditReadmeCounts,
+  auditReadmeImplementationReferences,
 } from "./docs-consistency-lib.mjs";
 
 const root = process.cwd();
@@ -35,9 +38,26 @@ const readmes = {
   "README.zh-CN.md": fs.readFileSync(path.join(root, "README.zh-CN.md"), "utf8"),
 };
 const aboutPath = path.join(root, "src/app/[locale]/about/page.tsx");
+
+function readRequiredDoc(relativePath) {
+  const fullPath = path.join(root, relativePath);
+  if (!fs.existsSync(fullPath)) {
+    issues.push(`${relativePath}: 文件缺失`);
+    return null;
+  }
+  return fs.readFileSync(fullPath, "utf8");
+}
+
 issues.push(...auditReadmeCounts({ en: readmes["README.md"], zh: readmes["README.zh-CN.md"] }, actual));
+issues.push(...auditReadmeImplementationReferences(readmes));
 issues.push(...auditAgentsContract(fs.readFileSync(path.join(root, "AGENTS.md"), "utf8")));
 issues.push(...auditPlanContract(fs.readFileSync(path.join(root, "docs/plan.md"), "utf8"), actual.lessons));
+
+const contributing = readRequiredDoc("CONTRIBUTING.md");
+if (contributing !== null) issues.push(...auditContributingContract(contributing));
+const architecture = readRequiredDoc("docs/architecture.md");
+if (architecture !== null) issues.push(...auditArchitectureContract(architecture));
+
 issues.push(...auditNeutrality(readmes, fs.readFileSync(aboutPath, "utf8")));
 
 if (issues.length > 0) {
@@ -45,4 +65,4 @@ if (issues.length > 0) {
   for (const issue of issues) console.error(`  - ${issue}`);
   process.exit(1);
 }
-console.log(`[docs-consistency] ✅ README/AGENTS/plan 与知识库一致（${actual.chapters} 章 / ${actual.lessons} 篇，zh/en 对齐）`);
+console.log(`[docs-consistency] ✅ README/CONTRIBUTING/architecture/AGENTS/plan 与知识库一致（${actual.chapters} 章 / ${actual.lessons} 篇，zh/en 对齐）`);
