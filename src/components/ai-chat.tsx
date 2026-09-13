@@ -348,9 +348,10 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   }
 
   async function copyMsg(text: string, e: React.MouseEvent) {
+    // React 合成事件在 await 之后会清空 currentTarget，必须在异步边界前捕获按钮。
+    const btn = e.currentTarget as HTMLButtonElement;
     try {
       await navigator.clipboard.writeText(text);
-      const btn = e.currentTarget as HTMLButtonElement;
       const orig = btn.textContent;
       btn.textContent = dict.copied;
       setTimeout(() => (btn.textContent = orig), 1500);
