@@ -3,6 +3,8 @@
     "date": "2026-09-13",
     "highlights": {
       "zh": [
+        "AI 对话复制回答失败时此前完全静默（`catch` 吞掉异常、且没有兜底），在微信内置浏览器等没有 `navigator.clipboard` 的环境按钮毫无反应；现在统一走 `copyText`，复制失败可见「复制失败」文案",
+        "新增统一的剪贴板助手 `src/lib/clipboard.ts`（异步 Clipboard API + `execCommand` 兜底，返回真实结果）并替换四处重复实现；补齐搜索快捷键、代码复制与各复制组件用例，全局覆盖率提升至 91.87% / 86.13% / 91.44% / 94.36%",
         "邮件订阅占位卡复制修复：`navigator.clipboard` 与 `execCommand` 兜底都失败时仍显示「已复制」，且 `execCommand` 抛错会变成未处理的 Promise 拒绝；现在两条复制路径都检查真实结果，失败时显示可见错误文案",
         "补齐回放战绩分享卡的失败反馈、预览下载、复制链接与文件名清洗用例（单文件语句 75→90 / 分支 51.72→86.2 / 函数 80→100 / 行 82.22→95.55），并修掉连续学习分享卡「重复预览」用例在全量负载下的偶发失败；全局覆盖率提升至 91.71% / 85.96% / 91.27% / 94.13%",
         "回放分享页评级单位回归修复：`accuracyBps` 是万分比却被当作百分数传给分级函数，导致所有非「总题数不足 3」的回放分享页恒显示最高评级；改为传入 0–1 比例后恢复正常",
@@ -21,6 +23,8 @@
         "补齐登录头、回放历史与 AI 对话操作（反馈、清空、复制、续写）的回归用例；全局语句覆盖率提升至 90.68% / 分支 84.21% / 函数 90.06% / 行 93.22%"
       ],
       "en": [
+        "Fixed silently-failing AI answer copy: the old `catch` swallowed errors and had no fallback, so the button did nothing in WeChat's in-app browser where `navigator.clipboard` is absent; copying now goes through `copyText` and surfaces a visible “Copy failed” message",
+        "Added a shared clipboard helper `src/lib/clipboard.ts` (async Clipboard API with an `execCommand` fallback that returns the real result) and replaced four duplicated implementations; added coverage for the search hotkey, code copy, and the copy components, lifting global coverage to 91.87% statements / 86.13% branches / 91.44% functions / 94.36% lines",
         "Fixed the newsletter placeholder faking copy success: when both `navigator.clipboard` and the `execCommand` fallback failed it still showed “Copied”, and a throwing `execCommand` became an unhandled rejection; both paths now check the real result and surface a visible failure message",
         "Added failure-feedback, preview-download, share-link, and filename-sanitizing coverage for the replay result share card (single-file statements 75→90 / branches 51.72→86.2 / functions 80→100 / lines 82.22→95.55), and stabilized the streak share card's repeat-preview test under full-suite load; global coverage is now 91.71% statements / 85.96% branches / 91.27% functions / 94.13% lines",
         "Fixed the replay share-landing grade scale: `accuracyBps` (basis points) was passed to the grading helper as a percentage, so every replay share page with 3+ questions showed the top grade; the helper now receives a 0–1 ratio",

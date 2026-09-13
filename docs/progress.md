@@ -1,8 +1,71 @@
 # Progress
 
-## 覆盖率批次 6：邮件订阅复制诚实性修复 + 回放分享卡补测（`codex/coverage-batch-6`）
+## 覆盖率批次 7：剪贴板助手统一与复制诚实性修复（`codex/coverage-batch-7`）
 
 - 状态：DONE（本地全部门禁绿灯，待 push + PR）
+- 工作分支：`codex/coverage-batch-7`（基于 `origin/main@0d0042b`）
+- 提交：`fix(clipboard): report copy failures and unify copy fallbacks` · `test: cover clipboard paths, hotkey and code copy` · `docs(progress): record clipboard helper and coverage batch 7`
+- 目标：把批次 6 在邮件订阅上发现的「复制结果必须诚实」原则推广到全部复制入口，并消除四处近似重复的剪贴板兜底实现。
+
+### 生产回归：AI 对话复制失败完全静默
+
+- 问题：`src/components/ai-chat.tsx` 的 `copyMsg` 把 `navigator.clipboard.writeText` 放在 `try/catch` 中且 `catch { /* ignore */ }` —— 复制失败时按钮毫无反应、没有任何反馈；同时没有 `execCommand` 兜底，在微信内置浏览器等没有 `navigator.clipboard` 的环境 100% 静默失效。
+- 修复：抽出统一的 `copyText(text): Promise<boolean>`（先异步 Clipboard API，失败退回 `execCommand`，返回真实结果），`copyMsg` 依据结果写入 `dict.copied` / `dict.copyFailed`。
+- 反证：把 `ai-chat.tsx` 临时还原为旧 buggy 版本跑 `-t "复制失败时显示失败文案"` → **1 failed**；恢复修复版 → 通过。
+
+### 统一重复实现与兜底健壮性
+
+- 新增 `src/lib/clipboard.ts`：`copyViaExecCommand`（`<textarea>` + `execCommand`，`try/catch/finally` 保证无论成功/失败/抛错都清理临时节点）、私有 `copyViaClipboardApi`、公开 `copyText`。
+- 统一四处重复实现：`newsletter-signup.tsx`（删本地 `fallbackCopy`）、`copy-link-button.tsx`（删内联 textarea 降级）、`milestone-share-button.tsx`（删 `copyToClipboard`）、`code-copy.tsx`（删 `try/catch`，现在也有 `execCommand` 兜底），共消除约 150 行近似重复代码。
+- `src/lib/i18n.ts` 的 `ai` 字典新增 zh/en `copyFailed`（`复制失败` / `Copy failed`）。
+
+### 覆盖率提升（单文件实测）
+
+| 文件 | 语句 | 分支 | 函数 | 行 |
+|---|---|---|---|---|
+| `search-hotkey.tsx`（1 → 8 例） | 72.7 → **100** | 0 → **100** | 75 → **100** | 70 → **100** |
+| `milestone-share-button.tsx` | — → **100** | — → **100** | — → **100** | — → **100** |
+| `newsletter-signup.tsx` | 89.3 → **94.87** | 80.8 → **90.9** | 72.7 → **80** | 92.3 → **100** |
+| `code-copy.tsx` | 77.3 → **92.85** | 50 → **83.33** | 60 → **70** | 83.8 → **100** |
+| `copy-link-button.tsx` | 80.5 → **87.5** | 86.4 → **92.85** | 50 | 86.8 → **100** |
+| `clipboard.ts`（新，7 例） | — → **88.46** | — → **75** | — → **100** | — → **95.45** |
+
+- 全局：**253 文件 / 2120 用例**通过；语句 **91.87** / 分支 **86.13** / 函数 **91.44** / 行 **94.36**（阈值 84 / 77 / 83 / 87）。
+
+### 新增的关键行为断言
+
+- 搜索快捷键：⌘K / Ctrl+K / 大写 K 触发跳转、无修饰键与其他键不跳转、卸载解绑、locale 变更后仍指向最新字典。
+- 代码复制：真实点击复制、`execCommand` 兜底、两路都失败显示 ✕、`MutationObserver` 动态插入、无 language 类、容器选择器不匹配。
+- AI 对话：复制失败可见文案、异步剪贴板缺失时走 `execCommand` 兜底成功。
+- 邮件订阅：Change 切回表单、挂载后记录消失 → 复制失败、`setItem` 抛错 → 保存失败。
+- 复制链接按钮：空 `url` 直接判失败、不触碰剪贴板、上报 failure。
+
+### 变更文件
+
+- `src/lib/clipboard.ts`、`src/lib/clipboard.test.ts`：新增统一剪贴板助手与其用例。
+- `src/components/ai-chat.tsx` + `.test.tsx`、`code-copy.tsx` + `.test.tsx`、`copy-link-button.tsx` + `.test.tsx`、`newsletter-signup.tsx` + `.test.tsx`、`milestone-share-button.tsx`、`search-hotkey.test.tsx`。
+- `src/lib/i18n.ts`：新增 `ai.copyFailed`。
+- `src/data/release-notes.json`、`CHANGELOG.md`、`docs/progress.md`。
+
+### 验证命令与结果（本地，全部以退出码判定）
+
+- `npm run test:coverage` exit 0 → **253 文件 / 2120 用例**通过；语句 91.87 / 分支 86.13 / 函数 91.44 / 行 94.36，阈值全过。
+- `npm run lint` / `npm run typecheck` / `npm run build` exit 0。
+- 33 项 `check:*` 门禁（含 `check:secrets`、`check:bundle`、`check:mobile`、`check:structured-data`、`check:kb-parity-budget`、`check:changelog` 等）exit 0。
+- `npm run e2e` exit 0 → Playwright **93 passed**。
+- `npm run audit:prod` / `npm run audit:all` exit 0 → 0 vulnerabilities。
+- `npm run db:test` exit 0。
+- `git diff --check` exit 0。
+
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 风险与回滚：只改复制路径与失败文案，不改存储/导出协议；`clipboard.ts` 为纯工具函数，回滚即撤销该 commit 并还原四处调用点。
+- 下一步：push 分支、创建 PR、等待全绿后以 `--rebase` 合并；随后继续补 `i18n.ts`、`/api/ai/quiz/route.ts`、`use-network-quality.ts`、`ai-quiz.tsx`、`reading-progress.tsx` 等覆盖率热点。
+- 最后更新：2026-09-13
+
+
+## 覆盖率批次 6：邮件订阅复制诚实性修复 + 回放分享卡补测（`codex/coverage-batch-6`）
+
+- 状态：MERGED（PR [#65](https://github.com/Sun1090/trade-buty/pull/65)，`--rebase` 合入 main，main 到 `0d0042b`）
 - 工作分支：`codex/coverage-batch-6`（基于 `origin/main@f114a41`）
 - 提交：`b1471af` `fix(newsletter): report copy failure instead of faking success` · `3f3617c` `test: cover replay share card and stabilize streak preview assertion`
 - 目标：先清理批次 5 全量回归暴露的偶发失败，再按「真实缺陷 > 覆盖率」继续核查分享链路中与批次 5 同类的诚实性与单位语义问题。
