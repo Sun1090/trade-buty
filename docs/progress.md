@@ -1,5 +1,199 @@
 # Progress
 
+## 工具链升级到 TypeScript 6.0.3 与 npm 10/11 lockfile 漂移（PR #54）
+
+- 状态：DONE（PR #54 已以 `--rebase` 合并进 main；PR CI run [34740352348](https://github.com/Sun1090/trade-buty/actions/runs/34740352348) 全绿）
+- 工作分支：`codex/typescript-6`（已删除）
+- PR：[#54](https://github.com/Sun1090/trade-buty/pull/54) · `MERGED`
+- Base：`origin/main@4c162b7`（rebase 后）
+- 合并提交：`6ac7721`
+- 已验证 Head：`ade0b10`
+- 本地提交：`ade0b10` `build(deps-dev): bump typescript to 6.0.3 (still under typescript-eslint peer)`
+- 目标：Dependabot PR #52 把 `typescript` 从 5.9.3 升到 6.0.3，CI 40 秒即红。必须先判定这是「类型层面不兼容」还是「流水线自身的问题」，再决定关闭还是落地。
+- 根因（**不是类型错误**）：生成 lockfile 的 npm 主版本与 CI 不一致。Dependabot / 本地侧用 npm 11，CI（Node 22 自带）用 npm 10。npm 11 会重排 root `devDependencies` 并删掉 14 条 `puppeteer-core/node_modules/*` 的 optional-peer 条目（`proxy-agent-negotiate`、`get-uri` 等），npm 10 的 `npm ci` 直接报 `Missing: get-uri@8.0.1 from lock file`，根本没走到编译。`typescript-eslint@8.70.0` 的 peer 是 `typescript >=4.8.4 <6.1.0`，6.0.3 落在允许区间内，越界的只有 TS 7。
+- 已完成：
+  - `package.json` 的 `typescript` 由 `^5` 升到 `^6`；用 **npm 10.9.4** 重新生成 lockfile，diff 压到 **6 增 6 删**（root `devDependencies` 排序归一 + `node_modules/typescript` → 6.0.3），不触碰任何其他包。
+  - `docs/deps.md`：TypeScript 从「延期」表移入「已落地」表；月度审计行改为「已升级到 6.0.3（7.0.2 仍延期）」；新增「lockfile 工具链漂移（npm 10 vs npm 11）」小节，把「改 lockfile 必须用与 CI 相同的 npm 主版本生成，并在 PR 里贴 `npm ci` 退出码」写进约定。
+  - `src/data/release-notes.json` + 生成的 `CHANGELOG.md` 增加未发布条目。
+  - 关闭被取代的 Dependabot PR #52，并附上 lockfile 根因说明。
+- 变更文件（关键）：`package.json`、`package-lock.json`、`docs/deps.md`、`src/data/release-notes.json`、`CHANGELOG.md`。
+- 验证命令与结果（全部用 npm 10.9.4，对齐 CI 的 npm 主版本）：
+  - `npx --yes npm@10.9.4 ci --registry=https://registry.npmjs.org` exit 0。
+  - `npx tsc --version` → `6.0.3`；`npm run typecheck` exit 0。
+  - `npm run lint` exit 0（零警告门禁）；`npm test` exit 0 → **251 文件 / 1862 用例**通过；`npm run build` exit 0。
+  - `npm run check:changelog` exit 0。
+  - PR CI（Node 22 + npm 10）exit 0：`ci` 6m17s + `db-tests` 34s；CodeQL（actions / javascript-typescript）pass。Vercel 因配额 `Deployment rate limited` 未产出预览。
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 未验证项：无。
+- 风险与回滚：TS 6 是 major，但 typecheck / lint / 全量测试 / 构建都已实测通过；lockfile 差异只有 typescript 一处，回滚 = 撤销 PR #54。长期风险是 npm 主版本继续漂移，候选根治手段是加 `packageManager` 字段或在 CI 显式安装固定 npm 主版本。
+- 下一步：无（已完成）。遗留改进项：把 npm 主版本写进仓库配置（`packageManager` 字段或 CI 显式安装固定 npm）以根治 lockfile 漂移。
+- 最后更新：2026-09-13
+
+## AI chat 路由流式/缓存/RAG 接线补齐测试（PR #53）
+
+- 状态：DONE（PR #53 已以 `--rebase` 合并进 main）
+- 工作分支：`codex/ai-chat-route-tests`（已删除）
+- PR：[#53](https://github.com/Sun1090/trade-buty/pull/53) · `MERGED`
+- Base：`origin/main@1c3962e`
+- 合并提交：`9faeb58`
+- 已验证 Head：`f9075b4`
+- 本地提交：`f9075b4` `test(ai): cover the chat route streaming, cache and RAG wiring`
+- 目标：`src/app/api/ai/chat/route.ts` 是流式 AI 问答主入口，覆盖率只有 语句 37.14% / 分支 12.5% / 函数 37.5% / 行 37.62%，流式分支、缓存写入与 RAG 接线基本没有测试，改动这些路径时没有回归网。
+- 已完成：`src/app/api/ai/chat/route.test.ts` 从 6 例扩到 20 例，覆盖流式响应拼装、缓存命中与实际写入、RAG 检索接线、错误与限流分支。
+- 变更文件（关键）：`src/app/api/ai/chat/route.test.ts`。
+- 验证命令与结果：
+  - 单文件覆盖率提升到 **语句 96.19% / 分支 87.5% / 函数 87.5% / 行 99%**（原 37.14% / 12.5% / 37.5% / 37.62%）。
+  - `npm test` exit 0 → **251 文件 / 1862 用例**通过；`npm run lint` / `npm run typecheck` exit 0。
+  - PR CI `ci` + `db-tests` 全绿；Vercel 因配额 `Deployment rate limited` 未产出预览，属外部状态而非代码问题。
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 未验证项：无。
+- 风险与回滚：纯测试新增，不改运行时行为；回滚 = 撤销 PR #53。
+- 下一步：无（已完成）。
+- 最后更新：2026-09-13
+
+## sitemap lastmod 探测可注入化并补覆盖（PR #51）
+
+- 状态：DONE（PR #51 已以 `--rebase` 合并进 main；rebase 后 PR CI run [34739929986](https://github.com/Sun1090/trade-buty/actions/runs/34739929986) 全绿）
+- 工作分支：`codex/kb-freshness-testable`（已删除）
+- PR：[#51](https://github.com/Sun1090/trade-buty/pull/51) · `MERGED`
+- Base：`origin/main@9faeb58`
+- 合并提交：`4c162b7`
+- 已验证 Head：`407b591`
+- 本地提交：`407b591` `refactor(kb): make sitemap lastmod probing injectable and covered`
+- 目标：`src/lib/kb-freshness.ts` 决定 sitemap 每条课程页的 `lastmod`（R13.17），但此前只有 `parseKbCommitDate` 有单测，文件覆盖率 36.8%。真正决定「能不能拿到时间」的逻辑——`git rev-parse --show-toplevel` 的错仓库守卫、`git log` 抛错兜底、目录不存在兜底——全部不可测：`readKbCommitDate` 是私有函数且直接调 `execFileSync`，模块还用私有 `cached` 变量做进程内缓存、测试无法重置。若把「父仓库根目录 ≠ 子模块目录」这条守卫写错（正是防止拿站点仓库提交时间当内容更新时间的那条），所有 `lastmod` 会静默变错而没有任何测试会红。
+- 已完成：
+  - 把副作用收进可注入的 `KbFreshnessDeps`（`exists` / `execGit`），导出纯函数 `readKbCommitDate(dir, deps)`；缓存移进 `createKbLastModifiedReader(resolveDir, deps)` 工厂，生产导出的 `kbLastModified()` 仍是同一个带缓存实例——**`src/app/sitemap.ts` 零改动，运行时行为不变**。
+  - 测试 3 → 12 用例：目录缺失（且不调 git）、toplevel 不等（且只问一次就否决）、git 抛错、log 输出不可解析、相对路径 toplevel 归一化、命中/未命中两种缓存行为，以及生产默认实例「不抛错且同进程结果稳定」的契约。
+- 变更文件（关键）：`src/lib/kb-freshness.ts`、`src/lib/kb-freshness.test.ts`。
+- 验证命令与结果：
+  - `npx vitest run src/lib/kb-freshness.test.ts` exit 0 → 1 文件 / 12 用例。
+  - `npx vitest run --coverage src/lib/kb-freshness.test.ts` → 该文件 **100% 语句 / 100% 分支 / 100% 函数 / 100% 行**（原 36.8% / 0% / 50% / 33.3%）。
+  - `npm test` exit 0 → 251 文件 / 1856 用例通过；`npm run lint` exit 0；`npx tsc --noEmit` exit 0。
+  - rebase 后 PR CI exit 0：`ci` + `db-tests` 全绿；CodeQL 两个语言 job pass。
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 未验证项：无。
+- 风险与回滚：纯重构 + 测试，运行时行为不变；回滚 = 撤销 PR #51。
+- 下一步：无（已完成）。
+- 最后更新：2026-09-13
+
+## 让 Dependabot 不再重开必然红灯的 major（PR #50）
+
+- 状态：DONE（PR #50 已以 `--rebase` 合并进 main）
+- 工作分支：`codex/dependabot-ignore-blocked-majors`（已删除）
+- PR：[#50](https://github.com/Sun1090/trade-buty/pull/50) · `MERGED`
+- Base：`origin/main@cc1a3f1`
+- 合并提交：`1c3962e`
+- 已验证 Head：`2234fcc`
+- 本地提交：`2234fcc` `chore(deps): stop dependabot from re-opening blocked major bumps`
+- 目标：`docs/deps.md` 已记录 `eslint@10` 与 `typescript@7` 在当前依赖链上实测失败（`eslint-plugin-react` peer 仍是 `eslint ^9`；`typescript-eslint` peer 是 `typescript <6.1.0`），但 Dependabot 每周仍开出这两个必然红灯的 PR（#47 / #48），把「必须人工判断的延期」伪装成「待合并的更新」。
+- 已完成：`.github/dependabot.yml` 的 npm 条目加 `ignore`，只挡 `eslint@10.x` 与 `typescript@7.x`，不影响 minor/patch 分组，也不挡 11.x / 8.x；`scripts/ci-workflow.test.mjs` 增回归用例锁定这两条忽略；`docs/deps.md` 补说明与解除条件。#47 / #48 已关闭并附实测证据。
+- 变更文件（关键）：`.github/dependabot.yml`、`scripts/ci-workflow.test.mjs`、`docs/deps.md`。
+- 验证命令与结果：`npx vitest run scripts/ci-workflow.test.mjs` exit 0 → 1 文件 / 18 用例（新增 1 例）；`npm run check:docs` exit 0；`npm run lint` exit 0；PR CI 全绿。
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 未验证项：无。
+- 风险与回滚：只影响 Dependabot 排期，不碰运行时；解除条件（上游放宽 peer）成立后必须先删对应 ignore 再升级。回滚 = 撤销 PR #50。
+- 下一步：无（已完成）。
+- 最后更新：2026-09-13
+
+## CI 覆盖率地板门禁（PR #49）
+
+- 状态：DONE（PR #49 已以 `--rebase` 合并进 main）
+- 工作分支：`codex/coverage-gate`（已删除）
+- PR：[#49](https://github.com/Sun1090/trade-buty/pull/49) · `MERGED`
+- Base：`origin/main@6d2e29c`
+- 合并提交：`cc1a3f1`
+- 已验证 Head：`c227503`
+- 本地提交：`c227503` `ci(coverage): enforce a coverage floor in CI`
+- 目标：v0.6 关账标准要求「测试覆盖范围不下降」，但 CI 只跑 `npm test`（Vitest，无覆盖度统计），没有任何门禁证明覆盖率没退化——新增代码可以完全不带测试而全绿。
+- 已完成：新增 `@vitest/coverage-v8@5.0.0` devDependency；`vitest.config.mts` 配置 `coverage` 与阈值地板；新增 `npm run test:coverage`（`vitest run --coverage`）与 `pretest:coverage`；CI 的 `ci` 作业由 `npm run test` 换成 `npm run test:coverage`；`eslint.config.mjs` 全局忽略 `coverage/**`（否则本地跑过覆盖率后 lint 会去检查 lcov HTML 产物而误报）；`scripts/ci-workflow.test.mjs` 增门禁守卫；`docs/ops.md` / `docs/deps.md` 同步。
+- 阈值：地板取 **语句 84 / 分支 77 / 函数 83 / 行 87**，2026-09-13 实测基线为 语句 86.45% / 分支 79.31% / 函数 84.84% / 行 89%，向下留约 2 个百分点吸收本地（Node 26）与 CI（Node 22）的 V8 计数差异。**Node 22 CI 实测与本地完全一致**（86.45 / 79.31 / 84.84 / 89）。
+- 验证命令与结果：
+  - `npm ci` exit 0；lockfile 仅新增 8 个包条目、无删除无关条目。
+  - `npm run test:coverage` exit 0 → 251 文件 / 1847 用例，四项均高于地板。
+  - 反证门禁真会拦：`npx vitest run --coverage --coverage.thresholds.lines=99 src/lib/date-utils.test.ts` exit 1，报 `Coverage for lines (92.85%) does not meet global threshold (99%)`。
+  - `npx vitest run scripts/ci-workflow.test.mjs` exit 0（1 文件 / 17 用例）；`npm run lint` / `typecheck` / `build` exit 0；`check:docs` / `check:secrets` / `check:changelog` / `check:env-docs` / `check:kb-pointer` / `check:kb-changelog` / `check:mobile` / `check:bundle` / `check:search-index` / `check:links` / `check:sitemap` / `check:seo-surface` / `check:structured-data` 全部 exit 0。
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 未验证项：无。
+- 风险与回滚：纯质量门禁，不改运行时行为；主要风险是新依赖的 lockfile 变更，已用官方 registry 解析并经 `npm ci` + 全量门禁验证。若 CI 的 V8 计数与本地差异超预期，先按实测收紧/放宽阈值并附测量证据。回滚 = 撤销 PR #49。
+- 下一步：无（已完成）。覆盖率最低的若干文件（`language-toggle` / `service-worker-registrar` / `share-card-preview` / `replay-trainer` / `toc` / `review-client` / `api/ai/quiz`）可作为后续补测候选。
+- 最后更新：2026-09-13
+
+## 固定 GitHub Actions 并接入 Dependabot（PR #46）
+
+- 状态：DONE（PR #46 已以 `--rebase` 合并进 main）
+- 工作分支：`codex/pin-actions`（已删除）
+- PR：[#46](https://github.com/Sun1090/trade-buty/pull/46) · `MERGED`
+- Base：`origin/main@c348e33`
+- 合并提交：`6d2e29c`
+- 已验证 Head：`feec4d9`
+- 本地提交：`feec4d9` `ci(workflows): pin actions and track dependency updates`
+- 目标：工作流里的 `uses:` 仍用浮动的 `@vN` 标签，上游 tag 被移动或发布破坏性更新时 CI 行为会静默改变；同时仓库没有依赖更新跟踪。
+- 已完成：把官方 GitHub Actions 固定到完整 commit SHA 并保留可追踪的 `# vN` 注释；新增 Dependabot，每周跟踪 npm 与 GitHub Actions，npm 的 minor/patch 分组；工作流回归门禁会拦截未固定的 action 与 Dependabot 配置漂移。
+- 变更文件（关键）：`.github/workflows/*.yml`、`.github/dependabot.yml`、`scripts/ci-workflow.test.mjs`。
+- 验证命令与结果：`npx vitest run scripts/ci-workflow.test.mjs` exit 0（16 用例）；`npm run lint` exit 0；`npm test` exit 0 → 251 文件 / 1846 用例；`npm run check:docs` / `npm run check:secrets` exit 0。
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 未验证项：无。
+- 风险与回滚：SHA 固定后需要人工/Dependabot 推进版本，安全性优于便利性；回滚 = 撤销 PR #46。
+- 下一步：无（已完成）。
+- 最后更新：2026-09-13
+
+## 声明支持的 Node 版本并刷新 js-yaml（PR #45）
+
+- 状态：DONE（PR #45 已以 `--rebase` 合并进 main）
+- 工作分支：`codex/node-toolchain`（已删除）
+- PR：[#45](https://github.com/Sun1090/trade-buty/pull/45) · `MERGED`
+- Base：`origin/main@26fb697`
+- 合并提交：`c348e33`
+- 已验证 Head：`4170e76`
+- 本地提交：`4170e76` `chore(toolchain): declare supported Node and refresh js-yaml`
+- 目标：CI 已固定 Node.js 22，但 `package.json` 没有 `engines`，本地用 Node 26 或更老版本都不会得到提示；README 的 Quick Start 用 `npm install` 而非可复现的 `npm ci`；`js-yaml` 当日发布 5.4.2 patch 未跟进。
+- 已完成：根 `package.json` 新增 `engines.node >=22`；README / CONTRIBUTING / 运维文档明确 Node.js 22 要求；Quick Start 改用 `npm ci`；`js-yaml` 5.4.1 → 5.4.2 及 lockfile。
+- 变更文件（关键）：`package.json`、`package-lock.json`、`README.md`、`README.zh-CN.md`、`CONTRIBUTING.md`、`docs/ops.md`。
+- 验证命令与结果：`npm ci` exit 0；`npm run lint` exit 0；`npm test` exit 0 → 251 文件 / 1845 用例；`npm run typecheck` / `build` / `check:docs` / `check:changelog` / `audit:all` 全部 exit 0。
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 未验证项：无。
+- 风险与回滚：`engines` 只对 `engine-strict` 生效，属提示性约束，不改变安装行为；回滚 = 撤销 PR #45。
+- 下一步：无（已完成）。
+- 最后更新：2026-09-13
+
+## 清理 main 上剩余的 CodeQL 告警（PR #44）
+
+- 状态：DONE（PR #44 已以 `--rebase` 合并进 main）
+- 工作分支：`codex/codeql-alert-hardening`（已删除）
+- PR：[#44](https://github.com/Sun1090/trade-buty/pull/44) · `MERGED`
+- Base：`origin/main@d3de36d`
+- 合并提交：`26fb697`
+- 已验证 Head：`d3d8761`
+- 本地提交：`d3d8761` `fix(security): resolve remaining codeql alerts`
+- 目标：main 上仍有 3 个 CodeQL 告警（2 个 React `key`、1 个 TOC 畸形标签重组清理），必须清零而不是长期挂着。
+- 已完成：`src/lib/toc.ts` 改为单次扫描处理标题内联 HTML，嵌套畸形标签不再跨边界拼回可注入标签，并补精确回归断言；首页与 404 推荐位的静态列表改用稳定的列表索引作为 React key（该值不会渲染到 DOM）。
+- 变更文件（关键）：`src/lib/toc.ts`、`src/lib/toc.test.ts`、首页与 404 组件。
+- 验证命令与结果：`npm test` exit 0 → 251 文件 / 1845 用例；`npm run lint` / `typecheck` / `build`（474 静态页）exit 0；`npm run check:structured-data` exit 0（454 页 / 5656 实体）；`check:docs` / `check:env-docs` / `check:secrets` exit 0。
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 未验证项：无。
+- 风险与回滚：列表顺序为构建期静态顺序且不做客户端重排，索引 key 不影响渲染身份；TOC 继续支持 `<mark>` 内文字，畸形标签整段移除。回滚 = 撤销 PR #44。
+- 下一步：无（已完成）。
+- 最后更新：2026-09-13
+
+## 加固动态渲染与序列化面（PR #43）
+
+- 状态：DONE（PR #43 已以 `--rebase` 合并进 main）
+- 工作分支：`codex/security-hardening`（已删除）
+- PR：[#43](https://github.com/Sun1090/trade-buty/pull/43) · `MERGED`
+- Base：`origin/main@71d85a4`
+- 合并提交：`d3de36d`
+- 已验证 Head：`dde23cb`
+- 本地提交：`dde23cb` `fix(security): harden dynamic rendering surfaces`
+- 目标：知识库内容与用户可控片段会进入动态 `href`、JSON-LD、TOC、FAQ 表格等渲染面；畸形输入或正则回溯会造成注入或 DoS 风险。
+- 已完成：新增知识库路径构造函数，验证 locale 与英文 slug，避免动态 `href` 接受 URL scheme / 路径穿越值；JSON-LD 序列化转义 `<`、`>`、`&`、U+2028/U+2029，阻止 `</script>` 逃逸；清理 TOC 标题中的畸形 HTML 标签；移除 env-docs 中可能灾难回溯的正则，改为状态机式前导注释解析；FAQ 表格单元格同时转义反斜杠与竖线；为上述安全边界补回归测试。
+- 变更文件（关键）：知识库路径构造模块、JSON-LD 序列化、`src/lib/toc.ts`、`scripts/check-env-docs.mjs`、FAQ 表格渲染与相应用例。
+- 验证命令与结果：`npm run lint` exit 0；`npm test` exit 0 → 251 文件 / 1845 用例；`npx tsc --noEmit` exit 0；`npm run build` exit 0（474 静态页）；`npm run check:structured-data` exit 0（454 页 / 5656 实体）；`check:env-docs` / `check:docs` exit 0。
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 未验证项：无。
+- 风险与回滚：属 fail-closed 加固，非法输入会被拒绝而不是降级渲染；回滚 = 撤销 PR #43。
+- 下一步：无（已完成）。
+- 最后更新：2026-09-13
+
 ## 贡献与架构文档收口（Q5.1/Q5.2 文档一致性）
 
 - 状态：DONE（PR #41 已以 `--rebase` 合并进 main；PR CI run [34728712232](https://github.com/Sun1090/trade-buty/actions/runs/34728712232) 与合并后 main CI run [34728985414](https://github.com/Sun1090/trade-buty/actions/runs/34728985414) 均全绿）
