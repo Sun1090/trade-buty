@@ -7,6 +7,7 @@ import {
   getDocMetas,
   prepareForRender,
 } from "@/lib/content";
+import { knowledgeHref } from "@/lib/hrefs";
 import { QUIZZES } from "@/lib/quizzes";
 import { suggestFromPath } from "@/lib/url-suggest";
 import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
@@ -240,7 +241,7 @@ export default async function ChapterPage({
       {nextChapter && (
         <section className="mt-12">
           <Link
-            href={p(`/knowledge/${nextChapter.slug}`)}
+            href={knowledgeHref(locale, nextChapter.slug)}
             className="group block rounded-2xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-6 hover:border-[var(--accent)]/60 transition"
           >
             <p className="text-xs font-semibold uppercase tracking-widest text-accent">

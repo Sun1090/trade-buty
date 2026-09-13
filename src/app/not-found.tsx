@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getChapters } from "@/lib/content";
+import { knowledgeHref } from "@/lib/hrefs";
 import { DEFAULT_LOCALE, getDict } from "@/lib/i18n";
 import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
 import { NotFoundSuggestions } from "@/components/not-found-suggestions";
@@ -73,7 +74,7 @@ export default function NotFound() {
             {starters.map((c) => (
               <Link
                 key={c.slug}
-                href={`/${DEFAULT_LOCALE}/knowledge/${c.slug}`}
+                href={knowledgeHref(DEFAULT_LOCALE, c.slug)}
                 className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 text-left hover:border-[var(--accent)]/50 transition"
               >
                 <p className="font-semibold text-sm group-hover:text-accent transition-colors">

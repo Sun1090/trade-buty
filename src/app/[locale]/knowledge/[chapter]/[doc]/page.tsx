@@ -9,6 +9,7 @@ import {
   getDocMetas,
   prepareForRender,
 } from "@/lib/content";
+import { knowledgeHref } from "@/lib/hrefs";
 import { suggestFromPath } from "@/lib/url-suggest";
 import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
 import { JsonLd } from "@/components/json-ld";
@@ -373,7 +374,7 @@ export default async function DocPage({
       {/* 上一篇章（如果当前是第一章首篇，无） */}
       {prevChapter && !prev && (
         <Link
-          href={p(`/knowledge/${prevChapter.slug}`)}
+          href={knowledgeHref(locale, prevChapter.slug)}
           className="group flex items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 hover:border-[var(--accent)]/40 transition mb-4"
         >
           <span className="text-2xl text-faint group-hover:-translate-x-1 transition-transform shrink-0">
@@ -394,7 +395,7 @@ export default async function DocPage({
       <div className="mt-8">
         {next ? (
           <Link
-            href={p(`/knowledge/${chapterSlug}/${next.slug}`)}
+            href={knowledgeHref(locale, chapterSlug, next.slug)}
             className="group flex items-center justify-between gap-4 rounded-2xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-5 hover:border-[var(--accent)]/60 transition"
           >
             <div>
@@ -411,7 +412,7 @@ export default async function DocPage({
           </Link>
         ) : nextChapterMeta ? (
           <Link
-            href={p(`/knowledge/${nextChapterMeta.slug}`)}
+            href={knowledgeHref(locale, nextChapterMeta.slug)}
             className="group flex items-center justify-between gap-4 rounded-2xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-5 hover:border-[var(--accent)]/60 transition"
           >
             <div>

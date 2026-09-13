@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useLocalProgress } from "@/components/use-local-progress";
+import { knowledgeHref } from "@/lib/hrefs";
 
 interface RailDict {
   nextChapter: string;
@@ -56,7 +57,7 @@ export function ChapterRail({
         {/* 篇章进度卡片 */}
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
           <Link
-            href={`/${locale}/knowledge/${chapterSlug}`}
+            href={knowledgeHref(locale, chapterSlug)}
             className="block hover:text-accent transition-colors"
           >
             <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-2">
@@ -107,7 +108,7 @@ export function ChapterRail({
                 {unread.map((d) => (
                   <li key={d.slug}>
                     <Link
-                      href={`/${locale}/knowledge/${chapterSlug}/${d.slug}`}
+                      href={knowledgeHref(locale, chapterSlug, d.slug)}
                       className={`block text-xs py-1 px-2 rounded transition ${
                         d.slug === currentDoc
                           ? "text-accent bg-[var(--accent-dim)]"
@@ -126,7 +127,7 @@ export function ChapterRail({
         {/* 下一篇章 */}
         {nextChapter && (
           <Link
-            href={`/${locale}/knowledge/${nextChapter.slug}`}
+            href={knowledgeHref(locale, nextChapter.slug)}
             className="block rounded-2xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-5 hover:border-[var(--accent)]/60 transition group"
           >
             <p className="text-xs font-semibold uppercase tracking-widest text-accent">

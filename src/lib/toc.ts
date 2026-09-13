@@ -14,6 +14,7 @@ function cleanHeadingText(raw: string): string {
     .replace(/<\/?(?!mark)[a-z][^>]*>/g, "") // 其余小写标签移除
     .replace(/<mark>([\s\S]*?)<\/mark>/g, "$1") // mark 只留文字
     .replace(/[*`~]/g, "")
+    .replace(/[<>]/g, "") // 即使输入含畸形标签，也不把尖括号带进可见文本/slug
     .trim();
 }
 

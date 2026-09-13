@@ -52,4 +52,12 @@ describe("extractHeadings", () => {
     const md = "## 标题 ##";
     expect(extractHeadings(md)[0].text).toBe("标题");
   });
+
+  it("不会把畸形 HTML/script 片段带入标题和 slug", () => {
+    const md = '## <scr<script>ipt>alert(1)</script>';
+    const heading = extractHeadings(md)[0];
+    expect(heading.text).not.toContain("<");
+    expect(heading.text).not.toContain(">");
+    expect(heading.id).not.toContain("script");
+  });
 });

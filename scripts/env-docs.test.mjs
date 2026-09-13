@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { auditEnvDocs, extractDocumentedVars, extractEnvRefs, loadSources } from "./env-docs.mjs";
+import { auditEnvDocs, extractDocumentedVars, extractEnvRefs, isClientModule, loadSources } from "./env-docs.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -68,6 +68,11 @@ describe("env docs contract", () => {
       ],
     });
     expect(errors.some((e) => e.includes("服务端密钥 SUPABASE_SERVICE_ROLE_KEY"))).toBe(true);
+  });
+
+  it("recognizes a client directive after leading comments without catastrophic backtracking", () => {
+    expect(isClientModule('// copyright\n/* license */\n"use client";\n')).toBe(true);
+    expect(isClientModule('/* never closed\n"use client";\n')).toBe(false);
   });
 
   it("does not flag secrets read from server modules or tests", () => {
