@@ -1,5 +1,58 @@
 # Progress
 
+## 覆盖率批次 5：回放分享评级单位回归修复 + 五个热点补测（`codex/coverage-batch-5`）
+
+- 状态：DONE（本地全部门禁绿灯，待 push + PR）
+- 工作分支：`codex/coverage-batch-5`（基于 `origin/main@139d257`）
+- 提交：`28b184e` `fix(share): grade replay landing from accuracy basis points` · `26cf871` `test: lift coverage on doc list, chart, streak card, login and share landing`
+- 目标：继续抬高客户端覆盖率地板，优先处理 `doc-list.tsx`、`kline-chart.tsx`、`streak-share-card.tsx`、`login-client.tsx` 与刚刚从批次 4 结论上锁定的 `share-landing.ts`。
+
+### 生产回归：回放分享落地页评级恒为最高档
+
+- 问题：`accuracyBps` 的单位是万分比（`10_000` = 100%）。`summarizeForMeta` 先把 `accuracyBps / 100` 得到展示用百分数（如 65）后，直接把它传给 `replayGradeLabel()`；而该函数与 `share-card.ts` 的 `gradeFromReplayAccuracy` 同语义，期望 0–1 比例。于是除「总题数 < 3」的兜底分支外，任何 `accuracy >= 0.7` 恒真，所有回放分享页（含 OG/社交媒体预览）永远显示 S 级「卓越」。
+- 修复：展示用的百分数单独存入 `accuracyPercent`，分级调用改传 `p.accuracyBps / 10_000`；展示文案不变。
+- 反证：新增的 `replayGradeLabel 分级覆盖` 用例在修复前 4 条稳定失败（全部输出「卓越」/「S」），修复后通过。
+
+### 覆盖率提升（单文件实测）
+
+| 文件 | 语句 | 分支 | 函数 | 行 |
+|---|---|---|---|---|
+| `doc-list.tsx`（4 → 15 例） | 68.42 → **100** | 50 → **100** | 50 → **100** | 70.58 → **100** |
+| `kline-chart.tsx`（3 → 31 例） | 71.62 → **97.97** | 48.51 → **98.01** | 58.33 → **97.22** | 76.92 → **100** |
+| `streak-share-card.tsx`（4 → 12 例） | 70 → **85** | 51.42 → **77.14** | 77.77 → **100** | 81.63 → **95.91** |
+| `login-client.tsx`（12 → 16 例） | 72.22 → **94.44** | 78.26 → **91.3** | 71.42 → **100** | 77.08 → **100** |
+| `share-landing.ts`（+10 例） | 74.13 → **94.82** | 47.61 → **84.12** | 100 | 83.33 → **100** |
+
+- 全局：语句 **91.55** / 分支 **85.77** / 函数 **91.2** / 行 **93.99**（批次前 90.68 / 84.21 / 90.06 / 93.22；阈值 84 / 77 / 83 / 87）。
+
+### 新增的关键行为断言
+
+- 课程目录：空态 zh/en、已读勾选与进度条宽度、未读优先排序（已读沉底但课号仍按 `metas` 原序）、无 description 不渲染 `<p>`、两位补零课号。
+- K 线图：错误/超时重试、离线态、慢网低带宽、移动端紧凑/完整密度与 `dataLimit`、自定义交易对合法/非法/回车、周期切换、MA series 复用、卸载后不写入、空响应、跌 K 红色量柱，以及 WS 建连/更新/脏帧/缺字段/跌帧/退避重连/卸载关闭/离线不建连。
+- 连续学习分享卡：下载失败/预览失败可见 alert、preview 触发下载、shareUrl 复制成功/失败埋点、英文 alt、无 2D context、重复预览 `revokeObjectURL`。
+- 登录表单：fetch 抛错归为网络异常、冷却期提交走客户端节流、冷却归零恢复 idle、倒计时文案刷新。
+- 分享落地页：`kindToLocale` / `gradeLabel` / `replayGradeLabel` 全分级覆盖。
+
+### 变更文件（关键）
+
+- `src/lib/share-landing.ts`：回放分享评级单位回归修复。
+- `src/app/share/[kind]/[path]/page.test.ts`、`src/components/doc-list.test.tsx`、`src/components/kline-chart.test.tsx`、`src/components/login-client.test.tsx`、`src/components/streak-share-card.test.tsx`：新增回归与分支用例。
+- `src/data/release-notes.json`、`CHANGELOG.md`：登记回归修复与覆盖率结果。
+
+### 验证命令与结果（本地，全部以退出码判定）
+
+- `npm run test:coverage` exit 0 → **252 文件 / 2081 用例**通过；语句 91.55 / 分支 85.77 / 函数 91.2 / 行 93.99，阈值全过。
+- `npm run lint` / `npm run typecheck` / `npm run build` exit 0；生产构建 474 静态页。
+- `npm run changelog:generate` + `npm run check:changelog` exit 0。
+- `npm run audit:prod` / `npm run audit:all` exit 0 → 0 vulnerabilities；`npm run check:secrets` exit 0（666 个文本文件）。
+- `npm run check:lockfile-repro` exit 0（npm 10.9.4 复现 981 个包条目，无差异）。
+- 全部 30 项内容/SEO/构建产物门禁与 7 项内容质量报告 exit 0；知识库新章节 dry-run 冒烟 exit 0；`git diff --check` exit 0。
+
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 风险与回滚：只改分级入参，不改 URL/分享协议；回滚 = 撤销 `28b184e`。测试/文档可独立撤销。
+- 下一步：push 分支、创建 PR、等待全绿后以 `--rebase` 合并；随后继续补 `replay-share-card.tsx` 等热点，并核查是否存在同类评级单位缺陷。
+- 最后更新：2026-09-13
+
 ## 覆盖率批次 4：复制反馈回归修复 + 三个热点组件补测（`codex/coverage-batch-4`）
 
 - 状态：DONE（本地全部门禁绿灯，待 push + PR）
