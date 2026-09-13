@@ -47,6 +47,22 @@ describe("growth event privacy audit", () => {
     expect(errors.some((error) => error.includes("event catalog is missing share_card_download"))).toBe(true);
   });
 
+  it("requires exactly one logger sink and a readable event catalog", () => {
+    const input = fixture();
+    input.source = input.source.replace('console.info("[growth-event]", safe.name, safe);', "");
+    input.docs = input.docs.replace("明确禁止", "");
+    const { errors } = auditGrowthEventPrivacy(input);
+    expect(errors).toContain("expected exactly one console.info sink, found 0");
+    expect(errors).toContain("event catalog must document prohibited fields");
+  });
+
+  it("rejects a source without the normalization boundary", () => {
+    const input = fixture();
+    input.source = input.source.replaceAll("normalizeGrowthEvent", "normalizeRemoved");
+    const { errors } = auditGrowthEventPrivacy(input);
+    expect(errors).toContain("growth event sink must pass through normalizeGrowthEvent");
+  });
+
   it("requires a bilingual privacy-policy disclosure for the local console", () => {
     const input = fixture();
     input.privacyPage = input.privacyPage.replace(/console/gi, "removed").replace(/控制台/g, "removed");
