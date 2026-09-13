@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vitest 覆盖率产物（lcov/html/json），由 npm run test:coverage 生成
+    "coverage/**",
     // 知识库 submodule：内容只读，不参与 lint
     "content/**",
   ]),

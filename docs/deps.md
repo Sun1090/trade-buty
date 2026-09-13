@@ -25,6 +25,12 @@
 - 图表库（recharts 等）：周报柱状用纯 CSS/SVG（R4.6）
 - dotenv：脚本手动解析 .env.local（沿用 generate-embeddings.mjs 惯例）
 
+## 开发依赖（测试与门禁）
+
+| 包 | 为什么需要 | 不用它的替代方案为何不成立 |
+|---|---|---|
+| `@vitest/coverage-v8` | Vitest 官方 V8 覆盖率 provider，为 `npm run test:coverage` 提供语句/分支/函数/行覆盖率与地板门禁（覆盖度回归门禁） | Vitest 无内置覆盖率；`c8`/`nyc` 需额外胶水且与 Vitest 5 的进程模型不对齐，官方 provider 直接复用同一 V8 语义 |
+
 ## 月度审计日志（Q5.3）
 
 > 每月至少跑一次 `npm run audit:prod` + `npm run audit:all` 与 `npm outdated`，把结果与「暂缓升级」的理由登记在此，避免审计只停留在口头。
