@@ -84,6 +84,8 @@
 | `eslint` | 10.10.0 | 安装后 `npm run lint` 直接崩溃（exit 2）：`TypeError: Error while loading rule 'react/display-name': contextOrFilename.getFilename is not a function`，抛自 `eslint-plugin-react/lib/util/version.js`。`eslint-config-next@16.3.5` 依赖 `eslint-plugin-react@^7.37.0`，而 7.37.5（当前 latest）的 peer 仍是 `eslint: ^3 \|\| … \|\| ^9.7`，未声明 ESLint 10 支持 | `eslint-plugin-react` 发布支持 ESLint 10 的版本，且 `eslint-config-next` 跟随升级 |
 | `typescript` | 7.0.2 | `npm run lint` exit 2：`typescript-eslint does not support TS 7.0.`（`typescript-eslint@8.70.0` 的 peer 为 `typescript >=4.8.4 <6.1.0`）。`tsc --noEmit` 本身能跑 | `typescript-eslint` 放宽 peer 到 TS 7 |
 
+为避免 Dependabot 每周重复开出这两个必然红灯的 major PR，`.github/dependabot.yml` 的 npm 条目已对 `eslint@10.x` 与 `typescript@7.x` 建了 `ignore` 规则（仅挡这两个 major，不挡 11.x / 8.x，也不影响 minor/patch 分组）；`scripts/ci-workflow.test.mjs` 有回归用例锁定该忽略，解除条件是上表「解除条件」列成立后先删掉对应 ignore 再升级。
+
 两项目前都**不能**通过 `overrides` 绕过：强行替换 `eslint-plugin-react` / `typescript-eslint` 会让 ESLint 配置链与 Next 官方配置发生版本错配，风险高于收益。
 
 ### 顺带修复

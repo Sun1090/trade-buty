@@ -219,6 +219,17 @@ describe("GitHub Actions workflow contract", () => {
     expect(minorPatch?.["update-types"]).toEqual(["minor", "patch"]);
   });
 
+  it("Dependabot 忽略上游尚未支持的 eslint 10 / typescript 7（解除条件见 docs/deps.md）", () => {
+    const [config] = loadWorkflow(path.join(".github", "dependabot.yml"));
+    const npm = (config.updates ?? []).find((entry) => entry["package-ecosystem"] === "npm");
+    const ignore = npm.ignore ?? [];
+    const ignored = (name) =>
+      ignore.find((entry) => entry["dependency-name"] === name)?.versions ?? [];
+    // 上游 eslint-plugin-react / typescript-eslint 放宽 peer 后，先解除这里的忽略再升级。
+    expect(ignored("eslint")).toContain("10.x");
+    expect(ignored("typescript")).toContain("7.x");
+  });
+
   it("外链巡检保留月度定时与手动触发，并递归拉取子模块", () => {
     const [workflow] = loadWorkflow(path.join(workflowDir, "link-patrol.yml"));
     const trigger = workflow.on ?? {};
