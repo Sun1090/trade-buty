@@ -95,19 +95,22 @@ export function summarizeForMeta(
     if (!p) return { title: t.share.invalidReplayTitle, description: t.share.invalidBody, locale: "zh" };
     const locale = p.locale;
     const lt = getDict(locale);
-    const acc = p.accuracyBps / 100;
+    // accuracyBps 是万分比（10_000 = 100%）：/100 得到展示用百分数，
+    // 分级函数（与 share-card 的 gradeFromReplayAccuracy 同语义）要的是 0–1 比例，
+    // 所以这里必须用 /10_000。曾经误传百分数导致所有回放分享页永远显示最高评级。
+    const accuracyPercent = p.accuracyBps / 100;
     return {
       title: lt.share.replayTitleTpl
         .replace("{symbol}", p.symbol)
         .replace("{interval}", p.interval)
-        .replace("{grade}", replayGradeLabel(acc, p.total, locale))
+        .replace("{grade}", replayGradeLabel(p.accuracyBps / 10_000, p.total, locale))
         .replace("{correct}", `${p.correct}`)
         .replace("{total}", `${p.total}`),
       description: lt.share.replayDescTpl
         .replace("{symbol}", p.symbol)
         .replace("{correct}", `${p.correct}`)
         .replace("{total}", `${p.total}`)
-        .replace("{percent}", `${acc.toFixed(0)}`),
+        .replace("{percent}", `${accuracyPercent.toFixed(0)}`),
       locale,
     };
   }
