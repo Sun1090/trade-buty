@@ -232,7 +232,7 @@ describe("StatsClient wrongbook review efficiency", () => {
   });
 
   it("renders dated review summaries from the local ledger without the notice", async () => {
-    const at = new Date(2026, 8, 7, 12).getTime();
+    const at = Date.now();
     store.set("tb-wrong", JSON.stringify({
       "getting-started:0": { chapterNum: "getting-started", questionIdx: 0, picked: 1, at, srsStage: 1, srsDue: localDateStr() },
     }));

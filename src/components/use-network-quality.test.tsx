@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, renderHook } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useNetworkQuality } from "./use-network-quality";
 
@@ -112,5 +113,25 @@ describe("useNetworkQuality（失败即放行的网络质量订阅）", () => {
 
     unmount();
     expect(connection.listeners.size).toBe(0);
+  });
+  it("SSR 快照固定为 online，不触碰浏览器 API", () => {
+    // 服务端没有 navigator/window；即使宿主环境 onLine=false，
+    // renderToString 也必须走 getServerSnapshot 得到稳定的 "online"，
+    // 否则服务端 shell 与客户端首帧会不一致。
+    stubNavigator({ online: false });
+    function Probe() {
+      return <span data-testid="quality">{useNetworkQuality()}</span>;
+    }
+    const html = renderToString(<Probe />);
+    expect(html).toContain("online");
+    expect(html).not.toContain("offline");
+  });
+
+  it("connection 缺少可选方法时不崩溃", () => {
+    const partial = { effectiveType: "4g" } as unknown as FakeConnection;
+    stubNavigator({ online: true, connection: partial });
+    const { result, unmount } = renderHook(() => useNetworkQuality());
+    expect(result.current).toBe("online");
+    expect(() => unmount()).not.toThrow();
   });
 });

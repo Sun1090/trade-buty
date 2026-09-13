@@ -63,4 +63,24 @@ describe("i18n", () => {
       missingInZh: [],
     });
   });
+  it("getDict(undefined) 回退到默认 locale", () => {
+    expect(getDict(undefined).nav.path).toBe(getDict(DEFAULT_LOCALE).nav.path);
+  });
+
+  it("home.subtitle 两种语言都按参数插值", () => {
+    expect(getDict("zh").home.subtitle(27, 418)).toContain("27 个篇章");
+    expect(getDict("zh").home.subtitle(27, 418)).toContain("418 篇课程");
+    expect(getDict("en").home.subtitle(27, 418)).toContain("27 chapters");
+    expect(getDict("en").home.subtitle(27, 418)).toContain("418 lessons");
+  });
+
+  it("chapter.readCount 两种语言都拼成 a/b", () => {
+    expect(getDict("zh").chapter.readCount(3, 10)).toBe("3/10");
+    expect(getDict("en").chapter.readCount(0, 0)).toBe("0/0");
+  });
+
+  it("docTools.estimatedReadingTime 两种语言都带数值", () => {
+    expect(getDict("zh").docTools.estimatedReadingTime(7)).toBe("约 7 分钟阅读");
+    expect(getDict("en").docTools.estimatedReadingTime(7)).toBe("~7 min read");
+  });
 });
