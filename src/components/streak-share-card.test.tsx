@@ -336,7 +336,7 @@ describe("StreakShareCard", () => {
   it("重复预览会回收上一张 object URL", async () => {
     const revoke = vi.fn();
     Object.defineProperty(URL, "revokeObjectURL", { value: revoke, configurable: true });
-    render(
+    const { container } = render(
       <StreakShareCard
         currentStreak={7}
         longestStreak={9}
@@ -346,8 +346,12 @@ describe("StreakShareCard", () => {
       />,
     );
     fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
-    await waitFor(() => expect(revoke).toHaveBeenCalledTimes(0));
+    // 必须等到第一张预览真正落进 state，第二次点击才会走回收分支；
+    // 之前这里断言 revoke 仍为 0（恒真），负载高时会在 state 更新前点第二下而偶发失败。
+    await waitFor(() => expect(container.querySelector("img")).toBeTruthy());
+    expect(revoke).toHaveBeenCalledTimes(0);
     fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
     await waitFor(() => expect(revoke).toHaveBeenCalledTimes(1));
+    expect(revoke).toHaveBeenCalledWith("data:image/png;base64,AAAA");
   });
 });
