@@ -174,6 +174,52 @@ describe("NewsletterSignup", () => {
     expect(screen.getByTestId("newsletter-saved").textContent).toContain("bob@x.io");
   });
 
+  it("点击 Change 由已保存视图切回表单，但保留本机记录", async () => {
+    memStore["tb-newsletter-email"] = JSON.stringify({ email: "x@y.z", recordedAt: 1 });
+    render(<NewsletterSignup labels={labels} locale="en" />);
+    await screen.findByTestId("newsletter-saved");
+
+    fireEvent.click(screen.getByTestId("newsletter-change"));
+
+    await waitFor(() => expect(screen.queryByTestId("newsletter-saved")).toBeNull());
+    expect(screen.getByTestId("newsletter-input")).toBeInTheDocument();
+    expect(localStorage.getItem("tb-newsletter-email")).not.toBeNull();
+  });
+
+  it("导出记录缺失时显示复制失败，而不是静默什么都不发生", async () => {
+    memStore["tb-newsletter-email"] = JSON.stringify({ email: "x@y.z", recordedAt: 1 });
+    render(<NewsletterSignup labels={labels} locale="en" />);
+    await screen.findByTestId("newsletter-saved");
+
+    // 挂载后本机记录被清掉（例如另一个标签页 clear）→ exportNewsletter 返回 null
+    delete memStore["tb-newsletter-email"];
+    fireEvent.click(screen.getByTestId("newsletter-copy"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("newsletter-copy").textContent).toContain("Copy failed"),
+    );
+    expect(writeText).not.toHaveBeenCalled();
+  });
+
+  it("localStorage 写入失败时显示保存失败", async () => {
+    const spy = vi.spyOn(window.localStorage, "setItem").mockImplementation(() => {
+      throw new Error("quota exceeded");
+    });
+    try {
+      render(<NewsletterSignup labels={labels} locale="en" />);
+      await new Promise((r) => setTimeout(r, 30));
+      fireEvent.change(screen.getByTestId("newsletter-input"), {
+        target: { value: "alice@example.com" },
+      });
+      fireEvent.submit(screen.getByTestId("newsletter-submit").closest("form")!);
+
+      await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/Save failed/));
+      expect(screen.queryByTestId("newsletter-saved")).toBeNull();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it("zh locale 时显示中文 desc 且 data-locale=zh", async () => {
     const zh = { ...labels, desc: "邮箱仅本机保存" };
     render(<NewsletterSignup labels={zh} locale="zh" />);
