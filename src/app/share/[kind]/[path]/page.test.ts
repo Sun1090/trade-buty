@@ -131,3 +131,91 @@ describe("kindToLocale / summarizeForMeta", () => {
     expect(summarizeForMeta("quiz", "garbage").title).toBeTruthy();
   });
 });
+
+describe("kindToLocale 覆盖三种载荷", () => {
+  it("replay 载荷解析出语言", () => {
+    const seg = encodeReplay({
+      symbol: "ETHUSDT",
+      interval: "4h",
+      correct: 3,
+      total: 5,
+      accuracyBps: 6000,
+      bestStreak: 2,
+      currentStreak: 1,
+      locale: "en",
+    });
+    expect(kindToLocale("replay", seg)).toBe("en");
+  });
+
+  it("streak 载荷解析出语言", () => {
+    const seg = encodeStreak({ currentStreak: 1, longestStreak: 2, locale: "zh" });
+    expect(kindToLocale("streak", seg)).toBe("zh");
+  });
+});
+
+describe("gradeLabel 分级覆盖", () => {
+  function quizTitle(percent: number) {
+    return summarizeForMeta(
+      "quiz",
+      encodeQuiz({ chapterTitle: "C", score: 7, total: 10, percent, locale: "zh" }),
+    ).title;
+  }
+
+  it("60-79 分显示及格", () => {
+    expect(quizTitle(70)).toContain("及格");
+  });
+
+  it("低于 60 分显示待加强", () => {
+    expect(quizTitle(50)).toContain("待加强");
+  });
+
+  it("英文 60-79 显示 B", () => {
+    const title = summarizeForMeta(
+      "quiz",
+      encodeQuiz({ chapterTitle: "C", score: 7, total: 10, percent: 70, locale: "en" }),
+    ).title;
+    expect(title).toContain("B");
+  });
+});
+
+describe("replayGradeLabel 分级覆盖", () => {
+  function replayTitle(accuracyBps: number, total = 10, locale: "zh" | "en" = "zh") {
+    return summarizeForMeta(
+      "replay",
+      encodeReplay({
+        symbol: "BTCUSDT",
+        interval: "1h",
+        correct: 6,
+        total,
+        accuracyBps,
+        bestStreak: 3,
+        currentStreak: 1,
+        locale,
+      }),
+    ).title;
+  }
+
+  it("总题数不足 3 判为待加强", () => {
+    expect(replayTitle(9000, 2)).toContain("待加强");
+  });
+
+  it("准确率 >=70% 显示卓越", () => {
+    expect(replayTitle(8000)).toContain("卓越");
+  });
+
+  it("准确率 60-69% 显示稳健", () => {
+    expect(replayTitle(6500)).toContain("稳健");
+  });
+
+  it("准确率 50-59% 显示及格", () => {
+    expect(replayTitle(5500)).toContain("及格");
+  });
+
+  it("准确率低于 50% 显示待加强", () => {
+    expect(replayTitle(4000)).toContain("待加强");
+  });
+
+  it("英文准确率 60-69% 显示 A", () => {
+    expect(replayTitle(6500, 10, "en")).toContain("A");
+  });
+});

@@ -163,4 +163,191 @@ describe("StreakShareCard", () => {
       { timeout: 2000 },
     );
   });
+
+  it("下载失败时显示可见错误并上报 failed", async () => {
+    HTMLCanvasElement.prototype.toBlob = vi.fn(function (cb: (b: Blob | null) => void) {
+      cb(null);
+    }) as unknown as typeof HTMLCanvasElement.prototype.toBlob;
+    render(
+      <StreakShareCard
+        currentStreak={9}
+        longestStreak={11}
+        recentDays={SEVEN_DAYS}
+        locale="zh"
+        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("streak-share-btn"));
+    await waitFor(
+      () => {
+        expect(screen.getByRole("alert")).toHaveTextContent("下载失败");
+        expect(growthTrack).toHaveBeenCalledWith({
+          name: "share_card_download",
+          card: "streak",
+          locale: "zh",
+          surface: "owner",
+          trigger: "share",
+          outcome: "failed",
+        });
+      },
+      { timeout: 2000 },
+    );
+  });
+
+  it("预览失败时显示可见错误", async () => {
+    HTMLCanvasElement.prototype.toDataURL = vi.fn(() => {
+      throw new Error("tainted canvas");
+    }) as unknown as typeof HTMLCanvasElement.prototype.toDataURL;
+    const { container } = render(
+      <StreakShareCard
+        currentStreak={9}
+        longestStreak={11}
+        recentDays={SEVEN_DAYS}
+        locale="zh"
+        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("下载失败"));
+    expect(container.querySelector("img")).toBeNull();
+  });
+
+  it("预览后再点下载按 preview 触发下载", async () => {
+    const { container } = render(
+      <StreakShareCard
+        currentStreak={4}
+        longestStreak={6}
+        recentDays={SEVEN_DAYS}
+        locale="zh"
+        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
+    await waitFor(() => expect(container.querySelector("img")).toBeTruthy());
+
+    fireEvent.click(screen.getByText(/⬇ 下载/));
+    await waitFor(() =>
+      expect(growthTrack).toHaveBeenCalledWith({
+        name: "share_card_download",
+        card: "streak",
+        locale: "zh",
+        surface: "owner",
+        trigger: "preview",
+        outcome: "succeeded",
+      }),
+    );
+  });
+
+  it("传入分享链接时渲染复制按钮并上报复制结果", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    render(
+      <StreakShareCard
+        currentStreak={3}
+        longestStreak={5}
+        recentDays={SEVEN_DAYS}
+        locale="zh"
+        shareUrl="https://example.com/share/streak"
+        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("streak-share-link-btn"));
+    await waitFor(() =>
+      expect(growthTrack).toHaveBeenCalledWith({
+        name: "share_link_copy",
+        card: "streak",
+        locale: "zh",
+        outcome: "succeeded",
+      }),
+    );
+    expect(writeText).toHaveBeenCalledWith("https://example.com/share/streak");
+  });
+
+  it("复制链接失败时上报 failed", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+      configurable: true,
+    });
+    document.execCommand = vi.fn(() => false);
+    render(
+      <StreakShareCard
+        currentStreak={3}
+        longestStreak={5}
+        recentDays={SEVEN_DAYS}
+        locale="zh"
+        shareUrl="https://example.com/share/streak"
+        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("streak-share-link-btn"));
+    await waitFor(() =>
+      expect(growthTrack).toHaveBeenCalledWith({
+        name: "share_link_copy",
+        card: "streak",
+        locale: "zh",
+        outcome: "failed",
+      }),
+    );
+  });
+
+  it("英文 locale 生成英文 alt 描述", async () => {
+    const { container } = render(
+      <StreakShareCard
+        currentStreak={5}
+        longestStreak={12}
+        recentDays={SEVEN_DAYS}
+        locale="en"
+        labels={{ share: "Share", previewAlt: "Preview", download: "Download", copyLink: "Copy link", copiedLink: "Copied", downloadFailed: "Download failed" }}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
+    await waitFor(() => expect(container.querySelector("img")).toBeTruthy());
+    const alt = container.querySelector("img")?.getAttribute("alt") ?? "";
+    expect(alt).toContain("study streak card");
+    expect(alt).toContain("5 days in a row");
+  });
+
+  it("canvas 无 2D 上下文时跳过绘制但下载仍可用", async () => {
+    HTMLCanvasElement.prototype.getContext = vi.fn(
+      () => null,
+    ) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+    render(
+      <StreakShareCard
+        currentStreak={6}
+        longestStreak={8}
+        recentDays={SEVEN_DAYS}
+        locale="zh"
+        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("streak-share-btn"));
+    await waitFor(
+      () =>
+        expect(growthTrack).toHaveBeenCalledWith(
+          expect.objectContaining({ outcome: "succeeded" }),
+        ),
+      { timeout: 2000 },
+    );
+  });
+
+  it("重复预览会回收上一张 object URL", async () => {
+    const revoke = vi.fn();
+    Object.defineProperty(URL, "revokeObjectURL", { value: revoke, configurable: true });
+    render(
+      <StreakShareCard
+        currentStreak={7}
+        longestStreak={9}
+        recentDays={SEVEN_DAYS}
+        locale="zh"
+        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
+    await waitFor(() => expect(revoke).toHaveBeenCalledTimes(0));
+    fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
+    await waitFor(() => expect(revoke).toHaveBeenCalledTimes(1));
+  });
 });
