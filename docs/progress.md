@@ -1,5 +1,53 @@
 # Progress
 
+## 覆盖率批次 4：复制反馈回归修复 + 三个热点组件补测（`codex/coverage-batch-4`）
+
+- 状态：DONE（本地全部门禁绿灯，待 push + PR）
+- 工作分支：`codex/coverage-batch-4`（基于 `origin/main@c5de18e`）
+- 提交：`4a2b4ba` `fix(ai): keep copy confirmation after async clipboard write` · `01d3c1d` `test: expand auth, replay history, and AI chat coverage`
+- 目标：继续抬高客户端覆盖率地板，优先处理 `auth-header.tsx`（语句 70.45%）、`replay-history.tsx`（69.23%）与已有大量交互分支但没有断言操作反馈的 `ai-chat.tsx`（72.02%）。
+
+### 生产回归：AI 回答复制成功但不显示「已复制」
+
+- 问题：`copyMsg()` 在 `await navigator.clipboard.writeText(text)` **之后**才读取 React 合成事件的 `e.currentTarget`。异步边界之后 `currentTarget` 已失效，读取/写回按钮文案会抛错并被同一个 `catch` 静默吞掉；剪贴板实际写入成功，但用户永远看不到任何复制反馈。
+- 修复：在进入 `try`/`await` 前把按钮引用捕获到局部变量，再执行异步写入与 1.5 秒文案恢复。
+- 反证：新增的复制回归用例在修复前稳定失败（找不到「已复制」），修复后通过。
+
+### 覆盖率提升（单文件实测）
+
+| 文件 | 语句 | 分支 | 函数 | 行 |
+|---|---|---|---|---|
+| `auth-header.test.tsx` 对应组件（6 → 15 例） | 70.45 → **100** | 54.54 → **86.36** | 53.84 → **100** | 72.5 → **100** |
+| `replay-history.tsx`（1 → 7 例） | 69.23 → **100** | 20 → **100** | 33.33 → **100** | 73.91 → **100** |
+| `ai-chat.tsx`（15 → 19 例） | 72.02 → **87.56** | 64.67 → **73.65** | 51.66 → **73.33** | 77.16 → **92.59** |
+
+- 全局：语句 **90.68** / 分支 **84.21** / 函数 **90.06** / 行 **93.22**（批次前 90.11 / 83.65 / 88.69 / 92.68；阈值 84 / 77 / 83 / 87）。
+
+### 新增的关键行为断言
+
+- 登录头：游客/已登录/管理员态、路径高亮、危险账号操作、注销进行中禁用、失败恢复。
+- 回放历史：空态、汇总与色阶、倒序、最多 10 条、`total=0` 除零、`tb-progress` 实时刷新、卸载移除监听。
+- AI 对话：反馈只提交一次并配对问题/回答；清空必须确认且取消不丢失；复制成功/恢复文案；被截断回答续写时原文追加并提交 `continueFrom`。
+
+### 变更文件（关键）
+
+- `src/components/ai-chat.tsx`：复制反馈异步边界修复。
+- `src/components/ai-chat.test.tsx`、`src/components/auth-header.test.tsx`、`src/components/replay-history.test.tsx`：新增 19 条回归/分支用例。
+- `src/data/release-notes.json`、`CHANGELOG.md`：登记复制反馈修复与覆盖率结果。
+
+### 验证命令与结果（本地，全部以退出码判定）
+
+- `npm run test:coverage` exit 0 → **252 文件 / 2018 用例**通过；语句 90.68 / 分支 84.21 / 函数 90.06 / 行 93.22，阈值全过。
+- `npm run lint` / `npm run typecheck` / `npm run build` exit 0；生产构建 **474 静态页**生成成功。
+- `npm run audit:prod` / `npm run audit:all` exit 0 → 0 vulnerabilities；`npm run check:secrets` exit 0（666 个文本文件）。
+- `npm run check:lockfile-repro` exit 0（npm 10.9.4 复现 981 个包条目，无差异）。
+- 全部 30 项内容/SEO/构建产物门禁与 7 项内容质量报告 exit 0；新章节 dry-run 冒烟 exit 0；`git diff --check` exit 0。
+
+- 上游依赖：无；`content/kline-buty` 未变更。
+- 风险与回滚：修复只提前捕获 DOM 引用，不改复制协议；回滚 = 撤销 `4a2b4ba`。测试/文档可独立撤销。
+- 下一步：push 分支、创建 PR、等待全绿后以 `--rebase` 合并；随后重新检查 roadmap，继续处理可执行项。
+- 最后更新：2026-09-13
+
 ## 覆盖率批次 3：回放训练器两个生产回归 + 四条热点路径补测（`codex/coverage-batch-3`）
 
 - 状态：DONE（本地全部门禁绿灯，待 push + PR）
