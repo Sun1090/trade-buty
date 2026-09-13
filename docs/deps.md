@@ -33,13 +33,13 @@
 
 - `npm run audit:prod` → `found 0 vulnerabilities`（exit 0）
 - `npm run audit:all` → `found 0 vulnerabilities`（exit 0）
-- `npm outdated`：落后项全部是 major，无 minor/patch 待跟：
+- `npm outdated`：`js-yaml` 在当日发布 5.4.2 patch，已随本轮更新；其余落后项均为 major：
 
 | 包 | 当前 | 最新 | 处理 |
 |---|---|---|---|
 | `@types/node` | 20.19.43 | 22.20.2 | 已升级到 `22.20.2`；全量测试、lint、typecheck 实测见「工具链 major 升级」 |
 | `eslint` | 9.39.5 | 10.10.0 | 延期：`eslint-plugin-react` 尚未支持 ESLint 10，实跑 `npm run lint` 崩溃；证据见「工具链 major 升级」 |
-| `js-yaml` | 4.3.2 | 5.4.1 | 已升级直接依赖到 `5.4.1` 并改用具名导出；`gray-matter` 与 ESLint 配置链继续由 `overrides` 固定到各自兼容版本 |
+| `js-yaml` | 4.3.2 | 5.4.2 | 已升级直接依赖到 `5.4.2` 并改用具名导出；`gray-matter` 与 ESLint 配置链继续由 `overrides` 固定到各自兼容版本 |
 | `typescript` | 5.9.3 | 7.0.2 | 延期：`typescript-eslint` peer 尚未支持 TS 7，实跑 `npm run lint` 失败；证据见「工具链 major 升级」 |
 | `vitest` | 4.1.11 | 5.0.0 | 已升级到 `5.0.0`；全量测试、lint、typecheck 实测见「工具链 major 升级」 |
 
@@ -66,7 +66,7 @@
 | 包 | 变更 | 为什么升 | 验证 |
 |---|---|---|---|
 | `@types/node` | 20.19.43 → 22.20.2 | CI 与本地运行时都是 Node 22，类型包落后两个 major 会掩盖真实 API 差异 | `npm run typecheck` exit 0；`npm run lint` exit 0；`npm test` 247 文件 / 1795 例通过 |
-| `js-yaml` | 4.3.2 → 5.4.1 | v5 改为 ESM 原生包、**只有具名导出**（无 default export），属于会直接崩测试的破坏性变更 | `scripts/ci-workflow.test.mjs` 7 例通过；`npm test` 全量通过 |
+| `js-yaml` | 4.3.2 → 5.4.2 | v5 改为 ESM 原生包、**只有具名导出**（无 default export），属于会直接崩测试的破坏性变更；随后跟进 5.4.2 patch | `scripts/ci-workflow.test.mjs` 通过；`npm test` 251 文件 / 1845 例通过；lockfile 干净安装和构建通过 |
 | `vitest` | 4.1.11 → 5.0.0 | 与 Vite/Node 22 对齐，避免测试运行器落后主版本 | `npm test` 247 文件 / 1795 例通过；`npm run lint`、`npm run typecheck` exit 0 |
 
 `js-yaml` 只在 `scripts/ci-workflow.test.mjs` 里被直接使用（解析 `.github/workflows/ci.yml`），因此升级面很窄；`gray-matter` 依赖的 `js-yaml@3.15.2` 与 `@eslint/eslintrc` 依赖的 `js-yaml@4.3.2` 仍由 `overrides` 固定，未随直接依赖变化。
