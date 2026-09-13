@@ -352,4 +352,28 @@ describe("CI workflow contract", () => {
       "coverage 产物必须对 ESLint 全局忽略，否则跑过覆盖率后 lint 会误报",
     ).toContain("coverage/**");
   });
+
+  it("lockfile 可复现性门禁存在：devEngines 钉住 npm 主版本、CI 在 npm ci 后实跑", () => {
+    const manager = pkg.devEngines?.packageManager;
+    expect(manager, "缺少 devEngines.packageManager 的 npm 钉版").toBeTruthy();
+    expect(manager.name, "钉版必须指向 npm").toBe("npm");
+    // 钉住 CI 的 npm 主版本（Node 22 自带 npm 10），否则 npm 10/11 的 lockfile 形状漂移会漏网。
+    expect(String(manager.version), "npm 钉版必须锁定 CI 的 major 10").toMatch(/^[~^]?10\./);
+    expect(pkg.scripts?.["check:lockfile-repro"], "缺少 check:lockfile-repro 脚本").toBeTruthy();
+    expect(
+      fs.existsSync("scripts/check-lockfile-reproducibility.mjs"),
+      "缺少 check-lockfile-reproducibility.mjs 门禁脚本",
+    ).toBe(true);
+    expect(
+      fs.existsSync("scripts/lockfile-repro-lib.mjs"),
+      "缺少 lockfile-repro-lib.mjs 纯函数库",
+    ).toBe(true);
+    const commands = jobCommands(workflow.jobs.ci).split("\n").map((line) => line.trim());
+    expect(commands, "CI 必须实跑 check:lockfile-repro").toContain("npm run check:lockfile-repro");
+    // 门禁要在 npm ci 之后（lockfile 已就位）且早于其余质量门禁，快速暴露漂移。
+    const ciIndex = commands.indexOf("npm ci");
+    const reproIndex = commands.indexOf("npm run check:lockfile-repro");
+    expect(ciIndex, "缺少 npm ci").toBeGreaterThanOrEqual(0);
+    expect(reproIndex, "check:lockfile-repro 必须晚于 npm ci").toBeGreaterThan(ciIndex);
+  });
 });

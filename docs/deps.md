@@ -102,6 +102,13 @@ npx --yes npm@10.9.4 ci --registry=https://registry.npmjs.org
 
 按此流程生成的 diff 只有 6 增 6 删（root `devDependencies` 排序归一 + `node_modules/typescript` 换到 6.0.3），没有改动任何其他包。**约定：改动 `package-lock.json` 时必须用与 CI 相同的 npm 主版本生成，并在 PR 里贴出 `npm ci` 的退出码。**
 
+这道门禁已自动化，不再依赖人肉约定：
+
+- 根 `package.json` 用 `devEngines.packageManager` 钉住 npm 主版本（`^10.9.4`，与 CI 的 Node 22 自带 npm 对齐），`onFail: "warn"`——本地用 npm 11 只会收到一条 warning，不会挡住日常安装；CI 的 npm 10.9.x 命中范围时完全静默。
+- `npm run check:lockfile-repro`（`scripts/check-lockfile-reproducibility.mjs`）用钉住的 npm 版本重新生成一份 `package-lock.json`，与仓库里已提交的那份逐条目比较；有差异即失败并打印「运行中的 npm / CI 期望的 npm / 新增与消失的条目 / 修复命令」。脚本无论成功失败都从备份恢复 `package-lock.json`，不会把工作树留在被改写状态。
+- CI 在 `npm ci` 之后立即跑 `npm run check:lockfile-repro`，所以 Dependabot 再次用 npm 11 提交 lockfile 时会在 40 秒内以可读原因红灯，而不是让下游 `npm ci` 报 `Missing: <pkg> from lock file`。
+- 纯计算部分放在 `scripts/lockfile-repro-lib.mjs`，由 `scripts/lockfile-repro-lib.test.mjs` 覆盖（含 2026-09-13 实测的 14 条 `puppeteer-core` 嵌套条目回归 fixture）；工作流契约由 `scripts/ci-workflow.test.mjs` 锁定（钉版必须指向 npm 10、CI 必须实跑、且晚于 `npm ci`）。
+
 ### 顺带修复
 
 TS 7 的 `tsc --noEmit` 暴露出 `src/lib/sync-queue-executor.ts` 的 `user_settings` upsert 用了 `Record<string, number | string>`，被 Supabase 的 upsert 重载拒绝（`TS2345`）。改为具名行类型 `{ user_id: string; daily_goal_min?: number; weekly_goal_min?: number }` 后，**TS 5.9.3 与 TS 7.0.2 双双通过** `tsc --noEmit`；该改动纯类型，运行时行为不变。

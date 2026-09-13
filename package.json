@@ -25,6 +25,7 @@
     "check:env-docs": "node scripts/env-docs.mjs",
     "check:dark-pattern-copy": "node scripts/check-dark-pattern-copy.mjs",
     "check:docs": "node scripts/check-docs-consistency.mjs",
+    "check:lockfile-repro": "node scripts/check-lockfile-reproducibility.mjs",
     "check:changelog": "node scripts/generate-changelog.mjs --check",
     "changelog:generate": "node scripts/generate-changelog.mjs",
     "check:constitution": "node scripts/check-constitution.mjs",
@@ -118,5 +119,12 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "version": "^10.9.4",
+      "onFail": "warn"
+    }
   }
 }

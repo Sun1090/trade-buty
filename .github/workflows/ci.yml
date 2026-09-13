@@ -29,6 +29,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run check:lockfile-repro
       - run: npm run audit:prod
       - run: npm run audit:all
       - run: npm run check:secrets
