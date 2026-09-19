@@ -3143,3 +3143,25 @@ Verification:
 Next:
 
 - Continue the coverage audit with the next lowest-coverage component/library, then consolidate the batch for review.
+
+## 2026-09-19 — Invite-banner interaction coverage
+
+Status: in progress on `codex/coverage-batch-18`.
+
+Completed:
+
+- Added regression coverage for previously dismissed invites.
+- Added multi-tab storage-event coverage for clearing an active invite and hiding the banner.
+
+Changed files:
+
+- `src/components/invite-banner.test.tsx`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run src/components/invite-banner.test.tsx --reporter=dot` — passed, 9 tests.
+
+Next:
+
+- Continue the coverage audit after committing this topic.
