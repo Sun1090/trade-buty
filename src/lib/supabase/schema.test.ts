@@ -97,6 +97,7 @@ const expectedTables = {
   replay_history: schema.replayHistory,
   replay_best: schema.replayBest,
   kb_embeddings: schema.kbEmbeddings,
+  kb_embedding_generations: schema.kbEmbeddingGenerations,
   ai_conversations: schema.aiConversations,
   ai_feedback: schema.aiFeedback,
   ai_citation_clicks: schema.aiCitationClicks,
@@ -154,6 +155,10 @@ describe("Supabase migration contract", () => {
     const embeddings = migrations.get("kb_embeddings")?.policies ?? [];
     expect(embeddings.map((policy) => policy.command)).toEqual(["select"]);
     expect(embeddings[0]?.body).toContain("true");
+
+    const generations = migrations.get("kb_embedding_generations")?.policies ?? [];
+    expect(generations.map((policy) => policy.command)).toEqual(["select"]);
+    expect(generations[0]?.body).toContain("true");
 
     const clicks = migrations.get("ai_citation_clicks")?.policies ?? [];
     expect(clicks.map((policy) => policy.command)).toEqual(["insert"]);
