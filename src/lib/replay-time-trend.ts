@@ -7,7 +7,7 @@
  *   不回推、不估算，统计口径内不计入时长，并给出 no-round-durations 警告。
  * - 时长清洗：负数/非数 → 按无时长处理；单轮 >8h → 截断到 8h（与 study-time 防呆一致）。
  */
-import { localDateStr, shiftDate } from "./date-utils";
+import { isLocalDateStr, localDateStr, shiftDate } from "./date-utils";
 
 export interface ReplayHistoryEntry {
   at?: unknown;
@@ -80,7 +80,7 @@ export function buildReplayTimeTrend(input: {
 }): ReplayTimeTrend {
   const history = normalizeReplayHistory(input.history);
   const today =
-    input.today && /^\d{4}-\d{2}-\d{2}$/.test(input.today)
+    isLocalDateStr(input.today)
       ? input.today
       : localDateStr();
   const requestedDays = Number(input.days);

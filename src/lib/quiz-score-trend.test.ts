@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
+import { localDateStr } from "./date-utils";
 import { buildQuizScoreTrend, normalizeQuizLedger, readQuizLedger } from "./quiz-score-trend";
 
 const local = (month: number, day: number, hour = 12) => new Date(2026, month - 1, day, hour).getTime();
 
 describe("buildQuizScoreTrend", () => {
+  it("rejects impossible calendar dates used as today", () => {
+    const result = buildQuizScoreTrend({ chapters: [], today: "2026-02-31" });
+    expect(result.days.at(-1)?.date).toBe(localDateStr());
+    expect(result.days.at(-1)?.date).not.toBe("2026-02-31");
+  });
+
   it("buckets quiz attempts and reports in-range and current best score", () => {
     const trend = buildQuizScoreTrend({
       chapters: [{ slug: "getting-started", questions: 10 }, { slug: "spot", questions: 8 }],
