@@ -2809,3 +2809,35 @@ Blockers / risk / rollback:
 Next:
 
 - Re-audit remaining shallow learner-facing component tests and select the next stateful control with persistence, navigation, or accessibility behavior that is not yet asserted.
+
+## 2026-09-19 — Coverage batch 15: automatic read completion
+
+Status: completed on `codex/coverage-batch-14`.
+
+Completed:
+
+- Replaced the invisible-component smoke test with behavioral coverage for short documents, the strict 50% scroll threshold, single-fire semantics, route identity changes, and listener cleanup.
+- Fixed a scroll-listener leak on documents shorter than the viewport: the component previously marked them read immediately, then attached a listener that could never do useful work.
+
+Changed files:
+
+- `src/components/mark-read.tsx`
+- `src/components/mark-read.test.tsx`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run src/components/mark-read.test.tsx --reporter=dot` — passed, 4 tests.
+- `npm test` — passed, 253 files / 2,151 tests.
+- `npm run lint -- --quiet` — passed with zero warnings.
+- `npm run typecheck` — passed (`next typegen` + `tsc --noEmit`).
+- `npm run build` — passed; knowledge contract validated and 474 static pages generated.
+
+Blockers / risk / rollback:
+
+- No new blocker. Read-completion thresholds and persistence behavior are unchanged; the fix only skips an unnecessary listener after synchronous completion.
+- Rollback is the atomic commit for this batch.
+
+Next:
+
+- Continue the shallow-test audit with learner navigation and responsive controls, prioritizing tests that can reveal stale event subscriptions or state-transition defects.

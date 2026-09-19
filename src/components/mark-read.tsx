@@ -25,7 +25,9 @@ export function MarkRead({
       }
     }
     onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    if (!fired.current) {
+      window.addEventListener("scroll", onScroll, { passive: true });
+    }
     return () => window.removeEventListener("scroll", onScroll);
   }, [chapterNum, docSlug]);
 
