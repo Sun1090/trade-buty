@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertKnowledgeRoot,
   convertContainers,
+  getAdjacentChapters,
+  getAdjacentDocs,
+  getChapter,
+  getChapters,
+  getChapterSlugs,
+  getDoc,
+  getDocMetas,
   prepareForRender,
   rewriteLinks,
   stripLeadingH1,
@@ -168,5 +176,64 @@ describe("章节导语风险提示兜底", () => {
 
   it("已有合规风险块时不重复展示兜底提示", () => {
     expect(shouldShowRiskWarningFallback("::: warning ⚠️ 风险提示\n内容\n:::")).toBe(false);
+  });
+});
+
+
+describe("knowledge-base filesystem contract", () => {
+  it("discovers the bilingual chapter tree in stable product order", () => {
+    expect(() => assertKnowledgeRoot()).not.toThrow();
+    const zh = getChapterSlugs("zh");
+    const en = getChapterSlugs("en");
+    expect(zh).toHaveLength(27);
+    expect(en).toEqual(zh);
+    expect(zh[0]).toBe("getting-started");
+    expect(zh.at(-1)).toBe("options-strategies");
+  });
+
+  it("reads chapter metadata, introductions and adjacent chapters", () => {
+    const chapters = getChapters("zh");
+    const first = chapters[0];
+    expect(first).toMatchObject({ slug: "getting-started", order: 0 });
+    expect(first.title).toContain("入门");
+    expect(first.tagline.length).toBeGreaterThan(0);
+    expect(first.docCount).toBeGreaterThan(0);
+
+    const chapter = getChapter("zh", "getting-started");
+    expect(chapter?.introContent).toContain("# 01");
+    expect(getChapter("zh", "missing-chapter")).toBeNull();
+    expect(getAdjacentChapters("zh", "getting-started")).toMatchObject({ prev: null, next: { slug: "spot" } });
+    expect(getAdjacentChapters("zh", "missing-chapter")).toEqual({ prev: null, next: null });
+  });
+
+  it("parses ordered document metadata and full documents in both locales", () => {
+    const zh = getDocMetas("zh", "getting-started");
+    const en = getDocMetas("en", "getting-started");
+    expect(zh.map((doc) => doc.slug)).toEqual(en.map((doc) => doc.slug));
+    expect(zh[0]).toMatchObject({ slug: "market-overview", chapterSlug: "getting-started" });
+    expect(zh[0].title).toContain("01");
+    expect(zh[0].description.length).toBeGreaterThan(0);
+
+    const doc = getDoc("zh", "getting-started", "market-overview");
+    expect(doc?.content.length).toBeGreaterThan(100);
+    expect(doc?.fileName).toBe("market-overview.md");
+    expect(getDoc("zh", "getting-started", "missing-doc")).toBeNull();
+  });
+
+  it("returns document neighbors at the beginning, middle and unknown positions", () => {
+    const metas = getDocMetas("zh", "getting-started");
+    expect(getAdjacentDocs("zh", "getting-started", metas[0].slug)).toMatchObject({
+      prev: null,
+      next: { slug: metas[1].slug },
+    });
+    expect(getAdjacentDocs("zh", "getting-started", metas[1].slug)).toMatchObject({
+      prev: { slug: metas[0].slug },
+      next: { slug: metas[2].slug },
+    });
+    expect(getAdjacentDocs("zh", "getting-started", "missing-doc")).toEqual({ prev: null, next: null });
+  });
+
+  it("fails clearly when a requested language root is absent", () => {
+    expect(() => getChapterSlugs("missing-locale")).toThrow("知识库语言根目录缺失：missing-locale");
   });
 });
