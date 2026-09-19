@@ -26,4 +26,25 @@ describe("content inventory (R10.1)", () => {
     expect(markdown).toContain("✅ 当前 zh 内容均有对应英文版本。");
     expect(markdown).toContain("课程覆盖：1/1（100%）");
   });
+
+  it("treats empty inventories as fully covered without division by zero", () => {
+    const report = buildContentInventory({}, {}, "2026-09-19");
+    expect(report.coverage.chapter).toEqual({ translated: 0, total: 0, percent: 100 });
+    expect(report.coverage.document).toEqual({ translated: 0, total: 0, percent: 100 });
+  });
+
+  it("renders missing chapters and documents in deterministic order", () => {
+    const report = buildContentInventory(
+      {
+        zeta: { documents: ["z-two", "z-one"] },
+        alpha: { documents: ["a-one"] },
+      },
+      { alpha: { documents: [] } },
+      "2026-09-19",
+    );
+    const markdown = renderContentInventoryMarkdown(report);
+    expect(markdown).toContain("- 缺整章：`en/zeta/`");
+    expect(markdown).toContain("- `alpha`：`a-one`");
+    expect(markdown).toContain("- `zeta`：`z-one`、`z-two`");
+  });
 });
