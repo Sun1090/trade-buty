@@ -112,3 +112,66 @@ describe("bundle measurement", () => {
     expect(metricFailures(measurement, budget)).toEqual(["js", "css", "html", "total"]);
   });
 });
+
+describe("bundle budget validation boundaries", () => {
+  it("rejects malformed manifests before reading budgets", () => {
+    expect(validateBudgetManifest(null)).toEqual(["manifest must be an object"]);
+    expect(validateBudgetManifest([])).toEqual(["manifest must be an object"]);
+    expect(validateBudgetManifest({ version: 2, budgets: [] })).toEqual([
+      "version must be 1",
+      "budgets must be a non-empty array",
+    ]);
+  });
+
+  it("reports malformed budget entries and unknown metrics", () => {
+    const errors = validateBudgetManifest({
+      version: 1,
+      budgets: [
+        null,
+        {
+          id: "Bad ID",
+          description: " ",
+          match: " ",
+          maxGzipKB: { js: 0, css: Infinity, html: -1, total: "1", extra: 1 },
+        },
+        { id: "duplicate", description: "ok", match: "^x$", maxGzipKB: { js: 1, css: 1, html: 1, total: 1 } },
+        { id: "duplicate", description: "ok", match: "^y$", maxGzipKB: { js: 1, css: 1, html: 1, total: 1 } },
+      ],
+    });
+    expect(errors).toEqual(expect.arrayContaining([
+      "budgets[0] must be an object",
+      "budgets[1].id must be a lowercase slug",
+      "budgets[1].description must be non-empty",
+      "budgets[1].match must be a non-empty regular expression",
+      "budgets[1].maxGzipKB.js must be a positive number",
+      "budgets[1].maxGzipKB.css must be a positive number",
+      "budgets[1].maxGzipKB.html must be a positive number",
+      "budgets[1].maxGzipKB.total must be a positive number",
+      "budgets[1].maxGzipKB has unknown metric extra",
+      "budgets[3].id duplicates duplicate",
+    ]));
+  });
+
+  it("throws a useful error when compiling an invalid manifest", () => {
+    expect(() => compileBudgetManifest({ version: 1, budgets: [] })).toThrow(
+      "invalid bundle budget manifest",
+    );
+  });
+});
+
+describe("bundle matching and asset boundaries", () => {
+  it("reports ambiguous route matches and rejects unsupported assets", () => {
+    const ambiguous = [
+      { id: "first", regex: /route/ },
+      { id: "second", regex: /route/ },
+    ];
+    expect(matchRouteBudget("route", ambiguous)).toEqual({
+      budget: null,
+      error: "route matches multiple budgets: first, second",
+    });
+    expect(() => collectStaticAssetUrls("", "html")).toThrow("unsupported asset extension: html");
+    expect(() => staticAssetRepoPath("/uploads/app.js")).toThrow(
+      "asset is outside /_next/static: /uploads/app.js",
+    );
+  });
+});

@@ -3058,3 +3058,28 @@ Verification:
 Next:
 
 - Run the repository gates, commit this atomic coverage topic, then continue the lowest-coverage script audit.
+
+## 2026-09-19 — Bundle-budget validation boundary coverage
+
+Status: in progress on `codex/coverage-batch-18`.
+
+Completed:
+
+- Added malformed-manifest coverage for invalid roots, versions, empty budgets, malformed entries, duplicate IDs, invalid regexes, incomplete metrics, and unknown metrics.
+- Added compile failure, ambiguous route matching, unsupported asset extension, and unsafe asset-path coverage.
+- Focused `scripts/bundle-budget.mjs` coverage now reaches 96.1% statements, 98.21% branches, 93.75% functions, and 96% lines.
+
+Changed files:
+
+- `scripts/bundle-budget.test.mjs`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run scripts/bundle-budget.test.mjs --reporter=dot` — passed, 27 tests.
+- Focused coverage command — passed tests and reported the coverage above.
+- `git diff --check` — passed.
+
+Next:
+
+- Run the full gates for this batch, commit the bundle-budget coverage topic, then continue with the next lowest-coverage library.
