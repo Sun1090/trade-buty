@@ -24,12 +24,14 @@ describe("formatDuration", () => {
   it("秒级 < 60s", () => {
     expect(formatDuration(30)).toBe("30s");
     expect(formatDuration(59.4)).toBe("59s");
+    expect(formatDuration(59.9)).toBe("1m 0s");
   });
 
   it("分级 1-59 分", () => {
     expect(formatDuration(60)).toBe("1m 0s");
     expect(formatDuration(90)).toBe("1m 30s");
     expect(formatDuration(3599)).toBe("59m 59s");
+    expect(formatDuration(3599.9)).toBe("1h 0m");
   });
 
   it("小时级 ≥ 60 分", () => {
