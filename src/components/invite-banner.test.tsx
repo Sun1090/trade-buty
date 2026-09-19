@@ -148,4 +148,21 @@ describe("InviteBanner", () => {
     expect(screen.queryByTestId("invite-banner")).toBeNull();
     expect(localStorage.getItem("tb-invite-ref")).toBeNull();
   });
+
+  it("does not show a previously dismissed invite", async () => {
+    setSearch("?ref=frank");
+    localStorage.setItem("tb-invite-dismissed-frank", "1");
+    render(<InviteBanner labels={labels} locale="en" />);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByTestId("invite-banner")).toBeNull();
+  });
+
+  it("syncs visibility and ref changes from storage events", async () => {
+    setSearch("?ref=gina");
+    render(<InviteBanner labels={labels} locale="en" />);
+    await screen.findByTestId("invite-banner");
+    localStorage.removeItem("tb-invite-ref");
+    fireEvent(window, new StorageEvent("storage", { key: "tb-invite-ref" }));
+    await waitFor(() => expect(screen.queryByTestId("invite-banner")).toBeNull());
+  });
 });
