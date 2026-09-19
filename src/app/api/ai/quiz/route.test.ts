@@ -86,6 +86,56 @@ describe("POST /api/ai/quiz 输入校验（R7.12）", () => {
     expect(chat).not.toHaveBeenCalled();
   });
 
+  it("变体模式：RAG 或模型输出异常时安全降级为 502", async () => {
+    retrieve.mockRejectedValueOnce(new Error("vector unavailable"));
+    chat.mockResolvedValueOnce("not json");
+    const invalidJson = await POST(request({ items: [{ chapterNum: "getting-started", questionIdx: 0 }] }));
+    expect(invalidJson.status).toBe(502);
+    expect((await invalidJson.json()).error).not.toContain("Invalid AI response");
+
+    retrieve.mockResolvedValueOnce([
+      { chapter: "getting-started", doc: "first-trade", chunk: "止损纪律与仓位管理", similarity: 0.9 },
+    ]);
+    chat.mockResolvedValueOnce(JSON.stringify({ questions: [{ question: "坏题" }] }));
+    const invalidQuestion = await POST(request({ items: [{ chapterNum: "getting-started", questionIdx: 0 }] }));
+    expect(invalidQuestion.status).toBe(502);
+  });
+
+  it("章节模式：生成、缓存、英文检索与固定题回退", async () => {
+    retrieve.mockResolvedValue([
+      { chapter: "futures", doc: "futures-basics", chunk: "期货 合约 保证金 风险", similarity: 0.9 },
+    ]);
+    chat.mockResolvedValue(JSON.stringify({ questions: [{
+      question: "期货合约的保证金主要用于什么风险约束？",
+      options: ["履约担保", "保证盈利", "消除波动", "固定价格"],
+      answer: 0,
+      explain: "保证金用于约束合约履约风险，并不保证盈利或消除价格波动。",
+      source: { chapter: "futures", doc: "futures-basics" },
+    }] }));
+
+    const generated = await POST(request({ chapter: "futures", difficulty: "advanced" }));
+    expect(generated.status).toBe(200);
+    expect(await generated.json()).toMatchObject({ source: "ai" });
+    expect(retrieve).toHaveBeenCalledWith(expect.stringContaining("核心概念"), "zh", expect.any(Number), expect.any(Number), "futures");
+
+    const cached = await POST(request({ chapter: "futures", difficulty: "advanced" }));
+    expect(await cached.json()).toMatchObject({ source: "ai", cached: true });
+    expect(chat).toHaveBeenCalledTimes(1);
+
+    retrieve.mockRejectedValueOnce(new Error("rag down"));
+    chat.mockRejectedValueOnce("model down");
+    const fallback = await POST(request({ chapter: "technical-analysis" }));
+    expect(fallback.status).toBe(200);
+    expect(await fallback.json()).toMatchObject({ source: "fallback" });
+
+    retrieve.mockResolvedValueOnce([]);
+    chat.mockRejectedValueOnce(new Error("model down"));
+    const englishFallback = await POST(request({ chapter: "bonds-rates", locale: "en" }));
+    expect(englishFallback.status).toBe(200);
+    expect(await englishFallback.json()).toMatchObject({ source: "fallback" });
+    expect(retrieve).toHaveBeenLastCalledWith(expect.stringContaining("core concepts"), "en", expect.any(Number), expect.any(Number), "bonds-rates");
+  });
+
   it("变体模式：真实篇章 slug 能取到原题并调用模型（回归保护）", async () => {
     retrieve.mockResolvedValue([
       { chapter: "getting-started", doc: "first-trade", chunk: "止损纪律与仓位管理", similarity: 0.9 },
