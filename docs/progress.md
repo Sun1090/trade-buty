@@ -2959,3 +2959,34 @@ Blockers / risk / rollback:
 Next:
 
 - Exercise the new migration's own rollback/replay path in the database harness, then continue the AI retrieval audit for stale-generation observability and operational retry behavior.
+
+## 2026-09-19 — Atomic embedding rollback/replay drill
+
+Status: completed on `codex/coverage-batch-16`.
+
+Completed:
+
+- Extended `npm run db:test` with a real rollback/replay exercise for migration 0009.
+- Added rollback behavior that removes staged, non-active generations before dropping the generation discriminator, preserving only rows visible through the active pointer.
+- Verified rollback removes the generation table/column, preserves the active row, and reapplying migration 0009 restores the pointer, generation metadata, and service-only activation ACL.
+
+Changed files:
+
+- `scripts/db-test.mjs`
+- `supabase/rollback/0009_atomic_embedding_generations.sql`
+- `docs/progress.md`
+
+Verification:
+
+- `npm run db:test` — passed: 10 migrations, 3 pgTAP files / 72 assertions, 0008 rollback/replay, and 0009 rollback/replay.
+- `node --check scripts/db-test.mjs` — passed.
+- `git diff --check` — passed.
+
+Blockers / risk / rollback:
+
+- Production migration and vector refresh still require external Supabase and embedding credentials.
+- The rollback intentionally discards non-active staged vectors because they were never queryable; active vectors remain available.
+
+Next:
+
+- Commit this atomic rollback/drill topic, then inspect the AI retrieval path for stale-generation observability and retry-safe operational behavior.

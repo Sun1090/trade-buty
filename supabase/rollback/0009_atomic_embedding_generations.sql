@@ -28,6 +28,17 @@ language sql stable as $$
 $$;
 
 drop function if exists activate_kb_embedding_generation(text, uuid);
+
+-- Rows outside the active pointer are incomplete/failed staging generations and
+-- were never queryable. Remove them before dropping the generation discriminator.
+delete from kb_embeddings e
+where not exists (
+  select 1
+  from kb_embedding_generations g
+  where g.locale = e.locale
+    and g.active_generation = e.generation
+);
+
 drop table if exists kb_embedding_generations;
 drop index if exists idx_kb_embeddings_locale_generation;
 alter table kb_embeddings drop column if exists generation;
