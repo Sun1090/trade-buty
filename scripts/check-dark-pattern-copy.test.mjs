@@ -164,6 +164,13 @@ describe("check-dark-pattern-copy", () => {
     expect(Object.keys(entries)).toContain("returnNudgeLater");
   });
 
+  it("handles missing parser blocks and safe copy without false positives", () => {
+    expect(extractLocaleBlock("const en = {};", "zh")).toBeNull();
+    expect(extractSection(null, "share")).toBeNull();
+    expect(extractEntries(null)).toEqual({});
+    expect(scanCopy(["继续学习，稍后再说"], BANNED_ZH)).toEqual([]);
+  });
+
   it("flags zh fake urgency and false scarcity copy", () => {
     const hits = scanCopy(["限时免费，最后机会！", "仅剩 3 个名额"], BANNED_ZH);
     expect(hits.map((h) => h.rule)).toEqual(
