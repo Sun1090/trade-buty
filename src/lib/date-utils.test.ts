@@ -9,13 +9,22 @@ vi.stubGlobal("localStorage", {
 });
 vi.stubGlobal("window", { dispatchEvent: () => {} });
 
-const { localDateStr, shiftDate, daysBetween } = await import("./date-utils");
+const { localDateStr, isLocalDateStr, shiftDate, daysBetween } = await import("./date-utils");
 const { addStudyTime, getStudySeconds, getStudySeries, getTotalStudySeconds } = await import("./study-time");
 
 describe("date-utils（R4.8）", () => {
   it("localDateStr 输出 YYYY-MM-DD", () => {
     expect(localDateStr(new Date(2026, 8, 5))).toBe("2026-09-05");
     expect(localDateStr(new Date(2026, 11, 31))).toBe("2026-12-31");
+  });
+
+  it("isLocalDateStr 拒绝格式正确但不存在的日历日期", () => {
+    expect(isLocalDateStr("2024-02-29")).toBe(true);
+    expect(isLocalDateStr("2026-02-29")).toBe(false);
+    expect(isLocalDateStr("2026-02-31")).toBe(false);
+    expect(isLocalDateStr("2026-13-01")).toBe(false);
+    expect(isLocalDateStr("2026-00-10")).toBe(false);
+    expect(isLocalDateStr("2026-9-01")).toBe(false);
   });
 
   it("shiftDate 跨月/跨年加减", () => {

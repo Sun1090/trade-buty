@@ -9,7 +9,7 @@
  * 打开课程页停留 ≥5 秒即计入当日 read——「打开即算活跃」的兜底口径。
  * quiz/replay 由组件在会话结束时上报实际耗时。
  */
-import { localDateStr } from "./date-utils";
+import { isLocalDateStr, localDateStr } from "./date-utils";
 import { isRecord, readStorageJson } from "./storage-json";
 
 const KEY = "tb-study-time";
@@ -30,7 +30,7 @@ function readLedger(): Ledger {
 
   const out: Ledger = {};
   for (const [day, rawEntry] of Object.entries(parsed)) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !isRecord(rawEntry)) continue;
+    if (!isLocalDateStr(day) || !isRecord(rawEntry)) continue;
     const entry: DayEntry = {};
     for (const source of ["read", "quiz", "replay"] as const) {
       const value = rawEntry[source];
