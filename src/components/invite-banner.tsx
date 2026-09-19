@@ -19,7 +19,6 @@ interface Labels {
 export function InviteBanner({ labels, locale }: { labels: Labels; locale: "zh" | "en" }) {
   const [visible, setVisible] = useState(false);
   const [ref, setRef] = useState<string | null>(null);
-  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
   const viewTracked = useRef(false);
 
   useEffect(() => {
@@ -38,11 +37,9 @@ export function InviteBanner({ labels, locale }: { labels: Labels; locale: "zh" 
     const key = `tb-invite-dismissed-${active.ref}`;
     if (typeof localStorage !== "undefined" && localStorage.getItem(key) === "1") {
       setVisible(false);
-      setDismissedKey(key);
       return;
     }
     setRef(active.ref);
-    setDismissedKey(key);
     setVisible(true);
     if (!viewTracked.current) {
       viewTracked.current = true;
@@ -57,11 +54,13 @@ export function InviteBanner({ labels, locale }: { labels: Labels; locale: "zh" 
     const onStorage = (e: StorageEvent) => {
       if (e.key === "tb-invite-ref") {
         const next = readInvite();
-        if (!next) {
+        const nextDismissed = next && localStorage.getItem(`tb-invite-dismissed-${next.ref}`) === "1";
+        setRef(next?.ref ?? null);
+        setVisible(Boolean(next && !nextDismissed));
+      } else if (e.key?.startsWith("tb-invite-dismissed-")) {
+        const current = readInvite();
+        if (current && e.key === `tb-invite-dismissed-${current.ref}` && localStorage.getItem(e.key) === "1") {
           setVisible(false);
-          setRef(null);
-        } else {
-          setRef(next.ref);
         }
       }
     };
@@ -71,7 +70,7 @@ export function InviteBanner({ labels, locale }: { labels: Labels; locale: "zh" 
 
   function handleDismiss() {
     if (typeof localStorage === "undefined") return;
-    if (dismissedKey) localStorage.setItem(dismissedKey, "1");
+    if (ref) localStorage.setItem(`tb-invite-dismissed-${ref}`, "1");
     trackGrowthEvent({ name: "invite_banner_dismissed", locale });
     setVisible(false);
   }

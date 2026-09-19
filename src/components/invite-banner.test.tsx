@@ -165,4 +165,54 @@ describe("InviteBanner", () => {
     fireEvent(window, new StorageEvent("storage", { key: "tb-invite-ref" }));
     await waitFor(() => expect(screen.queryByTestId("invite-banner")).toBeNull());
   });
+
+  it("updates the displayed ref and dismissal target when another tab replaces the invite", async () => {
+    setSearch("?ref=gina");
+    render(<InviteBanner labels={labels} locale="en" />);
+    await screen.findByTestId("invite-banner");
+    localStorage.setItem("tb-invite-ref", JSON.stringify({
+      ref: "hank", recordedAt: Date.now(), expiresAt: Date.now() + 60_000,
+    }));
+    fireEvent(window, new StorageEvent("storage", { key: "tb-invite-ref" }));
+    expect(screen.getByTestId("invite-banner").textContent).toContain("hank");
+    fireEvent.click(screen.getByTestId("invite-banner-dismiss"));
+    expect(localStorage.getItem("tb-invite-dismissed-hank")).toBe("1");
+    expect(localStorage.getItem("tb-invite-dismissed-gina")).toBeNull();
+  });
+
+  it("hides an invite dismissed in another tab", async () => {
+    setSearch("?ref=gina");
+    render(<InviteBanner labels={labels} locale="en" />);
+    await screen.findByTestId("invite-banner");
+    localStorage.setItem("tb-invite-dismissed-gina", "1");
+    fireEvent(window, new StorageEvent("storage", { key: "tb-invite-dismissed-gina" }));
+    expect(screen.queryByTestId("invite-banner")).toBeNull();
+  });
+
+
+  it("does not display a ref that another tab already dismissed", async () => {
+    setSearch("?ref=gina");
+    render(<InviteBanner labels={labels} locale="en" />);
+    await screen.findByTestId("invite-banner");
+    localStorage.setItem("tb-invite-dismissed-hank", "1");
+    localStorage.setItem("tb-invite-ref", JSON.stringify({
+      ref: "hank", recordedAt: Date.now(), expiresAt: Date.now() + 60_000,
+    }));
+    fireEvent(window, new StorageEvent("storage", { key: "tb-invite-ref" }));
+    expect(screen.queryByTestId("invite-banner")).toBeNull();
+  });
+
+  it("hides the latest ref when it is dismissed after a cross-tab replacement", async () => {
+    setSearch("?ref=gina");
+    render(<InviteBanner labels={labels} locale="en" />);
+    await screen.findByTestId("invite-banner");
+    localStorage.setItem("tb-invite-ref", JSON.stringify({
+      ref: "hank", recordedAt: Date.now(), expiresAt: Date.now() + 60_000,
+    }));
+    fireEvent(window, new StorageEvent("storage", { key: "tb-invite-ref" }));
+    localStorage.setItem("tb-invite-dismissed-hank", "1");
+    fireEvent(window, new StorageEvent("storage", { key: "tb-invite-dismissed-hank" }));
+    expect(screen.queryByTestId("invite-banner")).toBeNull();
+  });
+
 });
