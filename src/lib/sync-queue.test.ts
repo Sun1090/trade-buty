@@ -159,6 +159,21 @@ describe("readQueue", () => {
     expect(out[0]).toMatchObject({ id: 1, kind: "progress" });
   });
 
+  it("丢弃损坏的 id、kind、payload 与时间，避免重放或 nextId 冲突", () => {
+    const base = { id: 1, kind: "progress", payloadKey: "k", payload: {}, at: 100 };
+    const out = readQueue(JSON.stringify([
+      base,
+      { ...base, id: -1 },
+      { ...base, id: 1.5 },
+      { ...base, id: Number.MAX_SAFE_INTEGER + 1 },
+      { ...base, kind: "unknown" },
+      { ...base, payload: null },
+      { ...base, payload: [] },
+      { ...base, at: "100" },
+    ]));
+    expect(out).toEqual([base]);
+  });
+
   it("缺字段条目被丢弃", () => {
     const json = JSON.stringify([
       { id: 1, kind: "progress", payloadKey: "k", payload: { x: 1 }, at: 100 }, // 合法

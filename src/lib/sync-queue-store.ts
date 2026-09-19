@@ -31,8 +31,10 @@ export function loadQueueAndNextId(): { queue: QueueItem[]; nextId: number } {
   try {
     queue = readQueue(globalThis.localStorage?.getItem(QUEUE_KEY));
     const idStr = globalThis.localStorage?.getItem(QUEUE_NEXT_ID_KEY);
-    const parsed = idStr ? parseInt(idStr, 10) : NaN;
-    if (Number.isFinite(parsed) && parsed > 0) nextId = parsed;
+    const parsed = idStr && /^[1-9]\d*$/.test(idStr) ? Number(idStr) : NaN;
+    if (Number.isSafeInteger(parsed) && parsed < Number.MAX_SAFE_INTEGER) nextId = parsed;
+    const maxQueuedId = queue.reduce((max, item) => Math.max(max, item.id), 0);
+    nextId = Math.max(nextId, maxQueuedId + 1);
   } catch {
     // localStorage 不可用（SSR / 隐私模式）→ 返回空
   }

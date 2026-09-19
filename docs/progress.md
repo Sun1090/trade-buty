@@ -3309,3 +3309,21 @@ Verification: focused Vitest 15 passed; lint, typecheck, diff whitespace passed.
 Blockers / risk / rollback: none; display-only behavior, revert commit if presentation policy changes.
 
 Next: full quality gates, CI review, then audit next core boundary.
+
+## 2026-09-19 — Offline sync queue identifier recovery
+
+Status: completed locally on `codex/coverage-batch-22`.
+
+Completed:
+
+- Recover the next offline-write ID from the greatest persisted queue ID when the separate counter is missing or stale, preventing duplicate IDs after interrupted storage writes.
+- Reject partial, fractional, unsafe counters and malformed queue entries (invalid ID/kind/payload/timestamp) before replay.
+- Added regression tests for stale/missing counters and corrupted entries.
+
+Changed files: `src/lib/sync-queue-store.ts`, `src/lib/sync-queue-store.test.ts`, `src/lib/sync-queue.ts`, `src/lib/sync-queue.test.ts`, `docs/progress.md`.
+
+Verification: focused Vitest 36 passed; typecheck and lint passed; full gate pending.
+
+Risk / rollback: invalid persisted queue entries are omitted rather than replayed; valid entries remain unchanged. Revert this commit if a retired queue kind must be migrated instead of discarded.
+
+Next: full test/build, submit for CI, then continue data-isolation audit.
