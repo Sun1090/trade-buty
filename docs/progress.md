@@ -3106,3 +3106,26 @@ Verification:
 Next:
 
 - Run the full gates, commit this coverage topic, then continue the operational-script coverage audit.
+
+## 2026-09-19 — Dark-pattern parser boundary coverage
+
+Status: in progress on `codex/coverage-batch-18`.
+
+Completed:
+
+- Added parser boundary coverage for missing locale/section blocks and empty entry extraction.
+- Added a neutral-copy regression ensuring the blacklist does not report safe educational wording.
+
+Changed files:
+
+- `scripts/check-dark-pattern-copy.test.mjs`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run scripts/check-dark-pattern-copy.test.mjs --reporter=dot` — passed, 15 tests.
+- `git diff --check` — passed.
+
+Next:
+
+- Run the full gates, commit this coverage topic, then continue the coverage audit.
