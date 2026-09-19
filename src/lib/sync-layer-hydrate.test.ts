@@ -468,6 +468,25 @@ describe("hydrateFromCloud", () => {
     expect(dispatchSpy).toHaveBeenCalled();
   });
 
+  it("账号在请求期间切换时丢弃过期响应，不污染当前本地状态", async () => {
+    let resolveProgress!: (value: { data: Array<{ chapter_num: string; doc_slug: string }> }) => void;
+    mockProgressSelect.mockReturnValueOnce(new Promise((resolve) => {
+      resolveProgress = resolve;
+    }));
+    memStore.set("tb-progress", JSON.stringify({ local: ["kept"] }));
+    let current = true;
+
+    const { hydrateFromCloud } = await import("./sync-layer");
+    const hydration = hydrateFromCloud("user-a", () => current);
+    current = false;
+    resolveProgress({ data: [{ chapter_num: "cloud-a", doc_slug: "private" }] });
+    await hydration;
+
+    expect(JSON.parse(memStore.get("tb-progress")!)).toEqual({ local: ["kept"] });
+    expect(mockProgressUpsert).not.toHaveBeenCalled();
+    expect(memStore.get("tb-cloud-sync-at")).toBeUndefined();
+  });
+
   it("空 id 直接 return，不发起任何 supabase 请求", async () => {
     const { hydrateFromCloud } = await import("./sync-layer");
     await hydrateFromCloud("");

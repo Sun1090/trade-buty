@@ -369,8 +369,11 @@ export function mergeReplayBest(local: number, cloudBest: number): number {
  * 最后 dispatch 一次 tb-progress 让所有消费组件刷新。
  * 失败静默降级（保留本地数据）。
  */
-export async function hydrateFromCloud(id: string) {
-  if (!id) return;
+export async function hydrateFromCloud(
+  id: string,
+  isCurrent: () => boolean = () => true,
+) {
+  if (!id || !isCurrent()) return;
 
   // R9.4：整体降级——任意一张表失败都不能抛（断网/RLS deny 都不该影响本地体验）
   let progressRes: { data: CloudProgress[] | null } | undefined;
@@ -401,6 +404,9 @@ export async function hydrateFromCloud(id: string) {
     return;
   }
 
+  // 账号可能在请求期间登出或切换。过期响应绝不能写入当前账号的本地状态。
+  if (!isCurrent()) return;
+
   // R9.6：捕获合并前的本地快照，用于计算"新增了多少"摘要
   const preMergeProgress = readLocalJson("tb-progress", {}, normalizeLocalProgress);
   const preMergeWrong = readLocalJson("tb-wrong", {}, normalizeLocalWrong);
@@ -427,6 +433,7 @@ export async function hydrateFromCloud(id: string) {
         onConflict: "user_id,chapter_num,doc_slug",
         ignoreDuplicates: true,
       });
+      if (!isCurrent()) return;
     }
   }
 

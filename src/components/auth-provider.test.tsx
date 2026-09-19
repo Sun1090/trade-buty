@@ -109,7 +109,7 @@ describe("AuthProvider", () => {
       ),
     );
     expect(h.setAuthState).toHaveBeenCalledWith(true, "u1");
-    expect(h.hydrateFromCloud).toHaveBeenCalledWith("u1");
+    expect(h.hydrateFromCloud).toHaveBeenCalledWith("u1", expect.any(Function));
   });
 
   it("keeps the email null when the session omits it", async () => {
@@ -130,7 +130,25 @@ describe("AuthProvider", () => {
     await waitFor(() =>
       expect(screen.getByTestId("user")).toHaveTextContent("u3|c@d.e"),
     );
-    expect(h.hydrateFromCloud).toHaveBeenCalledWith("u3");
+    expect(h.hydrateFromCloud).toHaveBeenCalledWith("u3", expect.any(Function));
+  });
+
+  it("does not flush an old account queue when hydration finishes after sign-out", async () => {
+    let resolveHydration!: () => void;
+    h.hydrateFromCloud.mockImplementationOnce(() => new Promise<void>((resolve) => {
+      resolveHydration = resolve;
+    }));
+    h.state.session = { user: { id: "stale-user", email: null } };
+    renderProvider();
+    await waitFor(() => expect(h.hydrateFromCloud).toHaveBeenCalled());
+
+    act(() => {
+      for (const listener of h.state.listeners) listener("SIGNED_OUT", null);
+    });
+    await act(async () => { resolveHydration(); });
+
+    expect(h.flushPersistedQueue).not.toHaveBeenCalled();
+    expect(screen.getByTestId("user")).toHaveTextContent("anon");
   });
 
   it("clears the user and auth state on SIGNED_OUT", async () => {

@@ -1,5 +1,18 @@
 # Progress
 
+## 2026-09-20 — 账号切换期间的云端 hydration 隔离
+
+- Milestone / 版本：P4 打磨与增长（持久化数据与账号隔离审计）。
+- 状态：DONE。
+- 分支：`feat/persisted-data-isolation`。
+- 完成内容：为 `hydrateFromCloud` 增加调用方有效性守卫；若用户在 Supabase 查询或进度补写期间登出、切换账号或组件卸载，立即丢弃旧账号响应，禁止继续覆盖当前 localStorage、生成同步摘要/冲突记录或刷新 UI。`AuthProvider` 同时禁止旧账号 hydration 完成后 flush 其离线队列。
+- 变更文件：`src/lib/sync-layer.ts`、`src/lib/sync-layer-hydrate.test.ts`、`src/components/auth-provider.tsx`、`src/components/auth-provider.test.tsx`。
+- 验证：`npx vitest run src/lib/sync-layer-hydrate.test.ts src/components/auth-provider.test.tsx`（2 文件 / 36 tests）；`npm test`（254 文件 / 2205 tests）；`npm run typecheck`；`npm run lint`；`npm run build`（474 个静态页面）；全部通过。
+- 阻塞：无。
+- 风险 / 回滚：默认守卫保持所有现有直接调用兼容；仅 AuthProvider 传入账号生命周期判断。回滚可撤销本次原子提交。
+- 下一项：继续审计本地持久化输入的身份、数值范围与异步账号切换边界。
+- 更新时间：2026-09-20。
+
 ## 2026-09-13 — 覆盖率批次 8：隐私审计边界补强
 
 - 扩展 `scripts/growth-event-privacy.test.mjs`，覆盖缺失 console sink、缺失禁止字段文档，以及缺失 `normalizeGrowthEvent` 规范化边界。
