@@ -56,9 +56,10 @@ export function getTotalReadingTime(): number {
 
 /** 格式化秒为 xh xm xs */
 export function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  const m = Math.floor(seconds / 60);
-  const s = Math.round(seconds % 60);
+  const rounded = Math.round(seconds);
+  if (rounded < 60) return `${rounded}s`;
+  const m = Math.floor(rounded / 60);
+  const s = rounded % 60;
   if (m < 60) return `${m}m ${s}s`;
   const h = Math.floor(m / 60);
   return `${h}h ${m % 60}m`;

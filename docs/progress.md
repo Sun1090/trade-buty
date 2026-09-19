@@ -3295,3 +3295,17 @@ Verification: focused Vitest 17 passed; `npm run lint -- --quiet`, `npm run type
 Blockers / risk / rollback: no external dependency; existing within-window grace remains unchanged. Revert this commit if future timestamps need a distinct tolerance policy.
 
 Next: audit further core data boundaries, run full gates before PR.
+
+## 2026-09-19 — Reading duration display boundary
+
+Status: completed locally on `codex/coverage-batch-21`.
+
+Completed: rounded elapsed seconds before selecting seconds/minutes/hours presentation, preventing `60s` and `59m 60s` at unit boundaries. Added fractional-boundary regressions.
+
+Changed files: `src/lib/reading-time.ts`, `src/lib/reading-time.test.ts`, `docs/progress.md`.
+
+Verification: focused Vitest 15 passed; lint, typecheck, diff whitespace passed.
+
+Blockers / risk / rollback: none; display-only behavior, revert commit if presentation policy changes.
+
+Next: full quality gates, CI review, then audit next core boundary.
