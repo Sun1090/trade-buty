@@ -2877,3 +2877,39 @@ Blockers / risk / rollback:
 Next:
 
 - Audit AI retrieval and embedding generation boundaries for stable identifiers, empty-input behavior, and stale-index detection before returning to lower-value UI branch coverage.
+
+## 2026-09-19 — Embedding refresh failure safety
+
+Status: completed on `codex/coverage-batch-16`.
+
+Completed:
+
+- Extracted the embedding API and Supabase replacement workflow into a testable script library.
+- Changed refresh ordering so every vector must be generated and validated before the live locale index is deleted; transient model failures can no longer erase the existing index.
+- Refuse empty chunk sets, validate `data[0].embedding`, check DELETE responses, fail on batch insertion errors, and report deterministic batch progress instead of logging a false successful completion.
+- Added regression coverage for malformed model responses, empty indexes, model rate limits, database deletion failures, batching, progress, and vector insertion failures.
+
+Changed files:
+
+- `scripts/generate-embeddings.mjs`
+- `scripts/generate-embeddings-lib.mjs`
+- `scripts/generate-embeddings-lib.test.mjs`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run scripts/generate-embeddings-lib.test.mjs --reporter=dot` — passed, 6 tests.
+- `npm test` — passed, 254 files / 2,160 tests.
+- `npm run lint -- --quiet` — passed with zero warnings.
+- `npm run typecheck` — passed (`next typegen` + `tsc --noEmit`).
+- `node --check scripts/generate-embeddings.mjs && node --check scripts/generate-embeddings-lib.mjs` — passed.
+
+Blockers / risk / rollback:
+
+- Production execution still requires the documented AI and Supabase service credentials.
+- Generation failures are now non-destructive. A database failure after successful deletion can still leave a partial index because the current schema/API has no generation pointer or transactional replacement RPC; that requires a dedicated migration before fully atomic swaps are possible.
+- Rollback is the atomic commit for this batch.
+
+Next:
+
+- Design and test an atomic embedding-generation swap using a generation identifier and transactional activation, including migration and rollback behavior, before running a production refresh.
