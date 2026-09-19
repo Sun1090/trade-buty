@@ -161,3 +161,68 @@ describe("AiQuiz 错题本打通与幂等（R2.6/R2.8/R2.11）", () => {
     expect(screen.getByText(dict.reported)).toBeInTheDocument();
   });
 });
+
+describe("AiQuiz 入口、错误态与多题流程", () => {
+  it("AI 禁用或没有错题时隐藏/禁用入口", () => {
+    const { rerender } = render(<AiQuiz wrongItems={wrongItems} dict={dict} aiEnabled={false} />);
+    expect(screen.queryByText(dict.generate)).not.toBeInTheDocument();
+
+    rerender(<AiQuiz wrongItems={[]} dict={dict} />);
+    expect(screen.getByRole("button", { name: /AI 针对错题出变体题/ })).toBeDisabled();
+  });
+
+  it("展示 API 错误、非 JSON 错误回退和网络异常", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: false, json: async () => ({ error: "登录后才能生成" }) })
+      .mockResolvedValueOnce({ ok: false, json: async () => { throw new Error("bad json"); } })
+      .mockRejectedValueOnce("offline");
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
+
+    fireEvent.click(screen.getByText(dict.generate));
+    expect(await screen.findByText("登录后才能生成")).toBeInTheDocument();
+    fireEvent.click(screen.getByText(dict.generate));
+    expect(await screen.findByText(dict.error)).toBeInTheDocument();
+    fireEvent.click(screen.getByText(dict.generate));
+    expect(await screen.findByText(dict.error)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("多题可进入下一题，末题完成后回到生成入口", async () => {
+    const twoQuestions = [questions[0], {
+      question: "变体题：仓位控制的主要作用是什么？",
+      options: ["控制风险敞口", "保证盈利", "预测价格", "消除滑点"],
+      answer: 0,
+      explain: "仓位控制用于限制总体风险敞口。",
+    }];
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ questions: twoQuestions }),
+    })));
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
+
+    fireEvent.click(screen.getByText(dict.generate));
+    await screen.findByText(twoQuestions[0].question);
+    fireEvent.click(screen.getByText("限制单笔亏损"));
+    fireEvent.click(screen.getByText(dict.next));
+    expect(await screen.findByText(twoQuestions[1].question)).toBeInTheDocument();
+    expect(screen.getByText("AI 变体题 2/2")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("控制风险敞口"));
+    fireEvent.click(screen.getByText(dict.done));
+    expect(screen.getByText(dict.generate)).toBeInTheDocument();
+  });
+
+  it("举报网络失败不影响已举报状态", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === "/api/ai/quiz") return { ok: true, json: async () => ({ questions }) };
+      throw new Error("feedback offline");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
+    await generateQuestions();
+    fireEvent.click(screen.getByText("限制单笔亏损"));
+    fireEvent.click(screen.getByText(`⚑ ${dict.report}`));
+    expect(await screen.findByText(dict.reported)).toBeDisabled();
+  });
+});

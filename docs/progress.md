@@ -2647,3 +2647,33 @@ Blockers / risk / rollback:
 Next:
 
 - Continue the executable quality backlog with the next high-value low-coverage production boundary (AI quiz UI or content parser), while leaving externally blocked roadmap work untouched until credentials/accounts are available.
+
+## 2026-09-19 — Coverage batch 10: adaptive quiz UI lifecycle
+
+Status: completed on `codex/coverage-batch-8`.
+
+Completed:
+
+- Expanded `AiQuiz` component coverage for disabled and empty states, API-provided errors, malformed error responses, non-Error network failures, multi-question navigation, completion reset, and fire-and-forget feedback failures.
+- Locked the full learner lifecycle: generate → answer → next question → finish → return to the generation entry, including the second-question progress badge.
+- Confirmed failed feedback delivery remains non-blocking while the UI prevents duplicate reports.
+
+Changed files:
+
+- `src/components/ai-quiz.test.tsx`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run src/components/ai-quiz.test.tsx --reporter=dot` — passed, 11 tests.
+- `npm test` — passed, 253 files / 2,134 tests.
+- `npm run lint -- --quiet` — passed with zero warnings.
+- `npm run typecheck` — passed (`next typegen` + `tsc --noEmit`).
+
+Blockers / risk / rollback:
+
+- No new blocker. This batch changes tests only; rollback is the atomic commit.
+
+Next:
+
+- Re-run repository coverage and select the next production boundary by uncovered branch count, prioritizing content parsing and learner-facing error handling over cosmetic branches.
