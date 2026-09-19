@@ -2913,3 +2913,49 @@ Blockers / risk / rollback:
 Next:
 
 - Design and test an atomic embedding-generation swap using a generation identifier and transactional activation, including migration and rollback behavior, before running a production refresh.
+
+## 2026-09-19 — Atomic embedding generation activation
+
+Status: completed on `codex/coverage-batch-16`.
+
+Completed:
+
+- Added migration `0009_atomic_embedding_generations.sql`: every vector row now belongs to a UUID generation, each locale has one active-generation pointer, and retrieval joins through that pointer so staged rows remain invisible until activation.
+- Added the service-role-only `activate_kb_embedding_generation` RPC. It rejects empty generations, switches the active pointer and deletes stale generations in one database transaction.
+- Changed the embedding generator to stage a complete generation, activate it only after every batch succeeds, and remove only the failed staged generation on insert or activation errors. A simultaneous refresh and cleanup failure is preserved as an `AggregateError`.
+- Added rollback SQL, schema-mirror coverage, script regression tests, and 8 pgTAP assertions for activation, cleanup, locale isolation, empty generations, and RPC privilege boundaries.
+- Extended the backup/restore drill to include the generation-pointer table and activation RPC, preserve object ACLs while excluding image-owned default ACLs, and explicitly reassert the service-only RPC grant after restore. The restored database then passes the complete pgTAP suite.
+
+Changed files:
+
+- `scripts/generate-embeddings.mjs`
+- `scripts/generate-embeddings-lib.mjs`
+- `scripts/generate-embeddings-lib.test.mjs`
+- `scripts/backup-drill.mjs`
+- `src/lib/supabase/schema.ts`
+- `src/lib/supabase/schema.test.ts`
+- `supabase/migrations/0009_atomic_embedding_generations.sql`
+- `supabase/rollback/0009_atomic_embedding_generations.sql`
+- `supabase/tests/embedding_generations.sql`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run scripts/generate-embeddings-lib.test.mjs src/lib/supabase/schema.test.ts --reporter=dot` — passed, 2 files / 12 tests.
+- `npm test` — passed, 254 files / 2,161 tests.
+- `npm run lint -- --quiet` — passed with zero warnings.
+- `npm run typecheck` — passed (`next typegen` + `tsc --noEmit`).
+- `npm run build` — passed; knowledge contract validated and 474 static pages generated.
+- `npm run db:test` — passed, 10 migrations and 72 pgTAP assertions; rollback/replay drill passed.
+- `npm run backup:drill` — passed, 10 migrations, 11 business tables, restored ACL boundary, and all 3 pgTAP files.
+- `node --check scripts/generate-embeddings.mjs && node --check scripts/generate-embeddings-lib.mjs && node --check scripts/backup-drill.mjs` — passed.
+
+Blockers / risk / rollback:
+
+- Production migration and an actual vector refresh still require Supabase service-role and embedding-provider credentials; no production state was changed locally.
+- The activation transaction deletes prior generations after switching the pointer, so rollback after a successful production refresh requires regenerating the prior vectors rather than merely changing the pointer.
+- Rollback SQL is available at `supabase/rollback/0009_atomic_embedding_generations.sql`; code rollback is the atomic commit for this batch.
+
+Next:
+
+- Exercise the new migration's own rollback/replay path in the database harness, then continue the AI retrieval audit for stale-generation observability and operational retry behavior.

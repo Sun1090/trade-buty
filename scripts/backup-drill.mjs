@@ -47,6 +47,7 @@ const DATA_TABLES = [
   { name: "replay_history", orderBy: "id" },
   { name: "replay_best", orderBy: "user_id" },
   { name: "kb_embeddings", orderBy: "id" },
+  { name: "kb_embedding_generations", orderBy: "locale" },
   { name: "ai_conversations", orderBy: "id" },
   { name: "ai_feedback", orderBy: "id" },
   { name: "ai_citation_clicks", orderBy: "id" },
@@ -205,6 +206,11 @@ function seedApplicationData(container) {
        insert into kb_embeddings (id, chunk, chapter, doc, locale, embedding, created_at) values
          ('50000000-0000-0000-0000-000000000001', '演练向量块', 'risk', 'position-size', 'zh', '${ZERO_VECTOR}'::vector, '2026-09-08T01:02:03Z');
 
+       insert into kb_embedding_generations (locale, active_generation, activated_at)
+       select locale, generation, '2026-09-08T01:03:03Z'
+       from kb_embeddings
+       where id = '50000000-0000-0000-0000-000000000001';
+
        insert into ai_conversations (id, user_id, role, content, sources, created_at) values
          ('60000000-0000-0000-0000-000000000001', '${USER_A}', 'user', '如何理解回撤？', '[{"chapter":"risk","doc":"drawdown"}]'::jsonb, '2026-09-09T01:02:03Z');
 
@@ -282,7 +288,7 @@ function schemaFingerprint(container) {
     functions: q(
       `select count(*)::text || ':' || coalesce(md5(string_agg(p.proname||'|'||pg_get_function_identity_arguments(p.oid)||'|'||pg_get_functiondef(p.oid), E'\\n' order by p.proname,pg_get_function_identity_arguments(p.oid))), 'empty')
        from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-       where n.nspname='public' and p.proname = any(array['touch_updated_at','match_kb_embeddings'])`,
+       where n.nspname='public' and p.proname = any(array['touch_updated_at','match_kb_embeddings','activate_kb_embedding_generation'])`,
       "functions",
     ),
     extensions: q(
@@ -377,7 +383,6 @@ function main() {
       "-Fc",
       "--schema=public",
       "--no-owner",
-      "--no-acl",
     ],
     { encoding: null },
   );
@@ -397,29 +402,65 @@ function main() {
   assertSupabaseRoles(TARGET);
   seedAuthUsers(TARGET);
   assertOk("准备 vector 扩展", psql(TARGET, "create extension if not exists vector;"));
-  const restore = docker(
-    [
-      "exec",
-      "-i",
-      TARGET,
-      "pg_restore",
-      "-U",
-      "postgres",
-      "-d",
-      "postgres",
-      "--no-owner",
-      "--no-acl",
-      "--schema=public",
-      "--single-transaction",
-      "--exit-on-error",
-    ],
-    { input: dump.stdout },
+  assertOk(
+    "复制备份到恢复容器",
+    docker(["exec", "-i", TARGET, "sh", "-c", "cat > /tmp/trade-buty.dump"], {
+      input: dump.stdout,
+    }),
   );
+  const restoreList = docker([
+    "exec",
+    TARGET,
+    "pg_restore",
+    "--list",
+    "/tmp/trade-buty.dump",
+  ]);
+  assertOk("读取 pg_restore 清单", restoreList);
+  const filteredRestoreList = restoreList.stdout
+    .split("\n")
+    // Supabase image-level default privileges belong to supabase_admin and cannot
+    // be replayed by postgres. Object ACLs remain, including service-only RPCs.
+    .filter(
+      (line) =>
+        !line.includes(" DEFAULT ACL ") && !line.includes(" SCHEMA - public "),
+    )
+    .join("\n");
+  assertOk(
+    "写入过滤后的 pg_restore 清单",
+    docker(["exec", "-i", TARGET, "sh", "-c", "cat > /tmp/trade-buty.list"], {
+      input: filteredRestoreList,
+    }),
+  );
+  const restore = docker([
+    "exec",
+    TARGET,
+    "pg_restore",
+    "-U",
+    "postgres",
+    "-d",
+    "postgres",
+    "--no-owner",
+    "--single-transaction",
+    "--exit-on-error",
+    "--use-list=/tmp/trade-buty.list",
+    "/tmp/trade-buty.dump",
+  ]);
   assertOk("pg_restore", {
     status: restore.status ?? 1,
     stderr: restore.stderr?.toString() ?? "",
     error: restore.error,
   });
+  // The base Supabase image grants function execution through postgres default
+  // privileges. Reassert the application's narrower RPC ACL after restore so
+  // image defaults cannot widen a service-only function.
+  assertOk(
+    "恢复 service-only RPC 权限",
+    psql(
+      TARGET,
+      `revoke execute on function activate_kb_embedding_generation(text, uuid) from public, anon, authenticated;
+       grant execute on function activate_kb_embedding_generation(text, uuid) to service_role;`,
+    ),
+  );
 
   console.log("[backup:drill] 5/6 对比数据与 schema/RLS/约束指纹…");
   const restoredData = dataFingerprint(TARGET);

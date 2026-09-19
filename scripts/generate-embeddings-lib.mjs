@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 const DEFAULT_BATCH_SIZE = 20;
 
 async function responseError(response) {
@@ -34,48 +36,67 @@ export async function replaceLocaleEmbeddings({
   locale,
   chunks,
   batchSize = DEFAULT_BATCH_SIZE,
+  generationId = randomUUID(),
   onProgress = () => {},
 }) {
   if (chunks.length === 0) {
     throw new Error(`refusing to replace ${locale} embeddings with an empty index`);
   }
 
-  // Generate everything first. A transient model failure must not erase the live index.
+  // Generate everything first. A transient model failure must not touch the live index.
   const rows = [];
   for (const chunk of chunks) {
     rows.push({
       ...chunk,
+      generation: generationId,
       embedding: await embedText({ fetchImpl, aiUrl, aiKey, model, text: chunk.chunk }),
     });
   }
 
   const headers = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
-  const deleteResponse = await fetchImpl(
-    `${supabaseUrl}/rest/v1/kb_embeddings?locale=eq.${encodeURIComponent(locale)}`,
-    { method: "DELETE", headers },
-  );
-  if (!deleteResponse.ok) {
-    throw new Error(`delete ${locale} embeddings ${await responseError(deleteResponse)}`);
-  }
+  const cleanup = async () => {
+    const response = await fetchImpl(
+      `${supabaseUrl}/rest/v1/kb_embeddings?locale=eq.${encodeURIComponent(locale)}&generation=eq.${generationId}`,
+      { method: "DELETE", headers },
+    );
+    if (!response.ok) throw new Error(`cleanup ${locale} generation ${await responseError(response)}`);
+  };
 
-  let written = 0;
-  for (let index = 0; index < rows.length; index += batchSize) {
-    const batch = rows.slice(index, index + batchSize);
-    const response = await fetchImpl(`${supabaseUrl}/rest/v1/kb_embeddings`, {
-      method: "POST",
-      headers: {
-        ...headers,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify(batch),
-    });
-    if (!response.ok) {
-      throw new Error(`insert ${locale} batch ${index} ${await responseError(response)}`);
+  try {
+    let written = 0;
+    for (let index = 0; index < rows.length; index += batchSize) {
+      const batch = rows.slice(index, index + batchSize);
+      const response = await fetchImpl(`${supabaseUrl}/rest/v1/kb_embeddings`, {
+        method: "POST",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify(batch),
+      });
+      if (!response.ok) {
+        throw new Error(`insert ${locale} batch ${index} ${await responseError(response)}`);
+      }
+      written += batch.length;
+      onProgress(written, rows.length);
     }
-    written += batch.length;
-    onProgress(written, rows.length);
-  }
 
-  return written;
+    const activation = await fetchImpl(`${supabaseUrl}/rest/v1/rpc/activate_kb_embedding_generation`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ target_locale: locale, target_generation: generationId }),
+    });
+    if (!activation.ok) {
+      throw new Error(`activate ${locale} generation ${await responseError(activation)}`);
+    }
+    return written;
+  } catch (error) {
+    try {
+      await cleanup();
+    } catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], `embedding refresh and cleanup failed for ${locale}`);
+    }
+    throw error;
+  }
 }

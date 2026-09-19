@@ -86,11 +86,19 @@ export const kbEmbeddings = pgTable("kb_embeddings", {
   chapter: text("chapter").notNull(),
   doc: text("doc").notNull(),
   locale: text("locale").notNull().default("zh"),
+  generation: uuid("generation").notNull().defaultRandom(),
   embedding: vector("embedding", { dimensions: 1024 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   idxLocaleChapter: index("idx_kb_embeddings_locale_chapter").on(t.locale, t.chapter),
+  idxLocaleGeneration: index("idx_kb_embeddings_locale_generation").on(t.locale, t.generation),
 }));
+
+export const kbEmbeddingGenerations = pgTable("kb_embedding_generations", {
+  locale: text("locale").primaryKey(),
+  activeGeneration: uuid("active_generation").notNull(),
+  activatedAt: timestamp("activated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const aiConversations = pgTable("ai_conversations", {
   id: uuid("id").primaryKey().defaultRandom(),

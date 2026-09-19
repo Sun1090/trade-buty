@@ -2,7 +2,7 @@
  * P3 AI 陪学：知识库 embedding 生成脚本
  *
  * 遍历知识库 → 分块 → 调 embedding API → 写入 Supabase pgvector。
- * 幂等：先完整生成向量，再替换旧索引（避免模型失败清空线上数据）。
+ * 幂等：先完整生成并分批暂存，再原子激活新 generation。
  *
  * 用法：node --import tsx scripts/generate-embeddings.mjs
  * 需要：AI_EMBEDDING_* + SUPABASE_SERVICE_ROLE_KEY 环境变量
@@ -46,7 +46,7 @@ async function main() {
   for (const locale of locales) {
     const chunks = getAllChunks(locale);
     console.log(`\n📦 ${locale} 知识库分块：${chunks.length} 块`);
-    console.log(`🧠 先生成全部 embedding，成功后再替换 ${locale} 索引...`);
+    console.log(`🧠 生成并暂存全部 embedding，成功后原子激活 ${locale} 索引...`);
 
     const written = await replaceLocaleEmbeddings({
       supabaseUrl: SUPABASE_URL,
