@@ -17,6 +17,11 @@
 /** 队列最大长度（防止异常膨胀 + 跨设备同步时的 base64 体积限制） */
 export const MAX_QUEUE = 200;
 
+const QUEUE_KINDS = new Set([
+  "progress", "wrongbook-upsert", "wrongbook-delete", "quiz",
+  "replay-history", "replay-best", "goal",
+]);
+
 /** 写入类别：与 sync-layer 的写函数一一对应 */
 export type QueueKind =
   | "progress"
@@ -164,12 +169,11 @@ export function readQueue(serialized: string | null | undefined): QueueItem[] {
     return parsed.filter(
       (q): q is QueueItem =>
         q &&
-        typeof q.id === "number" &&
-        typeof q.kind === "string" &&
+        Number.isSafeInteger(q.id) && q.id > 0 && q.id < Number.MAX_SAFE_INTEGER &&
+        QUEUE_KINDS.has(q.kind) &&
         typeof q.payloadKey === "string" &&
-        q.payload !== undefined &&
-        typeof q.payload === "object" &&
-        typeof q.at === "number",
+        q.payload !== null && typeof q.payload === "object" && !Array.isArray(q.payload) &&
+        typeof q.at === "number" && Number.isFinite(q.at),
     );
   } catch {
     return [];

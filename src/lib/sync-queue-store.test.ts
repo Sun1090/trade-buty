@@ -80,6 +80,28 @@ describe("enqueueWrite (持久化)", () => {
     expect(nextId).toBe(3);
   });
 
+  it("nextId 丢失或落后时从队列最大 id 恢复，避免新条目撞号", () => {
+    memStore.set(QUEUE_KEY, JSON.stringify([
+      { id: 4, kind: "progress", payloadKey: "a", payload: {}, at: 1 },
+      { id: 8, kind: "quiz", payloadKey: "b", payload: {}, at: 2 },
+    ]));
+    memStore.set(QUEUE_NEXT_ID_KEY, "3");
+    expect(loadQueueAndNextId().nextId).toBe(9);
+    const next = enqueueWrite("progress", "c", {}, 3);
+    expect(next.map((item) => item.id)).toEqual([4, 8, 9]);
+    expect(memStore.get(QUEUE_NEXT_ID_KEY)).toBe("10");
+    memStore.delete(QUEUE_NEXT_ID_KEY);
+    expect(loadQueueAndNextId().nextId).toBe(10);
+  });
+
+  it.each(["2junk", "1.5", "0", "-1", "9007199254740992"])(
+    "不接受非规范或不安全的 nextId %s",
+    (value) => {
+      memStore.set(QUEUE_NEXT_ID_KEY, value);
+      expect(loadQueueAndNextId().nextId).toBe(1);
+    },
+  );
+
   it("nextId 非法值回退到 1", () => {
     memStore.set(QUEUE_NEXT_ID_KEY, "abc");
     const { nextId } = loadQueueAndNextId();
