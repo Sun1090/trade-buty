@@ -7,6 +7,8 @@ const LH_KEY = "tb-line-height";
 const MIN = 0.9;
 const MAX = 1.2;
 const STEP = 0.05;
+const LH_MIN = 1.5;
+const LH_MAX = 2.2;
 
 /** 正文字号 + 行距调节，记忆到 localStorage */
 export function FontSizeControl({
@@ -31,8 +33,7 @@ export function FontSizeControl({
         applyScale(v);
       }
       const lhv = parseFloat(localStorage.getItem(LH_KEY) ?? "1.85");
-      if (!isNaN(lhv)) {
-
+      if (!isNaN(lhv) && lhv >= LH_MIN && lhv <= LH_MAX) {
         setLh(lhv);
         applyLh(lhv);
       }
@@ -63,7 +64,7 @@ export function FontSizeControl({
 
   function changeLh(delta: number) {
     setLh((prev) => {
-      const next = Math.min(2.2, Math.max(1.5, +(prev + delta).toFixed(2)));
+      const next = Math.min(LH_MAX, Math.max(LH_MIN, +(prev + delta).toFixed(2)));
       try {
         localStorage.setItem(LH_KEY, String(next));
       } catch {
@@ -94,7 +95,7 @@ export function FontSizeControl({
       </button>
       <button
         onClick={() => changeLh(0.1)}
-        disabled={lh >= 2.2}
+        disabled={lh >= LH_MAX}
         aria-label={`${labels.lineHeightIncrease}: ☰+`}
         className="h-7 px-2 rounded-lg border border-[var(--border)] text-faint hover:text-accent hover:border-accent/40 transition disabled:opacity-30 font-mono"
       >
@@ -102,7 +103,7 @@ export function FontSizeControl({
       </button>
       <button
         onClick={() => changeLh(-0.1)}
-        disabled={lh <= 1.5}
+        disabled={lh <= LH_MIN}
         aria-label={`${labels.lineHeightDecrease}: ☰-`}
         className="h-7 px-2 rounded-lg border border-[var(--border)] text-faint hover:text-accent hover:border-accent/40 transition disabled:opacity-30 font-mono"
       >

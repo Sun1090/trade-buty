@@ -1,42 +1,115 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { FontSizeControl } from "./font-size-control";
 
+const labels = {
+  smaller: "缩小",
+  larger: "放大",
+  lineHeightIncrease: "增大行距",
+  lineHeightDecrease: "减小行距",
+};
+
+const root = document.documentElement;
+
+function button(name: string) {
+  return screen.getByRole("button", { name });
+}
+
 describe("FontSizeControl", () => {
-  const labels = {
-    smaller: "缩小",
-    larger: "放大",
-    lineHeightIncrease: "增大行距",
-    lineHeightDecrease: "减小行距",
-  };
+  beforeEach(() => {
+    localStorage.clear();
+    root.style.removeProperty("--kb-scale");
+    root.style.removeProperty("--kb-line-height");
+  });
 
-  it("渲染 A- 和 A+ 按钮", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    root.style.removeProperty("--kb-scale");
+    root.style.removeProperty("--kb-line-height");
+  });
+
+  it("renders accessible controls with default bounds available", () => {
     render(<FontSizeControl labels={labels} />);
-    expect(screen.getByText("A-")).toBeInTheDocument();
-    expect(screen.getByText("A+")).toBeInTheDocument();
+
+    expect(button("缩小: A-")).toBeEnabled();
+    expect(button("放大: A+")).toBeEnabled();
+    expect(button("增大行距: ☰+")).toBeEnabled();
+    expect(button("减小行距: ☰-")).toBeEnabled();
   });
 
-  it("可访问名称包含可见文本，满足 WCAG 2.5.3", () => {
+  it("loads valid persisted preferences and reflects their bounds", async () => {
+    localStorage.setItem("tb-font-scale", "1.2");
+    localStorage.setItem("tb-line-height", "1.5");
+
     render(<FontSizeControl labels={labels} />);
-    expect(screen.getByRole("button", { name: "缩小: A-" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "放大: A+" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "增大行距: ☰+" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "减小行距: ☰-" })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(root.style.getPropertyValue("--kb-scale")).toBe("1.2");
+      expect(root.style.getPropertyValue("--kb-line-height")).toBe("1.5");
+    });
+    expect(button("放大: A+")).toBeDisabled();
+    expect(button("减小行距: ☰-")).toBeDisabled();
   });
 
-  it("点击 A+ 不崩溃", () => {
-    const { container } = render(<FontSizeControl labels={labels} />);
-    const btns = container.querySelectorAll("button");
-    fireEvent.click(btns[1]); // A+
-    fireEvent.click(btns[1]);
-    expect(btns[1]).toBeInTheDocument();
+  it("ignores malformed and out-of-range persisted preferences", async () => {
+    localStorage.setItem("tb-font-scale", "5");
+    localStorage.setItem("tb-line-height", "0.5");
+
+    render(<FontSizeControl labels={labels} />);
+
+    await waitFor(() => expect(button("放大: A+")).toBeEnabled());
+    expect(root.style.getPropertyValue("--kb-scale")).toBe("");
+    expect(root.style.getPropertyValue("--kb-line-height")).toBe("");
+    expect(button("增大行距: ☰+")).toBeEnabled();
+    expect(button("减小行距: ☰-")).toBeEnabled();
   });
 
-  it("点击 A- 不崩溃", () => {
-    const { container } = render(<FontSizeControl labels={labels} />);
-    const btns = container.querySelectorAll("button");
-    fireEvent.click(btns[0]); // A-
-    expect(btns[0]).toBeInTheDocument();
+  it("updates and persists font scale while clamping at both bounds", () => {
+    render(<FontSizeControl labels={labels} />);
+
+    const larger = button("放大: A+");
+    for (let index = 0; index < 10; index += 1) fireEvent.click(larger);
+    expect(root.style.getPropertyValue("--kb-scale")).toBe("1.2");
+    expect(localStorage.getItem("tb-font-scale")).toBe("1.2");
+    expect(larger).toBeDisabled();
+
+    const smaller = button("缩小: A-");
+    for (let index = 0; index < 10; index += 1) fireEvent.click(smaller);
+    expect(root.style.getPropertyValue("--kb-scale")).toBe("0.9");
+    expect(localStorage.getItem("tb-font-scale")).toBe("0.9");
+    expect(smaller).toBeDisabled();
+  });
+
+  it("updates and persists line height while clamping at both bounds", () => {
+    render(<FontSizeControl labels={labels} />);
+
+    const increase = button("增大行距: ☰+");
+    for (let index = 0; index < 10; index += 1) fireEvent.click(increase);
+    expect(root.style.getPropertyValue("--kb-line-height")).toBe("2.2");
+    expect(localStorage.getItem("tb-line-height")).toBe("2.2");
+    expect(increase).toBeDisabled();
+
+    const decrease = button("减小行距: ☰-");
+    for (let index = 0; index < 10; index += 1) fireEvent.click(decrease);
+    expect(root.style.getPropertyValue("--kb-line-height")).toBe("1.5");
+    expect(localStorage.getItem("tb-line-height")).toBe("1.5");
+    expect(decrease).toBeDisabled();
+  });
+
+  it("keeps controls functional when storage access fails", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("storage unavailable");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("storage unavailable");
+    });
+
+    render(<FontSizeControl labels={labels} />);
+    fireEvent.click(button("放大: A+"));
+    fireEvent.click(button("增大行距: ☰+"));
+
+    expect(root.style.getPropertyValue("--kb-scale")).toBe("1.05");
+    expect(root.style.getPropertyValue("--kb-line-height")).toBe("1.95");
   });
 });
