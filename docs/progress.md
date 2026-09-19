@@ -2615,3 +2615,35 @@ Verification recorded:
 Next queue:
 
 1. Continue R12 data insights tasks: learning overview card, course completion trend, quiz score trends, wrongbook review efficiency, replay practice duration, streak recovery prompt, personalized next learning suggestion, and local/cloud source labeling.
+
+## 2026-09-19 — Coverage batch 9: AI quiz route failure/cache paths
+
+Status: completed on `codex/coverage-batch-8`.
+
+Completed:
+
+- Expanded `src/app/api/ai/quiz/route.test.ts` across the production chapter-generation path: successful RAG-backed generation, instance cache hits, zh/en retrieval query selection, fixed-quiz fallback, and RAG/model failure containment.
+- Added variant-generation regressions for unavailable retrieval, malformed model JSON, and schema-invalid questions; internal error details remain server-only and clients receive the generic 502 response.
+- Raised the AI quiz route's focused coverage to 96.70% statements / 92.06% branches / 98.85% lines; the sole uncovered line is the defensive no-fixed-quiz 502 branch, currently unreachable because every recognized chapter has a fixed quiz fallback.
+- Full repository coverage increased from 91.98% / 86.19% / 91.82% / 94.49% (statements/branches/functions/lines) to 92.23% / 86.48% / 91.88% / 94.74%.
+
+Changed files:
+
+- `src/app/api/ai/quiz/route.test.ts`
+- `docs/progress.md`
+
+Verification:
+
+- `npm test` — passed, 253 files / 2,130 tests.
+- `npm run test:coverage -- --reporter=dot` — passed, 253 files / 2,130 tests; 92.23% statements, 86.48% branches, 91.88% functions, 94.74% lines.
+- `npm run lint -- --quiet` — passed with zero warnings.
+- `npm run typecheck` — passed (`next typegen` + `tsc --noEmit`).
+
+Blockers / risk / rollback:
+
+- `docs/roadmap.md` still has only the 10 explicitly `BLOCKED_EXTERNAL` items remaining; no product decision is needed for this coverage batch.
+- Tests exercise only failure isolation, cache behavior, and existing fallbacks; rollback is the single atomic test/progress commit.
+
+Next:
+
+- Continue the executable quality backlog with the next high-value low-coverage production boundary (AI quiz UI or content parser), while leaving externally blocked roadmap work untouched until credentials/accounts are available.
