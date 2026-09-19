@@ -41,7 +41,10 @@ function toEntry(key, object) {
 function readElementAccessKey(node) {
   if (!ts.isElementAccessExpression(node)) return null;
   if (!ts.isIdentifier(node.expression) || node.expression.text !== "QUIZZES") return null;
-  return literalText(node.argumentExpression);
+  const key = node.argumentExpression;
+  return key && (ts.isStringLiteral(key) || ts.isNoSubstitutionTemplateLiteral(key))
+    ? key.text
+    : null;
 }
 
 /**
