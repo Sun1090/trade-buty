@@ -2770,3 +2770,9 @@ Blockers / risk / rollback:
 Next:
 
 - Continue replacing render-only assertions in low-coverage learner-facing components with state-transition and accessibility checks.
+
+## 2026-09-19 — Coverage batch 8–13 delivery
+
+- Branch `codex/coverage-batch-8` pushed successfully after GitHub authentication recovered.
+- Pull request opened: #68 (`test: expand regression coverage across critical boundaries`).
+- The PR contains 9 atomic commits on top of `origin/main`; CI/preview status is the next authoritative delivery check.
