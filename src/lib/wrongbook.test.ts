@@ -122,9 +122,10 @@ describe("wrongbook storage", () => {
           picked: 0,
           at: 100,
           srsStage: -1,
-          srsDue: "tomorrow",
+          srsDue: "2026-02-31",
         },
         "spot:2": { chapterNum: "spot", questionIdx: "2", picked: 0, at: 100 },
+        "wrong-key": { chapterNum: "spot", questionIdx: 4, picked: 0, at: 100 },
         "spot:3": null,
       }),
     );

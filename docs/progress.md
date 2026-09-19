@@ -3378,3 +3378,21 @@ Verification: three focused test files / 34 tests passed; lint, typecheck, diff 
 Risk / rollback: only impossible stored dates are dropped; valid historical dates are unchanged. Revert this commit to restore format-only acceptance.
 
 Next: extend the shared validator to remaining date-bearing data contracts after full regression gates.
+
+## 2026-09-19 — Wrongbook persisted identity validation
+
+Status: completed locally on `codex/coverage-batch-25`.
+
+Completed:
+
+- Require each persisted wrongbook key to match its normalized `chapterNum:questionIdx` identity, preventing corrupted entries from being read under one key and mutated/synced under another.
+- Reuse strict calendar validation for SRS due dates, dropping impossible dates while retaining the valid wrong-answer record.
+- Added malformed-key and impossible-date regression coverage.
+
+Changed files: `src/lib/wrongbook.ts`, `src/lib/wrongbook.test.ts`, `docs/progress.md`.
+
+Verification: focused Vitest 10 passed; lint, typecheck, diff whitespace passed. Full gate pending.
+
+Risk / rollback: only mismatched persisted identities are discarded. Revert this commit to accept legacy mismatches, at the cost of ambiguous mutation/sync behavior.
+
+Next: run full gates and CI, then continue persisted-data contract audit.

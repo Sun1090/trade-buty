@@ -1,6 +1,7 @@
 /** 本地错题本 + 云端双写：key = `${chapterNum}:${questionIdx}`，答对后移出 */
 
 import { syncWrongbookWrite, syncWrongbookDelete } from "./sync-layer";
+import { isLocalDateStr } from "./date-utils";
 import { touchStreak } from "./streak";
 import { EBBINGHAUS_INTERVALS, srsOnAnswer, type SrsOutcome } from "./srs";
 import { writeReviewAttempt } from "./review-attempt-ledger";
@@ -125,16 +126,18 @@ export function readWrong(): Record<string, WrongEntry> {
     ) {
       continue;
     }
+    const normalizedQuestionIdx = Math.round(questionIdx);
+    if (!chapterNum || key !== `${chapterNum}:${normalizedQuestionIdx}`) continue;
     const entry: WrongEntry = {
       chapterNum,
-      questionIdx: Math.round(questionIdx),
+      questionIdx: normalizedQuestionIdx,
       picked: Math.round(picked),
       at: Math.round(at),
     };
     if (typeof srsStage === "number" && Number.isFinite(srsStage) && srsStage >= 0) {
       entry.srsStage = Math.round(srsStage);
     }
-    if (typeof srsDue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(srsDue)) {
+    if (isLocalDateStr(srsDue)) {
       entry.srsDue = srsDue;
     }
     out[key] = entry;
