@@ -3012,3 +3012,25 @@ Verification:
 Next:
 
 - Run the full gates, commit the coverage batch, then continue auditing the remaining operational scripts and API boundary tests.
+
+## 2026-09-19 — Content-gap ranking boundary coverage
+
+Status: in progress on `codex/coverage-batch-17`.
+
+Completed:
+
+- Added regression coverage for non-empty Markdown table rendering and non-numeric score normalization in the content-gap ranking library.
+- Focused coverage reached 100% statements, branches, functions, and lines for `scripts/content-gap-ranking-lib.mjs`.
+
+Changed files:
+
+- `src/lib/content-gap-ranking.test.ts`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run src/lib/content-gap-ranking.test.ts --coverage --reporter=dot` — passed, 4 tests; 100% focused coverage.
+
+Next:
+
+- Run the full suite and commit this small coverage topic, then continue the coverage audit.

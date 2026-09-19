@@ -15,6 +15,20 @@ describe("content gap ranking (R10.2)", () => {
     ]);
   });
 
+  it("renders a ranked non-empty markdown table", () => {
+    const markdown = renderContentGapMarkdown({
+      generatedAt: "2026-09-19",
+      gaps: [{ chapter: "risk", document: "position-size", importance: 80, searchDemand: 60, score: 72 }],
+    });
+    expect(markdown).toContain("| 优先级 | 章节 | 课程 | 章节重要性 | 搜索需求 | 综合分");
+    expect(markdown).toContain("| 1 | risk | position-size | 80 | 60 | 72 |");
+  });
+
+  it("treats non-numeric scores as zero", () => {
+    const ranked = rankContentGaps([{ chapter: "z", document: "x", importance: "not-a-number", searchDemand: Number.NaN }]);
+    expect(ranked[0]).toMatchObject({ importance: 0, searchDemand: 0, score: 0 });
+  });
+
   it("clamps invalid scores and renders the empty report", () => {
     const ranked = rankContentGaps([{ chapter: "z", document: "x", importance: 120, searchDemand: -4 }]);
     expect(ranked[0]).toMatchObject({ importance: 100, searchDemand: 0, score: 60 });
