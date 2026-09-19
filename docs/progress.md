@@ -2709,3 +2709,34 @@ Blockers / risk / rollback:
 Next:
 
 - Recompute full coverage, then continue with the highest-value remaining learner-facing or content-boundary branches. External roadmap items remain blocked on production accounts and credentials.
+
+## 2026-09-19 — Coverage batch 12: global read-stat states
+
+Status: completed on `codex/coverage-batch-8`.
+
+Completed:
+
+- Replaced the previous ineffective “no progress” assertion (which still mocked populated progress) with state-driven coverage of the actual null, empty-object, and empty-chapter-list branches.
+- Added multi-chapter aggregation, template replacement, signed-in cloud-sync labeling, and guest behavior coverage for `GlobalReadStat`.
+- Recorded the post-batch-11 full coverage baseline: 92.70% statements, 86.87% branches, 92.53% functions, and 95.16% lines across 2,139 tests.
+
+Changed files:
+
+- `src/components/global-read-stat.test.tsx`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run src/components/global-read-stat.test.tsx --reporter=dot` — passed, 6 tests.
+- `npm test` — passed, 253 files / 2,143 tests.
+- `npm run lint -- --quiet` — passed with zero warnings.
+- `npm run typecheck` — passed (`next typegen` + `tsc --noEmit`).
+
+Blockers / risk / rollback:
+
+- No production behavior changed. The corrected tests now fail if zero-progress states accidentally render misleading “0 read” copy.
+- Rollback is the atomic test/progress commit.
+
+Next:
+
+- Continue auditing low-coverage tests for assertions that do not exercise their named branch, then strengthen the highest-value learner-facing state transitions.
