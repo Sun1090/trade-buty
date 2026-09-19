@@ -2776,3 +2776,36 @@ Next:
 - Branch `codex/coverage-batch-8` pushed successfully after GitHub authentication recovered.
 - Pull request opened: #68 (`test: expand regression coverage across critical boundaries`).
 - The PR contains 9 atomic commits on top of `origin/main`; CI/preview status is the next authoritative delivery check.
+
+## 2026-09-19 — Coverage batch 14: persisted reading preferences
+
+Status: completed on `codex/coverage-batch-14`.
+
+Completed:
+
+- Replaced render-only font preference checks with behavioral coverage for accessible labels, persisted preference loading, CSS custom-property updates, storage writes, bounds, disabled states, and unavailable storage.
+- Found and fixed a production defect where an out-of-range persisted line height was applied directly, allowing invalid typography and inconsistent controls after preference corruption or an older schema value.
+- Centralized line-height bounds so loading, clamping, and button states share the same contract.
+
+Changed files:
+
+- `src/components/font-size-control.tsx`
+- `src/components/font-size-control.test.tsx`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run src/components/font-size-control.test.tsx --reporter=dot` — passed, 6 tests.
+- `npm test` — passed, 253 files / 2,148 tests.
+- `npm run lint -- --quiet` — passed with zero warnings.
+- `npm run typecheck` — passed (`next typegen` + `tsc --noEmit`).
+- `npm run build` — passed; knowledge contract validated and 474 static pages generated.
+
+Blockers / risk / rollback:
+
+- No new blocker. Valid stored values retain existing behavior; only invalid line-height values are ignored in favor of the safe default.
+- Rollback is the atomic commit for this batch.
+
+Next:
+
+- Re-audit remaining shallow learner-facing component tests and select the next stateful control with persistence, navigation, or accessibility behavior that is not yet asserted.
