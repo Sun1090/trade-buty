@@ -3187,3 +3187,33 @@ Blockers / risk / rollback:
 Next:
 
 - Open and merge the batch PR after CI, synchronize `main`, and continue with the next lowest-coverage production boundary.
+
+## 2026-09-19 — Cross-tab invite dismissal correctness
+
+Status: completed locally on `codex/invite-storage-sync`.
+
+Completed:
+
+- Fixed the invite banner's stale dismissal key after another tab replaces the referral; the dismiss action now targets the displayed ref.
+- Synchronized cross-tab dismissal events and avoided rendering refs previously dismissed in another tab.
+- Added four regression tests covering replacement, dismissal, previously dismissed replacements, and dismissal after replacement.
+
+Changed files:
+
+- `src/components/invite-banner.tsx`
+- `src/components/invite-banner.test.tsx`
+- `docs/progress.md`
+
+Verification:
+
+- Initial regressions failed on the old implementation (2 failures); fixed implementation passes all 13 focused tests.
+- `npm test` — 254 files / 2182 tests passed.
+- `npm run lint -- --quiet`, `npm run typecheck`, `npm run build`, `git diff --check` — passed.
+
+Blockers / risk / rollback:
+
+- No external dependencies. The change is confined to client-side referral display/dismissal; rollback by reverting this commit.
+
+Next:
+
+- Review this fix through CI, merge, and continue the next highest-priority quality issue.
