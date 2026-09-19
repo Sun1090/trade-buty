@@ -173,5 +173,11 @@ describe("bundle matching and asset boundaries", () => {
     expect(() => staticAssetRepoPath("/uploads/app.js")).toThrow(
       "asset is outside /_next/static: /uploads/app.js",
     );
+    expect(() => staticAssetRepoPath("/_next/static/../../package.json")).toThrow(
+      "asset is outside /_next/static: /_next/static/../../package.json",
+    );
+    expect(() => staticAssetRepoPath("/_next/static/..\\..\\package.json")).toThrow(
+      "asset is outside /_next/static",
+    );
   });
 });

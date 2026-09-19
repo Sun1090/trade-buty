@@ -105,10 +105,13 @@ export function collectStaticAssetUrls(html, extension) {
 }
 
 export function staticAssetRepoPath(assetUrl) {
-  if (!assetUrl.startsWith("/_next/static/")) {
+  const relative = assetUrl.replace(/^\/_next\//, "");
+  const normalized = path.posix.normalize(relative);
+  if (!assetUrl.startsWith("/_next/static/") || assetUrl.includes("\\") ||
+      !normalized.startsWith("static/")) {
     throw new Error(`asset is outside /_next/static: ${assetUrl}`);
   }
-  return path.join(".next", assetUrl.replace(/^\/_next\//, ""));
+  return path.join(".next", normalized);
 }
 
 export function measureRoute({ route, html, assetGzip, htmlGzip }) {

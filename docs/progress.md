@@ -3247,3 +3247,32 @@ Risk / rollback:
 Next:
 
 - Continue the coverage and core-boundary audit, then submit the batch for CI review.
+
+## 2026-09-19 — Bundle asset path containment
+
+Status: completed locally on `codex/coverage-batch-19`.
+
+Completed:
+
+- Prevented `staticAssetRepoPath` from resolving traversal paths outside `.next/static` and rejected backslash path separators.
+- Added a regression demonstrating that `/_next/static/../../package.json` previously resolved to the repository package file.
+
+Changed files:
+
+- `scripts/bundle-budget.mjs`
+- `scripts/bundle-budget.test.mjs`
+- `docs/progress.md`
+
+Verification:
+
+- Regression failed on the old implementation, then `npx vitest run scripts/bundle-budget.test.mjs --reporter=dot` passed, 27 tests.
+- `npm run check:bundle` — all 454 zh/en routes and AI chunk isolation passed.
+- `git diff --check` — passed.
+
+Risk / rollback:
+
+- Only build-audit asset path resolution changes; existing production bundle assets remain under `.next/static`. Roll back by reverting this commit.
+
+Next:
+
+- Run full quality gates and submit the batch for CI review.
