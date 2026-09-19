@@ -11,7 +11,10 @@ export async function lazyEnqueueWrite(
   kind: QueueKind,
   payloadKey: string,
   payload: Record<string, unknown>,
+  ownerId?: string,
+  isCurrent: () => boolean = () => true,
 ): Promise<void> {
   const mod = await import("./sync-queue-store");
-  mod.enqueueWrite(kind, payloadKey, payload);
+  if (!isCurrent()) return;
+  mod.enqueueWrite(kind, payloadKey, payload, Date.now(), ownerId);
 }

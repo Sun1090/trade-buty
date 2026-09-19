@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           import("@/lib/sync-queue-store"),
           import("@/lib/sync-queue-executor"),
         ]);
-        await flushPersistedQueue(buildQueueExecutor(uid));
+        await flushPersistedQueue(buildQueueExecutor(uid), uid);
       } catch {
         // best-effort；下一轮 online/SIGNED_IN 还会重试
       }

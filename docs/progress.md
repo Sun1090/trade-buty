@@ -3341,3 +3341,22 @@ Verification: focused Vitest 17 passed; typecheck and diff whitespace passed. Fu
 Risk / rollback: replay result now reflects current queue. Roll back this commit independently if backend execution semantics change; concurrent-write loss would return.
 
 Next: complete full gate and CI review, then audit remaining synchronization boundaries.
+
+## 2026-09-19 — Offline write queue account isolation
+
+Status: completed locally on `codex/coverage-batch-23`.
+
+Completed:
+
+- Bound production offline writes and replay to the authenticated user ID; a queue from another account is never replayed to the current account.
+- Discard legacy unowned pending entries rather than risking cross-account writes. A new enqueue after account switch starts a fresh owned queue.
+- Capture the initiating account for Supabase writes and reject delayed failures after sign-out/account switch, including after the lazy queue module resolves.
+- Prevent an in-flight replay from overwriting a different account's queue. Added cross-account, legacy, and async interleaving regressions.
+
+Changed files: `src/lib/sync-queue-store.ts`, `src/lib/sync-queue-store.test.ts`, `src/lib/sync-layer.ts`, `src/lib/sync-layer-queue-fallback.ts`, `src/lib/sync-layer-queue-fallback.test.ts`, `src/components/auth-provider.tsx`, `docs/progress.md`.
+
+Verification: four focused test files / 41 tests plus extra replay-race test passed; lint, typecheck, diff whitespace passed. Full gate pending.
+
+Risk / rollback: pre-existing unowned offline writes are intentionally discarded on first authenticated replay because ownership cannot be proven. Export local data before upgrade if preserving unsynced legacy data is required. Revert this commit to restore previous behavior, but doing so reintroduces cross-account replay risk.
+
+Next: full gate and CI, then inspect related account-isolation paths.
