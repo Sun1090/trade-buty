@@ -3129,3 +3129,17 @@ Verification:
 Next:
 
 - Run the full gates, commit this coverage topic, then continue the coverage audit.
+
+## 2026-09-19 — Coverage batch 18 gate verification
+
+Status: in progress on `codex/coverage-batch-18`.
+
+Verification:
+
+- `npm test` — passed, 254 files / 2176 tests.
+- `npm run lint -- --quiet` — passed.
+- `npm run typecheck` — passed.
+
+Next:
+
+- Continue the coverage audit with the next lowest-coverage component/library, then consolidate the batch for review.
