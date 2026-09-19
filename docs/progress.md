@@ -3267,6 +3267,7 @@ Verification:
 
 - Regression failed on the old implementation, then `npx vitest run scripts/bundle-budget.test.mjs --reporter=dot` passed, 27 tests.
 - `npm run check:bundle` — all 454 zh/en routes and AI chunk isolation passed.
+- Full batch gate after both fixes: `npm test` — 254 files / 2184 tests passed; `npm run lint -- --quiet`, `npm run typecheck`, `npm run build` — passed (474 static pages).
 - `git diff --check` — passed.
 
 Risk / rollback:
