@@ -31,6 +31,12 @@ const yesterdayStr = () => {
 /** R4.8：跨时区/夏令时宽限窗——距上次活动不足 36h 视为未断签 */
 const GRACE_MS = 36 * 3600_000;
 
+function withinGrace(lastTs: number | undefined): boolean {
+  if (typeof lastTs !== "number" || lastTs <= 0) return false;
+  const elapsed = Date.now() - lastTs;
+  return elapsed >= 0 && elapsed < GRACE_MS;
+}
+
 /** 读取连续天数数据 */
 export function readStreak(): StreakData {
   const empty = { lastDate: "", current: 0, longest: 0, lastTs: 0 };
@@ -63,7 +69,7 @@ export function touchStreak(): void {
     // 不足 36h（lastTs 宽限窗）同样视为连续，不误判断签
     if (data.lastDate === yesterdayStr()) {
       data.current += 1;
-    } else if (data.lastTs && Date.now() - data.lastTs < GRACE_MS && daysBetween(data.lastDate, today) >= 1) {
+    } else if (withinGrace(data.lastTs) && daysBetween(data.lastDate, today) >= 1) {
       data.current += 1;
     } else {
       // 断了，重新计 1
@@ -92,7 +98,7 @@ export function getCurrentStreak(): number {
   if (data.lastDate === today || data.lastDate === yesterday) {
     return data.current;
   }
-  if (data.lastTs && Date.now() - data.lastTs < GRACE_MS) {
+  if (withinGrace(data.lastTs)) {
     return data.current;
   }
   return 0;
@@ -109,7 +115,7 @@ export function getStreakBreak(): { broken: boolean; longest: number } {
   const inGrace =
     data.lastDate === today ||
     data.lastDate === yesterday ||
-    (data.lastTs !== undefined && data.lastTs > 0 && Date.now() - data.lastTs < GRACE_MS);
+    (withinGrace(data.lastTs ?? 0));
   // 无任何历史（lastDate 为空）不算「断签」，是还没开始
   const broken = data.lastDate !== "" && !inGrace;
   return { broken, longest: data.longest };

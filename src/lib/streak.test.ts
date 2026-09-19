@@ -96,6 +96,19 @@ describe("streak", () => {
     expect(getCurrentStreak()).toBe(7);
   });
 
+  it("未来时间戳不应无限延长宽限窗或虚增连续天数", () => {
+    const oldDate = "2020-01-01";
+    const futureTs = Date.now() + 7 * 24 * 3600_000;
+    store.set("tb-streak", JSON.stringify({
+      lastDate: oldDate, current: 7, longest: 9, lastTs: futureTs,
+    }));
+    expect(getCurrentStreak()).toBe(0);
+    expect(getStreakBreak()).toEqual({ broken: true, longest: 9 });
+    touchStreak();
+    expect(readStreak().current).toBe(1);
+    expect(readStreak().longest).toBe(9);
+  });
+
   it("R4.3：断签后 broken=true 并给出历史最长；没开始过不算断签", () => {
     expect(getStreakBreak()).toEqual({ broken: false, longest: 0 });
     const threeDaysAgo = new Date();
