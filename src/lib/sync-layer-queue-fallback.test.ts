@@ -16,7 +16,7 @@ describe("lazyEnqueueWrite（R9.6 动态入队边界）", () => {
     await lazyEnqueueWrite("progress", "tb-progress", payload);
 
     expect(enqueueWrite).toHaveBeenCalledTimes(1);
-    expect(enqueueWrite).toHaveBeenCalledWith("progress", "tb-progress", payload);
+    expect(enqueueWrite).toHaveBeenCalledWith("progress", "tb-progress", payload, expect.any(Number), undefined);
   });
 
   it("支持全部队列类别（含删除与最佳成绩）", async () => {
@@ -24,9 +24,14 @@ describe("lazyEnqueueWrite（R9.6 动态入队边界）", () => {
     await lazyEnqueueWrite("replay-best", "tb-replay-best", { symbol: "BTCUSDT" });
 
     expect(enqueueWrite.mock.calls).toEqual([
-      ["wrongbook-delete", "tb-wrongbook", { id: "q1" }],
-      ["replay-best", "tb-replay-best", { symbol: "BTCUSDT" }],
+      ["wrongbook-delete", "tb-wrongbook", { id: "q1" }, expect.any(Number), undefined],
+      ["replay-best", "tb-replay-best", { symbol: "BTCUSDT" }, expect.any(Number), undefined],
     ]);
+  });
+
+  it("动态导入完成时身份已切换则不写旧账号队列", async () => {
+    await lazyEnqueueWrite("progress", "a", {}, "user-a", () => false);
+    expect(enqueueWrite).not.toHaveBeenCalled();
   });
 
   it("模块在 await 之前不得同步触达 sync-queue-store（保住 chunk 拆分）", () => {

@@ -8,6 +8,7 @@ import {
   loadQueueAndNextId,
   QUEUE_KEY,
   QUEUE_NEXT_ID_KEY,
+  QUEUE_OWNER_KEY,
 } from "./sync-queue-store";
 
 // 内存 localStorage
@@ -153,6 +154,39 @@ describe("flushPersistedQueue", () => {
     expect(result.queue.map((item) => item.payloadKey)).toEqual(["a", "c"]);
     expect(result.queue[0]?.payload).toEqual({ version: 2 });
     expect(loadQueueAndNextId().nextId).toBe(4);
+  });
+
+  it("账号切换不得把 A 的队列重放到 B，旧账号的延迟 flush 不得清掉 B", async () => {
+    enqueueWrite("progress", "a", {}, 1, "user-a");
+    const calls = vi.fn(async () => true);
+    const foreign = await flushPersistedQueue(calls, "user-b");
+    expect(foreign.executed).toBe(0);
+    expect(calls).not.toHaveBeenCalled();
+    enqueueWrite("quiz", "b", {}, 2, "user-b");
+    expect(memStore.get(QUEUE_OWNER_KEY)).toBe("user-b");
+    expect(loadQueueAndNextId().queue.map((item) => item.payloadKey)).toEqual(["b"]);
+    await flushPersistedQueue(calls, "user-a");
+    expect(loadQueueAndNextId().queue.map((item) => item.payloadKey)).toEqual(["b"]);
+  });
+
+  it("A 的异步重放未完成时切到 B，不得覆盖 B 的队列", async () => {
+    enqueueWrite("progress", "a", {}, 1, "user-a");
+    const result = await flushPersistedQueue(async () => {
+      enqueueWrite("progress", "b", {}, 2, "user-b");
+      return true;
+    }, "user-a");
+    expect(result.succeeded).toBe(1);
+    expect(memStore.get(QUEUE_OWNER_KEY)).toBe("user-b");
+    expect(loadQueueAndNextId().queue.map((item) => item.payloadKey)).toEqual(["b"]);
+  });
+
+  it("不重放旧版无归属队列", async () => {
+    enqueueWrite("progress", "legacy", {}, 1);
+    const calls = vi.fn(async () => true);
+    await flushPersistedQueue(calls, "user-b");
+    expect(calls).not.toHaveBeenCalled();
+    expect(loadQueueAndNextId().queue).toEqual([]);
+    expect(memStore.get(QUEUE_OWNER_KEY)).toBe("user-b");
   });
 
   it("空队列 → 不调用 executor，返回 0/0", async () => {

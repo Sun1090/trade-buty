@@ -24,6 +24,24 @@ export const QUEUE_KEY = "tb-sync-queue";
 /** nextId 键名（单调递增） */
 export const QUEUE_NEXT_ID_KEY = "tb-sync-queue-next-id";
 
+/** Account that owns the pending writes. Legacy unowned entries cannot be replayed safely. */
+export const QUEUE_OWNER_KEY = "tb-sync-queue-owner";
+
+function ensureOwner(ownerId: string): boolean {
+  try {
+    const storage = globalThis.localStorage;
+    if (!storage) return false;
+    if (storage.getItem(QUEUE_OWNER_KEY) === ownerId) return true;
+    storage.removeItem(QUEUE_KEY);
+    storage.removeItem(QUEUE_NEXT_ID_KEY);
+    storage.setItem(QUEUE_OWNER_KEY, ownerId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+
 /** 读取队列 + nextId（供调用方构造新增条目） */
 export function loadQueueAndNextId(): { queue: QueueItem[]; nextId: number } {
   let queue: QueueItem[] = [];
@@ -60,7 +78,9 @@ export function enqueueWrite(
   payloadKey: string,
   payload: Record<string, unknown>,
   now: number = Date.now(),
+  ownerId?: string,
 ): QueueItem[] {
+  if (ownerId && !ensureOwner(ownerId)) return [];
   const { queue, nextId } = loadQueueAndNextId();
   const updated = enqueueUnique(queue, kind, payloadKey, payload, now, nextId);
   const trimmed = trimQueue(updated);
@@ -79,7 +99,17 @@ export function enqueueWrite(
  */
 export async function flushPersistedQueue(
   executor: (item: QueueItem) => Promise<boolean>,
+  ownerId?: string,
 ): Promise<{ queue: QueueItem[]; executed: number; succeeded: number }> {
+  if (ownerId) {
+    try {
+      const existing = globalThis.localStorage?.getItem(QUEUE_OWNER_KEY);
+      if (existing && existing !== ownerId) return { queue: [], executed: 0, succeeded: 0 };
+    } catch {
+      return { queue: [], executed: 0, succeeded: 0 };
+    }
+    if (!ensureOwner(ownerId)) return { queue: [], executed: 0, succeeded: 0 };
+  }
   const { queue } = loadQueueAndNextId();
   const result = await flushQueueAsync(queue, executor);
   // Reconcile against writes made while the asynchronous executor was pending.
@@ -87,6 +117,14 @@ export async function flushPersistedQueue(
   const succeeded = new Map(queue
     .filter((item) => !result.queue.some((pending) => pending.id === item.id))
     .map((item) => [item.id, item]));
+  // Another account may have logged in while the executor was in flight.
+  try {
+    if (ownerId && globalThis.localStorage?.getItem(QUEUE_OWNER_KEY) !== ownerId) {
+      return { ...result, queue: [] };
+    }
+  } catch {
+    return { ...result, queue: [] };
+  }
   const latest = loadQueueAndNextId();
   const remaining = latest.queue.filter((item) => {
     const original = succeeded.get(item.id);
@@ -102,6 +140,7 @@ export function clearPersistedQueue(): void {
   try {
     globalThis.localStorage?.removeItem(QUEUE_KEY);
     globalThis.localStorage?.removeItem(QUEUE_NEXT_ID_KEY);
+    globalThis.localStorage?.removeItem(QUEUE_OWNER_KEY);
   } catch {
     // ignore
   }
