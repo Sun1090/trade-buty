@@ -3083,3 +3083,26 @@ Verification:
 Next:
 
 - Run the full gates for this batch, commit the bundle-budget coverage topic, then continue with the next lowest-coverage library.
+
+## 2026-09-19 — Content-inventory edge coverage
+
+Status: in progress on `codex/coverage-batch-18`.
+
+Completed:
+
+- Added empty-inventory coverage to guarantee 100% coverage without division-by-zero behavior.
+- Added deterministic rendering coverage for missing chapters and sorted missing documents.
+
+Changed files:
+
+- `src/lib/content-inventory.test.ts`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run src/lib/content-inventory.test.ts --reporter=dot` — passed, 4 tests.
+- `git diff --check` — passed.
+
+Next:
+
+- Run the full gates, commit this coverage topic, then continue the operational-script coverage audit.
