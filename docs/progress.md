@@ -3277,3 +3277,21 @@ Risk / rollback:
 Next:
 
 - Run full quality gates and submit the batch for CI review.
+
+## 2026-09-19 — Streak grace window rejects future timestamps
+
+Status: completed locally on `codex/coverage-batch-20`.
+
+Completed:
+
+- Unified the 36-hour grace check across streak update, current display, and break detection.
+- Reject future `lastTs` values so clock skew or corrupted storage cannot indefinitely preserve a streak or increase it after an actual break.
+- Added a regression for all three paths while retaining the historical longest streak.
+
+Changed files: `src/lib/streak.ts`, `src/lib/streak.test.ts`, `docs/progress.md`.
+
+Verification: focused Vitest 17 passed; `npm run lint -- --quiet`, `npm run typecheck`, `git diff --check` passed.
+
+Blockers / risk / rollback: no external dependency; existing within-window grace remains unchanged. Revert this commit if future timestamps need a distinct tolerance policy.
+
+Next: audit further core data boundaries, run full gates before PR.
