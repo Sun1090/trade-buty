@@ -3165,3 +3165,25 @@ Verification:
 Next:
 
 - Continue the coverage audit after committing this topic.
+
+## 2026-09-19 — Coverage batch 18 full report
+
+Status: completed locally on `codex/coverage-batch-18`.
+
+Completed:
+
+- Raised repository coverage to 93.46% statements, 87.61% branches, 93.05% functions, and 95.86% lines.
+- Covered growth-event privacy, bundle-budget validation, content inventory, dark-pattern parsing, and invite-banner persistence/storage synchronization boundaries.
+
+Verification:
+
+- `npm run test:coverage -- --reporter=dot` — passed, 254 files / 2178 tests.
+- Coverage: 8449/9040 statements, 5845/6671 branches, 1714/1842 functions, 7486/7809 lines.
+
+Blockers / risk / rollback:
+
+- No runtime behavior changed; rollback is limited to reverting the test and progress commits in this batch.
+
+Next:
+
+- Open and merge the batch PR after CI, synchronize `main`, and continue with the next lowest-coverage production boundary.
