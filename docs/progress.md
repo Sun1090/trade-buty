@@ -2740,3 +2740,33 @@ Blockers / risk / rollback:
 Next:
 
 - Continue auditing low-coverage tests for assertions that do not exercise their named branch, then strengthen the highest-value learner-facing state transitions.
+
+## 2026-09-19 — Coverage batch 13: reading progress interaction
+
+Status: completed on `codex/coverage-batch-8`.
+
+Completed:
+
+- Replaced shallow render-only checks with behavioral coverage of reading percentage calculation, the 800px return-to-top threshold, smooth-scroll action, 100% clamping, zero-scroll-distance handling, and listener cleanup.
+- Locked the visible percentage and accessible title/label contract for the floating return-to-top control.
+
+Changed files:
+
+- `src/components/reading-progress.test.tsx`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run src/components/reading-progress.test.tsx --reporter=dot` — passed, 5 tests.
+- `npm test` — passed, 253 files / 2,146 tests.
+- `npm run lint -- --quiet` — passed with zero warnings.
+- `npm run typecheck` — passed (`next typegen` + `tsc --noEmit`).
+
+Blockers / risk / rollback:
+
+- No production behavior changed. Tests control viewport geometry explicitly and restore globals after each case.
+- Rollback is the atomic test/progress commit.
+
+Next:
+
+- Continue replacing render-only assertions in low-coverage learner-facing components with state-transition and accessibility checks.
