@@ -6,6 +6,16 @@ const today = localDateStr(new Date(2026, 8, 7, 12)); // 2026-09-07
 const dayAt = (date: string) => new Date(`${date}T12:00:00`).getTime();
 
 describe("buildWrongbookEfficiency", () => {
+  it("rejects impossible today and SRS due dates", () => {
+    const now = localDateStr();
+    const result = buildWrongbookEfficiency({
+      wrongEntries: { "a:0": { at: dayAt(now), srsStage: 1, srsDue: "2026-02-31" } },
+      today: "2026-02-31",
+    });
+    expect(result.days.at(-1)?.date).toBe(now);
+    expect(result.latest).toMatchObject({ pending: 1, dueToday: 0, overdue: 0 });
+  });
+
   it("buckets review answers by local day with correct/mastered counts", () => {
     const yesterday = shiftDate(today, -1);
     const result = buildWrongbookEfficiency({

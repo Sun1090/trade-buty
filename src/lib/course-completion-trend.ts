@@ -1,4 +1,4 @@
-import { localDateStr, shiftDate } from "./date-utils";
+import { isLocalDateStr, localDateStr, shiftDate } from "./date-utils";
 
 export interface ChapterInput {
   slug: string;
@@ -97,7 +97,7 @@ export function buildCourseCompletionTrend(input: {
   const progress = input.progress ?? {};
   const ledger = normalizeCompletionLedger(input.completions);
   const hasLedger = Object.keys(ledger).length > 0;
-  const today = input.today && /^\d{4}-\d{2}-\d{2}$/.test(input.today) ? input.today : localDateStr();
+  const today = isLocalDateStr(input.today) ? input.today : localDateStr();
   const requestedDays = Number(input.days);
   const days = Math.min(365, Math.max(7, Number.isFinite(requestedDays) && requestedDays > 0 ? Math.round(requestedDays) : 7));
 

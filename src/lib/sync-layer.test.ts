@@ -5,6 +5,7 @@ import {
   mergeQuizScore,
   mergeReplayHistory,
   mergeReplayBest,
+  normalizeLocalWrong,
 } from "./sync-layer";
 import type { ProgressMap } from "./progress";
 import type { WrongEntry } from "./wrongbook";
@@ -33,6 +34,17 @@ describe("mergeProgress", () => {
 
   it("本地为空时只用云端", () => {
     expect(mergeProgress({}, [{ chapter_num: "ch", doc_slug: "d" }])).toEqual({ ch: ["d"] });
+  });
+});
+
+
+describe("normalizeLocalWrong", () => {
+  it("drops impossible SRS due dates while preserving the valid wrong answer", () => {
+    expect(normalizeLocalWrong({
+      "ch1:0": { chapterNum: "ch1", questionIdx: 0, picked: 1, at: 1000, srsDue: "2026-02-31" },
+    })).toEqual({
+      "ch1:0": { chapterNum: "ch1", questionIdx: 0, picked: 1, at: 1000 },
+    });
   });
 });
 

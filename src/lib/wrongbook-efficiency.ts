@@ -10,7 +10,7 @@
  * 全部日期使用 R4.8 的本地日期口径（date-utils）。
  */
 import { EBBINGHAUS_INTERVALS } from "./srs";
-import { localDateStr, shiftDate } from "./date-utils";
+import { isLocalDateStr, localDateStr, shiftDate } from "./date-utils";
 
 export interface ReviewAttemptEntry {
   chapter?: string;
@@ -97,7 +97,7 @@ export function buildWrongbookEfficiency(input: {
   const attempts = normalizeReviewLedger(input.attempts);
   const hasLedger = Object.keys(attempts).length > 0;
   const today =
-    input.today && /^\d{4}-\d{2}-\d{2}$/.test(input.today)
+    isLocalDateStr(input.today)
       ? input.today
       : localDateStr();
   const requestedDays = Number(input.days);
@@ -115,7 +115,7 @@ export function buildWrongbookEfficiency(input: {
   let stageSum = 0;
   for (const entry of entries) {
     const due =
-      typeof entry.srsDue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(entry.srsDue)
+      isLocalDateStr(entry.srsDue)
         ? entry.srsDue
         : shiftDate(localDateStr(new Date(safeNonNegative(entry.at))), EBBINGHAUS_INTERVALS[0]);
     const stage = Math.min(MAX_STAGE, safeNonNegative(entry.srsStage));

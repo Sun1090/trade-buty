@@ -3396,3 +3396,22 @@ Verification: focused Vitest 10 passed; lint, typecheck, diff whitespace passed.
 Risk / rollback: only mismatched persisted identities are discarded. Revert this commit to accept legacy mismatches, at the cost of ambiguous mutation/sync behavior.
 
 Next: run full gates and CI, then continue persisted-data contract audit.
+
+## 2026-09-20 — Strict date validation across analytics and sync
+
+Status: completed locally on `codex/coverage-batch-26`.
+
+Completed:
+
+- Reused the shared Gregorian calendar validator for course, quiz, replay, and wrongbook analytics `today` inputs, preventing impossible dates from producing malformed reporting windows.
+- Treated impossible wrongbook SRS due dates as absent in efficiency calculations instead of classifying them lexicographically.
+- Applied the same validation to the sync-layer local wrongbook sanitizer so malformed due dates are not reintroduced during cloud hydration.
+- Added focused regressions for each analytics path and the sync sanitizer.
+
+Changed files: `src/lib/course-completion-trend.ts`, `src/lib/course-completion-trend.test.ts`, `src/lib/quiz-score-trend.ts`, `src/lib/quiz-score-trend.test.ts`, `src/lib/replay-time-trend.ts`, `src/lib/replay-time-trend.test.ts`, `src/lib/wrongbook-efficiency.ts`, `src/lib/wrongbook-efficiency.test.ts`, `src/lib/sync-layer.ts`, `src/lib/sync-layer.test.ts`, `docs/progress.md`.
+
+Verification: five focused Vitest files / 39 tests passed; full Vitest 254 files / 2203 tests passed; typecheck, lint, production build, and diff whitespace passed.
+
+Risk / rollback: only impossible calendar dates change behavior; valid `YYYY-MM-DD` inputs are unchanged. Invalid report anchors fall back to the actual local date, while invalid SRS due fields degrade through the existing missing-date path. Revert this commit to restore format-only acceptance.
+
+Next: complete full regression gates and CI, then continue auditing persisted-data identity and account-isolation boundaries.

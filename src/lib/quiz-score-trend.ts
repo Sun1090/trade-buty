@@ -1,4 +1,4 @@
-import { localDateStr, shiftDate } from "./date-utils";
+import { isLocalDateStr, localDateStr, shiftDate } from "./date-utils";
 
 export interface QuizChapterInput {
   slug: string;
@@ -93,7 +93,7 @@ export function buildQuizScoreTrend(input: {
   const progress = input.progress ?? {};
   const attempts = normalizeQuizLedger(input.attempts);
   const hasLedger = Object.keys(attempts).length > 0;
-  const today = input.today && /^\d{4}-\d{2}-\d{2}$/.test(input.today) ? input.today : localDateStr();
+  const today = isLocalDateStr(input.today) ? input.today : localDateStr();
   const requestedDays = Number(input.days);
   const days = Math.min(365, Math.max(7, Number.isFinite(requestedDays) && requestedDays > 0 ? Math.round(requestedDays) : 7));
 

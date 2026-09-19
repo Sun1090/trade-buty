@@ -6,6 +6,12 @@ const today = localDateStr(new Date(2026, 8, 7, 12)); // 2026-09-07
 const dayAt = (date: string) => new Date(`${date}T12:00:00`).getTime();
 
 describe("buildReplayTimeTrend", () => {
+  it("rejects impossible calendar dates used as today", () => {
+    const result = buildReplayTimeTrend({ history: [], today: "2026-02-31" });
+    expect(result.days.at(-1)?.date).toBe(localDateStr());
+    expect(result.days.at(-1)?.date).not.toBe("2026-02-31");
+  });
+
   it("buckets rounds and durations by local day", () => {
     const yesterday = shiftDate(today, -1);
     const result = buildReplayTimeTrend({

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { localDateStr } from "./date-utils";
 import { buildCourseCompletionTrend } from "./course-completion-trend";
 
 const chapters = [
@@ -12,6 +13,12 @@ const progress = {
 };
 
 describe("buildCourseCompletionTrend", () => {
+  it("rejects impossible calendar dates used as today", () => {
+    const result = buildCourseCompletionTrend({ chapters: [], today: "2026-02-31" });
+    expect(result.days.at(-1)?.date).toBe(localDateStr());
+    expect(result.days.at(-1)?.date).not.toBe("2026-02-31");
+  });
+
   it("returns an empty trend without inventing dates when old progress has no ledger", () => {
     const trend = buildCourseCompletionTrend({ chapters, progress, days: 7, today: "2026-09-07" });
 

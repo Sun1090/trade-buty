@@ -9,6 +9,7 @@ import { detectMergeConflicts, recordSyncConflicts } from "./sync-conflicts";
 import type { ProgressMap } from "./progress";
 import type { WrongEntry } from "./wrongbook";
 import type { ReplayRecord } from "./replay-store";
+import { isLocalDateStr } from "./date-utils";
 import { isRecord, readStorageJson } from "./storage-json";
 
 /**
@@ -216,7 +217,7 @@ function normalizeLocalProgress(value: unknown): ProgressMap {
   return out;
 }
 
-function normalizeLocalWrong(value: unknown): Record<string, WrongEntry> {
+export function normalizeLocalWrong(value: unknown): Record<string, WrongEntry> {
   if (!isRecord(value)) return {};
   const out: Record<string, WrongEntry> = {};
   for (const [key, rawEntry] of Object.entries(value)) {
@@ -241,7 +242,7 @@ function normalizeLocalWrong(value: unknown): Record<string, WrongEntry> {
     if (typeof srsStage === "number" && Number.isFinite(srsStage) && srsStage >= 0) {
       entry.srsStage = Math.round(srsStage);
     }
-    if (typeof srsDue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(srsDue)) {
+    if (isLocalDateStr(srsDue)) {
       entry.srsDue = srsDue;
     }
     out[key] = entry;
