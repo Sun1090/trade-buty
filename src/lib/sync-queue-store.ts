@@ -82,8 +82,19 @@ export async function flushPersistedQueue(
 ): Promise<{ queue: QueueItem[]; executed: number; succeeded: number }> {
   const { queue } = loadQueueAndNextId();
   const result = await flushQueueAsync(queue, executor);
-  persist(result.queue, loadQueueAndNextId().nextId);
-  return result;
+  // Reconcile against writes made while the asynchronous executor was pending.
+  // Never overwrite new/updated entries with the stale snapshot taken above.
+  const succeeded = new Map(queue
+    .filter((item) => !result.queue.some((pending) => pending.id === item.id))
+    .map((item) => [item.id, item]));
+  const latest = loadQueueAndNextId();
+  const remaining = latest.queue.filter((item) => {
+    const original = succeeded.get(item.id);
+    return !original || original.at !== item.at ||
+      JSON.stringify(original.payload) !== JSON.stringify(item.payload);
+  });
+  persist(remaining, latest.nextId);
+  return { ...result, queue: remaining };
 }
 
 /** 清空队列（注销账号等场景使用） */
