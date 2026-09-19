@@ -2990,3 +2990,25 @@ Blockers / risk / rollback:
 Next:
 
 - Commit this atomic rollback/drill topic, then inspect the AI retrieval path for stale-generation observability and retry-safe operational behavior.
+
+## 2026-09-19 — Error-report privacy audit coverage
+
+Status: in progress on `codex/coverage-batch-17`.
+
+Completed:
+
+- Expanded `scripts/error-report-privacy.test.mjs` from implementation-only checks to adversarial coverage for missing client markers, missing/extra payload fields, missing endpoints, unsafe route references and response echoing, bounded-body/parser requirements, and privacy disclosure regressions.
+- Focused audit coverage increased to 87.32% statements, 91.3% branches, 85.71% functions, and 88.33% lines.
+
+Changed files:
+
+- `scripts/error-report-privacy.test.mjs`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run scripts/error-report-privacy.test.mjs --coverage --reporter=dot` — passed, 11 tests.
+
+Next:
+
+- Run the full gates, commit the coverage batch, then continue auditing the remaining operational scripts and API boundary tests.
