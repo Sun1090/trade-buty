@@ -2677,3 +2677,35 @@ Blockers / risk / rollback:
 Next:
 
 - Re-run repository coverage and select the next production boundary by uncovered branch count, prioritizing content parsing and learner-facing error handling over cosmetic branches.
+
+## 2026-09-19 — Coverage batch 11: knowledge-base filesystem contract
+
+Status: completed on `codex/coverage-batch-8`.
+
+Completed:
+
+- Added integration coverage against the checked-out `kline-buty` submodule for the content loader's real filesystem boundary.
+- Locked the 27-chapter bilingual inventory and stable product ordering, chapter metadata/introduction parsing, chapter adjacency, zh/en lesson parity and ordering, full-document loading, document adjacency, unknown chapter/document behavior, and clear missing-locale failure.
+- Raised focused `src/lib/content.ts` statement coverage from 77.0% in the repository baseline to 92.70% (165/178 statements), while testing the actual knowledge-base contract rather than mocked fixtures.
+
+Changed files:
+
+- `src/lib/content.test.ts`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run src/lib/content.test.ts --reporter=dot` — passed, 29 tests.
+- Focused coverage run — `src/lib/content.ts` 92.70% statements.
+- `npm test` — passed, 253 files / 2,139 tests.
+- `npm run lint -- --quiet` — passed with zero warnings.
+- `npm run typecheck` — passed (`next typegen` + `tsc --noEmit`).
+
+Blockers / risk / rollback:
+
+- These tests intentionally require the knowledge submodule, matching the repository's documented build dependency and producing a clear failure if it is absent.
+- No production behavior changed; rollback is the atomic test/progress commit.
+
+Next:
+
+- Recompute full coverage, then continue with the highest-value remaining learner-facing or content-boundary branches. External roadmap items remain blocked on production accounts and credentials.
