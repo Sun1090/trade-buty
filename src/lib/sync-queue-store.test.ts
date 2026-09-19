@@ -139,6 +139,22 @@ describe("flushPersistedQueue", () => {
     expect(remaining.map((q: { payloadKey: string }) => q.payloadKey)).toEqual(["b", "c"]);
   });
 
+  it("异步重放期间新增或更新的写入不会被旧快照覆盖", async () => {
+    enqueueWrite("progress", "a", { version: 1 }, 1);
+    enqueueWrite("progress", "b", { version: 1 }, 2);
+    const result = await flushPersistedQueue(async (item) => {
+      if (item.payloadKey === "a") {
+        enqueueWrite("progress", "a", { version: 2 }, 3);
+        enqueueWrite("progress", "c", { version: 1 }, 4);
+      }
+      return true;
+    });
+    expect(result.succeeded).toBe(2);
+    expect(result.queue.map((item) => item.payloadKey)).toEqual(["a", "c"]);
+    expect(result.queue[0]?.payload).toEqual({ version: 2 });
+    expect(loadQueueAndNextId().nextId).toBe(4);
+  });
+
   it("空队列 → 不调用 executor，返回 0/0", async () => {
     const executor = vi.fn(async () => true);
     const result = await flushPersistedQueue(executor);

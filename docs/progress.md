@@ -3327,3 +3327,17 @@ Verification: focused Vitest 36 passed; typecheck and lint passed; full gate pen
 Risk / rollback: invalid persisted queue entries are omitted rather than replayed; valid entries remain unchanged. Revert this commit if a retired queue kind must be migrated instead of discarded.
 
 Next: full test/build, submit for CI, then continue data-isolation audit.
+
+## 2026-09-19 — Preserve writes during asynchronous queue replay
+
+Status: completed locally on `codex/coverage-batch-22`.
+
+Completed: reconcile successful replay items against the latest persisted queue instead of writing a pre-await snapshot. New entries and updates to an in-flight item survive replay; regression exercises both cases.
+
+Changed files: `src/lib/sync-queue-store.ts`, `src/lib/sync-queue-store.test.ts`, `docs/progress.md`.
+
+Verification: focused Vitest 17 passed; typecheck and diff whitespace passed. Full gate pending.
+
+Risk / rollback: replay result now reflects current queue. Roll back this commit independently if backend execution semantics change; concurrent-write loss would return.
+
+Next: complete full gate and CI review, then audit remaining synchronization boundaries.
