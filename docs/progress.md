@@ -3217,3 +3217,33 @@ Blockers / risk / rollback:
 Next:
 
 - Review this fix through CI, merge, and continue the next highest-priority quality issue.
+
+## 2026-09-19 — Quiz source mount parser boundary
+
+Status: completed locally on `codex/coverage-batch-19`.
+
+Completed:
+
+- Restricted computed quiz mount keys to literal string/template values rather than treating a variable identifier as its actual chapter key.
+- Covered identifier object keys, template literals, unrelated assignments, and malformed chapter/document/question fields.
+
+Changed files:
+
+- `scripts/quiz-source-lib.mjs`
+- `scripts/quiz-source-lib.test.mjs`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run scripts/quiz-source-lib.test.mjs --reporter=dot` — 5 tests passed.
+- `npm run check:quiz-mounts` — 27 production mounts verified.
+- `npm test` — 254 files / 2184 tests passed.
+- `npm run lint -- --quiet`, `npm run typecheck`, `git diff --check` — passed.
+
+Risk / rollback:
+
+- This is a parser-only contract correction. Revert the commit to restore previous parsing if an intentional dynamic key is introduced; production mounts remain literal.
+
+Next:
+
+- Continue the coverage and core-boundary audit, then submit the batch for CI review.

@@ -63,3 +63,31 @@ describe("parseQuizMounts", () => {
     expect(entries.reduce((sum, entry) => sum + (entry.questionCount ?? 0), 0)).toBe(81);
   });
 });
+
+describe("parseQuizMounts boundaries", () => {
+  it("accepts identifier and template-literal keys and values", () => {
+    expect(parseQuizMounts(`
+      const QUIZZES = {
+        spot: { chapterNum: \`spot\`, docSlug: "basics", questions: [{}] },
+      };
+      QUIZZES[\`futures\`] = {
+        chapterNum: "futures", docSlug: \`margin\`, questions: [{}, {}],
+      };
+    `)).toEqual([
+      { key: "spot", chapterNum: "spot", docSlug: "basics", questionCount: 1 },
+      { key: "futures", chapterNum: "futures", docSlug: "margin", questionCount: 2 },
+    ]);
+  });
+
+  it("ignores unrelated statements and preserves malformed property types for validation", () => {
+    expect(parseQuizMounts(`
+      let ignored = { spot: { chapterNum: "spot", questions: [] } };
+      OTHER["spot"] = { chapterNum: "spot", questions: [] };
+      QUIZZES["spot"] += 1;
+      QUIZZES["spot"] = { chapterNum: 7, docSlug: null, questions: "not an array" };
+      QUIZZES[variable] = { chapterNum: "variable", questions: [] };
+    `)).toEqual([
+      { key: "spot", chapterNum: null, docSlug: null, questionCount: null },
+    ]);
+  });
+});
