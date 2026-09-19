@@ -3397,7 +3397,7 @@ Risk / rollback: only mismatched persisted identities are discarded. Revert this
 
 Next: run full gates and CI, then continue persisted-data contract audit.
 
-## 2026-09-20 — Strict date validation across analytics and sync
+## 2026-09-19 — Strict date validation across analytics and sync
 
 Status: completed locally on `codex/coverage-batch-26`.
 
