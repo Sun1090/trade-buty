@@ -71,4 +71,29 @@ describe("growth event privacy audit", () => {
       "privacy policy must disclose the local console-only debug channel in both locales",
     );
   });
+  it("detects every prohibited browser sink", () => {
+    const input = fixture();
+    input.source += `
+      XMLHttpRequest;
+      sessionStorage.getItem("x");
+      indexedDB.open("x");
+      navigator.sendBeacon("/x");
+    `;
+    const { errors } = auditGrowthEventPrivacy(input);
+    expect(errors).toEqual(expect.arrayContaining([
+      "growth event source contains forbidden network sendBeacon",
+      "growth event source contains forbidden network XMLHttpRequest",
+      "growth event source contains forbidden persistent storage",
+    ]));
+  });
+
+  it("reports malformed event catalogs and duplicate logger sinks", () => {
+    const input = fixture();
+    input.source = input.source
+      .replace('console.info("[growth-event]", safe.name, safe);', 'console.info("[growth-event]", safe.name, safe);\n  console.info("duplicate");')
+      .replace(/GROWTH_EVENT_NAMES\s*=\s*\[[\s\S]*?\]\s*as const/, "const GROWTH_EVENT_NAMES = [] as const");
+    const { errors } = auditGrowthEventPrivacy(input);
+    expect(errors).toContain("expected exactly one console.info sink, found 2");
+    expect(errors).toContain("could not read GROWTH_EVENT_NAMES");
+  });
 });

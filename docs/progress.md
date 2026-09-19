@@ -3034,3 +3034,27 @@ Verification:
 Next:
 
 - Run the full suite and commit this small coverage topic, then continue the coverage audit.
+
+## 2026-09-19 — Growth-event privacy boundary coverage
+
+Status: in progress on `codex/coverage-batch-18`.
+
+Completed:
+
+- Added adversarial coverage for every prohibited browser sink, including `sendBeacon`, `XMLHttpRequest`, session storage, and IndexedDB.
+- Added coverage for duplicate logger sinks and malformed/empty event catalogs.
+- Kept all new cases inside the existing audit suite and verified the production fixture remains compliant.
+
+Changed files:
+
+- `scripts/growth-event-privacy.test.mjs`
+- `docs/progress.md`
+
+Verification:
+
+- `npx vitest run scripts/growth-event-privacy.test.mjs --reporter=dot` — passed, 9 tests.
+- `git diff --check` — passed.
+
+Next:
+
+- Run the repository gates, commit this atomic coverage topic, then continue the lowest-coverage script audit.
