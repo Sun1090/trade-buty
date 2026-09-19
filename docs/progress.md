@@ -3360,3 +3360,21 @@ Verification: four focused test files / 41 tests plus extra replay-race test pas
 Risk / rollback: pre-existing unowned offline writes are intentionally discarded on first authenticated replay because ownership cannot be proven. Export local data before upgrade if preserving unsynced legacy data is required. Revert this commit to restore previous behavior, but doing so reintroduces cross-account replay risk.
 
 Next: full gate and CI, then inspect related account-isolation paths.
+
+## 2026-09-19 — Strict local calendar date validation
+
+Status: completed locally on `codex/coverage-batch-24`.
+
+Completed:
+
+- Added a shared strict `YYYY-MM-DD` validator that checks real Gregorian calendar dates rather than format alone.
+- Applied it to activity history, streak state, and study-time ledger reads so impossible persisted dates such as `2026-02-31` are discarded.
+- Corrected the 365-entry activity fixture to generate actual consecutive dates and added leap-year/month-boundary regressions.
+
+Changed files: `src/lib/date-utils.ts`, `src/lib/date-utils.test.ts`, `src/lib/activity-calendar.ts`, `src/lib/activity-calendar.test.ts`, `src/lib/streak.ts`, `src/lib/streak.test.ts`, `src/lib/study-time.ts`, `docs/progress.md`.
+
+Verification: three focused test files / 34 tests passed; lint, typecheck, diff whitespace passed. Full gate pending.
+
+Risk / rollback: only impossible stored dates are dropped; valid historical dates are unchanged. Revert this commit to restore format-only acceptance.
+
+Next: extend the shared validator to remaining date-bearing data contracts after full regression gates.

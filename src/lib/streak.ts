@@ -5,7 +5,7 @@
  * 计算当前连续学习天数和历史最长记录。
  */
 import { readActivityDates, recordActivity } from "./activity-calendar";
-import { localDateStr, daysBetween } from "./date-utils";
+import { localDateStr, daysBetween, isLocalDateStr } from "./date-utils";
 import { isRecord, readNonNegativeInteger, readStorageJson } from "./storage-json";
 
 const KEY = "tb-streak";
@@ -44,7 +44,7 @@ export function readStreak(): StreakData {
   if (!isRecord(parsed)) return empty;
 
   const lastDate =
-    typeof parsed.lastDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.lastDate)
+    isLocalDateStr(parsed.lastDate)
       ? parsed.lastDate
       : "";
   const current = readNonNegativeInteger(parsed.current);

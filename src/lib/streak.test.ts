@@ -47,7 +47,7 @@ describe("streak", () => {
     expect(readStreak()).toEqual({ lastDate: "", current: 0, longest: 0, lastTs: 0 });
     store.set(
       "tb-streak",
-      JSON.stringify({ lastDate: "not-a-date", current: -2, longest: "5", lastTs: Infinity }),
+      JSON.stringify({ lastDate: "2026-02-31", current: -2, longest: "5", lastTs: Infinity }),
     );
     expect(readStreak()).toEqual({ lastDate: "", current: 0, longest: 0, lastTs: 0 });
     store.set(

@@ -40,7 +40,7 @@ describe("activity-calendar", () => {
   it("过滤非法日期并去重", () => {
     store.set(
       "tb-activity",
-      JSON.stringify(["2026-09-13", "bad", null, 42, "2026-09-13"]),
+      JSON.stringify(["2026-09-13", "2026-02-31", "2026-13-01", "bad", null, 42, "2026-09-13"]),
     );
     expect(readActivityDates()).toEqual(["2026-09-13"]);
   });
@@ -62,7 +62,11 @@ describe("activity-calendar", () => {
   });
 
   it("最多保留最近 365 天，最旧被截断", () => {
-    const existing = Array.from({ length: 365 }, (_, i) => `2025-${String(Math.floor(i / 31) + 1).padStart(2, "0")}-${String((i % 31) + 1).padStart(2, "0")}`);
+    const existing = Array.from({ length: 365 }, (_, i) => {
+      const date = new Date(2025, 0, 1);
+      date.setDate(date.getDate() + i);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    });
     store.set("tb-activity", JSON.stringify(existing));
     vi.setSystemTime(new Date(2026, 8, 13, 10, 0, 0));
     recordActivity();
