@@ -31,6 +31,8 @@ const MIGRATIONS_DIR = path.join(root, "supabase", "migrations");
 const TESTS_DIR = path.join(root, "supabase", "tests");
 const ROLLBACK_0008 = path.join(root, "supabase", "rollback", "0008_goal_tier_constraints.sql");
 const FORWARD_0008 = path.join(MIGRATIONS_DIR, "0008_goal_tier_constraints.sql");
+const ROLLBACK_0009 = path.join(root, "supabase", "rollback", "0009_atomic_embedding_generations.sql");
+const FORWARD_0009 = path.join(MIGRATIONS_DIR, "0009_atomic_embedding_generations.sql");
 
 const failures = [];
 
@@ -246,6 +248,61 @@ function main() {
             } else {
               log("4/5", "✅ 回滚 → 重放：脏数据归一化、约束恢复、非法值再次被拒绝");
             }
+          }
+        }
+      }
+    }
+  }
+
+  log("4/5", "回滚演练：0009 embedding generation 原子激活…");
+  const generationSeed = psql(
+    `delete from kb_embedding_generations where locale = 'rollback-test';
+     delete from kb_embeddings where locale = 'rollback-test';
+     insert into kb_embeddings (chunk, chapter, doc, locale, generation, embedding) values
+       ('active', 'risk', 'active', 'rollback-test', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', ('[' || repeat('0.1,', 1023) || '0.1]')::vector),
+       ('staged', 'risk', 'staged', 'rollback-test', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', ('[' || repeat('0.2,', 1023) || '0.2]')::vector);
+     insert into kb_embedding_generations (locale, active_generation)
+     values ('rollback-test', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');`,
+  );
+  if (generationSeed.status !== 0) {
+    fail("rollback", `0009 回滚夹具写入失败：${generationSeed.stderr.trim()}`);
+  } else {
+    const rollback = psql(fs.readFileSync(ROLLBACK_0009, "utf8"));
+    if (rollback.status !== 0) {
+      fail("rollback", `rollback/0009 执行失败：${rollback.stderr.trim()}`);
+    } else {
+      const rolledBack = queryOne(
+        `select
+           to_regclass('public.kb_embedding_generations') is null,
+           not exists (
+             select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'kb_embeddings' and column_name = 'generation'
+           ),
+           count(*) filter (where locale = 'rollback-test'),
+           count(*) filter (where locale = 'rollback-test' and doc = 'active')
+         from kb_embeddings`,
+      );
+      if (rolledBack !== "t|t|1|1") {
+        fail("rollback", `rollback/0009 应仅保留 active generation，实际 ${rolledBack}`);
+      } else {
+        log("4/5", "✅ rollback/0009 移除 generation schema 并仅保留 active 行");
+        const reapplied = psql(fs.readFileSync(FORWARD_0009, "utf8"));
+        if (reapplied.status !== 0) {
+          fail("rollback", `重新应用 0009 失败：${reapplied.stderr.trim()}`);
+        } else {
+          const replayed = queryOne(
+            `select
+               count(*) filter (where e.locale = 'rollback-test'),
+               count(*) filter (where e.locale = 'rollback-test' and e.generation = g.active_generation),
+               not has_function_privilege('authenticated', 'activate_kb_embedding_generation(text, uuid)', 'execute')
+             from kb_embeddings e
+             join kb_embedding_generations g on g.locale = e.locale
+             where e.locale = 'rollback-test'`,
+          );
+          if (replayed !== "1|1|t") {
+            fail("rollback", `重新应用 0009 后 generation/ACL 未恢复，实际 ${replayed}`);
+          } else {
+            log("4/5", "✅ 回滚 → 重放：active generation 回填、指针与 RPC ACL 恢复");
           }
         }
       }
