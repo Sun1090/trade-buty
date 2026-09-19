@@ -9,12 +9,44 @@ import path from "node:path";
 import { getChapterSlugs, getDocMetas, assertKnowledgeRoot } from "@/lib/content";
 
 const KNOWLEDGE_ROOT = path.join(process.cwd(), "content/kline-buty/docs/knowledge");
+const MAX_CHUNK_LENGTH = 2000;
 
 export interface KbChunk {
   chapter: string;
   doc: string;
   locale: string;
   chunk: string;
+}
+
+function splitOversizedBlock(block: string): string[] {
+  const chunks: string[] = [];
+  let current = "";
+
+  function flush() {
+    if (current.trim()) chunks.push(current.trim());
+    current = "";
+  }
+
+  for (const paragraph of block.split(/\n\n+/)) {
+    const trimmed = paragraph.trim();
+    if (!trimmed) continue;
+
+    if (trimmed.length > MAX_CHUNK_LENGTH) {
+      flush();
+      const chunkCount = Math.ceil(trimmed.length / MAX_CHUNK_LENGTH);
+      const chunkLength = Math.ceil(trimmed.length / chunkCount);
+      for (let offset = 0; offset < trimmed.length; offset += chunkLength) {
+        chunks.push(trimmed.slice(offset, offset + chunkLength));
+      }
+      continue;
+    }
+
+    const candidate = current ? `${current}\n\n${trimmed}` : trimmed;
+    if (candidate.length > MAX_CHUNK_LENGTH) flush();
+    current = current ? `${current}\n\n${trimmed}` : trimmed;
+  }
+  flush();
+  return chunks;
 }
 
 /** 去掉 frontmatter，按 ## 切分 */
@@ -32,11 +64,8 @@ function splitByH2(md: string): string[] {
       buffer += (buffer ? "\n" : "") + section;
     }
     // 单块过大按段落切
-    if (buffer.length > 2000) {
-      const paras = buffer.split(/\n\n+/);
-      for (const p of paras) {
-        if (p.trim()) chunks.push(p.trim());
-      }
+    if (buffer.length > MAX_CHUNK_LENGTH) {
+      chunks.push(...splitOversizedBlock(buffer));
       buffer = "";
     }
   }

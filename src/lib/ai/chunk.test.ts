@@ -1,58 +1,115 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Mock fs + content 模块（避免读取真实知识库）
+const mocks = vi.hoisted(() => ({
+  existing: new Set<string>(),
+  files: new Map<string, string>(),
+  chapters: ["getting-started"],
+  docs: [{ slug: "test-doc", title: "Test", description: "" }],
+  assertKnowledgeRoot: vi.fn(),
+}));
+
 vi.mock("node:fs", () => ({
   default: {
-    existsSync: () => true,
-    readdirSync: () => [{ name: "getting-started", isDirectory: () => true }],
-    readFileSync: (p: string) => {
-      if (p.endsWith("README.md")) return "# 01 · 入门\nintro";
-      return `# Test Doc
-
-## 第一节：市场概述
-
-这一段内容描述了金融市场的基本概念，包括股票市场、债券市场和商品市场的基本运作方式。
-投资者需要理解这些基础概念才能做出明智的决策。
-
-## 第二节：交易机制
-
-交易所的撮合机制是价格优先、时间优先。市价单和限价单是两种最基本的订单类型。
-了解这些机制对于控制交易成本和执行效率至关重要。
-`;
-    },
+    existsSync: (filePath: string) => mocks.existing.has(filePath),
+    readFileSync: (filePath: string) => mocks.files.get(filePath) ?? "",
   },
 }));
 vi.mock("@/lib/content", () => ({
-  getChapterSlugs: () => ["getting-started"],
-  getDocMetas: () => [{ slug: "test-doc", title: "Test", description: "" }],
-  assertKnowledgeRoot: () => {},
+  getChapterSlugs: () => mocks.chapters,
+  getDocMetas: () => mocks.docs,
+  assertKnowledgeRoot: mocks.assertKnowledgeRoot,
 }));
 
 const { getAllChunks } = await import("./chunk");
+const root = `${process.cwd()}/content/kline-buty/docs/knowledge`;
+const localeRoot = `${root}/zh`;
+const chapterRoot = `${localeRoot}/getting-started`;
+const docPath = `${chapterRoot}/test-doc.md`;
 
-describe("chunk", () => {
-  it("按 H2 分块", () => {
+function documentWith(...sections: string[]) {
+  return `---\ntitle: Test\n---\n# Test Doc\n\n${sections.join("\n\n")}`;
+}
+
+beforeEach(() => {
+  mocks.existing.clear();
+  mocks.files.clear();
+  mocks.chapters = ["getting-started"];
+  mocks.docs = [{ slug: "test-doc", title: "Test", description: "" }];
+  mocks.assertKnowledgeRoot.mockClear();
+  mocks.existing.add(localeRoot);
+  mocks.existing.add(chapterRoot);
+  mocks.existing.add(docPath);
+  mocks.files.set(
+    docPath,
+    documentWith(
+      `## 第一节\n\n${"市场基础。".repeat(20)}`,
+      `## 第二节\n\n${"交易机制。".repeat(20)}`,
+    ),
+  );
+});
+
+describe("getAllChunks", () => {
+  it("splits H2 sections, strips frontmatter, and attaches source metadata", () => {
     const chunks = getAllChunks("zh");
-    expect(chunks.length).toBeGreaterThan(0);
-    expect(chunks[0]).toHaveProperty("chapter");
-    expect(chunks[0]).toHaveProperty("doc");
-    expect(chunks[0]).toHaveProperty("chunk");
-    expect(chunks[0]).toHaveProperty("locale");
+
+    expect(mocks.assertKnowledgeRoot).toHaveBeenCalledOnce();
+    expect(chunks).toHaveLength(2);
+    expect(chunks[0]).toMatchObject({
+      chapter: "getting-started",
+      doc: "test-doc",
+      locale: "zh",
+    });
+    expect(chunks[0].chunk).toContain("## 第一节");
+    expect(chunks[1].chunk).toContain("## 第二节");
+    expect(chunks.every(({ chunk }) => !chunk.includes("title: Test"))).toBe(true);
   });
 
-  it("每块含元信息", () => {
+  it("filters chunks with at most 50 characters", () => {
+    mocks.files.set(docPath, documentWith("## 短节\n\n太短。", `## 长节\n\n${"有效内容。".repeat(20)}`));
+
     const chunks = getAllChunks("zh");
-    for (const c of chunks) {
-      expect(c.locale).toBe("zh");
-      expect(c.chapter).toBeTruthy();
-      expect(c.doc).toBeTruthy();
-    }
+
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0].chunk).toContain("## 长节");
   });
 
-  it("太短的块被过滤（<50 字符）", () => {
+  it("splits oversized content and never emits a chunk above the embedding limit", () => {
+    mocks.files.set(docPath, documentWith(`## 超长段落\n\n${"长文本".repeat(900)}`));
+
     const chunks = getAllChunks("zh");
-    for (const c of chunks) {
-      expect(c.chunk.length).toBeGreaterThan(50);
-    }
+
+    expect(chunks.length).toBeGreaterThan(1);
+    expect(Math.max(...chunks.map(({ chunk }) => chunk.length))).toBeLessThanOrEqual(2000);
+    expect(chunks.map(({ chunk }) => chunk).join("")).toContain("长文本".repeat(900));
+  });
+
+  it("preserves a short tail when hard-splitting one long paragraph", () => {
+    mocks.files.set(docPath, documentWith(`## 边界段落\n\n${"字".repeat(2001)}`));
+
+    const chunks = getAllChunks("zh");
+    const combined = chunks.map(({ chunk }) => chunk).join("");
+
+    expect(chunks.every(({ chunk }) => chunk.length <= 2000 && chunk.length > 50)).toBe(true);
+    expect([...combined].filter((char) => char === "字")).toHaveLength(2001);
+  });
+
+  it("returns no chunks when the requested locale root is absent", () => {
+    mocks.existing.delete(localeRoot);
+
+    expect(getAllChunks("en")).toEqual([]);
+    expect(mocks.assertKnowledgeRoot).toHaveBeenCalledOnce();
+  });
+
+  it("skips missing chapter directories and lesson files", () => {
+    mocks.chapters = ["getting-started", "missing-chapter"];
+    mocks.docs = [
+      { slug: "test-doc", title: "Test", description: "" },
+      { slug: "missing-doc", title: "Missing", description: "" },
+    ];
+
+    const chunks = getAllChunks("zh");
+
+    expect(chunks).toHaveLength(2);
+    expect(chunks.every(({ doc }) => doc === "test-doc")).toBe(true);
   });
 });
