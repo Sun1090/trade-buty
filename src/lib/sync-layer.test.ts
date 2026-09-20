@@ -72,6 +72,17 @@ describe("mergeWrongbook", () => {
     const out = mergeWrongbook(local, cloud);
     expect(out["ch1:0"].picked).toBe(1); // 本地较新，保留
   });
+
+  it("ignores cloud rows with invalid answered_at", () => {
+    const local: Record<string, WrongEntry> = {
+      "ch1:0": { chapterNum: "ch1", questionIdx: 0, picked: 1, at: 1000 },
+    };
+    const cloud: Parameters<typeof mergeWrongbook>[1] = [
+      { chapter_num: "ch1", question_idx: 0, picked: 9, answered_at: "not-a-date" },
+    ];
+
+    expect(mergeWrongbook(local, cloud)["ch1:0"].picked).toBe(1);
+  });
 });
 
 describe("mergeQuizScore", () => {
@@ -124,6 +135,15 @@ describe("mergeReplayHistory", () => {
     for (let i = 1; i < out.length; i++) {
       expect(out[i].at).toBeGreaterThanOrEqual(out[i - 1].at);
     }
+  });
+
+  it("ignores cloud replay rows with invalid recorded_at", () => {
+    const local = [mkRec(1000)];
+    const cloud: Parameters<typeof mergeReplayHistory>[1] = [
+      { symbol: "BAD", interval: "1h", total: 10, correct: 5, best_streak: 3, recorded_at: "not-a-date" },
+    ];
+
+    expect(mergeReplayHistory(local, cloud)).toEqual(local);
   });
 });
 
