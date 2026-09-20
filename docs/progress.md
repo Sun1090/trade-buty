@@ -4278,8 +4278,12 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 验证命令与结果：
   - `npx vitest run src/lib/supabase/server.test.ts src/app/api/auth/session/route.test.ts src/app/api/ai/chat/route.test.ts src/app/api/ai/plan/route.test.ts src/app/api/ai/quiz/route.test.ts src/app/api/ai/summary/route.test.ts src/app/api/ai/feedback/route.test.ts src/app/api/ai/citation-click/route.test.ts src/app/api/ai/conversations/route.test.ts --coverage=false --reporter=verbose`：通过（9 文件 / 101 用例）。
   - `npx eslint <changed auth/api files>`：通过。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（257 文件 / 2353 用例；statements 95.38%，branches 90.11%，functions 95.56%，lines 97.58%）。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
   - `git diff --check`：通过。
-- 阻塞：无本地阻塞；已有远端 PR 仍可能受 Vercel 24 小时部署速率限制影响，当前未推送以避免继续消耗部署配额。
+- 阻塞：无本地阻塞；已有远端 PR #99/#101/#102/#104 的 GitHub checks 已通过，Vercel 因账户构建速率限制失败（提示升级/24 小时后重试），当前未推送新 PR 以避免继续消耗部署配额。
 - 风险 / 回滚：鉴权错误边界为服务端安全加固；如线上误伤，回滚 `getServerAuthUser()` 及 API 调用点即可。无数据库迁移或用户数据变更。
 - 下一项：等待 Vercel 配额恢复后推送本批并更新 PR；继续检查下一项本地质量/安全任务。
 - 更新时间：2026-09-21 03:47（Asia/Shanghai）。
