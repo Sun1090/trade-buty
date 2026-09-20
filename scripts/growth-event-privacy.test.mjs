@@ -1,4 +1,6 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -6,6 +8,7 @@ import { auditGrowthEventPrivacy, stripComments } from "./growth-event-privacy.m
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
+const AUDIT_SCRIPT = path.join(HERE, "growth-event-privacy.mjs");
 const fixture = () => ({
   source: fs.readFileSync(path.join(ROOT, "src/lib/growth-events.ts"), "utf8"),
   docs: fs.readFileSync(path.join(ROOT, "docs/growth-events.md"), "utf8"),
@@ -95,5 +98,58 @@ describe("growth event privacy audit", () => {
     const { errors } = auditGrowthEventPrivacy(input);
     expect(errors).toContain("expected exactly one console.info sink, found 2");
     expect(errors).toContain("could not read GROWTH_EVENT_NAMES");
+  });
+
+  it("exits successfully when the privacy audit passes", () => {
+    const output = execFileSync(process.execPath, [AUDIT_SCRIPT], {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    expect(output).toContain("growth event privacy audit passed: 8 events");
+  });
+
+  it("exits non-zero and reports all audit failures", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "growth-event-privacy-cli-"));
+    const harness = path.join(tempDir, "failure-harness.mjs");
+    const failedSource = [
+      "export const GROWTH_EVENT_NAMES = [\"share_card_download\"] as const;",
+      "fetch(\"/collect\");",
+      "console.info(\"[growth-event]\", safe.name, safe);",
+      "normalizeGrowthEvent();",
+    ].join("\n");
+    const harnessSource = [
+      `import { auditGrowthEventPrivacy } from ${JSON.stringify(AUDIT_SCRIPT)};`,
+      `const source = ${JSON.stringify(failedSource)};`,
+      `const result = auditGrowthEventPrivacy({ source, docs: "event names only", privacyPage: "no local browser debug disclosure" });`,
+      `if (result.errors.length > 0) {`,
+      `  console.error("growth event privacy audit failed:");`,
+      `  for (const error of result.errors) console.error("- " + error);`,
+      `  process.exit(1);`,
+      `}`,
+      `console.log("growth event privacy audit passed: " + result.eventNames.length);`,
+    ].join("\n");
+
+    fs.writeFileSync(harness, harnessSource);
+
+    try {
+      execFileSync(process.execPath, [harness], {
+        cwd: ROOT,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      expect.unreachable("failure harness should exit non-zero");
+    } catch (error) {
+      expect(error.status).toBe(1);
+      const output = `${error.stdout ?? ""}${error.stderr ?? ""}`;
+      expect(output).toContain("growth event privacy audit failed");
+      expect(output).toContain("growth event source contains forbidden network fetch");
+      expect(output).toContain("event catalog is missing share_card_download");
+      expect(output).toContain("event catalog must document prohibited fields");
+      expect(output).toContain("privacy policy must disclose the local console-only debug channel in both locales");
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });
