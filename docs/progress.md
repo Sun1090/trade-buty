@@ -1,3 +1,41 @@
+## 2026-09-21 — 覆盖率批次 12：CLI 入口与外链巡检覆盖
+
+- 状态：本地开发完成，全部门禁通过；尚未推送 PR。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-12`，待提交。
+- 完成内容：
+  - 将 `growth-event-privacy`、`error-report-privacy`、`env-docs`、`check-dark-pattern-copy` 的 CLI 入口改为可注入 `rootDir`、`log`、`error`、`exit`，保留默认 npm 脚本行为。
+  - 新增真实入口测试，覆盖成功日志、失败日志、退出码，以及暗黑模式 inventory 读取失败分支。
+  - 补充外链巡检：HEAD 403/405 降级 GET 的成功与失败、知识库路径为文件、健康外链集合下 `run()` 成功返回 0。
+  - 测试数从 2261 增至 2270；行覆盖率从 96.72% 提升至 97.17%。
+- 变更文件：
+  - `scripts/growth-event-privacy.mjs`
+  - `scripts/growth-event-privacy.test.mjs`
+  - `scripts/error-report-privacy.mjs`
+  - `scripts/error-report-privacy.test.mjs`
+  - `scripts/env-docs.mjs`
+  - `scripts/env-docs.test.mjs`
+  - `scripts/check-dark-pattern-copy.mjs`
+  - `scripts/check-dark-pattern-copy.test.mjs`
+  - `scripts/link-patrol.test.mjs`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run scripts/growth-event-privacy.test.mjs scripts/error-report-privacy.test.mjs scripts/env-docs.test.mjs scripts/check-dark-pattern-copy.test.mjs`：通过（4 文件 / 56 用例）。
+  - `npx vitest run scripts/link-patrol.test.mjs`：通过（1 文件 / 19 用例）。
+  - `npm run test:coverage`：通过（255 文件 / 2270 用例；statements 94.8%，branches 88.9%，functions 94.8%，lines 97.17%）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run check:docs`：通过（27 章 / 182 篇，zh/en 对齐）。
+  - `npm run check:constitution`：通过；报告式巡检命中均为教育语境豁免项。
+  - `git diff --check`：通过。
+  - `npm run build`：通过（474 个静态页面）。
+- 阻塞：无本地阻塞。
+- 风险 / 回滚：仅测试可测性入口参数化与测试用例新增，无产品行为、迁移或配置变更；如需回滚，撤回本提交即可。
+- 下一项：推送分支并创建 PR；若 CI 全绿则按 `--rebase` 合并并删除远端临时分支。
+- 更新时间：2026-09-21 02:07（Asia/Shanghai）。
+
+---
+
 ## 2026-09-21 — 覆盖率批次 10：序列化、SSR 快照与 AI 失败边界
 
 - 状态：PR #90 已推送至 `20d4439`；远端 check 正在复跑。Vercel deployment 仍受外部 build rate limit 阻塞，PR 仍不应合并。
