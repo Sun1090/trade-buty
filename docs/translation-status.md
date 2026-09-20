@@ -1,6 +1,6 @@
 # 知识库中英翻译进度
 
-> 自动生成于 2026-09-12（npm run kb:translation-status），勿手改。
+> 自动生成于 2026-09-20（npm run kb:translation-status），勿手改。
 
 ## 总览：27/27 章双语 · 182/182 篇 en 覆盖
 
