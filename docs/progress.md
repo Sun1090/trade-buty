@@ -3890,3 +3890,25 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：仅把测试依赖 `jsdom` 固定在兼容版本；生产下载逻辑、依赖范围和安装脚本均未改变。若后续 Vitest/jsdom 发布兼容性修复，可恢复为范围版本。
 - 下一项：提交并 rebase 到 `origin/main`，推送更新 PR #96，跑完整质量门禁；checks 全绿后 rebase 合并并删除远端临时分支。
 - 更新时间：2026-09-21 03:26（Asia/Shanghai）。
+
+---
+
+## 2026-09-21 — PR #96：依赖升级合并完成
+
+- 状态：已 rebase 合并到 `main`；远端临时分支已删除，远端跟踪引用已清理。
+- 合并提交：`e4ea80a`；依赖修复提交为 `6815c37`、lockfile 同步提交为 `e4ea80a`。
+- 完成内容：
+  - `@types/node`、`@vitest/coverage-v8` 与 `vitest` 完成 minor/patch 升级。
+  - `jsdom` 固定到 `30.0.1`，修复 Vitest 5.0.1 + jsdom 30.1.0 组合下 `URL.createObjectURL` 读取 Blob `_buffer` 的测试环境回归。
+  - lockfile 按 CI 使用的 npm 10.9.8 重新同步，修复 `npm ci` 缺失代理相关可选传递依赖的问题。
+- 验证命令与结果：
+  - npm 10.9.8 干净目录 `npm ci --ignore-scripts`：通过（873 包）。
+  - 集中下载/分享卡测试：通过（4 文件 / 44 用例）。
+  - `npm run test:coverage`：通过（255 文件 / 2293 用例；statements 95.1%，branches 89.29%，functions 95.01%，lines 97.45%）。
+  - `npm run lint`、`npm run typecheck`、`npm run build`、`git diff --check`：通过；构建生成 474 个静态页面。
+  - `npm run check:docs`、`npm run check:kb-pointer`、环境文档、增长事件隐私、错误报告隐私和生产依赖审计：通过。
+  - GitHub CI：`ci`、`db-tests`、CodeQL、workflow 静态分析全部通过。
+- 阻塞 / 风险：Vercel Preview 因账户构建速率限制失败（提示 24 小时后重试）；该检查不在 `main` 分支保护必需项内，生产构建已在本地通过。若发布部署需要实时预览，应等待配额恢复后重新部署。
+- 回滚方案：回滚 `jsdom` 固定和对应 lockfile；依赖包升级可独立回滚。当前没有数据库迁移或用户数据变更。
+- 下一项：等待 Vercel 配额恢复后补做预览/生产部署与 smoke test；继续下一项本地质量或 milestone 工作。
+- 更新时间：2026-09-21 03:39（Asia/Shanghai）。
