@@ -333,6 +333,62 @@ describe("StreakShareCard", () => {
     );
   });
 
+  it("无 2D 上下文时预览静默跳过，分享入口可继续下载", async () => {
+    HTMLCanvasElement.prototype.getContext = vi.fn(
+      () => null,
+    ) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+    const { container } = render(
+      <StreakShareCard
+        currentStreak={6}
+        longestStreak={8}
+        recentDays={SEVEN_DAYS}
+        locale="en"
+        labels={{ share: "Share", previewAlt: "Preview", download: "Download", copyLink: "Copy link", copiedLink: "Copied", downloadFailed: "Download failed" }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
+    await Promise.resolve();
+    expect(container.querySelector("img")).toBeNull();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("streak-share-btn"));
+    await waitFor(
+      () =>
+        expect(growthTrack).toHaveBeenCalledWith({
+          name: "share_card_download",
+          card: "streak",
+          locale: "en",
+          surface: "owner",
+          trigger: "share",
+          outcome: "succeeded",
+        }),
+      { timeout: 2000 },
+    );
+  });
+
+  it("预览失败后重新预览成功会清除可见错误", async () => {
+    HTMLCanvasElement.prototype.toDataURL = vi.fn(() => {
+      throw new Error("tainted canvas");
+    }) as unknown as typeof HTMLCanvasElement.prototype.toDataURL;
+    render(
+      <StreakShareCard
+        currentStreak={9}
+        longestStreak={11}
+        recentDays={SEVEN_DAYS}
+        locale="zh"
+        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("下载失败"));
+
+    installCanvasStub();
+    fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+  });
+
   it("重复预览会回收上一张 object URL", async () => {
     const revoke = vi.fn();
     Object.defineProperty(URL, "revokeObjectURL", { value: revoke, configurable: true });
