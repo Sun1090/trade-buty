@@ -3530,7 +3530,7 @@ Completed:
 
 Changed files: `src/lib/sync-layer.ts`, `src/lib/sync-layer-queue.test.ts`, `src/lib/sync-layer-failure-queue.test.ts`, `docs/progress.md`.
 
-Verification: focused sync/weekly tests 10 files / 127 tests passed. Full lint, typecheck, build, whitespace, and coverage gates pending before PR.
+Verification: focused sync/weekly tests 10 files / 127 tests passed; lint, typecheck, production build, and `git diff --check` passed; full coverage passed three consecutive runs with 255 files / 2,221 tests, 93.65% statements, 88.01% branches, 93.19% functions, and 96.01% lines.
 
 Risk / rollback: production behavior is equivalent for successful and failed writes, but removes duplicated goal-write branching that could diverge later. Revert this commit if the shared user_settings payload path conflicts with future settings-column changes.
 
