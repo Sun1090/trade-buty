@@ -23,7 +23,9 @@ describe("JsonLd", () => {
       <JsonLd
         data={{
           "@type": "FAQPage",
-          mainEntity: [{ name: "什么是 K 线？", acceptedAnswer: "一段时间的价格记录" }],
+          mainEntity: [
+            { name: "什么是 K 线？", acceptedAnswer: "一段时间的价格记录" },
+          ],
         }}
       />,
     );
@@ -35,12 +37,23 @@ describe("JsonLd", () => {
   });
 
   it("escapes script-breaking and line-separator characters", () => {
-    const data = { name: "</script><script>alert(1)</script>", separator: "a\u2028b\u2029c" };
+    const data = {
+      name: "</script><script>alert(1)</script>",
+      separator: "a\u2028b\u2029c",
+    };
     const serialized = serializeJsonLd(data);
 
     expect(serialized).not.toContain("</script>");
     expect(serialized).not.toContain("\u2028");
     expect(serialized).not.toContain("\u2029");
+    expect(JSON.parse(serialized)).toEqual(data);
+  });
+
+  it("escapes ampersands while keeping JSON semantics", () => {
+    const data = { name: "A & B</script>" };
+    const serialized = serializeJsonLd(data);
+
+    expect(serialized).toContain("\\u0026");
     expect(JSON.parse(serialized)).toEqual(data);
   });
 });

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 
 const mocks = vi.hoisted(() => ({
   getTheme: vi.fn<() => "dark" | "light" | "sepia">(() => "dark"),
@@ -53,5 +54,15 @@ describe("ThemeSelector", () => {
       fireEvent.click(button);
     }
     expect(mocks.setTheme).toHaveBeenCalledTimes(3);
+  });
+
+  it("uses the SSR dark snapshot before client theme state hydrates", () => {
+    mocks.getTheme.mockReturnValue("light");
+
+    const html = renderToString(<ThemeSelector labels={labels} />);
+
+    expect(html).toContain("深色");
+    expect(html).toContain("bg-[var(--accent-dim)]");
+    expect(html).not.toContain('text-faint">🌙</span> 深色');
   });
 });
