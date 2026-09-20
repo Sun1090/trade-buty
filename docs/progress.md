@@ -1,5 +1,30 @@
 # Progress
 
+## 2026-09-20 — 覆盖率批次 9：增长事件隐私 CLI 契约
+
+- 状态：本地完成，准备 PR。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/growth-event-audit-cli-coverage`，基于当前 `origin/main`；待提交。
+- 完成内容：
+  - 将增长事件隐私审计测试从仅调用 helper 扩展到真实 Node CLI 入口。
+  - 成功路径直接执行 `node scripts/growth-event-privacy.mjs`，覆盖实际 entrypoint 的通过输出。
+  - 失败路径改用临时 `.mjs` harness，避免 `node -e` 嵌套模板/引号导致语法假阳性；验证审计失败会非零退出并汇总多类问题。
+- 变更文件：
+  - `scripts/growth-event-privacy.test.mjs`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run scripts/growth-event-privacy.test.mjs`：通过（11 个用例）。
+  - `npm run check:growth-event-privacy`：通过（8 events, console-only sink, no network/persistence APIs）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（254 文件 / 2,205 用例；语句 93.4%，分支 87.74%，函数 93.06%，行 95.86%）。
+- 阻塞：无本地阻塞；后续 PR 仍需远端 CI。
+- 风险 / 回滚：仅新增测试覆盖，不改生产逻辑；若 CI 暴露临时目录或 Node 版本差异，直接回滚本提交即可。
+- 下一项：提交、推送并创建 PR，等待 CI 后 rebase 合并；随后继续排查覆盖率热点。
+- 更新时间：2026-09-20 16:12（Asia/Shanghai）。
+
+---
+
 ## 2026-09-20 — v0.7.0 RELEASED：稳定性、覆盖率与发布可靠性
 
 - 状态：已发布（PR [#84](https://github.com/Sun1090/trade-buty/pull/84) 已通过 CI 并以 rebase 合并；远端临时发布分支已删除）。
