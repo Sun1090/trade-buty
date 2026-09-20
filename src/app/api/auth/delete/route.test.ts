@@ -53,7 +53,7 @@ describe("DELETE /api/auth/delete (R9.10)", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
     expect(deleteUser).toHaveBeenCalledWith("user-1");
-    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(signOut).toHaveBeenCalledWith();
   });
 
   it("does not report success when admin deletion fails", async () => {

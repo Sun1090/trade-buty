@@ -21,6 +21,15 @@ describe("POST /api/auth/signout", () => {
     expect(signOut).toHaveBeenCalledTimes(1);
   });
 
+  it("Supabase 返回登出错误时不报成功，且不回传内部错误", async () => {
+    signOut.mockResolvedValueOnce({ error: new Error("auth server 500 trace") });
+    const res = await POST();
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body).toEqual({ ok: false, error: "signout error" });
+    expect(JSON.stringify(body)).not.toContain("trace");
+  });
+
   it("登出抛错时返回通用文案，不回传内部错误", async () => {
     signOut.mockRejectedValueOnce(new Error("auth server 500 trace"));
     const res = await POST();
