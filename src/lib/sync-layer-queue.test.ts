@@ -53,6 +53,7 @@ import {
   syncReplayHistoryWrite,
   syncReplayBestUpsert,
   syncGoalUpsert,
+  syncWeeklyGoalUpsert,
   setAuthState,
 } from "./sync-layer";
 import { getQueueLength, QUEUE_KEY } from "./sync-queue-store";
@@ -208,11 +209,34 @@ describe("R9.5 sync-layer 写入失败入队", () => {
     });
   });
 
+  it("syncWeeklyGoalUpsert 失败 → kind=goal 且只写周目标字段", async () => {
+    const failing = Promise.reject(new Error("offline"));
+    failing.catch(() => {});
+
+    mockUpsert.mockImplementationOnce(() => ({ then: failing.then.bind(failing) }));
+    syncWeeklyGoalUpsert(150);
+    await flush();
+    await flush();
+    expect(mockUpsert).toHaveBeenCalledWith(
+      { user_id: "user-queue-1", weekly_goal_min: 150 },
+      { onConflict: "user_id" },
+    );
+    expect(getQueueLength()).toBe(1);
+    const stored = JSON.parse(memStore.get(QUEUE_KEY)!);
+    expect(stored[0]).toMatchObject({
+      kind: "goal",
+      payloadKey: "weekly-goal",
+      payload: { weekly_goal_min: 150 },
+    });
+    expect(stored[0].payload.daily_goal_min).toBeUndefined();
+  });
+
   it("未登录时不发起 supabase 也不入队", () => {
     setAuthState(false);
     syncProgressWrite("ch1", "doc-a");
     syncQuizUpsert("ch1", 8, 10);
     syncGoalUpsert(20);
+    syncWeeklyGoalUpsert(150);
     expect(mockInsert).not.toHaveBeenCalled();
     expect(mockUpsert).not.toHaveBeenCalled();
     expect(getQueueLength()).toBe(0);

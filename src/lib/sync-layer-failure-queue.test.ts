@@ -8,6 +8,8 @@ import {
   syncQuizUpsert,
   syncReplayHistoryWrite,
   syncGoalUpsert,
+  syncReplayBestUpsert,
+  syncWeeklyGoalUpsert,
 } from "./sync-layer";
 import { QUEUE_KEY, QUEUE_OWNER_KEY, loadQueueAndNextId } from "./sync-queue-store";
 
@@ -95,6 +97,8 @@ describe("sync-layer failure-to-queue boundaries", () => {
     ["quiz", () => syncQuizUpsert("spot", 7, 10), { chapter_num: "spot", best: 7, total: 10 }],
     ["replay-history", () => syncReplayHistoryWrite({ symbol: "BTCUSDT", interval: "1h", total: 10, correct: 6, bestStreak: 3 }), { symbol: "BTCUSDT", interval: "1h", total: 10, correct: 6, best_streak: 3 }],
     ["goal", () => syncGoalUpsert(40), { daily_goal_min: 40 }],
+    ["replay-best", () => syncReplayBestUpsert(12), { best_streak: 12 }],
+    ["goal", () => syncWeeklyGoalUpsert(150), { weekly_goal_min: 150 }],
   ] as const)("Supabase 未配置时 %s 按稳定 payload 入队", async (kind, write, payload) => {
     setAuthState(true, "user-a");
 

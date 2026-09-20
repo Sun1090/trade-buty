@@ -3517,3 +3517,21 @@ Verification: focused sync tests 9 files / 119 tests passed; full coverage 255 f
 Risk / rollback: production behavior only hardens already fire-and-forget writes; valid Supabase writes remain unchanged. Revert this commit if immediate enqueue without an initialized Supabase client is incompatible with a future client-lifecycle change.
 
 Next: open and monitor PR, then rebase-merge after CI and delete the remote branch.
+
+## 2026-09-20 — Weekly goal and replay-best sync boundary coverage
+
+Status: completed locally on `codex/sync-settings-upsert-hardening`; pending PR/CI.
+
+Completed:
+
+- Consolidated daily and weekly goal cloud writes through a single `user_settings` enqueue path, ensuring each write carries only its own goal field.
+- Added regression coverage proving weekly goal failure queues `goal`/`weekly-goal` with only `weekly_goal_min`, does not leak `daily_goal_min`, and remains a no-op for unauthenticated users.
+- Extended missing-Supabase failure-to-queue coverage to weekly goals and replay-best writes.
+
+Changed files: `src/lib/sync-layer.ts`, `src/lib/sync-layer-queue.test.ts`, `src/lib/sync-layer-failure-queue.test.ts`, `docs/progress.md`.
+
+Verification: focused sync/weekly tests 10 files / 127 tests passed. Full lint, typecheck, build, whitespace, and coverage gates pending before PR.
+
+Risk / rollback: production behavior is equivalent for successful and failed writes, but removes duplicated goal-write branching that could diverge later. Revert this commit if the shared user_settings payload path conflicts with future settings-column changes.
+
+Next: complete full verification, open PR, monitor CI, rebase-merge, and delete the remote branch.
