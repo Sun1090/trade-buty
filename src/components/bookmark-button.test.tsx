@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 
 const mocks = vi.hoisted(() => ({
   isBookmarked: vi.fn(() => false),
@@ -90,7 +91,24 @@ describe("BookmarkButton", () => {
     );
     expect(screen.getByText("收藏")).toBeInTheDocument();
   });
-});
+
+  it("uses the SSR un-bookmarked snapshot before client bookmarks hydrate", () => {
+    mocks.isBookmarked.mockReturnValue(true);
+
+    const html = renderToString(
+      <BookmarkButton
+        chapter="risk"
+        doc="position-sizing"
+        title="仓位管理"
+        label={labels}
+        labeled
+      />,
+    );
+
+    expect(html).toContain('aria-pressed="false"');
+    expect(html).toContain("收藏");
+    expect(html).not.toContain("已收藏");
+  });
 
   it("updates from bookmark events without a rerender", async () => {
     mocks.isBookmarked.mockReturnValue(false);
@@ -115,3 +133,4 @@ describe("BookmarkButton", () => {
       unmount();
     }
   });
+});

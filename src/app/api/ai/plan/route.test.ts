@@ -2,23 +2,28 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { parsePlanBody, POST } from "./route";
 
-const getUser = vi.fn();
-vi.mock("@/lib/supabase/server", () => ({
-  createSupabaseServerClient: vi.fn(async () => ({ auth: { getUser } })),
+const mocks = vi.hoisted(() => ({
+  createSupabaseServerClient: vi.fn(),
+  getUser: vi.fn(),
+  chat: vi.fn(),
 }));
-const { chat } = vi.hoisted(() => ({ chat: vi.fn() }));
-vi.mock("@/lib/ai/client", () => ({ chat }));
+vi.mock("@/lib/supabase/server", () => ({
+  createSupabaseServerClient: mocks.createSupabaseServerClient,
+}));
+vi.mock("@/lib/ai/client", () => ({ chat: mocks.chat }));
+const { createSupabaseServerClient, getUser, chat } = mocks;
 
-function request(body: unknown): NextRequest {
+function request(body: unknown, raw = false): NextRequest {
   return new NextRequest("http://localhost/api/ai/plan", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: raw ? String(body) : JSON.stringify(body),
   });
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  createSupabaseServerClient.mockResolvedValue({ auth: { getUser } });
   chat.mockResolvedValue('{"plan":"先回顾已完成章节"}');
 });
 
@@ -69,21 +74,77 @@ describe("POST /api/ai/plan 限流（R7.12）", () => {
   });
 
   it("合法请求返回 plan", async () => {
-    getUser.mockResolvedValue({ data: { user: { id: "plan-user" } }, error: null });
-    const res = await POST(request({ doneChapters: ["spot"], wrongChapters: [], currentChapter: "spot" }));
+    getUser.mockResolvedValue({
+      data: { user: { id: "plan-user" } },
+      error: null,
+    });
+    const res = await POST(
+      request({
+        doneChapters: ["spot"],
+        wrongChapters: [],
+        currentChapter: "spot",
+      }),
+    );
     expect(res.status).toBe(200);
     expect((await res.json()).plan).toBe("先回顾已完成章节");
   });
 
   it("超过每用户配额返回 429 且带 Retry-After", async () => {
-    getUser.mockResolvedValue({ data: { user: { id: "plan-rl-user" } }, error: null });
+    getUser.mockResolvedValue({
+      data: { user: { id: "plan-rl-user" } },
+      error: null,
+    });
     let last;
     for (let i = 0; i < 31; i++) {
-      last = await POST(request({ doneChapters: [], wrongChapters: [], currentChapter: "" }));
+      last = await POST(
+        request({ doneChapters: [], wrongChapters: [], currentChapter: "" }),
+      );
       if (last.status === 429) break;
     }
     expect(last!.status).toBe(429);
     expect(Number(last!.headers.get("Retry-After"))).toBeGreaterThan(0);
     expect((await last!.json()).error).toBe("Rate limit exceeded");
+  });
+
+  it("畸形 JSON 返回 400，不调模型", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "plan-json-user" } },
+      error: null,
+    });
+    const res = await POST(request("{不是 JSON", true));
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Invalid JSON");
+    expect(chat).not.toHaveBeenCalled();
+  });
+
+  it("模型返回空计划时返回 502", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "plan-empty-user" } },
+      error: null,
+    });
+    chat.mockResolvedValue("");
+
+    const res = await POST(
+      request({ doneChapters: [], wrongChapters: [], currentChapter: "" }),
+    );
+
+    expect(res.status).toBe(502);
+    expect((await res.json()).error).toBe("AI 服务暂时不可用，请稍后再试。");
+  });
+
+  it("模型调用失败时返回通用 502", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "plan-chat-fail-user" } },
+      error: null,
+    });
+    chat.mockRejectedValue(new Error("upstream unavailable"));
+
+    const res = await POST(
+      request({ doneChapters: [], wrongChapters: [], currentChapter: "" }),
+    );
+
+    expect(res.status).toBe(502);
+    expect((await res.json()).error).toBe("AI 服务暂时不可用，请稍后再试。");
   });
 });

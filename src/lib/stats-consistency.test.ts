@@ -18,7 +18,11 @@ function buildAll() {
   ];
   const progress = { "getting-started": ["a", "b"], spot: ["c"] };
   const completions = {
-    "getting-started:a": { chapter: "getting-started", doc: "a", at: dayAt(shiftDate(today, -2)) },
+    "getting-started:a": {
+      chapter: "getting-started",
+      doc: "a",
+      at: dayAt(shiftDate(today, -2)),
+    },
     "spot:c": { chapter: "spot", doc: "c", at: dayAt(today) },
   };
   const quizChapters = [
@@ -30,17 +34,51 @@ function buildAll() {
     spot: { best: 0, done: false },
   };
   const quizAttempts = {
-    "getting-started:1": { chapter: "getting-started", best: 8, total: 10, at: dayAt(today) },
+    "getting-started:1": {
+      chapter: "getting-started",
+      best: 8,
+      total: 10,
+      at: dayAt(today),
+    },
   };
   const wrongEntries = {
-    "spot:0": { chapterNum: "spot", questionIdx: 0, picked: 1, at: dayAt(shiftDate(today, -1)), srsStage: 1, srsDue: today },
+    "spot:0": {
+      chapterNum: "spot",
+      questionIdx: 0,
+      picked: 1,
+      at: dayAt(shiftDate(today, -1)),
+      srsStage: 1,
+      srsDue: today,
+    },
   };
   const reviewAttempts = {
-    "spot:0:1": { chapter: "spot", questionIdx: 0, correct: true, mastered: false, stage: 1, at: dayAt(today) },
+    "spot:0:1": {
+      chapter: "spot",
+      questionIdx: 0,
+      correct: true,
+      mastered: false,
+      stage: 1,
+      at: dayAt(today),
+    },
   };
   const replayHistory = [
-    { at: dayAt(today), symbol: "BTCUSDT", interval: "1h", total: 10, correct: 7, bestStreak: 4, durationSec: 300 },
-    { at: dayAt(shiftDate(today, -1)), symbol: "ETHUSDT", interval: "15m", total: 8, correct: 5, bestStreak: 2 },
+    {
+      at: dayAt(today),
+      symbol: "BTCUSDT",
+      interval: "1h",
+      total: 10,
+      correct: 7,
+      bestStreak: 4,
+      durationSec: 300,
+    },
+    {
+      at: dayAt(shiftDate(today, -1)),
+      symbol: "ETHUSDT",
+      interval: "15m",
+      total: 8,
+      correct: 5,
+      bestStreak: 2,
+    },
   ];
 
   const overview = buildLearningOverview({
@@ -54,11 +92,29 @@ function buildAll() {
     totalStudySeconds: 3600,
     currentStreak: 2,
   });
-  const courseTrend = buildCourseCompletionTrend({ chapters, progress, completions, days: 7 });
-  const quizTrend = buildQuizScoreTrend({ chapters: quizChapters, progress: quizProgress, attempts: quizAttempts, days: 7 });
-  const reviewTrend = buildWrongbookEfficiency({ wrongEntries, attempts: reviewAttempts, days: 7 });
+  const courseTrend = buildCourseCompletionTrend({
+    chapters,
+    progress,
+    completions,
+    days: 7,
+  });
+  const quizTrend = buildQuizScoreTrend({
+    chapters: quizChapters,
+    progress: quizProgress,
+    attempts: quizAttempts,
+    days: 7,
+  });
+  const reviewTrend = buildWrongbookEfficiency({
+    wrongEntries,
+    attempts: reviewAttempts,
+    days: 7,
+  });
   const replayTrend = buildReplayTimeTrend({ history: replayHistory, days: 7 });
-  const stats = { currentWrong: Object.keys(wrongEntries).length, avgQuizScore: 80, replayAccuracy: 67 };
+  const stats = {
+    currentWrong: Object.keys(wrongEntries).length,
+    avgQuizScore: 80,
+    replayAccuracy: 67,
+  };
 
   return { overview, courseTrend, quizTrend, reviewTrend, replayTrend, stats };
 }
@@ -73,10 +129,48 @@ describe("auditStatsConsistency", () => {
     const input = buildAll();
     input.overview = {
       ...input.overview,
-      courses: { ...input.overview.courses, readDocs: input.overview.courses.readDocs + 1 },
+      courses: {
+        ...input.overview.courses,
+        readDocs: input.overview.courses.readDocs + 1,
+      },
     };
     const codes = auditStatsConsistency(input).map((i) => i.code);
     expect(codes).toContain("course-read-docs-mismatch");
+  });
+
+  it("detects remaining course overview/course-trend drift fields", () => {
+    const doneInput = buildAll();
+    doneInput.overview = {
+      ...doneInput.overview,
+      courses: {
+        ...doneInput.overview.courses,
+        doneChapters: doneInput.overview.courses.doneChapters + 1,
+      },
+    };
+    let codes = auditStatsConsistency(doneInput).map((i) => i.code);
+    expect(codes).toContain("course-done-chapters-mismatch");
+
+    const totalInput = buildAll();
+    totalInput.overview = {
+      ...totalInput.overview,
+      courses: {
+        ...totalInput.overview.courses,
+        totalDocs: totalInput.overview.courses.totalDocs + 1,
+      },
+    };
+    codes = auditStatsConsistency(totalInput).map((i) => i.code);
+    expect(codes).toContain("course-total-docs-mismatch");
+
+    const pctInput = buildAll();
+    pctInput.overview = {
+      ...pctInput.overview,
+      courses: {
+        ...pctInput.overview.courses,
+        completionPct: pctInput.overview.courses.completionPct + 1,
+      },
+    };
+    codes = auditStatsConsistency(pctInput).map((i) => i.code);
+    expect(codes).toContain("course-completion-pct-mismatch");
   });
 
   it("detects quiz done-count drift and replay round drift", () => {
@@ -100,7 +194,12 @@ describe("auditStatsConsistency", () => {
     const inverted = buildAll();
     inverted.reviewTrend = {
       ...inverted.reviewTrend,
-      latest: { ...inverted.reviewTrend.latest, overdue: 4, dueToday: 2, pending: 3 },
+      latest: {
+        ...inverted.reviewTrend.latest,
+        overdue: 4,
+        dueToday: 2,
+        pending: 3,
+      },
     };
     codes = auditStatsConsistency(inverted).map((i) => i.code);
     expect(codes).toContain("wrong-range-inversion");
@@ -115,6 +214,8 @@ describe("auditStatsConsistency", () => {
     const codes = auditStatsConsistency(input).map((i) => i.code);
     expect(codes).toContain("pct-out-of-range");
 
-    expect(auditStatsConsistency({}).map((i) => i.code)).toEqual(["missing-overview"]);
+    expect(auditStatsConsistency({}).map((i) => i.code)).toEqual([
+      "missing-overview",
+    ]);
   });
 });
