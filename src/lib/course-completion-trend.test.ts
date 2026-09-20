@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { localDateStr } from "./date-utils";
-import { buildCourseCompletionTrend } from "./course-completion-trend";
+import { buildCourseCompletionTrend, readCompletionLedger, type ChapterInput } from "./course-completion-trend";
 
 const chapters = [
   { slug: "getting-started", docCount: 2 },
@@ -56,6 +56,56 @@ describe("buildCourseCompletionTrend", () => {
     expect(trend.summary).toMatchObject({ completedDocs: 3, completionsInRange: 3, chaptersCompletedInRange: 1, activeDays: 2 });
     expect(trend.days[2]).toMatchObject({ date: "2026-09-03", completions: 2, newDocs: 2, newChapters: 1, cumulativeReadDocs: 2, completionPct: 50 });
     expect(trend.days.at(-1)).toMatchObject({ date: "2026-09-07", completions: 1, newChapters: 0, cumulativeReadDocs: 3, completionPct: 75 });
+  });
+
+  it("reads and tolerates malformed completion ledgers from storage", () => {
+    function storage(value: string | null) {
+      return { getItem: () => value } as unknown as Storage;
+    }
+
+    expect(readCompletionLedger(undefined)).toEqual({});
+    expect(readCompletionLedger(storage(null))).toEqual({});
+    expect(readCompletionLedger(storage("not-json"))).toEqual({});
+    expect(readCompletionLedger(storage('{"a": {}, "b": null, "c": []}'))).toEqual({ a: {} });
+    expect(readCompletionLedger(storage('{"a": {"chapter": "a", "doc": "1", "at": 3}}'))).toEqual({
+      a: { chapter: "a", doc: "1", at: 3 },
+    });
+  });
+
+  it("drops invalid chapter entries and non-string progress documents", () => {
+    const trend = buildCourseCompletionTrend({
+      chapters: [
+        undefined as unknown as ChapterInput,
+        { slug: "spot", docCount: 1 },
+        { slug: "empty", docCount: 2 },
+      ],
+      progress: { spot: [null as unknown as string, "", "a", "a"] },
+      days: 900,
+      today: "2026-09-07",
+      completions: {
+        "spot:a": { at: new Date(2026, 8, 7, 12).getTime() },
+      },
+    });
+
+    expect(trend.days).toHaveLength(365);
+    expect(trend.latest.totalChapters).toBe(2);
+    expect(trend.latest.readDocs).toBe(1);
+    expect(trend.summary.completionsInRange).toBe(1);
+    expect(trend.days.at(-1)).toMatchObject({ completions: 1, cumulativeReadDocs: 1, completionPct: 33 });
+  });
+
+  it("clamps negative timestamp completions to epoch day", () => {
+    const trend = buildCourseCompletionTrend({
+      chapters: [{ slug: "spot", docCount: 1 }],
+      progress: { spot: ["a"] },
+      days: 7,
+      today: "1970-01-07",
+      completions: { "spot:a": { chapter: "spot", doc: "a", at: -10 } },
+    });
+
+    expect(trend.hasLedger).toBe(true);
+    expect(trend.summary.completionsInRange).toBe(1);
+    expect(trend.days.at(-1)).toMatchObject({ completions: 0, cumulativeReadDocs: 1 });
   });
 
   it("clamps ranges and sanitizes invalid chapter/document counts", () => {

@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-09-21 — 覆盖率批次 28：课程完成趋势输入容错
+
+- 状态：本地开发与验证完成；当前未推送，避免继续触发 Vercel 部署配额。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-28`，待提交本批次。
+- 完成内容：
+  - 补充 `readCompletionLedger` 对空 storage、空值、坏 JSON、非法条目和正常 ledger 的覆盖。
+  - 补充课程趋势对无效章节项、空白/重复/非字符串 progress 文档、超过 365 天窗口截断的覆盖。
+  - 补充负时间戳 ledger 在 1970-01-07 窗口内按 epoch 日期聚合的回归测试。
+  - 测试数从 2320 增至 2323；语句覆盖率 95.24%，分支覆盖率 89.70%，函数覆盖率 95.13%，行覆盖率 97.52%。
+- 变更文件：
+  - `src/lib/course-completion-trend.test.ts`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run src/lib/course-completion-trend.test.ts --coverage=false --reporter=verbose`：通过（1 文件 / 7 用例）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（255 文件 / 2323 用例；statements 95.24%，branches 89.70%，functions 95.13%，lines 97.52%）。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - `git diff --check`：待提交前复核。
+- 阻塞：无本地阻塞；PR #99/#101/#102/#104 的 GitHub checks 已通过，但 Vercel Preview 因账户构建速率限制失败，暂不合并。
+- 风险 / 回滚：仅新增测试覆盖既有模块行为，不改产品代码、迁移或配置；如需回滚，撤回本提交即可。
+- 下一项：继续提升 `src/components/ai-chat.tsx`、`src/lib/privacy-export.ts` 等分支覆盖热点；待 Vercel 配额恢复后推送/合并 PR。
+- 更新时间：2026-09-21 05:08（Asia/Shanghai）。
+
+---
+
 ## 2026-09-21 — 覆盖率批次 27：连续打卡分享卡边界
 
 - 状态：本地开发与验证完成；当前未推送，避免继续触发 Vercel 部署配额。
