@@ -31,11 +31,11 @@
   - `npm run lint`：通过。
   - `npm run typecheck`：通过。
   - `npm run test:coverage`：通过（255 文件 / 2,241 用例；语句 93.96%，分支 88.31%，函数 93.94%，行 96.32%）。
-  - `npm run check:docs`、`npm run check:constitution`、`git diff --check`：通过。
-- 阻塞：无本地阻塞；等待 PR #90 远端 CI / Vercel 完成。
+  - `npm run check:docs`、`npm run check:constitution`、`git diff --check`、`npm run build`：通过。
+- 阻塞：无本地阻塞；等待 PR #90 远端 CI。Vercel Preview Comments 通过，但 Vercel deployment 因外部 build rate limit 失败（需 24 小时后或账号层面解除速率限制）。
 - 风险 / 回滚：仅新增测试覆盖，不改生产逻辑；若 CI 环境出现测试时序差异，回滚本分支测试提交即可。
-- 下一项：监控 PR #90；CI 全绿后 rebase 合并并删除远端分支，继续排查剩余覆盖率热点。
-- 更新时间：2026-09-21 00:28（Asia/Shanghai）。
+- 下一项：PR #90 的 GitHub CI 全绿后，确认 Vercel deployment 速率限制是否解除；若解除则 rebase 合并并删除远端分支，否则按外部速率限制处理，继续本地覆盖率热点。
+- 更新时间：2026-09-21 00:32（Asia/Shanghai）。
 
 ---
 
