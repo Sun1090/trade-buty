@@ -3804,3 +3804,33 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 更新时间：2026-09-21 02:16（Asia/Shanghai）。
 
 ---
+
+## 2026-09-21 — 覆盖率批次 15：回放趋势正确率、returnTo 与 AI 输入边界
+
+- 状态：本地开发完成，核心门禁通过；待推送 PR。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-15`，待提交。
+- 完成内容：
+  - 回放趋势：修复聚合阶段未对 `correct > total` 做二次 clamp 的问题，确保区间与全量正确率一致不会超过 100%；补充字符串指标、缺失窗口、零时长旧记录等边界。
+  - 登录回跳：补充 root 仅带 query/hash、多斜杠/反斜杠异常、allowedPrefixes 非通配等 open redirect 防御边界。
+  - AI 输入：补充 messages 中数组/null/字符串的拒绝路径，以及 continueFrom/contextChapter 的 trim 与空值省略行为。
+  - 测试数从 2281 增至 2291；分支覆盖率从 89.27% 提升至 89.28%。
+- 变更文件：
+  - `src/lib/replay-time-trend.ts`
+  - `src/lib/replay-time-trend.test.ts`
+  - `src/lib/auth-return.test.ts`
+  - `src/lib/ai/chat-input.test.ts`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run src/lib/replay-time-trend.test.ts src/lib/auth-return.test.ts src/lib/ai/chat-input.test.ts --coverage=false`：通过（3 文件 / 43 用例）。
+  - `npm run test:coverage`：通过（255 文件 / 2291 用例；statements 95.09%，branches 89.28%，functions 95.01%，lines 97.44%）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run check:docs`：通过（27 章 / 182 篇，zh/en 对齐）。
+  - `npm run check:constitution`：通过；报告式巡检命中均为教育语境豁免项。
+  - `git diff --check`：通过。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+- 阻塞：无本地阻塞。
+- 风险 / 回滚：回放趋势修复为统计正确率 clamp 的一致性修正；如线上展示异常，回滚 `src/lib/replay-time-trend.ts` 变更即可。
+- 下一项：推送分支并创建 PR；若 GitHub checks 通过则按 `--rebase` 合并并清理临时分支。
+- 更新时间：2026-09-21 02:53（Asia/Shanghai）。
