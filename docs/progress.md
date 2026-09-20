@@ -2,6 +2,35 @@
 
 ---
 
+## 2026-09-21 — 覆盖率批次 30：隐私导出、结构化数据与剪贴板边界
+
+- 状态：本地开发与验证完成；当前未推送，避免继续触发 Vercel 部署配额。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-26`，本批次随质量加固提交保留在本地。
+- 完成内容：
+  - 补充 `collectLocalStorage` 在读取后续 storage 条目抛错时，仍安全保留已收集条目且不中断导出。
+  - 补充 `breadcrumbList` 无页面上下文时省略 `@id`，且外部绝对 URL 不被站内前缀改写。
+  - 补充 `article` 无章节上下文时不伪造 `isPartOf` 结构化数据关系。
+  - 补充 `copyViaExecCommand` 节点创建失败直接失败，以及 value 写入异常时仍清理临时 textarea。
+  - 测试数从 2336 增至 2341；语句覆盖率 95.44%，分支覆盖率 90.12%，函数覆盖率 95.55%，行覆盖率 97.67%。
+- 变更文件：
+  - `src/lib/privacy-export.test.ts`
+  - `src/lib/jsonld.test.ts`
+  - `src/lib/clipboard.test.ts`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run src/lib/privacy-export.test.ts src/lib/jsonld.test.ts src/lib/clipboard.test.ts --coverage=false --reporter=verbose`：通过（3 文件 / 38 用例）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（255 文件 / 2341 用例；statements 95.44%，branches 90.12%，functions 95.55%，lines 97.67%）。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - 契约门禁批量检查：通过（docs、kb pointer、constitution、changelog、lockfile、frontmatter、image alt、quiz、sitemap、SEO、env docs、growth/error privacy、dark-pattern copy、slug conflicts、description dupes、links、nav、relative links、search index、bundle、structured data、mobile、title terminology、description quality、risk warning、kb changelog、translation history、parity budget）。
+  - `git diff --check`：通过。
+- 阻塞：无本地阻塞；PR #99/#101/#102/#104 的 GitHub checks 已通过，但 Vercel Preview 仍因账户构建速率限制失败（“Deployment rate limited — retry in 24 hours.”），暂不合并/推送新分支。
+- 风险 / 回滚：仅新增测试覆盖既有模块行为，不改产品代码、迁移或配置；如需回滚，撤回本提交即可。
+- 下一项：继续覆盖低分支模块或审计可执行安全/隐私门禁；待 Vercel 配额恢复后推送/合并 PR。
+- 更新时间：2026-09-21 05:31（Asia/Shanghai）。
+
 ## 2026-09-21 — 覆盖率批次 28：课程完成趋势输入容错
 
 - 状态：本地开发与验证完成；当前未推送，避免继续触发 Vercel 部署配额。

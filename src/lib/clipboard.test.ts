@@ -78,4 +78,29 @@ describe("copyViaExecCommand", () => {
     expect(copyViaExecCommand("payload")).toBe(false);
     expect(document.body.children.length).toBe(before);
   });
+
+  it("节点创建失败时直接失败", () => {
+    const spy = vi.spyOn(document, "createElement").mockImplementation(() => {
+      throw new Error("not allowed");
+    });
+    expect(copyViaExecCommand("payload")).toBe(false);
+    spy.mockRestore();
+  });
+
+  it("节点写入或选择失败时清理临时 textarea", () => {
+    const valueSetter = vi.fn(() => {
+      throw new Error("readonly textarea");
+    });
+    const originalCreate = document.createElement.bind(document);
+    const area = originalCreate("textarea");
+    Object.defineProperty(area, "value", { set: valueSetter, configurable: true });
+    const spy = vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+      if (tag === "textarea") return area;
+      return originalCreate(tag);
+    });
+    const before = document.body.children.length;
+    expect(copyViaExecCommand("payload")).toBe(false);
+    expect(document.body.children.length).toBe(before);
+    spy.mockRestore();
+  });
 });

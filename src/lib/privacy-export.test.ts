@@ -194,6 +194,27 @@ describe("buildPrivacyExport (R9.9)", () => {
       Object.defineProperty(globalThis, "localStorage", { value: original, configurable: true, writable: true });
     }
   });
+
+  it("storage 条目读取抛错时安全导出已收集的本地条目", () => {
+    const original = globalThis.localStorage;
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: {
+        length: 2,
+        key: (index: number) => (index === 0 ? "tb-ok" : null),
+        getItem: (key: string) => {
+          if (key === "tb-ok") return "kept";
+          throw new Error("quota exceeded");
+        },
+      },
+    });
+    try {
+      expect(() => buildPrivacyExport(1_700_000_000_000)).not.toThrow();
+      expect(buildPrivacyExport(1_700_000_000_000).localStorage).toEqual({ "tb-ok": "kept" });
+    } finally {
+      Object.defineProperty(globalThis, "localStorage", { value: original, configurable: true, writable: true });
+    }
+  });
 });
 
 describe("downloadPrivacyExport (R9.9)", () => {

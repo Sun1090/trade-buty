@@ -33,6 +33,12 @@ describe("breadcrumbList", () => {
     const out = breadcrumbList([{ name: "入门", href }], href);
     expect(out["@id"]).toBe(`${SITE_URL}${href}#breadcrumb`);
   });
+
+  it("无页面上下文时省略 @id，外部 URL 原样保留", () => {
+    const out = breadcrumbList([{ name: "Source", href: "https://example.com/knowledge" }]);
+    expect(out["@id"]).toBeUndefined();
+    expect((out.itemListElement as Array<{ item: string }>)[0]!.item).toBe("https://example.com/knowledge");
+  });
 });
 
 describe("siteGraph", () => {
@@ -113,6 +119,16 @@ describe("article", () => {
     expect((out.isPartOf as Record<string, string>)["@id"]).toBe(
       `${SITE_URL}/zh/knowledge/getting-started#course`,
     );
+  });
+
+  it("无章节上下文时不伪造 isPartOf", () => {
+    const out = article({
+      locale: "zh",
+      title: "独立文章",
+      description: "非课程文章",
+      pageHref: "/zh/about",
+    });
+    expect(out.isPartOf).toBeUndefined();
   });
 });
 
