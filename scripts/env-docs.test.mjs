@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import os from "node:os";
 import { describe, expect, it } from "vitest";
-import { auditEnvDocs, extractDocumentedVars, extractEnvRefs, isClientModule, loadSources } from "./env-docs.mjs";
+import { auditEnvDocs, extractDocumentedVars, extractEnvRefs, isClientModule, loadSources, run } from "./env-docs.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -106,4 +107,29 @@ describe("env docs contract", () => {
     });
     expect(errors).toEqual([]);
   });
+});
+
+it("runs the real CLI entrypoint success and failure branches", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "env-docs-run-"));
+  fs.mkdirSync(path.join(root, "src/lib"), { recursive: true });
+  fs.mkdirSync(path.join(root, "docs"), { recursive: true });
+  fs.writeFileSync(path.join(root, "docs/env.md"), docs());
+  fs.writeFileSync(path.join(root, "src/lib/site.ts"), 'export function f() { return process.env.NEXT_PUBLIC_SITE_URL; }\nexport function a() { return process.env.AI_API_KEY; }\n');
+  fs.writeFileSync(path.join(root, "next.config.ts"), "const config = { async headers() { return []; } };\n");
+  try {
+    let code = null;
+    const logs = [];
+    run({ rootDir: root, log: (message) => logs.push(String(message)), error: () => undefined, exit: (value) => { code = value; } });
+    expect(code).toBeNull();
+    expect(logs[0]).toContain("2 个运行时变量");
+
+    fs.writeFileSync(path.join(root, "docs/env.md"), docs().replace("`AI_API_KEY`", "AI_API_KEY"));
+    let failCode = null;
+    const errors = [];
+    run({ rootDir: root, log: () => undefined, error: (message) => errors.push(String(message)), exit: (value) => { failCode = value; } });
+    expect(failCode).toBe(1);
+    expect(errors.join("\n")).toContain("docs/env.md 未登记 AI_API_KEY");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });

@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   auditGrowthSurfaces,
   findUnregisteredGrowthComponents,
   loadInventory,
+  main,
   scanCopy,
   scanComponent,
   extractLocaleBlock,
@@ -344,4 +345,53 @@ describe("check-dark-pattern-copy", () => {
     const { errors } = auditGrowthSurfaces({ rootDir: realRoot, inventory, i18nSource });
     expect(errors).toEqual([]);
   });
+});
+
+it("runs the real main entrypoint success and failure branches", () => {
+  const realRoot = dirname(fileURLToPath(import.meta.url)) + "/..";
+  let successCode = null;
+  const successLogs = [];
+  main({
+    rootDir: realRoot,
+    log: (message) => successLogs.push(String(message)),
+    error: () => undefined,
+    exit: (value) => { successCode = value; },
+  });
+  expect(successCode).toBeNull();
+  expect(successLogs[0]).toContain("R13.21 通过");
+
+  const brokenRoot = isolatedInventoryRoot({ surfaces: [{ id: "missing", component: "src/components/missing.tsx", i18nSection: "install" }] });
+  mkdirSync(join(brokenRoot, "src/lib"), { recursive: true });
+  writeFileSync(join(brokenRoot, "src/lib/i18n.ts"), cleanI18n);
+  try {
+    let failCode = null;
+    const failures = [];
+    main({
+      rootDir: brokenRoot,
+      log: () => undefined,
+      error: (message) => failures.push(String(message)),
+      exit: (value) => { failCode = value; },
+    });
+    expect(failCode).toBe(1);
+    expect(failures.join("\n")).toContain("missing 的 component 不存在");
+  } finally {
+    rmSync(brokenRoot, { recursive: true, force: true });
+  }
+
+  const missingInventory = isolatedInventoryRoot({ surfaces: [] });
+  rmSync(join(missingInventory, "src/lib/growth-surfaces.json"), { force: true });
+  try {
+    let readFailCode = null;
+    const readFailures = [];
+    main({
+      rootDir: missingInventory,
+      log: () => undefined,
+      error: (message) => readFailures.push(String(message)),
+      exit: (value) => { readFailCode = value; },
+    });
+    expect(readFailCode).toBe(1);
+    expect(readFailures.join("\n")).toContain("读取 src/lib/growth-surfaces.json 失败");
+  } finally {
+    rmSync(missingInventory, { recursive: true, force: true });
+  }
 });

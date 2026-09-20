@@ -152,19 +152,21 @@ export function loadSources(root = ROOT) {
   }));
 }
 
-function run() {
+export function run({ rootDir = ROOT, log = console.log.bind(console), error = console.error.bind(console), exit = process.exit } = {}) {
+  const root = rootDir;
   const { errors, required } = auditEnvDocs({
-    docs: fs.readFileSync(path.join(ROOT, "docs/env.md"), "utf8"),
-    sources: loadSources(),
+    docs: fs.readFileSync(path.join(root, "docs/env.md"), "utf8"),
+    sources: loadSources(root),
   });
 
   if (errors.length > 0) {
-    console.error("[env-docs] ❌ 环境变量文档与代码不一致：");
-    for (const error of errors) console.error(`  - ${error}`);
-    process.exit(1);
+    error("[env-docs] ❌ 环境变量文档与代码不一致：");
+    for (const err of errors) error(`  - ${err}`);
+    exit(1);
+    return;
   }
 
-  console.log(`[env-docs] ✅ docs/env.md 与代码一致（${required.length} 个运行时变量全部登记，无幽灵条目，无客户端密钥泄漏）`);
+  log(`[env-docs] ✅ docs/env.md 与代码一致（${required.length} 个运行时变量全部登记，无幽灵条目，无客户端密钥泄漏）`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

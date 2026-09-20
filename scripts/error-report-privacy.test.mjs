@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import os from "node:os";
 import { describe, expect, it } from "vitest";
-import { auditErrorReportPrivacy, stripComments } from "./error-report-privacy.mjs";
+import { auditErrorReportPrivacy, run, stripComments } from "./error-report-privacy.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -123,3 +124,39 @@ describe("error report privacy audit", () => {
     expect(errors).toContain("docs/error-reporting.md must document the never-sent fields");
     expect(errors).toContain("privacy policy must disclose that diagnostics are not persisted");
   });
+
+it("runs the real CLI entrypoint success and failure branches", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "error-report-privacy-run-"));
+  const files = {
+    "src/lib/error-report.ts": fs.readFileSync(path.join(ROOT, "src/lib/error-report.ts"), "utf8"),
+    "src/app/api/error-reports/route.ts": fs.readFileSync(path.join(ROOT, "src/app/api/error-reports/route.ts"), "utf8"),
+    "docs/error-reporting.md": fs.readFileSync(path.join(ROOT, "docs/error-reporting.md"), "utf8"),
+    "src/app/[locale]/privacy/page.tsx": fs.readFileSync(path.join(ROOT, "src/app/[locale]/privacy/page.tsx"), "utf8"),
+  };
+  try {
+    for (const [relative, content] of Object.entries(files)) {
+      const fullPath = path.join(root, relative);
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+      fs.writeFileSync(fullPath, content);
+    }
+    let code = null;
+    const logs = [];
+    run({ rootDir: root, log: (message) => logs.push(String(message)), error: () => undefined, exit: (value) => { code = value; } });
+    expect(code).toBeNull();
+    expect(logs[0]).toContain("endpoint /api/error-reports");
+
+    fs.writeFileSync(path.join(root, "docs/error-reporting.md"), "missing fields\n");
+    let failCode = null;
+    const errors = [];
+    run({
+      rootDir: root,
+      log: () => undefined,
+      error: (message) => errors.push(String(message)),
+      exit: (value) => { failCode = value; },
+    });
+    expect(failCode).toBe(1);
+    expect(errors.join("\n")).toContain("error-reporting.md is missing field level");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

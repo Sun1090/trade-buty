@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { auditGrowthEventPrivacy, stripComments } from "./growth-event-privacy.mjs";
+import { auditGrowthEventPrivacy, run, stripComments } from "./growth-event-privacy.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -152,4 +152,67 @@ describe("growth event privacy audit", () => {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
   });
+});
+
+it("runs the real CLI entrypoint from an injected root", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "growth-event-privacy-run-"));
+  const sourcePath = path.join(tempDir, "src/lib/growth-events.ts");
+  const docsPath = path.join(tempDir, "docs/growth-events.md");
+  const privacyPath = path.join(tempDir, "src/app/[locale]/privacy/page.tsx");
+  fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
+  fs.mkdirSync(path.dirname(docsPath), { recursive: true });
+  fs.mkdirSync(path.dirname(privacyPath), { recursive: true });
+  fs.writeFileSync(sourcePath, [
+    'export const GROWTH_EVENT_NAMES = ["install_prompt"] as const;',
+    'export function track(safe){ console.info("[growth-event]", safe.name, safe); normalizeGrowthEvent(safe); }',
+  ].join("\n"));
+  fs.writeFileSync(docsPath, "install_prompt 明确禁止 email userId\n");
+  fs.writeFileSync(privacyPath, "console 控制台\n");
+  let code = null;
+  const errors = [];
+  const logs = [];
+  try {
+    run({
+      rootDir: tempDir,
+      log: (message) => logs.push(String(message)),
+      error: (message) => errors.push(String(message)),
+      exit: (value) => { code = value; },
+    });
+    expect(logs[0]).toContain("growth event privacy audit passed: 1 events");
+    expect(errors).toEqual([]);
+    expect(code).toBeNull();
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+it("runs the real CLI entrypoint failure branch without calling process.exit", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "growth-event-privacy-run-fail-"));
+  const sourcePath = path.join(tempDir, "src/lib/growth-events.ts");
+  fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
+  fs.mkdirSync(path.join(tempDir, "src/app/[locale]/privacy"), { recursive: true });
+  fs.mkdirSync(path.join(tempDir, "docs"), { recursive: true });
+  fs.writeFileSync(sourcePath, [
+    'export const GROWTH_EVENT_NAMES = ["install_prompt"] as const;',
+    'export function track(safe){ fetch("/collect"); console.info("[growth-event]", safe.name, safe); normalizeGrowthEvent(safe); }',
+  ].join("\n"));
+  fs.writeFileSync(path.join(tempDir, "docs/growth-events.md"), "no event name\n");
+  fs.writeFileSync(path.join(tempDir, "src/app/[locale]/privacy/page.tsx"), "no disclosure\n");
+  let code = null;
+  const errors = [];
+  const logs = [];
+  try {
+    run({
+      rootDir: tempDir,
+      log: (message) => logs.push(String(message)),
+      error: (message) => errors.push(String(message)),
+      exit: (value) => { code = value; },
+    });
+    expect(logs).toEqual([]);
+    expect(code).toBe(1);
+    expect(errors[0]).toBe("growth event privacy audit failed:");
+    expect(errors.join("\n")).toContain("growth event source contains forbidden network fetch");
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 });

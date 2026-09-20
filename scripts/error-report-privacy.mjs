@@ -112,21 +112,23 @@ export function auditErrorReportPrivacy({ clientSource, routeSource, docs, priva
   return { errors, endpoint };
 }
 
-function run() {
+export function run({ rootDir = ROOT, log = console.log.bind(console), error = console.error.bind(console), exit = process.exit } = {}) {
+  const root = rootDir;
   const result = auditErrorReportPrivacy({
-    clientSource: fs.readFileSync(path.join(ROOT, "src/lib/error-report.ts"), "utf8"),
-    routeSource: fs.readFileSync(path.join(ROOT, "src/app/api/error-reports/route.ts"), "utf8"),
-    docs: fs.readFileSync(path.join(ROOT, "docs/error-reporting.md"), "utf8"),
-    privacyPage: fs.readFileSync(path.join(ROOT, "src/app/[locale]/privacy/page.tsx"), "utf8"),
+    clientSource: fs.readFileSync(path.join(root, "src/lib/error-report.ts"), "utf8"),
+    routeSource: fs.readFileSync(path.join(root, "src/app/api/error-reports/route.ts"), "utf8"),
+    docs: fs.readFileSync(path.join(root, "docs/error-reporting.md"), "utf8"),
+    privacyPage: fs.readFileSync(path.join(root, "src/app/[locale]/privacy/page.tsx"), "utf8"),
   });
 
   if (result.errors.length > 0) {
-    console.error("error report privacy audit failed:");
-    for (const error of result.errors) console.error(`- ${error}`);
-    process.exit(1);
+    error("error report privacy audit failed:");
+    for (const err of result.errors) error(`- ${err}`);
+    exit(1);
+    return;
   }
 
-  console.log(
+  log(
     `error report privacy audit passed: endpoint ${result.endpoint}, allowlisted fields only, sanitized server log, disclosed in privacy policy`,
   );
 }
