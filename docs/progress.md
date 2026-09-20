@@ -1,5 +1,34 @@
 # Progress
 
+## 2026-09-20 — PR #89：同步设置写入队列边界加固待合并
+
+- 状态：本地验证完成；等待 Vercel preview check 完成后 rebase 合并。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/sync-settings-upsert-hardening`，HEAD `61d109b`。
+- 完成内容：
+  - `syncWeeklyGoalUpsert` 与 `syncReplayBestUpsert` 的 Supabase 初始化失败路径均改为立即入队。
+  - 周目标云写入复用共享 helper，避免把 `daily_goal_min` 混入 weekly goal payload。
+  - 补充 weekly goal / replay best / 未登录 weekly goal 的队列回归测试。
+- 变更文件：
+  - `src/lib/sync-layer.ts`
+  - `src/lib/sync-layer-queue.test.ts`
+  - `src/lib/sync-layer-failure-queue.test.ts`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - `npm run test`：通过（255 文件 / 2,221 用例）。
+  - `npm run test:coverage`：分支前连续三次通过（255 文件 / 2,221 用例；语句 93.65%，分支 88.01%，函数 93.19%，行 96.01%）。
+  - `npm run check:growth-event-privacy`、`check:docs`、`check:kb-pointer`、`check:changelog`、`check:constitution`、`git diff --check`：通过。
+  - PR #89：GitHub CI、db-tests、CodeQL、Analyze actions/JS、Vercel Preview Comments 均通过；Vercel deployment 截至本更新仍 pending。
+- 阻塞：等待远端 Vercel check 结束；本地无阻塞。
+- 风险 / 回滚：仅同步层错误边界与测试变更；若线上表现异常，回滚 `61d109b` 的 sync-layer 变更即可。
+- 下一项：Vercel 通过后执行 `gh pr merge 89 --rebase --delete-branch`，同步 `origin/main`，删除临时远端分支，并继续覆盖率/质量硬化。
+- 更新时间：2026-09-20 23:47（Asia/Shanghai）。
+
+---
+
 ## 2026-09-20 — 覆盖率批次 9：增长事件隐私 CLI 契约
 
 - 状态：本地完成，准备 PR。
