@@ -83,6 +83,7 @@
 - 验证命令与结果：
   - `npx vitest run src/lib/search-synonyms.test.ts`：通过（1 文件 / 10 用例）。
   - `npm run test:coverage`：通过（255 文件 / 2,261 用例；语句 94.36%，分支 88.67%，函数 94.58%，行 96.72%）。
+  - `npm run lint`、`npm run typecheck`、`npm run check:docs`、`npm run check:constitution`、`git diff --check`、`npm run build`：通过。
 - 阻塞：无。
 - 风险 / 回滚：仅新增测试，不改生产逻辑。
 - 下一项：继续覆盖率热点（优先 `quiz.tsx`、`search-client.tsx`、脚本库）。
