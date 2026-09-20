@@ -5,6 +5,11 @@ import { parseSummaryBody, POST } from "./route";
 const getUser = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(async () => ({ auth: { getUser } })),
+  getServerAuthUser: async () => {
+    const { data: { user }, error } = await getUser();
+    if (error) throw error;
+    return user;
+  },
 }));
 const { chat } = vi.hoisted(() => ({ chat: vi.fn() }));
 vi.mock("@/lib/ai/client", () => ({ chat }));
@@ -50,6 +55,22 @@ describe("parseSummaryBody (R7.12)", () => {
 
   it("非白名单 locale 一律回落 zh", () => {
     expect(parseSummaryBody({ chapter: "spot", locale: "fr" })?.locale).toBe("zh");
+  });
+});
+
+
+describe("POST /api/ai/summary auth failure boundary", () => {
+  it("getUser 返回 error 时返回通用 502，不调 RAG/模型且不透传内部错误", async () => {
+    getUser.mockResolvedValueOnce({ data: { user: null }, error: new Error("secret: trace expired") });
+
+    const res = await POST(request({ chapter: "spot" }, { "x-forwarded-for": "7.7.7.7" }));
+
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body).toEqual({ error: "AI 服务暂时不可用，请稍后再试。" });
+    expect(JSON.stringify(body)).not.toContain("secret");
+    expect(retrieve).not.toHaveBeenCalled();
+    expect(chat).not.toHaveBeenCalled();
   });
 });
 

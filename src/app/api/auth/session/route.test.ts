@@ -6,6 +6,12 @@ const createClient = vi.fn(async () => ({ auth: { getUser } }));
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: () => createClient(),
+  getServerAuthUser: async () => {
+    const client = await createClient();
+    const { data: { user }, error } = await client.auth.getUser();
+    if (error) throw error;
+    return user;
+  },
 }));
 
 beforeEach(() => {
@@ -29,12 +35,21 @@ describe("GET /api/auth/session", () => {
     expect(await res.json()).toEqual({ user: { id: "user-1", email: "a@b.com" } });
   });
 
-  it("查询抛错时回退 user:null 且不回传内部错误", async () => {
+  it("getUser 返回 error 时回退 user:null 且不回传内部错误", async () => {
+    getUser.mockResolvedValueOnce({ data: { user: null }, error: new Error("secret: trace expired") });
+    const res = await GET();
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body).toEqual({ user: null, error: "session error" });
+    expect(JSON.stringify(body)).not.toContain("secret");
+  });
+
+  it("客户端创建抛错时回退 user:null 且不回传内部错误", async () => {
     createClient.mockRejectedValueOnce(new Error("invalid api key: secret"));
     const res = await GET();
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.user).toBeNull();
+    expect(body).toEqual({ user: null, error: "session error" });
     expect(JSON.stringify(body)).not.toContain("secret");
   });
 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chat } from "@/lib/ai/client";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getServerAuthUser } from "@/lib/supabase/server";
 import { parseJsonLoose } from "@/lib/ai/json-extract";
 import { createRateLimiter } from "@/lib/ai/rate-limit";
 
@@ -55,8 +55,15 @@ export function parsePlanBody(value: unknown): PlanBody | null {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    let user;
+    try {
+      user = await getServerAuthUser();
+    } catch {
+      return NextResponse.json(
+        { error: "AI 服务暂时不可用，请稍后再试。" },
+        { status: 502 },
+      );
+    }
     if (!user) return NextResponse.json({ error: "Login required" }, { status: 401 });
 
     const decision = planLimiter.check(user.id, true);

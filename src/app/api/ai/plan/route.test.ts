@@ -9,6 +9,11 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: mocks.createSupabaseServerClient,
+  getServerAuthUser: async () => {
+    const { data: { user }, error } = await mocks.getUser();
+    if (error) throw error;
+    return user;
+  },
 }));
 vi.mock("@/lib/ai/client", () => ({ chat: mocks.chat }));
 const { createSupabaseServerClient, getUser, chat } = mocks;
@@ -62,6 +67,21 @@ describe("parsePlanBody (R7.12)", () => {
     const many = Array.from({ length: 65 }, (_, i) => `c${i}`);
     expect(parsePlanBody({ doneChapters: many })).toBeNull();
     expect(parsePlanBody({ doneChapters: many.slice(0, 64) })).not.toBeNull();
+  });
+});
+
+
+describe("POST /api/ai/plan auth failure boundary", () => {
+  it("getUser 返回 error 时返回通用 502，不调模型且不透传内部错误", async () => {
+    getUser.mockResolvedValueOnce({ data: { user: null }, error: new Error("secret: trace expired") });
+
+    const res = await POST(request({ doneChapters: [], wrongChapters: [], currentChapter: "" }));
+
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body).toEqual({ error: "AI 服务暂时不可用，请稍后再试。" });
+    expect(JSON.stringify(body)).not.toContain("secret");
+    expect(chat).not.toHaveBeenCalled();
   });
 });
 

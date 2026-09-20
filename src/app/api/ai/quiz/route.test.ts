@@ -5,6 +5,11 @@ import { POST } from "./route";
 const getUser = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(async () => ({ auth: { getUser } })),
+  getServerAuthUser: async () => {
+    const { data: { user }, error } = await getUser();
+    if (error) throw error;
+    return user;
+  },
 }));
 const { chat } = vi.hoisted(() => ({ chat: vi.fn() }));
 vi.mock("@/lib/ai/client", () => ({ chat }));

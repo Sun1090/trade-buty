@@ -23,6 +23,11 @@ const db = vi.hoisted(() => {
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: db.createSupabaseServerClient,
+  getServerAuthUser: async () => {
+    const { data: { user }, error } = await db.getUser();
+    if (error) throw error;
+    return user;
+  },
 }));
 
 function request(body: unknown): NextRequest {
@@ -99,6 +104,18 @@ describe("GET /api/ai/conversations", () => {
     const res = await GET();
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ messages: [] });
+    expect(db.select).not.toHaveBeenCalled();
+  });
+
+  it("getUser 返回 error 时加载历史返回通用失败，不读库且不透传内部错误", async () => {
+    db.getUser.mockResolvedValueOnce({ data: { user: null }, error: new Error("secret: trace expired") });
+
+    const res = await GET();
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body).toEqual({ error: "Failed to load conversations" });
+    expect(JSON.stringify(body)).not.toContain("secret");
     expect(db.select).not.toHaveBeenCalled();
   });
 

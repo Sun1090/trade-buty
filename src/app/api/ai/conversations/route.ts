@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerAuthUser } from "@/lib/supabase/server";
 
 
 export interface SaveBody {
@@ -49,8 +49,13 @@ export function parseSaveBody(value: unknown): SaveBody | null {
 /** GET: 拉取登录用户最近对话（用于进入 AI 页时恢复历史） */
 export async function GET() {
   try {
+    let user;
+    try {
+      user = await getServerAuthUser();
+    } catch {
+      return NextResponse.json({ error: "Failed to load conversations" }, { status: 500 });
+    }
     const supabase = await createSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ messages: [] });
     }
@@ -88,8 +93,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    let user;
+    try {
+      user = await getServerAuthUser();
+    } catch {
+      return NextResponse.json({ error: "Failed to save conversation" }, { status: 500 });
+    }
     const supabase = await createSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

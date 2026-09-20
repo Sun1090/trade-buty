@@ -8,6 +8,11 @@ import type { RagResult } from "@/lib/ai/rag";
 const getUser = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(async () => ({ auth: { getUser } })),
+  getServerAuthUser: async () => {
+    const { data: { user }, error } = await getUser();
+    if (error) throw error;
+    return user;
+  },
 }));
 // 护栏命中路径不会调模型；这里显式挡住真实上游，避免测试误发请求。
 // vi.mock 工厂会被提升到文件顶部，必须先 vi.hoisted 建好 mock 再引用。
@@ -66,6 +71,23 @@ beforeEach(() => {
   vi.mocked(retrieve).mockResolvedValue([]);
   chat.mockResolvedValue("");
   streamOf(["默认回答"]);
+});
+
+
+describe("POST /api/ai/chat auth failure boundary", () => {
+  it("getUser 返回 error 时返回通用 502，不调 RAG/模型且不透传内部错误", async () => {
+    getUser.mockResolvedValueOnce({ data: { user: null }, error: new Error("secret: trace expired") });
+
+    const res = await POST(request({ messages: [{ role: "user", content: "你好" }] }));
+
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body).toEqual({ error: "AI 服务暂时不可用，请稍后再试。" });
+    expect(JSON.stringify(body)).not.toContain("secret");
+    expect(retrieve).not.toHaveBeenCalled();
+    expect(streamChat).not.toHaveBeenCalled();
+    expect(chat).not.toHaveBeenCalled();
+  });
 });
 
 describe("POST /api/ai/chat 输入校验（R7.12）", () => {
