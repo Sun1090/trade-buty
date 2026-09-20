@@ -12,6 +12,15 @@ import type { ReplayRecord } from "./replay-store";
 import { isLocalDateStr } from "./date-utils";
 import { isRecord, readStorageJson } from "./storage-json";
 
+function safeSupabaseBrowser() {
+  try {
+    return { client: getSupabaseBrowser(), error: null as Error | null };
+  } catch (err) {
+    if (process.env.NODE_ENV !== "production") console.warn("[sync] Supabase unavailable; write will be queued", err);
+    return { client: null, error: err as Error };
+  }
+}
+
 /**
  * 双写同步层：已登录时，lib 写函数在写 localStorage 后调这些函数，
  * fire-and-forget 写 Supabase（anon key + RLS，仅写自己的行）。
@@ -32,17 +41,26 @@ export function syncProgressWrite(chapterNum: string, docSlug: string) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
   // R9.5：失败入队而非丢弃；flushPersistedQueue 在 hydrateFromCloud / online 时重放
-  void getSupabaseBrowser()
-    .from("progress")
-    .insert({ user_id: ownerId, chapter_num: chapterNum, doc_slug: docSlug })
-    .then(undefined, (err) => {
-      if (!authenticated || userId !== ownerId) return;
-      enqueueWriteLazy("progress", `${chapterNum}:${docSlug}`, {
-        chapter_num: chapterNum,
-        doc_slug: docSlug,
-      }, ownerId, () => authenticated && userId === ownerId);
-      if (process.env.NODE_ENV !== "production") console.warn("[sync] progress write failed → queued", err);
-    });
+  const { client, error: clientError } = safeSupabaseBrowser();
+  if (client) {
+    void client
+      .from("progress")
+      .insert({ user_id: ownerId, chapter_num: chapterNum, doc_slug: docSlug })
+      .then(undefined, (err) => {
+        if (!authenticated || userId !== ownerId) return;
+        enqueueWriteLazy("progress", `${chapterNum}:${docSlug}`, {
+          chapter_num: chapterNum,
+          doc_slug: docSlug,
+        }, ownerId, () => authenticated && userId === ownerId);
+        if (process.env.NODE_ENV !== "production") console.warn("[sync] progress write failed → queued", err);
+      });
+  } else {
+    enqueueWriteLazy("progress", `${chapterNum}:${docSlug}`, {
+      chapter_num: chapterNum,
+      doc_slug: docSlug,
+    }, ownerId, () => authenticated && userId === ownerId);
+    if (process.env.NODE_ENV !== "production") console.warn("[sync] progress write queued without Supabase", clientError);
+  }
 }
 
 // ---- 错题本 ----
@@ -55,70 +73,101 @@ export function syncWrongbookWrite(
 ) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
-  void getSupabaseBrowser()
-    .from("wrongbook")
-    .upsert(
-      {
-        user_id: ownerId,
-        chapter_num: chapterNum,
-        question_idx: questionIdx,
-        picked,
-        srs_stage: srsStage ?? null,
-        srs_due: srsDue ?? null,
-      },
-      { onConflict: "user_id,chapter_num,question_idx" },
-    )
-    .then(undefined, (err) => {
-      if (!authenticated || userId !== ownerId) return;
-      enqueueWriteLazy("wrongbook-upsert", `${chapterNum}:${questionIdx}`, {
-        chapter_num: chapterNum,
-        question_idx: questionIdx,
-        picked,
-        srs_stage: srsStage ?? null,
-        srs_due: srsDue ?? null,
-      }, ownerId, () => authenticated && userId === ownerId);
-      if (process.env.NODE_ENV !== "production") console.warn("[sync] wrongbook upsert failed → queued", err);
-    });
+  const { client, error: clientError } = safeSupabaseBrowser();
+  if (client) {
+    void client
+      .from("wrongbook")
+      .upsert(
+        {
+          user_id: ownerId,
+          chapter_num: chapterNum,
+          question_idx: questionIdx,
+          picked,
+          srs_stage: srsStage ?? null,
+          srs_due: srsDue ?? null,
+        },
+        { onConflict: "user_id,chapter_num,question_idx" },
+      )
+      .then(undefined, (err) => {
+        if (!authenticated || userId !== ownerId) return;
+        enqueueWriteLazy("wrongbook-upsert", `${chapterNum}:${questionIdx}`, {
+          chapter_num: chapterNum,
+          question_idx: questionIdx,
+          picked,
+          srs_stage: srsStage ?? null,
+          srs_due: srsDue ?? null,
+        }, ownerId, () => authenticated && userId === ownerId);
+        if (process.env.NODE_ENV !== "production") console.warn("[sync] wrongbook upsert failed → queued", err);
+      });
+  } else {
+    enqueueWriteLazy("wrongbook-upsert", `${chapterNum}:${questionIdx}`, {
+      chapter_num: chapterNum,
+      question_idx: questionIdx,
+      picked,
+      srs_stage: srsStage ?? null,
+      srs_due: srsDue ?? null,
+    }, ownerId, () => authenticated && userId === ownerId);
+    if (process.env.NODE_ENV !== "production") console.warn("[sync] wrongbook upsert queued without Supabase", clientError);
+  }
 }
 
 export function syncWrongbookDelete(chapterNum: string, questionIdx: number) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
-  void getSupabaseBrowser()
-    .from("wrongbook")
-    .delete()
-    .eq("user_id", ownerId)
-    .eq("chapter_num", chapterNum)
-    .eq("question_idx", questionIdx)
-    .then(undefined, (err) => {
-      if (!authenticated || userId !== ownerId) return;
-      enqueueWriteLazy("wrongbook-delete", `${chapterNum}:${questionIdx}`, {
-        chapter_num: chapterNum,
-        question_idx: questionIdx,
-      }, ownerId, () => authenticated && userId === ownerId);
-      if (process.env.NODE_ENV !== "production") console.warn("[sync] wrongbook delete failed → queued", err);
-    });
+  const { client, error: clientError } = safeSupabaseBrowser();
+  if (client) {
+    void client
+      .from("wrongbook")
+      .delete()
+      .eq("user_id", ownerId)
+      .eq("chapter_num", chapterNum)
+      .eq("question_idx", questionIdx)
+      .then(undefined, (err) => {
+        if (!authenticated || userId !== ownerId) return;
+        enqueueWriteLazy("wrongbook-delete", `${chapterNum}:${questionIdx}`, {
+          chapter_num: chapterNum,
+          question_idx: questionIdx,
+        }, ownerId, () => authenticated && userId === ownerId);
+        if (process.env.NODE_ENV !== "production") console.warn("[sync] wrongbook delete failed → queued", err);
+      });
+  } else {
+    enqueueWriteLazy("wrongbook-delete", `${chapterNum}:${questionIdx}`, {
+      chapter_num: chapterNum,
+      question_idx: questionIdx,
+    }, ownerId, () => authenticated && userId === ownerId);
+    if (process.env.NODE_ENV !== "production") console.warn("[sync] wrongbook delete queued without Supabase", clientError);
+  }
 }
 
 // ---- 测验成绩 ----
 export function syncQuizUpsert(chapterNum: string, best: number, total: number) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
-  void getSupabaseBrowser()
-    .from("quiz_scores")
-    .upsert(
-      { user_id: ownerId, chapter_num: chapterNum, best, total, done: true },
-      { onConflict: "user_id,chapter_num" },
-    )
-    .then(undefined, (err) => {
-      if (!authenticated || userId !== ownerId) return;
-      enqueueWriteLazy("quiz", chapterNum, {
-        chapter_num: chapterNum,
-        best,
-        total,
-      }, ownerId, () => authenticated && userId === ownerId);
-      if (process.env.NODE_ENV !== "production") console.warn("[sync] quiz upsert failed → queued", err);
-    });
+  const { client, error: clientError } = safeSupabaseBrowser();
+  if (client) {
+    void client
+      .from("quiz_scores")
+      .upsert(
+        { user_id: ownerId, chapter_num: chapterNum, best, total, done: true },
+        { onConflict: "user_id,chapter_num" },
+      )
+      .then(undefined, (err) => {
+        if (!authenticated || userId !== ownerId) return;
+        enqueueWriteLazy("quiz", chapterNum, {
+          chapter_num: chapterNum,
+          best,
+          total,
+        }, ownerId, () => authenticated && userId === ownerId);
+        if (process.env.NODE_ENV !== "production") console.warn("[sync] quiz upsert failed → queued", err);
+      });
+  } else {
+    enqueueWriteLazy("quiz", chapterNum, {
+      chapter_num: chapterNum,
+      best,
+      total,
+    }, ownerId, () => authenticated && userId === ownerId);
+    if (process.env.NODE_ENV !== "production") console.warn("[sync] quiz upsert queued without Supabase", clientError);
+  }
 }
 
 // ---- 回放记录 ----
@@ -131,69 +180,99 @@ export function syncReplayHistoryWrite(rec: {
 }) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
-  void getSupabaseBrowser()
-    .from("replay_history")
-    .insert({
-      user_id: ownerId,
-      symbol: rec.symbol,
-      interval: rec.interval,
-      total: rec.total,
-      correct: rec.correct,
-      best_streak: rec.bestStreak,
-    })
-    .then(undefined, (err) => {
-      if (!authenticated || userId !== ownerId) return;
-      enqueueWriteLazy("replay-history", `${rec.symbol}:${rec.interval}:${Date.now()}`, {
+  const { client, error: clientError } = safeSupabaseBrowser();
+  if (client) {
+    void client
+      .from("replay_history")
+      .insert({
+        user_id: ownerId,
         symbol: rec.symbol,
         interval: rec.interval,
         total: rec.total,
         correct: rec.correct,
         best_streak: rec.bestStreak,
-      }, ownerId, () => authenticated && userId === ownerId);
-      if (process.env.NODE_ENV !== "production") console.warn("[sync] replay history failed → queued", err);
-    });
+      })
+      .then(undefined, (err) => {
+        if (!authenticated || userId !== ownerId) return;
+        enqueueWriteLazy("replay-history", `${rec.symbol}:${rec.interval}:${Date.now()}`, {
+          symbol: rec.symbol,
+          interval: rec.interval,
+          total: rec.total,
+          correct: rec.correct,
+          best_streak: rec.bestStreak,
+        }, ownerId, () => authenticated && userId === ownerId);
+        if (process.env.NODE_ENV !== "production") console.warn("[sync] replay history failed → queued", err);
+      });
+  } else {
+    enqueueWriteLazy("replay-history", `${rec.symbol}:${rec.interval}:${Date.now()}`, {
+      symbol: rec.symbol,
+      interval: rec.interval,
+      total: rec.total,
+      correct: rec.correct,
+      best_streak: rec.bestStreak,
+    }, ownerId, () => authenticated && userId === ownerId);
+    if (process.env.NODE_ENV !== "production") console.warn("[sync] replay history queued without Supabase", clientError);
+  }
 }
 
 // ---- 回放最佳 ----
 export function syncReplayBestUpsert(best: number) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
-  void getSupabaseBrowser()
-    .from("replay_best")
-    .upsert({ user_id: ownerId, best_streak: best }, { onConflict: "user_id" })
-    .then(undefined, (err) => {
-      if (!authenticated || userId !== ownerId) return;
-      enqueueWriteLazy("replay-best", "global", { best_streak: best }, ownerId, () => authenticated && userId === ownerId);
-      if (process.env.NODE_ENV !== "production") console.warn("[sync] replay best failed → queued", err);
-    });
+  const { client, error: clientError } = safeSupabaseBrowser();
+  if (client) {
+    void client
+      .from("replay_best")
+      .upsert({ user_id: ownerId, best_streak: best }, { onConflict: "user_id" })
+      .then(undefined, (err) => {
+        if (!authenticated || userId !== ownerId) return;
+        enqueueWriteLazy("replay-best", "global", { best_streak: best }, ownerId, () => authenticated && userId === ownerId);
+        if (process.env.NODE_ENV !== "production") console.warn("[sync] replay best failed → queued", err);
+      });
+  } else {
+    enqueueWriteLazy("replay-best", "global", { best_streak: best }, ownerId, () => authenticated && userId === ownerId);
+    if (process.env.NODE_ENV !== "production") console.warn("[sync] replay best queued without Supabase", clientError);
+  }
 }
 
 /** R4.7：每日目标档位云端同步（登录后多设备一致） */
 export function syncGoalUpsert(goalMin: number) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
-  void getSupabaseBrowser()
-    .from("user_settings")
-    .upsert({ user_id: ownerId, daily_goal_min: goalMin }, { onConflict: "user_id" })
-    .then(undefined, (err) => {
-      if (!authenticated || userId !== ownerId) return;
-      enqueueWriteLazy("goal", "daily-goal", { daily_goal_min: goalMin }, ownerId, () => authenticated && userId === ownerId);
-      if (process.env.NODE_ENV !== "production") console.warn("[sync] goal upsert failed → queued", err);
-    });
+  const { client, error: clientError } = safeSupabaseBrowser();
+  if (client) {
+    void client
+      .from("user_settings")
+      .upsert({ user_id: ownerId, daily_goal_min: goalMin }, { onConflict: "user_id" })
+      .then(undefined, (err) => {
+        if (!authenticated || userId !== ownerId) return;
+        enqueueWriteLazy("goal", "daily-goal", { daily_goal_min: goalMin }, ownerId, () => authenticated && userId === ownerId);
+        if (process.env.NODE_ENV !== "production") console.warn("[sync] goal upsert failed → queued", err);
+      });
+  } else {
+    enqueueWriteLazy("goal", "daily-goal", { daily_goal_min: goalMin }, ownerId, () => authenticated && userId === ownerId);
+    if (process.env.NODE_ENV !== "production") console.warn("[sync] goal upsert queued without Supabase", clientError);
+  }
 }
 
 /** R12.19：每周目标档位云端同步 */
 export function syncWeeklyGoalUpsert(weeklyGoalMin: number) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
-  void getSupabaseBrowser()
-    .from("user_settings")
-    .upsert({ user_id: ownerId, weekly_goal_min: weeklyGoalMin }, { onConflict: "user_id" })
-    .then(undefined, (err) => {
-      if (!authenticated || userId !== ownerId) return;
-      enqueueWriteLazy("goal", "weekly-goal", { weekly_goal_min: weeklyGoalMin }, ownerId, () => authenticated && userId === ownerId);
-      if (process.env.NODE_ENV !== "production") console.warn("[sync] weekly goal upsert failed → queued", err);
-    });
+  const { client, error: clientError } = safeSupabaseBrowser();
+  if (client) {
+    void client
+      .from("user_settings")
+      .upsert({ user_id: ownerId, weekly_goal_min: weeklyGoalMin }, { onConflict: "user_id" })
+      .then(undefined, (err) => {
+        if (!authenticated || userId !== ownerId) return;
+        enqueueWriteLazy("goal", "weekly-goal", { weekly_goal_min: weeklyGoalMin }, ownerId, () => authenticated && userId === ownerId);
+        if (process.env.NODE_ENV !== "production") console.warn("[sync] weekly goal upsert failed → queued", err);
+      });
+  } else {
+    enqueueWriteLazy("goal", "weekly-goal", { weekly_goal_min: weeklyGoalMin }, ownerId, () => authenticated && userId === ownerId);
+    if (process.env.NODE_ENV !== "production") console.warn("[sync] weekly goal upsert queued without Supabase", clientError);
+  }
 }
 
 // ---- 登录时从云端拉取并合并到本地 ----

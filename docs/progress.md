@@ -3498,3 +3498,22 @@ Verification: focused Vitest 19 passed; dark-pattern-copy check passed for 7 reg
 Risk / rollback: test-only coverage change; revert this commit if the isolated inventory fixtures conflict with future inventory schema changes.
 
 Next: continue the next QA/coverage hotspot or roadmap-critical path after CI.
+
+## 2026-09-20 — Safe offline enqueue when Supabase initialization fails
+
+Status: completed locally on `codex/sync-queue-boundary-tests`; pending PR/CI.
+
+Completed:
+
+- Wrapped Supabase browser client creation used by fire-and-forget sync writes with `safeSupabaseBrowser()`, so missing environment configuration no longer throws synchronously out of user write calls.
+- When the client cannot be created, progress, wrongbook, quiz, replay-history, goal, and weekly-goal writes immediately enqueue the exact owner-bound write that would have been queued after an async Supabase failure.
+- Preserved the account-switch guard: delayed Supabase failures do not enqueue work for an old account after sign-out or account switch.
+- Added focused regression coverage for unauthenticated no-ops, missing Supabase configuration, stable queued payloads across multiple write kinds, async query rejection, and cross-account interleaving.
+
+Changed files: `src/lib/sync-layer.ts`, `src/lib/sync-layer-failure-queue.test.ts`, `docs/progress.md`.
+
+Verification: focused sync tests 9 files / 119 tests passed; full coverage 255 files / 2,218 tests passed with 93.47% statements, 87.75% branches, 92.98% functions, 95.89% lines; lint, typecheck, production build, and `git diff --check` passed.
+
+Risk / rollback: production behavior only hardens already fire-and-forget writes; valid Supabase writes remain unchanged. Revert this commit if immediate enqueue without an initialized Supabase client is incompatible with a future client-lifecycle change.
+
+Next: open and monitor PR, then rebase-merge after CI and delete the remote branch.
