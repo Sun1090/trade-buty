@@ -79,6 +79,12 @@ describe("parseKnowledgePath", () => {
       doc: "第一笔交易",
     });
   });
+  it("少于两段的根路径返回 null", () => {
+    expect(parseKnowledgePath("/zh")).toBeNull();
+  });
+  it("仅到 knowledge 且缺少 chapter 时返回 locale-only 结果", () => {
+    expect(parseKnowledgePath("/en/knowledge")).toEqual({ locale: "en" });
+  });
 });
 
 describe("suggestFromPath", () => {
@@ -106,6 +112,16 @@ describe("suggestFromPath", () => {
     const out = suggestFromPath("/zh/knowledge/nonexistent-chapter/anything", corpus, 3);
     expect(out.length).toBeGreaterThan(0);
     expect(out.length).toBeLessThanOrEqual(3);
+  });
+
+  it("章节路径缺少 doc 时按章节 slug 推荐", () => {
+    const out = suggestFromPath("/zh/knowledge/futres", corpus, 1);
+    expect(out[0]).toEqual(corpus.find((it) => it.href === "/zh/knowledge/futures"));
+  });
+
+  it("空白 doc 段不产生候选", () => {
+    const out = suggestFromPath("/zh/knowledge/futures/%20", corpus, 3);
+    expect(out).toEqual([]);
   });
 
   it("非知识库路径 → 空数组（调用方回退到热门）", () => {
