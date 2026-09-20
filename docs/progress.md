@@ -1,5 +1,51 @@
 # Progress
 
+## 2026-09-20 — v0.7.0 RELEASE_FREEZE：稳定性、覆盖率与发布可靠性
+
+- 状态：本地发布验证完成，已提交待推送 / PR。
+- 里程碑 / 版本：v0.7.0（稳定性、覆盖率与发布可靠性）。
+- 分支：`chore/release-v0.7.0`（基于 `origin/main@380e05b`）。
+- 提交：`2eb9d8f` `release(v0.7): publish stability fixes`。
+- 完成内容：
+  - 将 `src/data/release-notes.json` 中原 `unreleased` 项固化为 `0.7.0`，发布日期 `2026-09-20`。
+  - 由发布记录重新生成 `CHANGELOG.md`，未手写变更记录。
+  - 新增 `docs/v0.7-release-review.md`，记录范围、非目标、外部阻塞、验证矩阵、回滚方案。
+  - 修正 `scripts/generate-changelog.mjs` 的 `--check` 成功日志：不再无条件下称“含未发布”，改为按实际存在性报告“未发布区块为空 / 存在”。
+  - 确认本次发布无数据库迁移、必需配置变更、破坏性 API/URL 变更或知识子模块指针变更。
+- 变更文件：
+  - `src/data/release-notes.json`
+  - `CHANGELOG.md`
+  - `docs/v0.7-release-review.md`
+  - `scripts/generate-changelog.mjs`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npm run check:lockfile-repro`：通过（npm 10.9.4 复算 981 个 lockfile 条目一致）。
+  - `npm run audit:prod` / `npm run audit:all`：通过（0 vulnerabilities）。
+  - `npm run check:secrets`：通过（674 个文本文件，无疑似凭据）。
+  - `npm run lint`：通过。
+  - `npm run test:coverage`：通过（254 文件 / 2,203 用例；语句 93.4%，分支 87.74%，函数 93.06%，行 95.86%）。
+  - `npm run typecheck`：通过。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - `npx playwright install --with-deps chromium`：通过。
+  - `npm run check:mobile`：通过（14 个页面 / 320px 无横向溢出）。
+  - `npm run check:changelog`：通过（4 条版本记录，未发布区块为空）。
+  - `npm run check:docs`：通过（27 章 / 182 篇，zh/en 对齐）。
+  - `npm run check:ai-copy`、`check:growth-event-privacy`、`check:error-report-privacy`、`check:env-docs`、`check:dark-pattern-copy`、`check:constitution`、`check:frontmatter`、`check:image-alt`、`check:glossary`、`check:slug-conflicts`、`check:description-dupes`：全部通过。
+  - `npm run check:kb-pointer`：通过（仓库记录、工作区 submodule、快照均为 `a57d510`）。
+  - `npm run check:kb-changelog`：通过（419 个文件，快照基线一致）。
+  - `npm run check:translation-history`：通过（2026-09-12 快照为最新，27/182 zh 与 en）。
+  - `npm run check:kb-parity-budget`：通过（12/12 个关键章节达到预算）。
+- 阻塞：
+  - 本地无阻塞。
+  - 仍需账号 / 外部权限的 roadmap 项保持阻塞：Sentry、Supabase 线上联调、GSC、Bing、Vercel Analytics、PostHog、分享链路人工抽查、冷启动分发、云备份演练、R13.23 用户研究。
+- 风险 / 回滚：
+  - 风险：仅发布元数据与生成文档变更，无迁移、配置或上游指针变更；现有 npm 11 本地警告为已记录且不影响门禁。
+  - 回滚：撤回发布 commit 并重新部署即可恢复 v0.6.0 发布记录；无需数据库回滚或内容回滚。
+- 下一项：推送 `chore/release-v0.7.0`，创建 PR，等待 CI 与人工审核；合并部署后做生产 smoke test。随后重新检查 roadmap，仅推进仍可由本地执行的质量或文档工作。
+- 更新时间：2026-09-20 00:33（Asia/Shanghai）。
+
+---
+
 ## 2026-09-13 — 覆盖率批次 8：隐私审计边界补强
 
 - 扩展 `scripts/growth-event-privacy.test.mjs`，覆盖缺失 console sink、缺失禁止字段文档，以及缺失 `normalizeGrowthEvent` 规范化边界。
