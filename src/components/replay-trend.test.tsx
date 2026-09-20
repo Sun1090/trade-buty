@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 let history: Array<{ at: number; total: number; correct: number }> = [];
 vi.mock("@/lib/replay-store", () => ({
@@ -49,5 +49,32 @@ describe("ReplayTrend（R12.5）", () => {
     render(<ReplayTrend label="趋势" emptyLabel="空" />);
     const circles = screen.getByRole("img").querySelectorAll("circle");
     expect(circles.length).toBe(20);
+  });
+
+  it("tb-progress 事件更新趋势，并按 0% 处理 total 为 0 的增量记录", () => {
+    history = [
+      { at: 1, total: 10, correct: 3 },
+      { at: 2, total: 10, correct: 8 },
+    ];
+    const addEventListenerSpy = vi.spyOn(window, "addEventListener");
+    const removeEventListenerSpy = vi.spyOn(window, "removeEventListener");
+    const { unmount } = render(<ReplayTrend label="准确率趋势" emptyLabel="空" />);
+    expect(addEventListenerSpy).toHaveBeenCalledWith("tb-progress", expect.any(Function));
+    history = [
+      { at: 3, total: 0, correct: 0 },
+      { at: 4, total: 10, correct: 9 },
+    ];
+
+    fireEvent(window, new Event("tb-progress"));
+
+    const circles = screen.getByRole("img").querySelectorAll("circle");
+    expect(circles.length).toBe(2);
+    expect(circles[0].querySelector("title")?.textContent).toContain("0%");
+    expect(circles[1].querySelector("title")?.textContent).toContain("90%");
+    expect(circles[0].getAttribute("fill")).toBe("var(--down)");
+    expect(circles[1].getAttribute("fill")).toBe("var(--accent)");
+
+    unmount();
+    expect(removeEventListenerSpy).toHaveBeenCalledWith("tb-progress", expect.any(Function));
   });
 });
