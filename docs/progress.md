@@ -1,11 +1,11 @@
 # Progress
 
-## 2026-09-20 — v0.7.0 RELEASE_FREEZE：稳定性、覆盖率与发布可靠性
+## 2026-09-20 — v0.7.0 RELEASED：稳定性、覆盖率与发布可靠性
 
-- 状态：本地发布验证完成，已提交待推送 / PR。
+- 状态：已发布（PR [#84](https://github.com/Sun1090/trade-buty/pull/84) 已通过 CI 并以 rebase 合并；远端临时发布分支已删除）。
 - 里程碑 / 版本：v0.7.0（稳定性、覆盖率与发布可靠性）。
-- 分支：`chore/release-v0.7.0`（基于 `origin/main@380e05b`）。
-- 提交：`2eb9d8f` `release(v0.7): publish stability fixes`。
+- 分支 / 提交：`chore/release-v0.7.0` 基于 `origin/main@380e05b`；合并后 main 的发布提交为 `364515b` `release(v0.7): publish stability fixes`。
+- 发布形式：仓库当前没有 GitHub Releases 或 `v*` tag 惯例，因此未额外创建 release/tag；发布元数据的正式来源为 `src/data/release-notes.json`、`CHANGELOG.md` 与站内 `/changelog`。
 - 完成内容：
   - 将 `src/data/release-notes.json` 中原 `unreleased` 项固化为 `0.7.0`，发布日期 `2026-09-20`。
   - 由发布记录重新生成 `CHANGELOG.md`，未手写变更记录。
@@ -18,7 +18,7 @@
   - `docs/v0.7-release-review.md`
   - `scripts/generate-changelog.mjs`
   - `docs/progress.md`
-- 验证命令与结果：
+- 本地发布门禁：
   - `npm run check:lockfile-repro`：通过（npm 10.9.4 复算 981 个 lockfile 条目一致）。
   - `npm run audit:prod` / `npm run audit:all`：通过（0 vulnerabilities）。
   - `npm run check:secrets`：通过（674 个文本文件，无疑似凭据）。
@@ -26,23 +26,21 @@
   - `npm run test:coverage`：通过（254 文件 / 2,203 用例；语句 93.4%，分支 87.74%，函数 93.06%，行 95.86%）。
   - `npm run typecheck`：通过。
   - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
-  - `npx playwright install --with-deps chromium`：通过。
   - `npm run check:mobile`：通过（14 个页面 / 320px 无横向溢出）。
-  - `npm run check:changelog`：通过（4 条版本记录，未发布区块为空）。
-  - `npm run check:docs`：通过（27 章 / 182 篇，zh/en 对齐）。
-  - `npm run check:ai-copy`、`check:growth-event-privacy`、`check:error-report-privacy`、`check:env-docs`、`check:dark-pattern-copy`、`check:constitution`、`check:frontmatter`、`check:image-alt`、`check:glossary`、`check:slug-conflicts`、`check:description-dupes`：全部通过。
-  - `npm run check:kb-pointer`：通过（仓库记录、工作区 submodule、快照均为 `a57d510`）。
-  - `npm run check:kb-changelog`：通过（419 个文件，快照基线一致）。
-  - `npm run check:translation-history`：通过（2026-09-12 快照为最新，27/182 zh 与 en）。
-  - `npm run check:kb-parity-budget`：通过（12/12 个关键章节达到预算）。
+  - `npm run check:changelog`、`check:docs`、`check:kb-pointer`、`check:kb-changelog`、`check:translation-history`、`check:kb-parity-budget`：全部通过（27 章 / 182 篇；知识库版本 `a57d510`；关键章节预算 12/12）。
+  - 内容、SEO、隐私、文案、环境、宪章、frontmatter、alt、术语表、slug 与重复描述等本地检查全部通过。
+- PR 与生产验证：
+  - PR #84 的远端 CI/checks 全部通过；合并后临时远端分支已删除，`origin` 无遗留 topic branch。
+  - `https://trade-buty.vercel.app` 生产 smoke：`/`、`/en`、`/zh`、`/zh/path`、`/en/path`、`/zh/knowledge/getting-started`、`/zh/knowledge/getting-started/first-trade`、`/zh/replay`、`/zh/ai`、`/zh/changelog`、`/en/changelog`、`/robots.txt`、`/sitemap.xml`、`/manifest.webmanifest` 均返回 HTTP 200。
+  - `/zh/changelog` 已渲染 `v0.7.0` 与“稳定性、覆盖率与发布可靠性”；`/en/changelog` 已渲染 v0.7.0 英文发布元数据。
 - 阻塞：
-  - 本地无阻塞。
+  - 本地发布流程无阻塞。
   - 仍需账号 / 外部权限的 roadmap 项保持阻塞：Sentry、Supabase 线上联调、GSC、Bing、Vercel Analytics、PostHog、分享链路人工抽查、冷启动分发、云备份演练、R13.23 用户研究。
 - 风险 / 回滚：
   - 风险：仅发布元数据与生成文档变更，无迁移、配置或上游指针变更；现有 npm 11 本地警告为已记录且不影响门禁。
-  - 回滚：撤回发布 commit 并重新部署即可恢复 v0.6.0 发布记录；无需数据库回滚或内容回滚。
-- 下一项：推送 `chore/release-v0.7.0`，创建 PR，等待 CI 与人工审核；合并部署后做生产 smoke test。随后重新检查 roadmap，仅推进仍可由本地执行的质量或文档工作。
-- 更新时间：2026-09-20 00:33（Asia/Shanghai）。
+  - 回滚：通过 PR 撤回 v0.7.0 发布提交并重新部署即可恢复 v0.6.0 发布记录；无需数据库回滚或内容回滚。
+- 下一项：继续本地可执行的质量、测试或文档改进；外部集成项等待账号 / 权限后再进入 release freeze。
+- 更新时间：2026-09-20 15:20（Asia/Shanghai）。
 
 ---
 
