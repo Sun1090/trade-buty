@@ -1,3 +1,33 @@
+## 2026-09-21 — 覆盖率批次 14：分享卡绘制入口与错误上报失败边界
+
+- 状态：本地开发完成，全部门禁通过；待推送 PR。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-14`，待提交。
+- 完成内容：
+  - 分享卡：补充测验成绩卡、回放战绩卡、连续学习卡的 canvas 绘制入口回归，覆盖中英文案、评级、指标、品牌水印和缺失近 7 天数据。
+  - 错误上报：补充 fetch 返回 rejected Promise 时仍静默吸收、不向外抛错且不会新增 unhandled rejection 监听器的行为边界。
+  - 测试数从 2277 增至 2281；分支覆盖率从 89.25% 提升至 89.27%。
+- 变更文件：
+  - `src/lib/share-card.test.ts`
+  - `src/lib/error-report.test.ts`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run src/lib/share-card.test.ts --coverage=false`：通过（54 用例）。
+  - `npx vitest run src/lib/error-report.test.ts --coverage=false`：通过（19 用例）。
+  - `npm run test:coverage`：通过（255 文件 / 2281 用例；statements 95.08%，branches 89.27%，functions 95.01%，lines 97.44%）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run check:docs`：通过（27 章 / 182 篇，zh/en 对齐）。
+  - `npm run check:constitution`：通过；报告式巡检命中均为教育语境豁免项。
+  - `git diff --check`：通过。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+- 阻塞：无本地阻塞。
+- 风险 / 回滚：仅新增测试，无产品行为、迁移或配置变更；如需回滚，撤回本提交即可。
+- 下一项：推送分支并创建 PR；若 CI 全绿则按 `--rebase` 合并并删除远端临时分支。
+- 更新时间：2026-09-21 02:42（Asia/Shanghai）。
+
+---
+
 ## 2026-09-21 — 覆盖率批次 13：JSON-LD、测验键盘与分享卡边界
 
 - 状态：本地补充覆盖完成；PR #93 已打开并等待远端 CI 完成。

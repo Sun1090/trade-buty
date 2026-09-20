@@ -198,6 +198,21 @@ describe("sendErrorReport", () => {
       sendErrorReport({ level: "fatal", scope: "route-error", kind: "Error" }),
     ).not.toThrow();
   });
+
+  it("fetch 返回的 Promise 被拒绝时不向外抛", async () => {
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("navigator", {});
+    const fetchSpy = vi.fn().mockReturnValue(Promise.reject(new Error("rejected")));
+    vi.stubGlobal("fetch", fetchSpy);
+    const originalUnhandled = process.listeners("unhandledRejection");
+
+    expect(() =>
+      sendErrorReport({ level: "recoverable", scope: "ai-chat", kind: "Error" }),
+    ).not.toThrow();
+    await Promise.resolve();
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(process.listeners("unhandledRejection")).toEqual(originalUnhandled);
+  });
 });
 
 describe("reportError 远端上报接线", () => {

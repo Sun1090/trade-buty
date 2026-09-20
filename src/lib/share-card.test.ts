@@ -250,3 +250,131 @@ describe("CARD_LAYOUT template skeleton (R13.1)", () => {
     expect(recordedFont).toContain(`${CARD_LAYOUT.heroFontSizeMax}px`);
   });
 });
+
+import { drawQuizCard, drawReplayCard, drawStreakCard } from "./share-card";
+
+function makeCanvasContext() {
+  const calls: { name: string; args: unknown[] }[] = [];
+  const track = (name: string) => (...args: unknown[]) => calls.push({ name, args });
+  const gradient = { addColorStop: track("gradient.addColorStop") };
+  return {
+    calls,
+    ctx: {
+      save: track("save"),
+      restore: track("restore"),
+      beginPath: track("beginPath"),
+      moveTo: track("moveTo"),
+      lineTo: track("lineTo"),
+      stroke: track("stroke"),
+      fillRect: track("fillRect"),
+      strokeRect: track("strokeRect"),
+      fillText: track("fillText"),
+      createLinearGradient: track("createLinearGradient"),
+      measureText: () => ({ width: 10 }),
+      set fillStyle(_value: string | CanvasGradient | CanvasPattern) {},
+      set strokeStyle(_value: string | CanvasGradient | CanvasPattern) {},
+      set lineWidth(_value: number) {},
+      set font(_value: string) {},
+      set textAlign(_value: CanvasTextAlign) {},
+      set textBaseline(_value: CanvasTextBaseline) {},
+    } as unknown as CanvasRenderingContext2D,
+    // make createLinearGradient return a gradient-like object after recording the call
+    withGradient(ctx: CanvasRenderingContext2D) {
+      ctx.createLinearGradient = (() => {
+        calls.push({ name: "createLinearGradient", args: [0, 0, 1080, 1080] });
+        return gradient;
+      }) as CanvasRenderingContext2D["createLinearGradient"];
+    },
+  };
+}
+
+function textCalls(ctx: ReturnType<typeof makeCanvasContext>) {
+  return ctx.calls.filter((call) => call.name === "fillText").map((call) => call.args[0]);
+}
+
+describe("share card drawing entrypoints", () => {
+  it("draws the bilingual quiz result card and its brand footer", () => {
+    const mock = makeCanvasContext();
+    const ctx = mock.ctx;
+    mock.withGradient(ctx);
+
+    drawQuizCard({
+      ctx,
+      width: 1080,
+      height: 1080,
+      chapterTitle: "入门基础",
+      score: 10,
+      total: 10,
+      percent: 100,
+      locale: "zh",
+      theme: "dark",
+      siteName: "Trade Buty",
+      font: "system-ui",
+    });
+
+    expect(textCalls(mock)).toContain("随堂测成绩");
+    expect(textCalls(mock)).toContain("入门基础");
+    expect(textCalls(mock)).toContain("S");
+    expect(textCalls(mock)).toContain("10/10");
+    expect(textCalls(mock)).toContain("100%");
+    expect(textCalls(mock)).toContain("Trade Buty");
+  });
+
+  it("draws replay accuracy, streak blocks, and the English card copy", () => {
+    const mock = makeCanvasContext();
+    const ctx = mock.ctx;
+    mock.withGradient(ctx);
+
+    drawReplayCard({
+      ctx,
+      width: 1080,
+      height: 1080,
+      symbol: "BTCUSDT",
+      interval: "1h",
+      correct: 8,
+      total: 10,
+      accuracy: 0.8,
+      bestStreak: 5,
+      currentStreak: 3,
+      locale: "en",
+      theme: "light",
+      siteName: "Trade Buty",
+      font: "system-ui",
+    });
+
+    expect(textCalls(mock)).toContain("Replay Result");
+    expect(textCalls(mock)).toContain("BTCUSDT · 1h");
+    expect(textCalls(mock)).toContain("S");
+    expect(textCalls(mock)).toContain("80%");
+    expect(textCalls(mock)).toContain("8/10 correct");
+    expect(textCalls(mock)).toContain("3");
+    expect(textCalls(mock)).toContain("Best streak");
+    expect(textCalls(mock)).toContain("5");
+  });
+
+  it("draws a zero-day streak card and fills the missing recent days", () => {
+    const mock = makeCanvasContext();
+    const ctx = mock.ctx;
+    mock.withGradient(ctx);
+
+    drawStreakCard({
+      ctx,
+      width: 1080,
+      height: 1080,
+      currentStreak: 0,
+      longestStreak: 0,
+      recentDays: [],
+      locale: "zh",
+      theme: "dark",
+      siteName: "Trade Buty",
+      font: "system-ui",
+    });
+
+    expect(textCalls(mock)).toContain("学习连续打卡");
+    expect(textCalls(mock)).toContain("0");
+    expect(textCalls(mock)).toContain("连续天数");
+    expect(textCalls(mock)).toContain("最长连胜：0 天");
+    expect(textCalls(mock)).toContain("近 7 天");
+    expect(textCalls(mock)).toContain("Trade Buty");
+  });
+});
