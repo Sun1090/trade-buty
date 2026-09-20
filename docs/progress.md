@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-09-21 — 覆盖率批次 31：SSR 剪贴板与 URL 推荐兜底
+
+- 状态：本地开发与验证完成；当前未推送，避免继续触发 Vercel 部署配额。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-26`，本批次随质量加固提交保留在本地。
+- 完成内容：
+  - 在 Node 环境中覆盖 `copyText` 缺少 `navigator` / `document` 时返回 `false` 的 SSR 守卫。
+  - 在隔离测试文件中覆盖 `buildKnowledgeCorpus` 章节标题缺失时回退到 slug，避免全局 mock 污染知识库真实语料测试。
+  - 测试数从 2341 增至 2343；语句覆盖率 95.45%，分支覆盖率 90.15%，函数覆盖率 95.55%，行覆盖率 97.67%。
+- 变更文件：
+  - `src/lib/clipboard.browser.test.ts`
+  - `src/lib/url-suggest-server.fallback.test.ts`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run src/lib/clipboard.browser.test.ts src/lib/url-suggest-server.fallback.test.ts --coverage=false --reporter=verbose`：通过（2 文件 / 2 用例）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage -- --coverage.thresholds.lines=95 --coverage.thresholds.statements=95 --coverage.thresholds.functions=95 --coverage.thresholds.branches=90`：通过（257 文件 / 2343 用例；statements 95.45%，branches 90.15%，functions 95.55%，lines 97.67%）。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - 契约门禁批量检查：通过（docs、kb pointer、constitution、changelog、lockfile、frontmatter、image alt、quiz、sitemap、SEO、env docs、growth/error privacy、dark-pattern copy、slug conflicts、description dupes、links、nav、relative links、search index、bundle、structured data、mobile、title terminology、description quality、risk warning、kb changelog、translation history、parity budget）。
+  - `git diff --check`：通过。
+- 阻塞：无本地阻塞；PR #99/#101/#102/#104 的 GitHub checks 已通过，但 Vercel Preview 仍因账户构建速率限制失败（“Deployment rate limited — retry in 24 hours.”），暂不合并/推送新分支。
+- 风险 / 回滚：仅新增测试覆盖既有模块行为，不改产品代码、迁移或配置；如需回滚，撤回本提交即可。
+- 下一项：继续覆盖低分支模块或审计可执行安全/隐私门禁；待 Vercel 配额恢复后推送/合并 PR。
+- 更新时间：2026-09-21 05:38（Asia/Shanghai）。
+
 ## 2026-09-21 — 覆盖率批次 30：隐私导出、结构化数据与剪贴板边界
 
 - 状态：本地开发与验证完成；当前未推送，避免继续触发 Vercel 部署配额。
