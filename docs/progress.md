@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-09-21 — 覆盖率批次 27：连续打卡分享卡边界
+
+- 状态：本地开发与验证完成；当前未推送，避免继续触发 Vercel 部署配额。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-27`，待提交本批次。
+- 完成内容：
+  - 补充连续打卡分享卡在 canvas 无 2D 上下文时，预览静默跳过且不显示错误，分享入口仍可继续下载并上报 `share_card_download` 成功。
+  - 补充预览先失败、恢复 canvas 后再次预览成功会清除下载失败可见告警的回归测试。
+  - 测试数从 2318 增至 2320；语句覆盖率 95.19%，分支覆盖率 89.57%，函数覆盖率 95.07%，行覆盖率 97.47%。
+- 变更文件：
+  - `src/components/streak-share-card.test.tsx`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run src/components/streak-share-card.test.tsx --coverage=false --reporter=verbose`：通过（1 文件 / 14 用例）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（255 文件 / 2320 用例；statements 95.19%，branches 89.57%，functions 95.07%，lines 97.47%）。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - `git diff --check`：待提交前复核。
+- 阻塞：无本地阻塞；PR #99/#101/#102/#104 的 GitHub checks 已通过，但 Vercel Preview 因账户构建速率限制失败，暂不合并。
+- 风险 / 回滚：仅新增测试覆盖既有组件行为，不改产品代码、迁移或配置；如需回滚，撤回本提交即可。
+- 下一项：继续提升 `src/components/ai-chat.tsx`、`src/lib/course-completion-trend.ts` 等分支覆盖热点；待 Vercel 配额恢复后推送/合并 PR。
+- 更新时间：2026-09-21 05:05（Asia/Shanghai）。
+
+---
+
 ## 2026-09-21 — 覆盖率批次 26：测验分享卡交互边界
 
 - 状态：本地开发与验证完成；当前未推送，避免继续触发 Vercel 部署配额。
