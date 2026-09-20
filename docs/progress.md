@@ -1,3 +1,28 @@
+## 2026-09-21 — 覆盖率批次 23：分享摘要与隐私导出边界
+
+- 状态：本地实现与全量验证完成，暂未推送；已有 PR 因 Vercel 部署速率限制保持 UNSTABLE。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-23`，待提交。
+- 完成内容：
+  - 修复无效分享载荷的元信息语言回落：quiz/replay/streak 均使用 `DEFAULT_LOCALE`，避免英文 fallback 文案却标记 `zh`。
+  - 补充 share landing 的 `kindToLocale`、无效载荷 fallback、英文摘要和分级边界覆盖。
+  - 补充隐私导出的损坏 progress 章节数组、重复文档去重、未完成 onboarding step 与 `nextId` 覆盖。
+- 变更文件：
+  - `src/lib/share-landing.ts`
+  - `src/app/share/[kind]/[path]/page.test.ts`
+  - `src/lib/privacy-export.test.ts`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npm run test:coverage`：通过（255 文件 / 2311 用例；statements 95.16%，branches 89.54%，functions 95.01%，lines 97.45%）。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - `git diff --check`：通过。
+- 阻塞：无本地阻塞；远端 PR 受 Vercel 部署速率限制影响。
+- 风险 / 回滚：仅修正无效分享元数据语言与新增测试，无迁移或配置变更；如需回滚，撤回本提交即可。
+- 下一项：待 Vercel 容量恢复后推送分支并创建 PR；继续推进覆盖率薄弱模块。
+- 更新时间：2026-09-21 04:55（Asia/Shanghai）。
+
+---
+
 ## 2026-09-21 — 覆盖率批次 21：测验趋势边界
 
 - 状态：本地实现与全量验证完成，待推送 PR。

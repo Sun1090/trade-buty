@@ -153,6 +153,28 @@ describe("buildPrivacyExport (R9.9)", () => {
     expect(exp.localStorage).toEqual({ "tb-foo": "1", "tb-bar": "2", "ext-third-party": "3" });
   });
 
+  it("progress 汇总忽略损坏章节和重复文档", () => {
+    localStorage.setItem(
+      "tb-progress",
+      JSON.stringify({
+        "01": ["a", "a", "b"],
+        "02": "bad",
+      }),
+    );
+    const exp = buildPrivacyExport(1_700_000_000_000);
+    expect(exp.progress.readCounts).toEqual({ "01": 2 });
+    expect(exp.progress.totalRead).toBe(2);
+  });
+
+  it("同步摘要保留未完成引导步骤和 nextId", () => {
+    localStorage.setItem("tb-onboarded", "review");
+    localStorage.setItem("tb-sync-queue-next-id", "17");
+    const exp = buildPrivacyExport(1_700_000_000_000);
+    expect(exp.sync.onboarded).toBe(false);
+    expect(exp.sync.currentOnboardStep).toBe("review");
+    expect(exp.sync.nextId).toBe(17);
+  });
+
   it("JSON 序列化不抛错（可被 JSON.stringify）", () => {
     markRead("01", "a");
     recordWrong("01", 0, 2);
