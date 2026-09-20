@@ -3484,3 +3484,17 @@ Verification: five focused Vitest files / 39 tests passed; full Vitest 254 files
 Risk / rollback: only impossible calendar dates change behavior; valid `YYYY-MM-DD` inputs are unchanged. Invalid report anchors fall back to the actual local date, while invalid SRS due fields degrade through the existing missing-date path. Revert this commit to restore format-only acceptance.
 
 Next: complete full regression gates and CI, then continue auditing persisted-data identity and account-isolation boundaries.
+
+## 2026-09-20 — Dark pattern audit branch coverage
+
+Status: completed locally on `codex/dark-pattern-audit-branch-coverage`.
+
+Completed: expanded the R13.21 dark-pattern-copy test suite to cover inventory ID validation, duplicate registrations, malformed `unregisteredAllowed` entries, missing component paths, default/custom i18n lookup failures, and `loadInventory` JSON success/failure paths. Production audit behavior is unchanged.
+
+Changed files: `scripts/check-dark-pattern-copy.test.mjs`, `docs/progress.md`.
+
+Verification: focused Vitest 19 passed; dark-pattern-copy check passed for 7 registered surfaces; lint and typecheck passed; full Vitest coverage passed with 254 files / 2,209 tests, 93.54% statements, 87.95% branches, 93.06% functions, 95.94% lines; production build passed.
+
+Risk / rollback: test-only coverage change; revert this commit if the isolated inventory fixtures conflict with future inventory schema changes.
+
+Next: continue the next QA/coverage hotspot or roadmap-critical path after CI.
