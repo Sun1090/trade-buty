@@ -129,11 +129,11 @@ describe("AuthHeader (已登录：账户菜单)", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
-  it("退出登录调用 signOut", () => {
+  it("退出登录只结束当前会话", () => {
     mockUseAuth.mockReturnValue(account);
     openMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: "退出登录" }));
-    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(mockSignOut).toHaveBeenCalledWith({ scope: "local" });
     expect(screen.queryByRole("menu")).toBeNull();
   });
 });
