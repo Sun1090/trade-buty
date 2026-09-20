@@ -132,3 +132,48 @@ describe("normalizeReplayHistory", () => {
     expect(normalizeReplayHistory([{ at: 1 }, null, [1], "s"])).toEqual([{ at: 1 }]);
   });
 });
+
+describe("replay-time-trend sanitizer edges", () => {
+  it("treats string metric values as sanitized inputs and clamps to safe buckets", () => {
+    const result = buildReplayTimeTrend({
+      history: [
+        { at: String(dayAt(today)), total: "12", correct: "15", bestStreak: "9", durationSec: "45" },
+      ],
+      days: 7,
+      today,
+    });
+
+    expect(result.summary).toMatchObject({
+      roundsInRange: 1,
+      durationInRangeSec: 45,
+      timedRoundsInRange: 1,
+      accuracyInRangePct: 100,
+    });
+    expect(result.allTime).toMatchObject({
+      totalRounds: 1,
+      totalDurationSec: 45,
+      avgSecPerRound: 45,
+      bestStreak: 9,
+      bestAccuracyPct: 100,
+    });
+  });
+
+  it("falls back to local date generation and default range for missing/invalid window inputs", () => {
+    const result = buildReplayTimeTrend({ history: null });
+
+    expect(result.days).toHaveLength(7);
+    expect(result.days.at(-1)?.date).toBe(localDateStr());
+  });
+
+  it("counts zero-duration rounds as no timed data", () => {
+    const result = buildReplayTimeTrend({
+      history: [{ at: dayAt(today), total: 4, correct: 2, durationSec: 0 }],
+      days: 7,
+      today,
+    });
+
+    expect(result.hasDurations).toBe(false);
+    expect(result.warnings).toEqual(["no-round-durations"]);
+    expect(result.summary.timedRoundsInRange).toBe(0);
+  });
+});

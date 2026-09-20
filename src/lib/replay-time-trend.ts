@@ -93,12 +93,14 @@ export function buildReplayTimeTrend(input: {
     .flatMap((entry) => {
       const at = safeNonNegative(entry.at);
       if (at <= 0) return [];
+      const total = safeNonNegative(entry.total);
+      const correct = Math.min(safeNonNegative(entry.correct), total);
       return [
         {
           at,
           date: localDateStr(new Date(at)),
-          total: safeNonNegative(entry.total),
-          correct: safeNonNegative(entry.correct),
+          total,
+          correct,
           bestStreak: safeNonNegative(entry.bestStreak),
           durationSec: safeDuration(entry.durationSec),
         },
@@ -138,7 +140,7 @@ export function buildReplayTimeTrend(input: {
 
   // 全量口径（不受时间窗限制）
   const allTotal = ordered.reduce((sum, event) => sum + event.total, 0);
-  const allCorrect = ordered.reduce((sum, event) => sum + Math.min(event.correct, event.total), 0);
+  const allCorrect = ordered.reduce((sum, event) => sum + event.correct, 0);
   const timed = ordered.filter((event) => event.durationSec !== null);
   const totalDurationSec = timed.reduce((sum, event) => sum + (event.durationSec ?? 0), 0);
   const bestStreak = ordered.reduce((max, event) => Math.max(max, event.bestStreak), 0);

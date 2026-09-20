@@ -89,3 +89,36 @@ describe("parseChatBody (R7.12)", () => {
     expect(parseChatBody({ messages: [turn("user", "q")], locale: null })?.locale).toBe("zh");
   });
 });
+
+describe("parseChatBody malformed message edges", () => {
+  it("rejects array messages and object messages in the messages array", () => {
+    expect(parseChatBody({ messages: [[]] })).toBeNull();
+    expect(parseChatBody({ messages: [null] })).toBeNull();
+    expect(parseChatBody({ messages: [{ role: "user", content: "q" }, { role: "user", content: "q" }, "bad"] })).toBeNull();
+  });
+
+  it("trims continueFrom and contextChapter while preserving valid optional metadata", () => {
+    const parsed = parseChatBody({
+      messages: [turn("user", "q")],
+      continueFrom: "  已有回答  ",
+      contextChapter: "  risk-management  ",
+    });
+
+    expect(parsed).toEqual({
+      messages: [{ role: "user", content: "q" }],
+      locale: "zh",
+      continueFrom: "已有回答",
+      contextChapter: "risk-management",
+    });
+  });
+
+  it("accepts an empty whitespace contextChapter by omitting the field", () => {
+    const parsed = parseChatBody({
+      messages: [turn("user", "q")],
+      contextChapter: "   ",
+    });
+
+    expect(parsed?.contextChapter).toBeUndefined();
+    expect(parsed).toMatchObject({ locale: "zh", messages: [{ role: "user", content: "q" }] });
+  });
+});

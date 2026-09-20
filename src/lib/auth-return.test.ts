@@ -106,3 +106,27 @@ describe("withReturnTo", () => {
     );
   });
 });
+
+describe("normalizeReturnTo edge cases", () => {
+  it("accepts root paths with only query or hash suffixes", () => {
+    expect(normalizeReturnTo("/zh?ref=login", "zh")).toBe("/zh?ref=login");
+    expect(normalizeReturnTo("/zh#top", "zh")).toBe("/zh#top");
+  });
+
+  it("rejects slash-like path bodies without accepting external hosts", () => {
+    expect(normalizeReturnTo("/\\evil.com/path", "zh")).toBeNull();
+    expect(normalizeReturnTo("/\\\\evil.com", "zh")).toBeNull();
+    expect(normalizeReturnTo("////evil.com", "zh")).toBeNull();
+  });
+
+  it("does not treat allowedPrefixes as a wildcard for subpaths", () => {
+    expect(
+      normalizeReturnTo("/en/auth/callback", "zh", { allowedPrefixes: ["/en/auth"] }),
+    ).toBeNull();
+  });
+
+  it("accepts a locale root directly followed by query or hash", () => {
+    expect(normalizeReturnTo("/en?from=home", "en")).toBe("/en?from=home");
+    expect(normalizeReturnTo("/en#summary", "en")).toBe("/en#summary");
+  });
+});
