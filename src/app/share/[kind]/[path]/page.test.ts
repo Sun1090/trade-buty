@@ -133,6 +133,17 @@ describe("kindToLocale / summarizeForMeta", () => {
 });
 
 describe("kindToLocale 覆盖三种载荷", () => {
+  it("quiz 载荷解析出语言", () => {
+    const seg = encodeQuiz({
+      chapterTitle: "入门",
+      score: 3,
+      total: 4,
+      percent: 75,
+      locale: "en",
+    });
+    expect(kindToLocale("quiz", seg)).toBe("en");
+  });
+
   it("replay 载荷解析出语言", () => {
     const seg = encodeReplay({
       symbol: "ETHUSDT",
@@ -150,6 +161,93 @@ describe("kindToLocale 覆盖三种载荷", () => {
   it("streak 载荷解析出语言", () => {
     const seg = encodeStreak({ currentStreak: 1, longestStreak: 2, locale: "zh" });
     expect(kindToLocale("streak", seg)).toBe("zh");
+  });
+
+  it("三种 kind 的非法载荷都回退默认语言", () => {
+    for (const kind of ["quiz", "replay", "streak"] as const) {
+      expect(kindToLocale(kind, "garbage")).toBe("en");
+    }
+  });
+});
+
+describe("summarizeForMeta 无效载荷回落", () => {
+  it.each([
+    ["quiz", "Quiz share"],
+    ["replay", "Replay share"],
+    ["streak", "Streak share"],
+  ] as const)("invalid %s 返回默认语言错误文案", (kind, title) => {
+    const meta = summarizeForMeta(kind, "garbage");
+    expect(meta).toEqual({
+      title,
+      description: "Invalid link — the share payload is broken or out of date.",
+      locale: "en",
+    });
+  });
+});
+
+describe("summarizeForMeta 英文有效载荷", () => {
+  it("quiz 满分显示 S 并替换分数与百分比", () => {
+    const meta = summarizeForMeta(
+      "quiz",
+      encodeQuiz({ chapterTitle: "Spot", score: 10, total: 10, percent: 100, locale: "en" }),
+    );
+    expect(meta.locale).toBe("en");
+    expect(meta.title).toContain("Spot · Grade S · 10/10");
+    expect(meta.description).toContain("10/10 (100%)");
+  });
+
+  it("quiz 80 分及以上显示 A", () => {
+    expect(
+      summarizeForMeta(
+        "quiz",
+        encodeQuiz({ chapterTitle: "C", score: 8, total: 10, percent: 80, locale: "en" }),
+      ).title,
+    ).toContain("A");
+  });
+
+  it("replay 不足三题即使满分也显示 C", () => {
+    const meta = summarizeForMeta(
+      "replay",
+      encodeReplay({
+        symbol: "X",
+        interval: "1h",
+        correct: 2,
+        total: 2,
+        accuracyBps: 10000,
+        bestStreak: 1,
+        currentStreak: 1,
+        locale: "en",
+      }),
+    );
+    expect(meta.title).toContain("Grade C");
+    expect(meta.description).toContain("2/2 (100%)");
+  });
+
+  it("replay 准确率 50-59% 显示 B", () => {
+    expect(
+      summarizeForMeta(
+        "replay",
+        encodeReplay({
+          symbol: "X",
+          interval: "1h",
+          correct: 6,
+          total: 10,
+          accuracyBps: 5500,
+          bestStreak: 2,
+          currentStreak: 1,
+          locale: "en",
+        }),
+      ).title,
+    ).toContain("Grade B");
+  });
+
+  it("streak 摘要替换连续与最长天数", () => {
+    const meta = summarizeForMeta(
+      "streak",
+      encodeStreak({ currentStreak: 12, longestStreak: 30, locale: "en" }),
+    );
+    expect(meta.title).toContain("12-day streak");
+    expect(meta.description).toContain("12 days (longest 30)");
   });
 });
 

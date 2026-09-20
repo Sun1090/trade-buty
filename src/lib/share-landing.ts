@@ -73,7 +73,7 @@ export function summarizeForMeta(
   const t = getDict(DEFAULT_LOCALE);
   if (kind === "quiz") {
     const p = decodeQuiz(path);
-    if (!p) return { title: t.share.invalidQuizTitle, description: t.share.invalidBody, locale: "zh" };
+    if (!p) return { title: t.share.invalidQuizTitle, description: t.share.invalidBody, locale: DEFAULT_LOCALE };
     const locale = p.locale;
     const lt = getDict(locale);
     return {
@@ -92,7 +92,7 @@ export function summarizeForMeta(
   }
   if (kind === "replay") {
     const p = decodeReplay(path);
-    if (!p) return { title: t.share.invalidReplayTitle, description: t.share.invalidBody, locale: "zh" };
+    if (!p) return { title: t.share.invalidReplayTitle, description: t.share.invalidBody, locale: DEFAULT_LOCALE };
     const locale = p.locale;
     const lt = getDict(locale);
     // accuracyBps 是万分比（10_000 = 100%）：/100 得到展示用百分数，
@@ -116,7 +116,7 @@ export function summarizeForMeta(
   }
   // streak
   const p = decodeStreak(path);
-  if (!p) return { title: t.share.invalidStreakTitle, description: t.share.invalidBody, locale: "zh" };
+  if (!p) return { title: t.share.invalidStreakTitle, description: t.share.invalidBody, locale: DEFAULT_LOCALE };
   const locale = p.locale;
   const lt = getDict(locale);
   return {
