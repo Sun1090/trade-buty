@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { getRetrievalProfile } from "./retrieval-config";
 
 beforeEach(() => {
@@ -35,3 +35,19 @@ describe("getRetrievalProfile", () => {
     expect(p.topK).toBe(4);
   });
 });
+
+  it("非对象 JSON 被忽略并告警", () => {
+    process.env.AI_RETRIEVAL_JSON = "[1,2,3]";
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    try {
+      expect(getRetrievalProfile("summary").topK).toBe(6);
+      expect(warnSpy).toHaveBeenCalledWith("[retrieval-config] AI_RETRIEVAL_JSON 非对象，已忽略");
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it("未知场景按 chat 默认配置回退", () => {
+    expect(getRetrievalProfile("unknown" as never)).toEqual({ topK: 4, threshold: 0.3, relaxedTopK: 6 });
+  });
