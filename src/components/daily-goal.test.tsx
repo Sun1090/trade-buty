@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 
 let mockGoal = 15;
 let mockMinutes = 0;
@@ -74,6 +75,20 @@ describe("DailyGoal（R4.1–R4.4）", () => {
     expect(setDailyGoalMin).toHaveBeenCalledWith(5);
   });
 
+
+  it("uses stable SSR snapshots before client goal state hydrates", () => {
+    mockGoal = 30;
+    mockMinutes = 12;
+    mockBroken = true;
+    mockLongest = 9;
+
+    const html = renderToString(<DailyGoal dict={dict} />);
+
+    expect(html).toContain("/ <!-- -->15<!-- --> <!-- -->分钟");
+    expect(html).toContain("aria-valuenow=\"0\"");
+    expect(html).not.toContain("🎉");
+    expect(html).not.toContain("已连续 9 天");
+  });
   it("断签且未达成时显示挽回提示，代入最长连续天数", () => {
     mockBroken = true;
     mockLongest = 7;
