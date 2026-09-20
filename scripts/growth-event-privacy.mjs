@@ -57,20 +57,22 @@ export function auditGrowthEventPrivacy({ source, docs, privacyPage }) {
   return { errors, eventNames };
 }
 
-function run() {
+export function run({ rootDir = ROOT, log = console.log.bind(console), error = console.error.bind(console), exit = process.exit } = {}) {
+  const root = rootDir;
   const result = auditGrowthEventPrivacy({
-    source: fs.readFileSync(path.join(ROOT, "src/lib/growth-events.ts"), "utf8"),
-    docs: fs.readFileSync(path.join(ROOT, "docs/growth-events.md"), "utf8"),
-    privacyPage: fs.readFileSync(path.join(ROOT, "src/app/[locale]/privacy/page.tsx"), "utf8"),
+    source: fs.readFileSync(path.join(root, "src/lib/growth-events.ts"), "utf8"),
+    docs: fs.readFileSync(path.join(root, "docs/growth-events.md"), "utf8"),
+    privacyPage: fs.readFileSync(path.join(root, "src/app/[locale]/privacy/page.tsx"), "utf8"),
   });
 
   if (result.errors.length > 0) {
-    console.error("growth event privacy audit failed:");
-    for (const error of result.errors) console.error(`- ${error}`);
-    process.exit(1);
+    error("growth event privacy audit failed:");
+    for (const err of result.errors) error(`- ${err}`);
+    exit(1);
+    return;
   }
 
-  console.log(
+  log(
     `growth event privacy audit passed: ${result.eventNames.length} events, console-only sink, no network/persistence APIs`,
   );
 }

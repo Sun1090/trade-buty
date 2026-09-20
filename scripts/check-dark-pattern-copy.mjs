@@ -335,22 +335,25 @@ export function loadInventory(rootDir) {
   return JSON.parse(raw);
 }
 
-export function main() {
+export function main({ rootDir = root, log = console.log.bind(console), error = console.error.bind(console), exit = process.exit } = {}) {
+  const targetRoot = rootDir;
   let inventory;
   try {
-    inventory = loadInventory(root);
-  } catch (error) {
-    console.error("❌ 读取 src/lib/growth-surfaces.json 失败：", error.message);
-    process.exit(1);
+    inventory = loadInventory(targetRoot);
+  } catch (err) {
+    error("❌ 读取 src/lib/growth-surfaces.json 失败：", err.message);
+    exit(1);
+    return;
   }
-  const i18nSource = readFileSync(join(root, "src/lib/i18n.ts"), "utf8");
-  const { errors, info } = auditGrowthSurfaces({ rootDir: root, inventory, i18nSource });
+  const i18nSource = readFileSync(join(targetRoot, "src/lib/i18n.ts"), "utf8");
+  const { errors, info } = auditGrowthSurfaces({ rootDir: targetRoot, inventory, i18nSource });
   if (errors.length > 0) {
-    console.error(`❌ 增长文案暗黑模式门禁失败（${errors.length} 项）：`);
-    for (const error of errors) console.error(`  - [${error.rule}] ${error.detail}`);
-    process.exit(1);
+    error(`❌ 增长文案暗黑模式门禁失败（${errors.length} 项）：`);
+    for (const err of errors) error(`  - [${err.rule}] ${err.detail}`);
+    exit(1);
+    return;
   }
-  console.log(`✅ 增长文案无暗黑模式（R13.21 通过）：${info.length} 个登记表面 · 双语 · 可关闭/非阻断`);
+  log(`✅ 增长文案无暗黑模式（R13.21 通过）：${info.length} 个登记表面 · 双语 · 可关闭/非阻断`);
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {

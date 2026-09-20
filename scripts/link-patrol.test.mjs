@@ -145,6 +145,32 @@ describe("link patrol HTTP checks", () => {
     expect(result).toBe("HEAD 503");
     expect(calls).toBe(1);
   });
+
+  it("falls back to GET when HEAD is forbidden and reports the GET failure", async () => {
+    const calls = [];
+    const result = await checkExternalLink("https://forbidden.example", {
+      fetchImpl: async (_url, options) => {
+        calls.push(options.method);
+        return { status: options.method === "HEAD" ? 403 : 500 };
+      },
+    });
+
+    expect(result).toBe("GET 500");
+    expect(calls).toEqual(["HEAD", "GET"]);
+  });
+
+  it("accepts a link whose HEAD method is not allowed but GET is healthy", async () => {
+    const calls = [];
+    const result = await checkExternalLink("https://head-not-allowed.example", {
+      fetchImpl: async (_url, options) => {
+        calls.push(options.method);
+        return { status: options.method === "HEAD" ? 405 : 200 };
+      },
+    });
+
+    expect(result).toBeNull();
+    expect(calls).toEqual(["HEAD", "GET"]);
+  });
 });
 
 describe("link patrol falsifiable inputs", () => {
@@ -194,6 +220,34 @@ describe("link patrol falsifiable inputs", () => {
     expect(result.broken).toEqual([
       "content/kline-buty/docs/knowledge/a.md  HEAD 500  https://bad.example",
     ]);
+  });
+
+  it("fails when the knowledge path exists but is a file", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "trade-buty-link-patrol-file-"));
+    tempDirs.push(root);
+    const filePath = path.join(root, "not-a-dir.md");
+    fs.writeFileSync(filePath, "# A\n");
+    const result = await patrolExternalLinks({ root, kbDir: filePath });
+
+    expect(result.errors.join("\n")).toContain("知识库路径不是目录");
+  });
+
+  it("returns zero and reports success for a healthy external link set", async () => {
+    const { root, kbDir } = makeRepo({ "a.md": "[ok](https://ok.example)" });
+    const stdout = [];
+    const stderr = [];
+
+    const code = await run({
+      root,
+      kbDir,
+      check: async () => null,
+      stdout: (line) => stdout.push(line),
+      stderr: (line) => stderr.push(line),
+    });
+
+    expect(code).toBe(0);
+    expect(stderr).toEqual([]);
+    expect(stdout.join("\n")).toContain("1 个全部健康");
   });
 
   it("checks real HTTP responses and returns a failing exit code for a broken link", async () => {
