@@ -67,3 +67,26 @@ describe("search-synonyms (R10.21)", () => {
     expect(scoreWithSynonyms(entry, "定投")).toBe(0);
   });
 });
+
+describe("search-synonyms diagnostics edge cases", () => {
+  it("reports empty, missing, duplicated, and non-lowercase terms", () => {
+    expect(dictionaryProblems([])).toEqual([]);
+    expect(dictionaryProblems([{ id: "empty", terms: [] }])).toEqual(["组 empty 无词条"]);
+    expect(dictionaryProblems([{ id: "bad", terms: ["", "K线", "Ma"] }])).toEqual(expect.arrayContaining([
+      "组 bad 含空词条",
+      "组 bad 词条「K线」未小写归一",
+      "组 bad 词条「Ma」未小写归一",
+    ]));
+    expect(dictionaryProblems([
+      { id: "a", terms: ["risk"] },
+      { id: "b", terms: ["risk"] },
+    ])).toEqual(expect.arrayContaining(["词条「risk」同时属于 a 与 b"]));
+  });
+
+  it("skips malformed group shapes during matching and expansion", () => {
+    const badGroup = { id: "bad", terms: ["DCA", null as unknown as string] };
+    expect(matchedGroups("dca", [badGroup]).map((g) => g.id)).toEqual(["bad"]);
+    expect(expandQuery("dca", [badGroup])).toEqual(["dca"]);
+    expect(dictionaryProblems([badGroup])).toEqual(expect.arrayContaining(["组 bad 含空词条"]));
+  });
+});
