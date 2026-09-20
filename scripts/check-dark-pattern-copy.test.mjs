@@ -122,6 +122,13 @@ function cleanInventory() {
   };
 }
 
+function isolatedInventoryRoot(inventory) {
+  const root = mkdtempSync(join(tmpdir(), "dark-pattern-inventory-"));
+  mkdirSync(join(root, "src/lib"), { recursive: true });
+  writeFileSync(join(root, "src/lib/growth-surfaces.json"), JSON.stringify(inventory));
+  return root;
+}
+
 const CLEAN_INSTALL = `export function Install(){return <aside><button onClick={handleDismiss}>x</button><button>go</button></aside>}`;
 const CLEAN_INVITE = `export function Invite(){return <div role="status"><button onClick={handleDismiss}>x</button></div>}`;
 const CLEAN_NUDGE = `export function Nudge(){return <div role="status"><button onClick={()=>setOpen(false)}>x</button></div>}`;
@@ -276,6 +283,58 @@ describe("check-dark-pattern-copy", () => {
     const missing = findUnregisteredGrowthComponents({ rootDir: dir, inventory: cleanInventory() });
     expect(missing).toContain("src/components/extra-prompt.tsx");
     rmSync(join(dir, "src/components/extra-prompt.tsx"));
+  });
+
+  it("rejects inventory entries that are missing an id or duplicate an id", () => {
+    const root = isolatedInventoryRoot({
+      surfaces: [
+        { component: "src/components/share.tsx", i18nSection: "share" },
+        { id: "share-cards", component: "src/components/share.tsx", i18nSection: "share" },
+        { id: "share-cards", component: "src/components/install.tsx", i18nSection: "install" },
+      ],
+    });
+    mkdirSync(join(root, "src/components"), { recursive: true });
+    writeFileSync(join(root, "src/components/share.tsx"), CLEAN_SHARE);
+    writeFileSync(join(root, "src/components/install.tsx"), CLEAN_INSTALL);
+    try {
+      const { errors } = auditGrowthSurfaces({ rootDir: root, inventory: loadInventory(root), i18nSource: cleanI18n });
+      expect(errors.some((e) => e.rule === "inventory" && e.detail === "增长表面缺少 id")).toBe(true);
+      expect(errors.some((e) => e.rule === "inventory" && e.detail === "重复登记的增长表面 share-cards")).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reports malformed exemptions and missing component files without scanning absent files", () => {
+    const inventory = cleanInventory();
+    delete inventory.surfaces[0].component;
+    inventory.unregisteredAllowed = [{ component: "src/components/new-banner.tsx" }];
+    writeFileSync(join(dir, "src/components/new-banner.tsx"), `export function B(){return null}`);
+    const { errors } = auditGrowthSurfaces({ rootDir: dir, inventory, i18nSource: cleanI18n });
+    expect(errors.some((e) => e.rule === "inventory" && e.detail === "unregisteredAllowed 条目必须带 component 与 reason")).toBe(true);
+    expect(errors.some((e) => e.rule === "inventory" && e.detail === "install-prompt 的 component 不存在：undefined")).toBe(true);
+    rmSync(join(dir, "src/components/new-banner.tsx"));
+  });
+
+  it("reports both default and custom i18n lookup failures", () => {
+    const inventory = cleanInventory();
+    delete inventory.surfaces[0].i18nSection;
+    inventory.surfaces[1].i18nSource = "src/lib/missing-i18n.ts";
+    const { errors } = auditGrowthSurfaces({ rootDir: dir, inventory, i18nSource: cleanI18n });
+    expect(errors.some((e) => e.rule === "i18n" && e.detail === "install-prompt 缺少 zh section undefined")).toBe(true);
+    expect(errors.some((e) => e.rule === "i18n" && e.detail === "invite-banner 未找到 zh 字典块（src/lib/missing-i18n.ts）")).toBe(true);
+    expect(errors.some((e) => e.rule === "i18n" && e.detail === "invite-banner 未找到 en 字典块（src/lib/missing-i18n.ts）")).toBe(true);
+  });
+
+  it("loads an inventory from the repository and fails on a bad inventory file", () => {
+    const root = isolatedInventoryRoot({ surfaces: [] });
+    try {
+      expect(loadInventory(root)).toEqual({ surfaces: [] });
+      writeFileSync(join(root, "src/lib/growth-surfaces.json"), "{");
+      expect(() => loadInventory(root)).toThrow(SyntaxError);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("passes on the real repository inventory", () => {
