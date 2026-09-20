@@ -120,13 +120,15 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       if (ctx) {
         setContextChapter(ctx);
         if (ct) setContextTitle(ct);
+        if (q) send(q, ctx);
+        return;
       }
       if (q) send(q);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function send(text: string) {
+  async function send(text: string, immediateContext?: string | null) {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
     setError(null);
@@ -142,7 +144,10 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     await runStream(
       [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
       messages.length + 1,
-      { userMessage: trimmed }
+      {
+        userMessage: trimmed,
+        extraBody: immediateContext ? { contextChapter: immediateContext } : undefined,
+      }
     );
   }
 
@@ -216,9 +221,14 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       }
 
       const sources = res.headers.get("X-Sources");
-      sourcesArr = sources ? JSON.parse(decodeURIComponent(sources)) : undefined;
       const suggested = res.headers.get("X-Suggested");
-      suggestedArr = suggested ? JSON.parse(decodeURIComponent(suggested)) : undefined;
+      try {
+        sourcesArr = sources ? JSON.parse(decodeURIComponent(sources)) : undefined;
+        suggestedArr = suggested ? JSON.parse(decodeURIComponent(suggested)) : undefined;
+      } catch {
+        // 来源/推荐是可观测元数据，坏响应头不能把解析异常泄漏到聊天区。
+        throw new Error(dict.error);
+      }
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();

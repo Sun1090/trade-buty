@@ -625,3 +625,261 @@ describe("AiChat 回答操作与对话管理", () => {
     expect(screen.queryByRole("button", { name: `${dict.continueLabel} →` })).not.toBeInTheDocument();
   });
 });
+
+describe("AiChat 初始化历史、自动提问与边界响应", () => {
+  beforeEach(() => {
+    window.history.replaceState({}, "", "/zh/ai");
+    vi.clearAllTimers();
+  });
+
+  afterEach(() => {
+    window.history.replaceState({}, "", "/zh/ai");
+    vi.useRealTimers();
+  });
+
+  function clickSuggestion(container: HTMLElement): string {
+    const target = [...container.querySelectorAll("button")]
+      .filter((b) => SUGGESTED_QUESTIONS_ZH.includes(b.textContent ?? ""))[0];
+    const question = target.textContent as string;
+    fireEvent.click(target);
+    return question;
+  }
+
+  it("恢复云端历史时解析字符串形式的 sources/suggested，不触发 ?q= 自动发送", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === "/api/ai/conversations") {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            messages: [
+              { role: "user", content: "历史问题" },
+              {
+                role: "assistant",
+                content: "历史回答",
+                suggested: JSON.stringify([{ chapter: "futures", title: "推荐章节" }]),
+              },
+            ],
+          }),
+        } as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    window.history.replaceState({}, "", "/zh/ai?q=自动提问");
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AiChat locale="zh" dict={dict} />);
+    await screen.findByText("历史回答");
+    expect(screen.queryByRole("link", { name: "📖 来源标题" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "📚 推荐章节" })).toHaveAttribute("href", "/zh/knowledge/futures");
+    expect(fetchMock.mock.calls.every(([url]) => url !== "/api/ai/chat")).toBe(true);
+  });
+
+  it("无云端历史且 URL 有 q 时自动发送该问题并携带上下文", async () => {
+    window.history.replaceState({}, "", "/zh/ai?q=什么是杠杆&ctx=futures&ct=期货基础");
+    const fetchMock = mockFetch("上下文回答");
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AiChat locale="zh" dict={dict} />);
+    await screen.findByText("上下文回答");
+
+    expect(screen.getByText("什么是杠杆")).toBeInTheDocument();
+    expect(screen.getByText(/正在基于《期货基础》篇章回答/)).toBeInTheDocument();
+    const chatCalls = fetchMock.mock.calls.filter((args) => args[0] === "/api/ai/chat");
+    expect(chatCalls).toHaveLength(1);
+    const body = JSON.parse((chatCalls[0][1] as RequestInit).body as string);
+    expect(body.contextChapter).toBe("futures");
+    expect(body.messages.at(-1)).toEqual({ role: "user", content: "什么是杠杆" });
+  });
+
+  it("拉取历史失败后仍可继续提问", async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/ai/conversations" && !init) throw new Error("offline");
+      if (url === "/api/ai/chat") {
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+          body: makeStreamBody("继续回答"),
+        } as unknown as Response;
+      }
+      if (url === "/api/ai/conversations") {
+        return { ok: true, status: 200, json: async () => ({ ok: true }) } as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    clickSuggestion(container);
+    expect(await screen.findByText("继续回答")).toBeInTheDocument();
+    expect(fetchMock.mock.calls.filter((args) => args[0] === "/api/ai/conversations" && !args[1])).toHaveLength(1);
+  });
+
+  it("非法配额不覆盖正常回答", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === "/api/ai/conversations") {
+        return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+      }
+      if (url === "/api/ai/chat") {
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: (k: string) => (k.toLowerCase() === "x-quota-limit" ? "bad" : null) },
+          body: makeStreamBody("有效回答"),
+        } as unknown as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    clickSuggestion(container);
+    expect(await screen.findByText("有效回答")).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(String.raw`${dict.quotaRemaining.replace("{n}", "")}`))).not.toBeInTheDocument();
+  });
+
+  it("非法 X-Sources 响应头触发兜底错误", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/api/ai/conversations") {
+          return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+        }
+        if (url === "/api/ai/chat") {
+          return {
+            ok: true,
+            status: 200,
+            headers: { get: (k: string) => (k === "X-Sources" ? encodeURIComponent("{bad json") : null) },
+            body: makeStreamBody("不会使用"),
+          } as unknown as Response;
+        }
+        throw new Error(`unexpected fetch: ${url}`);
+      })
+    );
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    clickSuggestion(container);
+    expect(await screen.findByText(dict.error)).toBeInTheDocument();
+    expect(screen.queryByText("不会使用")).not.toBeInTheDocument();
+  });
+
+  it("429 带 retry-after 时把分钟数补进配额提示", async () => {
+    let resolveChat!: (r: Response) => void;
+    const chatPromise = new Promise<Response>((res) => { resolveChat = res; });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/api/ai/conversations") {
+          return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+        }
+        if (url === "/api/ai/chat") return chatPromise;
+        throw new Error(`unexpected fetch: ${url}`);
+      })
+    );
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    clickSuggestion(container);
+
+    resolveChat({
+      ok: false,
+      status: 429,
+      headers: { get: (k: string) => (k.toLowerCase() === "retry-after" ? "90" : null) },
+      json: async () => ({}),
+    } as unknown as Response);
+    expect(await screen.findByText(`${dict.guestLimit} (2min)`)).toBeInTheDocument();
+  });
+
+  it("流式响应为空时展示兜底错误，且不会提交 assistant 存档", async () => {
+    let saveCalls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url === "/api/ai/conversations" && !init) {
+          return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+        }
+        if (url === "/api/ai/chat") {
+          return {
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+            body: {
+              getReader: () => ({
+                read: async () => ({ done: true, value: undefined }),
+              }),
+            },
+          } as unknown as Response;
+        }
+        if (url === "/api/ai/conversations" && init?.method === "POST") {
+          saveCalls += 1;
+          return { ok: true, status: 200, json: async () => ({ ok: true }) } as Response;
+        }
+        throw new Error(`unexpected fetch: ${url}`);
+      })
+    );
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    clickSuggestion(container);
+    expect(await screen.findByText(dict.error)).toBeInTheDocument();
+    expect(saveCalls).toBe(0);
+  });
+
+  it("点击推荐章节也会上报 suggested citation-click", async () => {
+    const suggested = [{ chapter: "futures", title: "推荐标题" }];
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/ai/conversations" && !init) {
+        return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+      }
+      if (url === "/api/ai/chat") {
+        return {
+          ok: true,
+          status: 200,
+          headers: {
+            get: (k: string) => (k === "X-Suggested" ? encodeURIComponent(JSON.stringify(suggested)) : null),
+          },
+          body: makeStreamBody("推荐回答"),
+        } as unknown as Response;
+      }
+      if (url === "/api/ai/citation-click") {
+        return { ok: true, status: 200, json: async () => ({ ok: true }) } as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    const question = clickSuggestion(container);
+    await waitFor(() => expect(screen.getByRole("link", { name: "📚 推荐标题" })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("link", { name: "📚 推荐标题" }));
+
+    const citationCall = fetchMock.mock.calls.find(([url]) => url === "/api/ai/citation-click")?.[1] as RequestInit;
+    expect(JSON.parse(citationCall.body as string)).toEqual({
+      kind: "suggested",
+      chapter: "futures",
+      doc: undefined,
+      question,
+    });
+  });
+
+  it("反馈请求失败时仍记录本地反馈，避免用户反复点击", async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/ai/conversations" && !init) {
+        return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+      }
+      if (url === "/api/ai/chat") {
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+          body: makeStreamBody("反馈失败回答"),
+        } as unknown as Response;
+      }
+      if (url === "/api/ai/feedback") throw new Error("no stats");
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    clickSuggestion(container);
+    await screen.findByText("反馈失败回答");
+
+    const unhelpful = screen.getByRole("button", { name: dict.unhelpful });
+    fireEvent.click(unhelpful);
+    await waitFor(() => expect(unhelpful).toHaveClass("font-medium"));
+    fireEvent.click(unhelpful);
+    expect(fetchMock.mock.calls.filter(([url]) => url === "/api/ai/feedback")).toHaveLength(1);
+  });
+});
