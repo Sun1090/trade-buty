@@ -1,14 +1,14 @@
 ## 2026-09-21 — 覆盖率批次 10：搜索、测验、AI 测验与 AI 摘要失败边界
 
-- 状态：已推送 `codex/quality-coverage-batch-10` 并更新 PR #90；等待远端 CI。
+- 状态：PR #90 的远端 `ci` 失败已修复并重新验证；等待推送后 GitHub CI 复跑。Vercel deployment 仍受外部 build rate limit 阻塞。
 - 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
-- 分支 / 提交：`codex/quality-coverage-batch-10`，HEAD `494b5d0`。
+- 分支 / 提交：`codex/quality-coverage-batch-10`，待提交 `fix(test): stabilize daily goal timezone assertion`。
 - 完成内容：
   - 搜索：补充分页加载更多、合法零筛选恢复态、清空筛选，以及最近搜索回显 / 点击执行 / 空 query 不落库。
   - 测验：补充答错入错题本、答对清除错题本、最佳成绩保存、分享卡只在完成后出现、短耗时不写学习时长的行为边界。
   - AI 章节测验：补充举报题目只提交一次并进入已举报态、全局 AI kill switch 隐藏入口。
   - AI 摘要接口：补充非法 JSON、非法 payload、RAG 失败兜底、非 JSON 模型原文回落、摘要长度上限和模型失败 502 的行为边界。
-  - 每日目标：补充 localStorage 读取异常回落默认档位，以及今日学习秒数向下取整为分钟。`BoundedMap` 补充 clear 后 keys/values/entries/iterator 顺序。
+  - 每日目标：补充 localStorage 读取异常回落默认档位，以及今日学习秒数向下取整为分钟；CI 修复把写台账和读取「今天」固定到同一 mocked local date，避免 GitHub Actions UTC 日期与本地日期不一致。`BoundedMap` 补充 clear 后 keys/values/entries/iterator 顺序。
   - AI 检索配置：补充非对象 JSON 告警回退与未知场景按 chat 默认值回退。
   - 收藏按钮：补充 bookmark 事件触发外部 store 更新后的无障碍状态、样式和星标断言。
 - 变更文件：
@@ -28,14 +28,16 @@
   - `npx vitest run src/lib/daily-goal.test.ts src/lib/bounded-map.test.ts`：通过（2 文件 / 12 用例）。
   - `npx vitest run src/lib/ai/retrieval-config.test.ts`：通过（1 文件 / 6 用例）。
   - `npx vitest run src/components/bookmark-button.test.tsx`：通过（1 文件 / 5 用例）。
+  - `TZ=UTC npx vitest run src/lib/daily-goal.test.ts src/lib/study-time.test.ts src/lib/date-utils.test.ts src/components/daily-goal.test.tsx src/components/weekly-report.test.tsx`：通过（5 文件 / 29 用例）。
+  - `TZ=Asia/Shanghai npx vitest run src/lib/daily-goal.test.ts src/lib/study-time.test.ts src/lib/date-utils.test.ts src/components/daily-goal.test.tsx src/components/weekly-report.test.tsx`：通过（5 文件 / 29 用例）。
   - `npm run lint`：通过。
   - `npm run typecheck`：通过。
   - `npm run test:coverage`：通过（255 文件 / 2,241 用例；语句 93.96%，分支 88.31%，函数 93.94%，行 96.32%）。
   - `npm run check:docs`、`npm run check:constitution`、`git diff --check`、`npm run build`：通过。
-- 阻塞：无本地阻塞；等待 PR #90 远端 CI。Vercel Preview Comments 通过，但 Vercel deployment 因外部 build rate limit 失败（需 24 小时后或账号层面解除速率限制）。
-- 风险 / 回滚：仅新增测试覆盖，不改生产逻辑；若 CI 环境出现测试时序差异，回滚本分支测试提交即可。
-- 下一项：PR #90 的 GitHub CI 全绿后，确认 Vercel deployment 速率限制是否解除；若解除则 rebase 合并并删除远端分支，否则按外部速率限制处理，继续本地覆盖率热点。
-- 更新时间：2026-09-21 00:32（Asia/Shanghai）。
+- 阻塞：无本地阻塞。PR #90 原先的 GitHub `ci` 失败已由本次测试修复；Vercel deployment 仍因外部 build rate limit 失败（需 24 小时后或账号层面解除速率限制）。
+- 风险 / 回滚：仅新增或修正测试覆盖，不改生产逻辑；若修复影响断言语义，回滚 `fix(test): stabilize daily goal timezone assertion` 即可。
+- 下一项：推送修复后确认 GitHub CI 复跑结果；Vercel deployment 若仍受速率限制则继续本地覆盖率热点，不绕过必需检查。
+- 更新时间：2026-09-21 00:42（Asia/Shanghai）。
 
 ---
 
