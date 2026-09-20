@@ -235,4 +235,23 @@ describe("QuizShareCard download failure feedback (R13.6)", () => {
       outcome: "failed",
     });
   });
+
+  it("shows the failure message when preview drawing fails", async () => {
+    installCanvasStub();
+    installAnchorClickStub();
+    HTMLCanvasElement.prototype.getContext = vi.fn(() => {
+      throw new Error("canvas unavailable");
+    }) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+    render(
+      <QuizShareCard
+        chapterTitle="入门基础"
+        score={8}
+        total={10}
+        locale="zh"
+        labels={{ share: "分享", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败，请重试" }}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("quiz-share-preview-btn"));
+    expect(await screen.findByRole("alert")).toHaveTextContent("下载失败，请重试");
+  });
 });

@@ -3714,3 +3714,33 @@ Verification: focused sync/weekly tests 10 files / 127 tests passed; lint, typec
 Risk / rollback: production behavior is equivalent for successful and failed writes, but removes duplicated goal-write branching that could diverge later. Revert this commit if the shared user_settings payload path conflicts with future settings-column changes.
 
 Next: complete full verification, open PR, monitor CI, rebase-merge, and delete the remote branch.
+
+## 2026-09-21 — 覆盖率批次 13：JSON-LD、测验与分享卡覆盖边界
+
+- 状态：本地开发完成，门禁通过；尚未推送 PR。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-13`，待提交。
+- 完成内容：
+  - JSON-LD：补充数组递归节点收集、类型数组节点识别、非 URL 字段 URL 豁免、sameAs 占位模板、`@context` 错误、页面身份禁用选项，以及 FAQ 多节点 / 空实体 / FAQPage 非字符串 `mainEntity` 的边界。
+  - 测验：补充分享 URL 使用本地 `origin` 生成 `/share/quiz/` 链接，验证完成测验后分享卡出现且链接可编码。
+  - 测验分享卡：补充预览图生成失败时展示可见下载失败提示，覆盖 `draw()` 异常路径。
+- 变更文件：
+  - `scripts/structured-data-lib.test.mjs`
+  - `src/components/quiz.test.tsx`
+  - `src/components/quiz-share-card.test.tsx`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run scripts/structured-data-lib.test.mjs src/components/quiz.test.tsx src/components/quiz-share-card.test.tsx`：通过（3 文件 / 25 用例）。
+  - `npm run test:coverage`：通过（255 文件 / 2270 用例；statements 94.8%，branches 88.9%，functions 94.8%，lines 97.17%）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run check:docs`：通过（27 章 / 182 篇，zh/en 对齐）。
+  - `npm run check:constitution`：通过；报告式巡检命中均为教育语境豁免项。
+  - `npm run build`：通过（474 个静态页面）。
+  - `git diff --check`：待提交前复核。
+- 阻塞：无本地阻塞。
+- 风险 / 回滚：仅测试断言新增，不改产品行为、迁移或配置；如需回滚，撤回本提交即可。
+- 下一项：提交、推送并创建 PR；若 CI 全绿则 rebase 合并并继续下一项质量加固。
+- 更新时间：2026-09-21 02:16（Asia/Shanghai）。
+
+---
