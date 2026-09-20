@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
 const mocks = vi.hoisted(() => ({
   isBookmarked: vi.fn(() => false),
@@ -91,3 +91,27 @@ describe("BookmarkButton", () => {
     expect(screen.getByText("收藏")).toBeInTheDocument();
   });
 });
+
+  it("updates from bookmark events without a rerender", async () => {
+    mocks.isBookmarked.mockReturnValue(false);
+    const { unmount } = render(
+      <BookmarkButton
+        chapter="risk"
+        doc="position-sizing"
+        title="仓位管理"
+        label={labels}
+      />,
+    );
+
+    try {
+      mocks.isBookmarked.mockReturnValue(true);
+      await act(async () => {
+        window.dispatchEvent(new Event("tb-bookmarks"));
+      });
+      const button = screen.getByRole("button", { name: "已收藏" });
+      expect(button).toHaveAttribute("aria-pressed", "true");
+      expect(button.textContent).toContain("★");
+    } finally {
+      unmount();
+    }
+  });
