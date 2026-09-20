@@ -1,3 +1,37 @@
+## 2026-09-21 — 覆盖率批次 16：AI 检索阈值范围加固
+
+- 状态：本地实现与全量验证完成，待推送 PR。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-16`，待提交。
+- 完成内容：
+  - 修复 AI 检索配置边界：`AI_RETRIEVAL_JSON` 的 `threshold` 必须是有限且在 `0..1` 的 pgvector 相似度阈值；越界数值回退默认阈值并记录服务端告警。
+  - 保留合法边界 `threshold=0`、`topK` 向下取整、`topK=0` 回退默认、`relaxedTopK=0` 关闭兜底等行为。
+  - 更新环境变量说明，明确检索配置契约，避免线上误配置导致检索永久无结果或异常命中。
+- 变更文件：
+  - `src/lib/ai/retrieval-config.ts`
+  - `src/lib/ai/retrieval-config.test.ts`
+  - `docs/env.md`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run src/lib/ai/retrieval-config.test.ts --coverage=false`：通过（1 文件 / 8 用例）。
+  - `npm run check:env-docs`：通过（13 个运行时变量全部登记，无幽灵条目，无客户端密钥泄漏）。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（255 文件 / 2293 用例；statements 95.10%，branches 89.29%，functions 95.01%，lines 97.45%）。
+  - `npm run lint`：通过。
+  - `npm run check:docs`：通过（27 章 / 182 篇，zh/en 对齐）。
+  - `npm run check:constitution`：通过；报告式巡检命中均为教育语境豁免项。
+  - `npm run check:kb-pointer`、`npm run check:changelog`、`npm run check:env-docs`：全部通过。
+  - `npm run check:growth-event-privacy`、`npm run check:error-report-privacy`：全部通过。
+  - `git diff --check`：通过。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - `npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org/`：通过（0 漏洞）。
+- 阻塞：无本地阻塞。
+- 风险 / 回滚：仅收紧非法配置解析；合法 `0..1` 阈值、默认配置和既有调用方式不变。回滚本提交可恢复旧解析行为。
+- 下一项：推送 PR、观察 CI；通过则按 rebase 合并并清理远端临时分支。
+- 更新时间：2026-09-21 03:09（Asia/Shanghai）。
+
+---
+
 ## 2026-09-21 — 覆盖率批次 14：分享卡绘制入口与错误上报失败边界
 
 - 状态：本地开发完成，全部门禁通过；待推送 PR。

@@ -28,7 +28,7 @@
 | `AI_EMBEDDING_URL` | RAG 要 | embedding 端点（可与对话端点不同） |
 | `AI_EMBEDDING_MODEL` | RAG 要 | embedding 模型 |
 | `AI_EMBEDDING_KEY` | RAG 要 | embedding key（可与对话 key 不同） |
-| `AI_RETRIEVAL_JSON` | 否 | 检索配置覆盖，如 `{"chat":{"threshold":0.25}}`（见 R1.4） |
+| `AI_RETRIEVAL_JSON` | 否 | 检索配置覆盖，如 `{"chat":{"threshold":0.25}}`；`threshold` 必须是 `0..1`，`topK` 取整且 `0` 回退默认，`relaxedTopK` 允许 `0` 表示关闭兜底（见 R1.4） |
 | `NEXT_PUBLIC_AI_ENABLED` | 否 | 紧急总开关：设为字符串 `false` 时隐藏全部 AI 入口（R3.10），其它值或未设均视为开启；构建期内联到客户端 |
 
 无 AI key 时：AI 页显示未配置态，不阻断其他功能。

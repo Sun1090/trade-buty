@@ -23,6 +23,20 @@ function sanitizeNumber(v: unknown, fallback: number): number {
   return typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : fallback;
 }
 
+/**
+ * 检索阈值是 pgvector 相似度阈值，合法范围为 [0, 1]。
+ * 越界值通常会导致检索永远无结果或意外命中，因此回退默认阈值并告警。
+ */
+function sanitizeThreshold(v: unknown, fallback: number): number {
+  if (typeof v !== "number" || !Number.isFinite(v) || v < 0 || v > 1) {
+    if (typeof v === "number") {
+      console.warn(`[retrieval-config] 检索阈值超出 0..1，已回退为 ${fallback}`);
+    }
+    return fallback;
+  }
+  return v;
+}
+
 function readEnvOverride(): Partial<Record<RetrievalUse, Partial<RetrievalProfile>>> {
   const raw = process.env.AI_RETRIEVAL_JSON;
   if (!raw) return {};
@@ -44,7 +58,7 @@ export function getRetrievalProfile(use: RetrievalUse): RetrievalProfile {
   const override = readEnvOverride()[use] ?? {};
   return {
     topK: Math.floor(sanitizeNumber(override.topK, base.topK)) || base.topK,
-    threshold: sanitizeNumber(override.threshold, base.threshold),
+    threshold: sanitizeThreshold(override.threshold, base.threshold),
     relaxedTopK: Math.floor(sanitizeNumber(override.relaxedTopK, base.relaxedTopK)),
   };
 }
