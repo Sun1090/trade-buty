@@ -1,8 +1,8 @@
 ## 2026-09-21 — 覆盖率批次 13：JSON-LD、测验键盘与分享卡边界
 
-- 状态：本地补充覆盖完成；PR #93 已打开并等待最终验证。
+- 状态：本地补充覆盖完成；PR #93 已打开并等待远端 CI 完成。
 - 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
-- 分支 / 提交：`codex/quality-coverage-batch-13`，已推送 `b7ba4ac test: cover JSON-LD and quiz share edges`，本地补充提交待验证后推送。
+- 分支 / 提交：`codex/quality-coverage-batch-13`，最终提交 `c52b78f`，已推送 PR #93。
 - 完成内容：
   - JSON-LD：补充嵌套节点、类型数组、context/template URL 错误、跳过页面身份，以及 FAQ/Breadcrumb 的异常结构边界。
   - 测验：补充完成后分享/复制链接入口、键盘选择与前进、越界快捷键、跳过按钮在作答前后的行为。
@@ -14,11 +14,17 @@
   - `docs/progress.md`
 - 验证命令与结果：
   - `npx vitest run scripts/structured-data-lib.test.mjs src/components/quiz.test.tsx --coverage=false`：通过（2 文件 / 26 用例）。
-  - 待补充：`npm run test:coverage`、`npm run lint`、`npm run typecheck`、`npm run check:docs`、`npm run check:constitution`、`git diff --check`、`npm run build`。
+  - `npm run test:coverage`：通过（255 文件 / 2277 用例；statements 95.08%，branches 89.25%，functions 95.01%，lines 97.44%）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run check:docs`：通过（27 章 / 182 篇，zh/en 对齐）。
+  - `npm run check:constitution`：通过；报告式巡检命中均为教育语境豁免项。
+  - `git diff --check`：通过。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
 - 阻塞：无本地阻塞；最终合并依赖 PR #93 远端 checks。
 - 风险 / 回滚：以测试覆盖为主，JSON-LD 校验仅扩展测试，不改生产逻辑；如需回滚，撤回本 PR 即可。
-- 下一项：全量验证后推送 PR #93；CI 全绿时按 `--rebase` 合并并删除临时远端分支。
-- 更新时间：2026-09-21 02:23（Asia/Shanghai）。
+- 下一项：等待 PR #93 远端 CI；全绿时按 `--rebase` 合并并删除临时远端分支。
+- 更新时间：2026-09-21 02:28（Asia/Shanghai）。
 
 ---
 
