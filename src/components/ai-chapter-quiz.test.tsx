@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
+import { isAiGloballyDisabled } from "@/lib/ai-toggle";
 import { AiChapterQuizCard } from "./ai-chapter-quiz";
+
+vi.mock("@/lib/ai-toggle", () => ({
+  isAiGloballyDisabled: vi.fn(() => false),
+}));
 
 const localStorageMock = (() => {
   const store = new Map<string, string>();
@@ -136,5 +141,40 @@ describe("AiChapterQuizCard", () => {
     fireEvent.click(screen.getByRole("button", { name: dict.start }));
     expect(await screen.findByText(dict.error)).toBeInTheDocument();
     expect(container.textContent).toContain(dict.start);
+  });
+});
+
+describe("AiChapterQuizCard reporting and global kill switch", () => {
+  it("reports one question once and shows reported state", async () => {
+    const feedbackCalls: unknown[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: unknown, init?: RequestInit) => {
+        if (String(init?.body).includes("unhelpful")) {
+          feedbackCalls.push(init?.body);
+        }
+        return setup().mock.results[0]?.value
+          ?? { ok: true, status: 200, json: async () => ({ questions, source: "ai" }) };
+      })
+    );
+
+    render(<AiChapterQuizCard chapter="spot" locale="zh" dict={dict} />);
+    fireEvent.click(screen.getByRole("button", { name: dict.start }));
+    await screen.findByText(questions[0].question);
+
+    fireEvent.click(screen.getByRole("button", { name: /A\./ }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /⚑ 举报题目/ })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /⚑ 举报题目/ }));
+    await waitFor(() => expect(screen.getByText(dict.reported)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: dict.reported }));
+
+    await waitFor(() => expect(feedbackCalls).toHaveLength(1));
+  });
+
+  it("hides the card entirely when AI is globally disabled", () => {
+    vi.mocked(isAiGloballyDisabled).mockReturnValue(true);
+    render(<AiChapterQuizCard chapter="spot" locale="zh" dict={dict} />);
+    expect(screen.queryByRole("button", { name: dict.start })).toBeNull();
+    vi.mocked(isAiGloballyDisabled).mockReturnValue(false);
   });
 });

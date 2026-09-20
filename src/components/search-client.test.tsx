@@ -284,3 +284,91 @@ describe("SearchClient 最近搜索（回归：与 debounce 后的检索词对�
     expect(recents()).toEqual([]);
   });
 });
+
+describe("SearchClient pagination and filtering", () => {
+  const manyEntries = Array.from({ length: 23 }, (_, i) => ({
+    url: `/zh/knowledge/ch${i}/${String(i).padStart(2, "0")}`,
+    title: `章节 ${i} 保证金`,
+    chapter: i === 22 ? "none" : "spot",
+    text: `保证金 第 ${i} 条`,
+  }));
+
+  beforeEach(() => {
+    storage.clear();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => manyEntries }),
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("loads the first page and reveals more results without duplicating rows", async () => {
+    render(<SearchClient dict={dict} />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "保证金" } });
+
+    expect(await screen.findByRole("button", { name: "加载更多" })).toBeInTheDocument();
+    expect(document.querySelectorAll("a[data-search-result-index]")).toHaveLength(20);
+
+    fireEvent.click(screen.getByRole("button", { name: "加载更多" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "加载更多" })).toBeNull());
+    expect(document.querySelectorAll("a[data-search-result-index]")).toHaveLength(23);
+  });
+
+  it("shows a recoverable zero-filter state and clears the chapter filter", async () => {
+    render(<SearchClient dict={dict} />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "保证金" } });
+
+    fireEvent.keyDown(screen.getByRole("searchbox"), { key: "Escape" });
+    const filter = await screen.findByRole("combobox", { name: dict.filterLabel });
+    fireEvent.change(filter, { target: { value: "none" } });
+
+    await waitFor(() => expect(screen.getByText(dict.filterZeroCta)).toBeInTheDocument());
+    expect(document.querySelectorAll("a[data-search-result-index]")).toHaveLength(0);
+    expect(screen.getByText(/「none」暂无匹配/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText(dict.filterZeroCta));
+    expect(document.querySelectorAll("a[data-search-result-index]")).toHaveLength(20);
+  });
+});
+
+describe("SearchClient recent searches", () => {
+  const recents = () => JSON.parse(storage.getItem("tb-recent-search") ?? "[]");
+
+  beforeEach(() => {
+    storage.clear();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => [] }),
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("surfaces saved recent searches and runs them on click", async () => {
+    storage.setItem("tb-recent-search", JSON.stringify(["移动平均线", "杠杆"]));
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [{ url: "/zh/knowledge/moving-average", title: "移动平均线", chapter: "spot", text: "均线" }],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<SearchClient dict={dict} />);
+    expect(screen.getByText("移动平均线")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "移动平均线" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(screen.getByRole("searchbox")).toHaveValue("移动平均线");
+    expect(recents()).toEqual(["移动平均线", "杠杆"]);
+  });
+
+  it("does not create recent search entries while the query is empty", () => {
+    render(<SearchClient dict={dict} />);
+    fireEvent.click(screen.getByRole("searchbox"));
+    expect(recents()).toEqual([]);
+  });
+});
