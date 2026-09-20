@@ -59,7 +59,7 @@ describe("description quality (R10.4)", () => {
       { locale: "en", chapter: "spot", document: "a", title: "A", description: "Alpha alpha alpha alpha alpha." },
       { locale: "zh", chapter: "risk", document: "z", title: "风险", description: "风险与波动率的含义、来源与仓位控制。" },
     ];
-    expect(scoreDescriptions(entries).map((r) => r.document)).toEqual(["z", "a", "b"]);
+    expect(scoreDescriptions(entries).map((r: { document: string }) => r.document)).toEqual(["z", "a", "b"]);
     expect(renderDescriptionQualityMarkdown({ generatedAt: "2026-09-06", results: [] })).toContain("总课程：0");
     expect(renderDescriptionQualityMarkdown({ generatedAt: "2026-09-06", results: [] })).not.toContain("| 状态 |");
   });
