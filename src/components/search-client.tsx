@@ -14,6 +14,18 @@ interface Entry {
   text: string;
 }
 
+function readRecentSearches(): string[] {
+  let saved: unknown;
+  try {
+    saved = JSON.parse(localStorage.getItem("tb-recent-search") ?? "[]");
+  } catch {
+    saved = [];
+  }
+  return Array.isArray(saved)
+    ? saved.filter((term): term is string => typeof term === "string")
+    : [];
+}
+
 export function SearchClient({
   dict,
 }: {
@@ -37,7 +49,7 @@ export function SearchClient({
 }) {
   const [query, setQuery] = useState("");
   const [entries, setEntries] = useState<Entry[] | null>(null);
-  const [recent, setRecent] = useState<string[]>([]);
+  const [recent, setRecent] = useState<string[]>(readRecentSearches);
   const [filterChapter, setFilterChapter] = useState<string>("");
   const [focusIdx, setFocusIdx] = useState(-1);
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -50,11 +62,6 @@ export function SearchClient({
     const t = setTimeout(() => setDebouncedQ(query), 200);
     return () => clearTimeout(t);
   }, [query]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRecent(JSON.parse(localStorage.getItem("tb-recent-search") ?? "[]"));
-  }, []);
 
   const saveRecent = useCallback((q: string) => {
     const trimmed = q.trim();
