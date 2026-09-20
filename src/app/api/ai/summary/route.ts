@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { chat } from "@/lib/ai/client";
 import { retrieve } from "@/lib/ai/rag";
 import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getServerAuthUser } from "@/lib/supabase/server";
 import { parseJsonLoose } from "@/lib/ai/json-extract";
 import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
 
@@ -42,8 +42,15 @@ export function parseSummaryBody(value: unknown): SummaryBody | null {
 /** POST: 生成章节摘要（RAG 取该章内容 → AI 总结） */
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    let user;
+    try {
+      user = await getServerAuthUser();
+    } catch {
+      return NextResponse.json(
+        { error: "AI 服务暂时不可用，请稍后再试。" },
+        { status: 502 },
+      );
+    }
 
     const decision = summaryLimiter.check(user?.id ?? clientIp(req), !!user);
     if (!decision.allowed) {

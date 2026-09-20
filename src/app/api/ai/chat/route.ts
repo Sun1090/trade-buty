@@ -15,7 +15,7 @@ import {
   type ChapterSuggestion,
   type SourceLink,
 } from "@/lib/ai/sources";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getServerAuthUser } from "@/lib/supabase/server";
 import { parseChatBody } from "@/lib/ai/chat-input";
 import { BoundedMap, sweepExpired } from "@/lib/bounded-map";
 import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
@@ -36,8 +36,15 @@ const CACHE_TTL = 10 * 60 * 1000;
 export async function POST(req: NextRequest) {
   // 鉴权（可选）与限流放在解析 body 之前：这样畸形/超大 payload 也计入配额，
   // 不会出现「先解析再限流」的绕过窗口。
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let user;
+  try {
+    user = await getServerAuthUser();
+  } catch {
+    return NextResponse.json(
+      { error: "AI 服务暂时不可用，请稍后再试。" },
+      { status: 502 },
+    );
+  }
   const ip = clientIp(req);
 
   // rate limit（配额随响应头返回：游客前端展示剩余次数，429 附 Retry-After）

@@ -4244,3 +4244,42 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：生产代码仅新增 URL 自动提问的上下文覆盖传递，不影响手动输入、续写、持久化、迁移或数据库；如自动上下文行为异常，回滚 `src/components/ai-chat.tsx` 即可。
 - 下一项：重新检查远端 PR/checks；Vercel 配额恢复后推送本批并更新 PR，CI 全绿后 rebase 合并并继续下一项质量加固。
 - 更新时间：2026-09-21 05:22（Asia/Shanghai）。
+---
+
+## 2026-09-21 — 覆盖率批次 30：Supabase `getUser()` 错误边界加固
+
+- 状态：本地开发完成，定向测试通过；等待推送/PR 流程。
+- 里程碑 / 版本：v0.7.0 后续安全/质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-26`，本地待提交。
+- 完成内容：
+  - 新增 `getServerAuthUser()`，在 Supabase `getUser()` 返回 `error` 时抛出，避免调用方把未知身份状态误判为游客或未登录。
+  - 更新 `/api/auth/session`、AI chat/plan/quiz/summary、conversation load/save、feedback、citation-click：鉴权失败返回通用错误，不泄露内部错误，不继续调用 RAG/LLM 或数据库读写。
+  - 扩展定向测试覆盖 `getUser()` error + `user:null`、客户端创建失败、错误文案、调用链短路和内部错误不透传。
+- 变更文件：
+  - `src/lib/supabase/server.ts`
+  - `src/lib/supabase/server.test.ts`
+  - `src/app/api/auth/session/route.ts`
+  - `src/app/api/auth/session/route.test.ts`
+  - `src/app/api/ai/chat/route.ts`
+  - `src/app/api/ai/chat/route.test.ts`
+  - `src/app/api/ai/plan/route.ts`
+  - `src/app/api/ai/plan/route.test.ts`
+  - `src/app/api/ai/quiz/route.ts`
+  - `src/app/api/ai/quiz/route.test.ts`
+  - `src/app/api/ai/summary/route.ts`
+  - `src/app/api/ai/summary/route.test.ts`
+  - `src/app/api/ai/conversations/route.ts`
+  - `src/app/api/ai/conversations/route.test.ts`
+  - `src/app/api/ai/feedback/route.ts`
+  - `src/app/api/ai/feedback/route.test.ts`
+  - `src/app/api/ai/citation-click/route.ts`
+  - `src/app/api/ai/citation-click/route.test.ts`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run src/lib/supabase/server.test.ts src/app/api/auth/session/route.test.ts src/app/api/ai/chat/route.test.ts src/app/api/ai/plan/route.test.ts src/app/api/ai/quiz/route.test.ts src/app/api/ai/summary/route.test.ts src/app/api/ai/feedback/route.test.ts src/app/api/ai/citation-click/route.test.ts src/app/api/ai/conversations/route.test.ts --coverage=false --reporter=verbose`：通过（9 文件 / 101 用例）。
+  - `npx eslint <changed auth/api files>`：通过。
+  - `git diff --check`：通过。
+- 阻塞：无本地阻塞；已有远端 PR 仍可能受 Vercel 24 小时部署速率限制影响，当前未推送以避免继续消耗部署配额。
+- 风险 / 回滚：鉴权错误边界为服务端安全加固；如线上误伤，回滚 `getServerAuthUser()` 及 API 调用点即可。无数据库迁移或用户数据变更。
+- 下一项：等待 Vercel 配额恢复后推送本批并更新 PR；继续检查下一项本地质量/安全任务。
+- 更新时间：2026-09-21 03:47（Asia/Shanghai）。

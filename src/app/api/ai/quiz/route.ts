@@ -7,7 +7,7 @@ import { validateAiQuestions, filterDuplicateQuestions, filterRelevantQuestions 
 import { PROMPT_VERSION } from "@/lib/ai/prompt";
 import { resolveQuizStrategy, normalizeQuizDifficulty } from "@/lib/quiz-strategy";
 import { getChapterTitle } from "@/lib/ai/chapters";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getServerAuthUser } from "@/lib/supabase/server";
 import { QUIZZES } from "@/lib/quizzes";
 import { parseJsonLoose } from "@/lib/ai/json-extract";
 import { BoundedMap, sweepExpired } from "@/lib/bounded-map";
@@ -46,8 +46,15 @@ const CHAPTER_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
  * 3. AI 生成 3 道同主题变体题（JSON）
  */
 export async function POST(req: NextRequest) {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let user;
+  try {
+    user = await getServerAuthUser();
+  } catch {
+    return NextResponse.json(
+      { error: "AI 服务暂时不可用，请稍后再试。" },
+      { status: 502 },
+    );
+  }
   // 登录用户才可用（消耗较大）
   if (!user) {
     return NextResponse.json({ error: "Login required" }, { status: 401 });

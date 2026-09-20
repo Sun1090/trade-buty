@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerAuthUser } from "@/lib/supabase/server";
 import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
 
 export interface FeedbackBody {
@@ -59,8 +59,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    let user;
+    try {
+      user = await getServerAuthUser();
+    } catch {
+      return NextResponse.json({ error: "Failed to save feedback" }, { status: 500 });
+    }
     const supabase = await createSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
     const { error } = await supabase.from("ai_feedback").insert({
       user_id: user?.id ?? null, // 游客也可反馈（匿名）

@@ -10,7 +10,9 @@ vi.mock("@supabase/ssr", () => ({
   createServerClient: mocks.createServerClient,
 }));
 
-import { createSupabaseServerClient } from "./server";
+import { createSupabaseServerClient, getServerAuthUser } from "./server";
+
+const authGetUser = vi.fn();
 
 type CookieAdapter = {
   getAll: () => { name: string; value: string }[];
@@ -74,5 +76,29 @@ describe("createSupabaseServerClient", () => {
       throw new Error("Cookies can only be modified in a Server Action");
     });
     expect(() => adapter.setAll([{ name: "sb-token", value: "next" }])).not.toThrow();
+  });
+});
+
+
+describe("getServerAuthUser", () => {
+  it("returns a trusted user when getUser has no error", async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://proj.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon";
+    authGetUser.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
+    mocks.createServerClient.mockReturnValue({ auth: { getUser: authGetUser } });
+
+    await expect(getServerAuthUser()).resolves.toEqual({ id: "user-1" });
+  });
+
+  it("throws Supabase errors so callers cannot treat unknown identity as guest", async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://proj.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon";
+    authGetUser.mockResolvedValue({
+      data: { user: null },
+      error: new Error("secret: trace expired"),
+    });
+    mocks.createServerClient.mockReturnValue({ auth: { getUser: authGetUser } });
+
+    await expect(getServerAuthUser()).rejects.toThrow("secret: trace expired");
   });
 });

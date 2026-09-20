@@ -28,3 +28,16 @@ export async function createSupabaseServerClient() {
     },
   );
 }
+
+/**
+ * Server API 读取当前 Supabase 用户。
+ *
+ * `getUser()` 返回 `error` 表示身份状态不可信；此时调用方不能把 `user:null`
+ * 误当成游客或未登录，也不能据此做限流/授权决策。
+ */
+export async function getServerAuthUser() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  return user;
+}

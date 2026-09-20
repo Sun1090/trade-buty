@@ -9,6 +9,11 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: mocks.createSupabaseServerClient,
+  getServerAuthUser: async () => {
+    const { data: { user }, error } = await mocks.getUser();
+    if (error) throw error;
+    return user;
+  },
 }));
 const { createSupabaseServerClient, getUser, insert } = mocks;
 
@@ -127,6 +132,19 @@ describe("POST /api/ai/citation-click", () => {
     const body = await res.json();
     expect(body.error).toBe("Failed to record click");
     expect(JSON.stringify(body)).not.toContain("permission denied");
+  });
+
+  it("getUser 返回 error 时返回通用失败文案，不写库且不透传内部错误", async () => {
+    getUser.mockResolvedValueOnce({ data: { user: null }, error: new Error("secret: trace expired") });
+    const res = await POST(
+      request(JSON.stringify({ kind: "source", chapter: "spot" })),
+    );
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body).toEqual({ error: "Failed to record click" });
+    expect(JSON.stringify(body)).not.toContain("secret");
+    expect(insert).not.toHaveBeenCalled();
   });
 
   it("身份读取异常也返回通用失败文案，不回传内部错误", async () => {
