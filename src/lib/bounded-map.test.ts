@@ -60,3 +60,17 @@ describe("sweepExpired", () => {
     expect(m.size).toBe(3);
   });
 });
+
+describe("BoundedMap iterator surfaces", () => {
+  it("clear resets size while preserving later iteration order", () => {
+    const m = new BoundedMap<string, number>(3);
+    m.set("a", 1).set("b", 2);
+    m.clear();
+    m.set("c", 3);
+    expect(m.size).toBe(1);
+    expect([...m.keys()]).toEqual(["c"]);
+    expect([...m.values()]).toEqual([3]);
+    expect([...m.entries()]).toEqual([["c", 3]]);
+    expect([...m]).toEqual([["c", 3]]);
+  });
+});

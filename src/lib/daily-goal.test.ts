@@ -1,9 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const store = new Map<string, string>();
+let localStorageMode: "normal" | "throw" = "normal";
+let windowDispatches: string[] = [];
 const localStorageMock = {
-  getItem: (k: string) => store.get(k) ?? null,
-  setItem: (k: string, v: string) => store.set(k, v),
+  getItem: (k: string) => {
+    if (localStorageMode === "throw") throw new Error("storage unavailable");
+    return store.get(k) ?? null;
+  },
+  setItem: (k: string, v: string) => {
+    if (localStorageMode === "throw") throw new Error("storage unavailable");
+    store.set(k, v);
+  },
   removeItem: (k: string) => store.delete(k),
   key: (i: number) => Array.from(store.keys())[i] ?? null,
   get length() {
@@ -12,12 +20,16 @@ const localStorageMock = {
   clear: () => store.clear(),
 };
 vi.stubGlobal("localStorage", localStorageMock);
-vi.stubGlobal("window", { dispatchEvent: () => {} });
+vi.stubGlobal("window", { dispatchEvent: (event: Event) => windowDispatches.push(event.type) });
 
 const { getDailyGoalMin, setDailyGoalMin, GOAL_TIERS } = await import("./daily-goal");
 
 describe("daily-goal（R4.1 分钟三档）", () => {
-  beforeEach(() => store.clear());
+  beforeEach(() => {
+    store.clear();
+    localStorageMode = "normal";
+    windowDispatches = [];
+  });
 
   it("默认 15 分钟", () => {
     expect(getDailyGoalMin()).toBe(15);
@@ -32,5 +44,28 @@ describe("daily-goal（R4.1 分钟三档）", () => {
     expect(getDailyGoalMin()).toBe(15);
     setDailyGoalMin(999);
     expect(getDailyGoalMin()).toBe(15);
+  });
+});
+
+describe("daily-goal storage and study-minute fallbacks", () => {
+  it("falls back to 15 when localStorage rejects reads", () => {
+    localStorageMode = "throw";
+
+    expect(getDailyGoalMin()).toBe(15);
+  });
+
+  it("converts today's ledger seconds to whole study minutes", async () => {
+    localStorageMode = "normal";
+    const dateNowSpy = vi.spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 8, 21, 16));
+    const { getTodayStudyMinutes } = await import("./daily-goal");
+    const { addStudyTime } = await import("./study-time");
+    const { localDateStr } = await import("./date-utils");
+    const today = localDateStr(new Date(2026, 8, 21, 16));
+    try {
+      addStudyTime("read", 119, today);
+      expect(getTodayStudyMinutes()).toBe(1);
+    } finally {
+      dateNowSpy.mockRestore();
+    }
   });
 });
