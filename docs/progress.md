@@ -11,6 +11,7 @@
   - 每日目标：补充 localStorage 读取异常回落默认档位，以及今日学习秒数向下取整为分钟；CI 修复把写台账和读取「今天」固定到同一 mocked local date，避免 GitHub Actions UTC 日期与本地日期不一致。`BoundedMap` 补充 clear 后 keys/values/entries/iterator 顺序。
   - AI 检索配置：补充非对象 JSON 告警回退与未知场景按 chat 默认值回退。
   - 收藏按钮：补充 bookmark 事件触发外部 store 更新后的无障碍状态、样式和星标断言。
+  - 图片灯箱：补充非 button 图片键盘激活不打开、遮罩点击关闭、图片点击不冒泡关闭，以及打开/关闭期间页面滚动锁定与释放。
 - 变更文件：
   - `src/components/search-client.test.tsx`
   - `src/components/quiz.test.tsx`
@@ -20,6 +21,7 @@
   - `src/lib/bounded-map.test.ts`
   - `src/lib/ai/retrieval-config.test.ts`
   - `src/components/bookmark-button.test.tsx`
+  - `src/components/image-lightbox.test.tsx`
   - `docs/progress.md`
 - 关联完成：PR #89 已全绿并 `--rebase` 合并，main 到 `111f006`；远端临时分支已删除。
 - 验证命令与结果：
@@ -28,16 +30,17 @@
   - `npx vitest run src/lib/daily-goal.test.ts src/lib/bounded-map.test.ts`：通过（2 文件 / 12 用例）。
   - `npx vitest run src/lib/ai/retrieval-config.test.ts`：通过（1 文件 / 6 用例）。
   - `npx vitest run src/components/bookmark-button.test.tsx`：通过（1 文件 / 5 用例）。
+  - `npx vitest run src/components/image-lightbox.test.tsx`：通过（1 文件 / 6 用例）。
   - `TZ=UTC npx vitest run src/lib/daily-goal.test.ts src/lib/study-time.test.ts src/lib/date-utils.test.ts src/components/daily-goal.test.tsx src/components/weekly-report.test.tsx`：通过（5 文件 / 29 用例）。
   - `TZ=Asia/Shanghai npx vitest run src/lib/daily-goal.test.ts src/lib/study-time.test.ts src/lib/date-utils.test.ts src/components/daily-goal.test.tsx src/components/weekly-report.test.tsx`：通过（5 文件 / 29 用例）。
   - `npm run lint`：通过。
   - `npm run typecheck`：通过。
-  - `npm run test:coverage`：通过（255 文件 / 2,241 用例；语句 93.96%，分支 88.31%，函数 93.94%，行 96.32%）。
+  - `npm run test:coverage`：通过（255 文件 / 2,243 用例；语句 93.98%，分支 88.32%，函数 93.99%，行 96.34%）。
   - `npm run check:docs`、`npm run check:constitution`、`git diff --check`、`npm run build`：通过。
 - 阻塞：无本地阻塞。PR #90 原先的 GitHub `ci` 失败已由本次测试修复；Vercel deployment 仍因外部 build rate limit 失败（需 24 小时后或账号层面解除速率限制）。
 - 风险 / 回滚：仅新增或修正测试覆盖，不改生产逻辑；若修复影响断言语义，回滚 `fix(test): stabilize daily goal timezone assertion` 即可。
 - 下一项：推送修复后确认 GitHub CI 复跑结果；Vercel deployment 若仍受速率限制则继续本地覆盖率热点，不绕过必需检查。
-- 更新时间：2026-09-21 00:42（Asia/Shanghai）。
+- 更新时间：2026-09-21 00:47（Asia/Shanghai）。
 
 ---
 
