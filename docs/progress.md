@@ -3868,3 +3868,25 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：回放趋势修复为统计正确率 clamp 的一致性修正；如线上展示异常，回滚 `src/lib/replay-time-trend.ts` 变更即可。
 - 下一项：推送分支并创建 PR；若 GitHub checks 通过则按 `--rebase` 合并并清理临时分支。
 - 更新时间：2026-09-21 02:53（Asia/Shanghai）。
+
+---
+
+## 2026-09-21 — PR #96：依赖升级后修复 jsdom/Vitest Blob 兼容回归
+
+- 状态：本地修复完成，集中回归测试通过；待推送 PR 并等待远端 checks。
+- 里程碑 / 版本：v0.7.0 后续依赖维护，暂不发布。
+- 分支 / 提交：`dependabot-96`，修复待提交。
+- 完成内容：
+  - 接受 Dependabot 对 `@types/node`、`@vitest/coverage-v8` 与 `vitest` 的 minor/patch 升级。
+  - 将 `jsdom` 固定为 `30.0.1`，避免 `jsdom@30.1.0` 与 Vitest jsdom `URL.createObjectURL` 兼容层共同触发 `Cannot read properties of undefined (reading '_buffer')`，导致 canvas 分享卡下载测试显示 `下载失败`。
+  - 移除排查期间临时加入的 `canvas` 开发依赖及其脚本 allowlist，保持本 PR 只包含依赖升级与兼容性回退。
+- 变更文件：
+  - `package.json`
+  - `package-lock.json`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run src/lib/download.test.ts src/components/share-card-preview.test.tsx src/components/quiz-share-card.test.tsx src/components/streak-share-card.test.tsx --coverage=false`：通过（4 文件 / 44 用例）。
+- 阻塞：无本地阻塞；待远端 CI 结果。
+- 风险 / 回滚：仅把测试依赖 `jsdom` 固定在兼容版本；生产下载逻辑、依赖范围和安装脚本均未改变。若后续 Vitest/jsdom 发布兼容性修复，可恢复为范围版本。
+- 下一项：提交并 rebase 到 `origin/main`，推送更新 PR #96，跑完整质量门禁；checks 全绿后 rebase 合并并删除远端临时分支。
+- 更新时间：2026-09-21 03:26（Asia/Shanghai）。
