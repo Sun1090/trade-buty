@@ -4131,3 +4131,31 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 回滚方案：回滚 `jsdom` 固定和对应 lockfile；依赖包升级可独立回滚。当前没有数据库迁移或用户数据变更。
 - 下一项：等待 Vercel 配额恢复后补做预览/生产部署与 smoke test；继续下一项本地质量或 milestone 工作。
 - 更新时间：2026-09-21 03:39（Asia/Shanghai）。
+
+---
+
+## 2026-09-21 — 覆盖率批次 29：AI Chat 初始化、错误恢复与交互覆盖
+
+- 状态：本地开发完成，全量质量门禁通过；等待推送/PR 流程。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-26`，本地待提交。
+- 完成内容：
+  - 修复 `?q=&ctx=` 自动提问时因 React 初始化闭包尚未提交状态，导致首个 `/api/ai/chat` 请求遗漏 `contextChapter` 的竞态；URL 自动发送现在显式传递章节上下文。
+  - 扩展 AI Chat 覆盖：历史 sources/suggested 的 JSON 字符串与对象兼容、URL 自动提问、非流式回退、错误分级、重试、配额提示、引用点击、移动端键盘行为、visualViewport、追问链、快捷操作、输入上限、清空确认、复制兜底与截断续写。
+  - 针对 DOM 文本节点拆分改为通过目标链接和 `textContent` 断言，避免 Testing Library 对 emoji + 标题拆节点误报。
+  - 测试数从 2323 增至 2336；覆盖率从 statements 95.24%、branches 89.70%、functions 95.13%、lines 97.52% 提升至 statements 95.38%、branches 90.07%、functions 95.55%、lines 97.62%。
+- 变更文件：
+  - `src/components/ai-chat.tsx`
+  - `src/components/ai-chat.test.tsx`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run src/components/ai-chat.test.tsx --coverage=false --reporter=verbose`：通过（34 用例）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（255 文件 / 2336 用例；statements 95.38%，branches 90.07%，functions 95.55%，lines 97.62%）。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - `git diff --check`：通过。
+- 阻塞：无本地阻塞；已有远端 PR 仍可能受 Vercel 24 小时部署速率限制影响，当前未推送以避免继续消耗部署配额。
+- 风险 / 回滚：生产代码仅新增 URL 自动提问的上下文覆盖传递，不影响手动输入、续写、持久化、迁移或数据库；如自动上下文行为异常，回滚 `src/components/ai-chat.tsx` 即可。
+- 下一项：重新检查远端 PR/checks；Vercel 配额恢复后推送本批并更新 PR，CI 全绿后 rebase 合并并继续下一项质量加固。
+- 更新时间：2026-09-21 05:22（Asia/Shanghai）。

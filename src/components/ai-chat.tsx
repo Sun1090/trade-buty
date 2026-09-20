@@ -3,16 +3,23 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 // R7.1：Markdown 渲染链（react-markdown+rehype）按需加载——回答到达前不需要
-const Markdown = dynamic(() => import("@/components/markdown").then((m) => m.Markdown), {
-  ssr: false,
-  loading: () => (
-    <div className="space-y-2 py-1" aria-busy="true">
-      <div className="h-3 rounded bg-[var(--border)] w-full animate-pulse" />
-      <div className="h-3 rounded bg-[var(--border)] w-[85%] animate-pulse" />
-    </div>
-  ),
-});
-import { SUGGESTED_QUESTIONS_ZH, SUGGESTED_QUESTIONS_EN, pickRandomQuestions } from "@/lib/ai/prompt";
+const Markdown = dynamic(
+  () => import("@/components/markdown").then((m) => m.Markdown),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="space-y-2 py-1" aria-busy="true">
+        <div className="h-3 rounded bg-[var(--border)] w-full animate-pulse" />
+        <div className="h-3 rounded bg-[var(--border)] w-[85%] animate-pulse" />
+      </div>
+    ),
+  },
+);
+import {
+  SUGGESTED_QUESTIONS_ZH,
+  SUGGESTED_QUESTIONS_EN,
+  pickRandomQuestions,
+} from "@/lib/ai/prompt";
 import { hasTruncatedMarker, stripTruncatedMarker } from "@/lib/ai/streaming";
 import { reportError } from "@/lib/error-report";
 import { copyText } from "@/lib/clipboard";
@@ -60,9 +67,14 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   // R3.7：课程落地上下文（?ctx=章节 slug & ct=章节标题，课末「问 AI」按钮带入）
   const [contextTitle, setContextTitle] = useState<string | null>(null);
   // 游客配额（服务端仅对未登录请求返回 X-Quota-* 头；登录用户为 null 不展示）
-  const [quota, setQuota] = useState<{ remaining: number; limit: number } | null>(null);
+  const [quota, setQuota] = useState<{
+    remaining: number;
+    limit: number;
+  } | null>(null);
   const [contextChapter, setContextChapter] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<Record<number, "helpful" | "unhelpful">>({});
+  const [feedback, setFeedback] = useState<
+    Record<number, "helpful" | "unhelpful">
+  >({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const initRef = useRef(false);
@@ -81,13 +93,17 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
 
   // 初始化时从问题池随机取 5 个（每次进入页面看到不同推荐）
   const [suggestions] = useState(() => {
-    const pool = locale === "en" ? SUGGESTED_QUESTIONS_EN : SUGGESTED_QUESTIONS_ZH;
+    const pool =
+      locale === "en" ? SUGGESTED_QUESTIONS_EN : SUGGESTED_QUESTIONS_ZH;
     return pickRandomQuestions(pool, 5);
   });
 
   // 自动滚到底
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [messages, loading]);
 
   // 进入时拉云端历史（登录用户恢复上次对话）
@@ -100,12 +116,30 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         if (res.ok) {
           const data = await res.json();
           if (data.messages?.length > 0) {
-            setMessages(data.messages.map((m: { role: string; content: string; sources?: string | { chapter: string; doc: string; title?: string }[]; suggested?: string | { chapter: string; title: string }[] }) => ({
-              role: m.role as "user" | "assistant",
-              content: m.content,
-              sources: m.sources ? (typeof m.sources === "string" ? JSON.parse(m.sources) : m.sources) : undefined,
-              suggested: m.suggested ? (typeof m.suggested === "string" ? JSON.parse(m.suggested) : m.suggested) : undefined,
-            })));
+            setMessages(
+              data.messages.map(
+                (m: {
+                  role: string;
+                  content: string;
+                  sources?:
+                    string | { chapter: string; doc: string; title?: string }[];
+                  suggested?: string | { chapter: string; title: string }[];
+                }) => ({
+                  role: m.role as "user" | "assistant",
+                  content: m.content,
+                  sources: m.sources
+                    ? typeof m.sources === "string"
+                      ? JSON.parse(m.sources)
+                      : m.sources
+                    : undefined,
+                  suggested: m.suggested
+                    ? typeof m.suggested === "string"
+                      ? JSON.parse(m.suggested)
+                      : m.suggested
+                    : undefined,
+                }),
+              ),
+            );
             return; // 有历史就不走 ?q= 自动发送
           }
         }
@@ -121,12 +155,15 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         setContextChapter(ctx);
         if (ct) setContextTitle(ct);
       }
-      if (q) send(q);
+      if (q) send(q, { contextChapter: ctx ?? null });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function send(text: string) {
+  async function send(
+    text: string,
+    sendOpts: { contextChapter?: string | null } = {},
+  ) {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
     setError(null);
@@ -142,7 +179,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     await runStream(
       [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
       messages.length + 1,
-      { userMessage: trimmed }
+      { userMessage: trimmed, contextChapter: sendOpts.contextChapter },
     );
   }
 
@@ -153,9 +190,15 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     setError(null);
     setLoading(true);
     await runStream(
-      messages.slice(0, idx + 1).map((m) => ({ role: m.role, content: m.content })),
+      messages
+        .slice(0, idx + 1)
+        .map((m) => ({ role: m.role, content: m.content })),
       idx,
-      { baseText: target.content, userMessage: "", extraBody: { continueFrom: target.content } }
+      {
+        baseText: target.content,
+        userMessage: "",
+        extraBody: { continueFrom: target.content },
+      },
     );
   }
 
@@ -172,10 +215,13 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       baseText?: string;
       userMessage?: string;
       extraBody?: Record<string, unknown>;
-    } = {}
+      contextChapter?: string | null;
+    } = {},
   ) {
+    const activeContextChapter = opts.contextChapter ?? contextChapter;
     const baseText = opts.baseText ?? "";
-    let sourcesArr: { chapter: string; doc: string; title?: string }[] | undefined;
+    let sourcesArr:
+      { chapter: string; doc: string; title?: string }[] | undefined;
     let suggestedArr: { chapter: string; title: string }[] | undefined;
 
     // 连接超时（只约束到响应头到达，正文流式期不计入）
@@ -189,7 +235,9 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         body: JSON.stringify({
           messages: history,
           locale,
-          ...(contextChapter ? { contextChapter } : {}),
+          ...(activeContextChapter
+            ? { contextChapter: activeContextChapter }
+            : {}),
           ...opts.extraBody,
         }),
         signal: controller.signal,
@@ -216,9 +264,13 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       }
 
       const sources = res.headers.get("X-Sources");
-      sourcesArr = sources ? JSON.parse(decodeURIComponent(sources)) : undefined;
+      sourcesArr = sources
+        ? JSON.parse(decodeURIComponent(sources))
+        : undefined;
       const suggested = res.headers.get("X-Suggested");
-      suggestedArr = suggested ? JSON.parse(decodeURIComponent(suggested)) : undefined;
+      suggestedArr = suggested
+        ? JSON.parse(decodeURIComponent(suggested))
+        : undefined;
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
@@ -296,7 +348,8 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       // 移除空的 assistant 消息
       setMessages((prev) => {
         const last = prev[prev.length - 1];
-        if (last?.role === "assistant" && !last.content) return prev.slice(0, -1);
+        if (last?.role === "assistant" && !last.content)
+          return prev.slice(0, -1);
         return prev;
       });
     } finally {
@@ -318,7 +371,9 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     if (feedback[msgIdx]) return; // 已反馈过
     setFeedback((prev) => ({ ...prev, [msgIdx]: rating }));
     // 找对应的用户问题
-    const userQ = [...messages.slice(0, msgIdx)].reverse().find((m) => m.role === "user");
+    const userQ = [...messages.slice(0, msgIdx)]
+      .reverse()
+      .find((m) => m.role === "user");
     void fetch("/api/ai/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -334,9 +389,11 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   function trackCitation(
     kind: "source" | "suggested",
     s: { chapter: string; doc?: string },
-    msgIdx: number
+    msgIdx: number,
   ) {
-    const userQ = [...messages.slice(0, msgIdx)].reverse().find((m) => m.role === "user");
+    const userQ = [...messages.slice(0, msgIdx)]
+      .reverse()
+      .find((m) => m.role === "user");
     void fetch("/api/ai/citation-click", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -388,7 +445,9 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
           {messages.length === 0 && (
             <div className="text-center py-12">
               <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-br from-[var(--accent-dim)] to-transparent border border-[var(--accent)]/30 mb-4">
-                <span className="text-3xl" aria-hidden>🤖</span>
+                <span className="text-3xl" aria-hidden>
+                  🤖
+                </span>
               </div>
               <h2 className="text-xl font-bold">{dict.title}</h2>
               <p className="mt-2 text-sm text-muted max-w-md mx-auto leading-relaxed">
@@ -412,8 +471,13 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
           )}
 
           {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[85%] ${msg.role === "user" ? "" : "w-full"}`}>
+            <div
+              key={i}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[85%] ${msg.role === "user" ? "" : "w-full"}`}
+              >
                 <div
                   className={`rounded-2xl px-4 py-3 ${
                     msg.role === "user"
@@ -424,8 +488,13 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                   {msg.role === "assistant" && !msg.content && loading ? (
                     // 首个 token 未到：骨架屏 + 思考文案；流式到达后逐字填充
                     <div aria-busy="true">
-                      <span className="text-xs text-faint">{dict.thinking}</span>
-                      <div className="mt-2 space-y-2" data-testid="chat-skeleton">
+                      <span className="text-xs text-faint">
+                        {dict.thinking}
+                      </span>
+                      <div
+                        className="mt-2 space-y-2"
+                        data-testid="chat-skeleton"
+                      >
                         <div className="h-3 rounded bg-[var(--border)] w-full animate-pulse" />
                         <div className="h-3 rounded bg-[var(--border)] w-[85%] animate-pulse" />
                         <div className="h-3 rounded bg-[var(--border)] w-[60%] animate-pulse" />
@@ -443,25 +512,31 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                 {/* 来源引用 + 操作 */}
                 {msg.role === "assistant" && msg.content && (
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    {msg.suggested && msg.suggested.length > 0 && (!msg.sources || msg.sources.length === 0) && (
-                      <>
-                        <span className="text-xs text-faint">{dict.suggestedLabel}:</span>
-                        {msg.suggested.map((s, j) => (
-                          <a
-                            key={j}
-                            href={p(`/knowledge/${s.chapter}`)}
-                            title={s.chapter}
-                            onClick={() => trackCitation("suggested", s, i)}
-                            className="inline-flex items-center gap-1 rounded-full border border-[var(--border-strong)] px-2.5 py-0.5 text-xs text-muted hover:text-accent hover:border-accent/60 transition"
-                          >
-                            📚 {s.title}
-                          </a>
-                        ))}
-                      </>
-                    )}
+                    {msg.suggested &&
+                      msg.suggested.length > 0 &&
+                      (!msg.sources || msg.sources.length === 0) && (
+                        <>
+                          <span className="text-xs text-faint">
+                            {dict.suggestedLabel}:
+                          </span>
+                          {msg.suggested.map((s, j) => (
+                            <a
+                              key={j}
+                              href={p(`/knowledge/${s.chapter}`)}
+                              title={s.chapter}
+                              onClick={() => trackCitation("suggested", s, i)}
+                              className="inline-flex items-center gap-1 rounded-full border border-[var(--border-strong)] px-2.5 py-0.5 text-xs text-muted hover:text-accent hover:border-accent/60 transition"
+                            >
+                              📚 {s.title}
+                            </a>
+                          ))}
+                        </>
+                      )}
                     {msg.sources && msg.sources.length > 0 && (
                       <>
-                        <span className="text-xs text-faint">{dict.sourcesLabel}:</span>
+                        <span className="text-xs text-faint">
+                          {dict.sourcesLabel}:
+                        </span>
                         {msg.sources.map((s, j) => (
                           <a
                             key={j}
@@ -508,13 +583,17 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                     {/* 追问按钮 */}
                     <span className="flex items-center gap-1 ml-2">
                       <button
-                        onClick={() => send(locale === "en" ? "Simplify this" : "简化解释")}
+                        onClick={() =>
+                          send(locale === "en" ? "Simplify this" : "简化解释")
+                        }
                         className="text-[10px] text-faint hover:text-accent transition border border-[var(--border)] rounded px-1.5 py-0.5"
                       >
                         {locale === "en" ? "Simplify" : "简化"}
                       </button>
                       <button
-                        onClick={() => send(locale === "en" ? "Give an example" : "举个例子")}
+                        onClick={() =>
+                          send(locale === "en" ? "Give an example" : "举个例子")
+                        }
                         className="text-[10px] text-faint hover:text-accent transition border border-[var(--border)] rounded px-1.5 py-0.5"
                       >
                         {locale === "en" ? "Example" : "例子"}
@@ -548,7 +627,13 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
           <div className="mx-auto max-w-3xl rounded-xl border border-[var(--down)]/30 bg-[var(--down)]/10 p-3 flex items-center justify-between gap-3">
             <p className="text-sm text-down">{error}</p>
             <button
-              onClick={() => { setError(null); send(messages.filter((m) => m.role === "user").pop()?.content || ""); }}
+              onClick={() => {
+                setError(null);
+                send(
+                  messages.filter((m) => m.role === "user").pop()?.content ||
+                    "",
+                );
+              }}
               className="text-xs text-accent underline underline-offset-4 shrink-0"
             >
               {dict.retry}
@@ -563,7 +648,13 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
           {messages.length > 0 && (
             <button
               onClick={() => {
-                if (messages.length > 0 && !window.confirm(locale === "en" ? "Clear all messages?" : "清空所有对话？")) return;
+                if (
+                  messages.length > 0 &&
+                  !window.confirm(
+                    locale === "en" ? "Clear all messages?" : "清空所有对话？",
+                  )
+                )
+                  return;
                 clear();
               }}
               className="mb-2 text-xs text-faint hover:text-accent transition"
@@ -572,7 +663,10 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
             </button>
           )}
           <form
-            onSubmit={(e) => { e.preventDefault(); send(input); }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              send(input);
+            }}
             className="flex gap-2"
           >
             <input
@@ -583,8 +677,12 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
               onFocus={() => {
                 // 键盘弹起动画完成后补一次滚动，避免输入框被遮挡
                 window.setTimeout(
-                  () => inputRef.current?.scrollIntoView({ block: "end", behavior: "smooth" }),
-                  300
+                  () =>
+                    inputRef.current?.scrollIntoView({
+                      block: "end",
+                      behavior: "smooth",
+                    }),
+                  300,
                 );
               }}
               placeholder={dict.placeholder}
@@ -607,7 +705,10 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
               {quota.remaining > 0 ? (
                 dict.quotaRemaining.replace("{n}", String(quota.remaining))
               ) : (
-                <a href={`/${locale}/auth`} className="text-accent underline underline-offset-4">
+                <a
+                  href={`/${locale}/auth`}
+                  className="text-accent underline underline-offset-4"
+                >
                   {dict.quotaLoginHint}
                 </a>
               )}
@@ -615,7 +716,9 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
           )}
           <div className="mt-2 flex items-center justify-between gap-2">
             <p className="text-[10px] text-faint">{dict.disclaimer}</p>
-            <span className={`text-[10px] font-mono ${input.length > 450 ? "text-down" : "text-faint"}`}>
+            <span
+              className={`text-[10px] font-mono ${input.length > 450 ? "text-down" : "text-faint"}`}
+            >
               {input.length}/500
             </span>
           </div>
