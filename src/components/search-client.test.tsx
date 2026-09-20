@@ -46,6 +46,38 @@ const dict = {
   retry: "重试",
 };
 
+describe("SearchClient recent storage corruption", () => {
+  beforeEach(() => {
+    storage.clear();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("ignores malformed or non-string recent-search JSON without blocking search", async () => {
+    storage.setItem("tb-recent-search", "{not-json");
+
+    render(<SearchClient dict={dict} />);
+    const box = screen.getByRole("searchbox");
+    expect(screen.queryByText(dict.recentLabel)).toBeNull();
+
+    fireEvent.change(box, { target: { value: "definitely-no-such-lesson" } });
+    expect(await screen.findByTestId("search-empty-cta")).toHaveAttribute("href", "/zh/path");
+  });
+
+  it("keeps only string terms from mixed recent-search arrays", async () => {
+    storage.setItem("tb-recent-search", JSON.stringify(["止损", 7, null, "杠杆"]));
+
+    render(<SearchClient dict={dict} />);
+    expect(screen.getByText(dict.recentLabel)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "止损" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "杠杆" })).toBeInTheDocument();
+    expect(screen.queryByText("7")).toBeNull();
+  });
+});
+
 describe("SearchClient no-results CTA (R13.18)", () => {
   beforeEach(() => {
     storage.clear();

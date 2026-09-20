@@ -1,3 +1,30 @@
+## 2026-09-21 — 覆盖率批次 24：搜索最近记录损坏容错
+
+- 状态：本地实现与全量验证完成，暂未推送；已有 PR 因 Vercel 部署速率限制保持 UNSTABLE。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-24`，待提交。
+- 完成内容：
+  - 修复 `SearchClient` 首次读取 `tb-recent-search` 时遇到非法 JSON 或混合类型数组会中断渲染的问题。
+  - 将最近搜索初始化从 effect 同步写入迁移为 `useState` 惰性初始化，减少不必要的首屏级联渲染。
+  - 增加 malformed JSON 不阻断搜索、混合数组只保留字符串 term 的回归测试。
+- 变更文件：
+  - `src/components/search-client.tsx`
+  - `src/components/search-client.test.tsx`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run src/components/search-client.test.tsx --coverage=false`：通过（1 文件 / 15 用例）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（255 文件 / 2313 用例；statements 95.16%，branches 89.53%，functions 95.02%，lines 97.45%）。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - `git diff --check`：通过。
+- 阻塞：无本地阻塞；远端 PR 受 Vercel 部署速率限制影响。
+- 风险 / 回滚：仅改进最近搜索读取容错和初始化方式，无数据迁移或配置变更；如需回滚，撤回本提交即可。
+- 下一项：继续下一项覆盖率/质量加固；待 Vercel 容量恢复后批量推送 PR。
+- 更新时间：2026-09-21 05:00（Asia/Shanghai）。
+
+---
+
 ## 2026-09-21 — 覆盖率批次 23：分享摘要与隐私导出边界
 
 - 状态：本地实现与全量验证完成，暂未推送；已有 PR 因 Vercel 部署速率限制保持 UNSTABLE。
