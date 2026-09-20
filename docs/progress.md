@@ -70,6 +70,27 @@
 
 # Progress
 
+## 2026-09-21 — PR #90：质量覆盖批次 10 合并完成
+
+- 状态：已合并到 `main`，远端临时分支已删除。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：PR #90 rebase merge；`main` 当前 HEAD `4d6166f`。
+- 完成内容：
+  - 补齐 AI summary / plan / feedback / citation-click 的失败边界和 Supabase mock 稳定性。
+  - 补齐 JSON-LD 转义、主题选择器 / 收藏按钮 / 每日目标 SSR snapshot。
+  - 补齐统计一致性课程聚合器偏差、章节摘要缓存失败、描述质量边界和搜索 / 测验 / 回放趋势 / 图片灯箱交互边界。
+- 变更文件：PR #90 共 24 个文件，+1116 / -109。
+- 验证命令与结果：
+  - 合并前本地：`npm run lint`、`npm run typecheck`、`npm run check:docs`、`npm run check:constitution`、`git diff --check`、`npm run build` 均通过。
+  - 合并前远端：PR #90 的 GitHub `ci`、`db-tests`、CodeQL、Analyze actions、Analyze JS/TS、Vercel Preview Comments、Vercel deployment 均通过。
+  - 合并后清理：`gh pr list --state open` 为空；`origin/codex/quality-coverage-batch-10` 已删除。
+- 阻塞：无。
+- 风险 / 回滚：以测试和同步层错误边界为主；若线上同步队列行为异常，可回滚 `src/lib/sync-layer.ts` 相关变更。
+- 下一项：从 `main` 最新状态继续覆盖率热点和里程碑关键路径，优先 `quiz.tsx`、`search-client.tsx`、脚本库。
+- 更新时间：2026-09-21 01:32（Asia/Shanghai）。
+
+---
+
 ## 2026-09-20 — PR #89：同步设置写入队列边界加固待合并
 
 - 状态：本地验证完成；等待 Vercel preview check 完成后 rebase 合并。
