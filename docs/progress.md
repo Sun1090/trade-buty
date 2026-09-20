@@ -4287,3 +4287,30 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：鉴权错误边界为服务端安全加固；如线上误伤，回滚 `getServerAuthUser()` 及 API 调用点即可。无数据库迁移或用户数据变更。
 - 下一项：等待 Vercel 配额恢复后推送本批并更新 PR；继续检查下一项本地质量/安全任务。
 - 更新时间：2026-09-21 03:47（Asia/Shanghai）。
+
+---
+
+## 2026-09-21 — 自主检查：远端 PR 与全量本地门禁复核
+
+- 状态：远端 PR 仍被 Vercel 构建速率限制阻断；本地无新增待修代码，全量门禁复核通过。
+- 里程碑 / 版本：v0.7.0 后续质量/安全加固阶段，暂不发布。
+- 分支 / 提交：当前分支 `codex/quality-coverage-batch-26`，HEAD `25f9094`；origin 同步完成。
+- 完成内容：
+  - 复核 open PR #99/#101/#102/#104：GitHub CI/db-tests/CodeQL 已通过，失败项仅 Vercel Preview，目标页指向 Vercel build-rate-limit。
+  - 复核 roadmap/TODO/FIXME：剩余未完成项均为 `BLOCKED_EXTERNAL` 或上游/人工事项，无本地可执行产品缺口。
+  - 重新执行本地全量质量门禁、E2E、数据库测试与回滚演练。
+- 验证命令与结果：
+  - `gh pr list ...`：4 个 open PR 均仅 Vercel rate limit 失败。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（257 文件 / 2353 用例；statements 95.38%，branches 90.11%，functions 95.56%，lines 97.58%）。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - `npm run audit:prod` / `npm run audit:all`：0 vulnerabilities。
+  - `npm run check:secrets`：通过（684 个文本文件）。
+  - 文档、知识库契约、lockfile、changelog、constitution、frontmatter、image-alt、quiz、sitemap、SEO、links、nav、relative links、search index、bundle、structured data、mobile、title terminology、description quality、risk warning、KB pointer/changelog/history/parity、slug conflicts、description dupes、glossary、inventory、gap priority、acceptance：通过。
+  - `npm run e2e`：通过（93 tests / 23.6s）。
+  - `npm run db:test`：通过（10 个迁移、3 个 pgTAP 文件、38 RLS 越权断言、26 同步/约束断言、0008/0009 回滚重放演练）。
+- 阻塞：Vercel 账户构建速率限制仍阻断现有 PR 的 Preview check；需要等待配额恢复，或需要外部账号/升级/部署权限才能推进部署验证。
+- 风险 / 回滚：本轮没有代码改动；继续保留本地 commit 与进度记录。现有 PR 合并前仍需在 Vercel check 恢复后完成预览/部署验证。
+- 下一项：等待 Vercel 配额恢复后重跑现有 PR 的 Preview/部署检查；若仍未恢复，继续寻找独立本地质量项。
+- 更新时间：2026-09-21 05:56（Asia/Shanghai）。
