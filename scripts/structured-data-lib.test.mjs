@@ -63,6 +63,47 @@ describe("structured-data validation", () => {
     expect(result.errors).toEqual([]);
   });
 
+  it("collects nested array and type-array nodes", () => {
+    const result = validateStructuredData({
+      scripts: [
+        script({
+          "@context": "https://schema.org",
+          "@graph": [
+            { "@type": "WebSite", url: "https://example.com" },
+            { "@type": ["EducationalOrganization", "Organization"], url: "https://example.com" },
+          ],
+        }),
+      ],
+      expectedTypes: ["WebSite", "EducationalOrganization"],
+      locale: "en",
+      requirePageIdentity: false,
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.types).toContain("Organization");
+  });
+
+  it("reports context, non-http template URLs, and skipped page identity", () => {
+    const result = validateStructuredData({
+      scripts: [
+        script({
+          "@context": "https://not-schema.org",
+          "@type": "EducationalOrganization",
+          "@id": "mailto:support@example.com",
+          sameAs: ["https://example.com/{org}"],
+        }),
+      ],
+      expectedTypes: ["EducationalOrganization"],
+      locale: "en",
+      requirePageIdentity: false,
+      pageUrl,
+    });
+    expect(result.errors).toContain("script[0] @context must be https://schema.org");
+    expect(result.errors).toContain(
+      'script[0].@id: non-http URL "mailto:support@example.com"',
+    );
+    expect(result.errors).not.toContain(`no structured-data node identifies the canonical page ${pageUrl}`);
+  });
+
   it("reports missing types, wrong language, and relative URLs", () => {
     const result = validateStructuredData({
       scripts: [

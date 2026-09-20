@@ -134,13 +134,14 @@ describe("Quiz progress, wrongbook, and share URL", () => {
 
   it("builds a completed quiz share URL only after progress is done", async () => {
     globalThis.localStorage.clear();
-    const shareUrl = `http://localhost/share/quiz/${encodeQuiz({
+    const encoded = encodeQuiz({
       chapterTitle: "Beginner Quiz",
       score: 3,
       total: 3,
       percent: 100,
       locale: "en",
-    })}`;
+    });
+    expect(encoded).toMatch(/^v1\|/);
 
     render(<Quiz quiz={multiQuestionQuiz} dict={dict} locale="en" chapterTitle="Beginner Quiz" />);
     expect(screen.queryByTestId("quiz-share-btn")).toBeNull();
@@ -155,7 +156,8 @@ describe("Quiz progress, wrongbook, and share URL", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("quiz-share-btn")).toBeInTheDocument();
+      expect(screen.getByTestId("quiz-share-link-btn")).toBeInTheDocument();
     });
-    expect(shareUrl).toContain("/share/quiz/");
   });
+
 });
