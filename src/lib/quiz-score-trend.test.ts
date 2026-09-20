@@ -81,3 +81,35 @@ describe("quiz attempt ledger storage", () => {
     expect(readQuizLedger(storage)).toEqual({});
   });
 });
+
+  it("clamps the trend window and treats missing storage as empty", () => {
+    const trend = buildQuizScoreTrend({
+      chapters: [{ slug: "getting-started", questions: 0 }],
+      progress: { "getting-started": { best: "bad" } },
+      days: 9999,
+      today: "2026-09-07",
+    });
+
+    expect(trend.days.length).toBe(365);
+    expect(trend.latest).toEqual({ doneQuizzes: 0, totalQuizzes: 1, bestPct: null, avgPct: null, perfectQuizzes: 0 });
+    expect(readQuizLedger(undefined as unknown as Storage)).toEqual({});
+  });
+
+  it("falls back to attempt timestamps and caps best against chapter totals", () => {
+    const trend = buildQuizScoreTrend({
+      chapters: [{ slug: "getting-started", questions: 10 }],
+      progress: { "getting-started": { best: 99, done: true } },
+      attempts: {
+        "getting-started:1": { best: 8, total: 20 },
+        "getting-started:2": { chapter: "getting-started", best: 8, total: 8, at: local(9, 3) },
+      },
+      days: 7,
+      today: "2026-09-07",
+    });
+
+    expect(trend.summary.bestInRangeScore).toBe(8);
+    expect(trend.summary.bestInRangeTotal).toBe(8);
+    expect(trend.summary.bestInRangePct).toBe(100);
+    expect(trend.latest.bestPct).toBe(100);
+    expect(trend.latest.perfectQuizzes).toBe(1);
+  });

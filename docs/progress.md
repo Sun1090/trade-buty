@@ -1,3 +1,28 @@
+## 2026-09-21 — 覆盖率批次 21：测验趋势边界
+
+- 状态：本地实现与全量验证完成，待推送 PR。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-21`，待提交。
+- 完成内容：
+  - 补充 `buildQuizScoreTrend` 的窗口上限、空 localStorage、attempt 时间戳 fallback、best 值按 total 截断、满分判定等边界。
+  - 为 `src/lib/quiz-score-trend.ts` 覆盖薄弱分支增加 2 个回归用例。
+- 变更文件：
+  - `src/lib/quiz-score-trend.test.ts`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run src/lib/quiz-score-trend.test.ts --coverage=false`：通过（1 文件 / 8 用例）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（255 文件 / 2299 用例；statements 95.14%，branches 89.44%，functions 95.01%，lines 97.45%）。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - `git diff --check`：通过。
+- 阻塞：无本地阻塞。
+- 风险 / 回滚：仅新增测试，无产品行为、迁移或配置变更；如需回滚，撤回本提交即可。
+- 下一项：提交、推送分支并创建 PR；若 CI 全绿则按 rebase 合并并删除远端临时分支。
+- 更新时间：2026-09-21 04:20（Asia/Shanghai）。
+
+---
+
 ## 2026-09-21 — 覆盖率批次 18：404 推荐路径边界
 
 - 状态：本地实现与全量验证完成，待推送 PR。
