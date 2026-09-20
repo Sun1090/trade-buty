@@ -2,11 +2,39 @@
 
 ---
 
+## 2026-09-21 — 覆盖率批次 26：测验分享卡交互边界
+
+- 状态：本地开发与验证完成；当前未推送，避免继续触发 Vercel 部署配额。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-26`，待提交本批次。
+- 完成内容：
+  - 补充测验分享卡在缺失 `shareUrl` 时不渲染复制链接按钮的边界。
+  - 补充打开预览后从预览入口下载会以 `preview` trigger 上报且成功不显示失败告警。
+  - 补充英文预览 alt 文案的分数与百分比格式，确保可访问描述包含章节、分数和四舍五入百分比。
+  - 测试数从 2315 增至 2318；语句覆盖率 95.19%，分支覆盖率 89.57%，函数覆盖率 95.07%，行覆盖率 97.47%。
+- 变更文件：
+  - `src/components/quiz-share-card.test.tsx`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run src/components/quiz-share-card.test.tsx --coverage=false --reporter=verbose`：通过（1 文件 / 9 用例）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（255 文件 / 2318 用例；statements 95.19%，branches 89.57%，functions 95.07%，lines 97.47%）。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - `git diff --check`：通过。
+- 阻塞：无本地阻塞；PR #99/#101/#102/#104 的 GitHub checks 已通过，但 Vercel Preview 因账户构建速率限制失败，暂不合并。
+- 风险 / 回滚：仅新增测试覆盖既有组件行为，不改产品代码、迁移或配置；如需回滚，撤回本提交即可。
+- 下一项：继续提升 `src/components/streak-share-card.tsx`、`src/components/ai-chat.tsx` 等分支覆盖热点；待 Vercel 配额恢复后推送/合并 PR。
+- 更新时间：2026-09-21 04:58（Asia/Shanghai）。
+
+---
+
+
 ## 2026-09-21 — 覆盖率批次 25：云同步合并时间戳加固
 
-- 状态：本地开发与验证完成，待提交；当前未推送，避免继续触发 Vercel 部署配额。
+- 状态：本地开发、提交与验证完成；当前未推送，避免继续触发 Vercel 部署配额。
 - 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
-- 分支 / 提交：`codex/quality-coverage-batch-25`，待提交。
+- 分支 / 提交：`codex/quality-coverage-batch-25`，`009d22a fix(sync): ignore invalid cloud merge timestamps`。
 - 完成内容：
   - 错题本云端合并：跳过 `answered_at` 无法解析或为负毫秒的行，避免 `NaN` 覆盖有效本地错题记录。
   - 回放历史云端合并：跳过 `recorded_at` 无法解析或为负毫秒的行，避免脏数据进入回放历史排序与最近 100 条窗口。
@@ -28,16 +56,16 @@
   - `git diff --check`：通过。
 - 阻塞：无本地阻塞；PR #99/#101/#102/#104 的 GitHub checks 已通过，但 Vercel Preview 因账户构建速率限制失败，暂不合并。
 - 风险 / 回滚：仅收紧云端合并输入校验，不改数据库、迁移或用户数据写入路径；如需回滚，撤回本提交即可。
-- 下一项：提交本批次；Vercel 配额恢复后合并既有 PR 或推送新 PR；继续提升 `src/components/quiz-share-card.tsx`、`src/components/ai-chat.tsx` 等分支覆盖热点。
+- 下一项：Vercel 配额恢复后合并既有 PR 或推送新 PR；继续提升 `src/components/quiz-share-card.tsx`、`src/components/ai-chat.tsx` 等分支覆盖热点。
 - 更新时间：2026-09-21 04:55（Asia/Shanghai）。
 
 ---
 
 ## 2026-09-21 — 覆盖率批次 24：搜索最近记录损坏容错
 
-- 状态：本地实现与全量验证完成，暂未推送；已有 PR 因 Vercel 部署速率限制保持 UNSTABLE。
+- 状态：本地开发、提交与全量验证完成，暂未推送；已有 PR 因 Vercel 部署速率限制保持 UNSTABLE。
 - 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
-- 分支 / 提交：`codex/quality-coverage-batch-24`，待提交。
+- 分支 / 提交：`codex/quality-coverage-batch-24`，`8bb97d6 fix(search): tolerate corrupt recent searches`。
 - 完成内容：
   - 修复 `SearchClient` 首次读取 `tb-recent-search` 时遇到非法 JSON 或混合类型数组会中断渲染的问题。
   - 将最近搜索初始化从 effect 同步写入迁移为 `useState` 惰性初始化，减少不必要的首屏级联渲染。
@@ -62,9 +90,9 @@
 
 ## 2026-09-21 — 覆盖率批次 23：分享摘要与隐私导出边界
 
-- 状态：本地实现与全量验证完成，暂未推送；已有 PR 因 Vercel 部署速率限制保持 UNSTABLE。
+- 状态：本地开发、提交与验证完成，暂未推送；已有 PR 因 Vercel 部署速率限制保持 UNSTABLE。
 - 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
-- 分支 / 提交：`codex/quality-coverage-batch-23`，待提交。
+- 分支 / 提交：`codex/quality-coverage-batch-23`，`f074010 fix(share): align invalid share metadata locale`。
 - 完成内容：
   - 修复无效分享载荷的元信息语言回落：quiz/replay/streak 均使用 `DEFAULT_LOCALE`，避免英文 fallback 文案却标记 `zh`。
   - 补充 share landing 的 `kindToLocale`、无效载荷 fallback、英文摘要和分级边界覆盖。

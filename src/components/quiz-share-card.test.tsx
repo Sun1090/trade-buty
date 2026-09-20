@@ -255,3 +255,56 @@ describe("QuizShareCard download failure feedback (R13.6)", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("下载失败，请重试");
   });
 });
+
+describe("QuizShareCard share URL and preview behavior", () => {
+  function renderCard(opts: { shareUrl?: string; score?: number; total?: number } = {}) {
+    installCanvasStub();
+    installAnchorClickStub();
+    growthTrack.mockClear();
+    return render(
+      <QuizShareCard
+        chapterTitle="Margin Mechanics"
+        score={opts.score ?? 6}
+        total={opts.total ?? 8}
+        locale="en"
+        siteName="Trade Buty"
+        shareUrl={opts.shareUrl}
+        labels={{ share: "Share", previewAlt: "Preview", download: "Download", copyLink: "Copy link", copiedLink: "Copied", downloadFailed: "Download failed" }}
+      />,
+    );
+  }
+
+  it("omits the copy link button when no shareUrl is provided", () => {
+    renderCard();
+    expect(screen.queryByTestId("quiz-share-link-btn")).not.toBeInTheDocument();
+  });
+
+  it("uses the existing preview to download after preview is open", async () => {
+    renderCard({ shareUrl: "https://example.com/share/quiz/margin-mechanics" });
+    fireEvent.click(screen.getByTestId("quiz-share-preview-btn"));
+    await waitFor(() => expect(screen.getByText("⬇ Download")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText("⬇ Download"));
+    await waitFor(() =>
+      expect(growthTrack).toHaveBeenCalledWith({
+        name: "share_card_download",
+        card: "quiz",
+        locale: "en",
+        surface: "owner",
+        trigger: "preview",
+        outcome: "succeeded",
+      }),
+    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("renders an English preview description with rounded score percentage", async () => {
+    const { container } = renderCard({ score: 2, total: 3 });
+    fireEvent.click(screen.getByTestId("quiz-share-preview-btn"));
+
+    await waitFor(() => {
+      const img = container.querySelector("img");
+      expect(img?.getAttribute("alt")).toBe('Preview: quiz result card for "Margin Mechanics", 2/3 (66.7%)');
+    });
+  });
+});
