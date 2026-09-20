@@ -1,8 +1,8 @@
 ## 2026-09-21 — 覆盖率批次 10：序列化、SSR 快照与 AI 失败边界
 
-- 状态：PR #90 已推送至 `c2019ae`；GitHub `ci`、`db-tests`、CodeQL、Analyze actions/JS 均通过。Vercel deployment 仍受外部 build rate limit 阻塞，PR 保持 `UNSTABLE`，未合并。
+- 状态：PR #90 已推送至 `20d4439`；远端 check 正在复跑。Vercel deployment 仍受外部 build rate limit 阻塞，PR 仍不应合并。
 - 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
-- 分支 / 提交：`codex/quality-coverage-batch-10`，远端已包含 `c2019ae test(replay-trend): cover live update lifecycle`；本地新增待提交测试覆盖批次。
+- 分支 / 提交：`codex/quality-coverage-batch-10`，远端 `20d4439 test: expand serialization, SSR and AI fallback coverage`。
 - 完成内容：
   - 搜索：补充分页加载更多、合法零筛选恢复态、清空筛选，以及最近搜索回显 / 点击执行 / 空 query 不落库。
   - 测验：补充答错入错题本、答对清除错题本、最佳成绩保存、分享卡只在完成后出现、短耗时不写学习时长的行为边界。
@@ -20,6 +20,8 @@
   - AI 反馈导出：补充 `rating` 与 `since` 参数实际触发 `eq` / `gte` 查询链。
   - AI 计划：补充畸形 JSON 400、空模型输出 502、模型调用失败 502。
   - AI 章节摘要：补充损坏缓存快照回落空态，以及接口无 `summary` 字段时展示章节标题且不写缓存。
+  - 每日目标组件：补充 SSR server snapshot 回落（目标 15、今日分钟 0、无断签提示），消除 `getServerSnapshot` 覆盖缺口。
+  - 描述质量库：补充低分边界、超长 clamp、按 locale 排序和空报告不渲染表格。
 - 变更文件：
   - `src/components/search-client.test.tsx`
   - `src/components/quiz.test.tsx`
@@ -39,6 +41,8 @@
   - `src/app/api/ai/feedback/export/route.test.ts`
   - `src/app/api/ai/plan/route.test.ts`
   - `src/app/api/ai/citation-click/route.test.ts`
+  - `src/components/daily-goal.test.tsx`
+  - `src/lib/description-quality.test.ts`
   - `docs/progress.md`
 - 关联完成：PR #89 已全绿并 `--rebase` 合并，main 到 `111f006`；远端临时分支已删除。
 - 验证命令与结果：
@@ -52,15 +56,16 @@
   - `TZ=UTC npx vitest run src/lib/daily-goal.test.ts src/lib/study-time.test.ts src/lib/date-utils.test.ts src/components/daily-goal.test.tsx src/components/weekly-report.test.tsx`：通过（5 文件 / 29 用例）。
   - `TZ=Asia/Shanghai npx vitest run src/lib/daily-goal.test.ts src/lib/study-time.test.ts src/lib/date-utils.test.ts src/components/daily-goal.test.tsx src/components/weekly-report.test.tsx`：通过（5 文件 / 29 用例）。
   - `npx vitest run src/components/json-ld.test.tsx src/components/theme-selector.test.tsx src/components/bookmark-button.test.tsx src/lib/stats-consistency.test.ts src/components/chapter-summary-ai.test.tsx src/app/api/ai/feedback/route.test.ts src/app/api/ai/feedback/export/route.test.ts src/app/api/ai/plan/route.test.ts src/app/api/ai/citation-click/route.test.ts`：通过（9 文件 / 68 用例）。
+  - `npx vitest run src/components/daily-goal.test.tsx src/lib/description-quality.test.ts scripts/growth-event-privacy.test.mjs scripts/error-report-privacy.test.mjs`：通过（4 文件 / 38 用例）。
   - `npm run lint`：通过。
   - `npm run typecheck`：通过。
-  - `npm run test:coverage`：通过（255 文件 / 2,255 用例；语句 94.21%，分支 88.53%，函数 94.21%，行 96.58%）。
+  - `npm run test:coverage`：通过（255 文件 / 2,259 用例；语句 94.29%，分支 88.59%，函数 94.58%，行 96.67%）。
   - `npm run check:docs`、`npm run check:constitution`、`git diff --check`、`npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
-  - PR #90 checks：GitHub `ci`、`db-tests`、CodeQL、Analyze actions、Analyze JS/TS 均通过；Vercel failed。
+  - PR #90 checks：上一次远端 head `c2019ae` 的 GitHub `ci`、`db-tests`、CodeQL、Analyze actions、Analyze JS/TS 均通过；Vercel failed。推送 `20d4439` 后 GitHub checks 正在复跑。
 - 阻塞：无本地阻塞。PR #90 原先的 GitHub `ci` 失败已修复；Vercel deployment 仍因外部 build rate limit 失败（提示 24 小时后重试，需 Vercel 速率限制解除）。
 - 风险 / 回滚：仅新增或修正测试覆盖，不改生产逻辑；若新增断言影响行为解释，回滚对应测试 commit 即可。
-- 下一项：等待 Vercel 速率限制恢复后复跑 PR #90；恢复前继续本地覆盖率热点（优先 `daily-goal.tsx`、`quiz.tsx`、`search-client.tsx`、脚本库和剩余 AI/组件 fallback）。
-- 更新时间：2026-09-21 01:16（Asia/Shanghai）。
+- 下一项：等待 Vercel 速率限制恢复后复跑 PR #90；恢复前继续本地覆盖率热点（优先 `quiz.tsx`、`search-client.tsx`、脚本库和剩余 AI/组件 fallback）。
+- 更新时间：2026-09-21 01:20（Asia/Shanghai）。
 ---
 
 # Progress

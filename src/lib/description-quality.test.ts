@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { scoreDescription, renderDescriptionQualityMarkdown } from "../../scripts/description-quality-lib.mjs";
+import {
+  scoreDescription,
+  scoreDescriptions,
+  renderDescriptionQualityMarkdown,
+} from "../../scripts/description-quality-lib.mjs";
 
 describe("description quality (R10.4)", () => {
   it("rewards a present, detailed description relevant to its title", () => {
@@ -17,6 +21,47 @@ describe("description quality (R10.4)", () => {
     const result = scoreDescription({ title: "Market Risk", description: "Explains the mechanics and practical limits." });
     expect(result.length).toBe(44);
     expect(result.status).toBe("pass");
+  });
+
+  it("covers low-score boundary branches and status changes", () => {
+    const shortReview = scoreDescription({ title: "Risk", description: "Risk control" });
+    expect(shortReview.dimensions).toMatchObject({
+      length: 8,
+      detail: 10,
+      titleRelevance: 20,
+    });
+    expect(shortReview.status).toBe("gap");
+
+    const sparseLong = scoreDescription({ title: "Risk", description: "x".padEnd(18, "y") });
+    expect(sparseLong.dimensions).toMatchObject({
+      length: 20,
+      detail: 10,
+      titleRelevance: 0,
+    });
+    expect(sparseLong.status).toBe("review");
+
+    const emptyTitle = scoreDescription({ title: "", description: "Risk control basics and limits." });
+    expect(emptyTitle.dimensions.titleRelevance).toBe(0);
+  });
+
+  it("clamps very long descriptions", () => {
+    const result = scoreDescription({
+      title: "Risk Control",
+      description: `Risk control basics ${"x".repeat(220)}`,
+    });
+    expect(result.score).toBeLessThanOrEqual(100);
+    expect(result.dimensions.length).toBe(20);
+  });
+
+  it("sorts description reports by locale and omits the table when empty", () => {
+    const entries = [
+      { locale: "en", chapter: "spot", document: "b", title: "B", description: "Beta beta beta beta beta." },
+      { locale: "en", chapter: "spot", document: "a", title: "A", description: "Alpha alpha alpha alpha alpha." },
+      { locale: "zh", chapter: "risk", document: "z", title: "风险", description: "风险与波动率的含义、来源与仓位控制。" },
+    ];
+    expect(scoreDescriptions(entries).map((r) => r.document)).toEqual(["z", "a", "b"]);
+    expect(renderDescriptionQualityMarkdown({ generatedAt: "2026-09-06", results: [] })).toContain("总课程：0");
+    expect(renderDescriptionQualityMarkdown({ generatedAt: "2026-09-06", results: [] })).not.toContain("| 状态 |");
   });
 
   it("renders stable status counts", () => {
