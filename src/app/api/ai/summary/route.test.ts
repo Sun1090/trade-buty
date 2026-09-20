@@ -70,3 +70,77 @@ describe("POST /api/ai/summary 限流（R7.12）", () => {
     expect(Number(last!.headers.get("Retry-After"))).toBeGreaterThan(0);
   });
 });
+
+describe("POST /api/ai/summary request and AI failure boundaries", () => {
+  it("invalid JSON returns 400 before parsing the payload or calling retrieval/model", async () => {
+    const raw = new NextRequest("http://localhost/api/ai/summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{not-json",
+    });
+
+    const res = await POST(raw);
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Invalid JSON" });
+    expect(retrieve).not.toHaveBeenCalled();
+    expect(chat).not.toHaveBeenCalled();
+  });
+
+  it("invalid payload returns 400 and does not call retrieval or model", async () => {
+    const res = await POST(request({ chapter: "   " }));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Invalid payload" });
+    expect(retrieve).not.toHaveBeenCalled();
+    expect(chat).not.toHaveBeenCalled();
+  });
+
+  it("keeps generating a clean local summary when retrieval fails", async () => {
+    retrieve.mockRejectedValueOnce(new Error("pgvector unavailable"));
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await POST(request({ chapter: "spot", title: "Spot market" }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ summary: "本章导读" });
+    expect(retrieve).toHaveBeenCalledWith("Spot market", "zh", 6, 0.3, "spot");
+    expect(errorSpy).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  it("falls back to raw model text when the model returns non-JSON/plain prose", async () => {
+    chat.mockResolvedValueOnce("  现货市场先讲合约工具，再讲风险。 ");
+
+    const res = await POST(request({ chapter: "spot", locale: "zh" }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ summary: "现货市场先讲合约工具，再讲风险。" });
+  });
+
+  it("caps raw model fallback summaries to the configured character limit", async () => {
+    const raw = `原文摘要 ${"x".repeat(1000)}`;
+    chat.mockResolvedValueOnce(raw);
+
+    const res = await POST(request({ chapter: "spot" }));
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.summary).toBe(raw.trim().slice(0, 800));
+  });
+
+  it("returns a stable 502 when model generation fails", async () => {
+    chat.mockRejectedValueOnce(new Error("model timeout"));
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await POST(request({ chapter: "spot" }));
+
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: "AI 服务暂时不可用，请稍后再试。" });
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[ai/summary] generation failed:",
+      "model timeout",
+    );
+    errorSpy.mockRestore();
+  });
+});
