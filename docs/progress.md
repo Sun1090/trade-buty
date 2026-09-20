@@ -1,51 +1,27 @@
-## 2026-09-21 — 覆盖率批次 21：测验趋势边界
+## 2026-09-21 — 覆盖率批次 19：知识库链接边界与相邻章节测试
 
-- 状态：本地实现与全量验证完成，待推送 PR。
+- 状态：本地实现、测试与全量验证完成，待推送 PR。
 - 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
-- 分支 / 提交：`codex/quality-coverage-batch-21`，待提交。
+- 分支 / 提交：`codex/quality-coverage-batch-19`，待提交。
 - 完成内容：
-  - 补充 `buildQuizScoreTrend` 的窗口上限、空 localStorage、attempt 时间戳 fallback、best 值按 total 截断、满分判定等边界。
-  - 为 `src/lib/quiz-score-trend.ts` 覆盖薄弱分支增加 2 个回归用例。
+  - 修复知识库 Markdown 相对链接 `.` 被重写为 `/zh/knowledge/.` 的边界问题；现在回指当前篇章页。
+  - 补充当前篇章 README 空路径链接测试。
+  - 补充最后一个篇章相邻章节测试，确认末尾 `next` 为 null。
 - 变更文件：
-  - `src/lib/quiz-score-trend.test.ts`
+  - `src/lib/content.ts`
+  - `src/lib/content.test.ts`
   - `docs/progress.md`
 - 验证命令与结果：
-  - `npx vitest run src/lib/quiz-score-trend.test.ts --coverage=false`：通过（1 文件 / 8 用例）。
+  - `npx vitest run src/lib/content.test.ts --coverage=false`：通过（1 文件 / 31 用例）。
   - `npm run lint`：通过。
   - `npm run typecheck`：通过。
-  - `npm run test:coverage`：通过（255 文件 / 2299 用例；statements 95.14%，branches 89.44%，functions 95.01%，lines 97.45%）。
+  - `npm run test:coverage`：通过（255 文件 / 2295 用例；statements 95.10%，branches 89.32%，functions 95.01%，lines 97.45%）。
   - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
   - `git diff --check`：通过。
 - 阻塞：无本地阻塞。
-- 风险 / 回滚：仅新增测试，无产品行为、迁移或配置变更；如需回滚，撤回本提交即可。
-- 下一项：提交、推送分支并创建 PR；若 CI 全绿则按 rebase 合并并删除远端临时分支。
-- 更新时间：2026-09-21 04:20（Asia/Shanghai）。
-
----
-
-## 2026-09-21 — 覆盖率批次 18：404 推荐路径边界
-
-- 状态：本地实现与全量验证完成，待推送 PR。
-- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
-- 分支 / 提交：`codex/quality-coverage-batch-18`，待提交。
-- 完成内容：
-  - 补充 404 推荐路径解析边界：短路径 `/zh` 返回 null，`/en/knowledge` 返回 locale-only 解析结果，空白 doc 段不产生候选。
-  - 补充章节级拼写错位推荐：缺少 doc 段时使用章节 slug 在同章候选中排序。
-  - `src/lib/url-suggest.ts` 覆盖从 branches 81.63% 提升到 87.75%，语句覆盖从 93.75% 提升到 98.43%。
-- 变更文件：
-  - `src/lib/url-suggest.test.ts`
-  - `docs/progress.md`
-- 验证命令与结果：
-  - `npx vitest run src/lib/url-suggest.test.ts --coverage=false`：通过（1 文件 / 26 用例）。
-  - `npm run lint`：通过。
-  - `npm run typecheck`：通过。
-  - `npm run test:coverage`：通过（255 文件 / 2297 用例；statements 95.13%，branches 89.34%，functions 95.01%，lines 97.45%）。
-  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
-  - `git diff --check`：通过。
-- 阻塞：无本地阻塞。
-- 风险 / 回滚：仅新增测试，无产品行为、迁移或配置变更；如需回滚，撤回本提交即可。
+- 风险 / 回滚：只修正 `.` 相对链接的规范化，不影响 `../`、同章 `.md`、跨章目录或 `_assets` 链接；回滚本提交会恢复旧的 `.` 行为。
 - 下一项：推送分支并创建 PR；若 CI 全绿则按 rebase 合并并删除远端临时分支。
-- 更新时间：2026-09-21 04:05（Asia/Shanghai）。
+- 更新时间：2026-09-21 04:07（Asia/Shanghai）。
 
 ---
 

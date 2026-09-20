@@ -78,6 +78,11 @@ describe("rewriteLinks", () => {
     expect(out).toBe("![图](/knowledge-assets/zh/getting-started/k.svg)");
   });
 
+  it("当前篇章 README 空路径链接回指篇章页", () => {
+    const out = rewriteLinks("[篇章](.)", "zh", "futures");
+    expect(out).toBe("[篇章](/zh/knowledge/futures)");
+  });
+
   it("锚点保留", () => {
     const out = rewriteLinks("[量价](volume-price.md#5-vpvr)", "zh", "technical-analysis");
     expect(out).toBe("[量价](/zh/knowledge/technical-analysis/volume-price#5-vpvr)");
@@ -179,6 +184,16 @@ describe("章节导语风险提示兜底", () => {
   });
 });
 
+
+
+describe("相邻章节边界", () => {
+  it("最后一个篇章没有下一章节", () => {
+    expect(getAdjacentChapters("zh", "options-strategies")).toMatchObject({
+      prev: { slug: "career" },
+      next: null,
+    });
+  });
+});
 
 describe("knowledge-base filesystem contract", () => {
   it("discovers the bilingual chapter tree in stable product order", () => {
