@@ -1,3 +1,27 @@
+## 2026-09-21 — 覆盖率批次 13：JSON-LD、测验键盘与分享卡边界
+
+- 状态：本地补充覆盖完成；PR #93 已打开并等待最终验证。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：`codex/quality-coverage-batch-13`，已推送 `b7ba4ac test: cover JSON-LD and quiz share edges`，本地补充提交待验证后推送。
+- 完成内容：
+  - JSON-LD：补充嵌套节点、类型数组、context/template URL 错误、跳过页面身份，以及 FAQ/Breadcrumb 的异常结构边界。
+  - 测验：补充完成后分享/复制链接入口、键盘选择与前进、越界快捷键、跳过按钮在作答前后的行为。
+  - 测验分享卡：补充绘制失败后的用户反馈路径。
+- 变更文件：
+  - `scripts/structured-data-lib.test.mjs`
+  - `src/components/quiz.test.tsx`
+  - `src/components/quiz-share-card.test.tsx`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run scripts/structured-data-lib.test.mjs src/components/quiz.test.tsx --coverage=false`：通过（2 文件 / 26 用例）。
+  - 待补充：`npm run test:coverage`、`npm run lint`、`npm run typecheck`、`npm run check:docs`、`npm run check:constitution`、`git diff --check`、`npm run build`。
+- 阻塞：无本地阻塞；最终合并依赖 PR #93 远端 checks。
+- 风险 / 回滚：以测试覆盖为主，JSON-LD 校验仅扩展测试，不改生产逻辑；如需回滚，撤回本 PR 即可。
+- 下一项：全量验证后推送 PR #93；CI 全绿时按 `--rebase` 合并并删除临时远端分支。
+- 更新时间：2026-09-21 02:23（Asia/Shanghai）。
+
+---
+
 ## 2026-09-21 — 覆盖率批次 12：CLI 入口与外链巡检覆盖
 
 - 状态：本地开发完成，全部门禁通过；尚未推送 PR。

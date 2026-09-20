@@ -160,4 +160,44 @@ describe("Quiz progress, wrongbook, and share URL", () => {
     });
   });
 
+  it("supports keyboard shortcuts for picking and advancing questions", () => {
+    render(<Quiz quiz={multiQuestionQuiz} dict={dict} locale="zh" />);
+    fireEvent.click(screen.getByRole("button", { name: "开始" }));
+
+    fireEvent.keyDown(window, { key: "a" });
+    expect(screen.getByText("对")).toBeInTheDocument();
+    expect(recordWrong).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(window, { key: "Enter" });
+    expect(screen.getByText("第 2 题")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "3" });
+    expect(screen.getByText("错")).toBeInTheDocument();
+    expect(recordWrong).toHaveBeenCalledWith("getting-started", 1, 2);
+
+    fireEvent.keyDown(window, { key: " " });
+    expect(screen.getByText("第 3 题")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "c" });
+    expect(screen.getByText("错")).toBeInTheDocument();
+    expect(recordWrong).toHaveBeenCalledWith("getting-started", 2, 2);
+
+    fireEvent.keyDown(window, { key: " " });
+    expect(screen.getByText("重试")).toBeInTheDocument();
+  });
+
+  it("ignores out-of-range keyboard shortcuts after a pick and skips only before a pick", () => {
+    render(<Quiz quiz={multiQuestionQuiz} dict={dict} locale="zh" />);
+    fireEvent.click(screen.getByRole("button", { name: "开始" }));
+    fireEvent.keyDown(window, { key: "z" });
+    expect(screen.queryByText(/对|错/)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "跳过" }));
+    expect(screen.getByText("第 2 题")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "b" });
+    expect(screen.getByText("对")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "z" });
+    expect(screen.getByText("第 2 题")).toBeInTheDocument();
+  });
 });

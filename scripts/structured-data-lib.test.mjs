@@ -200,4 +200,38 @@ describe("semantic page contracts", () => {
       "FAQPage question[0] has an empty acceptedAnswer.text",
     ]);
   });
+
+  it("reports FAQ mainEntity when it is not a non-empty array", () => {
+    expect(
+      validateFaqPage([script({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: "not-array" })]),
+    ).toEqual(["FAQPage mainEntity must be a non-empty array"]);
+    expect(
+      validateFaqPage([script({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: [] })]),
+    ).toEqual(["FAQPage mainEntity must be a non-empty array"]);
+  });
+
+  it("rejects malformed breadcrumb items, short lists, and wrong final target", () => {
+    const pageUrl = "https://example.com/zh/knowledge/getting-started/market-overview";
+    const invalid = [
+      script({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { position: 2, name: "首页", item: "https://example.com/zh" },
+          { position: 2, name: "", item: "https://example.com/zh/faq" },
+        ],
+      }),
+    ];
+    expect(validateBreadcrumb(invalid, pageUrl)).toEqual([
+      "BreadcrumbList item[0] position must be 1",
+      "BreadcrumbList item[1] must have a name and item URL",
+      "BreadcrumbList last item must be https://example.com/zh/knowledge/getting-started/market-overview",
+    ]);
+    expect(
+      validateBreadcrumb([script({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [] })], pageUrl),
+    ).toEqual(["BreadcrumbList itemListElement must contain at least two items"]);
+    expect(
+      validateBreadcrumb([script({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: "bad" })], pageUrl),
+    ).toEqual(["BreadcrumbList itemListElement must contain at least two items"]);
+  });
 });
