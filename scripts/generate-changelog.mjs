@@ -197,7 +197,7 @@ if (checkOnly) {
     process.exit(1);
   }
   console.log(
-    `[changelog] ✅ CHANGELOG.md 与发布记录数据一致（${rendered.match(/^## /gm)?.length ?? 0} 条：含未发布 + 已发布版本）`,
+    `[changelog] ✅ CHANGELOG.md 与发布记录数据一致（${rendered.match(/^## /gm)?.length ?? 0} 条版本记录，未发布区块${/^## \[未发布\]/m.test(rendered) ? "存在" : "为空"}）`,
   );
 } else {
   fs.writeFileSync(outFile, rendered);

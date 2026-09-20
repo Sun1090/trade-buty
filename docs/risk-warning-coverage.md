@@ -1,6 +1,6 @@
 # 课程风险提示块覆盖率报告
 
-> 自动生成于 2026-09-12（npm run check:risk-warning），勿手改。
+> 自动生成于 2026-09-20（npm run check:risk-warning），勿手改。
 
 > 产品红线（docs/plan.md）：每篇内容必须带「⚠️ 风险提示 / Risk Warning」块。
 > pass = 有合规块；review = 仅提及「风险提示」字样或存在未装箱风险句，需人工补成标准块；

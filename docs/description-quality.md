@@ -1,6 +1,6 @@
 # 课程描述质量报告
 
-> 自动生成于 2026-09-12（npm run check:description-quality），勿手改。
+> 自动生成于 2026-09-20（npm run check:description-quality），勿手改。
 
 - 总课程：364 | ✅ pass：294 | 🔎 review：70 | ⚠️ gap：0
 

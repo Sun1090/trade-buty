@@ -1,6 +1,6 @@
 # 中英文标题术语一致性报告
 
-> 自动生成于 2026-09-12（npm run check:title-terminology），勿手改。
+> 自动生成于 2026-09-20（npm run check:title-terminology），勿手改。
 
 - 总课程：182 | ✅ pass：62 | 🔎 review：120 | ⚠️ gap：0
 
