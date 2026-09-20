@@ -235,44 +235,33 @@ export function syncReplayBestUpsert(best: number) {
   }
 }
 
-/** R4.7：每日目标档位云端同步（登录后多设备一致） */
-export function syncGoalUpsert(goalMin: number) {
+function enqueueGoalUpsert(payload: { daily_goal_min?: number; weekly_goal_min?: number }, key: "daily-goal" | "weekly-goal", warnLabel: string) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
   const { client, error: clientError } = safeSupabaseBrowser();
   if (client) {
     void client
       .from("user_settings")
-      .upsert({ user_id: ownerId, daily_goal_min: goalMin }, { onConflict: "user_id" })
+      .upsert({ user_id: ownerId, ...payload }, { onConflict: "user_id" })
       .then(undefined, (err) => {
         if (!authenticated || userId !== ownerId) return;
-        enqueueWriteLazy("goal", "daily-goal", { daily_goal_min: goalMin }, ownerId, () => authenticated && userId === ownerId);
-        if (process.env.NODE_ENV !== "production") console.warn("[sync] goal upsert failed → queued", err);
+        enqueueWriteLazy("goal", key, payload, ownerId, () => authenticated && userId === ownerId);
+        if (process.env.NODE_ENV !== "production") console.warn(`[sync] ${warnLabel} failed → queued`, err);
       });
   } else {
-    enqueueWriteLazy("goal", "daily-goal", { daily_goal_min: goalMin }, ownerId, () => authenticated && userId === ownerId);
-    if (process.env.NODE_ENV !== "production") console.warn("[sync] goal upsert queued without Supabase", clientError);
+    enqueueWriteLazy("goal", key, payload, ownerId, () => authenticated && userId === ownerId);
+    if (process.env.NODE_ENV !== "production") console.warn(`[sync] ${warnLabel} queued without Supabase`, clientError);
   }
+}
+
+/** R4.7：每日目标档位云端同步（登录后多设备一致） */
+export function syncGoalUpsert(goalMin: number) {
+  enqueueGoalUpsert({ daily_goal_min: goalMin }, "daily-goal", "goal upsert");
 }
 
 /** R12.19：每周目标档位云端同步 */
 export function syncWeeklyGoalUpsert(weeklyGoalMin: number) {
-  const ownerId = userId;
-  if (!authenticated || !ownerId) return;
-  const { client, error: clientError } = safeSupabaseBrowser();
-  if (client) {
-    void client
-      .from("user_settings")
-      .upsert({ user_id: ownerId, weekly_goal_min: weeklyGoalMin }, { onConflict: "user_id" })
-      .then(undefined, (err) => {
-        if (!authenticated || userId !== ownerId) return;
-        enqueueWriteLazy("goal", "weekly-goal", { weekly_goal_min: weeklyGoalMin }, ownerId, () => authenticated && userId === ownerId);
-        if (process.env.NODE_ENV !== "production") console.warn("[sync] weekly goal upsert failed → queued", err);
-      });
-  } else {
-    enqueueWriteLazy("goal", "weekly-goal", { weekly_goal_min: weeklyGoalMin }, ownerId, () => authenticated && userId === ownerId);
-    if (process.env.NODE_ENV !== "production") console.warn("[sync] weekly goal upsert queued without Supabase", clientError);
-  }
+  enqueueGoalUpsert({ weekly_goal_min: weeklyGoalMin }, "weekly-goal", "weekly goal upsert");
 }
 
 // ---- 登录时从云端拉取并合并到本地 ----
