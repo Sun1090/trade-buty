@@ -318,6 +318,10 @@ export function normalizeLocalWrong(value: unknown): Record<string, WrongEntry> 
   return out;
 }
 
+function isFiniteDateMs(value: number): boolean {
+  return Number.isFinite(value) && value >= 0;
+}
+
 function normalizeLocalReplay(value: unknown): ReplayRecord[] {
   if (!Array.isArray(value)) return [];
   const out: ReplayRecord[] = [];
@@ -381,6 +385,7 @@ export function mergeWrongbook(local: Record<string, WrongEntry>, cloud: CloudWr
   for (const row of cloud) {
     const key = `${row.chapter_num}:${row.question_idx}`;
     const cloudAt = new Date(row.answered_at).getTime();
+    if (!isFiniteDateMs(cloudAt)) continue;
     const localEntry = merged[key];
     if (!localEntry || cloudAt > localEntry.at) {
       merged[key] = {
@@ -413,16 +418,18 @@ export function mergeReplayHistory(local: ReplayRecord[], cloud: CloudReplay[]):
     merged.push(r);
   };
   local.forEach(add);
-  cloud.forEach((row) =>
+  cloud.forEach((row) => {
+    const at = new Date(row.recorded_at).getTime();
+    if (!isFiniteDateMs(at)) return;
     add({
-      at: new Date(row.recorded_at).getTime(),
+      at,
       symbol: row.symbol,
       interval: row.interval,
       total: row.total,
       correct: row.correct,
       bestStreak: row.best_streak,
-    }),
-  );
+    });
+  });
   merged.sort((a, b) => a.at - b.at);
   return merged.slice(-100);
 }
