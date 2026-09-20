@@ -1,28 +1,31 @@
-## 2026-09-21 — 覆盖率批次 10：搜索、测验与 AI 测验状态流
+## 2026-09-21 — 覆盖率批次 10：搜索、测验、AI 测验与 AI 摘要失败边界
 
-- 状态：本地完成并已 rebase 到最新 `origin/main`；待推送 / PR。
+- 状态：已推送 `codex/quality-coverage-batch-10` 并更新 PR #90；等待远端 CI。
 - 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
-- 分支 / 提交：`codex/quality-coverage-batch-10`，HEAD `15696c9`。
+- 分支 / 提交：`codex/quality-coverage-batch-10`，HEAD `0431096`。
 - 完成内容：
   - 搜索：补充分页加载更多、合法零筛选恢复态、清空筛选，以及最近搜索回显 / 点击执行 / 空 query 不落库。
   - 测验：补充答错入错题本、答对清除错题本、最佳成绩保存、分享卡只在完成后出现、短耗时不写学习时长的行为边界。
   - AI 章节测验：补充举报题目只提交一次并进入已举报态、全局 AI kill switch 隐藏入口。
+  - AI 摘要接口：补充非法 JSON、非法 payload、RAG 失败兜底、非 JSON 模型原文回落、摘要长度上限和模型失败 502 的行为边界。
 - 变更文件：
   - `src/components/search-client.test.tsx`
   - `src/components/quiz.test.tsx`
   - `src/components/ai-chapter-quiz.test.tsx`
+  - `src/app/api/ai/summary/route.test.ts`
   - `docs/progress.md`
-- 关联完成：PR #89 已全绿并 `--rebase` 合并，main 到 `111f006`；远端临时分支已删除，`origin` 仅剩 `main`。
+- 关联完成：PR #89 已全绿并 `--rebase` 合并，main 到 `111f006`；远端临时分支已删除。
 - 验证命令与结果：
   - `npx vitest run src/components/search-client.test.tsx src/components/search-hotkey.test.tsx src/components/quiz.test.tsx src/components/ai-chapter-quiz.test.tsx`：通过（4 文件 / 37 用例）。
+  - `npx vitest run src/app/api/ai/summary/route.test.ts`：通过（1 文件 / 11 用例）。
   - `npm run lint`：通过。
   - `npm run typecheck`：通过。
-  - `npm run test:coverage`：通过（255 文件 / 2,229 用例；语句 93.84%，分支 88.23%，函数 93.72%，行 96.18%）。
+  - `npm run test:coverage`：通过（255 文件 / 2,235 用例；语句 93.89%，分支 88.28%，函数 93.72%，行 96.23%）。
   - `npm run check:docs`、`npm run check:constitution`、`git diff --check`：通过。
-- 阻塞：无本地阻塞；待推送后等待远端 CI。
-- 风险 / 回滚：仅新增测试覆盖，不改生产逻辑；若 CI 环境出现测试时序差异，回滚 `15696c9` 即可。
-- 下一项：推送 `codex/quality-coverage-batch-10` 并创建 PR；CI 通过后 rebase 合并，继续排查剩余覆盖率热点。
-- 更新时间：2026-09-21 00:05（Asia/Shanghai）。
+- 阻塞：无本地阻塞；等待 PR #90 远端 CI / Vercel 完成。
+- 风险 / 回滚：仅新增测试覆盖，不改生产逻辑；若 CI 环境出现测试时序差异，回滚本分支测试提交即可。
+- 下一项：监控 PR #90；CI 全绿后 rebase 合并并删除远端分支，继续排查剩余覆盖率热点。
+- 更新时间：2026-09-21 00:18（Asia/Shanghai）。
 
 ---
 
