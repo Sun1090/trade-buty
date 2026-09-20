@@ -1,8 +1,11 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Quiz } from "./quiz";
 import type { ChapterQuiz } from "@/lib/quiz-types";
+import { encodeQuiz } from "@/lib/share-decode";
+import { addStudyTime } from "@/lib/study-time";
+import { recordWrong, resolveWrong } from "@/lib/wrongbook";
 
 const { saveQuizProgress } = vi.hoisted(() => ({
   saveQuizProgress: vi.fn(),
@@ -15,6 +18,9 @@ vi.mock("@/lib/wrongbook", () => ({
 vi.mock("@/lib/quiz-store", () => ({
   readQuizProgress: () => null,
   saveQuizProgress,
+}));
+vi.mock("@/lib/study-time", () => ({
+  addStudyTime: vi.fn(),
 }));
 
 const quiz: ChapterQuiz = {
@@ -96,5 +102,60 @@ describe("Quiz", () => {
       { best: 3, done: true },
       3,
     );
+  });
+});
+
+describe("Quiz progress, wrongbook, and share URL", () => {
+  it("writes wrong picks, resolves correct picks, and records quiz study time", () => {
+    vi.mocked(recordWrong).mockClear();
+    vi.mocked(resolveWrong).mockClear();
+    vi.mocked(addStudyTime).mockClear();
+    globalThis.localStorage.clear();
+
+    render(<Quiz quiz={multiQuestionQuiz} dict={dict} locale="zh" chapterTitle="入门基础" />);
+    fireEvent.click(screen.getByRole("button", { name: "开始" }));
+
+    fireEvent.click(screen.getByRole("button", { name: /C\./ }));
+    expect(recordWrong).toHaveBeenCalledWith("getting-started", 0, 2);
+
+    fireEvent.click(screen.getByRole("button", { name: "下一题" }));
+    fireEvent.click(screen.getByRole("button", { name: /B\./ }));
+    expect(resolveWrong).toHaveBeenCalledWith("getting-started", 1);
+    expect(screen.getByText("对")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "下一题" }));
+    fireEvent.click(screen.getByRole("button", { name: /B\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "完成" }));
+
+    expect(saveQuizProgress).toHaveBeenCalledWith("getting-started", { best: 2, done: true }, 3);
+    expect(addStudyTime).not.toHaveBeenCalled();
+    expect(screen.getByText("重试")).toBeInTheDocument();
+  });
+
+  it("builds a completed quiz share URL only after progress is done", async () => {
+    globalThis.localStorage.clear();
+    const shareUrl = `http://localhost/share/quiz/${encodeQuiz({
+      chapterTitle: "Beginner Quiz",
+      score: 3,
+      total: 3,
+      percent: 100,
+      locale: "en",
+    })}`;
+
+    render(<Quiz quiz={multiQuestionQuiz} dict={dict} locale="en" chapterTitle="Beginner Quiz" />);
+    expect(screen.queryByTestId("quiz-share-btn")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "开始" }));
+    fireEvent.click(screen.getByRole("button", { name: /A\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "下一题" }));
+    fireEvent.click(screen.getByRole("button", { name: /B\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "下一题" }));
+    fireEvent.click(screen.getByRole("button", { name: /B\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "完成" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("quiz-share-btn")).toBeInTheDocument();
+    });
+    expect(shareUrl).toContain("/share/quiz/");
   });
 });
