@@ -1,6 +1,37 @@
 {
   "releases": [
     {
+      "version": "0.7.2",
+      "date": "2026-09-22",
+      "name": {
+        "zh": "账号隔离修复与内容红线覆盖收口",
+        "en": "Account isolation fix and content red-line coverage"
+      },
+      "highlights": {
+        "zh": [
+          "修复账号切换后的数据隔离：登出或换号时，上一个账号迟到的云端进度响应仍会写进当前账号的本地存储，造成串档；现在每一轮写入前都校验会话是否仍是发起请求的那个账号，过期响应直接丢弃",
+          "补齐两处内容红线缺口：上游课文缺少合规风险提示块时，课文页自动展示本地化兜底提示；根级 `/share/*` 分享落地页（测验成绩、回放战绩、连续打卡三类）此前完全没有风险提示且没有任何测试看守，现在与全站页脚使用同一句文案，并由 E2E 逐路由钉住（中英共 16 条断言）",
+          "发布完整性：新增 `check:release-tag` 门禁，除最新发布版本外每条发布记录都必须存在同名 `vX.Y.Z` tag（`0.4.0`–`0.7.0` 属门禁上线前的遗留，显式豁免而非回填，避免把过期提交推成生产部署）；`v0.7.1` 是本仓库第一个 tag",
+          "工作保全审计进 CI：提交既没进入 `main` 也不在任何远端分支、或 PR 被关闭而工作去向从未确认时，流水线直接失败；CI 模式下读不到 GitHub 同样判失败，不允许门禁静默变绿",
+          "测试确定性：新增时钟卫生门禁，`expect(...)` 里直接读墙钟（结果取决于机器此刻是几点、跑多快）即判失败，真实定时器未受控的清单落为报告；存量 5 处命中已清零",
+          "质量基线：265 个测试文件 / 2483 个用例，语句覆盖率 95.47% → 96.24%、分支 90.35% → 91.10%（阈值 84/77 未下调）；14 个内容报告在内容未变时不再产生纯日期 diff，发布流程固化为受 `check:docs` 断言的 `docs/release-checklist.md`"
+        ],
+        "en": [
+          "Fixed account isolation after switching users: a late cloud progress response from the previous account could still be written into the current account's local storage after signing out or switching, mixing two accounts' data. Every write now verifies the session is still the one that started the request, and stale responses are discarded",
+          "Closed two content-constitution gaps: lesson pages now render a localized fallback risk notice when an upstream lesson lacks a compliant block, and the root-level `/share/*` landing pages (quiz score, replay result, study streak) — which previously carried no risk notice at all and no test guarding it — now use the same sentence as the site footer, pinned route by route in E2E (16 assertions across both languages)",
+          "Release integrity: a new `check:release-tag` gate requires every published release to carry its `vX.Y.Z` tag, except the newest one (0.4.0–0.7.0 predate the gate and are explicitly exempted rather than back-tagged, which could promote stale commits to a production deploy); `v0.7.1` is this repository's first tag",
+          "The work-preservation audit now runs in CI: the pipeline fails when a commit exists in neither `main` nor any remote branch, or when a pull request was closed with the fate of its work unconfirmed. In CI mode an unreachable GitHub API also fails the gate, so it can never go quietly green",
+          "Test determinism: a new clock-hygiene gate fails any assertion that reads the wall clock inside `expect(...)` — results that depend on what time it is or how fast the machine ran — while uncontrolled real timers are listed as a report. All five existing hits are gone",
+          "Quality baseline: 265 test files / 2483 tests, statement coverage 95.47% → 96.24% and branch 90.35% → 91.10% with no thresholds lowered; 14 generated reports no longer produce a date-only diff when their content is unchanged, and the release procedure is now a checklist that `check:docs` asserts step by step"
+        ]
+      },
+      "docs": [
+        "docs/v0.7.2-release-review.md",
+        "docs/release-checklist.md",
+        "docs/test-clock-hygiene.md"
+      ]
+    },
+    {
       "version": "0.7.1",
       "date": "2026-09-22",
       "name": {
