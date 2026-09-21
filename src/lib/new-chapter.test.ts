@@ -117,4 +117,68 @@ describe("new-chapter lib (R10.16)", () => {
       blocking: false,
     });
   });
+
+  it("缺字段的契约校验只报问题，不抛错", () => {
+    expect(validateReadme()).toEqual([
+      "README frontmatter 缺 title",
+      "README frontmatter 缺 description",
+    ]);
+    expect(validateReadme({ title: "  ", description: "\t" })).toEqual([
+      "README frontmatter 缺 title",
+      "README frontmatter 缺 description",
+    ]);
+    expect(validateReadme({ title: "01 · 入门", description: "d", h1: "01 · 入门 " })).toEqual([]);
+    expect(validateReadme({ title: "01 · 入门", description: "d", h1: "02 · 别的" })).toEqual([
+      "README 正文 H1 应与 frontmatter title 一致",
+    ]);
+    expect(validateLesson()).toEqual([
+      "undefined：frontmatter 缺 title",
+      "undefined：frontmatter 缺 description",
+    ]);
+    expect(validateLesson({ slug: "Bad_Slug", title: "01 · x", description: "d" })).toEqual([
+      "课程 slug 非法：Bad_Slug",
+    ]);
+  });
+
+  it("序号重复只统计带显式序号的课程", () => {
+    expect(
+      findOrderDuplicates([
+        { slug: "no-order", title: "无序号标题" },
+        { slug: "a", title: "01 · x" },
+        { slug: "b", title: "1. y" },
+      ])
+    ).toEqual([{ order: 1, slugs: ["a", "b"] }]);
+    expect(findOrderDuplicates([{ slug: "a", title: "01 · x" }])).toEqual([]);
+  });
+
+  it("planIntegration 区分「已登记」与「未收录」两种排期", () => {
+    expect(
+      planIntegration({ chapter: "spot", existingOrder: ["spot", "futures"], zhChapterCount: 27 })
+    ).toEqual([
+      "章节 spot 已在 CHAPTER_ORDER 第 1 位",
+      "zh 章节数将由 27 变为 28（validate-knowledge-contract 会提示非 27，属预期）",
+    ]);
+    expect(
+      planIntegration({ chapter: "brand-new", existingOrder: ["spot"], zhChapterCount: 27 })[0]
+    ).toContain("未收录 kb-order.CHAPTER_ORDER");
+  });
+
+  it("parseStageSlugs 跳过一切不合形状的语句而不是崩在 AST 上", () => {
+    // 解构声明、别的变量名、非数组初始化器都要被略过。
+    expect(
+      parseStageSlugs(
+        'const [a, b] = [1, 2];\nconst OTHER = [{ chapterNums: ["x"] }];\nconst STAGES = NOT_AN_ARRAY;\n'
+      )
+    ).toEqual([]);
+    // STAGES 里混入非对象元素、别的属性、非数组 chapterNums。
+    expect(
+      parseStageSlugs(
+        'const STAGES = ["bare", { other: 1 }, { chapterNums: "not-an-array" }];'
+      )
+    ).toEqual([]);
+    // 模板字面量与字符串都收，数字与重复项按语义处理。
+    expect(
+      parseStageSlugs("const STAGES = [{ chapterNums: [`a`, 1, \"b\", \"a\"] }];", "stages.ts")
+    ).toEqual(["a", "b"]);
+  });
 });

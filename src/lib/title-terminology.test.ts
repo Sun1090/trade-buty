@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { checkTitlePair, checkTitlePairs, renderTitleTerminologyMarkdown } from "../../scripts/title-terminology-lib.mjs";
+import {
+  checkTitlePair,
+  checkTitlePairs,
+  findTitleTerms,
+  renderTitleTerminologyMarkdown,
+  stripTitleOrder,
+  TITLE_TERMS,
+} from "../../scripts/title-terminology-lib.mjs";
 
 describe("title terminology (R10.3)", () => {
   it("matches Chinese trading terms in an English title", () => {
@@ -41,5 +48,55 @@ describe("title terminology (R10.3)", () => {
     ] });
     expect(markdown).toContain("pass：1");
     expect(markdown).toContain("2026-09-06");
+  });
+
+  it("strips every leading order form and tolerates a missing title", () => {
+    expect(stripTitleOrder("04 · 合约交易")).toBe("合约交易");
+    expect(stripTitleOrder("05、杠杆")).toBe("杠杆");
+    expect(stripTitleOrder("07 - 爆仓")).toBe("爆仓");
+    expect(stripTitleOrder("12.现货")).toBe("现货");
+    expect(stripTitleOrder("永续合约")).toBe("永续合约");
+    expect(stripTitleOrder(undefined)).toBe("");
+  });
+
+  it("finds dictionary terms against the built-in list and subsumes shorter ones", () => {
+    expect(findTitleTerms("风险与保证金").map((t: { zh: string }) => t.zh)).toEqual(["风险", "保证金"]);
+    expect(findTitleTerms("交易所里的合约").map((t: { zh: string }) => t.zh)).toEqual(["合约", "交易所"]);
+    expect(findTitleTerms("")).toEqual([]);
+    expect(findTitleTerms(undefined)).toEqual([]);
+    // 传入自定义词表时不得回落到内置表
+    expect(findTitleTerms("风险与保证金", [{ zh: "风险", en: ["risk"] }])).toHaveLength(1);
+    expect(TITLE_TERMS.length).toBeGreaterThan(0);
+  });
+
+  it("treats an absent title as a gap on whichever side is missing", () => {
+    expect(checkTitlePair({ chapter: "a", document: "x", zhTitle: "杠杆基础", enTitle: undefined })).toMatchObject({
+      status: "gap",
+      reason: "missing-en-title",
+      enTitle: "",
+    });
+    expect(checkTitlePair({ chapter: "a", document: "x", zhTitle: undefined, enTitle: "Leverage Basics" })).toMatchObject({
+      status: "gap",
+      reason: "missing-zh-title",
+      zhTitle: "",
+    });
+  });
+
+  it("normalizes dashes and whitespace before comparing English terms", () => {
+    const result = checkTitlePair({ chapter: "a", document: "x", zhTitle: "止损与止盈", enTitle: "Stop—Loss / Take Profit" });
+    expect(result.status).toBe("pass");
+  });
+
+  it("renders an empty report and marks the missing side of a gap row", () => {
+    const empty = renderTitleTerminologyMarkdown({ generatedAt: "2026-09-22", results: [] });
+    expect(empty).toContain("总课程：0");
+    expect(empty).not.toContain("| 状态 | 章节 |");
+
+    const gap = renderTitleTerminologyMarkdown({
+      generatedAt: "2026-09-22",
+      results: [checkTitlePair({ chapter: "b", document: "y", zhTitle: "杠杆基础", enTitle: undefined })],
+    });
+    expect(gap).toContain("（缺失）");
+    expect(gap).toContain("missing-en-title");
   });
 });
