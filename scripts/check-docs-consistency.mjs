@@ -1,4 +1,4 @@
-/** Q5.1/Q5.2：阻断 README、贡献指南、架构文档、AGENTS、plan 与当前实现再次漂移。 */
+/** Q5.1/Q5.2：阻断 README、贡献指南、架构文档、AGENTS、plan、发布版本号与当前实现再次漂移。 */
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -9,6 +9,7 @@ import {
   auditPlanContract,
   auditReadmeCounts,
   auditReadmeImplementationReferences,
+  auditReleaseVersion,
 } from "./docs-consistency-lib.mjs";
 
 const root = process.cwd();
@@ -60,9 +61,21 @@ if (architecture !== null) issues.push(...auditArchitectureContract(architecture
 
 issues.push(...auditNeutrality(readmes, fs.readFileSync(aboutPath, "utf8")));
 
+const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+const notes = JSON.parse(
+  fs.readFileSync(path.join(root, "src/data/release-notes.json"), "utf8")
+);
+const versionIssues = auditReleaseVersion({
+  packageVersion: pkg.version,
+  releases: notes.releases,
+});
+issues.push(...versionIssues);
+
 if (issues.length > 0) {
   console.error("[docs-consistency] ❌ 文档与当前实现不一致：");
   for (const issue of issues) console.error(`  - ${issue}`);
   process.exit(1);
 }
-console.log(`[docs-consistency] ✅ README/CONTRIBUTING/architecture/AGENTS/plan 与知识库一致（${actual.chapters} 章 / ${actual.lessons} 篇，zh/en 对齐）`);
+console.log(
+  `[docs-consistency] ✅ README/CONTRIBUTING/architecture/AGENTS/plan/版本号与知识库一致（${actual.chapters} 章 / ${actual.lessons} 篇，zh/en 对齐，package ${pkg.version}）`
+);

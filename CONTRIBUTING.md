@@ -52,7 +52,7 @@ git submodule update --init --recursive
 | `npm run lhci` | Lighthouse CI 性能与可访问性预算 |
 | `npm run db:test` | 在全新 Supabase Postgres 中验证迁移、RLS、同步与回滚 |
 | `npm run backup:drill` | 本地备份、恢复、指纹和 RLS 复验 |
-| `npm run check:docs` | README、贡献指南、架构文档、AGENTS 与 plan 的漂移门禁 |
+| `npm run check:docs` | README、贡献指南、架构文档、AGENTS、plan 与 `package.json` 版本号的漂移门禁 |
 | `npm run check:secrets` | 提交前 secrets 扫描 |
 | `npm run audit:prod` | 生产依赖高危漏洞审计 |
 | `npm run audit:all` | 全依赖高危漏洞审计 |
@@ -123,6 +123,7 @@ npm run check:docs
 - 行为、架构、命令、环境变量或运行边界变化时，同步更新 README、相关 `docs/` 文档和测试。
 - `CHANGELOG.md` 由 `src/data/release-notes.json` 生成；不要手工编辑生成文件。
 - 修改发布说明后运行 `npm run check:changelog`。
+- 每次发布把 `package.json` 的 `version` 同步到最新发布版本号；`npm run check:docs` 会拒绝它落后于 `src/data/release-notes.json` 的最新已发布版本。
 - 新增或删除公开路由时，检查 sitemap、robots、结构化数据、OG 和 E2E 覆盖。
 - 性能或依赖变化必须提供实测结果，不能只更新预算数字。
 
