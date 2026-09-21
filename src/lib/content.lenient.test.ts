@@ -42,6 +42,11 @@ beforeEach(() => {
     path.join(knowledge, "zh/alpha/lesson-no-frontmatter.md"),
     "# 只有正文的课文\n\n没有 frontmatter 的首段。\n"
   );
+  // 坏 YAML 且**没有**闭合围栏：此时无法区分 frontmatter 与正文
+  writeFileSync(
+    path.join(knowledge, "zh/alpha/lesson-unclosed-fence.md"),
+    '---\ntitle: "未闭合\nbody line\n'
+  );
 
   mkdirSync(path.join(knowledge, "zh/beta"), { recursive: true });
   // 没有 README；目录里还有一个「名字像课文但根本不是文件」的条目
@@ -109,13 +114,34 @@ describe("content 宽容模式", () => {
     const broken = pick("lesson-broken-yaml");
     const bare = pick("lesson-no-frontmatter");
 
-    // 解析失败只降级到文件名，不抛错；正文侧的 frontmatter 剥离是已知遗留（见 progress）
+    // 解析失败只降级到文件名，不抛错
     expect(broken.title).toBe("lesson-broken-yaml");
-    expect(typeof broken.description).toBe("string");
     expect(warnings.join("\n")).toContain(`${WARN} frontmatter 解析失败，降级处理: lesson-broken-yaml`);
 
     expect(bare.title).toContain("只有正文的课文");
     expect(bare.description).toContain("没有 frontmatter 的首段");
+  });
+
+  it("坏 YAML 的课文不把 `---` 围栏渲染成正文", async () => {
+    const content = await loadContentModule();
+    const broken = content.getDoc("zh", "alpha", "lesson-broken-yaml");
+    const unclosed = content.getDoc("zh", "alpha", "lesson-unclosed-fence");
+
+    if (!broken) throw new Error("坏 YAML 的课文应降级返回，而不是 getDoc 返回 null");
+    expect(broken.content).toBe("\n回退到这里的第一段。\n");
+    expect(broken.content).not.toContain("---");
+    expect(broken.content).not.toContain("未闭合");
+    // description 也来自切掉围栏后的正文，而不是 YAML 碎片
+    expect(broken.description).toContain("回退到这里的第一段");
+    // 站内同一篇会被解析两次（列目录 + 取正文）：两次都要告警。
+    // 只响一次说明命中了 gray-matter 的投毒缓存，第二次会静默返回带围栏的原文。
+    expect(
+      warnings.filter((w: string) => w.includes("lesson-broken-yaml")).length
+    ).toBeGreaterThanOrEqual(2);
+
+    // 找不到闭合围栏时不猜边界：宁可保留原文，也不能把整篇正文吞掉
+    expect(unclosed?.content).toContain("body line");
+    expect(unclosed?.title).toBe("lesson-unclosed-fence");
   });
 
   it("读不出来的课文被跳过并告警，getDoc 返回 null", async () => {
