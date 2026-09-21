@@ -1,6 +1,7 @@
 "use client";
 
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { adoptAccountMirror } from "./account-mirror";
 // R9.6：sync-layer 仅在登录后才需要 enqueueWrite；改为通过独立模块动态 import
 // 避免 sync-queue-store 被打进 layout 的共享 chunk（每个内容页 -12KB gzip）。
 import { lazyEnqueueWrite as enqueueWriteLazy } from "./sync-layer-queue-fallback";
@@ -34,6 +35,9 @@ let userId: string | null = null;
 export function setAuthState(isAuth: boolean, id?: string) {
   authenticated = isAuth;
   userId = isAuth && id ? id : null;
+  // 同步里最早的一刻就把本地镜像的归属钉死：hydrateFromCloud 走动态 import，
+  // 等它到达之前组件可能已经读到上一账号的镜像。
+  if (userId) adoptAccountMirror(userId);
 }
 
 // ---- 进度 ----
@@ -449,6 +453,10 @@ export async function hydrateFromCloud(
   isCurrent: () => boolean = () => true,
 ) {
   if (!id || !isCurrent()) return;
+
+  // 换账号登录时先丢弃上一账号的本地镜像：否则下面的合并会把别人的进度并进当前账号，
+  // 并以当前账号的 user_id 补传回云端（RLS 允许，因为那是当前账号的行）。
+  adoptAccountMirror(id);
 
   // R9.4：整体降级——任意一张表失败都不能抛（断网/RLS deny 都不该影响本地体验）
   let progressRes: { data: CloudProgress[] | null } | undefined;
