@@ -108,6 +108,26 @@ describe("buildQueueExecutor (R9.5)", () => {
     expect(calls[0]).toMatchObject({ op: "insert", table: "replay_history" });
   });
 
+  it("重放时带上原完成时刻 recorded_at，否则离线轮次会被打上补传时间", async () => {
+    const exec = buildQueueExecutor("u");
+    await exec(item("replay-history", {
+      symbol: "BTCUSDT", interval: "1h", total: 10, correct: 7, best_streak: 3,
+      recorded_at: "2026-09-20T10:00:00.000Z",
+    }));
+    expect(calls[0]).toMatchObject({
+      op: "insert",
+      table: "replay_history",
+      payload: { user_id: "u", symbol: "BTCUSDT", recorded_at: "2026-09-20T10:00:00.000Z" },
+    });
+  });
+
+  it("旧队列条目没有 recorded_at 时不伪造字段（仍由服务端 default now() 打点）", async () => {
+    const exec = buildQueueExecutor("u");
+    await exec(item("replay-history", { symbol: "ETHUSDT", interval: "4h", total: 8, correct: 4, best_streak: 2 }));
+    const payload = calls[0]!.payload as Record<string, unknown>;
+    expect(Object.prototype.hasOwnProperty.call(payload, "recorded_at")).toBe(false);
+  });
+
   it("replay-best → replay_best upsert onConflict user_id", async () => {
     const exec = buildQueueExecutor("u");
     await exec(item("replay-best", { best_streak: 9 }));

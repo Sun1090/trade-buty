@@ -240,19 +240,27 @@ export function syncReplayHistoryWrite(rec: {
   total: number;
   correct: number;
   bestStreak: number;
+  /** 本地这条的完成时刻；缺省时由服务端 `default now()` 兜底 */
+  at?: number;
 }) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
+  const payload: Record<string, unknown> = {
+    symbol: rec.symbol,
+    interval: rec.interval,
+    total: rec.total,
+    correct: rec.correct,
+    best_streak: rec.bestStreak,
+    // 云端 `recorded_at` 是 `default now()`：不带上的话它与本地 `at` 永远差一段网络
+    // 延迟，合并认不出同一轮 → 每轮回放都被记两次（统计与周报一起翻倍）。
+    ...(typeof rec.at === "number" && Number.isFinite(rec.at) && rec.at >= 0
+      ? { recorded_at: new Date(rec.at).toISOString() }
+      : {}),
+  };
   const target: QueueTarget = {
     kind: "replay-history",
-    key: `${rec.symbol}:${rec.interval}:${Date.now()}`,
-    payload: {
-      symbol: rec.symbol,
-      interval: rec.interval,
-      total: rec.total,
-      correct: rec.correct,
-      best_streak: rec.bestStreak,
-    },
+    key: `${rec.symbol}:${rec.interval}:${rec.at ?? Date.now()}`,
+    payload,
     ownerId,
     label: "replay history",
   };
@@ -260,7 +268,7 @@ export function syncReplayHistoryWrite(rec: {
   if (client) {
     void client
       .from("replay_history")
-      .insert({ user_id: ownerId, ...target.payload })
+      .insert({ user_id: ownerId, ...payload })
       .then(
         (result) => settleCloudWrite(target, result),
         (err) => settleCloudWrite(target, { error: err }),
@@ -472,20 +480,45 @@ export function mergeQuizScore(local: { best: number; done: boolean } | null, cl
   return { best: Math.max(local?.best ?? 0, cloud.best), done: true };
 }
 
-/** 回放记录合并：并集去重（按 at+symbol+interval+total+correct），取最近 100 */
+/**
+ * 同一轮回放在「本地 `at`」与「云端 `recorded_at`」之间的可容忍时间差。
+ * 历史云端行的 `recorded_at` 是服务器落库时刻（`default now()`），与客户端完成时刻必然
+ * 差一段网络延迟；不给容忍窗口，合并就认不出是同一轮，每轮回放都被统计两次。
+ * 取 10 秒：网络延迟量级，远小于一轮训练的时长。
+ *
+ * 只在「云端行 vs 本地记录」之间做容忍，不在云端行之间做：离线批量补传的云端行彼此可能
+ * 只隔 1–2 秒，若互相比对会把真实不同的轮次误并成一条。
+ */
+export const REPLAY_ROUND_DUP_WINDOW_MS = 10_000;
+
+/** 回放记录合并：并集去重（按 at+一轮的统计指纹，并对云端时间差给容忍），取最近 100 */
 export function mergeReplayHistory(local: ReplayRecord[], cloud: CloudReplay[]): ReplayRecord[] {
   const seen = new Set<string>();
   const merged: ReplayRecord[] = [];
+  const roundSig = (r: { symbol: string; interval: string; total: number; correct: number; bestStreak: number }) =>
+    `${r.symbol}|${r.interval}|${r.total}|${r.correct}|${r.bestStreak}`;
   const add = (r: ReplayRecord) => {
-    const sig = `${r.at}|${r.symbol}|${r.interval}|${r.total}|${r.correct}`;
+    const sig = `${r.at}|${roundSig(r)}`;
     if (seen.has(sig)) return;
     seen.add(sig);
     merged.push(r);
   };
   local.forEach(add);
+  const localRounds = local.map((r) => ({ sig: roundSig(r), at: r.at }));
   cloud.forEach((row) => {
     const at = new Date(row.recorded_at).getTime();
     if (!isFiniteDateMs(at)) return;
+    const sig = roundSig({
+      symbol: row.symbol,
+      interval: row.interval,
+      total: row.total,
+      correct: row.correct,
+      bestStreak: row.best_streak,
+    });
+    // 同一轮的云端行（服务器打点）与本地记录（客户端打点）只差网络延迟，认成本地那条即可
+    if (localRounds.some((l) => l.sig === sig && Math.abs(l.at - at) <= REPLAY_ROUND_DUP_WINDOW_MS)) {
+      return;
+    }
     add({
       at,
       symbol: row.symbol,
