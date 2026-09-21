@@ -1,6 +1,6 @@
 /** 本地错题本 + 云端双写：key = `${chapterNum}:${questionIdx}`，答对后移出 */
 
-import { syncWrongbookWrite, syncWrongbookDelete } from "./sync-layer";
+import { syncWrongbookWrite, syncWrongbookDelete, syncWrongbookClearAll } from "./sync-layer";
 import { isLocalDateStr } from "./date-utils";
 import { touchStreak } from "./streak";
 import { EBBINGHAUS_INTERVALS, srsOnAnswer, type SrsOutcome } from "./srs";
@@ -190,13 +190,19 @@ export function resolveWrong(chapterNum: string, questionIdx: number) {
   syncWrongbookDelete(chapterNum, questionIdx);
 }
 
-/** 清空所有错题 */
+/** 清空所有错题：本地镜像与云端一起清 */
 export function clearAllWrong() {
+  // 清空前先取快照：云端整表删除失败时要靠它逐条入队重放
+  const snapshot = Object.values(readWrong()).map((entry) => ({
+    chapterNum: entry.chapterNum,
+    questionIdx: entry.questionIdx,
+  }));
   try {
     localStorage.removeItem(KEY);
     window.dispatchEvent(new Event("tb-progress"));
   } catch {
     // ignore
   }
-  // 云端清空由 sync-layer 统一处理
+  // 只删本地=没删：下次 hydrate 会把整本错题拉回来，所以云端清空必须在这里发生
+  syncWrongbookClearAll(snapshot);
 }
