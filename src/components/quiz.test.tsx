@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, it, expect, vi } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Quiz } from "./quiz";
 import type { ChapterQuiz } from "@/lib/quiz-types";
@@ -106,11 +106,23 @@ describe("Quiz", () => {
 });
 
 describe("Quiz progress, wrongbook, and share URL", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /** 用时台账取墙钟差值，不钉住 Date.now 就会随并行负载在 0/1 秒之间抖动。 */
+  function mockClock() {
+    const state = { nowMs: 1_700_000_000_000 };
+    vi.spyOn(Date, "now").mockImplementation(() => state.nowMs);
+    return state;
+  }
+
   it("writes wrong picks, resolves correct picks, and records quiz study time", () => {
     vi.mocked(recordWrong).mockClear();
     vi.mocked(resolveWrong).mockClear();
     vi.mocked(addStudyTime).mockClear();
     globalThis.localStorage.clear();
+    mockClock();
 
     render(<Quiz quiz={multiQuestionQuiz} dict={dict} locale="zh" chapterTitle="入门基础" />);
     fireEvent.click(screen.getByRole("button", { name: "开始" }));
@@ -130,6 +142,42 @@ describe("Quiz progress, wrongbook, and share URL", () => {
     expect(saveQuizProgress).toHaveBeenCalledWith("getting-started", { best: 2, done: true }, 3);
     expect(addStudyTime).not.toHaveBeenCalled();
     expect(screen.getByText("重试")).toBeInTheDocument();
+  });
+
+  it("records the seconds spent between starting and finishing", () => {
+    vi.mocked(addStudyTime).mockClear();
+    globalThis.localStorage.clear();
+    const clock = mockClock();
+
+    render(<Quiz quiz={multiQuestionQuiz} dict={dict} locale="zh" chapterTitle="入门基础" />);
+    fireEvent.click(screen.getByRole("button", { name: "开始" }));
+    clock.nowMs += 42_000;
+    fireEvent.click(screen.getByRole("button", { name: /A\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "下一题" }));
+    fireEvent.click(screen.getByRole("button", { name: /B\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "下一题" }));
+    fireEvent.click(screen.getByRole("button", { name: /B\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "完成" }));
+
+    expect(addStudyTime).toHaveBeenCalledWith("quiz", 42);
+  });
+
+  it("caps recorded quiz study time at four hours", () => {
+    vi.mocked(addStudyTime).mockClear();
+    globalThis.localStorage.clear();
+    const clock = mockClock();
+
+    render(<Quiz quiz={multiQuestionQuiz} dict={dict} locale="zh" chapterTitle="入门基础" />);
+    fireEvent.click(screen.getByRole("button", { name: "开始" }));
+    clock.nowMs += 5 * 3600 * 1000;
+    fireEvent.click(screen.getByRole("button", { name: /A\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "下一题" }));
+    fireEvent.click(screen.getByRole("button", { name: /B\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "下一题" }));
+    fireEvent.click(screen.getByRole("button", { name: /B\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "完成" }));
+
+    expect(addStudyTime).toHaveBeenCalledWith("quiz", 4 * 3600);
   });
 
   it("builds a completed quiz share URL only after progress is done", async () => {
