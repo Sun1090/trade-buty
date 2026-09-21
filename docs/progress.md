@@ -4451,3 +4451,34 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：无数据库迁移、无依赖树变化（lockfile 仅根包版本字段随 `package.json` 同步）。`check:docs` 新增断言只可能把“忘记 bump”变红，回滚撤回 `af65576` 即可；quiz 测试改动不影响生产代码。
 - 下一项：合并本批次后在生产域名做部署后冒烟；随后进入 v0.7.1 patch 发布冻结（release-notes 条目 + CHANGELOG 生成 + `package.json` bump + 首个 git tag 补挂，含 0.4.0–0.7.0 历史 tag 的可行性评估，注意 tag push 可能触发 Vercel 部署）。
 - 更新时间：2026-09-22 00:52（Asia/Shanghai）。
+## 2026-09-22 — 线上回归：游客被认证边界打成 500
+
+- 状态：修复完成并本地全量验证；分支 `fix/guest-auth-session-boundary` 待 PR。PR #106 仍在评审。
+- 里程碑 / 版本：v0.7.0 之后的 patch 级修复，计入即将冻结的 v0.7.1。
+- 分支 / 提交：`fix/guest-auth-session-boundary`（基线 `4d47341`），`44e3940` 修复 + `7bec897` 去重。
+- 完成内容：
+  - 冒烟生产域名时发现：未登录访客请求 `/api/auth/session` 与 `/api/ai/conversations` 均返回 **HTTP 500**。本地 `npm run start` 复现同一结果，服务日志给出根因 `Auth session missing!`。
+  - 根因：`getServerAuthUser()` 对 `getUser()` 的任何 `error` 一律抛出，而「没有会话 cookie」正是 Supabase 返回 `AuthSessionMissingError` 的正常游客态；于是「不要把未知身份误判为游客」的加固反向把所有游客判成了未知身份。该边界由 `582028d`（PR #105 回收批次）引入并随其上线。
+  - 修复：`AuthSessionMissingError` 判为游客（`null`），其余错误继续抛出短路 RAG/LLM 与库读写；不新增产品决策，只恢复游客可用。
+  - 消除成因：`resolveAuthUser` 成为唯一实现，7 个 API 路由测试原先各自复制了一份 `getServerAuthUser` 函数体（正是它们让 500 通过单测上线），现统一共享真实语义；`/api/ai/conversations` 补上 Supabase 真实游客形状用例。
+  - 端到端复验（生产构建 + `next start`）：匿名与携带失效 cookie 的 `GET /api/auth/session` 均为 `200 {"user":null}`、`GET /api/ai/conversations` 均为 `200 {"messages":[]}`，修复前两者都是 500。
+  - 变异验证：临时回退 `resolveAuthUser` 判定后，新的游客用例精确转红（500），恢复后 5/5 通过。
+  - 顺带排查：`/zh/practice` 404 是我猜错路由（实际为 `/zh/replay`、`/zh/chart`），非缺陷。
+- 变更文件：
+  - `src/lib/supabase/auth-result.ts`（新增）
+  - `src/lib/supabase/auth-result.test.ts`（新增）
+  - `src/lib/supabase/server.ts`
+  - `src/lib/supabase/server.test.ts`
+  - `src/app/api/auth/session/route.test.ts`
+  - `src/app/api/ai/{chat,plan,quiz,summary,feedback,citation-click,conversations}/route.test.ts`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npm run lint`、`npm run typecheck`（0 error）、`npm run build`（474 静态页）：通过。
+  - `npm run test`：通过（258 文件 / 2378 用例）。
+  - `npx vitest run src/app/api/ai src/app/api/auth src/lib/supabase`：通过（15 文件 / 131 用例）。
+  - 生产构建端到端：`/api/auth/session` 200、`/api/ai/conversations` 200（匿名与失效 cookie 两种入参）。
+  - `npm run check:secrets`（679 文件）、`check:error-report-privacy`：通过。
+- 阻塞：无。合并后生产域名再次冒烟确认（Vercel 按 main 自动重建）。
+- 风险 / 回滚：仅放宽「无 cookie」这一种情况的判定，其余认证失败仍 fail-closed；无迁移、无数据库变更。回滚 `44e3940` 与 `7bec897` 即恢复原行为（不建议，原行为对游客是 500）。
+- 下一项：合并本修复并在生产冒烟；随后进入 v0.7.1 发布冻结（release-notes 条目 + CHANGELOG + `package.json` bump + 首个 `v0.7.1` tag；历史 tag 不回填，避免把旧提交推成生产部署）。
+- 更新时间：2026-09-22 01:48（Asia/Shanghai）。
