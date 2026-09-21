@@ -63,7 +63,10 @@ describe("ChapterSummaryAi（R3.5/R3.6/R3.9/R3.11）", () => {
     await screen.findByText("本章讲市场结构与参与者。");
     const cached = JSON.parse(store.get("tb-summary-v2-zh-spot")!);
     expect(cached.text).toContain("市场结构");
-    expect(cached.at).toBeLessThanOrEqual(Date.now());
+    // 时间戳不得来自未来。读数在断言之外取，断言里只比变量——
+    // 时钟卫生巡检（R14.6）要抓的就是「expect 里直接读墙钟」这种写法。
+    const readAt = Date.now();
+    expect(cached.at).toBeLessThanOrEqual(readAt);
   });
 
   it("缓存 7 天内命中时直接展示，不调 API", () => {

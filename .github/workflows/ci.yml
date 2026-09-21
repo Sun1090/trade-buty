@@ -146,6 +146,10 @@ jobs:
             docs/translation-status.md
             docs/new-course-acceptance.md
           retention-days: 7
+      # R14.6：测试时钟卫生巡检。「断言里直接读墙钟」阻断（该口径无已知误报，真实命中已清零）；
+      # 「真实定时器未受控」只写进 docs/test-clock-hygiene.md 排队人工判断。
+      - name: 测试时钟卫生巡检（R14.6）
+        run: npm run check:test-clock-hygiene
       # E2E 放最后：运行时会向 .next 写入动态 fallback 页，避免污染产物校验
       - run: npm run e2e
       - run: npm run lhci

@@ -67,7 +67,8 @@ describe("last-visit basic IO (R9.8)", () => {
 
 describe("shouldShowReturnNudge (R9.8)", () => {
   it("首次访问（无 lastVisit）不弹", () => {
-    expect(shouldShowReturnNudge(Date.now())).toBe(false);
+    const now = 200_000_000_000;
+    expect(shouldShowReturnNudge(now)).toBe(false);
   });
 
   it("6 天前访问过不弹", () => {
@@ -117,7 +118,7 @@ describe("daysSinceLastVisit (R9.8)", () => {
   });
 
   it("无记录 → null", () => {
-    expect(daysSinceLastVisit(Date.now())).toBeNull();
+    expect(daysSinceLastVisit(200_000_000_000)).toBeNull();
   });
 
   it("时间在未来 → 0", () => {
@@ -145,8 +146,8 @@ describe("last-visit SSR safety (R9.8)", () => {
     expect(() => touchLastVisit(1234)).not.toThrow();
     expect(getLastVisitAt()).toBeNull();
     expect(getLastNudgeShownAt()).toBeNull();
-    expect(shouldShowReturnNudge(Date.now())).toBe(false);
-    expect(daysSinceLastVisit(Date.now())).toBeNull();
+    expect(shouldShowReturnNudge(200_000_000_000)).toBe(false);
+    expect(daysSinceLastVisit(200_000_000_000)).toBeNull();
     expect(() => markNudgeShown(1234)).not.toThrow();
   });
 });

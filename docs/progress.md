@@ -4878,3 +4878,47 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：R14.6（静态扫描 `Date.now`/真实定时器判定为低信号，需重新定义为可失败的有效形式）；
   随后按 `docs/release-checklist.md` 执行 0.7.2 patch 发布。
 - 更新时间：2026-09-22 04:13（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — 测试确定性巡检接入门禁（R14.6）
+
+- 状态：完成，双向实测通过；待 PR 合并。
+- 里程碑 / 版本：v0.8 R14.6。新增的是测试与门禁，不改站点运行时。
+- 分支 / 提交：`ci/test-clock-hygiene`，基线 `f557970`。
+- 完成内容：
+  - 先前判断「静态扫 `Date.now` 属低信号」是对的，但结论错了：问题不在要不要扫，而在口径太宽。
+    按**「断言里直接读墙钟」**收窄后，误报为 0，于是同一件事既能阻断又不扰人。
+  - `scripts/test-clock-hygiene-lib.mjs`（新增）：两条口径。
+    1. `clock-in-assertion`——`expect(` 起始、括号配平到语句结尾的整条语句里出现
+       `Date.now()` / `performance.now()`。跨行 `expect` 只算一次。
+    2. `uncontrolled-timer`——文件使用真实 `setTimeout`/`setInterval` 且同文件从不出现
+       `useFakeTimers` / `setSystemTime` / `advanceTimersByTime` 等受控时钟。
+  - `scripts/check-test-clock-hygiene.mjs`（新增）：扫 `src` / `scripts` / `e2e` 下 264 个测试文件，
+    产出 `docs/test-clock-hygiene.md`（经 `writeReport` 幂等落盘，R14.5 的机制）。
+    **口径 1 判失败，口径 2 只列报告**：`await new Promise(r => setTimeout(r, 0))` 这类排空微任务的
+    写法合法，强行阻断只会逼人往 CI 里塞豁免。
+  - 排除巡检器自己的单测（`SELF_FIXTURES`）：那份夹具里有 5 处「被检查模式的字符串」，
+    逐行剥字符串覆盖不到跨行模板字面量，显式排除并在报告里说明，不让噪声淹没真实命中。
+  - ci.yml 新增步骤（位于内容报告归档之后、e2e 之前），`docs/ops.md` 按流水线顺序登记该门禁。
+  - 清零存量口径 1 命中（本批次唯一的代码改动，全在测试里）：`src/lib/last-visit.test.ts` 4 处
+    改用与相邻用例同样的固定时间常量；`chapter-summary-ai.test.tsx` 把读数取到变量再比较，
+    语义不变（仍证明缓存时间不来自未来），断言里不再碰墙钟。
+- 变更文件：`scripts/test-clock-hygiene-lib.mjs`、`scripts/test-clock-hygiene-lib.test.mjs`（新增）、
+  `scripts/check-test-clock-hygiene.mjs`、`docs/test-clock-hygiene.md`（生成）、`package.json`、
+  `.github/workflows/ci.yml`、`docs/ops.md`、`src/lib/last-visit.test.ts`、
+  `src/components/chapter-summary-ai.test.tsx`、`docs/roadmap.md`、`docs/progress.md`。
+- 验证命令和结果：
+  - `npx vitest run scripts/test-clock-hygiene-lib.test.mjs`：9 用例通过（含 `isSelfFixture`、
+    `shouldFailClockHygiene` 与跨行 `expect` 不重复计数）。
+  - `npx vitest run scripts/ci-workflow.test.mjs`：19 用例通过（新门禁已登记且顺序一致）。
+  - 现状：`扫描 264 个测试文件 · clock-in-assertion 0 · uncontrolled-timer 10`，退出码 0。
+  - **验收（roadmap 原话要求）**：临时加入 `expect(Date.now() - start).toBeLessThan(5)` 的测试文件后，
+    巡检以「❌ 1 个文件里有 1 处断言直接读墙钟」**退出码 1** 并点名文件/行/片段；删除后回到 0。
+  - `npm run test`：265 文件 / 2473 用例通过；`npm run typecheck` 0 error；`npm run lint` 通过。
+- 阻塞：无。
+- 风险 / 回滚：新增阻断口径若将来误伤（例如合法的 `expect(fn(Date.now()))` 形式），
+  应改为收窄判定而不是加全局豁免；回滚本 commit 即移除该步骤。
+- 下一项：v0.8 只剩 R14.9/R14.10/R14.11 三项 `BLOCKED_EXTERNAL`；按 `docs/release-checklist.md` 执行
+  0.7.2 patch 发布（含 #113 账号隔离、#109 课文兜底、#116 分享页红线与 R14.3–R14.8 门禁）。
+- 更新时间：2026-09-22 04:34（Asia/Shanghai）。
