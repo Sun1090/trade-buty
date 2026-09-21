@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { isAuthSessionMissingError } from "@supabase/supabase-js";
 
 /**
  * SSR cookie 客户端（anon key，守 RLS）
@@ -32,12 +33,16 @@ export async function createSupabaseServerClient() {
 /**
  * Server API 读取当前 Supabase 用户。
  *
- * `getUser()` 返回 `error` 表示身份状态不可信；此时调用方不能把 `user:null`
- * 误当成游客或未登录，也不能据此做限流/授权决策。
+ * 「没有会话 cookie」是游客的正常状态，返回 `null`；其余 `getUser()` 错误
+ * （网络、上游 Auth API 异常等）表示身份不可信，必须抛出，调用方不能把
+ * `user:null` 误当成游客或未登录，也不能据此做限流/授权决策。
  */
 export async function getServerAuthUser() {
   const supabase = await createSupabaseServerClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error) throw error;
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error && !isAuthSessionMissingError(error)) throw error;
   return user;
 }

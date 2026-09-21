@@ -10,6 +10,8 @@ vi.mock("@supabase/ssr", () => ({
   createServerClient: mocks.createServerClient,
 }));
 
+import { AuthSessionMissingError } from "@supabase/supabase-js";
+
 import { createSupabaseServerClient, getServerAuthUser } from "./server";
 
 const authGetUser = vi.fn();
@@ -88,6 +90,18 @@ describe("getServerAuthUser", () => {
     mocks.createServerClient.mockReturnValue({ auth: { getUser: authGetUser } });
 
     await expect(getServerAuthUser()).resolves.toEqual({ id: "user-1" });
+  });
+
+  it("treats a missing auth session as a guest instead of an unknown identity", async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://proj.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon";
+    authGetUser.mockResolvedValue({
+      data: { user: null },
+      error: new AuthSessionMissingError(),
+    });
+    mocks.createServerClient.mockReturnValue({ auth: { getUser: authGetUser } });
+
+    await expect(getServerAuthUser()).resolves.toBeNull();
   });
 
   it("throws Supabase errors so callers cannot treat unknown identity as guest", async () => {
