@@ -106,6 +106,20 @@ export function shouldFailClockHygiene(counts = {}) {
   return Number(counts["clock-in-assertion"] ?? 0) > 0;
 }
 
+/**
+ * Markdown 表格单元格转义。
+ *
+ * 只替 `|` 是不够的：原文里已有的反斜杠会让 `\\|` 之类看起来像「没闭合的转义」，
+ * 单元格被撑破；而补出来的 `&#124;` 里含 `&`，所以必须先转 `&` 再转后两者，
+ * 否则第二次替换会把第一次的实体再次编码。
+ */
+export function escapeTableCell(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/\\/g, "&#92;")
+    .replace(/\|/g, "&#124;");
+}
+
 /** 渲染报告。`generatedAt` 由调用方传入，内容未变时不产生纯日期 diff（R14.5）。 */
 export function renderClockHygieneMarkdown({ generatedAt, scanned, results } = {}) {
   const counts = summarizeClockHygiene(results);
@@ -143,8 +157,9 @@ export function renderClockHygieneMarkdown({ generatedAt, scanned, results } = {
   lines.push("| 口径 | 文件 | 行 | 片段 |", "|---|---|---|---|");
   for (const result of flagged) {
     for (const finding of result.findings) {
-      const snippet = finding.text.replace(/\|/g, "\\|");
-      lines.push(`| ${finding.kind} | ${result.file} | ${finding.line} | \`${snippet}\` |`);
+      lines.push(
+        `| ${escapeTableCell(finding.kind)} | ${escapeTableCell(result.file)} | ${finding.line} | \`${escapeTableCell(finding.text)}\` |`
+      );
     }
   }
   lines.push("");
