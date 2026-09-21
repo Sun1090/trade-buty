@@ -3,7 +3,7 @@
  *
  * 这些断言只覆盖可机器验证、曾真实漂移过的契约，避免把普通文案评审误报为
  * 回归：双语 README 的课程数、AGENTS 的 locale/slug 结构、plan 的当前技术栈，
- * 以及 README 与 About 页的中立/不接受捐赠承诺。
+ * README 与 About 页的中立/不接受捐赠承诺，以及 package.json 与发布记录的版本号。
  */
 
 export function extractReadmeCounts(markdown) {
@@ -156,6 +156,34 @@ export function auditNeutrality(readmes, aboutPage) {
     if (/(^##\s+(Sponsor|赞助)|\bdonate-|buying the author a coffee|请作者喝杯咖啡)/im.test(String(markdown))) {
       issues.push(`${file}: 存在与“不接受捐赠”承诺冲突的赞助入口`);
     }
+  }
+  return issues;
+}
+
+/** package.json 的 version 必须等于发布记录里的最新已发布版本。 */
+export function auditReleaseVersion({ packageVersion, releases }) {
+  const issues = [];
+  const versions = (Array.isArray(releases) ? releases : [])
+    .map((release) => release?.version)
+    .filter((version) => /^\d+\.\d+\.\d+$/.test(String(version ?? "")));
+  if (versions.length === 0) {
+    issues.push("src/data/release-notes.json: 没有 x.y.z 形式的已发布版本");
+    return issues;
+  }
+  const rank = (version) => version.split(".").map(Number);
+  const newest = versions.reduce((latest, candidate) => {
+    const left = rank(latest);
+    const right = rank(candidate);
+    for (let index = 0; index < 3; index += 1) {
+      if (right[index] > left[index]) return candidate;
+      if (right[index] < left[index]) return latest;
+    }
+    return latest;
+  });
+  if (packageVersion !== newest) {
+    issues.push(
+      `package.json: version 为 ${String(packageVersion)}，最新发布版本为 ${newest}；发布时必须同步 bump package.json`
+    );
   }
   return issues;
 }

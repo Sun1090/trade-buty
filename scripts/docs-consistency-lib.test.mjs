@@ -7,6 +7,7 @@ import {
   auditPlanContract,
   auditReadmeCounts,
   auditReadmeImplementationReferences,
+  auditReleaseVersion,
   extractReadmeCounts,
 } from "./docs-consistency-lib.mjs";
 
@@ -146,5 +147,44 @@ describe("docs-consistency-lib", () => {
     expect(
       auditNeutrality({ "README.md": "## Sponsor\nbuying the author a coffee" }, about)
     ).toContain("README.md: 存在与“不接受捐赠”承诺冲突的赞助入口");
+  });
+
+  it("binds package.json to the newest published release", () => {
+    const releases = [{ version: "0.7.0" }, { version: "0.6.0" }, { version: "0.4.0" }];
+    expect(auditReleaseVersion({ packageVersion: "0.7.0", releases })).toEqual([]);
+    expect(auditReleaseVersion({ packageVersion: "0.1.0", releases })).toContain(
+      "package.json: version 为 0.1.0，最新发布版本为 0.7.0；发布时必须同步 bump package.json"
+    );
+  });
+
+  it("ranks release versions numerically rather than lexicographically", () => {
+    expect(
+      auditReleaseVersion({
+        packageVersion: "0.10.0",
+        releases: [{ version: "0.9.0" }, { version: "0.10.0" }],
+      })
+    ).toEqual([]);
+    expect(
+      auditReleaseVersion({
+        packageVersion: "0.9.0",
+        releases: [{ version: "0.10.0" }, { version: "0.9.0" }],
+      })
+    ).toEqual([
+      "package.json: version 为 0.9.0，最新发布版本为 0.10.0；发布时必须同步 bump package.json",
+    ]);
+  });
+
+  it("ignores malformed version entries and reports when nothing is publishable", () => {
+    expect(
+      auditReleaseVersion({
+        packageVersion: "0.7.0",
+        releases: [{ version: "0.7.0" }, { version: "v0.8" }, {}],
+      })
+    ).toEqual([]);
+    for (const releases of [[{ version: "unreleased" }], [], undefined]) {
+      expect(auditReleaseVersion({ packageVersion: "0.7.0", releases })).toContain(
+        "src/data/release-notes.json: 没有 x.y.z 形式的已发布版本"
+      );
+    }
   });
 });
