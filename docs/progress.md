@@ -4785,3 +4785,53 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：R14.12 覆盖率爬坡；随后按新检查单执行 0.7.2 patch 发布（含 #113 账号隔离、#109 课文兜底、
   #116 分享页红线、R14.3/R14.7/R14.8 门禁）。
 - 更新时间：2026-09-22 03:36（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — 测试批次：覆盖率爬坡达标并补齐降级路径（R14.12）
+
+- 状态：完成，全量验证通过；待 PR 合并。
+- 里程碑 / 版本：v0.8 R14.12 关账。纯测试，不改产品行为，不计入发布说明。
+- 分支 / 提交：`test/coverage-push-r1412`，基线 `0d47865`。
+- 完成内容：
+  - 结果：statements **95.47% → 96.10%**（8983/9347），branches **90.35% → 91.01%**（6349/6976），
+    functions 95.90%，lines 98.18%。阈值保持 `vitest.config.mts` 原值（statements 84 / branches 77），
+    **没有为过门禁下调任何阈值**。
+  - 增量全部落在「坏输入时门禁/渲染怎么办」这类真实缺陷分支上，而不是凑行数：
+    1. `scripts/seo-surface-lib.test.mjs`（+8 用例）：非对象声明、path 形状问题逐条报出、
+       声明可索引但构建产物缺页、noindex 页缺页、sitemap 里的坏 URL 只跳过不中断整轮核对。
+    2. `scripts/check-dark-pattern-copy.test.mjs`（+7 用例）：对象块扫描器在行注释/块注释含 `}`、
+       字符串与模板插值含括号、嵌套模板、转义反引号时的行为；四类未闭合输入必须判为解析失败
+       而不是静默截断（截断=漏报，比误报危险）。
+    3. `scripts/structured-data-lib.test.mjs`（+8 用例）：`nodeTypes` 只认字符串与字符串数组；
+       `collectNodes` 去重且不被循环引用/原始值绊住；合法 JSON 但不是对象的文档逐个点名；
+       页面身份藏在数组里也要找到。
+    4. `src/lib/new-chapter.test.ts`（+4 用例）与 `src/lib/title-terminology.test.ts`（+5 用例）：
+       契约校验器在缺字段、非法 slug、无显式序号、未知章节、破折号/空白差异等退化输入下只报问题不抛错；
+       `parseStageSlugs` 跳过一切不合形状的 AST 节点。
+    5. `src/components/stats-client.server.test.tsx`（新增，node 环境）：统计页全部状态来自
+       localStorage 且该路由预渲染 —— 证明无 window 时整体退化为空输出而不是去碰存储。
+    6. `src/lib/content.lenient.test.ts`（新增）：AGENTS.md 的「宽容模式」红线此前没有任何测试能进入
+       那些分支（真子模块永远不会坏）。改为在临时目录搭一棵知识树 + `process.chdir` + 重新 import，
+       覆盖缺 README 章节、非法 YAML frontmatter、读不出的课文条目、以及知识根缺失时的可执行报错。
+- 顺带发现的遗留（未在本批次修）：`parseFrontmatter` 在 YAML 抛错时保留原始 `raw` 作为正文，
+  因此上游若出现坏 YAML，课文顶部会把 `---` 围栏当正文渲染。已在测试里以注释标注，
+  修复应作为独立改动（涉及渲染输出），不混进测试批次。
+- 变更文件：`scripts/seo-surface-lib.test.mjs`、`scripts/check-dark-pattern-copy.test.mjs`、
+  `scripts/structured-data-lib.test.mjs`、`src/lib/new-chapter.test.ts`、
+  `src/lib/title-terminology.test.ts`、`src/components/stats-client.server.test.tsx`（新增）、
+  `src/lib/content.lenient.test.ts`（新增）、`docs/roadmap.md`、`docs/progress.md`。
+- 验证命令和结果：
+  - `npm run test:coverage`：264 文件 / 2462 用例通过，阈值未动仍绿；上表为最终数字。
+  - `npm run typecheck` 0 error；`npm run lint`（`--max-warnings=0`）通过。
+  - 新增用例逐文件单独跑过：seo 37、copy 26、structured-data 21、new-chapter 15、terminology 11、
+    content 宽容 5、stats SSR 1。
+  - 变异抽查：把 `content.ts` 的 `console.warn` 降级路径改成直接抛错，宽容模式用例立即变红；
+    把 `stats-client` 的服务端快照换成读 localStorage，SSR 用例报出未定义访问。
+- 阻塞：无。Vercel 构建配额仍在 24h 窗口内。
+- 风险 / 回滚：只新增/扩展测试与 roadmap 勾选，不改运行时；回滚相应 commit 即可，覆盖率阈值未变。
+- 下一项：R14.4 收尾——roadmap 原话要求「CI 增加两类告警」，目前只有本地 `ops:work-audit`，
+  需把「已关闭但工作未落地」这一半接进 CI（并处理 checkout 默认 depth=1 看不到本地分支的问题，
+  否则会把全部提交误报为未推送）；顺手把 roadmap 里 R14.4/R14.5 的勾选状态与实际实现对齐。
+  随后执行 0.7.2 patch 发布（按新增的 `docs/release-checklist.md` 走）。
+- 更新时间：2026-09-22 04:05（Asia/Shanghai）。
