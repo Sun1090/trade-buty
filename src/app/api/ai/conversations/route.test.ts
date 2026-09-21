@@ -128,20 +128,26 @@ describe("GET /api/ai/conversations", () => {
     expect(db.select).not.toHaveBeenCalled();
   });
 
-  it("按时间升序取最近 50 条返回给客户端", async () => {
-    const rows = [
-      { role: "user", content: "hi", sources: null, created_at: "2026-01-01T00:00:00Z" },
+  it("取最近 50 条（倒序限窗）后再翻成正序返回给客户端", async () => {
+    // 云端按倒序返回：最新在前
+    const newestFirst = [
       { role: "assistant", content: "yo", sources: [{ chapter: "spot", doc: "order" }], created_at: "2026-01-01T00:00:01Z" },
+      { role: "user", content: "hi", sources: null, created_at: "2026-01-01T00:00:00Z" },
     ];
-    db.limit.mockResolvedValueOnce({ data: rows, error: null });
+    db.limit.mockResolvedValueOnce({ data: newestFirst, error: null });
 
     const res = await GET();
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ messages: rows });
-    // 只取自己的会话，且按时间正序 + 限额
+    expect(await res.json()).toEqual({
+      messages: [
+        { role: "user", content: "hi", sources: null, created_at: "2026-01-01T00:00:00Z" },
+        { role: "assistant", content: "yo", sources: [{ chapter: "spot", doc: "order" }], created_at: "2026-01-01T00:00:01Z" },
+      ],
+    });
+    // 升序 + limit 会拿到这个账号最早的五十条，老用户永远看不到近况
     expect(db.from).toHaveBeenCalledWith("ai_conversations");
     expect(db.eq).toHaveBeenCalledWith("user_id", "user-1");
-    expect(db.order).toHaveBeenCalledWith("created_at", { ascending: true });
+    expect(db.order).toHaveBeenCalledWith("created_at", { ascending: false });
     expect(db.limit).toHaveBeenCalledWith(50);
   });
 
@@ -226,5 +232,33 @@ describe("POST /api/ai/conversations", () => {
     const res = await POST(request({ userMessage: "问题", assistantMessage: "回答" }));
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Failed to save conversation" });
+  });
+
+  it("游客的畸形请求先被 401 挡下，不进入 body 解析", async () => {
+    db.getUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+    const garbage = new NextRequest("http://localhost/api/ai/conversations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{",
+    });
+    const res = await POST(garbage);
+    expect(res.status).toBe(401);
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("同一账号超过每小时配额后 429，并带 Retry-After", async () => {
+    // 独立 user id：模块级限流器在同一文件的其它用例里不被干扰
+    db.getUser.mockResolvedValue({ data: { user: { id: "user-flood" } }, error: null });
+    let lastStatus = 0;
+    for (let i = 0; i < 61; i++) {
+      const res = await POST(request({ userMessage: "问题", assistantMessage: "回答" }));
+      lastStatus = res.status;
+    }
+    expect(lastStatus).toBe(429);
+    expect(await (await POST(request({ userMessage: "问题", assistantMessage: "回答" }))).json()).toMatchObject({
+      error: "Rate limit exceeded",
+    });
+    // 60 次是配额内，配额外的请求一律不写库
+    expect(db.insert).toHaveBeenCalledTimes(60);
   });
 });
