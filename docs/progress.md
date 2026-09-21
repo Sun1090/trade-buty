@@ -4515,3 +4515,36 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：无数据库迁移，`git revert` 发布提交即完成站点回滚，Vercel 亦可直接 promote 上一个生产部署；细粒度回滚见 `docs/v0.7.1-release-review.md`。历史 tag 不回填（对旧提交打 tag 有把过期代码推成生产部署的风险）。
 - 下一项：合并后打 `v0.7.1` tag 并推 `main`；在生产域名冒烟确认游客链路（`/api/auth/session`、`/api/ai/conversations`、`/zh/ai`）恢复；随后进入下一 milestone——roadmap 剩余项均为 `BLOCKED_EXTERNAL`，需要账号/真实流量/上游内容，届时转为可本地推进的质量与内容门禁工作。
 - 更新时间：2026-09-22 02:58（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — v0.7.1 发布完成 + 课文页风险提示兜底
+
+- 状态：v0.7.1 已发布（PR #108 rebase 合并，tag `v0.7.1` 已推送）；课文兜底修复在 `fix/lesson-risk-warning-fallback` 待 PR。
+- 里程碑 / 版本：**v0.7.1 已发布**；下一 milestone 待 roadmap 补记。
+- 分支 / 提交：`main` = `ce55cc8`（tag `v0.7.1`）；`fix/lesson-risk-warning-fallback` = `c9d8050`。
+- 完成内容：
+  - v0.7.1 发布闭环：PR #108 rebase 合并 → 在合并后的 `main` 上打 `v0.7.1` annotated tag 并推送 → 生产域名冒烟。
+  - **仓库首个 git tag**：`0.4.0`–`0.7.0` 四次发布从未打 tag。历史 tag 有意不回填——给旧提交打 tag 在部分 Vercel 配置下会把过期代码推成生产部署，风险远大于收益；只对本次发布提交打 tag（与已部署代码同一提交，部署无副作用）。
+  - 内容红线补漏：只有章节导语页接了风险提示兜底，**课文页完全没有**。当前 364 篇课文上游全部合规，所以线上暂无暴露；但上游一旦新增缺块的课文（README 已有 14 篇不合规），课文页会整页无风险提示地上线，而 `check:risk-warning` 设计上对上游缺口只报告不阻断——这条红线当时无人守住。
+  - 课文页现在与章节页同规则兜底；`check:risk-warning` 新增阻断式接线校验（`auditFallbackWiring`），任一页面去掉兜底即 CI 变红，报告文案同步说明「上游缺口不阻断、站内接线阻断」。
+  - `risk-warning-lib.mjs` 首次获得单元测试（10 例：两种守卫写法、缺调用/缺渲染/无条件渲染三种退化、多页同时报错，以及 `analyzeRiskWarning` 的 pass/review/gap 分类）。
+- 变更文件：
+  - `src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx`
+  - `scripts/risk-warning-lib.mjs`
+  - `scripts/check-risk-warning.mjs`
+  - `scripts/risk-warning-lib.test.mjs`（新增）
+  - `docs/risk-warning-coverage.{md,json}`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npm run lint` 通过；`npm run typecheck` 0 error；`npm run build` 通过（474 页）。
+  - `npm run test`：通过（259 文件 / 2393 用例）。
+  - `npm run e2e`：通过（93 用例）。
+  - `npm run check:risk-warning`：通过（lessons 364/364 pass · readmes 40/54，review 12 / gap 2 走站内兜底）。
+  - 变异验证：临时摘掉课文页兜底后门禁输出「未调用 shouldShowRiskWarningFallback」并失败，恢复后通过。
+  - 构建产物核对（`next start` 实测）：合规课文 `fallback-notices: 0 / warning-headings: 1`（**不重复**）；不合规章节页 `fallback-notices: 1`。
+  - v0.7.1 生产冒烟：`/api/auth/session` 200、`/api/ai/conversations` 200、课文页含风险提示、`/sitemap.xml` 200。
+- 阻塞：无。
+- 风险 / 回滚：课文页改动是纯增量渲染分支，对现有 364 篇合规课文零可见变化（已实测）；回滚 `c9d8050` 即恢复原状。v0.7.1 回滚见 `docs/v0.7.1-release-review.md`。
+- 下一项：合并课文兜底修复；把 roadmap 补到 v0.7/v0.7.1 并定义 v0.8 范围（roadmap 目前止于 v0.6 关账，未来会话缺少里程碑输入）；继续处理内容报告每日日期抖动造成工作区噪声的问题。
+- 更新时间：2026-09-22 03:52（Asia/Shanghai）。
