@@ -124,6 +124,7 @@ npm run check:docs
 - `CHANGELOG.md` 由 `src/data/release-notes.json` 生成；不要手工编辑生成文件。
 - 修改发布说明后运行 `npm run check:changelog`。
 - 每次发布把 `package.json` 的 `version` 同步到最新发布版本号；`npm run check:docs` 会拒绝它落后于 `src/data/release-notes.json` 的最新已发布版本。
+- 发布合并到 `main` 之后必须打并推送 `vX.Y.Z` tag（rebase 合并会改写 SHA，所以只能在合并后打）；`npm run check:release-tag` 会拒绝遗漏 tag 的历史发布。
 - 新增或删除公开路由时，检查 sitemap、robots、结构化数据、OG 和 E2E 覆盖。
 - 性能或依赖变化必须提供实测结果，不能只更新预算数字。
 
