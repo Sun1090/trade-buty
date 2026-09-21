@@ -1,15 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { parseSummaryBody, POST } from "./route";
+import { resolveAuthUser } from "@/lib/supabase/auth-result";
 
 const getUser = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(async () => ({ auth: { getUser } })),
-  getServerAuthUser: async () => {
-    const { data: { user }, error } = await getUser();
-    if (error) throw error;
-    return user;
-  },
+  getServerAuthUser: async () => resolveAuthUser(await getUser()),
 }));
 const { chat } = vi.hoisted(() => ({ chat: vi.fn() }));
 vi.mock("@/lib/ai/client", () => ({ chat }));

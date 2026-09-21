@@ -4,15 +4,12 @@ import { POST } from "./route";
 import { retrieve } from "@/lib/ai/rag";
 import { TRUNCATED_MARKER } from "@/lib/ai/streaming";
 import type { RagResult } from "@/lib/ai/rag";
+import { resolveAuthUser } from "@/lib/supabase/auth-result";
 
 const getUser = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(async () => ({ auth: { getUser } })),
-  getServerAuthUser: async () => {
-    const { data: { user }, error } = await getUser();
-    if (error) throw error;
-    return user;
-  },
+  getServerAuthUser: async () => resolveAuthUser(await getUser()),
 }));
 // 护栏命中路径不会调模型；这里显式挡住真实上游，避免测试误发请求。
 // vi.mock 工厂会被提升到文件顶部，必须先 vi.hoisted 建好 mock 再引用。

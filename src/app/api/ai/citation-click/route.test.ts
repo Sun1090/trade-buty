@@ -1,6 +1,7 @@
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { PER_MINUTE_LIMIT, parseCitationClick, POST } from "./route";
+import { resolveAuthUser } from "@/lib/supabase/auth-result";
 
 const mocks = vi.hoisted(() => ({
   createSupabaseServerClient: vi.fn(),
@@ -9,11 +10,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: mocks.createSupabaseServerClient,
-  getServerAuthUser: async () => {
-    const { data: { user }, error } = await mocks.getUser();
-    if (error) throw error;
-    return user;
-  },
+  getServerAuthUser: async () => resolveAuthUser(await mocks.getUser()),
 }));
 const { createSupabaseServerClient, getUser, insert } = mocks;
 
