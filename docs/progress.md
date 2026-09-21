@@ -4416,7 +4416,7 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 
 ## 2026-09-22 — PR #105 合并与版本完整性/测试稳定性批次
 
-- 状态：PR #105 已 rebase 合并进 `main`（21 个提交落地，远端临时分支已删除并 prune）；本批次在 `feat/version-integrity` 上完成，待 PR。
+- 状态：PR #105 与 PR #106 均已 rebase 合并进 `main`（远端临时分支已删除并 prune）。
 - 里程碑 / 版本：v0.7.0 之后的质量/发布完整性批次；下一个候选发布为 v0.7.1（patch）。
 - 分支 / 提交：`feat/version-integrity`，基线 `4d47341`，提交 `af65576`（版本号绑定）+ `5480480`（quiz 时钟钉定）。
 - 完成内容：
@@ -4482,3 +4482,36 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：仅放宽「无 cookie」这一种情况的判定，其余认证失败仍 fail-closed；无迁移、无数据库变更。回滚 `44e3940` 与 `7bec897` 即恢复原行为（不建议，原行为对游客是 500）。
 - 下一项：合并本修复并在生产冒烟；随后进入 v0.7.1 发布冻结（release-notes 条目 + CHANGELOG + `package.json` bump + 首个 `v0.7.1` tag；历史 tag 不回填，避免把旧提交推成生产部署）。
 - 更新时间：2026-09-22 01:48（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — RELEASE_FREEZE：v0.7.1
+
+- 状态：发布冻结完成，全量门禁通过；`release/v0.7.1` 待 PR，合并后在 `main` 上打 `v0.7.1` tag（rebase 合并会改写 SHA，必须在合并后打）。
+- 里程碑 / 版本：**v0.7.1**（patch），上一版本 `0.7.0`（2026-09-20，发布提交 `364515b`）。
+- 分支 / 提交：`release/v0.7.1`，基线 `1203fc5`（含 PR #105/#106/#107）。
+- 发布级别判定：`0.7.0` 之后落地的全部是缺陷修复与发布完整性收口，无新增产品能力、无不兼容变更 → patch。硬性触发点是 PR #107 的线上回归：游客 AI 问答 502、登录态与历史接口 500。
+- 完成内容：
+  - `src/data/release-notes.json` 新增 `0.7.1` 条目（中英各 6 条 highlights，双语条数一致由 `check:changelog` 强制），`CHANGELOG.md` 由 `npm run changelog:generate` 重新生成（5 条版本记录）。
+  - `package.json` `0.7.0` → `0.7.1`，lockfile 根条目用钉定的 `npm@10.9.4` 同步（仅版本号两行）。
+  - 新增 `docs/v0.7.1-release-review.md`：发布动因、变更范围（#105/#106/#107 逐条）、验证证据、四级回滚方案、遗留项。
+  - 修正上一条目中已过时的“待 PR”状态，避免后续会话据错误事实决策。
+- 变更文件：
+  - `src/data/release-notes.json`
+  - `CHANGELOG.md`
+  - `package.json`
+  - `package-lock.json`
+  - `docs/v0.7.1-release-review.md`（新增）
+  - `docs/progress.md`
+- 验证命令与结果（RELEASE_FREEZE 全量）：
+  - `npm run lint`：通过；`npm run typecheck`：0 error。
+  - `npm run test:coverage`：通过（258 文件 / 2383 用例；statements 95.47%、branches 90.35%、functions 95.62%、lines 97.61%）。
+  - `npm run build`：通过（474 个静态页面）。
+  - 38 项门禁一次性批量校验 **0 失败**：docs/changelog/constitution/frontmatter/image-alt/quiz/sitemap/seo-surface/links/nav-chain/relative-links/search-index/bundle/structured-data/mobile/title-terminology/description-quality/risk-warning/slug-conflicts/description-dupes/glossary/kb-pointer/kb-changelog/translation-history/kb-parity-budget/kb:parity/kb:accept/kb:inventory/kb:gap-priority/ai-copy/dark-pattern-copy/env-docs/growth-event-privacy/error-report-privacy/secrets/lockfile-repro/audit:prod/audit:all。
+  - `npm run e2e`：通过（93 用例 / 54.6s）。注：首次运行报 `config.webServer ... Exit code 1`，为上一轮遗留的 `next start` 占用 3100 端口所致；清理进程后重跑全绿，非代码问题。
+  - `npm run db:test`：通过（迁移 + RLS 越权 + 同步约束 + 0008/0009 回滚重放）。
+  - `npm run backup:drill`：通过（10 迁移、11 张业务表、3 个 pgTAP 文件、dump/恢复/指纹/RLS 重跑）。
+- 阻塞：无。
+- 风险 / 回滚：无数据库迁移，`git revert` 发布提交即完成站点回滚，Vercel 亦可直接 promote 上一个生产部署；细粒度回滚见 `docs/v0.7.1-release-review.md`。历史 tag 不回填（对旧提交打 tag 有把过期代码推成生产部署的风险）。
+- 下一项：合并后打 `v0.7.1` tag 并推 `main`；在生产域名冒烟确认游客链路（`/api/auth/session`、`/api/ai/conversations`、`/zh/ai`）恢复；随后进入下一 milestone——roadmap 剩余项均为 `BLOCKED_EXTERNAL`，需要账号/真实流量/上游内容，届时转为可本地推进的质量与内容门禁工作。
+- 更新时间：2026-09-22 02:58（Asia/Shanghai）。
