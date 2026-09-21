@@ -4749,3 +4749,39 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：R14.8 发布检查单固化（`docs/release-checklist.md` + `check:docs` 断言），随后 R14.12 覆盖率
   爬坡；攒够后打 0.7.2 patch（含 #113 账号隔离、#109 课文兜底、本批次分享页红线）。
 - 更新时间：2026-09-22 03:20（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — 发布工程批次：发布检查单固化为门禁（R14.8）
+
+- 状态：文档与门禁完成、三向变异验证通过；待 PR 合并。
+- 里程碑 / 版本：v0.8 R14.8。纯流程与门禁，不改运行时，不单独发布。
+- 分支 / 提交：`docs/release-checklist`，基线 `70d1f8a`。
+- 完成内容：
+  - 新增 `docs/release-checklist.md`：把发布全过程写成可照抄执行的命令级清单——判级规则
+    （patch/minor/major 依据）、RELEASE_FREEZE 前置（`ops:work-audit` + `origin/main..HEAD` 必须为空）、
+    发布记录与版本号同步（含钉住 `npm@10.9.4` 重算 lockfile）、全量验证的**固定顺序**、
+    rebase 合并、合并后打 tag、Vercel 部署与生产域名冒烟脚本、进度记录、四级回滚方案。
+  - 清单收录的是本项目真踩过的坑，不是通用套话：e2e 会往 `.next` 写兜底页所以必须排在产物门禁之后；
+    tag 只能在 rebase 合并后打；Vercel 24h 构建配额耗尽时 PR 上的 Vercel 红不阻塞合并；
+    游客 `/api/auth/session` 500 与 AI 502 是生产冒烟必查项（PR #107 回归）。
+  - `npm run check:docs` 新增 `auditReleaseChecklist`：断言该文件存在且 13 个关键步骤标记仍在；
+    `CONTRIBUTING.md` 增指路行，并把该行纳入 `auditContributingContract`，防止指路本身烂掉。
+  - `docs/roadmap.md` 勾选 R14.8 并补「R14.8 发布检查单」小节。
+- 变更文件：
+  - `docs/release-checklist.md`（新增）
+  - `scripts/docs-consistency-lib.mjs`、`scripts/check-docs-consistency.mjs`
+  - `scripts/docs-consistency-lib.test.mjs`（+2 用例，含读真实文件验收）
+  - `CONTRIBUTING.md`、`docs/roadmap.md`、`docs/progress.md`
+- 验证命令和结果：
+  - `npx vitest run scripts/docs-consistency-lib.test.mjs`：13 用例通过（新增「拒绝缺步骤的检查单」
+    与「接受实际随仓库发布的那份」）。
+  - `npm run check:docs`：通过（27 章 / 182 篇，package 0.7.1）。
+  - 变异（三向）：删除 `docs/release-checklist.md` → 「文件缺失」；把 `git tag -a vX.Y.Z` 弱化为 `git tag`
+    → 「缺少发布步骤『git tag -a vX.Y.Z』」；删掉 CONTRIBUTING 指路行 → 贡献契约报错。还原后全绿。
+  - `npm run check:links`、`check:relative-links`、`check:changelog`、`check:release-tag`：通过。
+- 阻塞：无。Vercel 仍处 24h 构建配额期内。
+- 风险 / 回滚：纯文档 + 只读校验，无运行时影响；回滚本 commit 即移除门禁。
+- 下一项：R14.12 覆盖率爬坡；随后按新检查单执行 0.7.2 patch 发布（含 #113 账号隔离、#109 课文兜底、
+  #116 分享页红线、R14.3/R14.7/R14.8 门禁）。
+- 更新时间：2026-09-22 03:36（Asia/Shanghai）。

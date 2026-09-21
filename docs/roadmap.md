@@ -397,7 +397,7 @@
 - [ ] R14.5 内容报告幂等化：`check:risk-warning` / `check:glossary` / `kb:inventory` 等 14 个报告产物在内容未变时不得产生纯日期 diff（保留上次内容变更日期）。验证：连跑两次门禁，`git status` 必须干净
 - [ ] R14.6 测试确定性巡检：扫描测试文件中未受控的墙钟与定时器依赖（`Date.now`、`performance.now`、真实 `setTimeout`），报告式列出让门禁排队整改。验证：临时引入一个依赖真实耗时的断言，巡检必须点名。背景：`quiz.test.tsx` 的学习时长断言只在单跑 <500ms 时成立，全量并行必现抖动，R14 之前无人知道还有多少同类
 - [x] R14.7 内容红线守卫覆盖面盘点：除章节导语与课文外，测验页、术语表、错题本、AI 生成内容是否都满足「每篇内容带风险提示」；结论写入本文件并各自配接线门禁。验证：每类内容一条断言（结论见下节；盘点逮到 `/share/*` 三类分享落地页完全没有承载面，已修复并加断言）
-- [ ] R14.8 发布检查单固化：版本号 → `release-notes.json` → `changelog:generate` → tag → 全量门禁 → 生产部署 → 生产域名冒烟 → 进度记录，落为 `docs/release-checklist.md` 并在 `CONTRIBUTING.md` 指路。验证：`check:docs` 断言清单存在且含关键步
+- [x] R14.8 发布检查单固化：版本号 → `release-notes.json` → `changelog:generate` → tag → 全量门禁 → 生产部署 → 生产域名冒烟 → 进度记录，落为 `docs/release-checklist.md` 并在 `CONTRIBUTING.md` 指路。验证：`check:docs` 断言清单存在且含关键步
 - [ ] R14.9 预览站自动化冒烟 — `BLOCKED_EXTERNAL`：预览域启用了 Vercel Deployment Protection，未授权请求一律 302 到 SSO，需要账号级 protection-bypass 密钥才能跑自动化。当前以生产域名冒烟代替（已验证可用）
 - [ ] R14.10 错误监控与告警通道（承接 Q2.7）— `BLOCKED_EXTERNAL`：需 Sentry 生产 DSN 与告警接收渠道；站内已具备隐私合规的上报端点与本地日志脱敏门禁
 - [ ] R14.11 上游内容遗留（承接 R10 系列）— `BLOCKED_EXTERNAL`（必须在 kline-buty 仓库改）：14 篇章节 README 风险块不合规（2 gap + 12 review）、70/364 篇 description 待复核、120/182 条标题术语待复核；站内已用 R14.2 的兜底与报告门禁保证不阻断上线也不误报为 pass
@@ -424,6 +424,14 @@
 断言一律取 `src/lib/i18n.ts` 的词典原文逐字比对，并同时校验词典本身仍带 `⚠️` 与
 「不构成（任何）投资建议 / not constitute investment advice」表述——这样改文案时门禁跟着词典走，
 把文案改软也会立刻变红，不会出现「测试与产品各自漂移」。
+
+#### R14.8 发布检查单（2026-09-22）
+
+发布流程落为 [`docs/release-checklist.md`](release-checklist.md)：判级 → RELEASE_FREEZE 检查 → 发布记录与版本号 →
+全量验证（固定顺序）→ 发布提交与 rebase 合并 → 合并后打 tag → 部署与生产域名冒烟 → 进度记录 → 回滚。
+`npm run check:docs` 的 `auditReleaseChecklist` 断言该文件存在且 13 个关键步骤标记仍在，`CONTRIBUTING.md`
+的指路行同时进入贡献契约。变异验证三向：删文件 → 「文件缺失」；把 `git tag -a vX.Y.Z` 改成 `git tag` →
+「缺少发布步骤」；删掉 CONTRIBUTING 指路行 → 贡献契约报错。
 
 ### v0.8 关账标准
 
