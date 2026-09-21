@@ -42,6 +42,7 @@
     "check:glossary": "node scripts/check-glossary.mjs",
     "ops:faq-candidates": "node scripts/faq-candidates.mjs",
     "ops:link-patrol": "node scripts/link-patrol.mjs",
+    "ops:work-audit": "node scripts/audit-work-preservation.mjs",
     "analyze": "ANALYZE=true next build",
     "kb:parity": "node scripts/check-locale-parity.mjs",
     "check:links": "node scripts/check-links.mjs",

@@ -1,0 +1,21 @@
+{
+  "_comment": "R14.4 工作保全审计的确认台账。仓库全部使用 rebase 合并，PR 的原始 head SHA 注定不会出现在 main 上，所以「SHA 不在 main」不是工作丢失的证据；已逐条确认去向的关闭 PR 记录在此，审计脚本据此跳过。每条必须写理由，新增即视为一次人工确认。",
+  "acknowledged": [
+    {
+      "number": 99,
+      "reason": "生产代码的上下文竞态修复已随 PR #105 以另一种实现落地（send(q, { contextChapter })）；本条附带的 ai-chat 元数据加固在 PR #105 中被识别为遗漏并已单独回收（fix(ai): keep malformed citation headers out of the chat UI）。"
+    },
+    {
+      "number": 101,
+      "reason": "已随 PR #105 回收（fix(content): normalize current chapter relative links），含裸 `.` 链接归一与相邻章节边界测试。"
+    },
+    {
+      "number": 102,
+      "reason": "已随 PR #105 回收（test(course): cover completion ledger boundaries），并与 main 上更新的 trend 测试合并了 import。"
+    },
+    {
+      "number": 104,
+      "reason": "已随 PR #105 回收（test(growth): cover enum rejection boundaries），并把原先落在 describe 之外的用例收回块内。"
+    }
+  ]
+}
