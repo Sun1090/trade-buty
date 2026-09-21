@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { localDateStr } from "./date-utils";
-import { buildCourseCompletionTrend, readCompletionLedger, type ChapterInput } from "./course-completion-trend";
+import {
+  buildCourseCompletionTrend,
+  normalizeCompletionLedger,
+  readCompletionLedger,
+  type ChapterInput,
+} from "./course-completion-trend";
 
 const chapters = [
   { slug: "getting-started", docCount: 2 },
@@ -11,6 +16,36 @@ const progress = {
   "getting-started": ["market-overview", "candlestick-basics"],
   "technical-analysis": ["indicators"],
 };
+
+describe("normalizeCompletionLedger", () => {
+  it("keeps object ledger entries and drops malformed records", () => {
+    const out = normalizeCompletionLedger({
+      "ch:doc": { chapter: "ch", doc: "doc", at: 1 },
+      "ch:empty": "",
+      "ch:list": [{ doc: "ignored" }],
+      "ch:null": null,
+      "ch:number": 7,
+    } as unknown as Record<string, unknown>);
+
+    expect(out).toEqual({ "ch:doc": { chapter: "ch", doc: "doc", at: 1 } });
+  });
+});
+
+describe("readCompletionLedger", () => {
+  it("reads valid storage and returns an empty ledger for missing, invalid, or malformed JSON", () => {
+    const valid = {
+      getItem: (key: string) => key === "tb-progress-completions" ? JSON.stringify({ "ch:doc": { chapter: "ch", doc: "doc" } }) : null,
+    } as unknown as Storage;
+    const missing = { getItem: () => null } as unknown as Storage;
+    const badJson = { getItem: () => "{not-json" } as unknown as Storage;
+
+    expect(readCompletionLedger(valid)).toEqual({ "ch:doc": { chapter: "ch", doc: "doc" } });
+    expect(readCompletionLedger(missing)).toEqual({});
+    expect(readCompletionLedger(badJson)).toEqual({});
+    const empty = { getItem: () => null, length: 0 } as unknown as Storage;
+    expect(readCompletionLedger(empty)).toEqual({});
+  });
+});
 
 describe("buildCourseCompletionTrend", () => {
   it("rejects impossible calendar dates used as today", () => {
@@ -121,5 +156,54 @@ describe("buildCourseCompletionTrend", () => {
     expect(trend.latest.totalDocs).toBe(0);
     expect(trend.latest.completionPct).toBe(0);
     expect(trend.summary.completionsInRange).toBe(0);
+  });
+
+  it("keeps ledger timestamps outside the selected range but excludes them from cumulative and summary counts", () => {
+    const trend = buildCourseCompletionTrend({
+      chapters,
+      progress,
+      days: 7,
+      today: "2026-09-07",
+      completions: {
+        "getting-started:market-overview": { chapter: "getting-started", doc: "market-overview", at: new Date(2026, 8, 1, 12).getTime() },
+        "technical-analysis:indicators": { chapter: "technical-analysis", doc: "indicators", at: new Date(2026, 8, 7, 12).getTime() },
+      },
+    });
+
+    expect(trend.summary.completedDocs).toBe(2);
+    expect(trend.summary.completionsInRange).toBe(2);
+    expect(trend.days.at(-1)).toMatchObject({ completions: 1, cumulativeReadDocs: 2, completionPct: 50 });
+  });
+
+  it("filters ledger entries that are no longer in current progress while still reporting current chapter completion", () => {
+    const trend = buildCourseCompletionTrend({
+      chapters: [{ slug: "empty", docCount: 0 }, { slug: "getting-started", docCount: 1 }],
+      progress: { "getting-started": ["market-overview"], gone: ["stale-doc"] },
+      days: 7,
+      today: "2026-09-07",
+      completions: {
+        "getting-started:market-overview": { chapter: "getting-started", doc: "market-overview", at: new Date(2026, 8, 7, 12).getTime() },
+        "gone:stale-doc": { chapter: "gone", doc: "stale-doc", at: new Date(2026, 8, 7, 12).getTime() },
+      },
+    });
+
+    expect(trend.latest.doneChapters).toBe(1);
+    expect(trend.latest.readDocs).toBe(1);
+    expect(trend.latest.totalDocs).toBe(1);
+    expect(trend.summary.completedDocs).toBe(1);
+    expect(trend.days.at(-1)).toMatchObject({ completions: 1, newChapters: 1, completionPct: 100 });
+  });
+
+  it("falls back to ledger keys when chapter or doc fields are missing", () => {
+    const trend = buildCourseCompletionTrend({
+      chapters: [{ slug: "ch", docCount: 1 }],
+      progress: { ch: ["doc"] },
+      days: 7,
+      today: "2026-09-07",
+      completions: { "ch:doc": { at: new Date(2026, 8, 7, 12).getTime() } },
+    });
+
+    expect(trend.summary.completedDocs).toBe(1);
+    expect(trend.days.at(-1)).toMatchObject({ completions: 1, cumulativeReadDocs: 1, completionPct: 100 });
   });
 });
