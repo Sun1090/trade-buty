@@ -2,6 +2,10 @@
   "_comment": "R14.4 工作保全审计的确认台账。仓库全部使用 rebase 合并，PR 的原始 head SHA 注定不会出现在 main 上，所以「SHA 不在 main」不是工作丢失的证据；已逐条确认去向的关闭 PR 记录在此，审计脚本据此跳过。每条必须写理由，新增即视为一次人工确认。",
   "acknowledged": [
     {
+      "number": 83,
+      "reason": "工作确实丢失（非 rebase 误报）：main 上没有任何 isCurrent 守卫，登出/换号后过期云响应仍会写入本地状态。已由本审计发现并重新落地为 PR #113（fix(sync): discard stale account hydration），隔离用例经变异验证。"
+    },
+    {
       "number": 99,
       "reason": "生产代码的上下文竞态修复已随 PR #105 以另一种实现落地（send(q, { contextChapter })）；本条附带的 ai-chat 元数据加固在 PR #105 中被识别为遗漏并已单独回收（fix(ai): keep malformed citation headers out of the chat UI）。"
     },
