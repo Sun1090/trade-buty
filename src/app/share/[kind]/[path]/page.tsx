@@ -64,6 +64,9 @@ export default async function ShareLandingPage({
         </div>
       </div>
 
+      {/* 内容红线：分享落地页在 `[locale]` 布局之外，全站页脚的风险提示覆盖不到这里。 */}
+      <p className="mt-6 text-xs leading-relaxed text-faint">{t.footer.disclaimer}</p>
+
       <JsonLd
         data={webPage({
           locale,
