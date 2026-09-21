@@ -5,6 +5,30 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.1] - 2026-09-22
+
+**游客登录态修复与发布完整性 / Guest session fix and release integrity**
+
+### 中文
+
+- 修复游客无法使用 AI 问答的回归：没有 Supabase 会话 cookie 时身份读取被误判为「未知身份」并抛错，登录态与历史接口返回 500、AI 问答返回 502；现在无会话按游客处理，其余认证失败仍然 fail-closed，不进入模型与数据库读写
+- 修复 AI 对话在损坏的引用响应头下把 JSON 解析异常原文当作错误文案展示；URL 自动提问补齐章节上下文，检索阈值上限收敛
+- 修复同步与本地数据边界：忽略非法的云端合并时间戳、Supabase 客户端初始化失败时写入入队、容忍被污染的最近搜索记录、非法分享元数据的语言回退与回放战绩精度上限
+- 修复知识库正文中裸 `.` 相对链接被改写成坏路由；测验学习时长不再依赖真实墙钟，消除 CI 随机红灯
+- 发布完整性：package.json 版本号绑定最新发布版本（此前长期停在 0.1.0）并新增 check:docs 漂移门禁；依赖与 lockfile 工具链钉定 npm 10.9.4
+- 质量基线：258 个测试文件 / 2383 个用例，语句覆盖率 95.47%、分支 90.35%，474 个静态页面、93 项 E2E 与数据库 RLS/回滚门禁全部通过
+
+### English
+
+- Fixed a regression that broke AI Q&A for signed-out visitors: a request without a Supabase session cookie was read as an unknown identity and threw, so the session and history endpoints returned 500 and AI chat returned 502. A missing session is now treated as a guest, while every other auth failure still fails closed and never reaches the model or the database
+- Fixed AI chat surfacing a raw JSON parser message as the user-facing error when citation headers were malformed; auto-ask from the URL now carries its chapter context, and retrieval thresholds are bounded
+- Fixed sync and local-data edges: invalid cloud merge timestamps are ignored, writes queue when the Supabase client fails to initialise, corrupt recent searches are tolerated, and invalid share metadata and replay accuracy totals fall back correctly
+- Fixed a bare `.` relative link in knowledge-base markdown resolving to a broken route; quiz study-time recording no longer depends on the real wall clock, removing a random CI failure
+- Release integrity: package.json version is now bound to the latest published release (it had been stuck at 0.1.0) with a new check:docs drift gate, and the dependency and lockfile toolchain is pinned to npm 10.9.4
+- Quality baseline: 258 test files / 2383 tests, statements 95.47% and branches 90.35% coverage, with 474 static pages, 93 E2E checks and the database RLS/rollback gates all green
+
+参考：[docs/v0.7.1-release-review.md](docs/v0.7.1-release-review.md)
+
 ## [0.7.0] - 2026-09-20
 
 **稳定性、覆盖率与发布可靠性 / Stability, coverage, and release reliability**
