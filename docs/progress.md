@@ -4922,3 +4922,46 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：v0.8 只剩 R14.9/R14.10/R14.11 三项 `BLOCKED_EXTERNAL`；按 `docs/release-checklist.md` 执行
   0.7.2 patch 发布（含 #113 账号隔离、#109 课文兜底、#116 分享页红线与 R14.3–R14.8 门禁）。
 - 更新时间：2026-09-22 04:34（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — RELEASE_FREEZE：v0.7.2（账号隔离修复与红线覆盖收口）
+
+- 状态：冻结验证完成，发布 PR 待合并；tag、生产部署与生产冒烟在合并后执行并追加记录（0.7.1 同一做法）。
+- 里程碑 / 版本：**0.7.2**（patch）。判级依据：`0.7.1` 之后只有缺陷修复与发布/测试工程收口，无新增产品能力。
+- 分支 / 提交：`chore/release-0.7.2`，基线 `d5459b2`（= 合并 R14.6 后的 `origin/main`）。
+- 完成内容：
+  - 这是新 `docs/release-checklist.md` 的第一次完整执行，逐步照做而不是凭记忆——检查单本身因此被验证过。
+  - 发布记录：`src/data/release-notes.json` 新增 0.7.2 条目（zh/en 各 6 条 highlights，附 3 份文档指向），
+    `npm run changelog:generate` 重写 `CHANGELOG.md`（6 条版本记录，未发布区块为空）。
+  - 版本号：`package.json` `0.7.1 → 0.7.2`，用钉住的 `npm@10.9.4` 重算 lockfile，diff 恰好只有两处
+    `version` 行；`check:lockfile-repro`、`check:docs`（打印 package 0.7.2）、`check:release-tag`
+    （「最新 0.7.2 待合并后补打」不判失败）均符合预期。
+  - 复核文档：新增 `docs/v0.7.2-release-review.md`（发布动因 / 变更范围按 PR 列表 / 验证证据 / 四级回滚
+    方案 / 遗留与下一步 / 部署与冒烟待补）。硬理由写清了：账号切换的数据隔离缺陷（#113）本身就是
+    一次工作丢失的回收结果，不该再多等一个「顺手」的发布。
+  - 账面过程（值得记下来）：R14.12 关账时测得 96.10% / 91.01%，其后 R14.4 / R14.6 新增的门禁代码抬高
+    分母，发布前一度复测为 96.12% / **90.98%**（差 0.02pp 未达 ≥91%）。当时先把 roadmap 标注为
+    「未完全守住」而不是引用旧数字交差；随后由 PR #122 补真实交互用例（搜索页输入联想与零结果诊断——
+    那条键盘路径此前被老用例的第一个 Escape 整个关掉）把分支率推回 **91.10%**。
+    全程**没有下调任何阈值**（仍是 statements 84 / branches 77）。
+- 变更文件：`package.json`、`package-lock.json`、`src/data/release-notes.json`、`CHANGELOG.md`、
+  `docs/v0.7.2-release-review.md`（新增）、`docs/roadmap.md`、`docs/progress.md`。
+- 验证命令和结果（顺序即检查单顺序）：
+  - 冻结前置：`ops:work-audit` → `悬空 0 · 陈旧 0 · 未确认关闭 PR 0`；`origin/main..HEAD` 除发布分支自身外无本地遗留。
+  - `check:lockfile-repro` / `check:docs` / `check:changelog` / `check:release-tag` /
+    `check:test-clock-hygiene` / `lint`（0 warning）/ `typecheck`（0 error）：全部通过。
+  - `npm run test:coverage` → 265 文件 / 2483 用例通过，statements 96.24%、branches 91.10%、
+    functions 96.24%、lines 98.30%。
+  - `npm run db:test` → 迁移 + 38 条 RLS 越权断言 + 26 条同步约束 + 0008/0009 回滚重放演练全部通过。
+  - `npm run e2e` → 109 用例通过（含红线套件 16 条）。
+  - `npm run build` 通过；产物门禁 `check:seo-surface` / `check:search-index` / `check:structured-data` /
+    `check:mobile` 通过且 `git status` 干净。
+  - 生产现状对照（发布前）：`https://trade-buty.vercel.app/share/streak/...` 返回 200 但 HTML 内
+    **没有** `⚠️`，确认生产仍落后 `main`（Vercel 24h 配额），这正是 #116 的分享页风险行是否上线的判据。
+- 阻塞：Vercel 构建配额仍在窗口内；不阻塞合并（Vercel 非必需检查），但生产冒烟要等配额恢复或手动触发。
+- 风险 / 回滚：本 commit 只动版本元数据与文档，不改运行时；回滚 `git revert` 发布 commit 即恢复
+  `0.7.1`。运行时变更的逐项回滚边界写在 `docs/v0.7.2-release-review.md`。
+- 下一项：本 PR 合并后立即 `git tag -a v0.7.2 origin/main` 并推送，
+  部署恢复后按检查单跑生产域名冒烟（含 `/share/*` 的 `⚠️` 断言），结果追加进 progress。
+- 更新时间：2026-09-22 04:58（Asia/Shanghai）。
