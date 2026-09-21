@@ -20,6 +20,10 @@
     {
       "number": 104,
       "reason": "已随 PR #105 回收（test(growth): cover enum rejection boundaries），并把原先落在 describe 之外的用例收回块内。"
+    },
+    {
+      "number": 125,
+      "reason": "工作未丢失，只是换了载体：本仓库要求合并前分支与基线同步（BEHIND 时 GitHub 拒绝 rebase 合并），而更新该分支需要 force push——本仓库禁止。于是在最新 origin/main(695b213) 上重做同样两个 commit（0a1281b→c73a102、1cfd4e5→cdb3c53），由 PR #126 落地，PR 描述逐字搬迁。合并后可用 git cherry 验证补丁等价。"
     }
   ]
 }
