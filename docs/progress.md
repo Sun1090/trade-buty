@@ -4411,3 +4411,43 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：无数据库迁移、无依赖树变更、无内容契约变更。`content.ts` 与 `ai-chat.tsx` 各自独立成commit，可单独回滚；其余为测试与文档。
 - 下一项：`ci` 变绿后 rebase 合并 PR #105，删除 `feat/recover-stranded-batches` 与已无内容的 `origin/feat/maintain-merge-20260921` 远端分支；随后在生产域名上做部署后冒烟。另在 roadmap 复核中发现版本完整性缺陷：`package.json` 仍为 `0.1.0`，而 `src/data/release-notes.json` / `CHANGELOG.md` 已发布 `0.7.0`，且现有门禁（`check:changelog`、`check:docs`）不校验该字段，需要单独修复并补门禁。
 - 更新时间：2026-09-22 00:10（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — PR #105 合并与版本完整性/测试稳定性批次
+
+- 状态：PR #105 已 rebase 合并进 `main`（21 个提交落地，远端临时分支已删除并 prune）；本批次在 `feat/version-integrity` 上完成，待 PR。
+- 里程碑 / 版本：v0.7.0 之后的质量/发布完整性批次；下一个候选发布为 v0.7.1（patch）。
+- 分支 / 提交：`feat/version-integrity`，基线 `4d47341`，提交 `af65576`（版本号绑定）+ `5480480`（quiz 时钟钉定）。
+- 完成内容：
+  - 回收验证：PR #105 合并后逐 patch-id 核对，`origin/main` 已完整包含 `feat/recover-stranded-batches` 与陈旧 `feat/maintain-merge-20260921` 的全部内容（各 0 个缺失补丁），随后删除两个远端分支并把本地 `main` 同步到 `4d47341`。
+  - 修正发布版本漂移：`package.json` 长期停在 `0.1.0`，而 `src/data/release-notes.json` / `CHANGELOG.md` / 站内 `/changelog` 已发布 `0.7.0`，且没有任何门禁比较三者，漂移跨 0.4.0→0.7.0 四次发布存活。现在 `check:docs` 复用既有 `docs-consistency-lib` 审计链拒绝任何非最新发布版本号，`package-lock.json` 根条目同步为 `0.7.0`（用仓库钉定的 npm 10.9.4 复现生成，除两行版本号外零差异）。
+  - 修复 CI 随机红灯：`src/components/quiz.test.tsx` 的“完成测验不记学习时长”断言依赖真实墙钟——`Quiz.save()` 用 `Math.round((Date.now()-started)/1000)`，只要“开始→完成”超过 500ms 就会记账并使断言失败，全量并行下必现抖动。改为钉住 `Date.now`，并补上此前完全未覆盖的正向路径（`addStudyTime("quiz", 42)`）与 4 小时上限（`14400`）。
+  - 同批排查：`replay-trainer.test.tsx` 已用自增 `Date.now` mock，不属同一抖动类；`review-client.test.tsx` 断言固定 60 秒，同样确定性。
+  - 文档：`CONTRIBUTING.md` 与 `docs/ops.md` 的 `check:docs` 行补上版本号契约，发布流程明确要求同步 bump `package.json`。
+- 变更文件：
+  - `package.json`
+  - `package-lock.json`
+  - `scripts/docs-consistency-lib.mjs`
+  - `scripts/check-docs-consistency.mjs`
+  - `scripts/docs-consistency-lib.test.mjs`
+  - `src/components/quiz.test.tsx`
+  - `CONTRIBUTING.md`
+  - `docs/ops.md`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npm run lint` / `npm run typecheck`：通过。
+  - `npx vitest run src/components/quiz.test.tsx`：通过（11 用例，含 2 个新增覆盖）。
+  - `npx vitest run scripts/docs-consistency-lib.test.mjs`：通过（11 用例，含 3 个新增）。
+  - `npm run test`（修复前）：`quiz.test.tsx` 在全量并行下失败 1 例，隔离运行通过 → 确认为墙钟抖动；修复后全量通过。
+  - `npm run test:coverage`：通过（257 文件 / 2376 用例；statements 95.47%、branches 90.35%、functions 95.62%、lines 97.61%）。
+  - `npm run build`：通过（474 个静态页面）。
+  - `npm run check:lockfile-repro`：先失败（lockfile 根条目仍为 0.1.0）→ 按门禁提示用 `npx --yes npm@10.9.4 install --package-lock-only` 同步后通过（981 个包条目无差异）。
+  - `npm run check:docs`：通过（输出新增 `package 0.7.0` 字段）。
+  - `npm run e2e`：通过（93 用例 / 24.2s）。
+  - `npm run db:test`：通过（迁移、38 条 RLS 断言、同步约束、0008/0009 回滚重放）。
+  - `check:changelog` / `check:seo-surface` / `check:search-index` / `check:structured-data` / `check:sitemap` / `check:links` / `check:kb-pointer` / `check:constitution` / `check:secrets` / `audit:prod`：通过。
+- 阻塞：无本地阻塞。预览站仍受 Vercel Deployment Protection 保护，自动化冒烟需账号级 bypass 密钥；生产域名公开可达，合并后按生产域名冒烟。
+- 风险 / 回滚：无数据库迁移、无依赖树变化（lockfile 仅根包版本字段随 `package.json` 同步）。`check:docs` 新增断言只可能把“忘记 bump”变红，回滚撤回 `af65576` 即可；quiz 测试改动不影响生产代码。
+- 下一项：合并本批次后在生产域名做部署后冒烟；随后进入 v0.7.1 patch 发布冻结（release-notes 条目 + CHANGELOG 生成 + `package.json` bump + 首个 git tag 补挂，含 0.4.0–0.7.0 历史 tag 的可行性评估，注意 tag push 可能触发 Vercel 部署）。
+- 更新时间：2026-09-22 00:52（Asia/Shanghai）。
