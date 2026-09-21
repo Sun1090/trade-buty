@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   analyzeTestClockHygiene,
+  escapeTableCell,
   isSelfFixture,
   renderClockHygieneMarkdown,
   shouldFailClockHygiene,
@@ -142,6 +143,21 @@ describe("renderClockHygieneMarkdown", () => {
         },
       ],
     });
-    expect(pipe).toContain("a \\| b");
+    expect(pipe).toContain("a &#124; b");
+    expect(pipe).not.toContain("a \| b");
+  });
+});
+
+describe("escapeTableCell", () => {
+  it("转义 &、反斜杠与竖线，且顺序保证实体不被二次编码", () => {
+    expect(escapeTableCell("a | b")).toBe("a &#124; b");
+    expect(escapeTableCell("a \\ b")).toBe("a &#92; b");
+    expect(escapeTableCell("a & b")).toBe("a &amp; b");
+    // 原文里已存在的实体要原样可见，不能被解码后又叠成新实体
+    expect(escapeTableCell("&amp;")).toBe("&amp;amp;");
+    // 反斜杠紧跟竖线时，只替竖线会把表格单元格撑破
+    expect(escapeTableCell("\\|")).toBe("&#92;&#124;");
+    expect(escapeTableCell(undefined)).toBe("");
+    expect(escapeTableCell(null)).toBe("");
   });
 });
