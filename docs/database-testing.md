@@ -78,13 +78,14 @@ BACKUP_DRILL_IMAGE=supabase/postgres:17.6.1.155 npm run backup:drill
 
 `npm run backup:drill` 不依赖线上 Supabase 项目，实际执行的是：
 
-1. 在干净 Supabase Postgres 上应用全部迁移，写入覆盖 10 张业务表的样例数据；
+1. 在干净 Supabase Postgres 上应用全部迁移，写入覆盖 11 张业务表的样例数据；
 2. 用 `pg_dump -Fc --schema=public --no-owner --no-acl` 生成 custom-format 备份；
 3. **销毁源容器**，模拟实例丢失；
 4. 启动另一个全新 Supabase Postgres，预置恢复 public schema 外键所需的最小
    `auth.users` 行，再执行 `pg_restore --single-transaction --exit-on-error`；
 5. 逐表对比恢复前后的数据指纹，并对比表/列/RLS 策略/约束/索引/触发器/函数/扩展指纹；
-6. 确认 `authenticated` 权限仍在；在恢复库上重跑全部 pgTAP RLS 与同步/约束测试。
+6. 确认 `authenticated` 权限仍在；在恢复库上重跑全部三个 pgTAP 文件
+   （`rls_isolation` 40 + `sync_and_constraints` 26 + `embedding_generations` 8 条断言）。
 
 本演练只覆盖 Supabase 托管的 `public` schema 与应用数据。托管项目的 `auth`、Storage、
 项目配置、定时备份策略及仓库镜像确认仍必须在 Supabase 控制台和外部存储中完成，不能
