@@ -4548,3 +4548,35 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：课文页改动是纯增量渲染分支，对现有 364 篇合规课文零可见变化（已实测）；回滚 `c9d8050` 即恢复原状。v0.7.1 回滚见 `docs/v0.7.1-release-review.md`。
 - 下一项：合并课文兜底修复；把 roadmap 补到 v0.7/v0.7.1 并定义 v0.8 范围（roadmap 目前止于 v0.6 关账，未来会话缺少里程碑输入）；继续处理内容报告每日日期抖动造成工作区噪声的问题。
 - 更新时间：2026-09-22 03:52（Asia/Shanghai）。
+## 2026-09-22 — R14.3：发布 tag 门禁
+
+- 状态：本地完成，全量门禁通过；分支 `feat/release-tag-gate` 待 PR。
+- 里程碑 / 版本：v0.8（R14）首项可本地执行任务落地。
+- 分支 / 提交：`feat/release-tag-gate`，基线 `ce55cc8`（tag `v0.7.1`），提交 `dec22c8`。
+- 完成内容：
+  - 新增 `check:release-tag`（`scripts/check-release-tag.mjs` + `scripts/release-tag-lib.mjs`）：除最新发布版本外，每条发布记录都必须有同名 `vX.Y.Z` tag，缺失即 CI 变红。
+  - 口径设计上避开两个假失败：rebase 合并会改写 SHA，因此最新发布版本只打印「待合并后补打」而不判失败；`0.4.0`–`0.7.0` 用显式 `UNTAGGED_LEGACY_RELEASES` 遗留豁免，而不是回填历史 tag——给已被取代的旧提交补 tag，在把 tag 当部署触发器的托管配置下会把过期代码推上线。
+  - 消除重复实现：`check:docs` 的 `auditReleaseVersion` 改为共用 `newestReleaseVersion`，不再各写一份 semver 比较。
+  - CI 接入：`ci.yml` 的 checkout 显式 `fetch-tags: true`（不依赖 action 默认值），门禁步骤排在 `check:changelog` 之后；`docs/ops.md` 门禁表与 `CONTRIBUTING.md` 发布条款同步登记——仓库自身的契约测试会强制这种登记，我加步骤后它立刻报出「docs/ops.md 未登记 check:release-tag」，说明这道防线有效。
+  - 自伤并即时修复一处：给 checkout 加参数时误删了相邻的 `setup-node` 步骤，靠 `git diff` 复核发现并复原，最终净增 2 行、workflow 契约 19 项测试恢复全绿。
+- 变更文件：
+  - `scripts/release-tag-lib.mjs`（新增）
+  - `scripts/check-release-tag.mjs`（新增）
+  - `scripts/release-tag-lib.test.mjs`（新增，13 用例）
+  - `scripts/docs-consistency-lib.mjs`
+  - `scripts/ci-workflow.test.mjs`
+  - `.github/workflows/ci.yml`
+  - `package.json`
+  - `docs/ops.md`
+  - `CONTRIBUTING.md`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run scripts/release-tag-lib.test.mjs scripts/docs-consistency-lib.test.mjs scripts/ci-workflow.test.mjs`：通过（43 用例）。
+  - `npm run lint` 通过；`npm run typecheck` 0 error；`npm run test`：259 文件 / 2396 用例通过。
+  - `npm run check:release-tag`：通过（5 条发布记录，最新 `0.7.1` → `v0.7.1`）。
+  - 宽限规则双向验证：本地删除 `v0.7.1` 后门禁输出「最新 0.7.1 待合并后补打」且不失败；从 origin 重新拉取 tag 后恢复「已落地」输出。
+  - `npm run check:docs`、`check:secrets`（683 文件）：通过。
+- 阻塞：无。
+- 风险 / 回滚：纯新增门禁，不改运行时、依赖树或数据库；若误伤可在 CI 移除该步骤，或回滚 `dec22c8`。
+- 下一项：合并 PR #109 与本文档批次；继续 R14.5（内容报告幂等化，消除每次跑门禁都产生的 14 个纯日期 diff）与 R14.6（测试墙钟/定时器确定性巡检）。
+- 更新时间：2026-09-22 05:40（Asia/Shanghai）。
