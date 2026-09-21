@@ -404,3 +404,136 @@ describe("SearchClient recent searches", () => {
     expect(recents()).toEqual([]);
   });
 });
+
+/**
+ * 输入联想是搜索里唯一「键盘可达但此前没有断言」的路径：结果列表的导航被测过，
+ * 联想下拉从未被测——因为老用例一进 keyboard 块就先按 Escape 把它关掉了。
+ */
+describe("SearchClient 输入联想与零结果诊断", () => {
+  const entries = [
+    {
+      url: "/zh/knowledge/spot/order-types",
+      title: "订单类型",
+      chapter: "spot",
+      text: "限价单 市价单 成交价",
+    },
+    {
+      url: "/zh/knowledge/futures/orders",
+      title: "期货订单",
+      chapter: "futures",
+      text: "交割 合约乘数",
+    },
+  ];
+
+  beforeEach(() => {
+    storage.clear();
+    mockPush.mockClear();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => entries })
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  const type = (value: string) => {
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value } });
+  };
+
+  it("方向键在联想列表里移动高亮，Enter 打开高亮的那一条", async () => {
+    render(<SearchClient dict={dict} />);
+    const box = screen.getByRole("searchbox");
+    type("订单");
+
+    const listbox = await screen.findByRole("listbox", { name: "相关课程" });
+    expect(within(listbox).getAllByRole("option")).toHaveLength(2);
+
+    fireEvent.keyDown(box, { key: "ArrowDown" });
+    expect(box).toHaveAttribute("aria-activedescendant", "search-suggestion-0");
+
+    // 到底不再越界
+    fireEvent.keyDown(box, { key: "ArrowDown" });
+    fireEvent.keyDown(box, { key: "ArrowDown" });
+    expect(box).toHaveAttribute("aria-activedescendant", "search-suggestion-1");
+
+    fireEvent.keyDown(box, { key: "ArrowUp" });
+    expect(box).toHaveAttribute("aria-activedescendant", "search-suggestion-0");
+
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(mockPush).toHaveBeenCalledWith("/zh/knowledge/spot/order-types");
+  });
+
+  it("Escape 关掉联想后，Enter 才落到结果列表上", async () => {
+    render(<SearchClient dict={dict} />);
+    const box = screen.getByRole("searchbox");
+    type("订单");
+    await screen.findByRole("listbox", { name: "相关课程" });
+    await waitFor(() =>
+      expect(document.querySelector('a[data-search-result-index="0"]')).not.toBeNull()
+    );
+
+    fireEvent.keyDown(box, { key: "Escape" });
+    expect(screen.queryByRole("listbox", { name: "相关课程" })).toBeNull();
+    expect(box).not.toHaveAttribute("aria-activedescendant");
+
+    fireEvent.keyDown(box, { key: "ArrowDown" });
+    fireEvent.keyDown(box, { key: "ArrowDown" });
+    expect(mockPush).not.toHaveBeenCalled();
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(mockPush).toHaveBeenCalledTimes(1);
+  });
+
+  it("鼠标掠过联想项即高亮，输入框失焦后下拉自动关闭", async () => {
+    render(<SearchClient dict={dict} />);
+    const box = screen.getByRole("searchbox");
+    type("订单");
+
+    const options = await screen.findAllByRole("option");
+    expect(options.length).toBeGreaterThan(1);
+    fireEvent.mouseEnter(options[1]);
+    expect(options[1]).toHaveAttribute("aria-selected", "true");
+
+    fireEvent.blur(box);
+    await waitFor(
+      () => expect(screen.queryByRole("listbox", { name: "相关课程" })).toBeNull(),
+      { timeout: 1_000 }
+    );
+  });
+
+  it("疑似拼错时给出可点击的近义词，点击后重新检索", async () => {
+    render(<SearchClient dict={dict} />);
+    type("订单类形");
+
+    await screen.findByText(dict.noResults);
+    const chip = await screen.findByRole("button", { name: "订单类型" });
+    fireEvent.click(chip);
+
+    expect(screen.getByRole("searchbox")).toHaveValue("订单类型");
+    // 换词后有结果：空结果卡片消失，联想下拉重新出现
+    await waitFor(() =>
+      expect(screen.queryByTestId("search-empty-cta")).toBeNull()
+    );
+  });
+
+  it("同义词组内确实没有内容时说明检索过的词，而不是假装拼错", async () => {
+    render(<SearchClient dict={dict} />);
+    type("dca");
+
+    // 索引是异步加载的：entries 到位之前 diag 为 null，空结果卡片会先以「裸状态」渲染一次。
+    await screen.findByText(dict.gapHint);
+    expect(screen.queryByText(dict.didYouMean)).toBeNull();
+    expect(screen.getByText(/已按同义说法搜索/)).toBeInTheDocument();
+  });
+
+  it("零结果页的热门词条按钮直接换词检索", async () => {
+    render(<SearchClient dict={dict} />);
+    type("zzzzqqqq");
+
+    await screen.findByText(dict.noResults);
+    fireEvent.click(screen.getByRole("button", { name: "保证金" }));
+    expect(screen.getByRole("searchbox")).toHaveValue("保证金");
+  });
+});
