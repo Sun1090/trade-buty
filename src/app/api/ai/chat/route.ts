@@ -48,7 +48,9 @@ export async function POST(req: NextRequest) {
   const ip = clientIp(req);
 
   // rate limit（配额随响应头返回：游客前端展示剩余次数，429 附 Retry-After）
-  const decision = chatLimiter.check(ip, !!user);
+  // 登录账号按 user id 分桶（与 /api/ai/plan、/api/ai/quiz 一致）：按 IP 分桶会让
+  // 同一运营商 NAT 后的所有用户共享 50 次/小时，一个人脚本化就能把整片网络锁在门外。
+  const decision = chatLimiter.check(user?.id ?? ip, !!user);
   if (!decision.allowed) {
     return NextResponse.json(
       { error: "Rate limit exceeded", retryAfter: decision.retryAfterSec },

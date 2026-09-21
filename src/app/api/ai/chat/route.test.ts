@@ -181,6 +181,26 @@ describe("POST /api/ai/chat 输入校验（R7.12）", () => {
     expect(res.headers.get("X-Quota-Limit")).toBeNull();
     expect(res.headers.get("X-Quota-Remaining")).toBeNull();
   });
+
+  it("同一 NAT 出口下的不同登录账号各自有配额，一个人打满不会锁死整片网络", async () => {
+    // 登录态此前也按 XFF 分桶：同一运营商出口下 50 次/小时是共享的，
+    // 一个人脚本化就能把后面所有登录用户挡在门外。
+    const sharedIp = "198.51.100.88";
+    const body = { messages: [{ role: "user", content: "同一出口的问题" }] };
+    streamOf(["回答"]);
+    getUser.mockResolvedValue({ data: { user: { id: "u-shared" } }, error: null });
+
+    // 登录配额 50/小时：账号 A 把自己打满
+    for (let i = 0; i < 50; i += 1) {
+      expect((await POST(request(body, { ip: sharedIp }))).status).toBe(200);
+    }
+    expect((await POST(request(body, { ip: sharedIp }))).status).toBe(429);
+
+    // 同一出口、另一个账号：不该被 A 的滥用连坐
+    getUser.mockResolvedValue({ data: { user: { id: "u-neighbour" } }, error: null });
+    const neighbour = await POST(request(body, { ip: sharedIp }));
+    expect(neighbour.status).toBe(200);
+  });
 });
 
 describe("POST /api/ai/chat RAG 接线（R1.6 / R2.1）", () => {
