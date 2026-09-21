@@ -77,9 +77,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // 页面刷新后已有会话：补一次 hydrate（若未做过）；完成后 flush 离线写队列
         if (hydratedRef.current !== u.id) {
           hydratedRef.current = u.id;
-          void import("@/lib/sync-layer").then(({ hydrateFromCloud }) => hydrateFromCloud(u.id)).then(() => {
-            void flushQueueAfterLogin(u.id);
-          });
+          const isCurrent = () => mounted && hydratedRef.current === u.id;
+          void import("@/lib/sync-layer")
+            .then(({ hydrateFromCloud }) => hydrateFromCloud(u.id, isCurrent))
+            .then(() => {
+              if (isCurrent()) void flushQueueAfterLogin(u.id);
+            });
         }
       }
     });
@@ -92,9 +95,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // 新登录：触发云端合并（用 ref 去重，避免与 getSession 的 hydrate 重复）
         if (event === "SIGNED_IN" && hydratedRef.current !== u.id) {
           hydratedRef.current = u.id;
-          void import("@/lib/sync-layer").then(({ hydrateFromCloud }) => hydrateFromCloud(u.id)).then(() => {
-            void flushQueueAfterLogin(u.id);
-          });
+          const isCurrent = () => mounted && hydratedRef.current === u.id;
+          void import("@/lib/sync-layer")
+            .then(({ hydrateFromCloud }) => hydrateFromCloud(u.id, isCurrent))
+            .then(() => {
+              if (isCurrent()) void flushQueueAfterLogin(u.id);
+            });
         }
       } else {
         setUser(null);

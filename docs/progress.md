@@ -4580,3 +4580,31 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：纯新增门禁，不改运行时、依赖树或数据库；若误伤可在 CI 移除该步骤，或回滚 `dec22c8`。
 - 下一项：合并 PR #109 与本文档批次；继续 R14.5（内容报告幂等化，消除每次跑门禁都产生的 14 个纯日期 diff）与 R14.6（测试墙钟/定时器确定性巡检）。
 - 更新时间：2026-09-22 05:40（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — 恢复 PR #83：账号切换后的过期云同步隔离
+
+- 状态：修复已落地并变异验证；分支 `fix/account-hydration-isolation` 待 PR。这是**数据隔离类缺陷**，优先级高于本会话其他改动。
+- 里程碑 / 版本：v0.8（R14.4 的直接产出）；将计入下一个 patch 发布。
+- 分支 / 提交：`fix/account-hydration-isolation`，基线 `e6f4b07`。
+- 发现方式：刚写的工作保全审计（R14.4）扫出 PR #83 已关闭未合并、且 2 个补丁在 main 上找不到。逐项核实后确认不是 rebase 改写 SHA 造成的误报，而是**真的丢了**。
+- 完成内容：
+  - 问题：`AuthProvider` 在「刷新后已有会话」和「SIGNED_IN 事件」两条路径上直接 `hydrateFromCloud(u.id)`，云响应返回时不校验账号是否仍是当初发起请求的那个。登出或换号期间在途的响应会把**上一个账号**的进度/错题/回放数据合并写进本地存储，离线写队列也会在过期上下文里 flush。
+  - 恢复：`hydrateFromCloud(id, isCurrent)` 在发起前、拿到数据后、以及每轮冲突写入之后各校验一次；`AuthProvider` 用 `mounted && hydratedRef.current === u.id` 作为 `isCurrent`，队列 flush 同样只在当前账号时执行。
+  - 该修复原本就存在（PR #83，2026-09-20 07:27 提交），因 `feat/persisted-data-isolation` head 分支被删除、PR 被 GitHub 自动关闭而丢失，与 PR #99/#101/#102/#104 同一成因。
+  - 变异验证：摘掉 `sync-layer.ts` 的过期判定后，用例「账号在请求期间切换时丢弃过期响应，不污染当前本地状态」精确转红；恢复后 36/36 通过。
+- 变更文件：
+  - `src/lib/sync-layer.ts`
+  - `src/lib/sync-layer-hydrate.test.ts`
+  - `src/components/auth-provider.tsx`
+  - `src/components/auth-provider.test.tsx`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npm run typecheck`：0 error。
+  - `npx vitest run src/components/auth-provider.test.tsx src/lib/sync-layer-hydrate.test.ts`：通过（36 用例）。
+  - 变异验证：见上（1 失败 → 恢复后 36 通过）。
+- 阻塞：无。
+- 风险 / 回滚：新增参数带默认值 `() => true`，未传调用点行为不变；回滚本 commit 即恢复现状（不建议，现状会跨账号污染本地数据）。无迁移。
+- 下一项：把 #83 的确认条目写进审计分支的 `docs/work-audit-ack.json`；合并后随下一个 patch 发布（0.7.2）带上；继续用 R14.4 审计扫其余历史关闭 PR（窗口 30 天外的还要再扫一轮）。
+- 更新时间：2026-09-22 07:30（Asia/Shanghai）。
