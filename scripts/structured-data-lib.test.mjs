@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  collectNodes,
   expectedTypesForRoute,
   extractJsonLd,
+  nodeTypes,
   hasPageIdentity,
   validateBreadcrumb,
   validateFaqPage,
@@ -233,5 +235,52 @@ describe("semantic page contracts", () => {
     expect(
       validateBreadcrumb([script({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: "bad" })], pageUrl),
     ).toEqual(["BreadcrumbList itemListElement must contain at least two items"]);
+  });
+});
+
+/**
+ * 门禁读的是上游生成的 JSON-LD，形状不可信：非对象文档、循环引用、混进数组的
+ * 原始值都必须被点名或被跳过，而不是让检查本身抛错。
+ */
+describe("structured-data 对畸形文档的容忍", () => {
+  it("nodeTypes 只认字符串与字符串数组", () => {
+    expect(nodeTypes({ "@type": "WebPage" })).toEqual(["WebPage"]);
+    expect(nodeTypes({ "@type": ["A", 1, null, "B"] })).toEqual(["A", "B"]);
+    expect(nodeTypes({ "@type": 7 })).toEqual([]);
+    expect(nodeTypes({})).toEqual([]);
+    expect(nodeTypes(null)).toEqual([]);
+    expect(nodeTypes(undefined)).toEqual([]);
+  });
+
+  it("collectNodes 去重、走数组，且不被循环引用和原始值绊住", () => {
+    const doc = { "@type": "WebSite", list: [1, "x", null, { "@type": "Thing" }] };
+    doc.self = doc;
+    expect(collectNodes(doc).map((node) => node["@type"])).toEqual(["WebSite", "Thing"]);
+    expect(collectNodes(null)).toEqual([]);
+    expect(collectNodes("text")).toEqual([]);
+  });
+
+  it("合法 JSON 但不是对象的文档会被点名，而不是中断整轮核对", () => {
+    const result = validateStructuredData({
+      scripts: [script(123), script("nope"), script(null)],
+      expectedTypes: ["WebSite"],
+      locale: "zh",
+      pageUrl: "https://example.com/zh",
+    });
+    // 非对象文档除自身报错外还会连带缺类型 / 缺身份，这里只要求它如实点名且不崩。
+    expect(result.errors).toEqual(
+      expect.arrayContaining([
+        "script[0] must contain a JSON object",
+        "script[1] must contain a JSON object",
+        "script[2] must contain a JSON object",
+      ])
+    );
+  });
+
+  it("hasPageIdentity 在数组里也要找到身份，找不到时如实报告", () => {
+    const url = "https://example.com/zh";
+    expect(hasPageIdentity([script({ "@graph": [{ url }] })], url)).toBe(true);
+    expect(hasPageIdentity([script({ "@graph": [1, "x", null, { other: url }] })], url)).toBe(false);
+    expect(hasPageIdentity([], url)).toBe(false);
   });
 });
