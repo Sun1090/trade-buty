@@ -4380,9 +4380,9 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 分支 / 提交：`feat/recover-stranded-batches`（HEAD 见 PR #105），基线 `9b36dbd`。
 - 完成内容：
   - 查明此前记录的“Vercel 速率限制阻塞”实为误判方向：PR #99/#101/#102/#104 已因 `codex/*` 远端分支被清理而**关闭且从未合并**，其 15 个提交只存在于本地 `main`，远端完全没有这些工作。
-  - 恢复 4 项悬空批次，其中两处是仍然存在的线上缺陷：
-    - `fix(content): normalize current chapter relative links`：知识库 Markdown 中的裸 `(.)` 链接被改写成坏路由 `/[locale]/knowledge/.`（实测 `[a](.)` → `/zh/knowledge/.`），现回指当前篇章。
-    - `fix(ai): keep malformed citation headers out of the chat UI`：`X-Sources` / `X-Suggested` 响应头损坏时，`JSON.parse` 的 `SyntaxError` 原文会被当成用户可见错误文案渲染，覆盖本地化提示并泄漏内部报错。
+  - 恢复 4 项悬空批次。两处生产代码缺陷在源码中确实仍然存在，但触发面不同：
+    - `fix(content): normalize current chapter relative links`：知识库 Markdown 中的裸 `(.)` 链接会被改写成坏路由 `/[locale]/knowledge/.`（实测 `[a](.)` → `/zh/knowledge/.`），现回指当前篇章。已核对当前 knowledge base 全量正文：0 篇使用裸 `(.)` 链接，因此该修复是契约内的防御性修复，不影响任何线上页面。
+    - `fix(ai): keep malformed citation headers out of the chat UI`：`X-Sources` / `X-Suggested` 响应头损坏时，`JSON.parse` 的 `SyntaxError` 原文会被当成用户可见错误文案渲染，覆盖本地化提示并泄漏内部报错；该路径由服务端响应头决定，与正文内容无关。
     - `test(course): cover completion ledger boundaries`：账本归一化与越界时间戳覆盖。
     - `test(growth): cover enum rejection boundaries`：把误落在 `describe` 外的枚举拒绝用例收回块内，复用共享 `console.info` mock。
   - 把本地 `main` 领先的 15 个提交（auth 边界、sync/search/share 修复、AI 上下文竞态、npm lockfile 工具链门禁）搬上受保护分支的正确通道：feat 分支 + PR。
@@ -4409,5 +4409,5 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   - 内容/契约/隐私门禁（`check:docs`、`constitution`、`frontmatter`、`image-alt`、`quiz-*`、`sitemap`、`seo-surface`、`links`、`nav-chain`、`relative-links`、`search-index`、`bundle`、`structured-data`、`mobile`、`title-terminology`、`description-quality`、`risk-warning`、`slug-conflicts`、`description-dupes`、`glossary`、`kb-pointer`、`kb-changelog`、`translation-history`、`kb-parity-budget`、`kb:parity`、`kb:accept`、`kb:inventory`、`kb:gap-priority`、`ai-copy`、`dark-pattern-copy`、`env-docs`、`growth-event-privacy`、`error-report-privacy`）：全部通过。
 - 阻塞：预览站自动化冒烟需要 Vercel Deployment Protection bypass 密钥（账号级凭据，属外部权限）；不阻塞合并与生产冒烟。
 - 风险 / 回滚：无数据库迁移、无依赖树变更、无内容契约变更。`content.ts` 与 `ai-chat.tsx` 各自独立成commit，可单独回滚；其余为测试与文档。
-- 下一项：`ci` 变绿后 rebase 合并 PR #105，删除 `feat/recover-stranded-batches` 与已无内容的 `origin/feat/maintain-merge-20260921` 远端分支；随后在生产域名上做部署后冒烟，并继续排查内容质量报告每日日期抖动带来的工作区噪声。
+- 下一项：`ci` 变绿后 rebase 合并 PR #105，删除 `feat/recover-stranded-batches` 与已无内容的 `origin/feat/maintain-merge-20260921` 远端分支；随后在生产域名上做部署后冒烟。另在 roadmap 复核中发现版本完整性缺陷：`package.json` 仍为 `0.1.0`，而 `src/data/release-notes.json` / `CHANGELOG.md` 已发布 `0.7.0`，且现有门禁（`check:changelog`、`check:docs`）不校验该字段，需要单独修复并补门禁。
 - 更新时间：2026-09-22 00:10（Asia/Shanghai）。
