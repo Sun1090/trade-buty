@@ -4370,3 +4370,44 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：仅收敛工具链门禁与文档，不改依赖树、数据库、运行时行为或 lockfile；如需回滚，撤回本提交即可。
 - 下一项：继续推进 CI/内容质量门禁或等待并合并受保护分支 PR。
 - 更新时间：2026-09-21 05:30（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — 悬空提交回收与 Vercel 阻塞解除
+
+- 状态：`feat/recover-stranded-batches` 已开 PR #105；db-tests / CodeQL / Vercel Preview 通过，`ci` 运行中。
+- 里程碑 / 版本：v0.7.0 后续质量/安全加固阶段，暂不发布。
+- 分支 / 提交：`feat/recover-stranded-batches`（HEAD 见 PR #105），基线 `9b36dbd`。
+- 完成内容：
+  - 查明此前记录的“Vercel 速率限制阻塞”实为误判方向：PR #99/#101/#102/#104 已因 `codex/*` 远端分支被清理而**关闭且从未合并**，其 15 个提交只存在于本地 `main`，远端完全没有这些工作。
+  - 恢复 4 项悬空批次，其中两处是仍然存在的线上缺陷：
+    - `fix(content): normalize current chapter relative links`：知识库 Markdown 中的裸 `(.)` 链接被改写成坏路由 `/[locale]/knowledge/.`（实测 `[a](.)` → `/zh/knowledge/.`），现回指当前篇章。
+    - `fix(ai): keep malformed citation headers out of the chat UI`：`X-Sources` / `X-Suggested` 响应头损坏时，`JSON.parse` 的 `SyntaxError` 原文会被当成用户可见错误文案渲染，覆盖本地化提示并泄漏内部报错。
+    - `test(course): cover completion ledger boundaries`：账本归一化与越界时间戳覆盖。
+    - `test(growth): cover enum rejection boundaries`：把误落在 `describe` 外的枚举拒绝用例收回块内，复用共享 `console.info` mock。
+  - 把本地 `main` 领先的 15 个提交（auth 边界、sync/search/share 修复、AI 上下文竞态、npm lockfile 工具链门禁）搬上受保护分支的正确通道：feat 分支 + PR。
+  - 对恢复的 `X-Sources` 用例做变异验证：回退生产修复后该用例失败，恢复后通过，确认不是空断言。
+  - 实测预览与生产可达性：Preview URL 受 Vercel Deployment Protection（SSO 302）保护，自动化冒烟需 `protection-bypass` 密钥；生产 `trade-buty.vercel.app` 公开 200，合并按生产域名冒烟即可。
+  - 本地门禁顺序与 CI 对齐：`check:seo-surface` / `check:search-index` / `check:structured-data` 必须在 `npm run build` 之后、`npm run e2e` 之前跑（e2e 会把 fallback 页写进 `.next`）；CI 现有顺序已正确，无需改动。
+- 变更文件：
+  - `src/lib/content.ts`
+  - `src/lib/content.test.ts`
+  - `src/components/ai-chat.tsx`
+  - `src/components/ai-chat.test.tsx`
+  - `src/lib/course-completion-trend.test.ts`
+  - `src/lib/growth-events.test.ts`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npm run lint`、`npm run typecheck`：通过。
+  - `npx vitest run src/components/ai-chat.test.tsx`：通过（43 用例，含 9 个恢复用例）。
+  - `npx vitest run src/lib/content.test.ts src/lib/course-completion-trend.test.ts src/lib/growth-events.test.ts`：通过（31 / 12 / 16 用例）。
+  - `npm run test:coverage`：通过（257 文件 / 2371 用例；statements 95.46%）。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - `npm run e2e`：通过（93 用例 / 26.4s）。
+  - `npm run db:test`：通过（10 迁移、38 条 RLS 越权断言、26 条同步/约束断言、0008/0009 回滚重放）。
+  - `npm run audit:prod` / `audit:all` / `check:secrets` / `check:lockfile-repro` / `check:changelog`：通过。
+  - 内容/契约/隐私门禁（`check:docs`、`constitution`、`frontmatter`、`image-alt`、`quiz-*`、`sitemap`、`seo-surface`、`links`、`nav-chain`、`relative-links`、`search-index`、`bundle`、`structured-data`、`mobile`、`title-terminology`、`description-quality`、`risk-warning`、`slug-conflicts`、`description-dupes`、`glossary`、`kb-pointer`、`kb-changelog`、`translation-history`、`kb-parity-budget`、`kb:parity`、`kb:accept`、`kb:inventory`、`kb:gap-priority`、`ai-copy`、`dark-pattern-copy`、`env-docs`、`growth-event-privacy`、`error-report-privacy`）：全部通过。
+- 阻塞：预览站自动化冒烟需要 Vercel Deployment Protection bypass 密钥（账号级凭据，属外部权限）；不阻塞合并与生产冒烟。
+- 风险 / 回滚：无数据库迁移、无依赖树变更、无内容契约变更。`content.ts` 与 `ai-chat.tsx` 各自独立成commit，可单独回滚；其余为测试与文档。
+- 下一项：`ci` 变绿后 rebase 合并 PR #105，删除 `feat/recover-stranded-batches` 与已无内容的 `origin/feat/maintain-merge-20260921` 远端分支；随后在生产域名上做部署后冒烟，并继续排查内容质量报告每日日期抖动带来的工作区噪声。
+- 更新时间：2026-09-22 00:10（Asia/Shanghai）。
