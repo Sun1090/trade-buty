@@ -3,8 +3,13 @@ import { NextRequest } from "next/server";
 import { GET, parseExportQuery } from "./route";
 
 const from = vi.fn();
+/** 匿名（RLS 生效）的服务端客户端：本端点绝不该用它读 ai_feedback */
+const anonFrom = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
-  createSupabaseServerClient: vi.fn(async () => ({ from })),
+  createSupabaseServerClient: vi.fn(async () => ({ from: anonFrom })),
+}));
+vi.mock("@/lib/supabase/admin", () => ({
+  createSupabaseAdminClient: vi.fn(() => ({ from })),
 }));
 
 type QueryResult = {
@@ -54,11 +59,15 @@ beforeEach(() => {
   vi.clearAllMocks();
   result = { data: [], error: null };
   process.env.ADMIN_TOKEN = "secret";
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
   from.mockImplementation(() => builder());
 });
 
 afterEach(() => {
   delete process.env.ADMIN_TOKEN;
+  delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 });
 
 describe("parseExportQuery", () => {
@@ -126,6 +135,32 @@ describe("GET /api/ai/feedback/export", () => {
     const body = await res.json();
     expect(body.count).toBe(2);
     expect(body.items).toHaveLength(2);
+  });
+
+  it("读的是 service_role 客户端，不是受 RLS 约束的匿名客户端", async () => {
+    // anon 客户端没有 Supabase 会话，`auth.uid()` 为 NULL，而 ai_feedback 的策略是
+    // `using (auth.uid() = user_id)` —— 用它查询「成功但零行」，人工抽查形同虚设。
+    result = { data: [{ id: 1 }], error: null };
+    const res = await GET(request({ authorization: "Bearer secret" }));
+    expect(res.status).toBe(200);
+    expect(from).toHaveBeenCalledWith("ai_feedback");
+    expect(anonFrom).not.toHaveBeenCalled();
+  });
+
+  it("缺 SUPABASE_SERVICE_ROLE_KEY 时明确 503，而不是静默返回空集", async () => {
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const res = await GET(request({ authorization: "Bearer secret" }));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "export unavailable" });
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("token 长度相同但内容不同、或长度不符，都判 401", async () => {
+    for (const header of ["Bearer sec", "Bearer secretX", "Bearer XXXXXXX"]) {
+      const res = await GET(request({ authorization: header }));
+      expect(res.status, header).toBe(401);
+    }
+    expect(from).not.toHaveBeenCalled();
   });
 
   it("数据库失败返回通用文案，不回传内部错误", async () => {
