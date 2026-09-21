@@ -5,9 +5,11 @@ on:
     branches: [main]
   pull_request:
 
-# 最小权限：工作流只读取仓库内容，不需要写 token / PR / issue 权限。
+# 最小权限：只读仓库内容与 PR 元数据（R14.4 工作保全审计需要列出关闭未合并的 PR），
+# 不需要任何写 token / issue 权限。
 permissions:
   contents: read
+  pull-requests: read
 
 # 同一 PR 连续 push 时取消被取代的运行（否则一次 push 会并行占用多份 runner）；
 # main 的 push 用 run_id 分组，保持每次提交都有独立的完整门禁结果。
@@ -36,6 +38,15 @@ jobs:
       - run: npm run audit:prod
       - run: npm run audit:all
       - run: npm run check:secrets
+      - name: 工作保全审计（R14.4：关闭未合并的 PR 必须先确认工作去向）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORK_AUDIT_REQUIRE_GH: "1"
+        run: |
+          # 审计用 origin/main 比对补丁是否落地；actions/checkout 默认只取当前 ref，
+          # 不补这一条就等于让审计在「无从比对」的情况下静默通过。
+          git fetch --no-tags origin +main:refs/remotes/origin/main
+          npm run ops:work-audit
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |

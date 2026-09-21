@@ -15,6 +15,7 @@
 | `npm run audit:prod` | 生产依赖高危及以上漏洞审计（npm 官方 registry） | 升级/替换受影响依赖；不得通过降低 audit level 掩盖 |
 | `npm run audit:all` | 全量依赖（含开发工具链）高危及以上漏洞审计；当前 0 漏洞 | 升级/替换受影响依赖，优先用经验证的 overrides；不得用 `--omit=dev` 掩盖开发链回归 |
 | `npm run check:secrets` | 扫描受版本控制与未忽略的新文本文件，阻断私钥、平台 token 和疑似硬编码密钥；输出不包含命中值 | 吊销并移除泄露凭据，改用环境变量/密钥管理；测试夹具使用明确占位值 |
+| `npm run ops:work-audit` | 工作保全审计（R14.4）：有没有提交既不在 `main` 也不在任何远端分支，以及有没有 PR 被关闭而工作去向从未确认。CI 用 `WORK_AUDIT_REQUIRE_GH=1` 把它当门禁：读不到 GitHub 也判失败，不允许静默变绿 | 需要的工作重放到新 topic 分支并提 PR；确认已无需保留的关闭 PR 在 `docs/work-audit-ack.json` 记下理由（每条必须写原因） |
 | `npm run lint` | 全仓库 ESLint，**0 error / 0 warning** | 修复规则报告；定向例外必须附理由，脚本本身固定 `--max-warnings=0` |
 | `npm run test:coverage` | Vitest 单元、组件、脚本契约与集成测试，并跑 V8 覆盖度地板门禁（语句 84 / 分支 77 / 函数 83 / 行 87） | 修复失败用例；覆盖度跌破地板时补测试，不得跳过/删除断言或下调阈值伪造通过 |
 | `npm run typecheck` | Next.js 16 路由类型生成 + `tsc --noEmit` | 修复类型错误；不得用 `any`/忽略指令掩盖真实不匹配 |

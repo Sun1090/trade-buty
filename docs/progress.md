@@ -4835,3 +4835,46 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   否则会把全部提交误报为未推送）；顺手把 roadmap 里 R14.4/R14.5 的勾选状态与实际实现对齐。
   随后执行 0.7.2 patch 发布（按新增的 `docs/release-checklist.md` 走）。
 - 更新时间：2026-09-22 04:05（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — 工作保全审计接入 CI 门禁（R14.4 收尾）
+
+- 状态：完成，双向实测通过；待 PR 合并。
+- 里程碑 / 版本：v0.8 R14.4 关账。只改 CI 配置与门禁脚本，不改站点运行时。
+- 分支 / 提交：`ci/work-audit-gate`，基线 `0d47865`。
+- 完成内容：
+  - roadmap 的 R14.4 原话要求「CI 增加两类告警」，但 #114 落地的只是本地运维脚本。
+    本批次把它接进 `ci.yml`，同时纠正脚本头部那句「不进 CI」的旧判断。
+  - 第一类（本地未推送提交）在 CI 里天然为 0：runner 检出的是分离 HEAD，看不到开发者本地分支。
+    脚本对两种模式都成立，不需要新增 scope 开关——这是实现前确认过的事实，不是事后找的理由。
+  - 第二类（关闭未合并且去向未确认的 PR）走 GitHub API，CI 里成立，因此新增
+    `WORK_AUDIT_REQUIRE_GH=1`：**读不到 GitHub 即判失败**。这个开关专门用来堵「门禁永远绿」的
+    失效方式——本工具的 PR 判定曾经因为一个恒为假的比较（REST 返回小写 `closed`，代码比 `CLOSED`）
+    而静默得到 0 个候选。
+  - CI 步骤先 `git fetch --no-tags origin +main:refs/remotes/origin/main`：`actions/checkout` 默认只取
+    当前 ref，没有 `origin/main` 时 `merge-base`/`git cherry` 会失败，判定会退化成「补丁数未知」。
+    宁可未知并报出，也不能无声通过。
+  - 权限：工作流新增 `pull-requests: read`（唯一允许的额外只读 scope），并把这条例外写进
+    `scripts/ci-workflow.test.mjs` 的最小权限契约——放宽的是自设规则的白名单，
+    仓库分支保护规则未做任何改动。
+- 变更文件：`.github/workflows/ci.yml`、`scripts/audit-work-preservation.mjs`、
+  `scripts/work-audit-lib.mjs`、`scripts/work-audit-lib.test.mjs`、`scripts/ci-workflow.test.mjs`、
+  `docs/ops.md`、`docs/roadmap.md`、`docs/progress.md`。
+- 验证命令和结果：
+  - `npx vitest run scripts/work-audit-lib.test.mjs`：16 用例通过（新增 `workAuditExit` 3 用例）；
+    `npx vitest run scripts/ci-workflow.test.mjs`：19 用例通过（含登记与顺序校验）。
+  - `docs/ops.md` 新增 `npm run ops:work-audit` 门禁行，位置与 ci.yml 顺序一致（顺序契约测试通过）。
+  - 实测四象限：`gh` 可用 → 本地与 CI 模式都 exit 0（悬空 0 / 未确认 0）；
+    用 `GH_TOKEN=bogus` 模拟拿不到 GitHub → 本地模式 exit 0 并打印跳过原因，
+    CI 模式 **exit 1** 并打印「CI 模式：读不到 GitHub 即判失败，门禁不允许静默变绿」。
+  - `npm run check:docs` / `check:links` / `lint` / `typecheck`：通过。
+- 顺带关账：R14.5（内容报告幂等化，PR #112 已落地的能力）此前在 roadmap 里仍未勾选——
+  本批次连跑 `check:risk-warning` / `check:glossary` / `kb:inventory` 两遍，`git status` 对报告产物无 diff，
+  确认能力仍在后才勾选。
+- 阻塞：无。Vercel 构建配额仍在 24h 窗口内（Vercel 检查非必需检查，不阻塞合并）。
+- 风险 / 回滚：CI 多一步网络调用（`gh api` + 一次 `git fetch`），若 GitHub API 抖动会让门禁偶发红；
+  回滚本 commit 即恢复原流水线。若某天真有 PR 被关闭未合并，CI 会红直到台账写下理由——这是设计意图。
+- 下一项：R14.6（静态扫描 `Date.now`/真实定时器判定为低信号，需重新定义为可失败的有效形式）；
+  随后按 `docs/release-checklist.md` 执行 0.7.2 patch 发布。
+- 更新时间：2026-09-22 04:13（Asia/Shanghai）。
