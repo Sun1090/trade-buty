@@ -29,6 +29,7 @@
 | `npm run check:dark-pattern-copy` | 增长表面均已登记，且无紧迫/恐吓/默认勾选等暗黑模式（R13.21–R13.22） | 修正 `growth-surfaces.json` 登记或用户文案 |
 | `npm run check:docs` | README/AGENTS/plan/About 的内容规模、技术栈、关键承诺与 `package.json` 版本号一致 | 修正漂移文档；发布时同步 bump `package.json` version，不得只改门禁快照 |
 | `npm run check:changelog` | `CHANGELOG.md` 与单一来源 `src/data/release-notes.json`（站点 `/changelog` 页同源）一致：版本/日期格式、新旧排序与双语条目 | 跑 `npm run changelog:generate` 重新生成并提交；不得手工编辑 `CHANGELOG.md` |
+| `npm run check:release-tag` | 发布 tag 核对（R14.3）：除最新发布版本外，每条发布记录都必须有同名 `vX.Y.Z` tag；最新发布版本允许暂缺（rebase 合并改写 SHA，tag 只能在合并后打到 `main`），此时打印待办不判失败 | 在合并后的 `main` 上 `git tag -a vX.Y.Z origin/main -m "..." && git push origin vX.Y.Z`；0.4.0–0.7.0 属门禁上线前的遗留豁免（见 `scripts/release-tag-lib.mjs`），有意不回填以免把过期提交推成生产部署 |
 | `npm run check:constitution` | 内容宪法：导流/荐股黑话、收益承诺表述（R6.11） | 默认报告式（教育语境豁免）；内容整改后可在 CI 加 `--strict` 升级阻断 |
 | `npm run check:frontmatter` | 每篇课程 title/description 齐全且 description ≥15 字符（R6.5） | 补齐 frontmatter；章节 README 按契约豁免 |
 | `npm run check:image-alt` | 知识库图片 alt 文本（R6.6，R10.12 增强） | 为对应图片补描述 |

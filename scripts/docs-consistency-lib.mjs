@@ -6,6 +6,8 @@
  * README 与 About 页的中立/不接受捐赠承诺，以及 package.json 与发布记录的版本号。
  */
 
+import { newestReleaseVersion } from "./release-tag-lib.mjs";
+
 export function extractReadmeCounts(markdown) {
   const text = String(markdown);
   const en = text.match(/\*\*Learn\*\*:\s*(\d+)\s+chapters?\s*\/\s*(\d+)\s+lessons?/i);
@@ -162,28 +164,14 @@ export function auditNeutrality(readmes, aboutPage) {
 
 /** package.json 的 version 必须等于发布记录里的最新已发布版本。 */
 export function auditReleaseVersion({ packageVersion, releases }) {
-  const issues = [];
-  const versions = (Array.isArray(releases) ? releases : [])
-    .map((release) => release?.version)
-    .filter((version) => /^\d+\.\d+\.\d+$/.test(String(version ?? "")));
-  if (versions.length === 0) {
-    issues.push("src/data/release-notes.json: 没有 x.y.z 形式的已发布版本");
-    return issues;
+  const newest = newestReleaseVersion(releases);
+  if (!newest) {
+    return ["src/data/release-notes.json: 没有 x.y.z 形式的已发布版本"];
   }
-  const rank = (version) => version.split(".").map(Number);
-  const newest = versions.reduce((latest, candidate) => {
-    const left = rank(latest);
-    const right = rank(candidate);
-    for (let index = 0; index < 3; index += 1) {
-      if (right[index] > left[index]) return candidate;
-      if (right[index] < left[index]) return latest;
-    }
-    return latest;
-  });
   if (packageVersion !== newest) {
-    issues.push(
+    return [
       `package.json: version 为 ${String(packageVersion)}，最新发布版本为 ${newest}；发布时必须同步 bump package.json`
-    );
+    ];
   }
-  return issues;
+  return [];
 }

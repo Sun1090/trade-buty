@@ -27,6 +27,7 @@
     "check:docs": "node scripts/check-docs-consistency.mjs",
     "check:lockfile-repro": "node scripts/check-lockfile-reproducibility.mjs",
     "check:changelog": "node scripts/generate-changelog.mjs --check",
+    "check:release-tag": "node scripts/check-release-tag.mjs",
     "changelog:generate": "node scripts/generate-changelog.mjs",
     "check:constitution": "node scripts/check-constitution.mjs",
     "check:frontmatter": "node scripts/check-frontmatter.mjs",

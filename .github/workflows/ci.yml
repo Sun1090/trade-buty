@@ -24,6 +24,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           submodules: recursive
+          # R14.3：check:release-tag 需要读 tag；不依赖 checkout 的默认值。
+          fetch-tags: true
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
@@ -67,6 +69,8 @@ jobs:
       - run: npm run check:dark-pattern-copy
       - run: npm run check:docs
       - run: npm run check:changelog
+      - name: 发布 tag 核对（R14.3：除最新发布版本外，每条发布记录都必须有同名 tag）
+        run: npm run check:release-tag
       - run: npm run check:constitution
       - run: npm run check:frontmatter
       - run: npm run check:image-alt
