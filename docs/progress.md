@@ -4713,3 +4713,39 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   本 PR 是队列里最后一个待合并项。
 - 下一项：R14.7 剩余盘点（分享落地页等 `[locale]` 布局之外的表面），随后 R14.8 发布检查清单。
 - 更新时间：2026-09-22 02:53（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — 内容红线批次 2：分享落地页补齐风险提示并关账 R14.7
+
+- 状态：修复与守卫完成、双向变异验证通过；待 PR 合并。
+- 里程碑 / 版本：v0.8 R14.7 关账项。含用户可见文案位（分享页新增一行），计入下一个 patch 发布。
+- 分支 / 提交：`fix/share-landing-risk-warning`，基线 `f3280ea`。
+- 完成内容：
+  - 盘点方式：枚举构建产物里全部预渲染路由（36 条非知识库路由）逐条抓 HTML 查 `⚠️`，再按
+    内容类型核对承载组件与已有守卫。36 条工具/法务页全部命中，课文与章节页另有兜底块。
+  - **发现的真实空洞**：`/share/{quiz,replay,streak}/*` 挂在根级、不在 `[locale]` 布局下，页脚
+    够不着，三类对外转发的落地页一句风险提示都没有（用合法编码载荷实测 `⚠️` 命中数为 0）。
+    这是内容红线（docs/plan.md「每篇内容必须带风险提示」）在站外传播面缺口，非风格问题。
+  - 修复：分享落地页渲染与页脚同一句 `footer.disclaimer`（复用词典原文，不新增文案分支）。
+  - 守卫：`e2e/static-surface.spec.ts` 的红线套件抽出 `expectRiskLine` 助手，新增 3 条分享页断言
+    （zh quiz / en replay / zh streak），与 13 条 `[locale]` 路由共用同一逐字比对口径。
+  - 台账：`docs/roadmap.md` 勾选 R14.7，并写入「R14.7 盘点结论」表——逐面列出承载组件与
+    对应门禁，注明 404 外壳为有意不覆盖（该页不含可免责内容）。
+- 变更文件：
+  - `src/app/share/[kind]/[path]/page.tsx`
+  - `e2e/static-surface.spec.ts`
+  - `docs/roadmap.md`
+  - `docs/progress.md`
+- 验证命令和结果：
+  - `npm run build` + `npm run e2e`：通过（109 用例，其中红线套件 16 条）。
+  - `npm run typecheck` 0 error；`npm run lint` 通过；`npm run test`：261 文件全绿。
+  - `check:seo-surface` / `check:search-index` / `check:structured-data`：通过且 `git status` 干净。
+  - 变异（双向）：删除分享页该行并重建 → 红线套件 3 条分享断言全部「未渲染页脚风险提示」变红，
+    13 条页脚断言不受影响；还原后 16 条全绿。
+  - `npm run ops:work-audit`：悬空提交 0、未确认关闭 PR 0；据其提示清理了 6 个内容已落地的陈旧本地分支。
+- 阻塞：无。Vercel 仍处 24h 构建配额期内，预览冒烟不可用，不影响合并。
+- 风险 / 回滚：仅新增一行已存在于词典的文案与测试，无数据/接口变更；回滚本 commit 即恢复原页面。
+- 下一项：R14.8 发布检查单固化（`docs/release-checklist.md` + `check:docs` 断言），随后 R14.12 覆盖率
+  爬坡；攒够后打 0.7.2 patch（含 #113 账号隔离、#109 课文兜底、本批次分享页红线）。
+- 更新时间：2026-09-22 03:20（Asia/Shanghai）。
