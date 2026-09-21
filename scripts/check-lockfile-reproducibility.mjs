@@ -37,7 +37,7 @@ if (!pin) {
     [
       "❌ package.json 缺少 devEngines.packageManager 的 npm 钉版，无法核验 lockfile 可复现性。",
       "   请在 package.json 里声明（版本与 CI 的 Node 22 自带 npm 同 major）：",
-      '   "devEngines": { "packageManager": { "name": "npm", "version": "^10.9.4", "onFail": "warn" } }',
+      '   "devEngines": { "packageManager": { "name": "npm", "version": "10.9.4", "onFail": "warn" } }',
     ].join("\n"),
   );
 }

@@ -104,10 +104,10 @@ npx --yes npm@10.9.4 ci --registry=https://registry.npmjs.org
 
 这道门禁已自动化，不再依赖人肉约定：
 
-- 根 `package.json` 用 `devEngines.packageManager` 钉住 npm 主版本（`^10.9.4`，与 CI 的 Node 22 自带 npm 对齐），`onFail: "warn"`——本地用 npm 11 只会收到一条 warning，不会挡住日常安装；CI 的 npm 10.9.x 命中范围时完全静默。
-- `npm run check:lockfile-repro`（`scripts/check-lockfile-reproducibility.mjs`）用钉住的 npm 版本重新生成一份 `package-lock.json`，与仓库里已提交的那份逐条目比较；有差异即失败并打印「运行中的 npm / CI 期望的 npm / 新增与消失的条目 / 修复命令」。脚本无论成功失败都从备份恢复 `package-lock.json`，不会把工作树留在被改写状态。
-- CI 在 `npm ci` 之后立即跑 `npm run check:lockfile-repro`，所以 Dependabot 再次用 npm 11 提交 lockfile 时会在 40 秒内以可读原因红灯，而不是让下游 `npm ci` 报 `Missing: <pkg> from lock file`。
-- 纯计算部分放在 `scripts/lockfile-repro-lib.mjs`，由 `scripts/lockfile-repro-lib.test.mjs` 覆盖（含 2026-09-13 实测的 14 条 `puppeteer-core` 嵌套条目回归 fixture）；工作流契约由 `scripts/ci-workflow.test.mjs` 锁定（钉版必须指向 npm 10、CI 必须实跑、且晚于 `npm ci`）。
+- 根 `package.json` 用 `devEngines.packageManager` 精确钉住 `10.9.4`（与 lockfile 生成工具一致）。npm 11 仍可能打出 `EBADDEVENGINES` warning，但不会改变安装或 lockfile 门禁；本地脚本已通过 `npx --yes npm@10.9.4` 显式使用同一版本。
+- `npm run check:lockfile-repro`（`scripts/check-lockfile-reproducibility.mjs`）用钉住的 npm 10.9.4 重新生成一份 `package-lock.json`，与仓库里已提交的那份逐条目比较；有差异即失败并打印「运行中的 npm / CI 期望的 npm / 新增与消失的条目 / 修复命令」。脚本无论成功失败都从备份恢复 `package-lock.json`，不会把工作树留在被改写状态。
+- CI 在 `npm ci` 之后立即跑 `npm run check:lockfile-repro`；`setup-node` 把 `package-lock.json` 作为 npm cache key，避免不同工具链写入同一 npm 缓存。Dependabot 再次用 npm 11 提交 lockfile 时会在 40 秒内以可读原因红灯，而不是让下游 `npm ci` 报 `Missing: <pkg> from lock file`。
+- 纯计算部分放在 `scripts/lockfile-repro-lib.mjs`，由 `scripts/lockfile-repro-lib.test.mjs` 覆盖（含 2026-09-13 实测的 14 条 `puppeteer-core` 嵌套条目回归 fixture）；工作流契约由 `scripts/ci-workflow.test.mjs` 锁定（钉版必须精确指向 npm 10.9.4、CI 必须实跑、且晚于 `npm ci`）。
 
 ### 顺带修复
 
