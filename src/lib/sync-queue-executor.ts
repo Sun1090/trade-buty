@@ -54,11 +54,15 @@ export function buildQueueExecutor(uid: string) {
           return !error;
         }
         case "replay-history": {
-          const { symbol, interval, total, correct, best_streak } = item.payload as {
-            symbol: string; interval: string; total: number; correct: number; best_streak: number;
+          const { symbol, interval, total, correct, best_streak, recorded_at } = item.payload as {
+            symbol: string; interval: string; total: number; correct: number;
+            best_streak: number; recorded_at?: string;
           };
+          // recorded_at 必须跟着重放：否则离线补传的轮次会被打上「重放那一刻」的时间，
+          // 与本地 `at` 对不上，合并时又被算成两条。
           const { error } = await sb.from("replay_history").insert({
             user_id: uid, symbol, interval, total, correct, best_streak,
+            ...(recorded_at ? { recorded_at } : {}),
           });
           return !error;
         }

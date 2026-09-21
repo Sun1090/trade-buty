@@ -18,13 +18,18 @@ import {
   syncProgressWrite,
   syncQuizUpsert,
   syncReplayBestUpsert,
+  syncReplayHistoryWrite,
   syncWrongbookClearAll,
   syncWrongbookDelete,
   syncWrongbookWrite,
 } from "./sync-layer";
 
 type Mode = "ok" | "postgrest-error" | "reject" | "pending";
-const state = vi.hoisted(() => ({ mode: "postgrest-error" as Mode, release: null as null | (() => void) }));
+const state = vi.hoisted(() => ({
+  mode: "postgrest-error" as Mode,
+  release: null as null | (() => void),
+  sent: [] as { table: string; args: unknown[] }[],
+}));
 
 vi.mock("@/lib/supabase/client", () => ({
   getSupabaseBrowser: () => {
@@ -38,25 +43,28 @@ vi.mock("@/lib/supabase/client", () => ({
       }
       return Promise.resolve({ data: null, error: { message: "offline", code: "500" } });
     };
-    /** 链式构造器：`.eq()` 可以任意层数叠加（delete 用三链），`.then()` 才是真正落地的请求 */
-    const builder = (): Record<string, unknown> => {
-      const result = outcome();
-      const self: Record<string, unknown> = {
-        then: (onfulfilled: unknown, onrejected: unknown) =>
-          (result as Promise<unknown>).then(
-            onfulfilled as (v: unknown) => unknown,
-            onrejected as (e: unknown) => unknown,
-          ),
-      };
-      self.eq = () => self;
-      return self;
-    };
     return {
-      from: () => ({
-        insert: builder,
-        upsert: builder,
-        delete: builder,
-      }),
+      from: (table: string) => {
+        /** 链式构造器：`.eq()` 可任意层数叠加（delete 用三链），`.then()` 才是真正落地的请求 */
+        const builder = (...args: unknown[]) => {
+          state.sent.push({ table, args });
+          const result = outcome();
+          const self: Record<string, unknown> = {
+            then: (onfulfilled: unknown, onrejected: unknown) =>
+              (result as Promise<unknown>).then(
+                onfulfilled as (v: unknown) => unknown,
+                onrejected as (e: unknown) => unknown,
+              ),
+          };
+          self.eq = () => self;
+          return self;
+        };
+        return {
+          insert: (row: unknown) => builder(row),
+          upsert: (row: unknown) => builder(row),
+          delete: () => builder(),
+        };
+      },
     };
   },
 }));
@@ -125,6 +133,7 @@ beforeEach(() => {
   memStore.clear();
   state.mode = "postgrest-error";
   state.release = null;
+  state.sent = [];
   setAuthState(false);
   vi.spyOn(console, "warn").mockImplementation(() => undefined);
 });
@@ -216,5 +225,59 @@ describe("清空错题本的云端侧", () => {
     expect(() => syncWrongbookClearAll([{ chapterNum: "spot", questionIdx: 1 }])).not.toThrow();
     await flushMicrotasks();
     expect(memStore.has(QUEUE_KEY)).toBe(false);
+  });
+});
+
+describe("回放记录的时间戳口径", () => {
+  it("在线写入把本地完成时刻作为 recorded_at 一起上传，合并时才不会多算一轮", async () => {
+    state.mode = "ok";
+    setAuthState(true, "user-a");
+
+    syncReplayHistoryWrite({
+      symbol: "BTCUSDT",
+      interval: "1h",
+      total: 10,
+      correct: 7,
+      bestStreak: 3,
+      at: 1_700_000_000_000,
+    });
+    await flushMicrotasks();
+
+    expect(state.sent[0]?.table).toBe("replay_history");
+    expect(state.sent[0]?.args[0]).toMatchObject({
+      user_id: "user-a",
+      symbol: "BTCUSDT",
+      recorded_at: "2023-11-14T22:13:20.000Z",
+    });
+  });
+
+  it("没有完成时刻时不伪造时间（交给服务端 default now()）", async () => {
+    state.mode = "ok";
+    setAuthState(true, "user-a");
+
+    syncReplayHistoryWrite({ symbol: "BTCUSDT", interval: "1h", total: 10, correct: 7, bestStreak: 3 });
+    await flushMicrotasks();
+
+    const row = state.sent[0]?.args[0] as Record<string, unknown>;
+    expect(Object.prototype.hasOwnProperty.call(row, "recorded_at")).toBe(false);
+  });
+
+  it("失败入队时 recorded_at 留在载荷里，重放后时间与本地一致", async () => {
+    setAuthState(true, "user-a");
+
+    syncReplayHistoryWrite({
+      symbol: "ETHUSDT",
+      interval: "4h",
+      total: 8,
+      correct: 4,
+      bestStreak: 2,
+      at: 1_700_000_000_000,
+    });
+    await flushMicrotasks();
+
+    expect(loadQueueAndNextId().queue[0]).toMatchObject({
+      kind: "replay-history",
+      payload: { symbol: "ETHUSDT", recorded_at: "2023-11-14T22:13:20.000Z" },
+    });
   });
 });

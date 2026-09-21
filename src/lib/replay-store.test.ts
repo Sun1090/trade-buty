@@ -69,6 +69,18 @@ describe("replay-store", () => {
       expect(typeof h[0].at).toBe("number");
     });
 
+    it("交给云端的 at 与本地这条完全一致（否则合并认不出同一轮，每轮被记两次）", async () => {
+      const { syncReplayHistoryWrite } = await import("./sync-layer");
+      vi.mocked(syncReplayHistoryWrite).mockClear();
+
+      saveReplayRecord({ symbol: "BTCUSDT", interval: "1h", total: 10, correct: 7, bestStreak: 3 });
+
+      const local = readReplayHistory()[0];
+      expect(vi.mocked(syncReplayHistoryWrite)).toHaveBeenCalledWith(
+        expect.objectContaining({ symbol: "BTCUSDT", at: local.at }),
+      );
+    });
+
     it("超过 100 条只保留最近 100", () => {
       for (let i = 0; i < 105; i++) {
         saveReplayRecord({

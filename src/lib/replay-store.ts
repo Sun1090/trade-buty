@@ -62,15 +62,17 @@ export function readReplayHistory(): ReplayRecord[] {
 
 export function saveReplayRecord(rec: Omit<ReplayRecord, "at">) {
   const all = readReplayHistory();
-  all.push({ ...rec, at: Date.now() });
-  const trimmed = all.slice(-100);
+  const record: ReplayRecord = { ...rec, at: Date.now() };
+  const trimmed = [...all, record].slice(-100);
   try {
     localStorage.setItem(KEY, JSON.stringify(trimmed));
     tryDispatchProgressEvent();
   } catch {
     // ignore
   }
-  syncReplayHistoryWrite(rec);
+  // 把本地这条的 `at` 一起交给云端：`recorded_at` 有 `default now()`，若让它取服务器
+  // 落库时刻，云端时间与本地时间永远差一段网络延迟，合并时认不出是同一轮（每轮被记两次）。
+  syncReplayHistoryWrite({ ...rec, at: record.at });
 }
 
 /** 读取历史最佳连击 */

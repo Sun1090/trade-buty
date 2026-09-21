@@ -118,6 +118,33 @@ describe("mergeReplayHistory", () => {
     expect(out.map((r) => r.symbol)).toEqual(["BTCUSDT", "BTCUSDT", "ETHUSDT"]);
   });
 
+  it("云端行的 recorded_at 由服务器打点，与本地 at 差一段延迟时仍认作同一轮", () => {
+    // 回归：`recorded_at` 是 `default now()`，若不带客户端时间上去，本地 1000ms 那条
+    // 与云端 1480ms 那条指纹不同 → 每轮回放被记两次，统计与周报翻倍。
+    const local = [mkRec(1_000)];
+    const cloud = [
+      { symbol: "BTCUSDT", interval: "1h", total: 10, correct: 5, best_streak: 3, recorded_at: "1970-01-01T00:00:01.480Z" },
+    ];
+    expect(mergeReplayHistory(local, cloud)).toEqual(local);
+  });
+
+  it("容忍窗口只用于云端 vs 本地：两批云端行彼此相隔 1 秒也各算一轮", () => {
+    // 离线批量补传时，云端行可能只隔 1–2 秒；若互相比对会把真实不同的轮次误并掉。
+    const cloud = [
+      { symbol: "BTCUSDT", interval: "1h", total: 10, correct: 5, best_streak: 3, recorded_at: "1970-01-01T00:00:01Z" },
+      { symbol: "BTCUSDT", interval: "1h", total: 10, correct: 5, best_streak: 3, recorded_at: "1970-01-01T00:00:02Z" },
+    ];
+    expect(mergeReplayHistory([], cloud).length).toBe(2);
+  });
+
+  it("超过容忍窗口的同参数两轮都保留（真的是两次训练）", () => {
+    const local = [mkRec(0)];
+    const cloud = [
+      { symbol: "BTCUSDT", interval: "1h", total: 10, correct: 5, best_streak: 3, recorded_at: "1970-01-01T00:01:00Z" },
+    ];
+    expect(mergeReplayHistory(local, cloud).length).toBe(2);
+  });
+
   it("超过 100 条只保留最近 100", () => {
     const local = Array.from({ length: 90 }, (_, i) => mkRec(i));
     const cloud = Array.from({ length: 30 }, (_, i) => ({
