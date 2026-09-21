@@ -139,6 +139,38 @@ describe("growth event contract", () => {
     expect(info).not.toHaveBeenCalled();
   });
 
+  it("rejects invalid enum values across all event variants", () => {
+    const invalidEvents = [
+      { name: "share_preview_opened", card: "email", locale: "zh" },
+      {
+        name: "share_link_copy",
+        card: "quiz",
+        locale: "zh",
+        outcome: "started",
+      },
+      {
+        name: "share_landing_cta_clicked",
+        card: "quiz",
+        locale: "zh",
+        destination: "chart",
+      },
+      { name: "invite_banner_viewed", locale: "zh", source: "cookie" },
+      { name: "invite_banner_dismissed", locale: "fr" },
+      { name: "invite_banner_cleared", locale: "fr" },
+    ] as unknown as GrowthEvent[];
+
+    for (const event of invalidEvents) {
+      trackGrowthEvent(event);
+    }
+
+    expect(info).not.toHaveBeenCalled();
+  });
+
+  it("does not log when the event object is missing", () => {
+    trackGrowthEvent(null as unknown as GrowthEvent);
+    expect(info).not.toHaveBeenCalled();
+  });
+
   it("never throws when console.info throws", () => {
     info.mockImplementationOnce(() => {
       throw new Error("console unavailable");
