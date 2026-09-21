@@ -500,6 +500,58 @@ describe("hydrateFromCloud", () => {
 });
 
 // ============================================================
+// 共享浏览器换账号：本地镜像归属
+// ============================================================
+
+describe("换账号登录的本地镜像归属", () => {
+  it("上一账号的镜像既不并进当前账号，也不以当前账号身份补传到云端", async () => {
+    memStore.set("tb-data-owner", "user-a");
+    memStore.set("tb-progress", JSON.stringify({ "getting-started": ["a 的私密进度"] }));
+    memStore.set("tb-wrong", JSON.stringify({ "spot:0": { picked: 1 } }));
+    mockProgressSelect.mockResolvedValueOnce({
+      data: [{ chapter_num: "spot", doc_slug: "b 的进度" }],
+    });
+
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await hydrateFromCloud("user-b");
+
+    expect(JSON.parse(memStore.get("tb-progress")!)).toEqual({ spot: ["b 的进度"] });
+    expect(memStore.has("tb-wrong")).toBe(false);
+    expect(mockProgressUpsert).toHaveBeenCalledTimes(1);
+    expect(mockProgressUpsert.mock.calls[0]![0]).toEqual([
+      { user_id: "user-b", chapter_num: "spot", doc_slug: "b 的进度" },
+    ]);
+    expect(memStore.get("tb-data-owner")).toBe("user-b");
+  });
+
+  it("没有归属戳的游客镜像由第一个登录的账号认领并补传（既有行为不变）", async () => {
+    memStore.set("tb-progress", JSON.stringify({ "getting-started": ["登录前读过"] }));
+    mockProgressSelect.mockResolvedValueOnce({ data: [] });
+
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await hydrateFromCloud("user-a");
+
+    expect(mockProgressUpsert.mock.calls[0]![0]).toEqual([
+      { user_id: "user-a", chapter_num: "getting-started", doc_slug: "登录前读过" },
+    ]);
+    expect(memStore.get("tb-data-owner")).toBe("user-a");
+  });
+
+  it("同一账号刷新页面不会清掉自己的本地镜像", async () => {
+    memStore.set("tb-data-owner", "user-a");
+    memStore.set("tb-progress", JSON.stringify({ "getting-started": ["登录前读过"] }));
+    mockProgressSelect.mockResolvedValueOnce({ data: [] });
+
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await hydrateFromCloud("user-a");
+
+    expect(JSON.parse(memStore.get("tb-progress")!)).toEqual({
+      "getting-started": ["登录前读过"],
+    });
+  });
+});
+
+// ============================================================
 // R9.6/R9.7：合并摘要事件
 // ============================================================
 
