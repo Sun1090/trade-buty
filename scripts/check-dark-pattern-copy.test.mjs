@@ -11,6 +11,7 @@ import {
   scanCopy,
   scanComponent,
   extractLocaleBlock,
+  extractObjectBlock,
   extractSection,
   extractEntries,
   BANNED_ZH,
@@ -394,4 +395,46 @@ it("runs the real main entrypoint success and failure branches", () => {
   } finally {
     rmSync(missingInventory, { recursive: true, force: true });
   }
+});
+
+/**
+ * 对象块扫描器是这套文案门禁的地基：它误判一个 `}`，就会静默少扫一整段文案
+ * （漏报比误报危险得多）。这里把引号、模板插值、注释与截断输入钉住。
+ */
+describe("对象块扫描器的引号 / 模板 / 注释边界", () => {
+  const blockAt = (src) => extractObjectBlock(src, src.indexOf("{"));
+
+  it("行注释里的右括号不会提前闭合", () => {
+    const src = '{ // }\n"a": "b" }';
+    expect(blockAt(src)).toBe(src);
+  });
+
+  it("块注释里的右括号不会提前闭合", () => {
+    const src = '{ /* } */ "a": "b" }';
+    expect(blockAt(src)).toBe(src);
+  });
+
+  it("字符串与模板里的括号不参与配平", () => {
+    expect(blockAt('{ s: "a{b}c", t: `d{e}f` }')).toBe('{ s: "a{b}c", t: `d{e}f` }');
+  });
+
+  it("模板插值里的对象字面量与字符串都能走完", () => {
+    const src = '{ t: `a${ {x:1} }b` }';
+    expect(blockAt(src)).toBe(src);
+    const inString = '{ t: `a${"}"}b` }';
+    expect(blockAt(inString)).toBe(inString);
+  });
+
+  it("模板里的转义与插值内的反斜杠不会吃掉闭合符", () => {
+    expect(blockAt('{ t: `a\\`b` }')).toBe('{ t: `a\\`b` }');
+    expect(blockAt('{ t: `a${ \\ }b` }')).toBe('{ t: `a${ \\ }b` }');
+  });
+
+  it("未闭合的字符串 / 模板 / 注释一律判为解析失败，而不是静默截断", () => {
+    expect(blockAt('{ "abc }')).toBeNull();
+    expect(blockAt('{ t: `abc }')).toBeNull();
+    expect(blockAt('{ // }')).toBeNull();
+    expect(blockAt('{ /* } ')).toBeNull();
+    expect(blockAt('{ a: { b: 1 }')).toBeNull();
+  });
 });
