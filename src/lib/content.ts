@@ -324,7 +324,10 @@ export function rewriteLinks(
         depth++;
         p = p.slice(3);
       }
-      p = p.replace(/^\.\//, "");
+      p = p.replace(/^\.\//, "").replace(/^\./, "");
+      if (!p) {
+        return `${open}/${locale}/knowledge/${currentChapter}${hash}${rest}`;
+      }
       const parts = p.split("/").filter(Boolean);
 
       // 资产引用 .../_assets/file.ext → /knowledge-assets/{locale}/{章节}/{file}
