@@ -10,6 +10,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { writeReport } from "./report-write-lib.mjs";
 
 const root = process.cwd();
 const CJK = /[\u4e00-\u9fff]/;
@@ -84,7 +85,7 @@ const lines = [
     : ["", "（无问题）"]),
   "",
 ];
-fs.writeFileSync(path.join(root, "docs/glossary-coverage.md"), lines.join("\n"));
+writeReport(path.join(root, "docs/glossary-coverage.md"), lines.join("\n"));
 
 if (problems.length > 0) {
   console.error(`❌ 术语表双语检查失败：${problems.length} 个问题`);

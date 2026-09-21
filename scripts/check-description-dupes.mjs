@@ -13,6 +13,7 @@ import {
   findDescriptionDuplicates,
   findTitleClones,
 } from "./description-dupes-lib.mjs";
+import { writeReport } from "./report-write-lib.mjs";
 
 const root = process.cwd();
 const KB = path.join(root, "content/kline-buty/docs/knowledge");
@@ -66,7 +67,7 @@ const lines = [
     : ["", "（无问题）"]),
   "",
 ];
-fs.writeFileSync(path.join(root, "docs/description-dupes.md"), lines.join("\n"));
+writeReport(path.join(root, "docs/description-dupes.md"), lines.join("\n"));
 
 if (problems.length > 0) {
   console.error(`❌ description 去重检查失败：${problems.length} 个问题`);

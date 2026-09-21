@@ -4608,3 +4608,27 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：新增参数带默认值 `() => true`，未传调用点行为不变；回滚本 commit 即恢复现状（不建议，现状会跨账号污染本地数据）。无迁移。
 - 下一项：把 #83 的确认条目写进审计分支的 `docs/work-audit-ack.json`；合并后随下一个 patch 发布（0.7.2）带上；继续用 R14.4 审计扫其余历史关闭 PR（窗口 30 天外的还要再扫一轮）。
 - 更新时间：2026-09-22 07:30（Asia/Shanghai）。
+## 2026-09-22 — R14.5：内容报告幂等化
+
+- 状态：本地完成并双向验证；分支 `feat/idempotent-reports` 待 PR。
+- 里程碑 / 版本：v0.8（R14）第二项可本地执行任务落地。
+- 分支 / 提交：`feat/idempotent-reports`，基线 `609ed65`。
+- 完成内容：
+  - 新增 `scripts/report-write-lib.mjs`（`sameReportContent` + `writeReport`）：规范化日期后比较，内容未变就不重写文件，因此报告日期含义变为「内容最后一次变化」。
+  - 9 个纯重算型生成器的 15 处 `fs.writeFileSync` 全部改走该 helper：`check:description-dupes`、`check:description-quality`、`check:glossary`、`check:risk-warning`、`check:title-terminology`、`kb:accept`、`kb:inventory`、`kb:gap-priority`、`ops:faq-candidates`。
+  - 有意**排除**按日追加的历史快照（`kb:translation-status`、`kb:diff`、KB changelog）：那里日期本身就是数据，跳过写入会丢历史；这一边界写进 helper 头注释与 `docs/ops.md`。
+  - `docs/ops.md` 报告行补充日期新语义，避免「日期没刷新」被误读成「报告没重跑」。
+- 变更文件：
+  - `scripts/report-write-lib.mjs`（新增）
+  - `scripts/report-write-lib.test.mjs`（新增，8 用例）
+  - 上述 9 个生成脚本
+  - `docs/ops.md`、`docs/progress.md`
+- 验证命令与结果：
+  - 决定性验证：连跑两遍全部 9 个报告生成器，`git status --short docs/` **两次都为空**；改动前同样操作会产生 14 个纯日期脏文件（本会话早前实测记录）。
+  - 反向对照：手工往 `docs/glossary-coverage.md` 追加一行真实内容后跑 `check:glossary`，脏行被正确重写清除、日期保持 `2026-09-21` 不被机器刷新，证明不是变成静默不写。
+  - `npx vitest run scripts/report-write-lib.test.mjs`：通过（8 用例）。
+  - `npm run test`：通过（260 文件 / 2401 用例）；`npm run lint` 通过；`npm run typecheck` 0 error。
+- 阻塞：无。
+- 风险 / 回滚：报告内容仍每次真实重算，只有「内容未变」时不写文件；若需要恢复旧行为（例如外部流程依赖每日日期），回滚本 commit 即可。
+- 下一项：合并 PR #110（R14.3）与 #111（roadmap），随后 R14.6 测试确定性巡检、R14.4 悬空提交防护。
+- 更新时间：2026-09-22 06:35（Asia/Shanghai）。
