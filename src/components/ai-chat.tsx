@@ -264,13 +264,16 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       }
 
       const sources = res.headers.get("X-Sources");
-      sourcesArr = sources
-        ? JSON.parse(decodeURIComponent(sources))
-        : undefined;
       const suggested = res.headers.get("X-Suggested");
-      suggestedArr = suggested
-        ? JSON.parse(decodeURIComponent(suggested))
-        : undefined;
+      try {
+        sourcesArr = sources ? JSON.parse(decodeURIComponent(sources)) : undefined;
+        suggestedArr = suggested
+          ? JSON.parse(decodeURIComponent(suggested))
+          : undefined;
+      } catch {
+        // 来源/推荐是可观测元数据，坏响应头不能把解析异常泄漏到聊天区。
+        throw new Error(dict.error);
+      }
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
