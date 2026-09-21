@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient, getServerAuthUser } from "@/lib/supabase/server";
+import { createRateLimiter } from "@/lib/ai/rate-limit";
+
+/**
+ * 一轮问答 = 两行写入（各可达 8KB / 20KB）。这条路由此前是 AI 系列里唯一没有配额的
+ * 用户级写入端点：任何免费注册账号都能循环把 `ai_conversations` 撑大，而 RLS 只保证
+ * 别人读不到，不限制你自己写多少。
+ * authedLimit 与 `/api/ai/chat` 的登录配额（50/小时）同量级并留一次重试余量；
+ * guestLimit 0 是语义标注——游客没有可归属的会话，进路由前就已经 401。
+ */
+const conversationsLimiter = createRateLimiter({ guestLimit: 0, authedLimit: 60 });
 
 
 export interface SaveBody {
@@ -60,11 +70,13 @@ export async function GET() {
       return NextResponse.json({ messages: [] });
     }
 
+    // 取「最近」50 条必须按时间倒序限窗，再翻回正序给客户端：
+    // 升序 + limit(50) 拿到的是这个账号最早的五十条，老用户回到 AI 页永远看不到近况。
     const { data, error } = await supabase
       .from("ai_conversations")
       .select("role, content, sources, created_at")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(50); // 最近 25 轮
 
     if (error) {
@@ -72,7 +84,7 @@ export async function GET() {
       return NextResponse.json({ error: "Failed to load conversations" }, { status: 500 });
     }
 
-    return NextResponse.json({ messages: data ?? [] });
+    return NextResponse.json({ messages: (data ?? []).reverse() });
   } catch (e) {
     console.error("[ai/conversations] unexpected failure:", e instanceof Error ? e.message : e);
     return NextResponse.json({ messages: [] });
@@ -81,6 +93,25 @@ export async function GET() {
 
 /** POST: 存一轮对话（user + assistant 两条） */
 export async function POST(req: NextRequest) {
+  // 鉴权与限流放在解析 body 之前：畸形/超大 payload 也计入配额，
+  // 不给「先解析再限流」留出绕过窗口（与 /api/ai/chat 同一口径）。
+  let user;
+  try {
+    user = await getServerAuthUser();
+  } catch {
+    return NextResponse.json({ error: "Failed to save conversation" }, { status: 500 });
+  }
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const decision = conversationsLimiter.check(user.id, true);
+  if (!decision.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded", retryAfter: decision.retryAfterSec },
+      { status: 429, headers: { "Retry-After": String(decision.retryAfterSec) } },
+    );
+  }
+
   let raw: unknown;
   try {
     raw = await req.json();
@@ -93,16 +124,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    let user;
-    try {
-      user = await getServerAuthUser();
-    } catch {
-      return NextResponse.json({ error: "Failed to save conversation" }, { status: 500 });
-    }
     const supabase = await createSupabaseServerClient();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     // 批量插入两条
     const { error } = await supabase.from("ai_conversations").insert([
