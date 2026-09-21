@@ -4338,3 +4338,35 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：本轮仅追加进度记录，无代码、迁移或配置改动。
 - 下一项：等待 Vercel 配额恢复后重跑现有 PR 的 Preview/部署检查；若恢复，合并/清理对应临时远端分支。
 - 更新时间：2026-09-21 06:03（Asia/Shanghai）。
+
+---
+
+## 2026-09-21 — 质量批次：npm lockfile 工具链门禁收敛
+
+- 状态：本地开发、提交与全量验证完成；受保护 `origin/main` 仍等待既有 `feat/maintain-merge-20260921` PR 合并。
+- 里程碑 / 版本：v0.7.0 后续质量加固，暂不发布。
+- 分支 / 提交：本地 `main`（提交前 HEAD：`aa892aa`）。
+- 完成内容：
+  - 将 `devEngines.packageManager` 从宽范围 `^10.9.4` 精确钉到 `10.9.4`，与仓库 lockfile 复现工具使用的 npm 版本完全一致。
+  - `check:lockfile-repro` 固定调用 `npx --yes npm@10.9.4`，避免 npm 10/11 lockfile 形状差异污染复现检查。
+  - GitHub Actions 的 `setup-node` 显式使用 `package-lock.json` 作为 npm cache key，减少不同工具链共享缓存的风险。
+  - 同步更新依赖与运维文档，明确 npm 11 外壳告警不会改变 lockfile 门禁，也不要求升级 lockfile。
+- 变更文件：
+  - `.github/workflows/ci.yml`
+  - `docs/deps.md`
+  - `docs/ops.md`
+  - `package.json`
+  - `scripts/check-lockfile-reproducibility.mjs`
+  - `docs/progress.md`
+- 验证命令与结果：
+  - `npm run check:lockfile-repro`：通过（npm 10.9.4 复现 981 个包条目，无差异）。
+  - `npx vitest run scripts/ci-workflow.test.mjs scripts/lockfile-repro-lib.test.mjs --coverage=false`：通过（2 文件 / 35 用例）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（257 文件 / 2353 用例；statements 95.38%，branches 90.11%，functions 95.56%，lines 97.58%）。
+  - `npm run build`：通过（Next.js 16.3.5，474 个静态页面）。
+  - `git diff --check`：通过。
+- 阻塞：无本地阻塞；`origin/main` 受保护，既有合并需要通过 `feat/maintain-merge-20260921` PR 完成。
+- 风险 / 回滚：仅收敛工具链门禁与文档，不改依赖树、数据库、运行时行为或 lockfile；如需回滚，撤回本提交即可。
+- 下一项：继续推进 CI/内容质量门禁或等待并合并受保护分支 PR。
+- 更新时间：2026-09-21 05:30（Asia/Shanghai）。
