@@ -12,10 +12,11 @@ vi.stubGlobal("window", { dispatchEvent: vi.fn() });
 vi.mock("./sync-layer", () => ({
   syncWrongbookWrite: vi.fn(),
   syncWrongbookDelete: vi.fn(),
+  syncWrongbookClearAll: vi.fn(),
 }));
 
-const { syncWrongbookWrite } = await import("./sync-layer");
-const { readWrong, recordWrong, resolveWrong } = await import("./wrongbook");
+const { syncWrongbookWrite, syncWrongbookClearAll } = await import("./sync-layer");
+const { readWrong, recordWrong, resolveWrong, clearAllWrong } = await import("./wrongbook");
 
 describe("wrongbook storage", () => {
   beforeEach(() => {
@@ -132,5 +133,31 @@ describe("wrongbook storage", () => {
     expect(readWrong()).toEqual({
       "spot:1": { chapterNum: "spot", questionIdx: 1, picked: 0, at: 100 },
     });
+  });
+});
+
+describe("clearAllWrong 的云端侧", () => {
+  it("清空时把清空前的快照交给 sync-layer，否则下次 hydrate 会把整本错题拉回来", () => {
+    recordWrong("spot", 1, 0);
+    recordWrong("futures", 3, 2);
+    vi.mocked(syncWrongbookClearAll).mockClear();
+
+    clearAllWrong();
+
+    expect(readWrong()).toEqual({});
+    expect(store.has("tb-wrong")).toBe(false);
+    expect(vi.mocked(syncWrongbookClearAll)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(syncWrongbookClearAll)).toHaveBeenCalledWith([
+      { chapterNum: "spot", questionIdx: 1 },
+      { chapterNum: "futures", questionIdx: 3 },
+    ]);
+  });
+
+  it("本来就空时快照为空数组，仍然要走一次（云端可能有本地没拉下来的行）", () => {
+    vi.mocked(syncWrongbookClearAll).mockClear();
+
+    clearAllWrong();
+
+    expect(vi.mocked(syncWrongbookClearAll)).toHaveBeenCalledWith([]);
   });
 });
