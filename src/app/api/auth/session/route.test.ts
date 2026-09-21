@@ -1,24 +1,44 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GET } from "./route";
+import { AuthSessionMissingError } from "@supabase/supabase-js";
 
 const getUser = vi.fn();
-const createClient = vi.fn(async () => ({ auth: { getUser } }));
+const createServerClient = vi.fn();
 
-vi.mock("@/lib/supabase/server", () => ({
-  createSupabaseServerClient: () => createClient(),
-  getServerAuthUser: async () => {
-    const client = await createClient();
-    const { data: { user }, error } = await client.auth.getUser();
-    if (error) throw error;
-    return user;
+// 只替换第三方边界：GET 走真实的 getServerAuthUser，否则游客身份判定测不到。
+vi.mock("@supabase/ssr", () => ({
+  createServerClient: (...args: unknown[]) => {
+    createServerClient(...args);
+    return { auth: { getUser } };
   },
 }));
+vi.mock("next/headers", () => ({
+  cookies: async () => ({
+    getAll: () => [] as { name: string; value: string }[],
+    setAll: () => {},
+  }),
+}));
+
+import { GET } from "./route";
+
+process.env.NEXT_PUBLIC_SUPABASE_URL = "https://proj.supabase.co";
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  createServerClient.mockReturnValue({ auth: { getUser } });
 });
 
 describe("GET /api/auth/session", () => {
+  it("无会话 cookie 的游客返回 user:null 而不是 500", async () => {
+    getUser.mockResolvedValue({
+      data: { user: null },
+      error: new AuthSessionMissingError(),
+    });
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ user: null });
+  });
+
   it("无登录用户时返回 user:null", async () => {
     getUser.mockResolvedValue({ data: { user: null }, error: null });
     const res = await GET();
@@ -36,7 +56,10 @@ describe("GET /api/auth/session", () => {
   });
 
   it("getUser 返回 error 时回退 user:null 且不回传内部错误", async () => {
-    getUser.mockResolvedValueOnce({ data: { user: null }, error: new Error("secret: trace expired") });
+    getUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: new Error("secret: trace expired"),
+    });
     const res = await GET();
     expect(res.status).toBe(500);
     const body = await res.json();
@@ -45,7 +68,9 @@ describe("GET /api/auth/session", () => {
   });
 
   it("客户端创建抛错时回退 user:null 且不回传内部错误", async () => {
-    createClient.mockRejectedValueOnce(new Error("invalid api key: secret"));
+    createServerClient.mockImplementationOnce(() => {
+      throw new Error("invalid api key: secret");
+    });
     const res = await GET();
     expect(res.status).toBe(500);
     const body = await res.json();
