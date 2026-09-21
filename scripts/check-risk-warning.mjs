@@ -1,7 +1,11 @@
 /** R10.5：扫描知识库 zh/en 全部 Markdown，输出风险提示块覆盖率报告（JSON + Markdown）。 */
 import fs from "node:fs";
 import path from "node:path";
-import { analyzeRiskWarning, renderRiskWarningMarkdown } from "./risk-warning-lib.mjs";
+import {
+  analyzeRiskWarning,
+  auditFallbackWiring,
+  renderRiskWarningMarkdown,
+} from "./risk-warning-lib.mjs";
 
 const root = process.cwd();
 const knowledgeRoot = path.join(root, "content/kline-buty/docs/knowledge");
@@ -10,6 +14,29 @@ const outputMarkdown = path.join(root, "docs/risk-warning-coverage.md");
 
 if (!fs.existsSync(knowledgeRoot)) {
   console.error("[risk-warning] 知识库缺失：请先 git submodule update --init");
+  process.exit(1);
+}
+
+// 上游缺口只能去 kline-buty 修，所以报告式不阻断；但站内兜底接线缺失是本站自己的
+// 红线失守，必须阻断。
+const pageFiles = [
+  "src/app/[locale]/knowledge/[chapter]/page.tsx",
+  "src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx",
+];
+const wiringIssues = [];
+const wiringSources = {};
+for (const file of pageFiles) {
+  const full = path.join(root, file);
+  if (!fs.existsSync(full)) {
+    wiringIssues.push(`${file}: 文件缺失`);
+    continue;
+  }
+  wiringSources[file] = fs.readFileSync(full, "utf8");
+}
+wiringIssues.push(...auditFallbackWiring(wiringSources));
+if (wiringIssues.length > 0) {
+  console.error("[risk-warning] ❌ 站内风险提示兜底接线不完整（内容红线失守）：");
+  for (const issue of wiringIssues) console.error(`  - ${issue}`);
   process.exit(1);
 }
 

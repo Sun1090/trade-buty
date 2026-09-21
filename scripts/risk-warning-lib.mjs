@@ -88,8 +88,9 @@ export function renderRiskWarningMarkdown({ generatedAt, results }) {
     "",
     "> 产品红线（docs/plan.md）：每篇内容必须带「⚠️ 风险提示 / Risk Warning」块。",
     "> pass = 有合规块；review = 仅提及「风险提示」字样或存在未装箱风险句，需人工补成标准块；",
-    "> gap = 完全缺失。报告不阻断（知识库内容改动需在 kline-buty 仓库进行）。",
-    "> 章节页会对不合规 README 展示本地化兜底提示；本表仍统计上游原文，避免把未修复内容误报为 pass。",
+    "> gap = 完全缺失。上游缺口本身不阻断（知识库内容改动需在 kline-buty 仓库进行）。",
+    "> 章节导语页与课文页都会对不合规正文展示本地化兜底提示；两处接线由本门禁阻断式校验，",
+    "> 但本表仍统计上游原文，避免把未修复内容误报为 pass。",
     "",
     "## 课程正文（lesson）",
     ...lessonByLocale,
@@ -117,4 +118,35 @@ export function renderRiskWarningMarkdown({ generatedAt, results }) {
     "",
   ];
   return `${lines.flat().join("\n")}\n`;
+}
+
+/**
+ * 站内兜底接线检查：章节导语页与课文页都必须在上游缺块时渲染本地化提示。
+ *
+ * 覆盖率报告只统计上游原文（上游整改必须在 kline-buty 仓库做），所以
+ * 「站内有没有守住红线」只能由这个断言负责；缺任何一侧接线即失败。
+ */
+export function auditFallbackWiring(pages) {
+  const issues = [];
+  for (const [file, source] of Object.entries(pages ?? {})) {
+    const text = String(source ?? "");
+    if (!text.includes("shouldShowRiskWarningFallback(")) {
+      issues.push(
+        `${file}: 未调用 shouldShowRiskWarningFallback，上游缺风险块时不会兜底`,
+      );
+      continue;
+    }
+    const at = text.indexOf("<RiskWarningNotice");
+    if (at < 0) {
+      issues.push(`${file}: 没有渲染 RiskWarningNotice 兜底块`);
+      continue;
+    }
+    const guard = text.slice(Math.max(0, at - 240), at);
+    if (!guard.includes("&&")) {
+      issues.push(
+        `${file}: RiskWarningNotice 没有受兜底条件保护，合规内容会重复展示风险提示`,
+      );
+    }
+  }
+  return issues;
 }
