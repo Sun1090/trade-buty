@@ -31,33 +31,8 @@ Object.defineProperty(globalThis, "localStorage", {
   writable: true,
 });
 
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-}
-
-function asyncRejectingClient(error: Error) {
-  return {
-    from: vi.fn(() => ({
-      insert: () => Promise.reject(error),
-      upsert: () => Promise.reject(error),
-      delete: () => ({ eq: () => ({ eq: () => Promise.reject(error) }) }),
-    })),
-  };
-}
-
 async function waitForQueue() {
   await vi.waitFor(() => expect(memStore.get(QUEUE_KEY)).not.toBeUndefined());
-}
-
-async function flushMicrotasks() {
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 beforeEach(() => {
@@ -110,35 +85,8 @@ describe("sync-layer failure-to-queue boundaries", () => {
     ]);
   });
 
-  it("Supabase 查询失败会入队，并保留 owner 队列", async () => {
-    vi.doMock("@/lib/supabase/client", () => ({ getSupabaseBrowser: () => asyncRejectingClient(new Error("offline")) }));
-    const { setAuthState: localSetAuthState, syncProgressWrite: localSyncProgressWrite } = await vi.importActual<typeof import("./sync-layer")>("./sync-layer");
-    localSetAuthState(true, "user-a");
-
-    localSyncProgressWrite("spot", "first-trade");
-    await waitForQueue();
-
-    expect(loadQueueAndNextId().queue).toEqual([
-      expect.objectContaining({ kind: "progress", payloadKey: "spot:first-trade", payload: { chapter_num: "spot", doc_slug: "first-trade" } }),
-    ]);
-  });
-
-  it("Supabase 失败入队前用户已切换账号时，不写入旧账号队列", async () => {
-    const rejected = deferred<never>();
-    const writePromise = rejected.promise.catch(() => undefined);
-    vi.doMock("@/lib/supabase/client", () => ({
-      getSupabaseBrowser: () => ({
-        from: () => ({ insert: () => rejected.promise }),
-      }),
-    }));
-    const { setAuthState: localSetAuthState, syncProgressWrite: localSyncProgressWrite } = await vi.importActual<typeof import("./sync-layer")>("./sync-layer");
-    localSetAuthState(true, "user-a");
-    localSyncProgressWrite("spot", "first-trade");
-    localSetAuthState(true, "user-b");
-    rejected.reject(new Error("offline"));
-    await writePromise;
-    await flushMicrotasks();
-
-    expect(memStore.has(QUEUE_KEY)).toBe(false);
-  });
+  // 「客户端构造得出来、但这一次写失败」的用例不在这里：`vi.doMock` + `vi.importActual`
+  // 并不会替换被加载模块的依赖，本文件里那两条曾经以为自己测的是失败路径，实际走的是
+  // 「Supabase 未配置」这一支（断言同样成立，但结论是假的）。
+  // 真正的失败形态见 src/lib/sync-layer-write-failure.test.ts（静态 vi.mock）。
 });

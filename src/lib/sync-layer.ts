@@ -5,6 +5,7 @@ import { adoptAccountMirror } from "./account-mirror";
 // R9.6：sync-layer 仅在登录后才需要 enqueueWrite；改为通过独立模块动态 import
 // 避免 sync-queue-store 被打进 layout 的共享 chunk（每个内容页 -12KB gzip）。
 import { lazyEnqueueWrite as enqueueWriteLazy } from "./sync-layer-queue-fallback";
+import type { QueueKind } from "./sync-queue";
 import { recordCloudSync } from "./cloud-sync-meta";
 import { detectMergeConflicts, recordSyncConflicts } from "./sync-conflicts";
 import type { ProgressMap } from "./progress";
@@ -40,30 +41,65 @@ export function setAuthState(isAuth: boolean, id?: string) {
   if (userId) adoptAccountMirror(userId);
 }
 
+// ---- 云端写入的失败入队 ----
+
+interface QueueTarget {
+  kind: QueueKind;
+  /** 队列去重键 */
+  key: string;
+  /** 云端列名形状的载荷：既能直接作为 upsert/insert 的行，也是重放所需内容 */
+  payload: Record<string, unknown>;
+  ownerId: string;
+  label: string;
+}
+
+function queueFailedWrite(target: QueueTarget, reason: unknown, note: string): void {
+  if (!authenticated || userId !== target.ownerId) return;
+  void enqueueWriteLazy(
+    target.kind,
+    target.key,
+    target.payload,
+    target.ownerId,
+    () => authenticated && userId === target.ownerId,
+  );
+  if (process.env.NODE_ENV !== "production") {
+    console.warn(`[sync] ${target.label} ${note}`, reason);
+  }
+}
+
+/**
+ * postgrest-js 默认**不 reject**：RLS 拒绝、5xx、断网的 fetch 失败都被它内部 catch 成
+ * resolved 的 `{data:null, error}`。所以只挂在 rejected 分支上的「失败入队」在真实浏览器里
+ * 一次都不会触发——R9.5 承诺的离线写队列对正常失败路径是死的（只有 Supabase 客户端
+ * 构造不出来那条分支会入队）。两种形态都必须认：`{error}` 与 rejection。
+ */
+function settleCloudWrite(target: QueueTarget, result: { error?: unknown } | null | undefined): void {
+  if (result && result.error) queueFailedWrite(target, result.error, "failed → queued");
+}
+
 // ---- 进度 ----
 export function syncProgressWrite(chapterNum: string, docSlug: string) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
   // R9.5：失败入队而非丢弃；flushPersistedQueue 在 hydrateFromCloud / online 时重放
+  const target: QueueTarget = {
+    kind: "progress",
+    key: `${chapterNum}:${docSlug}`,
+    payload: { chapter_num: chapterNum, doc_slug: docSlug },
+    ownerId,
+    label: "progress write",
+  };
   const { client, error: clientError } = safeSupabaseBrowser();
   if (client) {
     void client
       .from("progress")
-      .insert({ user_id: ownerId, chapter_num: chapterNum, doc_slug: docSlug })
-      .then(undefined, (err) => {
-        if (!authenticated || userId !== ownerId) return;
-        enqueueWriteLazy("progress", `${chapterNum}:${docSlug}`, {
-          chapter_num: chapterNum,
-          doc_slug: docSlug,
-        }, ownerId, () => authenticated && userId === ownerId);
-        if (process.env.NODE_ENV !== "production") console.warn("[sync] progress write failed → queued", err);
-      });
+      .insert({ user_id: ownerId, ...target.payload })
+      .then(
+        (result) => settleCloudWrite(target, result),
+        (err) => settleCloudWrite(target, { error: err }),
+      );
   } else {
-    enqueueWriteLazy("progress", `${chapterNum}:${docSlug}`, {
-      chapter_num: chapterNum,
-      doc_slug: docSlug,
-    }, ownerId, () => authenticated && userId === ownerId);
-    if (process.env.NODE_ENV !== "production") console.warn("[sync] progress write queued without Supabase", clientError);
+    queueFailedWrite(target, clientError, "queued without Supabase");
   }
 }
 
@@ -77,47 +113,46 @@ export function syncWrongbookWrite(
 ) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
-  const { client, error: clientError } = safeSupabaseBrowser();
-  if (client) {
-    void client
-      .from("wrongbook")
-      .upsert(
-        {
-          user_id: ownerId,
-          chapter_num: chapterNum,
-          question_idx: questionIdx,
-          picked,
-          srs_stage: srsStage ?? null,
-          srs_due: srsDue ?? null,
-        },
-        { onConflict: "user_id,chapter_num,question_idx" },
-      )
-      .then(undefined, (err) => {
-        if (!authenticated || userId !== ownerId) return;
-        enqueueWriteLazy("wrongbook-upsert", `${chapterNum}:${questionIdx}`, {
-          chapter_num: chapterNum,
-          question_idx: questionIdx,
-          picked,
-          srs_stage: srsStage ?? null,
-          srs_due: srsDue ?? null,
-        }, ownerId, () => authenticated && userId === ownerId);
-        if (process.env.NODE_ENV !== "production") console.warn("[sync] wrongbook upsert failed → queued", err);
-      });
-  } else {
-    enqueueWriteLazy("wrongbook-upsert", `${chapterNum}:${questionIdx}`, {
+  const target: QueueTarget = {
+    kind: "wrongbook-upsert",
+    key: `${chapterNum}:${questionIdx}`,
+    payload: {
       chapter_num: chapterNum,
       question_idx: questionIdx,
       picked,
       srs_stage: srsStage ?? null,
       srs_due: srsDue ?? null,
-    }, ownerId, () => authenticated && userId === ownerId);
-    if (process.env.NODE_ENV !== "production") console.warn("[sync] wrongbook upsert queued without Supabase", clientError);
+    },
+    ownerId,
+    label: "wrongbook upsert",
+  };
+  const { client, error: clientError } = safeSupabaseBrowser();
+  if (client) {
+    void client
+      .from("wrongbook")
+      .upsert(
+        { user_id: ownerId, ...target.payload },
+        { onConflict: "user_id,chapter_num,question_idx" },
+      )
+      .then(
+        (result) => settleCloudWrite(target, result),
+        (err) => settleCloudWrite(target, { error: err }),
+      );
+  } else {
+    queueFailedWrite(target, clientError, "queued without Supabase");
   }
 }
 
 export function syncWrongbookDelete(chapterNum: string, questionIdx: number) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
+  const target: QueueTarget = {
+    kind: "wrongbook-delete",
+    key: `${chapterNum}:${questionIdx}`,
+    payload: { chapter_num: chapterNum, question_idx: questionIdx },
+    ownerId,
+    label: "wrongbook delete",
+  };
   const { client, error: clientError } = safeSupabaseBrowser();
   if (client) {
     void client
@@ -126,51 +161,75 @@ export function syncWrongbookDelete(chapterNum: string, questionIdx: number) {
       .eq("user_id", ownerId)
       .eq("chapter_num", chapterNum)
       .eq("question_idx", questionIdx)
-      .then(undefined, (err) => {
-        if (!authenticated || userId !== ownerId) return;
-        enqueueWriteLazy("wrongbook-delete", `${chapterNum}:${questionIdx}`, {
-          chapter_num: chapterNum,
-          question_idx: questionIdx,
-        }, ownerId, () => authenticated && userId === ownerId);
-        if (process.env.NODE_ENV !== "production") console.warn("[sync] wrongbook delete failed → queued", err);
-      });
+      .then(
+        (result) => settleCloudWrite(target, result),
+        (err) => settleCloudWrite(target, { error: err }),
+      );
   } else {
-    enqueueWriteLazy("wrongbook-delete", `${chapterNum}:${questionIdx}`, {
-      chapter_num: chapterNum,
-      question_idx: questionIdx,
-    }, ownerId, () => authenticated && userId === ownerId);
-    if (process.env.NODE_ENV !== "production") console.warn("[sync] wrongbook delete queued without Supabase", clientError);
+    queueFailedWrite(target, clientError, "queued without Supabase");
   }
+}
+
+/**
+ * 清空错题本的云端侧。只删本地 `tb-wrong` 是不够的：下一次 `hydrateFromCloud` 会把
+ * 云端整本错题重新并回本地，用户视角里「清空」等于没生效。
+ *
+ * 一次整表删除；失败（含 `{data:null,error}` 形态、或压根没有客户端）时退回逐条入队，
+ * 由 flush 重放，语义与单条删除完全一致。传入的是清空前的本地快照。
+ */
+export function syncWrongbookClearAll(
+  entries: { chapterNum: string; questionIdx: number }[],
+) {
+  const ownerId = userId;
+  if (!authenticated || !ownerId) return;
+  const fallBackToOneByOne = (reason: unknown, note: string) => {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(`[sync] wrongbook clear-all ${note}`, reason);
+    }
+    for (const entry of entries) syncWrongbookDelete(entry.chapterNum, entry.questionIdx);
+  };
+  const { client, error: clientError } = safeSupabaseBrowser();
+  if (!client) {
+    fallBackToOneByOne(clientError, "queued without Supabase");
+    return;
+  }
+  void client
+    .from("wrongbook")
+    .delete()
+    .eq("user_id", ownerId)
+    .then(
+      (result) => {
+        if (result && result.error) fallBackToOneByOne(result.error, "failed → per-row queue");
+      },
+      (err) => fallBackToOneByOne(err, "failed → per-row queue"),
+    );
 }
 
 // ---- 测验成绩 ----
 export function syncQuizUpsert(chapterNum: string, best: number, total: number) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
+  const target: QueueTarget = {
+    kind: "quiz",
+    key: chapterNum,
+    payload: { chapter_num: chapterNum, best, total },
+    ownerId,
+    label: "quiz upsert",
+  };
   const { client, error: clientError } = safeSupabaseBrowser();
   if (client) {
     void client
       .from("quiz_scores")
       .upsert(
-        { user_id: ownerId, chapter_num: chapterNum, best, total, done: true },
+        { user_id: ownerId, ...target.payload, done: true },
         { onConflict: "user_id,chapter_num" },
       )
-      .then(undefined, (err) => {
-        if (!authenticated || userId !== ownerId) return;
-        enqueueWriteLazy("quiz", chapterNum, {
-          chapter_num: chapterNum,
-          best,
-          total,
-        }, ownerId, () => authenticated && userId === ownerId);
-        if (process.env.NODE_ENV !== "production") console.warn("[sync] quiz upsert failed → queued", err);
-      });
+      .then(
+        (result) => settleCloudWrite(target, result),
+        (err) => settleCloudWrite(target, { error: err }),
+      );
   } else {
-    enqueueWriteLazy("quiz", chapterNum, {
-      chapter_num: chapterNum,
-      best,
-      total,
-    }, ownerId, () => authenticated && userId === ownerId);
-    if (process.env.NODE_ENV !== "production") console.warn("[sync] quiz upsert queued without Supabase", clientError);
+    queueFailedWrite(target, clientError, "queued without Supabase");
   }
 }
 
@@ -184,38 +243,30 @@ export function syncReplayHistoryWrite(rec: {
 }) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
-  const { client, error: clientError } = safeSupabaseBrowser();
-  if (client) {
-    void client
-      .from("replay_history")
-      .insert({
-        user_id: ownerId,
-        symbol: rec.symbol,
-        interval: rec.interval,
-        total: rec.total,
-        correct: rec.correct,
-        best_streak: rec.bestStreak,
-      })
-      .then(undefined, (err) => {
-        if (!authenticated || userId !== ownerId) return;
-        enqueueWriteLazy("replay-history", `${rec.symbol}:${rec.interval}:${Date.now()}`, {
-          symbol: rec.symbol,
-          interval: rec.interval,
-          total: rec.total,
-          correct: rec.correct,
-          best_streak: rec.bestStreak,
-        }, ownerId, () => authenticated && userId === ownerId);
-        if (process.env.NODE_ENV !== "production") console.warn("[sync] replay history failed → queued", err);
-      });
-  } else {
-    enqueueWriteLazy("replay-history", `${rec.symbol}:${rec.interval}:${Date.now()}`, {
+  const target: QueueTarget = {
+    kind: "replay-history",
+    key: `${rec.symbol}:${rec.interval}:${Date.now()}`,
+    payload: {
       symbol: rec.symbol,
       interval: rec.interval,
       total: rec.total,
       correct: rec.correct,
       best_streak: rec.bestStreak,
-    }, ownerId, () => authenticated && userId === ownerId);
-    if (process.env.NODE_ENV !== "production") console.warn("[sync] replay history queued without Supabase", clientError);
+    },
+    ownerId,
+    label: "replay history",
+  };
+  const { client, error: clientError } = safeSupabaseBrowser();
+  if (client) {
+    void client
+      .from("replay_history")
+      .insert({ user_id: ownerId, ...target.payload })
+      .then(
+        (result) => settleCloudWrite(target, result),
+        (err) => settleCloudWrite(target, { error: err }),
+      );
+  } else {
+    queueFailedWrite(target, clientError, "queued without Supabase");
   }
 }
 
@@ -223,38 +274,48 @@ export function syncReplayHistoryWrite(rec: {
 export function syncReplayBestUpsert(best: number) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
+  const target: QueueTarget = {
+    kind: "replay-best",
+    key: "global",
+    payload: { best_streak: best },
+    ownerId,
+    label: "replay best",
+  };
   const { client, error: clientError } = safeSupabaseBrowser();
   if (client) {
     void client
       .from("replay_best")
-      .upsert({ user_id: ownerId, best_streak: best }, { onConflict: "user_id" })
-      .then(undefined, (err) => {
-        if (!authenticated || userId !== ownerId) return;
-        enqueueWriteLazy("replay-best", "global", { best_streak: best }, ownerId, () => authenticated && userId === ownerId);
-        if (process.env.NODE_ENV !== "production") console.warn("[sync] replay best failed → queued", err);
-      });
+      .upsert({ user_id: ownerId, ...target.payload }, { onConflict: "user_id" })
+      .then(
+        (result) => settleCloudWrite(target, result),
+        (err) => settleCloudWrite(target, { error: err }),
+      );
   } else {
-    enqueueWriteLazy("replay-best", "global", { best_streak: best }, ownerId, () => authenticated && userId === ownerId);
-    if (process.env.NODE_ENV !== "production") console.warn("[sync] replay best queued without Supabase", clientError);
+    queueFailedWrite(target, clientError, "queued without Supabase");
   }
 }
 
 function enqueueGoalUpsert(payload: { daily_goal_min?: number; weekly_goal_min?: number }, key: "daily-goal" | "weekly-goal", warnLabel: string) {
   const ownerId = userId;
   if (!authenticated || !ownerId) return;
+  const target: QueueTarget = {
+    kind: "goal",
+    key,
+    payload,
+    ownerId,
+    label: warnLabel,
+  };
   const { client, error: clientError } = safeSupabaseBrowser();
   if (client) {
     void client
       .from("user_settings")
       .upsert({ user_id: ownerId, ...payload }, { onConflict: "user_id" })
-      .then(undefined, (err) => {
-        if (!authenticated || userId !== ownerId) return;
-        enqueueWriteLazy("goal", key, payload, ownerId, () => authenticated && userId === ownerId);
-        if (process.env.NODE_ENV !== "production") console.warn(`[sync] ${warnLabel} failed → queued`, err);
-      });
+      .then(
+        (result) => settleCloudWrite(target, result),
+        (err) => settleCloudWrite(target, { error: err }),
+      );
   } else {
-    enqueueWriteLazy("goal", key, payload, ownerId, () => authenticated && userId === ownerId);
-    if (process.env.NODE_ENV !== "production") console.warn(`[sync] ${warnLabel} queued without Supabase`, clientError);
+    queueFailedWrite(target, clientError, "queued without Supabase");
   }
 }
 
