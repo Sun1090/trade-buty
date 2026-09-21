@@ -4992,3 +4992,90 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：本条目纯文档；站点回滚仍是 `git revert` + 重新部署，或 Vercel 切回上一 Production Deployment。
 - 下一项：v0.9 立项盘点（v0.8 仅剩三项 `BLOCKED_EXTERNAL`）；期间定期复测生产探针，上线后补冒烟记录。
 - 更新时间：2026-09-22 05:35（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — 共享浏览器的数据归属与 AI 端点口径：一轮盘点的 7 个修复（PR #123–#129）
+
+- 状态：全部已合并进 `main` 并各自通过 `ci` + `db-tests`；`Vercel` 检查因账号级构建配额
+  仍为失败（非必需检查，不阻断合并），因此**生产仍停在 0.7.1 构建**。
+- 里程碑 / 版本：v0.8 收口后开出 **v0.9「共享浏览器上的数据归属与认证边界」（R15）**；
+  本批次是缺陷修复批次，判级为 patch，尚未发布（见下一项）。
+- 分支 / 提交（按合并顺序）：
+  - `5663e4d`（PR #123）发布部署状态记录：0.7.2 已合并打 tag、生产被配额挡住。
+  - `695b213`（PR #124）课文 frontmatter 降级：坏 YAML 不再把 `---` 围栏渲染成正文。
+  - `c54f542` + `13cac2d` + `865577b`（PR #126）本地镜像归属戳 R15.1 + v0.9 立项 + 关闭 PR 去向确认。
+  - `b724a18` + `0e752af`（PR #127）AI 历史取最近窗口、对话写入纳入配额、聊天配额按账号分桶。
+  - `5ba35a1` + `3cb9361`（PR #128）人工抽查端点改用 service_role + pgTAP 钉住事实。
+  - `833c877` + `615584b` + `8f2c0e5`（PR #129）登出/换号后清掉上一账号的 AI 对话 + 演练账本对齐。
+- 完成内容：
+  1. **内容红线守卫的最后一处空洞之外，补了渲染降级链**：`parseFrontmatter` 在 YAML 抛错时
+     把原始文本当正文返回，课文顶部会渲染出 `---` 围栏；真正的原因是 gray-matter 在解析**前**
+     就写缓存（`matter.cache[原文] = 未解析的 file`），抛错那次即投毒——同一篇第二次解析不抛错、
+     静默返回带围栏正文。站内每篇课文都会被「列目录」和「取正文」各解析一次，所以告警只响一次，
+     围栏留在页面上，且结果取决于调用顺序。改法是传空 options 关闭该缓存 + 按 YAML 口径切掉**成对**
+     围栏（找不到闭合围栏时保留原文，不猜边界）。
+  2. **共享浏览器换账号的数据污染（R15.1）**：`tb-*` 镜像按设备存，A 登出、B 登录后
+     `hydrateFromCloud(B)` 会把 A 的镜像并进 B，并以 `user_id = B` 补传回云端——RLS 允许，
+     因为那是 B 自己的行，B 事后无法分辨哪些进度是自己的，也没有干净的撤销路径。新增 `tb-data-owner`
+     归属戳：同账号幂等、无戳的游客数据由第一个登录的账号认领（保留既有「登录前进度补传」行为）、
+     归属为别人时先丢弃上一账号的镜像再合并。丢弃范围只覆盖 hydrate 负责合并/补传且云端有对应行的键
+     + 由它们派生的合并元数据；设备偏好与云端无对应表的本地记录不动（后者清掉即真丢数据，
+     已作为 R15.2 记为需产品决策）。
+  3. **AI 端点的三处口径**：`GET /api/ai/conversations` 用 `ascending:true + limit(50)` 取的是
+     **最旧** 50 条（注释写的是「最近 25 轮」）；`POST` 是 AI 系列里唯一没有配额的用户级写入端点
+     （8KB+20KB/请求）；`/api/ai/chat` 即使登录态也按 `X-Forwarded-For` 分桶，同一运营商 NAT 后
+     所有用户共享 50 次/小时，一个人脚本化能把整片网络挡在门外（plan/quiz 早已按 `user.id`）。
+  4. **人工抽查端点从上线起就查不到数据**：`/api/ai/feedback/export` 用 anon 客户端读
+     `ai_feedback`，而该请求没有 Supabase 会话、`auth.uid()` 恒为 `NULL`，策略
+     `using (auth.uid() = user_id)` 于是过滤掉全部行——内容红线（不得荐股 / 不承诺收益）唯一依赖
+     人工复查的通道实际是死的。改用 service_role 客户端（与 `/api/auth/delete` 同先例），缺 key 时
+     明确 503 而不是静默返回空集，并把 `ADMIN_TOKEN` 改成定长比较；同时在真实 Postgres 上
+     用两条 pgTAP 断言钉住事实（先确认 fixture 行落库，避免把空表当成 RLS 生效）。
+  5. **登出/换号后的 AI 对话残留**：`AiChat` 只在挂载时按 cookie 拉一次历史，之后从不感知身份变化，
+     A 的完整问答会一直显示给下一个使用者直到刷新。现在身份从「已登录」变为另一身份或游客时清空
+     对话、反馈标记、游客配额与课程上下文；游客登录（`null → id`）不清，那是同一个人自己的会话。
+  6. **发布记录与账本准确性**：把 0.7.2「已合并打 tag、部署被配额挡住、三个修复尚未上线」写进
+     `docs/v0.7.2-release-review.md` 与 progress（冒烟结论不预先写成已通过）；实测
+     `backup:drill` 输出后更正 roadmap/database-testing 的 pgTAP 断言数（38+26 → 40+26+8）、
+     业务表数（10 → 11）与备份字节数（30,963 → 45,104）。
+- 变更文件：`src/lib/content.ts`、`src/lib/content.lenient.test.ts`、`src/lib/account-mirror.ts`（新）、
+  `src/lib/account-mirror.test.ts`（新）、`src/lib/sync-layer.ts`、`src/lib/sync-layer-hydrate.test.ts`、
+  `src/app/api/ai/conversations/route.ts(.test.ts)`、`src/app/api/ai/chat/route.ts(.test.ts)`、
+  `src/app/api/ai/feedback/export/route.ts(.test.ts)`、`src/components/ai-chat.tsx`、
+  `src/components/ai-chat.account-switch.test.tsx`（新）、`supabase/tests/rls_isolation.sql`、
+  `docs/roadmap.md`、`docs/database-testing.md`、`docs/v0.7.2-release-review.md`、`docs/work-audit-ack.json`、
+  `docs/progress.md`。
+- 验证命令和结果：
+  - `npm run test` → 267 文件 / 2504 用例全绿（新增 21 条用例：account-mirror 7、hydrate 换账号 3、
+    ai-chat 身份变化 4、conversations 2、chat 配额分桶 1、feedback export 3、课文降级 1；
+    另改写 2 条既有断言，并在 pgTAP 里新增 2 条断言）。
+  - **变异验证逐条做足**：去掉 `matter(raw, {})` → 围栏泄漏用例失败；去掉 `stripFrontmatterFence` 调用 → 同条再失败；
+    摘掉 `adoptAccountMirror(id)` → 换账号用例报「A 的私密进度出现在 B 的镜像里」；把 `ascending:false + reverse()`
+    改回去 → 窗口用例失败；摘掉 `conversationsLimiter.check` → 429 用例失败；把 chat 分桶键改回 `ip` →
+    同 NAT 两账号用例失败；路由改回 anon 客户端 → 两条导出用例同时失败；把身份变化的清理块换成空操作 →
+    登出与换号两条用例超时失败。
+  - `npm run typecheck` 0 · `npm run lint` 0 · `npm run check:docs` 0 · `npm run check:links` 0（454 页无死链）
+    · `npm run check:bundle` 0（`/zh/ai` 316.0/350KB，AI chunk 隔离仍覆盖 452 条非 AI 路由）。
+  - `npm run db:test` 本地与 CI 双向通过：10 个迁移、`rls_isolation.sql` **40** 条、`sync_and_constraints.sql` 26 条、
+    `embedding_generations.sql` 8 条、0008/0009 回滚 → 重放演练。
+  - `npm run -s backup:drill` exit 0：`10 个迁移、11 张业务表、3 个 pgTAP 文件`、备份 45,104 bytes，恢复库重跑断言全通过。
+  - `npm run e2e`：109 例通过（本机 3100 端口，含全站风险提示 13 + 分享落地页 3 条红线断言）。
+  - `npm run -s ops:work-audit` → 悬空 0 · 陈旧本地提交 0 · 未确认关闭 PR 0；合并分支的远端与本地引用已清理。
+  - 覆盖率：statements 96.23% / branches 91.10%（阈值 84/77 未下调）。
+- 过程中的两处自我纠正（都值得记住）：
+  - **#125 因 `BEHIND` 无法 rebase 合并**（仓库要求合并前分支与基线同步，而更新分支需要 force push——禁止），
+    于是在最新 `main` 上重做同样两个 commit 由 #126 落地，并在 #125 线程里写明去向。这正是 R14.4 门禁
+    第一次在 CI 里拦下**我自己**关闭的 PR：`工作保全审计` 步骤判失败，要求先确认去向。
+  - **连续两次把 `git checkout --` 用在自己未提交的工作上**（`/share/*` 风险行、chat 分桶键），每次都要重写
+    修复并重新验证。教训是变异检查必须走「复制到 /tmp → 改动 → 还原 → grep 确认」，不能靠 checkout/restore。
+- 阻塞：`BLOCKED_EXTERNAL` 未新增，但 0.7.2/0.7.3 的全部修复在生产上是**未生效**状态——Vercel 账号级
+  24h 构建配额（`Deployment rate limited — retry in 24 hours`，`main@caec8a7` 起算）。R14.9/R14.10/R14.11
+  仍是原来的外部阻塞（预览域 protection-bypass 密钥、Sentry DSN 与告警通道、上游 kline-buty 内容遗留）。
+- 风险 / 回滚：无迁移、无 schema 变更、无内容变更；每条都可单独 `git revert`。行为侧唯一需要留意的是
+  R15.1 会在换账号时清掉当前设备上的**可恢复**镜像（云端有对应行），以及导出端点第一次真能返回数据时
+  运维侧会看到历史全量反馈样本；两者都是设计意图。
+- 下一项：①判级并切 0.7.3（patch，发布说明覆盖本批次；按 `docs/release-checklist.md` 全量验证）；
+  ②配额窗口结束后一次构建携带 0.7.2 + 0.7.3，并按 `docs/v0.7.2-release-review.md` 的四条生产冒烟判据补记；
+  ③继续 v0.9：学习数据层（连续天数 / SRS / 合并语义）的盘点结论正在整理，按同一标准逐条落为可失败的门禁或修复。
+- 更新时间：2026-09-22 07:12（Asia/Shanghai）。
