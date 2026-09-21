@@ -4689,3 +4689,27 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：纯新增运维脚本与文档台账，不参与 CI、不改运行时；回滚 `ab61fbd` 即可。
 - 下一项：合并 PR #113（数据隔离）优先；再扫一遍 30 天窗口之外的历史关闭 PR；随后 R14.6 按实测证据重新界定（静态扫 Date.now 会误报，连续 3 轮全量零失败）。
 - 更新时间：2026-09-22 08:05（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — 内容红线批次：全站页脚风险提示纳入 E2E 守卫（R14.7）
+
+- 状态：已实现并完成两轮变异验证，PR #115 待合并。
+- 里程碑 / 版本：v0.8「发布工程、红线可验证性」范围内的测试补齐，不改产品行为，不单独发布。
+- 分支 / 提交：`feat/footer-risk-e2e-guard`。
+- 完成内容：
+  - `e2e/static-surface.spec.ts` 新增 `内容红线：全站页脚风险提示` 套件，覆盖 13 条代表路由（首页中英、章节页、课文页、`/ai`、`/chart`、`/replay`、`/glossary`、`/stats`、`/path`）。
+  - 断言取自 `src/lib/i18n.ts` 的 `footer.disclaimer` 原文并要求逐字出现在服务端 HTML 中，而不是在测试里重抄一遍措辞：改文案时门禁跟着词典走，删掉 `layout.tsx` 的页脚行会立刻变红。
+  - 另加词典侧断言：文案本身必须带 `⚠️` 且含「不构成（任何）投资建议 / not constitute investment advice」，防止把词典文案改软后逐字比对仍为绿。
+  - 首版断言用硬编码英文短语（`not investment advice|markets carry risk`），与 en 页脚实际措辞（`does not constitute investment advice … Markets are risky.`）不符，3 条 en 路由假失败；改为读词典后消除。
+- 变更文件：`e2e/static-surface.spec.ts`、`docs/progress.md`。
+- 验证命令和结果：
+  - `npx playwright test e2e/static-surface.spec.ts -g "全站页脚风险提示"` → 13 passed。
+  - 变异 1：删除 `layout.tsx` 的 `{t.footer.disclaimer}` 段落并 `npm run build` → 13 条全部以「未渲染页脚风险提示」失败；还原后重建转绿。
+  - 变异 2：把 en `footer.disclaimer` 的「does not constitute investment advice」删掉 → 4 条 en 路由以「页脚文案缺少『不构成投资建议』表述」失败；已还原。
+- 阻塞：无。Vercel 仍处 24h 构建配额期内，预览部署不可用，不影响合并。
+- 风险 / 回滚：仅新增测试与进度记录，无运行时风险；回滚 `git revert` 本提交即可。
+- 依赖关系：#111（roadmap v0.8 立项）与 #114（工作保全审计）已先于本 PR 合入 `main`；
+  本 PR 是队列里最后一个待合并项。
+- 下一项：R14.7 剩余盘点（分享落地页等 `[locale]` 布局之外的表面），随后 R14.8 发布检查清单。
+- 更新时间：2026-09-22 02:53（Asia/Shanghai）。

@@ -6,6 +6,7 @@ import {
   encodeReplay,
   encodeStreak,
 } from "../src/lib/share-decode";
+import { getDict, isLocale } from "../src/lib/i18n";
 
 /**
  * 根级静态表面 + 软 404 的 HTTP 契约（proxy matcher 回归）。
@@ -167,4 +168,58 @@ test.describe("软 404 语义未被误伤", () => {
       expect(html, route).toMatch(/不存在|找不到|not found/i);
     }
   });
+});
+
+/**
+ * R14.7：全站页脚风险提示是内容红线的最后承载面。
+ *
+ * 章节页与课文页另有兜底块（`check:risk-warning` 阻断校验其接线），但 `/ai`、
+ * `/chart`、`/replay`、`/glossary`、`/stats`、`/path` 这些不渲染知识库正文的
+ * 页面只靠 `layout.tsx` 的页脚文案。此前没有任何测试守着它——删掉页脚那行
+ * 不会让任何门禁变红。这里按路由逐个钉住，中英双份。
+ *
+ * 断言取 `i18n` 词典原文逐字比对，而不是在测试里重抄一遍措辞：改文案时
+ * 门禁跟着词典走，删页脚或改写措辞都会立刻变红。
+ */
+test.describe("内容红线：全站页脚风险提示", () => {
+  const RISK_ROUTES = [
+    "/zh",
+    "/en",
+    "/zh/knowledge/getting-started",
+    "/zh/knowledge/getting-started/candlestick-basics",
+    "/en/knowledge/futures",
+    "/zh/ai",
+    "/en/ai",
+    "/zh/chart",
+    "/zh/replay",
+    "/zh/glossary",
+    "/en/glossary",
+    "/zh/stats",
+    "/zh/path",
+  ];
+
+  for (const route of RISK_ROUTES) {
+    test(`${route} 渲染风险提示`, async ({ request }) => {
+      const response = await request.get(route, { maxRedirects: 0 });
+      expect(response.status(), route).toBe(200);
+
+      const locale = route.split("/")[1];
+      expect(isLocale(locale), `${route} 不是带语言前缀的页面`).toBe(true);
+      const disclaimer = getDict(locale).footer.disclaimer;
+
+      // 词典侧：文案必须自带 ⚠️ 与「不构成投资建议」承诺。否则逐字比对
+      // 会跟着一起退化——把词典改成「祝交易顺利」也能过。
+      expect(disclaimer, `${locale} 页脚文案缺少 ⚠️ 标记`).toContain("⚠️");
+      expect(
+        disclaimer,
+        `${locale} 页脚文案缺少「不构成投资建议」表述`
+      ).toMatch(
+        /不构成(任何)?投资建议|not\s+(constitute\s+)?investment advice/i
+      );
+
+      // 渲染侧：页脚要把这条文案逐字落到服务端 HTML。
+      const html = await response.text();
+      expect(html, `${route} 未渲染页脚风险提示`).toContain(disclaimer);
+    });
+  }
 });
