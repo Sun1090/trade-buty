@@ -6,6 +6,7 @@ import {
   auditFallbackWiring,
   renderRiskWarningMarkdown,
 } from "./risk-warning-lib.mjs";
+import { writeReport } from "./report-write-lib.mjs";
 
 const root = process.cwd();
 const knowledgeRoot = path.join(root, "content/kline-buty/docs/knowledge");
@@ -63,8 +64,8 @@ const lessons = results.filter((row) => row.kind === "lesson");
 const readmes = results.filter((row) => row.kind === "readme");
 const summary = { lessons: summarize(lessons), readmes: summarize(readmes), total: summarize(results) };
 const report = { generatedAt: new Date().toISOString().slice(0, 10), summary, results };
-fs.writeFileSync(outputJson, `${JSON.stringify(report, null, 2)}\n`);
-fs.writeFileSync(outputMarkdown, renderRiskWarningMarkdown(report));
+writeReport(outputJson, `${JSON.stringify(report, null, 2)}\n`);
+writeReport(outputMarkdown, renderRiskWarningMarkdown(report));
 console.log(
   `[risk-warning] lessons ${summary.lessons.pass}/${lessons.length} pass · readmes ${summary.readmes.pass}/${readmes.length} pass (review ${summary.readmes.review} / gap ${summary.readmes.gap}) → docs/risk-warning-coverage.md`,
 );

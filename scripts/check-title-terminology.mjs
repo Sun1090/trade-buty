@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 import { checkTitlePairs, renderTitleTerminologyMarkdown } from "./title-terminology-lib.mjs";
+import { writeReport } from "./report-write-lib.mjs";
 
 const root = process.cwd();
 const knowledgeRoot = path.join(root, "content/kline-buty/docs/knowledge");
@@ -41,6 +42,6 @@ const pairs = keys.map((key) => {
 const results = checkTitlePairs(pairs);
 const counts = results.reduce((acc, result) => ({ ...acc, [result.status]: acc[result.status] + 1 }), { pass: 0, review: 0, gap: 0 });
 const report = { generatedAt: new Date().toISOString().slice(0, 10), counts, results };
-fs.writeFileSync(outputJson, `${JSON.stringify(report, null, 2)}\n`);
-fs.writeFileSync(outputMarkdown, renderTitleTerminologyMarkdown(report));
+writeReport(outputJson, `${JSON.stringify(report, null, 2)}\n`);
+writeReport(outputMarkdown, renderTitleTerminologyMarkdown(report));
 console.log(`[title-terminology] pass ${counts.pass} / review ${counts.review} / gap ${counts.gap} → docs/title-terminology.md`);

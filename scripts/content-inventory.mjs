@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { buildContentInventory, renderContentInventoryMarkdown } from "./content-inventory-lib.mjs";
+import { writeReport } from "./report-write-lib.mjs";
 
 const root = process.cwd();
 const knowledgeRoot = path.join(root, "content/kline-buty/docs/knowledge");
@@ -29,6 +30,6 @@ if (!fs.existsSync(knowledgeRoot)) {
 }
 
 const report = buildContentInventory(scanLocale("zh"), scanLocale("en"), new Date().toISOString().slice(0, 10));
-fs.writeFileSync(outputJson, `${JSON.stringify(report, null, 2)}\n`);
-fs.writeFileSync(outputMarkdown, renderContentInventoryMarkdown(report));
+writeReport(outputJson, `${JSON.stringify(report, null, 2)}\n`);
+writeReport(outputMarkdown, renderContentInventoryMarkdown(report));
 console.log(`[inventory] ${report.coverage.document.translated}/${report.coverage.document.total} 篇课程覆盖（${report.coverage.document.percent}%）`);

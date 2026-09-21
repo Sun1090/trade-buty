@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 import { scoreDescription, renderDescriptionQualityMarkdown } from "./description-quality-lib.mjs";
+import { writeReport } from "./report-write-lib.mjs";
 
 const root = process.cwd();
 const knowledgeRoot = path.join(root, "content/kline-buty/docs/knowledge");
@@ -32,6 +33,6 @@ for (const locale of ["zh", "en"]) {
 results.sort((a, b) => a.locale.localeCompare(b.locale) || a.chapter.localeCompare(b.chapter) || a.document.localeCompare(b.document));
 const counts = results.reduce((acc, result) => ({ ...acc, [result.status]: acc[result.status] + 1 }), { pass: 0, review: 0, gap: 0 });
 const report = { generatedAt: new Date().toISOString().slice(0, 10), counts, results };
-fs.writeFileSync(outputJson, `${JSON.stringify(report, null, 2)}\n`);
-fs.writeFileSync(outputMarkdown, renderDescriptionQualityMarkdown(report));
+writeReport(outputJson, `${JSON.stringify(report, null, 2)}\n`);
+writeReport(outputMarkdown, renderDescriptionQualityMarkdown(report));
 console.log(`[description-quality] pass ${counts.pass} / review ${counts.review} / gap ${counts.gap} → docs/description-quality.md`);

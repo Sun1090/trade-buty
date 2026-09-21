@@ -4,10 +4,10 @@
  * 需要 SUPABASE_SERVICE_ROLE_KEY；无 key 时友好跳过（不阻断）。
  * 用法：npm run ops:faq-candidates
  */
-import fs from "node:fs";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
+import { writeReport } from "./report-write-lib.mjs";
 
 const root = process.cwd();
 try {
@@ -65,5 +65,5 @@ const lines = [
       ]),
   "",
 ];
-fs.writeFileSync(path.join(root, "docs/faq-candidates.md"), lines.join("\n"));
+writeReport(path.join(root, "docs/faq-candidates.md"), lines.join("\n"));
 console.log(`✅ FAQ 候选清单已生成（${top.length} 条）→ docs/faq-candidates.md`);

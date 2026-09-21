@@ -9,6 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { checkNewCourse, renderNewCourseMarkdown } from "./new-course-lib.mjs";
+import { writeReport } from "./report-write-lib.mjs";
 
 const root = process.cwd();
 const knowledgeRoot = path.join(root, "content/kline-buty/docs/knowledge");
@@ -84,8 +85,8 @@ if (missing.length) console.error(`[kb:accept] ⚠ 找不到文件（跳过）: 
 
 if (plan.rollup) {
   const counts = results.reduce((acc, r) => ({ ...acc, [r.status]: acc[r.status] + 1 }), { ok: 0, warn: 0, fail: 0 });
-  fs.writeFileSync(outputJson, `${JSON.stringify({ generatedAt: new Date().toISOString().slice(0, 10), counts, results }, null, 2)}\n`);
-  fs.writeFileSync(outputMarkdown, renderNewCourseMarkdown({ generatedAt: new Date().toISOString().slice(0, 10), results }));
+  writeReport(outputJson, `${JSON.stringify({ generatedAt: new Date().toISOString().slice(0, 10), counts, results }, null, 2)}\n`);
+  writeReport(outputMarkdown, renderNewCourseMarkdown({ generatedAt: new Date().toISOString().slice(0, 10), results }));
   console.log(`[kb:accept] ${plan.label} → ok ${counts.ok} / warn ${counts.warn} / fail ${counts.fail} → docs/new-course-acceptance.md`);
   process.exit(0);
 }

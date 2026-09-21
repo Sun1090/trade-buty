@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { rankContentGaps, renderContentGapMarkdown } from "./content-gap-ranking-lib.mjs";
+import { writeReport } from "./report-write-lib.mjs";
 
 const root = process.cwd();
 const inventoryPath = path.join(root, "docs/content-inventory.json");
@@ -27,6 +28,6 @@ const gaps = [
 ];
 const ranked = rankContentGaps(gaps);
 const report = { generatedAt: new Date().toISOString().slice(0, 10), count: ranked.length, gaps: ranked };
-fs.writeFileSync(outputJson, `${JSON.stringify(report, null, 2)}\n`);
-fs.writeFileSync(outputMarkdown, renderContentGapMarkdown(report));
+writeReport(outputJson, `${JSON.stringify(report, null, 2)}\n`);
+writeReport(outputMarkdown, renderContentGapMarkdown(report));
 console.log(`[gap-priority] ${ranked.length} 个内容缺口，已生成优先级报告`);
