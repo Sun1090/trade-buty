@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { AuthSessionMissingError } from "@supabase/supabase-js";
 import {
   MAX_ASSISTANT_MESSAGE_CHARS,
   MAX_SOURCES,
@@ -8,6 +9,7 @@ import {
   GET,
   POST,
 } from "./route";
+import { resolveAuthUser } from "@/lib/supabase/auth-result";
 
 const db = vi.hoisted(() => {
   const getUser = vi.fn();
@@ -23,11 +25,7 @@ const db = vi.hoisted(() => {
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: db.createSupabaseServerClient,
-  getServerAuthUser: async () => {
-    const { data: { user }, error } = await db.getUser();
-    if (error) throw error;
-    return user;
-  },
+  getServerAuthUser: async () => resolveAuthUser(await db.getUser()),
 }));
 
 function request(body: unknown): NextRequest {
@@ -101,6 +99,17 @@ describe("parseSaveBody", () => {
 describe("GET /api/ai/conversations", () => {
   it("未登录返回空列表而不是报错（首访用户不该看到错误）", async () => {
     db.getUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ messages: [] });
+    expect(db.select).not.toHaveBeenCalled();
+  });
+
+  it("无会话 cookie 的真实游客形状返回空列表，不是 500", async () => {
+    db.getUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: new AuthSessionMissingError(),
+    });
     const res = await GET();
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ messages: [] });
