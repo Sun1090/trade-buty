@@ -4658,3 +4658,34 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：纯文档与流程规则，无代码/迁移/依赖变更；回滚本 commit 即恢复原账本。
 - 下一项：合并 PR #109 后合并本批次；随后按 R14.3（tag 门禁）、R14.5（报告幂等化）、R14.6（测试确定性巡检）顺序推进可本地执行项。
 - 更新时间：2026-09-22 04:40（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — R14.4 工作保全审计落地
+
+- 状态：脚本、台账与测试完成；分支 `feat/work-preservation-audit` 待 PR。运维脚本，不进 CI（CI 看不到其它会话的本地仓库）。
+- 里程碑 / 版本：v0.8（R14）第三项可本地执行任务。
+- 分支 / 提交：`feat/work-preservation-audit`，基线 `e6f4b07`，提交 `ab61fbd`。
+- 完成内容：
+  - `npm run ops:work-audit`：报出「内容从未进入 main 的本地提交」「已关闭但未合并且无人确认去向的 PR」，退出码非零以便接入 pre-push/会话自检流程。
+  - 两条判定口径是在对自己历史实测时纠正出来的：
+    1. 本仓库全部 rebase 合并，PR head SHA **注定不是** main 的祖先，所以 SHA 只能当线索、不能当丢失证据；确认结果落在 `docs/work-audit-ack.json` 台账，条目必须带理由否则脚本报错。
+    2. REST `pulls` 返回小写 `closed`，早期草案用 `"CLOSED"` 比较得到恒为 0 的候选——**审计工具出现假绿**比没有工具更糟，已改为大小写无关并补回归测试。
+  - 另修一处：`gh api` 原始响应超出 `execFileSync` 默认缓冲触发 `ENOBUFS`，被 catch 误报成「访问不了 GitHub」；改为 `--jq` 只取所需字段 + 显式 8MB 缓冲 + 打印真实错误原因。
+  - **首次运行即逮到真实丢失**：PR #83 `fix(sync): discard stale account hydration` 已关闭未合并、2 个补丁不在 main。核实确认不是误报——`auth-provider.tsx` 至今没有 `isCurrent` 守卫，登出/换号期间在途云响应会把上一个账号的数据写进本地。已另开 PR #113 恢复，并在台账记下确认理由。
+- 变更文件：
+  - `scripts/audit-work-preservation.mjs`（新增）
+  - `scripts/work-audit-lib.mjs`（新增）
+  - `scripts/work-audit-lib.test.mjs`（新增，13 用例）
+  - `docs/work-audit-ack.json`（新增台账）
+  - `package.json`、`docs/progress.md`
+- 验证命令与结果：
+  - `npx vitest run scripts/work-audit-lib.test.mjs`：通过（13 用例，含小写 state 回归）。
+  - `npm run test`：通过；`npm run lint` 通过；`npm run typecheck` 0 error。
+  - `npm run ops:work-audit`：`悬空提交 0 · 陈旧本地提交 3 · 未确认的关闭 PR 0`（本分支自身未推送时会被正确点名，推送后归零）。
+  - 检测能力双向验证：从台账移除 #102 → 立即报出；恢复 → 归零。
+  - `npm run check:secrets`（688 文件）、`check:docs`：通过。
+- 阻塞：无。
+- 风险 / 回滚：纯新增运维脚本与文档台账，不参与 CI、不改运行时；回滚 `ab61fbd` 即可。
+- 下一项：合并 PR #113（数据隔离）优先；再扫一遍 30 天窗口之外的历史关闭 PR；随后 R14.6 按实测证据重新界定（静态扫 Date.now 会误报，连续 3 轮全量零失败）。
+- 更新时间：2026-09-22 08:05（Asia/Shanghai）。
