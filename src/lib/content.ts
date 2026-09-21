@@ -56,6 +56,24 @@ export function getChapterSlugs(locale: string): string[] {
     .sort((a, b) => chapterRank(a) - chapterRank(b) || a.localeCompare(b));
 }
 
+/**
+ * 宽容降级：坏 YAML 的课文不得把 `---` 围栏当正文渲染。按 YAML 口径只切掉**成对**围栏；
+ * 找不到闭合围栏时保留原文——那种情况下无法区分 frontmatter 与正文，宁可多显示也不吞内容。
+ */
+function stripFrontmatterFence(raw: string): string {
+  const open = /^---[ \t]*\r?\n/.exec(raw);
+  if (!open) return raw;
+  const rest = raw.slice(open[0].length);
+  const close = /^(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/m.exec(rest);
+  return close ? rest.slice(close.index + close[0].length) : raw;
+}
+
+/**
+ * 传空 options 是为了绕开 gray-matter 的按原文缓存：它在解析**前**就写入
+ * `matter.cache[原文] = 未解析的 file`，于是抛错的那一次会把缓存投毒——同一篇文档第二次
+ * 解析不再抛错，而是返回 `data: {}` + 带 `---` 围栏的原始正文。站内每篇课文都会被
+ * 「列目录」和「取正文」各解析一次，所以降级告警只会响一次，围栏却留在了页面上。
+ */
 function parseFrontmatter(
   raw: string,
   fallbackTitle: string
@@ -64,13 +82,14 @@ function parseFrontmatter(
   let description = "";
   let content = raw;
   try {
-    const parsed = matter(raw);
+    const parsed = matter(raw, {});
     content = parsed.content;
     const fmTitle = parsed.data.title;
     const fmDesc = parsed.data.description;
     if (typeof fmTitle === "string" && fmTitle.trim()) title = fmTitle.trim();
     if (typeof fmDesc === "string" && fmDesc.trim()) description = fmDesc.trim();
   } catch {
+    content = stripFrontmatterFence(raw);
     console.warn(`[content] frontmatter 解析失败，降级处理: ${fallbackTitle}`);
   }
   if (!description) description = readFirstParagraph(content);
