@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 /**
- * R14.4：工作保全审计（人工 / 代理运行，不进 CI）。
+ * R14.4：工作保全审计（本地运维 + CI 门禁）。
  *
- * 回答两个只能从本地仓库看清的问题：
+ * 回答两个问题：
  *   1. 有没有提交从未推送到任何远端（受保护分支上「先提交本地 main」最容易踩）；
  *   2. 有没有 PR 被关掉而工作去向从未被确认（删除 head 分支会让 GitHub 自动关 PR）。
- * CI 看不到其它会话的本地仓库，所以这是运维脚本而不是门禁。
+ *
+ * 第 1 问只有本地仓库看得见，CI 里检出的工作区没有开发者的其它分支，因此 CI 跑这一半
+ * 天然为 0；第 2 问走 GitHub API，两边都成立，所以 ci.yml 用 `WORK_AUDIT_REQUIRE_GH=1`
+ * 把它当门禁：拿不到 GitHub 也必须失败，不允许静默变绿。
  *
  * 用法：npm run ops:work-audit
- * 退出码：发现未推送提交或未确认的关闭 PR → 1；gh 不可用时只跳过 PR 部分。
+ * 退出码：发现悬空提交或未确认的关闭 PR → 1；CI 模式下 gh 不可用同样 → 1。
  */
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -20,11 +23,13 @@ import {
   isValidAcknowledgement,
   parseUnpushedCommits,
   renderWorkAuditReport,
+  workAuditExit,
 } from "./work-audit-lib.mjs";
 
 const root = process.cwd();
 const ackPath = path.join(root, "docs/work-audit-ack.json");
 const WINDOW_DAYS = 30;
+const requireGh = process.env.WORK_AUDIT_REQUIRE_GH === "1";
 
 function runGit(args) {
   try {
@@ -112,6 +117,9 @@ try {
 } catch (error) {
   ghSkipped = true;
   ghNote = `（跳过 PR 检查：${String(error?.message ?? error).split("\n")[0].slice(0, 120)}）`;
+  if (requireGh) {
+    ghNote = "（CI 模式：读不到 GitHub 即判失败，门禁不允许静默变绿）" + ghNote;
+  }
 }
 
 const unconfirmed = findUnconfirmedClosedPullRequests(closedPulls, acknowledged);
@@ -127,4 +135,11 @@ console.log(
   })
 );
 
-process.exit(strandedCommits.length > 0 || unconfirmed.length > 0 ? 1 : 0);
+process.exit(
+  workAuditExit({
+    stranded: strandedCommits,
+    unconfirmed,
+    ghSkipped,
+    requireGh,
+  })
+);

@@ -393,8 +393,8 @@
 - [x] R14.1 `package.json` 版本号绑定最新发布版本并门禁防漂移（`check:docs` 新增 `auditReleaseVersion`；此前 `0.1.0` 与已发布 `0.7.0` 并存，跨 0.4.0→0.7.0 四次发布无人发现。验证：把版本改回 `0.1.0`，`check:docs` 变红）
 - [x] R14.2 课文页风险提示兜底 + 站内接线阻断式门禁（`check:risk-warning` 的 `auditFallbackWiring`：章节页与课文页任一去掉兜底即 CI 变红；此前红线只在章节页成立。验证：摘掉课文页守卫后门禁报「未调用 shouldShowRiskWarningFallback」；PR #109）
 - [x] R14.3 发布必须留 git tag，且新增 `check:release-tag` 校验「除最新发布版本外，每条发布记录都存在同名 tag」。验证：`npm run check:release-tag` 通过；本地删除 `v0.7.1` 后打印「待合并后补打」而不判失败，删除已被取代的版本 tag 则 CI 变红。背景：`0.4.0`–`0.7.0` 四次发布从未打 tag，`v0.7.1` 是本仓库第一个 tag（遗留四次发布用显式豁免清单而非回填：给已被取代的旧提交补 tag 可能把过期代码推成生产部署）
-- [ ] R14.4 悬空提交防护：CI 增加「`origin/main` 之后存在本地未推送提交」与「PR 关闭但其 head 提交未进入 `main`」两类告警。验证：本地造一个未推送提交，门禁必须报出。背景：PR #99/#101/#102/#104 因 `codex/*` 分支被清理而关闭且从未合并，19 个提交只在本地 `main` 存活近一天
-- [ ] R14.5 内容报告幂等化：`check:risk-warning` / `check:glossary` / `kb:inventory` 等 14 个报告产物在内容未变时不得产生纯日期 diff（保留上次内容变更日期）。验证：连跑两次门禁，`git status` 必须干净
+- [x] R14.4 悬空提交防护：`npm run ops:work-audit` 报出两类问题——本地既不在 `main` 也不在任何远端的提交，以及被关闭但工作去向未确认的 PR（台账 `docs/work-audit-ack.json`）。第二类的判定（rebase 合并会改写 SHA，必须用 `git cherry` 比补丁而不是比 SHA）是在对自己历史实测时纠正出来的。**已进 CI**（R14.4 收尾）：ci.yml 用 `WORK_AUDIT_REQUIRE_GH=1` 跑这道门，读不到 GitHub 即判失败，不允许静默变绿；第一类在 CI 里天然为 0（runner 检出的是分离 HEAD，看不到开发者本地分支），所以它只在本地有意义，脚本对两种模式都成立。验证：本地造一个未推送提交，门禁必须报出。背景：PR #99/#101/#102/#104 因 `codex/*` 分支被清理而关闭且从未合并，19 个提交只在本地 `main` 存活近一天
+- [x] R14.5 内容报告幂等化：`check:risk-warning` / `check:glossary` / `kb:inventory` 等 14 个报告产物在内容未变时不得产生纯日期 diff（保留上次内容变更日期）。验证：连跑两次门禁，`git status` 必须干净
 - [ ] R14.6 测试确定性巡检：扫描测试文件中未受控的墙钟与定时器依赖（`Date.now`、`performance.now`、真实 `setTimeout`），报告式列出让门禁排队整改。验证：临时引入一个依赖真实耗时的断言，巡检必须点名。背景：`quiz.test.tsx` 的学习时长断言只在单跑 <500ms 时成立，全量并行必现抖动，R14 之前无人知道还有多少同类
 - [x] R14.7 内容红线守卫覆盖面盘点：除章节导语与课文外，测验页、术语表、错题本、AI 生成内容是否都满足「每篇内容带风险提示」；结论写入本文件并各自配接线门禁。验证：每类内容一条断言（结论见下节；盘点逮到 `/share/*` 三类分享落地页完全没有承载面，已修复并加断言）
 - [x] R14.8 发布检查单固化：版本号 → `release-notes.json` → `changelog:generate` → tag → 全量门禁 → 生产部署 → 生产域名冒烟 → 进度记录，落为 `docs/release-checklist.md` 并在 `CONTRIBUTING.md` 指路。验证：`check:docs` 断言清单存在且含关键步

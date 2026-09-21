@@ -151,3 +151,23 @@ export function renderWorkAuditReport({ unpushed, stale, unconfirmed, ghSkipped 
   }
   return lines.join("\n");
 }
+
+/**
+ * 审计的退出码判定。
+ *
+ * `requireGh` 是给 CI 用的：作为门禁时「拿不到 GitHub」必须是失败，否则这道门会在
+ * token 权限没配好、gh 不可用等情况下**永远显示绿色**——本工具的 PR 判定早期就
+ * 因为一个恒为假的过滤条件假绿过（REST 返回小写 `closed`，代码比的是 `CLOSED`）。
+ * 人工在本地跑（requireGh=false）时没装 gh 只应跳过 PR 部分，不该报错。
+ */
+export function workAuditExit({
+  stranded = 0,
+  unconfirmed = 0,
+  ghSkipped = false,
+  requireGh = false,
+} = {}) {
+  const counts = (value) => (Array.isArray(value) ? value.length : Number(value) || 0);
+  if (counts(stranded) > 0 || counts(unconfirmed) > 0) return 1;
+  if (requireGh && ghSkipped) return 1;
+  return 0;
+}

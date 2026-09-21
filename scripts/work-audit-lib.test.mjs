@@ -7,6 +7,7 @@ import {
   parseRefs,
   parseUnpushedCommits,
   renderWorkAuditReport,
+  workAuditExit,
 } from "./work-audit-lib.mjs";
 
 describe("parseUnpushedCommits", () => {
@@ -116,5 +117,26 @@ describe("renderWorkAuditReport", () => {
     expect(text).toContain("ℹ️ 1 个本地提交的内容已在 main 上");
     expect(text).toContain("#7 Dropped");
     expect(text).toContain("main 上找不到对应补丁的提交 1 个");
+  });
+});
+
+describe("workAuditExit", () => {
+  it("本地跑：发现悬空提交或未确认的关闭 PR 才失败", () => {
+    expect(workAuditExit({})).toBe(0);
+    expect(workAuditExit({ stranded: [{ sha: "aaaaaaa" }] })).toBe(1);
+    expect(workAuditExit({ unconfirmed: [{ number: 7 }] })).toBe(1);
+    expect(workAuditExit({ stale: [{ sha: "bbbbbbb" }] })).toBe(0);
+  });
+
+  it("CI 模式：读不到 GitHub 必须失败，而不是让门禁静默变绿", () => {
+    expect(workAuditExit({ ghSkipped: true })).toBe(0);
+    expect(workAuditExit({ ghSkipped: true, requireGh: true })).toBe(1);
+    expect(workAuditExit({ ghSkipped: false, requireGh: true })).toBe(0);
+  });
+
+  it("接受计数或数组两种入参形状", () => {
+    expect(workAuditExit({ stranded: 2 })).toBe(1);
+    expect(workAuditExit({ unconfirmed: 0 })).toBe(0);
+    expect(workAuditExit({ stranded: [], unconfirmed: [], ghSkipped: false })).toBe(0);
   });
 });

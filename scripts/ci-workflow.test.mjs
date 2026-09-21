@@ -147,9 +147,12 @@ describe("GitHub Actions workflow contract", () => {
       if (permissions.contents !== "read") {
         problems.push(`${workflowPath}: contents 权限应为 read，实际 ${JSON.stringify(permissions.contents)}`);
       }
-      const extra = Object.keys(permissions).filter((key) => key !== "contents");
-      if (extra.length > 0) {
-        problems.push(`${workflowPath}: 多授予了权限 ${extra.join(", ")}`);
+      // R14.4 的工作保全审计要枚举「关闭但未合并」的 PR，这是唯一被允许的额外只读 scope。
+      const allowedExtra = { "pull-requests": "read" };
+      for (const [key, value] of Object.entries(permissions)) {
+        if (key === "contents") continue;
+        if (allowedExtra[key] === value) continue;
+        problems.push(`${workflowPath}: 多授予了权限 ${key}=${JSON.stringify(value)}`);
       }
     }
     expect(problems, `工作流权限未最小化：\n${problems.join("\n")}`).toEqual([]);
