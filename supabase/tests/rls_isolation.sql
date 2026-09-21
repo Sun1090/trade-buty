@@ -9,7 +9,7 @@
 
 begin;
 
-select plan(38);
+select plan(40);
 
 -- 固定测试用户（事务回滚，不污染真实 auth.users）
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, confirmed_at, created_at, updated_at)
@@ -106,6 +106,9 @@ select is_empty(
 reset role;
 reset request.jwt.claim.sub;
 
+-- 超级用户视角确认 fixture 真的落库了：否则下面的「anon 读到 0 行」可能只是空表假象
+select isnt((select count(*) from ai_feedback), 0::bigint, '会话角色能看到 A 写入的 ai_feedback 行');
+
 -- ------------------------------------------------------------
 -- 匿名：无 JWT claim，读不到任何用户数据，也不能冒充写入
 -- ------------------------------------------------------------
@@ -114,6 +117,9 @@ set local role anon;
 select is((select count(*) from progress), 0::bigint, 'anon 看不到用户 progress');
 select is((select count(*) from user_settings), 0::bigint, 'anon 看不到用户 user_settings');
 select is((select count(*) from wrongbook), 0::bigint, 'anon 看不到用户 wrongbook');
+-- /api/ai/feedback/export 读的是全库反馈：它只带 ADMIN_TOKEN、没有 Supabase 会话，
+-- auth.uid() 恒为 NULL，所以用 anon 客户端查询必然「成功且零行」，人工抽查永远查不到东西。
+select is((select count(*) from ai_feedback), 0::bigint, 'anon 读不到任何 ai_feedback（导出端点必须走 service_role）');
 
 select throws_ok(
   $$ insert into progress (user_id, chapter_num, doc_slug) values ('aaaaaaaa-0000-0000-0000-000000000001','ch','anon') $$,

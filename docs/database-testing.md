@@ -31,7 +31,7 @@ BACKUP_DRILL_IMAGE=supabase/postgres:17.6.1.155 npm run backup:drill
 
 每次运行都在干净的容器里重新应用 `supabase/migrations/*.sql`（按字典序），然后执行：
 
-### 1. `supabase/tests/rls_isolation.sql`（pgTAP，38 条断言）
+### 1. `supabase/tests/rls_isolation.sql`（pgTAP，40 条断言）
 
 跨用户隔离与越权写入：
 
@@ -41,7 +41,10 @@ BACKUP_DRILL_IMAGE=supabase/postgres:17.6.1.155 npm run backup:drill
   `replay_best` / `ai_conversations` / `ai_feedback` / `user_settings`；
 - B 冒用 A 的 `user_id` 写入一律以 SQLSTATE `42501` 被拒；
 - B 更新/删除 A 的行影响行数为 0（RLS `USING` 过滤，而不是报错）；
-- 匿名请求读不到任何用户数据，也不能写入；
+- 匿名请求读不到任何用户数据，也不能写入；其中 `ai_feedback` 读不到这条是
+  `/api/ai/feedback/export` 必须走 service_role 的直接依据（那条路线上只带 `ADMIN_TOKEN`、
+  没有 Supabase 会话，`auth.uid()` 恒为 `NULL`，用匿名客户端查是「成功但零行」）；
+  同一节还用超级用户视角先确认 fixture 行确实落库，避免把空表当成 RLS 生效；
 - `kb_embeddings` 对 `authenticated` 可读不可写（只读公开表）；
 - `ai_citation_clicks` 允许匿名上报（`user_id is null`），但没有 `select` 权限。
 
