@@ -21,6 +21,7 @@ import {
   pickRandomQuestions,
 } from "@/lib/ai/prompt";
 import { hasTruncatedMarker, stripTruncatedMarker } from "@/lib/ai/streaming";
+import { useAuth } from "@/components/auth-provider";
 import { reportError } from "@/lib/error-report";
 import { copyText } from "@/lib/clipboard";
 
@@ -60,6 +61,7 @@ interface AiDict {
 }
 
 export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
+  const auth = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -78,6 +80,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const initRef = useRef(false);
+  const accountRef = useRef<string | null | undefined>(undefined);
 
   // R1.15：移动端软键盘弹起时保证输入框可见（dvh 只解决地址栏，键盘需主动滚动）
   useEffect(() => {
@@ -159,6 +162,28 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 登出或换号：云端历史按身份拉取，上一个账号的对话不能继续留在屏幕上
+  // （/api/ai/conversations 只在有会话时返回内容，组件此前从不感知身份变化）。
+  // 游客登录（null → id）不清：那是同一个人自己的会话，接着聊才是对的。
+  useEffect(() => {
+    const accountId = auth?.id ?? null;
+    if (accountRef.current === undefined) {
+      accountRef.current = accountId;
+      return;
+    }
+    if (accountRef.current === accountId) return;
+    const previous = accountRef.current;
+    accountRef.current = accountId;
+    if (previous === null) return;
+    setMessages([]);
+    setFeedback({});
+    setQuota(null);
+    setInput("");
+    setError(null);
+    setContextChapter(null);
+    setContextTitle(null);
+  }, [auth?.id]);
 
   async function send(
     text: string,
