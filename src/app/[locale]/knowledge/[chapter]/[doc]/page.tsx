@@ -35,6 +35,8 @@ import { FontSizeControl } from "@/components/font-size-control";
 import { BookmarkButton } from "@/components/bookmark-button";
 import { RelatedCourses } from "@/components/related-courses";
 import { ReadingTimeTracker } from "@/components/reading-time-tracker";
+import { RiskWarningNotice } from "@/components/risk-warning-notice";
+import { shouldShowRiskWarningFallback } from "@/lib/risk-warning";
 import { ReadingTimeDisplay } from "@/components/reading-time-display";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { ReadAloud } from "@/components/read-aloud";
@@ -276,6 +278,11 @@ export default async function DocPage({
           interactiveImageLabel={tools.lightboxOpen}
         />
       </article>
+
+      {/* 内容红线：上游课文缺少合规风险块时，本地补一份兜底提示 */}
+      {shouldShowRiskWarningFallback(doc.content) && (
+        <RiskWarningNotice locale={locale} />
+      )}
 
       {/* R3.3：划词解释（挂载于正文容器，AI 开关控制） */}
       <TermExplainer
