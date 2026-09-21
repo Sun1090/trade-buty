@@ -4965,3 +4965,30 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：本 PR 合并后立即 `git tag -a v0.7.2 origin/main` 并推送，
   部署恢复后按检查单跑生产域名冒烟（含 `/share/*` 的 `⚠️` 断言），结果追加进 progress。
 - 更新时间：2026-09-22 04:58（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — v0.7.2 已合并并打 tag，生产部署被 Vercel 配额挡住
+
+- 状态：发布提交与 tag 已落地；**生产尚未更新**，部署待 Vercel 构建配额窗口结束后自动触发。
+- 里程碑 / 版本：**0.7.2**（已发布到 `main`，待上线）。
+- 分支 / 提交：`docs/release-0.7.2-deploy-pending`；发布内容在 `640b042` + `caec8a7`（rebase 进 `main`）。
+- tag：`v0.7.2` → `caec8a7`，已推送；`npm run check:release-tag` 输出
+  「6 条发布记录的 tag 均已落地（最新 0.7.2 → v0.7.2）」，R14.3 的待办提示已消失。
+- 完成内容：
+  - 更新 `docs/v0.7.2-release-review.md` 的「部署与冒烟」小节：写明合并 SHA、tag SHA、当前部署状态，
+    以及配额恢复后必须逐条验证的四个判据（changelog 出现 0.7.2、`/share/*` 含 `⚠️`、
+    游客 `/api/auth/session` 返回 `200 {"user":null}` 且 AI 不再 502、首页与课文页 200 且含 `⚠️`）。
+  - 冒烟结论**不预先写成已通过**：等真实构建上线后再补记一条。
+- 变更文件：`docs/v0.7.2-release-review.md`、`docs/progress.md`。
+- 验证命令和结果：
+  - `gh api repos/.../commits/caec8a7/status` → `Vercel: Deployment rate limited — retry in 24 hours`。
+  - 生产探针（合并后）：`/zh/changelog` **不含** `0.7.2`；`/share/streak/zzz` 返回 200 但 HTML **不含** `⚠️`
+    —— 与配额被挡一致，不是代码问题。
+  - `npm run -s check:release-tag` 通过；`git log origin/main -1` = `caec8a7`。
+- 阻塞：`BLOCKED_EXTERNAL`——Vercel 账号级 24h 构建配额。不阻塞合并任何 PR（Vercel 非必需检查），
+  但 0.7.2 的三个修复在生产上是**未生效**状态，其中账号切换数据隔离是用户可感知缺陷。
+  人工可做的是在 Vercel 控制台手动触发一次 Deploy；否则等窗口结束自动构建。
+- 风险 / 回滚：本条目纯文档；站点回滚仍是 `git revert` + 重新部署，或 Vercel 切回上一 Production Deployment。
+- 下一项：v0.9 立项盘点（v0.8 仅剩三项 `BLOCKED_EXTERNAL`）；期间定期复测生产探针，上线后补冒烟记录。
+- 更新时间：2026-09-22 05:35（Asia/Shanghai）。
