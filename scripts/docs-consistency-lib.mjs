@@ -106,6 +106,7 @@ export function auditContributingContract(markdown) {
     "Angular Convention",
     "Co-Authored-By",
     "禁止直接向 `main` 推送",
+    "docs/release-checklist.md",
     "codex/",
     "content/kline-buty",
     "只读 git submodule",
@@ -175,3 +176,37 @@ export function auditReleaseVersion({ packageVersion, releases }) {
   }
   return [];
 }
+
+/**
+ * R14.8：发布检查单必须存在且关键步骤不缺。
+ *
+ * 发布是本项目最容易「记得做」的环节：tag 只能在 rebase 合并后打、e2e 会污染构建产物门禁、
+ * 版本号与 release-notes 必须同步——漏掉任何一步都要靠事后盘点才发现。这里把步骤钉成断言。
+ */
+export const RELEASE_CHECKLIST_STEPS = Object.freeze([
+  "判级",
+  "RELEASE_FREEZE",
+  "src/data/release-notes.json",
+  "npm run changelog:generate",
+  "npm run check:lockfile-repro",
+  "npm run test:coverage",
+  "npm run build",
+  "npm run check:release-tag",
+  "git tag -a vX.Y.Z",
+  "gh pr merge",
+  "trade-buty.vercel.app",
+  "docs/progress.md",
+  "## 7. 回滚",
+]);
+
+export function auditReleaseChecklist(markdown) {
+  const text = String(markdown ?? "");
+  const issues = [];
+  for (const required of RELEASE_CHECKLIST_STEPS) {
+    if (!text.includes(required)) {
+      issues.push(`docs/release-checklist.md: 缺少发布步骤「${required}」`);
+    }
+  }
+  return issues;
+}
+

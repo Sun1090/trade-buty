@@ -120,6 +120,7 @@ npm run check:docs
 
 ## Documentation And Release Hygiene
 
+- 发布一律按 [`docs/release-checklist.md`](docs/release-checklist.md) 从上到下执行（判级 → 发布记录 → 版本号 → 全量门禁 → tag → 部署 → 生产冒烟 → 进度记录 → 回滚）；`npm run check:docs` 会断言该清单存在且关键步骤未被删。
 - 行为、架构、命令、环境变量或运行边界变化时，同步更新 README、相关 `docs/` 文档和测试。
 - `CHANGELOG.md` 由 `src/data/release-notes.json` 生成；不要手工编辑生成文件。
 - 修改发布说明后运行 `npm run check:changelog`。

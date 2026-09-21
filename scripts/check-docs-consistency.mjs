@@ -9,6 +9,7 @@ import {
   auditPlanContract,
   auditReadmeCounts,
   auditReadmeImplementationReferences,
+  auditReleaseChecklist,
   auditReleaseVersion,
 } from "./docs-consistency-lib.mjs";
 
@@ -58,6 +59,8 @@ const contributing = readRequiredDoc("CONTRIBUTING.md");
 if (contributing !== null) issues.push(...auditContributingContract(contributing));
 const architecture = readRequiredDoc("docs/architecture.md");
 if (architecture !== null) issues.push(...auditArchitectureContract(architecture));
+const releaseChecklist = readRequiredDoc("docs/release-checklist.md");
+if (releaseChecklist !== null) issues.push(...auditReleaseChecklist(releaseChecklist));
 
 issues.push(...auditNeutrality(readmes, fs.readFileSync(aboutPath, "utf8")));
 
