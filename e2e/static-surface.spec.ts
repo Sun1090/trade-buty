@@ -171,17 +171,17 @@ test.describe("软 404 语义未被误伤", () => {
 });
 
 /**
- * R14.7：全站页脚风险提示是内容红线的最后承载面。
+ * R14.7：全站风险提示是内容红线的最后承载面。
  *
  * 章节页与课文页另有兜底块（`check:risk-warning` 阻断校验其接线），但 `/ai`、
  * `/chart`、`/replay`、`/glossary`、`/stats`、`/path` 这些不渲染知识库正文的
- * 页面只靠 `layout.tsx` 的页脚文案。此前没有任何测试守着它——删掉页脚那行
- * 不会让任何门禁变红。这里按路由逐个钉住，中英双份。
+ * 页面只靠 `layout.tsx` 的页脚文案；根级 `/share/*` 连页脚都够不着。此前没有
+ * 任何测试守着它们——删掉页脚那行不会让任何门禁变红。这里逐路由钉住，中英双份。
  *
  * 断言取 `i18n` 词典原文逐字比对，而不是在测试里重抄一遍措辞：改文案时
  * 门禁跟着词典走，删页脚或改写措辞都会立刻变红。
  */
-test.describe("内容红线：全站页脚风险提示", () => {
+test.describe("内容红线：全站风险提示", () => {
   const RISK_ROUTES = [
     "/zh",
     "/en",
@@ -198,6 +198,23 @@ test.describe("内容红线：全站页脚风险提示", () => {
     "/zh/path",
   ];
 
+  /** 钉住某个 locale 的页脚风险提示确实渲染出来了。 */
+  const expectRiskLine = async (response: { text(): Promise<string> }, locale: string, label: string) => {
+    const disclaimer = getDict(locale).footer.disclaimer;
+
+    // 词典侧：文案必须自带 ⚠️ 与「不构成投资建议」承诺。否则逐字比对
+    // 会跟着一起退化——把词典改成「祝交易顺利」也能过。
+    expect(disclaimer, `${locale} 页脚文案缺少 ⚠️ 标记`).toContain("⚠️");
+    expect(
+      disclaimer,
+      `${locale} 页脚文案缺少「不构成投资建议」表述`
+    ).toMatch(/不构成(任何)?投资建议|not\s+(constitute\s+)?investment advice/i);
+
+    // 渲染侧：这条文案要逐字落到服务端 HTML。
+    const html = await response.text();
+    expect(html, `${label} 未渲染页脚风险提示`).toContain(disclaimer);
+  };
+
   for (const route of RISK_ROUTES) {
     test(`${route} 渲染风险提示`, async ({ request }) => {
       const response = await request.get(route, { maxRedirects: 0 });
@@ -205,21 +222,49 @@ test.describe("内容红线：全站页脚风险提示", () => {
 
       const locale = route.split("/")[1];
       expect(isLocale(locale), `${route} 不是带语言前缀的页面`).toBe(true);
-      const disclaimer = getDict(locale).footer.disclaimer;
+      await expectRiskLine(response, locale, route);
+    });
+  }
 
-      // 词典侧：文案必须自带 ⚠️ 与「不构成投资建议」承诺。否则逐字比对
-      // 会跟着一起退化——把词典改成「祝交易顺利」也能过。
-      expect(disclaimer, `${locale} 页脚文案缺少 ⚠️ 标记`).toContain("⚠️");
-      expect(
-        disclaimer,
-        `${locale} 页脚文案缺少「不构成投资建议」表述`
-      ).toMatch(
-        /不构成(任何)?投资建议|not\s+(constitute\s+)?investment advice/i
+  // 分享落地页挂在根级 `/share/*`，不在 `[locale]` 布局下，页脚够不着——
+  // 而它们恰恰是最容易被转发到站外的一类页面。
+  const SHARE_CASES: Array<[kind: string, segment: string, locale: string]> = [
+    [
+      "quiz",
+      encodeQuiz({
+        chapterTitle: "入门基础",
+        score: 8,
+        total: 10,
+        percent: 80,
+        locale: "zh",
+      }),
+      "zh",
+    ],
+    [
+      "replay",
+      encodeReplay({
+        symbol: "BTCUSDT",
+        interval: "1h",
+        correct: 7,
+        total: 10,
+        accuracyBps: 7000,
+        bestStreak: 5,
+        currentStreak: 3,
+        locale: "en",
+      }),
+      "en",
+    ],
+    ["streak", encodeStreak({ currentStreak: 12, longestStreak: 30, locale: "zh" }), "zh"],
+  ];
+
+  for (const [kind, segment, locale] of SHARE_CASES) {
+    test(`/share/${kind} 渲染风险提示`, async ({ request }) => {
+      const response = await request.get(
+        `/share/${kind}/${encodeURIComponent(segment)}`,
+        { maxRedirects: 0 }
       );
-
-      // 渲染侧：页脚要把这条文案逐字落到服务端 HTML。
-      const html = await response.text();
-      expect(html, `${route} 未渲染页脚风险提示`).toContain(disclaimer);
+      expect(response.status(), `/share/${kind}`).toBe(200);
+      await expectRiskLine(response, locale, `/share/${kind}`);
     });
   }
 });
