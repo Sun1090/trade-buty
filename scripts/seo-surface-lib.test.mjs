@@ -86,6 +86,48 @@ describe("validateDeclaration", () => {
       }),
     ).toThrow(/重复/);
   });
+
+  it("拒绝非对象声明", () => {
+    for (const bad of [undefined, null, "x", 42]) {
+      expect(() => validateDeclaration(bad)).toThrow(/seo-surface\.json 必须是对象/);
+    }
+  });
+
+  it("path 结构问题逐条报出，而不是只报第一条", () => {
+    expect(() =>
+      validateDeclaration({
+        ...declaration,
+        indexable: [
+          { priority: 0.5, changeFrequency: "daily" },
+          { path: "path", priority: 0.5, changeFrequency: "daily" },
+          { path: "/path/", priority: 0.5, changeFrequency: "daily" },
+        ],
+      }),
+    ).toThrow(
+      /indexable\[0\]\.path 必须是字符串[\s\S]*indexable\[1\]\.path 必须以 \/ 开头[\s\S]*indexable\[2\]\.path 不能以 \/ 结尾/
+    );
+  });
+
+  it("拒绝空的 indexable / noindex / robotsDisallow", () => {
+    expect(() => validateDeclaration({ ...declaration, indexable: [] })).toThrow(
+      /indexable 必须是非空数组/
+    );
+    expect(() => validateDeclaration({ ...declaration, noindex: [] })).toThrow(
+      /noindex 必须是非空数组/
+    );
+    expect(() => validateDeclaration({ ...declaration, robotsDisallow: [] })).toThrow(
+      /robotsDisallow 必须是非空数组/
+    );
+  });
+
+  it("拒绝形状非法的 noindex 条目", () => {
+    expect(() => validateDeclaration({ ...declaration, noindex: ["stats/"] })).toThrow(
+      /noindex\[0\] 必须是非空、以 \/ 开头且不以 \/ 结尾的路径/
+    );
+    expect(() => validateDeclaration({ ...declaration, noindex: ["/ok", 7] })).toThrow(
+      /noindex\[1\]/
+    );
+  });
 });
 
 describe("robots 模式匹配", () => {
@@ -283,6 +325,41 @@ describe("auditSeoSurface", () => {
     const f = goodFixture();
     f.pages = [...f.pages, { pathname: "/zh/new-page", robots: null, canonical: `${BASE}/zh/new-page` }];
     expect(auditSeoSurface(f).errors.join("\n")).toMatch(/未声明的可索引表面：\/zh\/new-page/);
+  });
+
+  it("构建产物同一页面出现两次会被抓出来", () => {
+    const f = goodFixture();
+    f.pages = [...f.pages, { pathname: "/zh", robots: null, canonical: `${BASE}/zh` }];
+    expect(auditSeoSurface(f).errors.join("\n")).toMatch(/构建产物出现重复页面：\/zh$/m);
+  });
+
+  it("声明可索引但构建产物里没有这一页会被抓出来", () => {
+    const f = goodFixture();
+    // 只留首页：sitemap 同步收缩，确保报的是「缺页」而不是顺带的 sitemap 缺失。
+    f.pages = f.pages.filter((p) => !p.pathname.endsWith("/path"));
+    f.sitemap = { urls: [`${BASE}/zh`, `${BASE}/en`], lastmods: new Map(), duplicates: [] };
+    const errors = auditSeoSurface(f).errors.join("\n");
+    expect(errors).toMatch(/可索引页面在构建产物中不存在：\/zh\/path/);
+    expect(errors).toMatch(/可索引页面在构建产物中不存在：\/en\/path/);
+  });
+
+  it("声明 noindex 但构建产物里没有这一页会被抓出来", () => {
+    const f = goodFixture();
+    f.pages = f.pages.filter((p) => !p.pathname.endsWith("/stats"));
+    expect(auditSeoSurface(f).errors.join("\n")).toMatch(
+      /noindex 页面在构建产物中不存在：\/zh\/stats/
+    );
+  });
+
+  it("sitemap 里的坏 URL 只跳过，不让整个核对崩掉", () => {
+    const f = goodFixture();
+    f.sitemap = {
+      urls: [`${BASE}/zh`, "not a url", `${BASE}/en`],
+      lastmods: new Map(),
+      duplicates: [],
+    };
+    const result = auditSeoSurface(f);
+    expect(result.errors.join("\n")).toMatch(/sitemap URL 必须是 https 绝对地址：not a url/);
   });
 
   it("知识库页面必须可索引、进 sitemap 且 canonical 指向自身", () => {
