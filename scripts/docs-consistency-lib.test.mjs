@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { readFile } from "node:fs/promises";
 import {
+  RELEASE_CHECKLIST_STEPS,
   auditAgentsContract,
   auditArchitectureContract,
   auditContributingContract,
@@ -7,6 +9,7 @@ import {
   auditPlanContract,
   auditReadmeCounts,
   auditReadmeImplementationReferences,
+  auditReleaseChecklist,
   auditReleaseVersion,
   extractReadmeCounts,
 } from "./docs-consistency-lib.mjs";
@@ -37,6 +40,7 @@ const validContributing = [
   "Angular Convention",
   "Co-Authored-By",
   "禁止直接向 `main` 推送",
+  "docs/release-checklist.md",
   "codex/topic",
   "content/kline-buty",
   "只读 git submodule",
@@ -186,5 +190,27 @@ describe("docs-consistency-lib", () => {
         "src/data/release-notes.json: 没有 x.y.z 形式的已发布版本"
       );
     }
+  });
+
+  it("rejects a release checklist that lost a step", () => {
+    expect(auditReleaseChecklist("")).toEqual(
+      RELEASE_CHECKLIST_STEPS.map((step) => `docs/release-checklist.md: 缺少发布步骤「${step}」`)
+    );
+    expect(
+      auditReleaseChecklist(
+        RELEASE_CHECKLIST_STEPS.filter((step) => step !== "git tag -a vX.Y.Z").join("\n")
+      )
+    ).toEqual(["docs/release-checklist.md: 缺少发布步骤「git tag -a vX.Y.Z」"]);
+    expect(auditReleaseChecklist(undefined)).toEqual(
+      RELEASE_CHECKLIST_STEPS.map((step) => `docs/release-checklist.md: 缺少发布步骤「${step}」`)
+    );
+  });
+
+  it("accepts the release checklist that actually ships", async () => {
+    const shipped = await readFile(
+      new URL("../docs/release-checklist.md", import.meta.url),
+      "utf8"
+    );
+    expect(auditReleaseChecklist(shipped)).toEqual([]);
   });
 });
