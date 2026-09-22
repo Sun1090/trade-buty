@@ -156,6 +156,9 @@ npm run ops:faq-candidates
 ```
 
 从 `ai_feedback` 表近 30 天 unhelpful 反馈聚类高频问题，生成 `docs/faq-candidates.md`。
+**输出会提交进公开仓库**，所以聚类带 k-匿名门槛：只有出现 ≥3 次（`K_MIN_COUNT`）的问题才进表，
+单人独条的用户原话（可能带仓位、资金、平台名）不写入，且每条截到 80 字符。
+门槛与截断由 `scripts/faq-candidates.test.mjs` 钉住；改门槛请一并复核这段说明。
 需要 `SUPABASE_SERVICE_ROLE_KEY`（读 .env.local）；未配置时友好跳过。
 
 ## 外链巡检（R6.12）
