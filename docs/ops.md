@@ -195,6 +195,9 @@ SMOKE_BASE_URL=http://localhost:3111 npm run ops:smoke-prod   # 打本地生产�
 预览域受 Vercel Deployment Protection 保护（未授权请求 302 到 SSO，R14.9），所以默认指向生产域名；
 要覆盖预览需要账号级 protection-bypass 密钥。脚本本身由 `scripts/prod-smoke.test.mjs` 用假站点逐条验证：
 每种退化都必须被抓出来，读不到发布版本号也算失败而不是跳过。
+只有**传输层**失败（`fetch failed`、socket 挂断、超时）会重试到第 3 次，并在结论里写明是第几次才连上——
+Vercel 边缘偶发一次 `fetch failed` 会把「部署没跟上」和「网络抖了一下」混成同一条红。断言不满足走的是返回值
+而不是异常，所以重试不会把真实的站内回归刷成通过；非传输层异常一次定性。
 
 ## Supabase 迁移清单（按文件名顺序执行）
 

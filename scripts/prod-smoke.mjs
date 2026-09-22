@@ -161,16 +161,57 @@ export function buildChecks({ expectedVersion, aiQuestion = AI_PROBE_QUESTION })
   return checks;
 }
 
-/** 逐条跑断言；网络异常按失败计，不中断其余断言（冒烟要给全景，不是撞到第一个错就退）。 */
-export async function runChecks({ baseUrl, checks, fetchImpl = defaultFetch }) {
+/**
+ * 逐条跑断言；网络异常按失败计，不中断其余断言（冒烟要给全景，不是撞到第一个错就退）。
+ *
+ * 传输层失败（Vercel 边缘偶发 `fetch failed` / socket 挂断）重试到 3 次：一条假红会把
+ * 「部署没跟上」和「网络抖了一下」混在一起，每次都得手动复跑一遍才能下结论。
+ * 断言不满足走的是返回值不是异常，所以重试只可能发生在真的没连上时。
+ */
+const TRANSPORT_RETRIES = 2;
+const TRANSPORT_HINT = /fetch failed|socket hang up|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|ERR_SOCKET|ERR_SSL|SSL_ERROR|timed out|timeout|aborted/i;
+
+export function isTransportError(error) {
+  if (error instanceof TypeError) return true;
+  const name = error instanceof Error ? error.name : "";
+  if (name === "AbortError" || name === "TimeoutError") return true;
+  return TRANSPORT_HINT.test(error instanceof Error ? `${name}: ${error.message}` : String(error));
+}
+
+const sleep = (ms) => (ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : undefined);
+
+export async function runChecks({ baseUrl, checks, fetchImpl = defaultFetch, retryDelayMs = 250 }) {
   const ctx = { baseUrl, fetch: fetchImpl };
   const results = [];
   for (const check of checks) {
-    try {
-      const failure = await check.run(ctx);
-      results.push({ name: check.name, ok: !failure, detail: failure ?? "" });
-    } catch (error) {
-      results.push({ name: check.name, ok: false, detail: `请求异常：${error instanceof Error ? error.message : String(error)}` });
+    let failure = null;
+    let thrown = null;
+    let priorFailures = 0;
+    for (let attempt = 0; attempt <= TRANSPORT_RETRIES; attempt += 1) {
+      priorFailures = attempt;
+      try {
+        failure = await check.run(ctx);
+        thrown = null;
+        break;
+      } catch (error) {
+        thrown = error;
+        if (!isTransportError(error)) break;
+        if (attempt < TRANSPORT_RETRIES) await sleep(retryDelayMs);
+      }
+    }
+    if (thrown) {
+      const message = thrown instanceof Error ? thrown.message : String(thrown);
+      results.push({
+        name: check.name,
+        ok: false,
+        detail: `请求异常：${message}${priorFailures > 0 ? `（重试 ${priorFailures} 次后仍失败）` : ""}`,
+      });
+    } else {
+      results.push({
+        name: check.name,
+        ok: !failure,
+        detail: failure || (priorFailures > 0 ? `第 ${priorFailures + 1} 次尝试才连上（前 ${priorFailures} 次传输失败）` : ""),
+      });
     }
   }
   return results;
@@ -206,7 +247,7 @@ export async function run({
   stdout(`🚦 生产冒烟：${baseUrl}（期望已发布版本 ${expectedVersion ?? "读不到"}），${checks.length} 条断言`);
   const results = await runChecks({ baseUrl, checks, fetchImpl });
   for (const result of results) {
-    stdout(`  ${result.ok ? "✅" : "❌"} ${result.name}${result.ok ? "" : ` — ${result.detail}`}`);
+    stdout(`  ${result.ok ? "✅" : "❌"} ${result.name}${result.detail ? ` — ${result.detail}` : ""}`);
   }
 
   const failed = results.filter((r) => !r.ok);
