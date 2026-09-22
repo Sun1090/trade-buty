@@ -55,4 +55,17 @@ describe("fetchRandomHistoryWindow", () => {
     expect(endTime).toBeLessThanOrEqual(now - 7 * 24 * 3600_000);
     expect(endTime).toBeGreaterThan(now - 180 * 24 * 3600_000);
   });
+
+  it("抽样确实是随机的，而不是被钳死在一个端点", async () => {
+    const fetchMock = vi.fn<FetchFn>(async () => ({ ok: true, status: 200, json: async () => [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(Math, "random").mockReturnValueOnce(0).mockReturnValueOnce(0.999);
+    const ends: number[] = [];
+    for (let i = 0; i < 2; i++) {
+      await fetchRandomHistoryWindow("BTCUSDT", "1h", 300);
+      ends.push(Number(new URL(String(fetchMock.mock.calls[i][0])).searchParams.get("endTime")));
+    }
+    // 0 与 0.999 之间应当摊开约 173 天；钳位生效过的话这里会塌成同一个点
+    expect(ends[1] - ends[0]).toBeGreaterThan(30 * 24 * 3600_000);
+  });
 });
