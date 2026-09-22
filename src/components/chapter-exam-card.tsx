@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { Quiz } from "@/components/quiz";
-import { readQuizProgress } from "@/lib/quiz-store";
+import { readQuizProgress, type QuizProgress } from "@/lib/quiz-store";
 import type { ChapterQuiz } from "@/lib/quiz-types";
 import type { ShareLocale } from "@/lib/share-card";
+
+function subscribeQuizProgress(onChange: () => void) {
+  window.addEventListener("tb-progress", onChange);
+  return () => window.removeEventListener("tb-progress", onChange);
+}
 
 type QuizDict = {
   questionsUnit: string;
@@ -44,7 +49,17 @@ export function ChapterExamCard({
   chapterTitle?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const progress = readQuizProgress(quiz.chapterNum);
+  // 成绩存在 localStorage 里。直接在渲染期读它会让服务端快照与客户端首帧不一致：
+  // SSG 吐出的 HTML 是「开始测验」，客户端 hydrate 时用户早就做过题（「再测一次 · 最佳 3/3」），
+  // 于是两处文本同时对不上。改成订阅式快照，服务端固定「无进度」，挂载后再对齐真实成绩；
+  // `quiz-store` 保存成绩时派发的就是 tb-progress，答完一套题这里会自己更新。
+  // 快照必须是可比较的原始值（对象会让 useSyncExternalStore 每帧都认为变了），所以序列化成字符串。
+  const serialized = useSyncExternalStore(
+    subscribeQuizProgress,
+    () => JSON.stringify(readQuizProgress(quiz.chapterNum)),
+    () => "null",
+  );
+  const progress = serialized === "null" ? null : (JSON.parse(serialized) as QuizProgress);
   const done = progress?.done;
   const total = quiz.questions.length;
 
