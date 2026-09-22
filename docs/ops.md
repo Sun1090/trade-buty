@@ -26,6 +26,7 @@
 | `npm run check:ai-copy` | en 字典无中文残留（R3.12） | 修正 i18n.ts en 值 |
 | `npm run check:growth-event-privacy` | 增长事件只留在本机且不携带 URL/身份信息（R13.20） | 删除遥测外发或敏感字段；审计文档作废时重新评审 |
 | `npm run check:error-report-privacy` | 错误上报载荷只含白名单元数据、服务端有界读取 + 未知字段拒绝、日志无原始内容、隐私页双语披露（R7.6） | 修正 `src/lib/error-report.ts` / 路由或隐私页；不得放宽白名单或日志脱敏 |
+| `npm run check:request-body-bounds` | 站内每个解析 JSON 请求体的端点都经 `src/lib/request-body.ts` 有界读取，且上限是具名常量（R15.4①） | 新端点改用 `readJsonBody(req, MAX_*_BODY_BYTES)`；不得把上限退回行内数字或恢复 `req.json()` |
 | `npm run check:env-docs` | `docs/env.md` 与代码对账：`process.env.*` 读到的运行时变量全部登记、文档无幽灵条目、服务端密钥不出现在 `"use client"` 模块 | 补写 `docs/env.md` 或清理死变量；密钥前缀/暴露面错误必须改代码而不是改文档 |
 | `npm run check:dark-pattern-copy` | 增长表面均已登记，且无紧迫/恐吓/默认勾选等暗黑模式（R13.21–R13.22） | 修正 `growth-surfaces.json` 登记或用户文案 |
 | `npm run check:docs` | README/AGENTS/plan/About 的内容规模、技术栈、关键承诺与 `package.json` 版本号一致 | 修正漂移文档；发布时同步 bump `package.json` version，不得只改门禁快照 |

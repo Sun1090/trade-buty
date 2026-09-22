@@ -76,6 +76,8 @@ jobs:
       - run: npm run check:ai-copy
       - run: npm run check:growth-event-privacy
       - run: npm run check:error-report-privacy
+      - name: 请求体字节上限审计（R15.4①：接收 JSON 的端点必须在读流阶段设闸）
+        run: npm run check:request-body-bounds
       - run: npm run check:env-docs
       - run: npm run check:dark-pattern-copy
       - run: npm run check:docs
