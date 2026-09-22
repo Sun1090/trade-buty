@@ -642,7 +642,9 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
             </div>
           </div>
         )}
-        <p className="mt-3 text-xs text-faint">{dict.contextNote}</p>
+        <p className="mt-3 text-xs text-faint">
+          {dict.contextNote.replace("{n}", String(context)).replace("{m}", String(context + 1))}
+        </p>
       </div>
       <p className="mt-3 text-xs text-faint">{dict.disclaimer}</p>
     </div>
