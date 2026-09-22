@@ -5,6 +5,34 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.3] - 2026-09-22
+
+**数据归属、学习口径与 AI 端点边界的一批修复 / Account ownership, learning-metric consistency, and AI endpoint boundaries**
+
+### 中文
+
+- 共享浏览器上的数据归属：换账号登录不再把上一个账号留在本机的学习镜像并进当前账号并以当前账号身份补传回云端（`tb-data-owner` 归属戳；被丢弃的都是云端有对应行的可恢复镜像，账号回来重新登录即可恢复，设备偏好不在内）。登出或换号后 AI 对话窗口一并清空，上一账号的问答不再留在屏幕上
+- 断网时的写入不再静默消失：Supabase 客户端把错误吞成 `{data:null,error}`，此前的失败兜底分支永远进不去，那次写入直接被丢弃；现在会入队并在联网或下次登录时重放。同时「清空错题本」开始同步清云端——只删本地等于没删，下次登录整本会被拉回来
+- 回放训练每轮只统计一次：云端 `recorded_at` 是服务器落库时刻，与本机完成时刻必然差一段网络延迟，过去每次登录本地历史翻倍、统计页轮数虚高；合并摘要里的「新增 N 轮回放」也改为只数合并真正带入的轮次，不再对着本地与云端完全相同的数据报新增
+- 复习与统计口径对齐：错题本头部的「今日到期/已过期」与统计页、复习提醒卡统一走回填后的 SRS 计划，旧数据不再同时被算成今日到期并显示 1 天后；「总学习时长」改为「近 90 天学习时长」，台账也真正按日历窗口保留 90 天，与隐私页的承诺一致
+- 内容红线的强制点补齐：AI 问答对荐股/收益承诺的输入护栏过去只看最后一条用户消息的前 500 个字符，而送进模型的是最近 10 轮——先问荐股再发一句「继续」，或在前面垫 501 个无关字都能绕过去；现在逐轮判定且不截断。上游课文 frontmatter 的 YAML 损坏时不再把 `---` 围栏渲染进正文
+- AI 端点的配额与数据边界：对话历史返回最近 50 条（此前取的是最旧的 50 条）、保存端点纳入配额、聊天配额按账号而非 client IP 分桶、反馈与引用点击同样按账号分桶（同一 NAT 出口下不再互相锁死）、身份不可确定时按匿名行入库而不是把真实反馈丢掉、人工抽查导出端点改用 service_role 后第一次真能取到数据、命中缓存的截断回答重新能看到「继续生成」
+- 离线兜底页不再把人困住：连接恢复时那一次自动重载可能抢在浏览器网络栈之前落地，被 service worker 又送回兜底页，而 `online` 事件已经用过、不会有第二次——本地实测三次里两次停在「已经联网的离线页」上出不来。现在改成同源 HEAD 探针探通之后才自动重载（失败按 500ms 起步退避、最多 6 次），开局就已在线的那一份文档也会自己探一次，并给 30 秒窗口内最多 3 次的自动重载预算，用完就提示手动点按钮
+- 发布与验证：0.7.2 的四条生产冒烟判据首次逐条实测，并把这套断言固化为 `npm run ops:smoke-prod`（10 条只读断言 + 16 条契约用例，任一失败 exit 1）；新增 R15「数据归属与认证边界」与 R16「学习数据口径一致性」两轮盘点的结论与两项明确不擅自选边的决策项；269 个测试文件 / 2561 个用例，语句覆盖率 96.24% → 96.31%、分支 91.10% → 91.36%（阈值 84/77 未下调）
+
+### English
+
+- Data ownership on a shared browser: signing in as another account no longer merges the previous account's local study mirror into the current account and re-uploads it under the current identity (a `tb-data-owner` stamp; everything discarded has a cloud row and comes back when that account signs in again, and device preferences are untouched). The AI chat panel is also cleared when you sign out or switch accounts, so the previous account's conversation no longer stays on screen
+- Writes made while offline no longer vanish silently: the Supabase client swallows errors into `{data:null,error}`, so the previous failure branch could never run and that write was simply dropped; it is now queued and replayed on reconnect or next sign-in. Clearing the wrong-answer notebook now also clears the cloud copy — deleting only the local one meant nothing was cleared, since the whole book came back on next sign-in
+- Each replay round is counted once: the cloud `recorded_at` is the server insert time, inevitably a network delay away from the local completion time, so every sign-in used to double the local history and inflate the round count on the stats page. The merge summary's N new replay rounds now counts only the rounds the merge actually brings in, instead of reporting new rounds for data that is identical on both sides
+- Review and stats now measure the same thing: the notebook header's due/overdue counts follow the backfilled SRS schedule like the stats page and the streak recovery card, so legacy entries are no longer both due today and shown as due in one day; Total study time became Study time (last 90 days), and the ledger now really keeps a 90-day calendar window, matching what the privacy page promises
+- The content-constitution enforcement point is closed: the input guardrail against stock picks and profit promises only inspected the last user message's first 500 characters while the model receives the last ten turns — asking for a pick and then saying continue, or padding 501 irrelevant characters in front, both got through. It now checks every user turn without truncating. A lesson whose frontmatter YAML is broken no longer renders its own `---` fence into the body
+- AI endpoint quotas and boundaries: conversation history returns the most recent 50 rounds (it used to return the oldest 50), the save endpoint is now quota'd, chat quota buckets by account rather than client IP, feedback and citation clicks are bucketed by account too (a shared NAT exit no longer locks users out of each other), an undeterminable identity now stores an anonymous row instead of throwing away a real feedback entry, the manual review export finally returns rows after moving to service_role, and a cached truncated answer shows the continue affordance again
+- The offline page no longer strands people: the single reload fired on `online` can land before the browser's network stack is actually ready, so the service worker sends the navigation right back to the fallback page — and `online` has already been consumed, so nothing retries. Measured locally, two out of three recoveries left the user sitting on an offline page that already reported being online. Recovery now reloads only after a same-origin HEAD probe succeeds (backoff from 500ms, at most six attempts), a fallback document that loads while already online probes for itself, and at most three automatic reloads are allowed per 30-second window before the page asks you to press Retry
+- Release and verification: the four production smoke assertions from 0.7.2 were finally run one by one and turned into `npm run ops:smoke-prod` (10 read-only assertions + 16 contract tests, exit 1 on any failure); two audit rounds, R15 data ownership / auth boundaries and R16 learning-metric consistency, record their findings including two items deliberately left to a product decision; 269 test files / 2561 tests, statement coverage 96.24% → 96.31% and branch coverage 91.10% → 91.36% with no thresholds lowered
+
+参考：[docs/roadmap.md](docs/roadmap.md) · [docs/ops.md](docs/ops.md) · [docs/release-checklist.md](docs/release-checklist.md)
+
 ## [0.7.2] - 2026-09-22
 
 **账号隔离修复与内容红线覆盖收口 / Account isolation fix and content red-line coverage**
