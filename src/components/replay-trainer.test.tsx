@@ -2,6 +2,7 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ReplayTrainer, type ReplayDict } from "./replay-trainer";
+import { gradeFromReplayAccuracy } from "@/lib/share-card";
 
 // Node 22 的实验性 localStorage 在 jsdom 下可能不可用，显式提供内存实现。
 const store = new Map<string, string>();
@@ -352,9 +353,14 @@ describe("ReplayTrainer 竞猜模式与战绩", () => {
     fireEvent.click(screen.getByRole("button", { name: "涨" }));
     await waitFor(() => expect(screen.getByText(/进度: 2\/2/)).toBeInTheDocument());
 
-    // 全对 → S 评价
+    // 面板大字与同一块面板里的分享卡必须同一个评级：2/2 曾显示 S，
+    // 而完全相同的数字画到卡上是 C（样本 <3 不给评级，见 share-card.test.ts）。
+    const [cardProps] = mocks.shareCard.mock.calls.at(-1) as unknown as [
+      { shareUrl?: string; correct: number; total: number; accuracy: number },
+    ];
+    expect(gradeFromReplayAccuracy(cardProps.accuracy, cardProps.total)).toBe("C");
     expect(screen.getByText("本轮总结")).toBeInTheDocument();
-    expect(screen.getByText("S")).toBeInTheDocument();
+    expect(screen.getByText("C")).toBeInTheDocument();
 
     // 首轮（round=0）就必须入库，且只入库一次
     await waitFor(() => expect(mocks.saveReplayRecord).toHaveBeenCalledTimes(1));
@@ -363,12 +369,9 @@ describe("ReplayTrainer 竞猜模式与战绩", () => {
     );
     await waitFor(() => expect(mocks.addStudyTime).toHaveBeenCalledWith("replay", expect.any(Number)));
 
-    const [props] = mocks.shareCard.mock.calls.at(-1) as unknown as [
-      { shareUrl?: string; correct: number; total: number },
-    ];
-    expect(props.correct).toBe(2);
-    expect(props.total).toBe(2);
-    expect(props.shareUrl).toMatch(/^http:\/\/localhost:\d+\/share\/replay\//);
+    expect(cardProps.correct).toBe(2);
+    expect(cardProps.total).toBe(2);
+    expect(cardProps.shareUrl).toMatch(/^http:\/\/localhost:\d+\/share\/replay\//);
   });
 
   it("全错时评价为 C 且最佳连击为 0", async () => {
