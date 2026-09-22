@@ -17,6 +17,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { AiChat } from "./ai-chat";
+import { renderToString } from "react-dom/server";
 import {
   SUGGESTED_QUESTIONS_ZH,
   SUGGESTED_QUESTIONS_EN,
@@ -132,6 +133,36 @@ describe("AiChat 空状态与首屏示例问题", () => {
       SUGGESTED_QUESTIONS_EN.includes(b.textContent ?? ""),
     );
     expect(buttons).toHaveLength(5);
+  });
+
+  it("服务端渲染是确定值：两次渲染的示例完全一致", () => {
+    // /ai 是静态页，服务端 HTML 构建时固化；水合首帧与它不同会让 React 丢掉服务端树重渲染
+    const html = renderToString(<AiChat locale="zh" dict={dict} />);
+    expect(renderToString(<AiChat locale="zh" dict={dict} />)).toBe(html);
+    for (const question of SUGGESTED_QUESTIONS_ZH.slice(0, 5)) {
+      expect(html).toContain(question);
+    }
+  });
+
+  it("随机只发生在挂载之后，且不在重渲染时洗牌", () => {
+    const spy = vi.spyOn(Math, "random");
+    try {
+      const { rerender } = render(<AiChat locale="zh" dict={dict} />);
+      const exampleButtons = screen
+        .getAllByRole("button")
+        .map((b) => b.textContent ?? "")
+        .filter((text) => SUGGESTED_QUESTIONS_ZH.includes(text));
+      expect(exampleButtons).toHaveLength(5);
+      // 洗牌抽的是不重复的 5 条
+      expect(new Set(exampleButtons).size).toBe(5);
+      expect(spy).toHaveBeenCalled();
+
+      spy.mockClear();
+      rerender(<AiChat locale="zh" dict={dict} />);
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("点击示例即发送：用户消息出现在对话区，空状态消失", async () => {

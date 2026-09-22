@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { getDailyTip } from "@/lib/tips";
+import { useEffect, useState } from "react";
+import { getRandomTip, getSeedTip } from "@/lib/tips";
 
-/** 每日交易提示卡片 */
+/** 交易心得卡：水合首帧取确定值，挂载后再换成随机一条 */
 export function DailyTip({ locale }: { locale: string }) {
-  const [tip, setTip] = useState(() => getDailyTip(locale));
+  const [tip, setTip] = useState(() => getSeedTip(locale));
+
+  useEffect(() => {
+    // 首帧必须与静态页的服务端 HTML 同值，随机只能延后到这里
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTip(getRandomTip(locale));
+  }, [locale]);
 
   function refresh() {
-    setTip(getDailyTip(locale));
+    setTip(getRandomTip(locale));
   }
 
   return (

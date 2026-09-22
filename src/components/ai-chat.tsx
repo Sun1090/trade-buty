@@ -25,6 +25,9 @@ import { useAuth } from "@/components/auth-provider";
 import { reportError } from "@/lib/error-report";
 import { copyText } from "@/lib/clipboard";
 
+/** 空状态首屏示例条数：水合首帧与挂载后洗牌必须取同一个数 */
+const EXAMPLE_COUNT = 5;
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -94,12 +97,15 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     return () => vv?.removeEventListener("resize", revealInput);
   }, []);
 
-  // 初始化时从问题池随机取 5 个（每次进入页面看到不同推荐）
-  const [suggestions] = useState(() => {
-    const pool =
-      locale === "en" ? SUGGESTED_QUESTIONS_EN : SUGGESTED_QUESTIONS_ZH;
-    return pickRandomQuestions(pool, 5);
-  });
+  // 初始化时从问题池随机取 5 个（每次进入页面看到不同推荐）。
+  // 渲染期只能取确定值：这条路是静态页，服务端 HTML 构建时就固化了，
+  // 水合首帧与它不一致会让 React 丢掉整棵服务端树重渲染。
+  const pool = locale === "en" ? SUGGESTED_QUESTIONS_EN : SUGGESTED_QUESTIONS_ZH;
+  const [suggestions, setSuggestions] = useState(() => pool.slice(0, EXAMPLE_COUNT));
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSuggestions(pickRandomQuestions(pool, EXAMPLE_COUNT));
+  }, [pool]);
 
   // 自动滚到底
   useEffect(() => {
