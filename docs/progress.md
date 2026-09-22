@@ -5694,3 +5694,45 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：三条提交互相独立，逐条 `git revert` 即可。`CHART_CUSTOM_SYMBOL` 放宽只改一个输入框的接受集，输错标的走既有错误态 + 重试；hero-chart 全站零引用；FAQ 只改一句答案，JSON-LD 同步生成，`check:structured-data` 已复核。
 - 下一项：①#201 检查绿了 rebase 合并，并把合并结果补进本条；②继续倒查「界面声称 vs 代码事实」：站内已无第二处硬编码币种清单，下一个入口候选是图表的未就绪态——在尺寸异常的浏览器里 `/zh/chart` 会停在「加载行情中…」而没有任何请求在飞（真实 Chromium 下不复现，`e2e` 断言该文案计数为 0），需要先把「视口未就绪 / 图表容器 0 尺寸」这条路径与 `viewportReady` 早退的交互复现清楚，再判断是站内缺陷还是探针环境产物；③R16.12 / R16.13 等决策仍挂着。
 - 更新时间：2026-09-23 05:05（Asia/Shanghai）。
+
+---
+
+## 2026-09-23 — 「界面说法回到代码事实」第二批（PR #202–#207）
+
+- 里程碑 / 版本：v0.7.8 之后的第二批，全部是缺陷修复与文案订正（并入 v0.7.9）。
+- 状态：六条 PR 全部已 rebase 合并，远端分支由 GitHub 自动删除；本地 main = `067c4c0`。
+- 分支 / 提交：`#202` `5ac901a` 篇章身份代入 · `#203` `dba9095` 删死文案 · `#204` `742f6ca` 示例日历 · `#205` `6f8610f` 随机窗口钳位 · `#206` `3bc4384` 等待时长 · `#207` `067c4c0` 引导步序。
+- 完成内容：
+  1. **#202（R16.16 之外的另一处抄写）**：学习路径与图表页把知识库的编号和篇名抄死在文案里（「三站式」「第 08 篇」「06 · 技术分析篇」）。新增 `chapterRef(locale, slug)`（查不到宁可露出 slug，也不编一个编号）与 `withCopyRefs(locale, text)`，`{stages}` / `{lastCore}` / `{chapter:slug}` 在渲染时代入；图表页删掉写死的 `BTCUSDT · 4H` 角标。`src/app/[locale]/chapter-ref-claims.test.ts` 8 条门禁：旧文案自证禁令抓得住、扫掉残留数字、两种语言的 slug 都必须可解析、代入结果正确、页面确实接了 `withCopyRefs`、禁止 `标的 · 周期` 角标。
+  2. **#203**：`home.subtitle` 与 `chapter.readCount` 两条字典文案只有它们自己的测试在读，全站零渲染点，连同用例删除（其中还躺着一句已不成立的「173 篇深度课程」）。
+  3. **#204（R16.16 订正部分）**：`/calendar` 的 9 条示例事件写死在 `2026-08-26 → 2026-09-05`，页面却宣称「本周重要财经事件」——SSG 出来之后这句话永远不会自己变对。数据抽到 `src/lib/calendar-sample.ts`，窗口由数组算出（`calendarSampleWindow()`），文案改为「下面这几条发布覆盖 X → Y，不会自动更新，也不构成任何投资建议」，`sample-claims.test.tsx` 3 条把时效承诺禁掉并把窗口与列表首尾对死。产品决策仍挂着：①接第三方 API ②整页下线 ③改成教学内容（推荐③）。
+  4. **#205**：`fetchRandomHistoryWindow` 里 `Math.max(count * stepMs, Date.now() - 180d)` 一行从未生效过（`endTime` 的采样区间本就在 180 天内），删掉；补一条用例证明抽样确实随机（`Math.random` 取 0 与 0.999 时两个 `endTime` 相差 >30 天），否则这行死代码可以一直伪装成钳位。
+  5. **#206**：等待时长类文案只保留代码算得出的数——行情条「慢速模式」提示代入 `getMarketRefreshDelay("slow")` 的真实间隔（文案留 `{n}` 占位，扫到字面数字即红），AI 出题删掉凭空承诺的「约需 10 秒」。`src/lib/timing-claims.test.ts` 2 条看守。
+  6. **#207**：新手引导的步序与文案钉上测试——标题数等于 `ONBOARD_STEPS.length`，每一步标题以其序数词开头（中英分别），并在用例内交换两步以证明断言真的区分顺序。
+- 验证命令和结果：每条 PR 合并前本地跑 `npm test` + 相关门禁 + 变异；六条合并后 main 的汇总数由下一条发布记录给出。
+- 阻塞：无新增；R16.16 的产品决策仍待拍板。
+- 风险 / 回滚：六条互相独立，逐条 `git revert` 即可；#204 只改文案与数据落点，页面路由不变。
+- 更新时间：2026-09-23 07:05（Asia/Shanghai）。
+
+## 2026-09-23 — 发布冻结：v0.7.9（「界面说法回到代码事实」第二批 + 更新日志页体积收口）
+
+- 里程碑 / 版本：**v0.7.9**（上一版 v0.7.8）。判级 patch：`#201`–`#207` 六批全部是缺陷修复与文案订正，加上 R16.17 的页面体积上界，无新增能力、无不兼容变更。
+- 状态：冻结验证全部通过，提交在发布分支上，等待 PR 合并后打 tag。
+- 分支 / 提交：`chore/release-0.7.9` — `f46e486` fix(changelog)（R16.17）+ `c247ba3` chore(release)（版本号 / 发布记录 / CHANGELOG）+ 本条记录。基线 main = `067c4c0`。
+- 完成内容：
+  1. **R16.17**：`/changelog` 把整部发布历史烤进一份静态 HTML，v0.7.9 自己的发布记录就把 `zh/changelog` 顶到 45.7KB（预算 45KB），`check:bundle` 为这一页变红。改为只渲染最近 8 版，「最近 M 个 / 更早的 N 个」与真实 section 数由 `changelogSurface()` 同源给出，折叠部分指向 CHANGELOG.md；`REPOSITORY_URL` 从 `jsonld.ts` 的私有常量收进 `src/lib/site.ts`。新增 4 条渲染门禁 + e2e 改为读最新一条发布记录（原来钉死 `v0.6.0`，版本一滑出窗口就假报警）。
+  2. 发布产物：`package.json` / `package-lock.json` → 0.7.9；`src/data/release-notes.json` 插入 0.7.9 条目（中英各 6 条要点）；`npm run changelog:generate` 重写 CHANGELOG.md。
+- 变更文件：见上两条提交。回滚面核对：`supabase/` `src/app/api/` `docs/env.md` `.github/` `content/` **0 个文件改动**——无迁移、无接口变更、无 CI 变更。
+- 验证命令和结果（全部本地实测）：
+  - `npm run lint` exit 0；`npm run typecheck` exit 0。
+  - `npm test`：**283 文件 / 2725 条**全绿（v0.7.8 时 279/2707）。
+  - `npm run test:coverage`：statements **95.67%** / branches **90.93%** / functions **95.34%** / lines **97.70%**，阈值 84/77/83/87 未下调。
+  - `npm run build` exit 0；`npm run e2e`：**138 通过**（1.9m）。
+  - 门禁 **36 条 exit 0**：`bundle`（`static-info` 回到 330.5/340KB）· `seo-surface` · `structured-data` · `changelog`（13 条版本记录一致）· `docs` · `risk-warning` · `links` · `constitution` · `secrets` · `lockfile-repro` · `mobile` · `ai-copy` · `dark-pattern-copy` · `db-assertion-counts` · `description-dupes` · `description-quality` · `env-docs` · `error-report-privacy` · `frontmatter` · `glossary` · `growth-event-privacy` · `image-alt` · `kb-changelog` · `kb-parity-budget` · `kb-pointer` · `nav-chain` · `quiz-coverage` · `quiz-mounts` · `relative-links` · `request-body-bounds` · `search-index` · `sitemap` · `slug-conflicts` · `test-clock-hygiene` · `title-terminology` · `translation-history`。
+  - `npm run db:test`：✅ 迁移、RLS 越权、双设备同步约束与回滚演练全部通过。
+  - 变异四组确认 R16.17 门禁非空转：退回全量渲染 → 3 条红；窗口改 13（不折叠）→ 2 条红；「更早的 N 个」写错 → 1 条红；「最近 M 个」写死 → 1 条红。
+- 过程记录（两处自己的错误）：① 三条产物门禁（`bundle` / `seo-surface` / `structured-data`）第一次报红，指向的是 `nonexistent-lesson`、`nonexistent-chapter` 这类**只在 e2e 里请求过**的路径——Playwright 跑在产物门禁之前，运行时 fallback 页被写进 `.next`，门禁量的是被污染的构建产物而不是代码回归。重跑 `npm run build` 后 `seo-surface` 与 `structured-data` 立刻转绿；这条顺序（产物门禁在 e2e 之前，或 e2e 之后重建）是本次起冻结流程的固定动作。② R16.17 的新门禁第一次是**我自己写错的断言**：拿裸版本字符串当「折叠生效」的判据，而 v0.7.2 的正文里就写着「`0.4.0`–`0.7.0` 属门禁上线前的遗留」，于是用例红在一条正常叙述上。判据改为结构（那一版有没有自己的 section）加版本标题。
+- 阻塞：`BLOCKED_EXTERNAL` 两项照旧——生产 AI 运行期配置（游客模型路径 502：`AI_API_URL` / `AI_MODEL` / `AI_API_KEY` / 出口），以及 Vercel 账户级 24h 构建配额（预览部署可能延迟，按既有判据不阻塞合并）。
+- 风险 / 回滚：`git revert c247ba3 f46e486` 即可，无数据面影响。发布后若发现页面窗口需要调，只改 `CHANGELOG_WINDOW` 一个常量，门禁会把文案与列表一起钉住。
+- 下一项：①本 PR 合并、打 `v0.7.9` tag、`check:release-tag`、Vercel 构建落地后 `ops:smoke-prod` 复跑并记录时间戳；②清理两条内容已确证在 main 上的本地陈旧分支（`fix/calendar-sample-honesty`、`chore/drop-dead-home-copy`）；③继续倒查「声称 vs 事实」：`docs/test-clock-hygiene.md` 台账上仍有 **10 处未受控定时器**，是下一个入口。
+- 更新时间：2026-09-23 07:12（Asia/Shanghai）。
