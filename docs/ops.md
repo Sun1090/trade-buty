@@ -194,7 +194,7 @@ SMOKE_BASE_URL=http://localhost:3111 npm run ops:smoke-prod   # 打本地生产�
 | `/zh/changelog` 含最新发布版本号 | 「合并 ≠ 上线」：Vercel 配额限流会让生产停在旧构建（0.7.2 就停过一次） |
 | `/share/streak/<合法载荷>` 200 且含 `⚠️` | R14.7：分享落地页曾经漏掉风险行 |
 | `GET /api/auth/session` 匿名 → `200 {"user":null}` | PR #107：游客被判 500 的回归 |
-| `POST /api/ai/chat` 游客合法载荷 → 不返回 5xx | 游客 AI 问答可用性；429 视为通过（限流生效即端点活着） |
+| `POST /api/ai/chat` 游客：护栏路径 200 且模型路径不 5xx | 游客 AI 问答可用性；429 视为通过（限流生效即端点活着）。拆成两段是因为一句「AI 502」分不清站内还是站外：护栏在调用上游**之前**就返回，它 200 且带 `X-Refused` 就证明函数活着、部署没落后、内容红线还在，此时模型路径 502 只可能是上游配置或出口 |
 
 预览域受 Vercel Deployment Protection 保护（未授权请求 302 到 SSO，R14.9），所以默认指向生产域名；
 要覆盖预览需要账号级 protection-bypass 密钥。脚本本身由 `scripts/prod-smoke.test.mjs` 用假站点逐条验证：
