@@ -5,6 +5,30 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.9] - 2026-09-23
+
+**界面说法回到代码事实（第二批） / UI claims back to code facts (round two)**
+
+### 中文
+
+- 行情标的清单收口到一处：FAQ 明确图表可以直接输入任意以 USDT 计价的币安现货交易对，回放与首页行情条各自覆盖哪些标的也分别说清
+- 学习路径与图表页不再抄写篇章编号和名称（「三站式」「第 08 篇」「06 · 技术分析篇」），改在渲染时由知识库代入；图表页删掉写死的 BTCUSDT · 4H 角标
+- 示例经济日历不再承诺「本周」，页面写出的日期窗口由数据本身算出；早已下线的假行情组件（手写 K 线标着真实交易对与 +12.6%）连同用例一起删除
+- 等待时长类文案只保留代码算得出的数：行情条慢速提示代入真实轮询间隔，AI 出题不再承诺「约需 10 秒」
+- 清理与加固：删掉两条只有自己的测试在读的死文案，回放随机历史窗口去掉从不生效的钳位并补上「确实随机」的用例，新手引导步序与文案钉上测试
+- 更新日志页不再把所有历史版本一次性烤进静态 HTML：只列最近 8 版，页面那句「更早的 N 个版本完整记录在 CHANGELOG.md」里的 N 与窗口大小都由同一份发布记录算出——此前每发一版页面就长一截，0.7.9 自己就把这页顶破了 45KB 的体积预算
+
+### English
+
+- One source of truth for market symbols: the FAQ now states that the chart accepts any USDT-quoted Binance spot pair you type, and replay and the landing ticker each name their own scope
+- The path and chart pages resolve chapter numbers and titles from the knowledge base at render time instead of copying 「三站式 / 第 08 篇 / 06 · 技术分析篇」, and the chart page's hardcoded BTCUSDT · 4H caption is gone
+- The sample economic calendar no longer promises 'this week' — the date window it shows is computed from its own data — and the long-dead fake hero chart (hand-drawn candles labelled BTCUSDT, +12.6%) was deleted
+- Wait-time copy now states only numbers the code guarantees: the ticker's slow-mode note uses the real poll interval, and AI quiz generation no longer claims 'about 10 seconds'
+- Cleanup and hardening: two dictionary entries kept alive only by their own tests were removed, the replay history sampler lost a clamp that never fired and gained a real randomness test, and onboarding step labels are pinned to the flow order
+- The changelog page no longer bakes every release into its static HTML: it lists the latest 8 versions, and the "earlier N releases are recorded in CHANGELOG.md" line derives N and the window from the same release record — the page used to grow with every release, and 0.7.9 itself pushed it past the 45KB budget
+
+参考：[docs/roadmap.md](docs/roadmap.md)
+
 ## [0.7.8] - 2026-09-23
 
 **离线写入不再静默丢失，五处界面数字回到代码这一侧 / Offline writes stop vanishing; five on-screen numbers now come from the code**
