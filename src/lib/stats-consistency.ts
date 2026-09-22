@@ -10,7 +10,8 @@
  * - 回放：overview.replay.rounds ↔ replayTrend.allTime.totalRounds 必须一致
  * - 错题：stats.wrongCount ↔ reviewTrend.latest.pending 必须一致，
  *   且 overdue ≤ dueToday ≤ pending
- * - 所有百分比字段必须 ∈ [0,100] 或 null（绝不 NaN）
+ * - 所有百分比字段必须 ∈ [0,100] 或 null（绝不 NaN）——含 learn-stats
+ *   喂给统计页三张卡的 overallPct / avgQuizScore / replayAccuracy
  *
  * 供测试与开发期诊断使用；返回的问题列表为空即口径一致。
  */
@@ -23,6 +24,8 @@ import type { ReplayTimeTrend } from "./replay-time-trend";
 export interface StatsLike {
   wrongCount?: number;
   currentWrong?: number;
+  /** 总体完成度：统计页「总体完成度」卡与学习路线页进度条同源 */
+  overallPct?: number | null;
   avgQuizScore?: number | null;
   replayAccuracy?: number | null;
 }
@@ -126,6 +129,10 @@ export function auditStatsConsistency(input: StatsConsistencyInput): Consistency
     ["overview.courses.completionPct", overview.courses.completionPct],
     ["overview.quizzes.bestPct", overview.quizzes.bestPct],
     ["overview.replay.accuracyPct", overview.replay.accuracyPct],
+    // learn-stats 那三张卡同样是百分比，此前只被文件头的承诺覆盖、没进清单
+    ["stats.overallPct", stats?.overallPct],
+    ["stats.avgQuizScore", stats?.avgQuizScore],
+    ["stats.replayAccuracy", stats?.replayAccuracy],
     ["quizTrend.latest.bestPct", quizTrend?.latest.bestPct],
     ["quizTrend.latest.avgPct", quizTrend?.latest.avgPct],
     ["quizTrend.summary.bestInRangePct", quizTrend?.summary.bestInRangePct],
