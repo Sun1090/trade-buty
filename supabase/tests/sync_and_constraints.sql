@@ -9,7 +9,7 @@
 
 begin;
 
-select plan(26);
+select plan(30);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, confirmed_at, created_at, updated_at)
 values
@@ -164,6 +164,65 @@ delete from auth.users where id = 'bbbbbbbb-0000-0000-0000-000000000002';
 select is(
   (select count(*) from progress where user_id = 'bbbbbbbb-0000-0000-0000-000000000002'),
   0::bigint, '删除 auth 用户后其 progress 级联删除');
+
+-- ------------------------------------------------------------
+-- 7. 目录级不变量：注销必须能把用户的云端数据清干净
+--
+-- 隐私页承诺「删除账户将删除该账户的全部云端数据」。上面第 6 节只验了 progress 一张表；
+-- 真正的风险是以后加一张用户表时漏写 `on delete cascade`（甚至漏写外键）——
+-- 那时注销用户不会报错，只是那行数据永远留在库里，而且没人会去补一张表的用例。
+-- 这两条按目录扫，新表自动纳入。
+-- ------------------------------------------------------------
+-- PG 12 起 pg_constraint 不再存 ondel，引用动作只能从约束定义里读。
+-- 没有显式 ON DELETE 子句 = NO ACTION = 注销用户时这行会被拒删或留下归属，都不符合承诺。
+select is(
+  (select string_agg(c.conname, ', ' order by c.conname)
+     from pg_constraint c
+    where c.contype = 'f'
+      and c.confrelid = 'auth.users'::regclass
+      and pg_get_constraintdef(c.oid) !~* 'on delete (cascade|set null)'),
+  null::text,
+  '指向 auth.users 的外键都显式声明了 ON DELETE CASCADE 或 SET NULL');
+
+-- ai_citation_clicks 是**唯一**被允许的例外：注销后点击计数脱敏留档，不再归属任何人。
+-- 若有人把它改成 cascade（连带删掉匿名统计）或 no action（留下归属行），这里会红。
+select is(
+  (select count(*)
+     from pg_constraint c
+     join pg_class t on t.oid = c.conrelid
+    where t.relname = 'ai_citation_clicks'
+      and c.contype = 'f'
+      and c.confrelid = 'auth.users'::regclass
+      and pg_get_constraintdef(c.oid) ~* 'on delete set null'),
+  1::bigint,
+  'ai_citation_clicks 注销时 set null（脱敏保留），不是 cascade');
+
+select ok(
+  (select count(*) from pg_constraint
+    where contype = 'f' and confrelid = 'auth.users'::regclass) >= 9,
+  'auth.users 的外键数量 >= 9，上面的两条不变量不是在对空集合说话');
+
+-- 带 user_id 列却没有 auth.users 外键的表 = 注销后必然留孤儿行
+select is(
+  (select string_agg(t.relname, ', ' order by t.relname)
+     from pg_attribute a
+     join pg_class t on t.oid = a.attrelid
+     join pg_namespace n on n.oid = t.relnamespace
+    where a.attname = 'user_id'
+      and a.attnum > 0
+      and not a.attisdropped
+      and t.relkind = 'r'
+      and n.nspname not in ('auth', 'extensions', 'storage', 'realtime', 'supabase_migrations',
+                           'graphql', 'graphql_public', 'net', 'pgbouncer', 'pgrst',
+                           'supabase_functions', 'information_schema', 'pg_catalog', 'pg_toast')
+      and not exists (
+        select 1 from pg_constraint c
+         where c.conrelid = t.oid
+           and c.contype = 'f'
+           and c.confrelid = 'auth.users'::regclass
+           and a.attnum = any (c.conkey))),
+  null::text,
+  '每张带 user_id 的表都挂了 auth.users 外键');
 
 select * from finish();
 rollback;

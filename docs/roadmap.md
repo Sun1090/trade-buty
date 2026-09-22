@@ -27,7 +27,7 @@
 - [x] Q2.5 320px 回归（`npm run check:mobile`，14 关键页，CI 在生产构建后执行并阻断；修掉 path/knowledge-graph 两处 grid truncate 溢出）
 - [x] Q2.6 错误边界覆盖率：图表/搜索/AI 三个外部依赖入口都有降级 UI（搜索索引加载失败/重试单测补齐）
 - [ ] Q2.7 [手动] Sentry（或同类）错误监控接入 + 告警通道 — `BLOCKED_EXTERNAL`：需 Sentry 账号、生产 DSN 与告警通道（邮件/Slack）凭据，无凭据无法接入或验证告警送达。
-- [ ] Q2.8 [手动] RLS/越权/双设备同步线上联调（需 Supabase keys）— 本地半边已完成：`npm run db:test` 在真实 `supabase/postgres:17.6.1.155` 镜像上应用 10 个迁移，跑通 RLS 越权 40 断言 + 双设备同步/约束 26 断言 + `0008_*` 回滚 → 重放演练（见 docs/database-testing.md）；`BLOCKED_EXTERNAL`：Supabase 云项目 keys、线上数据与真实两台设备联调无法在本地完成。
+- [ ] Q2.8 [手动] RLS/越权/双设备同步线上联调（需 Supabase keys）— 本地半边已完成：`npm run db:test` 在真实 `supabase/postgres:17.6.1.155` 镜像上应用 10 个迁移，跑通 RLS 越权 40 断言 + 双设备同步/约束 30 断言 + `0008_*` 回滚 → 重放演练（见 docs/database-testing.md）；`BLOCKED_EXTERNAL`：Supabase 云项目 keys、线上数据与真实两台设备联调无法在本地完成。
 
 ## Q3 增长收尾（Q3.1–Q3.6）
 
