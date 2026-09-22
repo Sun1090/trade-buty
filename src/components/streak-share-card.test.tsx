@@ -88,11 +88,15 @@ describe("StreakShareCard", () => {
         longestStreak={14}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享我的连续打卡", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+        labels={{ share: "分享我的连续打卡", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     expect(screen.getByTestId("streak-share-btn")).toBeInTheDocument();
-    expect(screen.getByTestId("streak-share-preview-btn")).toBeInTheDocument();
+    const preview = screen.getByTestId("streak-share-preview-btn");
+    expect(preview).toBeInTheDocument();
+    // 按钮文案来自传入的字典，不是组件里写死的英文
+    expect(preview).toHaveTextContent("预览卡面");
+    expect(preview).not.toHaveTextContent("Preview");
   });
 
   it("currentStreak = 0 时按钮禁用", () => {
@@ -102,7 +106,7 @@ describe("StreakShareCard", () => {
         longestStreak={3}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     expect(screen.getByTestId("streak-share-btn")).toBeDisabled();
@@ -116,7 +120,7 @@ describe("StreakShareCard", () => {
         longestStreak={20}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     expect(container.querySelector("canvas")).toBeTruthy();
@@ -144,7 +148,7 @@ describe("StreakShareCard", () => {
         longestStreak={12}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "连续打卡卡预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "连续打卡卡预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
@@ -174,7 +178,7 @@ describe("StreakShareCard", () => {
         longestStreak={11}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     fireEvent.click(screen.getByTestId("streak-share-btn"));
@@ -204,7 +208,7 @@ describe("StreakShareCard", () => {
         longestStreak={11}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
@@ -219,7 +223,7 @@ describe("StreakShareCard", () => {
         longestStreak={6}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
@@ -251,7 +255,7 @@ describe("StreakShareCard", () => {
         recentDays={SEVEN_DAYS}
         locale="zh"
         shareUrl="https://example.com/share/streak"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     fireEvent.click(screen.getByTestId("streak-share-link-btn"));
@@ -279,7 +283,7 @@ describe("StreakShareCard", () => {
         recentDays={SEVEN_DAYS}
         locale="zh"
         shareUrl="https://example.com/share/streak"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     fireEvent.click(screen.getByTestId("streak-share-link-btn"));
@@ -300,7 +304,7 @@ describe("StreakShareCard", () => {
         longestStreak={12}
         recentDays={SEVEN_DAYS}
         locale="en"
-        labels={{ share: "Share", previewAlt: "Preview", download: "Download", copyLink: "Copy link", copiedLink: "Copied", downloadFailed: "Download failed" }}
+        labels={{ share: "Share", preview: "预览卡面", previewAlt: "Preview", download: "Download", copyLink: "Copy link", copiedLink: "Copied", downloadFailed: "Download failed" }}
       />,
     );
     fireEvent.click(screen.getByTestId("streak-share-preview-btn"));
@@ -320,7 +324,7 @@ describe("StreakShareCard", () => {
         longestStreak={8}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     fireEvent.click(screen.getByTestId("streak-share-btn"));
@@ -343,7 +347,7 @@ describe("StreakShareCard", () => {
         longestStreak={8}
         recentDays={SEVEN_DAYS}
         locale="en"
-        labels={{ share: "Share", previewAlt: "Preview", download: "Download", copyLink: "Copy link", copiedLink: "Copied", downloadFailed: "Download failed" }}
+        labels={{ share: "Share", preview: "预览卡面", previewAlt: "Preview", download: "Download", copyLink: "Copy link", copiedLink: "Copied", downloadFailed: "Download failed" }}
       />,
     );
 
@@ -377,7 +381,7 @@ describe("StreakShareCard", () => {
         longestStreak={11}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
 
@@ -398,7 +402,7 @@ describe("StreakShareCard", () => {
         longestStreak={9}
         recentDays={SEVEN_DAYS}
         locale="zh"
-        labels={{ share: "分享", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", downloadFailed: "下载失败" }}
       />,
     );
     fireEvent.click(screen.getByTestId("streak-share-preview-btn"));

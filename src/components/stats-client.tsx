@@ -780,6 +780,7 @@ export function StatsClient({
               locale={locale === "en" ? "en" : "zh"}
               labels={{
                 share: dict.shareStreak,
+                preview: dict.previewStreak,
                 previewAlt: dict.previewAlt,
                 download: dict.download,
                 copyLink: dict.copyLink,

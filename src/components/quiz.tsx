@@ -204,6 +204,7 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
                 locale={locale}
                 labels={{
                   share: dict.shareQuiz,
+                  preview: dict.previewQuiz,
                   previewAlt: dict.previewAlt,
                   download: dict.download,
                   copyLink: dict.copyLink,
