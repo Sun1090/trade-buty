@@ -99,17 +99,21 @@ describe("ReviewClient SRS（R5.3/R5.4/R5.12）", () => {
     expect(JSON.parse(store.get("tb-wrong")!)["ghost:99"]).toBeUndefined();
   });
 
-  // 头部计数与每行徽章必须同一把尺子：无 srs_due 的条目按 R5.6 回填，不能一会儿算到期一会儿不算
-  it("旧数据（无 srs_due）回填后，头部计数与行内徽章一致", () => {
+  // 头部计数与每行徽章必须同一把尺子：无 srs_due 的条目按 R5.6 回填，不能一会儿算到期一会儿不算。
+  // 但「回填」只回答「什么时候该出现」，不回答「逾期几天」：回填出的到期日是推断值、不是系统
+  // 真正排过的计划（R5.4 旧数据不标红），也和 `wrongbook-efficiency` 的 overdue 口径保持一致。
+  it("旧数据（无 srs_due）回填后进队列、头部与行内徽章一致，但不算已过期", () => {
     store.set("tb-wrong", JSON.stringify({
       // 今天答错、回填到期日是「明天」→ 不该算今日到期
       "spot:0": { chapterNum: "spot", questionIdx: 0, picked: 0, at: localAtOffset(0) },
-      // 5 天前答错、回填到期日是 4 天前 → 既到期又过期
+      // 5 天前答错、回填到期日是 4 天前 → 到期该出现，但不宣布逾期天数
       "spot:1": { chapterNum: "spot", questionIdx: 1, picked: 1, at: localAtOffset(-5) },
     }));
     const { container } = render(<ReviewClient quizzes={quizzes} dict={dict} locale="zh" />);
-    expect(container.textContent).toContain("2 道错题，1 道今日到期（1 道已过期）");
-    expect(container.textContent).toContain("过期 4 天");
+    expect(container.textContent).toContain("2 道错题，1 道今日到期");
+    expect(container.textContent).not.toContain("已过期");
+    expect(container.textContent).not.toContain("过期 4 天");
+    expect(container.textContent).toContain("今日到期");
     expect(container.textContent).toContain("1 天后");
   });
 
