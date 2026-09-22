@@ -48,8 +48,6 @@ const zh = {
   brand: { name: "Trade Buty", badge: "免费 · 中立" },
   home: {
     title1: "先学会不亏大钱，",
-    subtitle: (chapters: number, docs: number) =>
-      `${chapters} 个篇章、${docs} 篇课程的系统化中文交易教育。只讲知识，不卖课，不带节奏。`,
     readTpl: "📖 你已完成 {r} / {t} 篇",
     readKeepGoing: "继续加油",
     syncedLabel: "已云端存档，换设备不丢",
@@ -75,7 +73,6 @@ const zh = {
     collapseIntro: "收起",
     introHeading: "篇章导语",
     coursesHeading: "本篇课程",
-    readCount: (a: number, b: number) => `${a}/${b}`,
     nextChapter: "下一篇章",
     prevChapter: "上一篇章",
     progressLabel: "篇章进度",
@@ -434,8 +431,6 @@ const en: Dict = {
   brand: { name: "Trade Buty", badge: "Free · Neutral" },
   home: {
     title1: "Learn not to lose big first.",
-    subtitle: (c: number, d: number) =>
-      `A systematic trading education in Chinese: ${c} chapters, ${d} lessons. Knowledge only — no courses for sale, no hype.`,
     readTpl: "📖 Completed {r} / {t} lessons",
     readKeepGoing: "keep going",
     syncedLabel: "Synced to cloud",
@@ -459,7 +454,6 @@ const en: Dict = {
   chapter: {
     introHeading: "Chapter Intro",
     coursesHeading: "Lessons",
-    readCount: (a: number, b: number) => `${a}/${b}`,
     nextChapter: "Next chapter",
     prevChapter: "Previous chapter",
     progressLabel: "Chapter progress",
