@@ -96,3 +96,30 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Product Boundaries (thesis → queue, not checklist)
+
+Boundaries derive from the project thesis ("Project" + "Non-reversible Product Decisions" above). Task queues derive from boundaries — never the other way around. A parked idea is not a backlog item unless its entry conditions are met.
+
+### In Scope (thesis-internal queue)
+
+- Content quality / contract / compliance gate convergence
+- Fact corrections for privacy and third-party service docs
+- C-side experience and a11y
+
+### Out of Scope (parking; every item carries entry conditions)
+
+- Community / UGC features: entry = operating commitment + content-review cost sustainable
+- Extending paywalls to existing free content: **prohibited** (violates "core courses are free forever")
+- Building a self-hosted market-data layer: entry = Binance data-policy change, or local cache + fallback no longer sufficient
+- Astro / VitePress migration: **prohibited** (locked by "Non-reversible Product Decisions")
+
+### Upstream / Environment Blocked
+
+- Production AI upstream configuration (AI_API_URL / AI_API_KEY / quota): entry = Vercel Production env-var and deploy-log investigation (recorded in docs/progress.md)
+
+### Boundary Review Signals (check before moving any boundary)
+
+- Whether Binance public-data access policy has changed
+- Whether existing free content materially restricts the practice experience
+- Whether operating / review costs have actually materialized and are sustainable
