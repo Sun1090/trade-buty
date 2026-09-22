@@ -110,7 +110,7 @@ export function ShareCardPreview({ kind, path, locale, labels }: Props) {
         height: CARD_SIZE,
         currentStreak: p.currentStreak,
         longestStreak: p.longestStreak,
-        recentDays: [], // 落地页不展示个人 7 天数据
+        recentDays: [], // 链接里没有逐日数据（也不该有），日历整块不画而非画 7 个空格
         locale,
         theme: "dark",
         siteName: "Trade Buty",

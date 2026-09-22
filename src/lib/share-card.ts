@@ -508,7 +508,7 @@ export interface StreakCardArgs {
   currentStreak: number;
   /** 历史最长 */
   longestStreak: number;
-  /** 最近 7 天的活动日期（yyyy-MM-dd 字符串数组；缺日期视为未学习） */
+  /** 最近 7 天的活动日期（yyyy-MM-dd 字符串数组；缺日期视为未学习；空数组＝没有逐日数据，日历整块不画） */
   recentDays: { date: string; active: boolean }[];
   locale: ShareLocale;
   theme: CardTheme;
@@ -570,9 +570,11 @@ export function drawStreakCard(args: StreakCardArgs): void {
     height / 2 + 220,
   );
 
-  // 底：近 7 天小方格
-  const grid = drawStreakWeekGrid(ctx, recentDays, width, height, colors, font, locale);
-  void grid; // 未来若要返图备用
+  // 底：近 7 天小方格。没有逐日数据时整块不画——画 7 个空格 + 「近 7 天」，
+  // 等于在「连续 12 天」下面宣称这一周什么都没干，那是假的（分享链接只带两个天数）。
+  if (recentDays.length > 0) {
+    drawStreakWeekGrid(ctx, recentDays, width, height, colors, font, locale);
+  }
 
   drawBrandFooter(ctx, width, height, colors, siteName, font);
   ctx.restore();
