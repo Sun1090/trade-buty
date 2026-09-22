@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ChapterQuiz, QuizQuestion } from "@/lib/quiz-types";
 import { readWrong, resolveWrong, clearAllWrong, applySrsResult, pruneOrphanWrong, type WrongEntry } from "@/lib/wrongbook";
-import { effectiveSrs, isSrsDue, isSrsOverdue, daysUntilDue } from "@/lib/srs";
+import { effectiveSrs, isSrsDue, isSrsOverdue, daysUntilDue, type SrsState } from "@/lib/srs";
 import { addStudyTime } from "@/lib/study-time";
 import { AiQuiz } from "@/components/ai-quiz";
 
@@ -23,6 +23,16 @@ export interface ReviewDict {
 interface Item extends WrongEntry {
   quiz: ChapterQuiz;
   question: QuizQuestion;
+}
+
+/**
+ * 渲染用的错题：`srs` 是「什么时候该出现」的统一尺子（含 R5.6 回填），
+ * `overdue` 是「要不要标红成逾期」的尺子——只看真实排过的 `srsDue`（R5.4），
+ * 两个口径分开是有意的，见下方 dueCount/overdueCount 处注释。
+ */
+interface ReviewItem extends Item {
+  srs: SrsState;
+  overdue: boolean;
 }
 
 export function ReviewClient({
@@ -72,13 +82,21 @@ export function ReviewClient({
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-  const items: (Item & { srs: ReturnType<typeof effectiveSrs> })[] = Object.values(wrong)
+  const items: ReviewItem[] = Object.values(wrong)
     .map((e) => {
       const quiz = quizzes.find((q) => q.chapterNum === e.chapterNum);
       const question = quiz?.questions[e.questionIdx];
-      return quiz && question ? { ...e, quiz, question, srs: effectiveSrs(e, todayStr) } : null;
+      return quiz && question
+        ? {
+            ...e,
+            quiz,
+            question,
+            srs: effectiveSrs(e, todayStr),
+            overdue: isSrsOverdue(e.srsDue, todayStr),
+          }
+        : null;
     })
-    .filter((x): x is Item & { srs: ReturnType<typeof effectiveSrs> } => !!x)
+    .filter((x): x is ReviewItem => !!x)
     .sort((a, b) => b.at - a.at);
 
   // R5.3：SRS 开启时，到期（含过期）置顶、其余按到期日升序；关闭则按入库时间倒序
@@ -91,10 +109,14 @@ export function ReviewClient({
       })
     : items;
 
-  // 口径统一走 effectiveSrs：无 srs_due 的条目（R5 之前的旧数据、云端 srs_due 为空的行）
-  // 按入库日回填，与每行的徽章、统计页「今日到期」、复习提醒卡片同一把尺子。
+  // 「今日到期」统一走 effectiveSrs：无 srs_due 的条目（R5 之前的旧数据、云端 srs_due 为空的行）
+  // 按入库日回填，与统计页「今日到期」、复习提醒卡片同一把尺子。
   const dueCount = items.filter((x) => isSrsDue(x.srs.due, todayStr)).length;
-  const overdueCount = items.filter((x) => isSrsOverdue(x.srs.due, todayStr)).length;
+  // 「已过期」是另一把尺子，只看真实排过的 `srsDue`、不看回填值：回填出来的到期日是推断的，
+  // 不是系统真正定过的复习计划，拿它标红等于对旧数据宣布一个没人定过的逾期天数（R5.4）。
+  // 这与 `wrongbook-efficiency` 的 `overdue` 口径一致，否则复习页显示「N 道已过期」、
+  // 导出的统计里 overdue 却是另一个数。
+  const overdueCount = items.filter((x) => x.overdue).length;
 
   /** R5.8：复习应答计入每日目标（1 题记 1 分钟，与台账 quiz 源合并） */
   function creditReview() {
@@ -102,7 +124,7 @@ export function ReviewClient({
   }
 
   /** R5.5：标记掌握了 → SRS 推进/掌握 */
-  function markMastered(item: Item & { srs: ReturnType<typeof effectiveSrs> }) {
+  function markMastered(item: ReviewItem) {
     creditReview();
     applySrsResult(item.chapterNum, item.questionIdx, true);
     setRevealed((s) => {
@@ -113,7 +135,7 @@ export function ReviewClient({
   }
 
   /** R5.5：还没掌握 → SRS 重置（明天再见） */
-  function markNotYet(item: Item & { srs: ReturnType<typeof effectiveSrs> }) {
+  function markNotYet(item: ReviewItem) {
     creditReview();
     applySrsResult(item.chapterNum, item.questionIdx, false, item.picked);
   }
@@ -165,7 +187,7 @@ export function ReviewClient({
     );
   }
 
-  const groups = new Map<string, (Item & { srs: ReturnType<typeof effectiveSrs> })[]>();
+  const groups = new Map<string, ReviewItem[]>();
   for (const item of sorted) {
     const title = item.quiz.title;
     if (!groups.has(title)) groups.set(title, []);
@@ -328,12 +350,12 @@ export function ReviewClient({
               return (
                 <div
                   key={key}
-                  className={`rounded-2xl border border-[var(--border)] border-l-2 bg-[var(--surface)] p-5 ${isSrsOverdue(item.srs.due, todayStr) ? "border-l-[var(--down)]" : isSrsDue(item.srs.due, todayStr) ? "border-l-[var(--accent)]" : "border-l-[var(--border-strong)]"}`}
+                  className={`rounded-2xl border border-[var(--border)] border-l-2 bg-[var(--surface)] p-5 ${item.overdue ? "border-l-[var(--down)]" : isSrsDue(item.srs.due, todayStr) ? "border-l-[var(--accent)]" : "border-l-[var(--border-strong)]"}`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs text-faint">Q{item.questionIdx + 1}</p>
                     {srsOn && (
-                      isSrsOverdue(item.srs.due, todayStr) ? (
+                      item.overdue ? (
                         // R5.4：过期温和提醒——说明事实 + 正向措辞，不制造焦虑
                         <span className="rounded-full border border-[var(--down)]/40 bg-[var(--down)]/10 px-2.5 py-0.5 text-[10px] text-down">
                           {locale === "en"
