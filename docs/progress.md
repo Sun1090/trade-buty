@@ -5624,3 +5624,29 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：纯客户端交付路径，无迁移、无接口形状变化。缓冲只在「原本必然丢」的路径上生效，成功路径的入队语义与顺序不变（串行化后反而更严格）；`git revert c97561d` 单独可撤。
 - 下一项：①#191 合并后继续倒查，下一条候选是导出仍含 `tb-data-owner`（账户 UUID）是否适合出现在可转发文件里（该键只被 `account-mirror` 用于本机归属判定，导出无导入/恢复路径）；②配额窗口过去后重跑 `ops:smoke-prod`，补 0.7.7 的真实上线结论；③攒够一批后判 0.7.8。
 - 更新时间：2026-09-23 02:15（Asia/Shanghai）。
+
+---
+
+## 2026-09-23 — 「界面声称了数据没做到的事」倒查批次（PR #191–#198）
+
+- 里程碑 / 版本：v0.7.7 之后的修复批次，收口进 **v0.7.8**。
+- 状态：六个 PR 全部已 rebase 合并；本地 `main` = `f19658b`。
+- 分支 / 提交：#191 `fix/offline-queue-chunk-failure`（`2e18175`+`40953ed`+`dc781f9`）、#192 `fix/export-copy-completeness-claim`（`5e0de10`）、#193 `test/pin-stats-export-field-names`（`5d12f8e`）、#194 `fix/replay-history-cap-source`（`ef3c292`）、#195 `fix/replay-context-note-follows-difficulty`（`3da3051`）、#196 `fix/chart-note-follows-data-limit`（`38d0cb3`）、#198 `fix/chapter-count-derived-v2`（`d8ecc8b`+`f19658b`，取代因 roadmap 锚点冲突无法 rebase 的 #197）。
+- 完成内容（每条都是「文案/产物声称的范围」与「代码真正做的事」重新对齐）：
+  1. **#191 离线写队列不再丢**：失败的云端写入要进队列，而队列实现在独立异步 chunk 里；这一页没拿到那个 chunk 时 `import()` 直接 reject，`void enqueueWriteLazy(...)` 既留下未处理 Promise 拒绝，又把 R9.5 承诺「入队而非丢弃」的写入真丢了。现在 `lazyEnqueueWrite` 永不 reject，写入先进内存缓冲（去重键 `kind|payloadKey`、上限 `MAX_QUEUE`，与 `enqueueUnique`/`trimQueue` 同口径），下一次入队或网络恢复后 flush 前补落盘；缓冲只活在当前页面会话，`docs/architecture.md` §5.2 与 `docs/perf-notes.md` §R9.6 按这个边界写清，不假称跨会话恢复。顺带补齐 `auth-provider` 三条 fire-and-forget 动态 import 链的 `.catch`。
+  2. **#195 回放背景根数跟着难度变**：三档是 50/30/15，控件下那句写死「前 30 根…从第 31 根开始回放」，选新手或挑战时报的是中间档的数、起点也是错的。改 `{n}`/`{m}` 模板按当前档位代入。
+  3. **#196 图表提示只说代码真做了的事**：`slowNetwork` 声称「已切换为 180 根 K 线精简模式」，但 `density` 只看视口（低带宽真正做的是关 WebSocket + 隐藏「显示完整」），桌面慢网仍按 500 根取数——对桌面用户是假话，改成只说暂停推送；`compactNote`/`fullNote` 写死的 180/500 改为代入本次真正用于 `fetchKlines` 的 `dataLimit`。登记 R16.12（低带宽是否应真的降根数，需产品决策）。
+  4. **#194 回放保留轮数收成一个常量**：本机写入 `slice(-100)`、云端合并 `slice(-100)`、hydrate 取数 `limit(100)` 三份独立字面量——三处可以各留不同的 100 轮，隐私页那句「仅保留最近 100 轮」也可能被单点改动悄悄推翻。新增 `replay-history-limit.ts`（放独立模块是因为 `replay-store` 依赖 `sync-layer`，常量放任何一边都成环），隐私页门禁同时钉住 90 天与 100 轮，并禁止这两个文件再出现写死的 `.slice(-N)`/`.limit(N)`。
+  5. **#192 导出卡片如实描述产物**：卡片写「包含浏览器本机存储的全部条目」，而 #187 起 `sb-*` 整族被剔除——那句话被上一个 PR 变成了假话。改为点名被剔掉的类别（登录会话令牌），并说明文件里仍带着记录数据归属哪个账户的本机标识；渲染层门禁要求 zh/en 两句都出现「声称全部 → 点名例外」的结构。
+  6. **#198 篇章总数由知识库现算**：「27 篇章覆盖完整体系」在五处写死（首页 metadata、AI 页副标题、路径页两处、关于页、FAQ）。`content.ts` 新增 `totalChapterCount()`/`withChapterCount()`，文案改 `{chapters}` 占位符。过程中真实踩到：AI 页把整个 `t.ai` 交给客户端组件，占位符不在服务端代入就会漏进界面（构建产物 grep 抓到），已补 `ai/page.test.tsx` 钉住。登记 R16.13（en 目录已 27/27，「英文正在翻译中」两句待上游核实，本仓不改口径）。
+  7. **#193 合同可执行化**：`stats-export.ts` 头部写着「字段命名稳定」，但只有 `courses`/`goals` 两节的键被顺带覆盖——新增叶子路径钉死（22 项 + `version === 1`），R16.11 那两个名不副实的键因此在决策前动不了。
+- 变更文件（关键）：`src/lib/sync-layer-queue-fallback.ts`、`src/lib/sync-layer.ts`、`src/components/auth-provider.tsx`、`src/components/replay-trainer.tsx`、`src/components/kline-chart.tsx`、`src/lib/chart-density.ts`、`src/lib/replay-history-limit.ts`、`src/lib/replay-store.ts`、`src/lib/content.ts`、`src/lib/i18n.ts`、`src/components/privacy-data-export.tsx`、`src/lib/stats-export.ts`、`src/app/[locale]/{page,ai/page,path/page,faq/page,about/page}.tsx`、`src/app/[locale]/privacy/privacy-endpoints.test.ts`、`docs/{architecture,perf-notes,roadmap,work-audit-ack,test-clock-hygiene,progress}.md` 及对应测试。
+- 验证命令和结果：
+  - 每一处新断言都做变异验证，摘几例：去掉 swallow → 2 红；去掉 `remember` → 8 红；去掉成功后 `delete` → 3 红；去掉身份门 → 2 红；去掉 `MAX_QUEUE` 上限 → 1 红；去掉 flush 前的 retry → 顺序例红；`REPLAY_HISTORY_KEEP` 改 120 不动文案 → 文案门禁红；改回 `slice(-100)` → 「共用同一上限」红；退回静态 `contextNote` → 4 条难度用例红；去掉 `.replace("{n}", dataLimit)` → 根数用例红；去掉 WS effect 的 `networkQuality` 依赖 → 「恢复后自动重连」红；`withChapterCount(t.ai.subtitle)` 退回 `t.ai` → AI 页 2 条红；i18n 改回「27 篇章」→ 门禁报 `src/lib/i18n.ts: 27 篇章`。全部还原后复跑。
+  - 真实浏览器（生产构建，端口先 `lsof` 确认空闲并核对监听 PID）：隐私页导出卡片 390/1280 × zh/en 截图无溢出，点「下载我的数据」实测产物 `localStorage` 键为 `tb-daily-goal-min · tb-data-owner · tb-last-visit · tb-migrated-v2 · tb-progress`、无 `sb-*`、全文不含令牌片段、派生摘要 `{"getting-started":2}`；回放页逐档读回 `前 50 根…第 51 根` / `30/31` / `15/16`（zh、en 各一遍）。
+  - 构建产物核对：`grep -rl "已切换为 180 根" .next/static/chunks` 为空、`grep -rl "基于 {chapters}" .next/server/app` 为空，`zh/path.html`「27 篇章 × 3 阶段」、`en/path.html`「27 chapters across 3 stages」与「27/27 chapters」、`en/about.html`「organized into 27 chapters」。
+  - 门禁：`npm test` 最终 **278 文件 / 2698 条**全绿；`test:coverage` statements **95.91%** / branches 91.09% / functions 95.81% / lines 97.86%（阈值 84/77/83/87 未下调）；`lint --max-warnings=0`、`tsc --noEmit` 干净；`npm run build` + `check:bundle` 454 条路由在预算内、队列 store 仍是独立 13.3KB gzip chunk；`npm run e2e` **137 通过**；`check:docs` / `check:secrets` / `check:test-clock-hygiene` / `check:constitution` / `check:ai-copy` / `check:dark-pattern-copy` / `check:mobile` / `check:kb-parity-budget` / `kb:parity` 全绿；`ops:work-audit` 悬空提交 0 · 陈旧本地提交 0 · 未确认的关闭 PR 0（#197 的载体变更已记入 `docs/work-audit-ack.json`）。
+- 阻塞：`BLOCKED_EXTERNAL` 不变——Vercel 账号构建配额（本批次全程 `retry in 24 hours`，生产仍停在 0.7.7）、生产 AI 运行期配置、R15.2 / R16.7 / R16.10 / R16.11 / R16.12 / R16.13 待决策；#178 是维护者自提的 AGENTS.md，未代为合并。
+- 风险 / 回滚：全部是客户端交付路径、显示口径与文案，无迁移、无接口形状变化。#191 的缓冲只在「原本必然丢」的路径上生效；#198 改了五处 metadata 文案但产物数字不变（仍是 27）。逐条 revert 各自独立。
+- 下一项：①本批收口为 v0.7.8（判级 patch）；②配额窗口过去后重跑 `ops:smoke-prod`，把 0.7.7/0.7.8 的真实上线结论补进发布记录；③继续倒查，剩余候选：FAQ 的「BTC/ETH/BNB/SOL 四个币种」未提图表支持自定义交易对，且 `market-ticker` 的 SYMBOLS 是 3 个而 `replay-trainer` 是 4 个（是否统一属产品口径）。
+- 更新时间：2026-09-23 04:40（Asia/Shanghai）。
