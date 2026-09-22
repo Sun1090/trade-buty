@@ -11,8 +11,9 @@ vi.stubGlobal("localStorage", {
 });
 
 const { WeeklyReport } = await import("./weekly-report");
-const { addStudyTime, getTotalStudySeconds, getStudySeconds } = await import("@/lib/study-time");
-const { localDateStr } = await import("@/lib/date-utils");
+const { addStudyTime, getTotalStudySeconds, getStudySeconds, getStudySeries } = await import("@/lib/study-time");
+const { localDateStr, shiftDate } = await import("@/lib/date-utils");
+const { buildWeeklySummary } = await import("@/lib/weekly-summary");
 
 beforeEach(() => store.clear());
 afterEach(cleanup);
@@ -51,5 +52,30 @@ describe("口径对账（R4.10）", () => {
     // 09-04: 600；09-05: max(500, 200)=500 → 合计 1100（不是 1300）
     expect(getTotalStudySeconds()).toBe(1100);
     expect(getStudySeconds("2026-09-05").total).toBe(500);
+  });
+});
+
+describe("口径对账：同一页两张周卡片说同一个分钟数", () => {
+  it("柱状摘要的周分钟数 = 周度摘要 totalMinutes，且不把 30 秒抬成 1 分钟", async () => {
+    const today = localDateStr();
+    // 7 天各 30 秒 = 整周 210 秒 = 3 分钟。按天四舍五入会得到 7×1=7 分钟，
+    // 于是「近 7 天共学 7 分钟」与「本周共学 3 分钟」在同一页同时出现。
+    for (let i = 0; i < 7; i += 1) addStudyTime("read", 30, shiftDate(today, -i));
+
+    render(<WeeklyReport dict={dict} />);
+    const label = await screen.findByRole("img");
+    const chartMinutes = Number(/共学 (\d+) 分钟/.exec(label.getAttribute("aria-label") ?? "")?.[1]);
+
+    const summary = buildWeeklySummary({
+      dailySeconds: getStudySeries(7).map((d) => d.total),
+      completions: {},
+      quizAttempts: {},
+      reviewAttempts: {},
+      replayHistory: [],
+      weeklyGoalMin: 90,
+    });
+
+    expect(chartMinutes).toBe(summary.totalMinutes);
+    expect(chartMinutes).toBe(3);
   });
 });

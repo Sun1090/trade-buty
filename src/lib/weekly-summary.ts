@@ -68,6 +68,17 @@ export interface WeeklySummary {
 
 const DAY_MS = 86_400_000;
 
+/**
+ * 周学习分钟数的全站唯一口径：秒数向下取整成分钟。
+ *
+ * 逐日取整再相加会把 30 秒的一天抬成「1 分钟」——7 天各 30 秒（整周 210 秒）能报成
+ * 7 分钟，而同一页的周度摘要报 3 分钟。本模块开头承诺「绝不放松口径凑数」，
+ * 所以柱状摘要（WeeklyReport）与周度摘要都必须走这里。
+ */
+export function weekMinutes(totalSeconds: number): number {
+  return Math.floor((Number.isFinite(totalSeconds) ? totalSeconds : 0) / 60);
+}
+
 function toDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -96,7 +107,7 @@ export function buildWeeklySummary(input: WeeklySummaryInput): WeeklySummary {
   const { startStr, endStr } = weekBounds(now);
   const daily = (input.dailySeconds ?? []).map((s) => (Number.isFinite(s) && s > 0 ? s : 0)).slice(-7);
   const totalSeconds = daily.reduce((a, b) => a + b, 0);
-  const totalMinutes = Math.floor(totalSeconds / 60);
+  const totalMinutes = weekMinutes(totalSeconds);
   const goalMin = (WEEKLY_GOAL_TIERS as readonly number[]).includes(input.weeklyGoalMin)
     ? input.weeklyGoalMin
     : DEFAULT_WEEKLY_GOAL_MIN;
