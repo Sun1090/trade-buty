@@ -1,0 +1,100 @@
+/**
+ * pgTAP 断言数与文档引用对账。
+ *
+ * 文档里手写「N 条断言」这类数字必然漂移：本仓库已经两次发现 roadmap/database-testing
+ * 还写着旧的 26，而 `sync_and_constraints.sql` 早已升到 30。历史条目（docs/progress.md
+ * 是追加式日志）不改，但**现行文档**引用的数字必须等于 `supabase/tests/*.sql` 里的
+ * `select plan(N)`。新增/删除断言时忘了改文档，这道门禁就红。
+ *
+ * 用法：npm run check:db-assertion-counts
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+/** 现行文档（会被引用的那几篇）；progress.md 是历史记录，不参与对账 */
+const AUDITED_DOCS = ["docs/database-testing.md", "docs/roadmap.md"];
+
+/** 从 pgTAP 文件读出 basename → plan(N) */
+export function readPlanCounts(dir) {
+  const plans = new Map();
+  for (const entry of fs.readdirSync(dir)) {
+    if (!entry.endsWith(".sql")) continue;
+    const sql = fs.readFileSync(path.join(dir, entry), "utf8");
+    const m = /select\s+plan\(\s*(\d+)\s*\)/i.exec(sql);
+    if (m) plans.set(entry.replace(/\.sql$/, ""), Number(m[1]));
+  }
+  return plans;
+}
+
+/**
+ * 找出文档里与真实 plan 不符的断言数。
+ * 两种写法都要覆盖：紧跟文件名的「xxx.sql（30 条断言）」，
+ * 以及不带文件名的聚合写法「重跑 pgTAP(40+30+8 断言)」。
+ */
+export function auditDocCitations({ plans, docs }) {
+  const issues = [];
+  const sortedPlans = [...plans.values()].sort((a, b) => a - b);
+
+  for (const { file, text } of docs) {
+    const lines = text.split("\n");
+    for (const [name, count] of plans) {
+      for (const line of lines) {
+        if (!line.includes(name) || !line.includes("断言")) continue;
+        // 文件名后紧跟的第一个数字就是它声称的断言数
+        const after = line.slice(line.indexOf(name) + name.length);
+        const cited = /\d{1,4}/.exec(after);
+        if (!cited || Number(cited[0]) === count) continue;
+        issues.push({
+          file,
+          detail: `${name} 文档写 ${cited[0]} 条断言，supabase/tests/${name}.sql 的 plan 是 ${count}`,
+        });
+      }
+    }
+
+    for (const m of text.matchAll(/(\d{1,3}(?:\s*\+\s*\d{1,3})+)\s*(?:条)?断言/g)) {
+      const cited = m[1]
+        .split("+")
+        .map((n) => Number(n.trim()))
+        .sort((a, b) => a - b);
+      if (cited.length !== sortedPlans.length || cited.some((n, i) => n !== sortedPlans[i])) {
+        issues.push({
+          file,
+          detail: `聚合写法「${m[1]} 断言」与真实 plan 集合 ${sortedPlans.join("+")} 不符`,
+        });
+      }
+    }
+  }
+
+  return issues;
+}
+
+export function run({ root = process.cwd(), log = console.log, exit = (code) => process.exit(code) } = {}) {
+  const plans = readPlanCounts(path.join(root, "supabase", "tests"));
+  if (plans.size === 0) {
+    log("db-assertion-counts: 没读到任何 pgTAP plan，检查 supabase/tests/ 是否存在");
+    return exit(1);
+  }
+
+  const docs = AUDITED_DOCS.filter((f) => fs.existsSync(path.join(root, f))).map((file) => ({
+    file,
+    text: fs.readFileSync(path.join(root, file), "utf8"),
+  }));
+
+  const issues = auditDocCitations({ plans, docs });
+  if (issues.length > 0) {
+    for (const issue of issues) log(`❌ ${issue.file}: ${issue.detail}`);
+    log(
+      `db-assertion-counts: ${issues.length} 处文档断言数与 pgTAP plan 不符（改完断言记得同步现行文档；历史记录不改）`,
+    );
+    return exit(1);
+  }
+
+  log(
+    `db-assertion-counts audit passed: ${[...plans.entries()].map(([n, c]) => `${n}=${c}`).join(", ")} · ${AUDITED_DOCS.length} 篇现行文档引用一致`,
+  );
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  run();
+}
