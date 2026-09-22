@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-/** 焦点模式：隐藏导航栏 + 侧栏，仅留正文 */
+/** 焦点模式：只收起顶部导航栏；课文侧栏属于正文布局，不随它隐藏 */
 export function FocusMode({ label, activeLabel }: { label: string; activeLabel: string }) {
   const [active, setActive] = useState(false);
 
