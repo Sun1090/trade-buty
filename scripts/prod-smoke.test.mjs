@@ -3,6 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  AI_GUARDRAIL_PROBE_QUESTION,
+  AI_PROBE_QUESTION,
   buildChecks,
   isTransportError,
   latestReleaseVersion,
@@ -23,10 +25,13 @@ function fakeFetch(routes) {
     const { pathname } = new URL(url);
     const key = init?.method === "POST" ? `POST ${pathname}` : pathname;
     calls.push({ key, url, init });
-    const route = routes[key] ?? { status: 404, body: "not found" };
+    const raw = routes[key] ?? { status: 404, body: "not found" };
+    // 路由可以是静态响应，也可以是 (init) => 响应——同一端点用不同载荷走不同分支时要用后者
+    const route = typeof raw === "function" ? raw(init) : raw;
     if (route.throw) throw new Error(route.throw);
     return {
       status: route.status,
+      headers: { get: (name) => route.headers?.[String(name).toLowerCase()] ?? null },
       text: async () => route.body,
     };
   };
@@ -35,13 +40,30 @@ function fakeFetch(routes) {
 
 const page = (extra = "") => `<html><body>${extra} ${RISK_WARNING_MARK} 风险提示</body></html>`;
 
+/**
+ * AI 端点的两条路径分开模拟：护栏探针（问题命中红线，200 + X-Refused，不碰上游）
+ * 与模型问答（200 SSE）。真实部署里前者正常、后者 502，就是上游配置问题的指纹。
+ */
+function aiChatRoute({ refused = true, model = { status: 200, body: "data: ok\n\n" } } = {}) {
+  return (init) => {
+    const asked = JSON.parse(init.body).messages.at(-1).content;
+    const isGuardrail = asked === AI_GUARDRAIL_PROBE_QUESTION;
+    if (isGuardrail) {
+      return refused
+        ? { status: 200, body: "抱歉，我不能推荐具体的股票/基金/币种。", headers: { "x-refused": "stock-pick" } }
+        : { status: 200, body: "回答本该被红线拦下" };
+    }
+    return model;
+  };
+}
+
 function healthyRoutes() {
   const routes = {
     "/sitemap.xml": { status: 200, body: "<urlset>…</urlset>" },
     "/robots.txt": { status: 200, body: "User-agent: *\nSitemap: https://prod.example/sitemap.xml" },
     "/zh/changelog": { status: 200, body: page(`v${VERSION}`) },
     "/api/auth/session": { status: 200, body: '{"user":null}' },
-    "POST /api/ai/chat": { status: 200, body: "data: ok\n\n" },
+    "POST /api/ai/chat": aiChatRoute(),
   };
   for (const p of [...PAGE_PATHS, streakSharePath()]) routes[p] = { status: 200, body: page() };
   return routes;
@@ -94,12 +116,36 @@ describe("prod-smoke 断言清单", () => {
     expect((await failures(brokenJson))[0]).toContain("响应不是 JSON");
   });
 
-  it("AI 问答 502 → 失败；429（限流）→ 通过", async () => {
-    const upstreamDown = { ...healthyRoutes(), "POST /api/ai/chat": { status: 502, body: "AI 服务暂时不可用" } };
+  it("只有模型路径 502（护栏正常）→ 报上游而不是「AI 不可用」", async () => {
+    const upstreamDown = { ...healthyRoutes(), "POST /api/ai/chat": aiChatRoute({ model: { status: 502, body: "AI 服务暂时不可用" } }) };
     expect(await failures(upstreamDown)).toEqual([
-      "POST /api/ai/chat 游客合法载荷 → 不返回 5xx — 状态 502（AI 问答对游客不可用）",
+      "POST /api/ai/chat 游客：护栏路径 200 且模型路径不 5xx — 状态 502，而护栏路径正常 → 站内代码没问题，查上游：部署快照里的 AI_API_URL/AI_MODEL/AI_API_KEY 或出口网络",
     ]);
-    expect(await failures({ ...healthyRoutes(), "POST /api/ai/chat": { status: 429, body: "too many" } })).toEqual([]);
+  });
+
+  it("两条路径都 500 → 报「函数没起来」，先于上游结论", async () => {
+    const dead = { ...healthyRoutes(), "POST /api/ai/chat": { status: 500, body: "~~~" } };
+    expect(await failures(dead)).toEqual([
+      "POST /api/ai/chat 游客：护栏路径 200 且模型路径不 5xx — 护栏路径 500（无 X-Refused 头）：函数没起来、部署落后或内容红线失效",
+    ]);
+  });
+
+  it("护栏不再回 X-Refused（红线失效）→ 单独报出", async () => {
+    const noTag = { ...healthyRoutes(), "POST /api/ai/chat": aiChatRoute({ refused: false }) };
+    expect(await failures(noTag)).toEqual([
+      "POST /api/ai/chat 游客：护栏路径 200 且模型路径不 5xx — 护栏路径 200（无 X-Refused 头）：函数没起来、部署落后或内容红线失效",
+    ]);
+  });
+
+  it("AI 两条路径都限流 429 → 通过（端点活着）", async () => {
+    const throttled = { ...healthyRoutes(), "POST /api/ai/chat": { status: 429, body: "too many" } };
+    expect(await failures(throttled)).toEqual([]);
+  });
+
+  it("探针问题与真分类器对齐：护栏问题必被拦、问答问题不误伤", async () => {
+    const { matchSensitiveRequest } = await import("../src/lib/ai/guardrail.ts");
+    expect(matchSensitiveRequest(AI_GUARDRAIL_PROBE_QUESTION)).toBeTruthy();
+    expect(matchSensitiveRequest(AI_PROBE_QUESTION)).toBeNull();
   });
 
   it("changelog 停在旧版本 → 报「生产构建落后于 main」", async () => {
@@ -213,7 +259,9 @@ describe("prod-smoke CLI", () => {
     const root = writeReleaseRoot(VERSION);
     expect(await run({ root, env: { SMOKE_BASE_URL: BASE }, stdout: io.stdout, stderr: io.stderr, fetchImpl: impl })).toBe(0);
     expect(io.out.filter((l) => l.startsWith("  ✅"))).toHaveLength(buildChecks({ expectedVersion: VERSION }).length);
-    expect(calls).toHaveLength(buildChecks({ expectedVersion: VERSION }).length);
+    // 每条断言至少发一次请求（AI 条目两次：护栏探针 + 模型问答），否则「通过」可能只是没测
+    expect(calls).toHaveLength(buildChecks({ expectedVersion: VERSION }).length + 1);
+    expect(calls.filter((c) => c.key === "POST /api/ai/chat")).toHaveLength(2);
   });
 
   it("有失败时退出 1 并点名条目", async () => {

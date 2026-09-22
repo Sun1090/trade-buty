@@ -5536,7 +5536,7 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 ## 2026-09-22 — 发布冻结：v0.7.6（水合、指标封顶与隐私披露批次）
 
 - 里程碑 / 版本：**v0.7.6**（`package.json` 0.7.5 → 0.7.6）。
-- 状态：已合并、已打 tag；**生产部署仍未发生**（Vercel 24h 构建配额），冒烟里「changelog 含 0.7.6」这条因此为红。
+- 状态：已合并、已打 tag、**生产已上线 0.7.6**（配额窗口过去后 Vercel 从 `main` 构建完成，`/zh/changelog` 冒烟探针转绿）；只剩游客 AI 一条为红。
 - 判级理由：`v0.7.5` 之后进入 `main` 的 19 个提交（#159–#175）全是缺陷修复、门禁/工具链加固与文案订正——无新增产品能力、无内容契约/数据结构变更、无迁移 → patch。
 - 分支 / 提交：`chore/release-0.7.6` → PR **#176**（rebase 合并）→ `041036d`（批次记录）、`eccac28`（`chore(release): ship v0.7.6`）、`0b89fc2`（覆盖率与测试计数取最终值）；tag **`v0.7.6` → `0b89fc2`**（附注 tag，已推送）。
 - 完成内容：发布记录 `src/data/release-notes.json` 追加 0.7.6（zh/en 各 5 条 highlights，未发布区块为空），`CHANGELOG.md` 由 `npm run changelog:generate` 生成，锁文件用钉住的 npm 10.9.4 重算。
@@ -5548,7 +5548,9 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   - `npm run -s ops:work-audit` ✅ 悬空提交 0 · 未确认的关闭 PR 0；13 个已合并本地分支按 `git cherry` 确认补丁等价后删除，远端分支随 PR 合并自动删除并 `prune`。
   - 生产构建 + 真实浏览器：`/zh/changelog` 本地渲染已含 0.7.6 条目与 5 条 highlights（部署跟上后即上线）。
   - `npm run ops:smoke-prod` **8/10**：①`/zh/changelog` 尚无 0.7.6 —— 发布提交上 Vercel 状态为 `Deployment rate limited — retry in 24 hours.`，是配额而非站内缺陷；②游客 `POST /api/ai/chat` 502（同一构建本地 10/10，生产 HTML 无「AI 未开启」文案说明构建期看得到 key，缺的是运行期配置或出口）。
-- 阻塞：`BLOCKED_EXTERNAL` 两条不变（Vercel 生产构建配额、生产 AI 运行期配置）。配额窗口过去后生产会从 `main` 构建到 0.7.6，届时重跑冒烟应以 10/10（或仅剩 AI 一条）为准。
+  - **0.7.6 上线结论（补上一条的 ①，重跑 `npm run ops:smoke-prod` → 9/10）**：`GET /zh/changelog → 含最新发布版本` 由红转绿，即生产构建已跟上 `main`（tag `v0.7.6` → `0b89fc2`），部署阻塞解除；余下一红仍是外部项——游客 `POST /api/ai/chat` 502。
+  - 该 502 现已可归因（同批把冒烟的 AI 探针拆成护栏段 + 模型段，见 `docs/ops.md` 对照表）：向生产发一条必被内容红线拦下的问题 → **200 + `X-Refused: stock-pick`，1.8s**；同端点发中性问题 → **502，5.4~10.2s**，响应体是站内自制的兜底文案 `AI 服务暂时不可用，请稍后再试。`。护栏在调用上游**之前**返回，所以函数存活、部署新鲜、内容红线三项同时为真，缺的只能是运行期 `AI_API_URL/AI_MODEL/AI_API_KEY` 快照或到服务商的出口网络。处置在 Vercel 控制台（改完 `AI_*` 必须重新部署，见 `docs/env.md`），本地无 CLI 凭证可代跑。
+- 阻塞：`BLOCKED_EXTERNAL` 只剩一条——生产 AI 运行期配置/出口（Vercel 控制台，见上面的归因）；构建配额已解除，0.7.6 已在生产。R16.7 / R15.2 两个产品决策仍等用户拍板。
 - 风险 / 回滚：运行期变化全是显示口径与文案——已读数/分数按现有课数与题数封顶、首屏随机延后到挂载后、隐私与 FAQ 措辞、AI 服务商点名。无迁移、无 `supabase/` 结构变更、无 API 形状变化；`git revert eccac28` 撤版本号与更新日志，逐条 revert 亦可；Vercel 可先把 Production Deployment 切回上一构建止血。
-- 下一项：①配额恢复后重跑 `npm run ops:smoke-prod`，把 0.7.6 的真实上线结论补进本条；②继续按「界面声称了数据没做到的事」倒查（本轮已把隐私页四句假话、指标封顶、删除账户留存边界与 FAQ 候选报告的对外产物隐私查完）；③R16.7 / R15.2 仍需用户拍板才能动数据模型与留存策略。
-- 更新时间：2026-09-22 22:15（Asia/Shanghai）。
+- 下一项：①继续按「界面声称了数据没做到的事」倒查，本轮从 share 面查出的四条（连击卡的空「近 7 天」网格、`mergeQuizScore` 跨总数取 max 造出的「满分」、写着「分享」只做下载、OG 卡 percent 与 score/total 无绑定）逐条复核后修；②R16.7 / R15.2 仍需用户拍板才能动数据模型与留存策略；③生产 AI 运行期配置仍等外部条件。
+- 更新时间：2026-09-22 22:47（Asia/Shanghai）。

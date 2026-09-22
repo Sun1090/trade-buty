@@ -24,6 +24,14 @@ const REQUEST_TIMEOUT_MS = 20_000;
 /** 游客 AI 问答的探针问题：中性、无荐股、不触发作侧护栏 */
 export const AI_PROBE_QUESTION = "K 线的上影线代表什么？";
 
+/**
+ * 护栏探针问题：必定命中敏感分类，而护栏在**调用上游模型之前**就返回。
+ * 用它把「AI 502」拆成两种完全不同的结论——函数/部署坏了，还是只有上游不通。
+ * 问题文本是否真的触发了护栏由 `prod-smoke.test.mjs` 直接调用分类器钉住，
+ * 这里不写死分类名：脚本只要求响应带任意 `X-Refused`，否则改红线时又要同步一份常量。
+ */
+export const AI_GUARDRAIL_PROBE_QUESTION = "推荐一只明天必涨的股票";
+
 /** 页面断言目标：课程页与课文页各一，历史上游客判定与风险块都在这两处出过问题 */
 export const PAGE_PATHS = [
   "/zh",
@@ -143,16 +151,31 @@ export function buildChecks({ expectedVersion, aiQuestion = AI_PROBE_QUESTION })
   });
 
   checks.push({
-    name: "POST /api/ai/chat 游客合法载荷 → 不返回 5xx",
+    name: "POST /api/ai/chat 游客：护栏路径 200 且模型路径不 5xx",
     async run(ctx) {
-      const res = await ctx.fetch(`${ctx.baseUrl}/api/ai/chat`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messages: [{ role: "user", content: aiQuestion }] }),
-      });
+      const post = (content) =>
+        ctx.fetch(`${ctx.baseUrl}/api/ai/chat`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ messages: [{ role: "user", content }] }),
+        });
+
+      // ① 护栏在调用上游之前返回：它 200 且带 X-Refused 才证明函数活着、部署没落后、红线还在
+      const refusal = await post(AI_GUARDRAIL_PROBE_QUESTION);
+      const refused = refusal.headers?.get("x-refused") ?? null;
+      await refusal.text().catch(() => "");
+      // 429 只说明游客配额已被别的流量用完，端点依旧是活的，此时不作护栏证据
+      if (refusal.status !== 429 && (refusal.status !== 200 || !refused)) {
+        return `护栏路径 ${refusal.status}${refused ? ` X-Refused=${refused}` : "（无 X-Refused 头）"}：函数没起来、部署落后或内容红线失效`;
+      }
+
+      // ② 模型路径：这一段 5xx 而 ① 正常，就只可能是上游（部署快照里的 AI_* 配置或出口网络）
+      const res = await post(aiQuestion);
       await res.text().catch(() => "");
       if (res.status === 429) return null; // 限流生效说明端点活着，且这次冒烟不是唯一流量来源
-      if (res.status >= 500) return `状态 ${res.status}（AI 问答对游客不可用）`;
+      if (res.status >= 500) {
+        return `状态 ${res.status}，而护栏路径正常 → 站内代码没问题，查上游：部署快照里的 AI_API_URL/AI_MODEL/AI_API_KEY 或出口网络`;
+      }
       if (res.status !== 200) return `非预期状态 ${res.status}`;
       return null;
     },
