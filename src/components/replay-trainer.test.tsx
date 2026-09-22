@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { ReplayTrainer, type ReplayDict } from "./replay-trainer";
+import { ReplayTrainer, SPEEDS, type ReplayDict } from "./replay-trainer";
 import { gradeFromReplayAccuracy } from "@/lib/share-card";
 import { getDict } from "@/lib/i18n";
 
@@ -280,7 +280,10 @@ describe("ReplayTrainer 自由模式控制", () => {
     fireEvent.click(screen.getByRole("button", { name: "暂停" }));
     expect(screen.getByRole("button", { name: "播放" })).toHaveAttribute("aria-pressed", "false");
     const progressed = screen.getByText(/进度: \d+\/270/).textContent;
-    await new Promise((r) => setTimeout(r, 700));
+    // 探针必须跨过「所选倍速下至少两个 tick」，否则暂停失效也照样通过：
+    // 等待时长跟着 SPEEDS 走，档位一改这里不会悄悄失去效力。
+    const tickMs = 1000 / Math.max(...SPEEDS);
+    await new Promise((r) => setTimeout(r, tickMs * 2 + 200));
     expect(screen.getByText(/进度: \d+\/270/).textContent).toBe(progressed);
   });
 

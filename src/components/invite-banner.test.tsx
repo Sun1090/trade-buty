@@ -91,7 +91,7 @@ describe("InviteBanner", () => {
 
   it("无 URL ref 也无 storage 时不显示", async () => {
     render(<InviteBanner labels={labels} locale="en" />);
-    await new Promise((r) => setTimeout(r, 50));
+
     expect(screen.queryByTestId("invite-banner")).toBeNull();
   });
 
@@ -144,7 +144,7 @@ describe("InviteBanner", () => {
       JSON.stringify({ ref: "expired", recordedAt: 1, expiresAt: 2 }),
     );
     render(<InviteBanner labels={labels} locale="en" />);
-    await new Promise((r) => setTimeout(r, 50));
+
     expect(screen.queryByTestId("invite-banner")).toBeNull();
     expect(localStorage.getItem("tb-invite-ref")).toBeNull();
   });
@@ -153,7 +153,7 @@ describe("InviteBanner", () => {
     setSearch("?ref=frank");
     localStorage.setItem("tb-invite-dismissed-frank", "1");
     render(<InviteBanner labels={labels} locale="en" />);
-    await new Promise((r) => setTimeout(r, 50));
+
     expect(screen.queryByTestId("invite-banner")).toBeNull();
   });
 

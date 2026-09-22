@@ -24,7 +24,8 @@ const SYMBOL_NAMES: Record<string, string> = {
   SOLUSDT: "Solana",
 };
 const INTERVALS = ["15m", "1h", "4h", "1d"] as const;
-const SPEEDS = [1, 2, 4] as const;
+/** 倍速档位；播放步进的真实间隔由它算出（见下面的 setTimeout），测试要盯同一个来源 */
+export const SPEEDS = [1, 2, 4] as const;
 const DIFFICULTIES = [
   { labelKey: "difficultyNew", context: 50 },
   { labelKey: "difficultyIntermediate", context: 30 },
