@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   buildChecks,
+  isTransportError,
   latestReleaseVersion,
   PAGE_PATHS,
   RISK_WARNING_MARK,
@@ -54,6 +55,7 @@ async function failures(routes, options = {}) {
       expectedVersion: "expectedVersion" in options ? options.expectedVersion : VERSION,
     }),
     fetchImpl: impl,
+    retryDelayMs: 0,
   });
   return results.filter((r) => !r.ok).map((r) => `${r.name} — ${r.detail}`);
 }
@@ -127,6 +129,51 @@ describe("prod-smoke 断言清单", () => {
     const failed = await failures(routes);
     expect(failed).toHaveLength(1);
     expect(failed[0]).toContain("请求异常：socket hang up");
+  });
+});
+
+describe("prod-smoke 传输层重试", () => {
+  /** 前 failuresBefore 次抛传输异常，之后成功；同时数一共试了几次 */
+  function flakyCheck(failuresBefore, errorFactory = () => new TypeError("fetch failed")) {
+    let calls = 0;
+    return {
+      name: "GET /flaky",
+      async run() {
+        calls += 1;
+        if (calls <= failuresBefore) throw errorFactory();
+        return null;
+      },
+      getCalls: () => calls,
+    };
+  }
+
+  it("抖一下就重试到成功，并把「第几次才连上」写进结论", async () => {
+    const check = flakyCheck(2);
+    const results = await runChecks({ baseUrl: BASE, checks: [check], retryDelayMs: 0 });
+    expect(results).toEqual([{ name: "GET /flaky", ok: true, detail: "第 3 次尝试才连上（前 2 次传输失败）" }]);
+    expect(check.getCalls()).toBe(3);
+  });
+
+  it("一直连不上才判失败，并说明重试过", async () => {
+    const check = flakyCheck(99);
+    const results = await runChecks({ baseUrl: BASE, checks: [check], retryDelayMs: 0 });
+    expect(results[0].ok).toBe(false);
+    expect(results[0].detail).toBe("请求异常：fetch failed（重试 2 次后仍失败）");
+    expect(check.getCalls()).toBe(3);
+  });
+
+  it("非传输层异常一次定性，不靠重试掩盖站内缺陷", async () => {
+    const check = flakyCheck(99, () => new Error("解析断言状态时炸了"));
+    const results = await runChecks({ baseUrl: BASE, checks: [check], retryDelayMs: 0 });
+    expect(results[0].detail).toBe("请求异常：解析断言状态时炸了");
+    expect(check.getCalls()).toBe(1);
+  });
+
+  it("分类器认得 undici 与超时，认不得普通错误", () => {
+    expect(isTransportError(new TypeError("fetch failed"))).toBe(true);
+    expect(isTransportError(Object.assign(new Error("signal timed out"), { name: "AbortError" }))).toBe(true);
+    expect(isTransportError(new Error("socket hang up"))).toBe(true);
+    expect(isTransportError(new Error("HTML 里没有风险块"))).toBe(false);
   });
 });
 
