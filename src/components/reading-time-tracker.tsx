@@ -24,33 +24,21 @@ export function ReadingTimeTracker({
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
-    let hidden = false;
 
-    function start() {
-      if (interval) return;
-      interval = setInterval(() => {
-        if (!hidden) {
-          addReadingTime(chapterRef.current, docRef.current, 5);
-        }
-      }, 5000);
-    }
+    interval = setInterval(() => {
+      // 读实时的 document.hidden，而不是把结果缓存成 visibilitychange 回调里的变量：
+      // 那个事件只在「切换」时触发，所以标签在后台挂载（点击链接后没切过去看）时，
+      // 缓存值会停在初始的 false，于是一篇根本没人读过的课照样累计学习时长。
+      if (!document.hidden) {
+        addReadingTime(chapterRef.current, docRef.current, 5);
+      }
+    }, 5000);
 
-    function stop() {
+    return () => {
       if (interval) {
         clearInterval(interval);
         interval = null;
       }
-    }
-
-    function onVisibilityChange() {
-      hidden = document.hidden;
-    }
-
-    start();
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => {
-      stop();
-      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
 
