@@ -9,13 +9,6 @@ export interface Kline {
   volume: number;
 }
 
-const INTERVAL_MS: Record<string, number> = {
-  "15m": 15 * 60_000,
-  "1h": 60 * 60_000,
-  "4h": 4 * 60 * 60_000,
-  "1d": 24 * 60 * 60_000,
-};
-
 export async function fetchKlines(
   symbol: string,
   interval: string,
@@ -50,11 +43,12 @@ export async function fetchRandomHistoryWindow(
   interval: string,
   count = 300
 ): Promise<Kline[]> {
-  const stepMs = INTERVAL_MS[interval] ?? 60 * 60_000;
-  const windowMs = count * stepMs;
-  // 距今 7 天 ~ 180 天前的任意窗口
+  // 距今 7 天 ~ 180 天前的任意窗口。
+  // 这里曾有一行 `Math.max(count * stepMs, Date.now() - 180d)` 想保证「窗口不越过有记录的最早
+  // 时间」，但 `count * stepMs` 是**时长**（约 2.6e10），拿去和**绝对时间戳**（约 1.8e12）取
+  // max 永远输给对方，所以它从未生效过；标的历史不够长时币安本就返回较少根数，由调用方自行处理。
   const maxEnd = Date.now() - 7 * 24 * 3600_000;
-  const minEnd = Math.max(windowMs + stepMs, Date.now() - 180 * 24 * 3600_000);
+  const minEnd = Date.now() - 180 * 24 * 3600_000;
   const endTime = Math.floor(
     minEnd + Math.random() * Math.max(maxEnd - minEnd, 1)
   );
