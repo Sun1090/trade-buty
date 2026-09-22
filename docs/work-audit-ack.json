@@ -44,6 +44,10 @@
     {
       "number": 197,
       "reason": "工作未丢失，换了载体：#197 分支与 #196 在 docs/roadmap.md 同一锚点各插入一条 R16 决策项，GitHub 的 update-branch 报 RebaseConflictError，而更新分支需要 force push（本仓库禁止）。于是在最新 origin/main(38d0cb3) 上把 0ee6a99 重新落地为 d8ecc8b（PR #198），冲突只有 roadmap.md 一处、按 R16.12 → R16.13 顺序保留两条。九个实质文件的补丁已用 git diff 逐字比对为 0 行差异；#197 的远程分支随关闭删除，本地副本在确认等价后才删。"
+    },
+    {
+      "number": 211,
+      "reason": "工作未丢失，只是换了载体（与 #125 / #134 同一情形）：#211 与已合并的 #209 都在 docs/roadmap.md 文末追加登记，产生冲突；本仓库禁止对远端分支 force push，因此从最新 origin/main 重开为 PR #214。重开前用 git diff 对比两个分支相对 origin/main 的补丁，src/lib/i18n-stats.ts 与 src/lib/streak-claims.test.ts 的 diff 逐字节相同（0 行差异），roadmap 冲突按编号顺序保留 R16.17/R16.18/R16.19 三条。#214 合并后可用 git cherry 验证补丁等价。"
     }
   ]
 }
