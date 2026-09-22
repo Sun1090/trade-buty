@@ -48,7 +48,7 @@ BACKUP_DRILL_IMAGE=supabase/postgres:17.6.1.155 npm run backup:drill
 - `kb_embeddings` 对 `authenticated` 可读不可写（只读公开表）；
 - `ai_citation_clicks` 允许匿名上报（`user_id is null`），但没有 `select` 权限。
 
-### 2. `supabase/tests/sync_and_constraints.sql`（pgTAP，26 条断言）
+### 2. `supabase/tests/sync_and_constraints.sql`（pgTAP，30 条断言）
 
 双设备同步所依赖的数据库契约：
 
@@ -59,7 +59,12 @@ BACKUP_DRILL_IMAGE=supabase/postgres:17.6.1.155 npm run backup:drill
 - 显式传入 `answered_at` 时会被刷新（客户端「取较新」合并依赖它）；
 - `touch_updated_at` 触发器在 `quiz_scores` 更新后刷新 `updated_at`；
 - `user_settings` 目标档位约束（0008）：`5/15/30` 与 `45/90/150` 合法，其他值以 `23514` 被拒；
-- 删除 `auth.users` 行会级联清掉其业务数据（账号注销路径）。
+- 删除 `auth.users` 行会级联清掉其业务数据（账号注销路径）；
+- 目录级不变量（隐私页「删除账户即清空云端数据」的长期保障，按 `pg_constraint` 扫，新表自动纳入）：
+  所有指向 `auth.users` 的外键必须显式写 `ON DELETE CASCADE` 或 `SET NULL`（PG 12 起没有 `ondel` 列，
+  只能读 `pg_get_constraintdef`）；`ai_citation_clicks` 是唯一被允许的 `SET NULL`（注销后点击计数脱敏留档）；
+  带 `user_id` 列的表必须挂上 `auth.users` 外键，否则注销后会留下归属行；
+  另有一条 `>= 9` 的外键数量下限，防止前面两条在一个都不匹配的情况下「空集通过」。
 
 ### 3. 回滚演练（使用真实 rollback 脚本）
 
