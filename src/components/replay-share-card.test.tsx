@@ -20,6 +20,7 @@ const LABELS = {
   download: "下载",
   copyLink: "复制链接",
   copiedLink: "已复制",
+  copyFailed: "复制失败",
   downloadFailed: "下载失败",
 };
 
@@ -30,6 +31,7 @@ const LABELS_EN = {
   download: "Download",
   copyLink: "Copy link",
   copiedLink: "Copied",
+  copyFailed: "Copy failed",
   downloadFailed: "Download failed",
 };
 

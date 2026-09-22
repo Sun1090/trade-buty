@@ -28,6 +28,7 @@ type QuizDict = {
   previewAlt: string;
   copyLink: string;
   copiedLink: string;
+  copyFailed: string;
   downloadFailed: string;
 };
 

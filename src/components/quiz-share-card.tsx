@@ -24,6 +24,7 @@ interface Props {
     download: string;
     copyLink: string;
     copiedLink: string;
+    copyFailed: string;
     downloadFailed: string;
   };
 }
@@ -180,6 +181,7 @@ export function QuizShareCard({
           url={shareUrl}
           label={labels.copyLink}
           copiedLabel={labels.copiedLink}
+          failedLabel={labels.copyFailed}
           testId="quiz-share-link-btn"
           onOutcome={(outcome) =>
             trackGrowthEvent({

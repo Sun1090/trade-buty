@@ -215,7 +215,12 @@ export default async function DocPage({
             label={{ bookmark: tools.bookmark, bookmarked: tools.bookmarked }}
             labeled
           />
-          <CopyLinkButton label={locale === "en" ? "Copy link" : "复制链接"} copiedLabel={locale === "en" ? "Copied ✓" : "已复制 ✓"} testId="page-copy-link-btn" />
+          <CopyLinkButton
+            label={locale === "en" ? "Copy link" : "复制链接"}
+            copiedLabel={locale === "en" ? "Copied ✓" : "已复制 ✓"}
+            failedLabel={locale === "en" ? "Copy failed — select and copy manually" : "复制失败，请手动选择复制"}
+            testId="page-copy-link-btn"
+          />
           <ReadAloud text={doc.content} label={locale === "en" ? "Read aloud" : "朗读"} playingLabel={locale === "en" ? "Stop" : "停止"} locale={locale} />
           <FocusMode label={locale === "en" ? "Focus" : "专注"} activeLabel={locale === "en" ? "Exit focus" : "退出专注"} />
           <span className="ml-auto flex items-center gap-3">

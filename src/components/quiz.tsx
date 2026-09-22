@@ -27,6 +27,7 @@ interface QuizDict {
   previewAlt: string;
   copyLink: string;
   copiedLink: string;
+  copyFailed: string;
   downloadFailed: string;
 }
 
@@ -209,6 +210,7 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
                   download: dict.download,
                   copyLink: dict.copyLink,
                   copiedLink: dict.copiedLink,
+                  copyFailed: dict.copyFailed,
                   downloadFailed: dict.downloadFailed,
                 }}
                 shareUrl={shareUrl ?? undefined}

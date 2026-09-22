@@ -118,6 +118,7 @@ const dict: ReplayDict = {
   accuracy: "正确率",
   rounds: "进度",
   contextNote: "历史上下文",
+  fetchError: "行情暂时不可用，请稍后重试",
   disclaimer: "仅为训练用途",
   modeBlind: "盲测",
   modeCustom: "自定义",
@@ -129,6 +130,7 @@ const dict: ReplayDict = {
   previewAlt: "预览图",
   copyLink: "复制链接",
   copiedLink: "已复制",
+  copyFailed: "复制失败，请手动选择复制",
   downloadFailed: "下载失败",
 };
 
@@ -222,7 +224,7 @@ describe("ReplayTrainer 数据加载", () => {
   it("拉取失败时显示不可用提示", async () => {
     mocks.fetchRandomHistoryWindow.mockRejectedValueOnce(new Error("boom"));
     render(<ReplayTrainer dict={dict} locale="zh" />);
-    await waitFor(() => expect(screen.getByText("Binance API unreachable")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("行情暂时不可用，请稍后重试")).toBeInTheDocument());
   });
 
   it("自定义截止日期走 fetchKlines 并开启新回合", async () => {
