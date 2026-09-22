@@ -30,7 +30,7 @@ const DICT: Record<"zh" | "en", MarketTickerDict> = {
     error: "行情暂时不可用",
     stale: "上次数据",
     offline: "当前离线：已暂停轮询，恢复联网后自动更新。",
-    slow: "慢速模式：每 60 秒更新一次。",
+    slow: "慢速模式：每 {n} 秒更新一次。",
   },
   en: {
     heading: "Live market",
@@ -39,7 +39,7 @@ const DICT: Record<"zh" | "en", MarketTickerDict> = {
     error: "Market data is temporarily unavailable",
     stale: "Last available data",
     offline: "You are offline. Polling is paused and will resume automatically.",
-    slow: "Slow mode: refreshing every 60 seconds.",
+    slow: "Slow mode: refreshing every {n} seconds.",
   },
 };
 
@@ -102,12 +102,13 @@ export function MarketTicker({ locale = "zh" }: { locale?: "zh" | "en" }) {
     };
   }, [networkQuality, retryNonce]);
 
+  const slowPollSeconds = (getMarketRefreshDelay("slow") ?? 0) / 1000;
   const heading = `${dict.heading} · ${TICKER_SYMBOLS.length} ${locale === "zh" ? "币" : "assets"}`;
   const networkNote =
     networkQuality === "offline"
       ? dict.offline
       : networkQuality === "slow"
-        ? dict.slow
+        ? dict.slow.replace("{n}", String(slowPollSeconds))
         : null;
 
   return (
