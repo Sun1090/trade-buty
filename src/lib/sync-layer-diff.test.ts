@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { diffMergeSummary } from "./sync-layer";
+import { diffMergeSummary, mergeReplayHistory } from "./sync-layer";
 import type { ProgressMap } from "./progress";
 import type { WrongEntry } from "./wrongbook";
 import type { ReplayRecord } from "./replay-store";
@@ -27,8 +27,30 @@ describe("diffMergeSummary", () => {
     expect(summary.newProgress).toBe(0);
     expect(summary.newWrong).toBe(0);
     expect(summary.quizImprovements).toBe(0);
-    expect(summary.newReplays).toBe(1); // replay-history append-only：1 cloud row = 1 new
-    expect(summary.hasAny).toBe(true); // 仅 replay 一项也算新
+    // 这一轮就是本机自己上传云端的（指纹相同、时间只差打点），合并不会带它进来
+    expect(summary.newReplays).toBe(0);
+    expect(summary.hasAny).toBe(false);
+  });
+
+  it("回放摘要只数合并真正带入的轮次，云端重复行算一次", () => {
+    const localReplay: ReplayRecord[] = [
+      { at: 100, symbol: "BTCUSDT", interval: "1h", total: 10, correct: 5, bestStreak: 3 },
+    ];
+    const cloudReplay = [
+      // 本机上传的那一轮（recorded_at 晚 200ms）
+      { symbol: "BTCUSDT", interval: "1h", total: 10, correct: 5, best_streak: 3, recorded_at: "1970-01-01T00:00:00.300Z" },
+      // 另一台设备的一轮
+      { symbol: "ETHUSDT", interval: "15m", total: 20, correct: 18, best_streak: 12, recorded_at: "1970-01-02T00:00:00Z" },
+      // 云端重复行（append-only 表没有唯一约束）
+      { symbol: "ETHUSDT", interval: "15m", total: 20, correct: 18, best_streak: 12, recorded_at: "1970-01-02T00:00:00Z" },
+      // 坏时间戳：合并会跳过，摘要也不能算它
+      { symbol: "XRPUSDT", interval: "1d", total: 5, correct: 1, best_streak: 1, recorded_at: "not-a-date" },
+    ];
+    const summary = diffMergeSummary({}, [], {}, [], {}, [], localReplay, cloudReplay);
+    expect(summary.newReplays).toBe(1);
+    expect(summary.hasAny).toBe(true);
+    // 同一批数据、同一把尺子：摘要说带入几轮，合并就多出几轮
+    expect(mergeReplayHistory(localReplay, cloudReplay).length).toBe(localReplay.length + summary.newReplays);
   });
 
   it("云端有本地没有的进度 → newProgress 计数", () => {
