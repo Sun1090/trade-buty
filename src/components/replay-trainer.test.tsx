@@ -3,6 +3,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ReplayTrainer, type ReplayDict } from "./replay-trainer";
 import { gradeFromReplayAccuracy } from "@/lib/share-card";
+import { getDict } from "@/lib/i18n";
 
 // Node 22 的实验性 localStorage 在 jsdom 下可能不可用，显式提供内存实现。
 const store = new Map<string, string>();
@@ -441,5 +442,43 @@ describe("ReplayTrainer 图表生命周期", () => {
     await waitFor(() => expect(mocks.createChart).toHaveBeenCalledTimes(1));
     unmount();
     expect(mocks.chart.remove).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * 背景根数是难度档位的属性（新手 50 / 进阶 30 / 挑战 15），而控件下方那句说明
+ * 曾经写死「前 30 根…从第 31 根开始」——选了别的难度，界面仍在报中间档的数。
+ */
+describe("ReplayTrainer 上下文说明跟着难度变", () => {
+  const realZh = { ...dict, contextNote: getDict("zh").replay.contextNote };
+  const realEn = { ...dict, contextNote: getDict("en").replay.contextNote };
+
+  it("占位符必须真的在模板里，否则下面的断言会退化成匹配静态数字", () => {
+    for (const locale of ["zh", "en"] as const) {
+      const note = getDict(locale).replay.contextNote;
+      expect(note, locale).toContain("{n}");
+      expect(note, locale).toContain("{m}");
+      expect(note, `模板里不该再留着写死的 30（${locale}）`).not.toMatch(/30|31/);
+    }
+  });
+
+  it.each([
+    ["新手", 50],
+    ["进阶", 30],
+    ["挑战", 15],
+  ] as const)("中文选「%s」时说明写成 %i 根背景", async (label, context) => {
+    render(<ReplayTrainer dict={realZh} locale="zh" />);
+    fireEvent.click(screen.getByRole("button", { name: label }));
+    await waitFor(() =>
+      expect(screen.getByText(`前 ${context} 根为背景走势，从第 ${context + 1} 根开始回放。`)).toBeInTheDocument(),
+    );
+  });
+
+  it("英文档位切换后说明同步（First 15 … starts from #16）", async () => {
+    render(<ReplayTrainer dict={realEn} locale="en" />);
+    fireEvent.click(screen.getByRole("button", { name: "挑战" }));
+    await waitFor(() =>
+      expect(screen.getByText("First 15 candles are context; replay starts from #16.")).toBeInTheDocument(),
+    );
   });
 });
