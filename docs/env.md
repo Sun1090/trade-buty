@@ -33,6 +33,13 @@
 
 无 AI key 时：AI 页显示未配置态，不阻断其他功能。
 
+**但 `AI_API_KEY` 的判定发生在构建期**：`aiEnabledForPage()`（`src/lib/ai-toggle.ts`）读的是服务端环境变量，
+而 AI 页、课程页、章节页都是 SSG——入口显示与否被**烘进静态 HTML**。
+所以只在 Vercel 上补 key 不重新部署，API 会活过来而页面仍然显示「AI 功能暂未开启」（反向同理：撤掉 key 后
+旧 HTML 还会把入口留着，点下去就是 502）。改完 `AI_*` 之后必须触发一次部署才与运行期一致。
+两条信号分别怎么判：运行期看 `npm run ops:smoke-prod` 的游客 `POST /api/ai/chat` 探针；
+构建期看部署后的 `/zh/ai` 是否还停在「AI 功能暂未开启」。两边不一致就说明少了一次重新部署。
+
 紧急关闭：把 `NEXT_PUBLIC_AI_ENABLED` 设为 `false` 并重新部署，即可在所有页面隐藏 AI 入口（不改代码、不回滚）。
 
 ## 运营
