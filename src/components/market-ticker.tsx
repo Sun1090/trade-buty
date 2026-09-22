@@ -162,7 +162,10 @@ export function MarketTicker({ locale = "zh" }: { locale?: "zh" | "en" }) {
 
       {tickers && (
         <div>
-          {networkQuality === "offline" && (
+          {/* 「上次数据」标的是**屏幕上这些数字已经不再刷新**：离线是一种，
+              在线但轮询失败是更常见的一种（navigator.onLine 为 true 而网络其实不通，
+              PR #139 的同一个教训）。只在 offline 时标注，等于让旧价格顶着「实时行情」的标题继续挂着。 */}
+          {(networkQuality === "offline" || failed) && (
             <p className="mb-2 text-xs text-faint">{dict.stale}</p>
           )}
           <div className="grid grid-cols-3 gap-2">
