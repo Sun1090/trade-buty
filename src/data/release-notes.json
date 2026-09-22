@@ -1,6 +1,38 @@
 {
   "releases": [
     {
+      "version": "0.7.4",
+      "date": "2026-09-22",
+      "name": {
+        "zh": "学习数据展示口径、行情与本地状态的七个缺陷修复",
+        "en": "Seven fixes to learning-data display, market prices, and local state"
+      },
+      "highlights": {
+        "zh": [
+          "复习页的「已过期」与统计导出的 `overdue` 从此是同一个数：回填出来的到期日是推断值、不是系统真正排过的复习计划，旧数据（R5 之前的条目、云端 `srs_due` 为空的行）不再被标成红色「过期 N 天」。「今日到期」仍按回填口径，旧课文照样出现在队列最前面",
+          "所有接收 JSON 的端点在读流阶段设字节上限：7 个 AI 端点此前直接 `req.json()`，而字段级上限要整包缓冲并解析完之后才生效，匿名请求体等于把内存放大的额度交给客户端决定。现在超限立刻断流返回 413，7 个端点与原本已有上限的 `/api/error-reports` 共用同一把有界读取，并由新门禁 `check:request-body-bounds` 防止回归",
+          "行情卡在轮询失败时把屏幕上的旧价格标成「上次数据」：`navigator.onLine` 仍为 true 而请求全部失败才是最常见的破网姿势，过去只有离线才标注，旧报价于是继续顶着「实时行情」的标题显示",
+          "统计页的近 7 天迷你条不再冻结在打开页面那一刻：日期窗口此前锁死，用户学完一节课，旁边的学习日历亮起、这根条不动。现在跟随记录更新，并把「哪几天有学习」写进无障碍名称——此前亮与灭只有颜色一个通道",
+          "课末测验卡不再产生服务端/客户端不一致的首屏：成绩存在 localStorage，此前在渲染期直接读取，预渲染的 HTML 写的是「开始测验」而客户端 hydration 时用户早已做过题。现在服务端快照固定为「无进度」，挂载后对齐，答完一套题卡片自己更新成「再测一次 · 最佳 n/total」",
+          "篇章完成庆祝只在刚读完的时间窗内触发：判定此前是「这次挂载读到的进度是满的」，于是几周后随便点开一篇已学完的篇章也会再放一次礼花，对着旧成就宣布刚完成；云端同步来、本机没有阅读记录的进度同样不再庆祝",
+          "后台标签里的课程页不再给没人读过的课累计学习时长：`visibilitychange` 只在切换时触发，组件在后台挂载时事件一次也不会来，计时器按「可见」继续累加并汇入近 90 天学习时长与每日目标"
+        ],
+        "en": [
+          "The review page's \"overdue\" count and the `overdue` field in the stats export now use one ruler: a backfilled due date is an inference, not a schedule the system actually set, so legacy entries (pre-R5 rows, cloud rows with an empty `srs_due`) no longer get a red \"N days overdue\" mark. \"Due today\" still honours the backfill, so old lessons stay at the front of the queue",
+          "Every endpoint that accepts JSON now bounds the body while streaming it: seven AI routes used bare `req.json()`, and per-field caps only apply after the whole payload has been buffered and parsed, which handed anonymous requests a memory-amplification dial. Oversized bodies are now cancelled and answered with 413; those seven routes and `/api/error-reports`, which already had a cap, now share one bounded reader, and a new `check:request-body-bounds` gate keeps it from regressing",
+          "The market card now labels stale prices as \"last available data\" when polling fails: `navigator.onLine` staying true while every request fails is the common way to lose a network, and only the offline path was labelled, so old quotes kept shipping under a \"Live market\" heading",
+          "The 7-day mini bar on the stats page no longer freezes at the moment the page opened: its date window was memoised, so finishing a lesson lit up the activity calendar beside it while the bar stayed put. It now follows new records, and which days had study activity is written into an accessible name instead of being carried by colour alone",
+          "The end-of-lesson quiz card no longer ships a first paint that contradicts itself: scores live in localStorage and were read during render, so prerendered HTML said \"Start quiz\" while hydration already knew better. The server snapshot is now fixed at \"no progress\", the client reconciles on mount, and the card updates itself after a run finishes",
+          "Chapter completion is celebrated only inside a just-finished window: the test used to be \"progress looked complete on this mount\", which fired confetti at chapters completed weeks ago, and cloud-synced progress with no local reading record no longer celebrates either",
+          "A lesson opened in a background tab no longer accrues study time nobody spent: `visibilitychange` only fires on a transition, so a component mounted while hidden never received one and kept crediting time to the 90-day totals and daily goal ring"
+        ]
+      },
+      "docs": [
+        "docs/roadmap.md",
+        "docs/ops.md"
+      ]
+    },
+    {
       "version": "0.7.3",
       "date": "2026-09-22",
       "name": {
