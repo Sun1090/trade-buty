@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { ReviewClient } from "./review-client";
 import type { ChapterQuiz } from "@/lib/quiz-types";
 import { localDateStr, shiftDate } from "@/lib/date-utils";
+import { buildWrongbookEfficiency } from "@/lib/wrongbook-efficiency";
 
 type Entry = {
   chapterNum: string;
@@ -183,6 +184,41 @@ describe("ReviewClient 展示与到期提示（R5.2/R5.4）", () => {
     render(<ReviewClient quizzes={quizzes} dict={dict} locale="en" />);
     expect(screen.getByText(/2d overdue/)).toBeInTheDocument();
     expect(screen.getByText(/due now/)).toBeInTheDocument();
+  });
+
+  // R16.4 的另一半：复习页的「已过期」与错题效率统计的 overdue 必须是同一个数。
+  // 「今日到期」按 R5.6 回填（旧数据该出现就出现），「已过期」只看系统真正排过的
+  // srsDue（R5.4 不拿推断日期宣布逾期天数）——两把尺子各自成立，但两处入口不能各用一把。
+  it("回填的旧数据算今日到期但不标红，且与错题效率统计同口径", () => {
+    const dayAt = (date: string) => new Date(`${date}T12:00:00`).getTime();
+    const items = {
+      // 入库 5 天前、没有 srs_due：回填到期日 = 4 天前 → 该出现在队列里，但不算「已过期」
+      "spot:0": entry({ at: dayAt(shiftDate(today(), -5)) }),
+      // 真正排过且已过期的条目
+      "spot:1": entry({ questionIdx: 1, srsStage: 1, srsDue: shiftDate(today(), -2) }),
+    };
+    wrongState.items = items;
+    render(<ReviewClient quizzes={quizzes} dict={dict} locale="zh" />);
+
+    expect(screen.getByText("今日到期")).toBeInTheDocument();
+    expect(screen.getByText(/过期 2 天/)).toBeInTheDocument();
+    expect(screen.queryByText(/过期 4 天/)).not.toBeInTheDocument();
+
+    const header = screen.getByText(/道错题/).textContent ?? "";
+    const shown = {
+      dueToday: Number(header.match(/(\d+) 道今日到期/)?.[1]),
+      overdue: Number(header.match(/（(\d+) 道已过期）/)?.[1]),
+    };
+    const efficiency = buildWrongbookEfficiency({
+      wrongEntries: items,
+      attempts: {},
+      today: today(),
+    });
+    expect(shown).toEqual({
+      dueToday: efficiency.latest.dueToday,
+      overdue: efficiency.latest.overdue,
+    });
+    expect(shown).toEqual({ dueToday: 2, overdue: 1 });
   });
 });
 
