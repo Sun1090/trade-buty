@@ -363,6 +363,61 @@ describe("POST /api/ai/chat 流式与缓存（R1.4）", () => {
     expect(streamChat).not.toHaveBeenCalled();
   });
 
+  it("被截断的回答进缓存后仍带截断标记，命中方还能看到「继续生成」", async () => {
+    const body = { messages: [{ role: "user", content: "截断缓存用例-唯一问题" }] };
+    streamOf(["写到一半就断了"], "length");
+    const first = await POST(request(body));
+    expect(await first.text()).toBe(`写到一半就断了${TRUNCATED_MARKER}`);
+
+    streamChat.mockClear();
+    const second = await POST(request(body));
+    expect(second.headers.get("X-Cache")).toBe("HIT");
+    // 标记必须在缓存里：前端只有看到它才渲染「继续生成」，否则用户拿到半句话且无路可走
+    expect(await second.text()).toBe(`写到一半就断了${TRUNCATED_MARKER}`);
+  });
+
+  it("跨片 UTF-8 多字节字符不能把缓存里的答案解成替换符", async () => {
+    const answer = "均线汇聚之后的回答"; // 每个汉字 3 字节
+    const bytes = new TextEncoder().encode(answer);
+    const cut = 13; // 故意切在第 5 个字的中间
+    streamChat.mockImplementation(async () =>
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(bytes.slice(0, cut));
+          controller.enqueue(bytes.slice(cut));
+          controller.close();
+        },
+      }),
+    );
+    const body = { messages: [{ role: "user", content: "跨片解码用例-唯一问题" }] };
+    const first = await POST(request(body));
+    expect(await first.text()).toBe(answer); // 透传的字节本身不会坏
+
+    const second = await POST(request(body));
+    expect(second.headers.get("X-Cache")).toBe("HIT");
+    // 缓存的是累计文本：每片新建 decoder 会把跨片的字解成 U+FFFD，命中方就拿到花掉的答案
+    expect(await second.text()).toBe(answer);
+  });
+
+  it("章节上下文不同的同名问题不共用缓存", async () => {
+    const question = "章节上下文用例-唯一问题";
+    streamOf(["结合期货篇章的回答"]);
+    const withContext = await POST(
+      request({ messages: [{ role: "user", content: question }], contextChapter: "futures" }),
+    );
+    expect(await withContext.text()).toBe("结合期货篇章的回答");
+    expect(streamChat).toHaveBeenCalledTimes(1);
+
+    streamOf(["不带上下文的回答"]);
+    const withoutContext = await POST(
+      request({ messages: [{ role: "user", content: question }] }),
+    );
+    // 上下文会改写 system prompt，键里没有它 = 把 A 的篇章化回答发给问同一句话的所有人
+    expect(withoutContext.headers.get("X-Cache")).toBeNull();
+    expect(await withoutContext.text()).toBe("不带上下文的回答");
+    expect(streamChat).toHaveBeenCalledTimes(2);
+  });
+
   it("输出疑似荐股时打人工抽查告警，但照常把内容发给用户", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     streamOf(["建议买入 BTC"]);
