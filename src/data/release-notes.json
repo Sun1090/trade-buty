@@ -1,6 +1,31 @@
 {
   "releases": [
     {
+      "version": "0.7.5",
+      "date": "2026-09-22",
+      "name": {
+        "zh": "统计口径、回放评级与分享界面文案的缺陷修复",
+        "en": "Fixes to stats caliber, replay grading, and share-screen wording"
+      },
+      "highlights": {
+        "zh": [
+          "统计页的两张周卡片从此说同一个数：柱状摘要此前把每天的学习秒数各自四舍五入再相加，7 天各学 30 秒会被报成「共学 7 分钟」，而旁边的周度摘要按整周合计说是 3 分钟；现在统一为整周向下取整，半小时的一天也不再被写成「1 分钟」，30 秒的柱子不再画成满格",
+          "回放训练的「本轮小结」评级与同一块面板里的分享卡同一个口径：面板此前自己抄了一套阈值、漏掉「少于 3 次猜测样本不足、不给评级」的规则，于是 2/2 全对的一轮在面板上是 S、画到卡上却是 C",
+          "分享卡与分享落地页的按钮和状态提示不再只有英文：预览按钮改回字典里早就写好的「预览卡面」，落地页的下载按钮与状态行改为「下载卡面 PNG / 可以分享了 / 正在生成预览…」，复制链接失败与回放取数失败的提示也按页面语言显示",
+          "维护工具：生产冒烟脚本遇到传输层抖动（`fetch failed`、socket 挂断、超时）会重试到第 3 次并在结论里注明是第几次才连上，不再让一次网络抖动冒充站内回归；断言不满足与非传输层异常仍然一次定性"
+        ],
+        "en": [
+          "The two weekly cards on the stats page now agree. The bar summary used to round each day's seconds separately and add them up, so 30 seconds on each of 7 days was reported as \"7 minutes studied\" while the weekly summary next to it said 3 minutes. Both now floor the weekly total; half a minute no longer reads as \"1 minute\" and a 30-second bar is no longer drawn full height",
+          "The replay trainer's round summary and the share card in the very same panel now use one grading rule. The summary had its own copy of the thresholds and missed the \"fewer than 3 guesses is too small a sample to rate\" guard, so a perfect 2/2 round showed S on the panel and C on the card",
+          "Share cards and the share landing page are no longer English-only: the preview button now uses the localized \"Preview card\" label that was already in the dictionaries, the landing page download button and status line follow the page language, and the copy-link and market-data failure messages are localized too",
+          "Tooling: the production smoke script now retries transport-level flakes (`fetch failed`, socket hangs, timeouts) up to three times and reports which attempt connected, so one network hiccup no longer masquerades as a site regression. Assertion failures and non-transport errors still fail on the first try"
+        ]
+      },
+      "docs": [
+        "docs/progress.md"
+      ]
+    },
+    {
       "version": "0.7.4",
       "date": "2026-09-22",
       "name": {
