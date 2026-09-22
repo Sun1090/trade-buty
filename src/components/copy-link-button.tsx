@@ -10,6 +10,8 @@ interface Props {
   label: string;
   /** 复制成功后短提示（i18n） */
   copiedLabel: string;
+  /** 复制失败提示（i18n）；失败必须可见，所以文案也必须是本页语言 */
+  failedLabel: string;
   /** 测试 hook */
   testId: string;
   /** 可选样式覆盖 */
@@ -24,7 +26,7 @@ interface Props {
  * - 成功后切换文案 1.5s 给视觉反馈
  * - 失败时也反馈给用户（不可静默吞错——分享是用户主动操作）
  */
-export function CopyLinkButton({ url, label, copiedLabel, testId, className, onOutcome }: Props) {
+export function CopyLinkButton({ url, label, copiedLabel, failedLabel, testId, className, onOutcome }: Props) {
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -68,7 +70,7 @@ export function CopyLinkButton({ url, label, copiedLabel, testId, className, onO
         "rounded-full border border-[var(--accent)]/40 bg-[var(--surface)] hover:border-accent/60 text-accent font-medium px-5 py-2 text-sm min-h-10 transition"
       }
     >
-      {failed ? "⚠️ Copy failed" : copied ? `✓ ${copiedLabel}` : `🔗 ${label}`}
+      {failed ? `⚠️ ${failedLabel}` : copied ? `✓ ${copiedLabel}` : `🔗 ${label}`}
     </button>
   );
 }

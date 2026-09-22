@@ -26,6 +26,7 @@ interface Props {
     download: string;
     copyLink: string;
     copiedLink: string;
+    copyFailed: string;
     downloadFailed: string;
   };
 }
@@ -182,6 +183,7 @@ export function ReplayShareCard({
           url={shareUrl}
           label={labels.copyLink}
           copiedLabel={labels.copiedLink}
+          failedLabel={labels.copyFailed}
           testId="replay-share-link-btn"
           onOutcome={(outcome) =>
             trackGrowthEvent({

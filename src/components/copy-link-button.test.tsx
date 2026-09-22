@@ -43,7 +43,7 @@ describe("CopyLinkButton", () => {
       <CopyLinkButton
         url="https://example.com/share/quiz/v1-abc"
         label="复制链接"
-        copiedLabel="已复制"
+        copiedLabel="已复制" failedLabel="复制失败"
         testId="copy-btn"
       />,
     );
@@ -62,7 +62,7 @@ describe("CopyLinkButton", () => {
       <CopyLinkButton
         url="https://example.com/x"
         label="copy"
-        copiedLabel="ok"
+        copiedLabel="ok" failedLabel="复制失败"
         testId="copy-btn2"
       />,
     );
@@ -82,13 +82,13 @@ describe("CopyLinkButton", () => {
       <CopyLinkButton
         url="https://example.com/x"
         label="copy"
-        copiedLabel="ok"
+        copiedLabel="ok" failedLabel="复制失败"
         testId="copy-btn3"
       />,
     );
     fireEvent.click(screen.getByTestId("copy-btn3"));
     await waitFor(() => {
-      expect(screen.getByTestId("copy-btn3").textContent).toContain("Copy failed");
+      expect(screen.getByTestId("copy-btn3").textContent).toContain("复制失败");
     });
   });
 
@@ -96,7 +96,7 @@ describe("CopyLinkButton", () => {
     const writeText = stubClipboard({ ok: true });
     // jsdom 默认 location.href 是 "http://localhost:3000/"
     render(
-      <CopyLinkButton label="copy" copiedLabel="ok" testId="copy-btn4" />,
+      <CopyLinkButton label="copy" copiedLabel="ok" failedLabel="复制失败" testId="copy-btn4" />,
     );
     fireEvent.click(screen.getByTestId("copy-btn4"));
     await waitFor(() => {
@@ -111,7 +111,7 @@ describe("CopyLinkButton", () => {
       <CopyLinkButton
         url="https://example.com/share/quiz/secret?ref=alice"
         label="copy"
-        copiedLabel="ok"
+        copiedLabel="ok" failedLabel="复制失败"
         testId="copy-btn5"
         onOutcome={onOutcome}
       />,
@@ -128,14 +128,14 @@ describe("CopyLinkButton", () => {
       <CopyLinkButton
         url=""
         label="copy"
-        copiedLabel="ok"
+        copiedLabel="ok" failedLabel="复制失败"
         testId="copy-btn7"
         onOutcome={onOutcome}
       />,
     );
     fireEvent.click(screen.getByTestId("copy-btn7"));
     await waitFor(() => {
-      expect(screen.getByTestId("copy-btn7").textContent).toContain("Copy failed");
+      expect(screen.getByTestId("copy-btn7").textContent).toContain("复制失败");
     });
     expect(writeText).not.toHaveBeenCalled();
     expect(onOutcome).toHaveBeenCalledWith("failure");
@@ -147,7 +147,7 @@ describe("CopyLinkButton", () => {
       <CopyLinkButton
         url="https://example.com/x"
         label="copy"
-        copiedLabel="ok"
+        copiedLabel="ok" failedLabel="复制失败"
         testId="copy-btn6"
         onOutcome={() => {
           throw new Error("analytics failed");

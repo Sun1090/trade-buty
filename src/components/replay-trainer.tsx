@@ -65,10 +65,12 @@ export interface ReplayDict {
   startCustom: string;
   shareReplay: string;
   previewReplay: string;
+  fetchError: string;
   download: string;
   previewAlt: string;
   copyLink: string;
   copiedLink: string;
+  copyFailed: string;
   downloadFailed: string;
 }
 
@@ -477,7 +479,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
         )}
         {error && (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-muted">
-            Binance API unreachable
+            {dict.fetchError}
           </div>
         )}
       </div>
@@ -526,6 +528,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
                       download: dict.download,
                       copyLink: dict.copyLink,
                       copiedLink: dict.copiedLink,
+                      copyFailed: dict.copyFailed,
                   downloadFailed: dict.downloadFailed,
                     }}
                     shareUrl={
