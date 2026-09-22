@@ -24,6 +24,18 @@
     {
       "number": 125,
       "reason": "工作未丢失，只是换了载体：本仓库要求合并前分支与基线同步（BEHIND 时 GitHub 拒绝 rebase 合并），而更新该分支需要 force push——本仓库禁止。于是在最新 origin/main(695b213) 上重做同样两个 commit（0a1281b→c73a102、1cfd4e5→cdb3c53），由 PR #126 落地，PR 描述逐字搬迁。合并后可用 git cherry 验证补丁等价。"
+    },
+    {
+      "number": 134,
+      "reason": "同一个 BEHIND 载体问题，一次批量重投：#135 合并后 main 前移，#134/#136/#137 三条分支全部落在旧基线上，逐个重建要烧三轮 CI。于是把三个分支的 5 个 commit（1fb7568、dd8705a、c39184e／77b96bb／43257ee）按原顺序 cherry-pick 到最新 origin/main 的 PR #138，逐条独立成 commit、可单独 revert，PR 描述按原三条分别搬迁。补丁等价可用 git cherry 验证。"
+    },
+    {
+      "number": 136,
+      "reason": "同 PR #134 的批量重投：commit 77b96bb（fix(ai): 回答缓存写入挪到截断标记之后，缓存键纳入章节上下文）原样 cherry-pick 进 PR #138，未改写内容；三条端点用例（截断标记进缓存、章节上下文分桶、跨片 UTF-8）随该 commit 一起落地。"
+    },
+    {
+      "number": 137,
+      "reason": "同 PR #134 的批量重投：commit 43257ee（fix(ai): 反馈与引用点击按账号分桶，身份不可确定时降级为匿名行）原样 cherry-pick 进 PR #138，含 roadmap R15.3 与两端点各 3 条用例。"
     }
   ]
 }
