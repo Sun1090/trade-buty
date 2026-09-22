@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { CALENDAR_EVENTS, calendarSampleWindow } from "@/lib/calendar-sample";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/metadata";
 import { HeroCard } from "@/components/hero-card";
@@ -20,27 +21,6 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/calendar
   });
 }
 
-interface Event {
-  date: string;
-  time: string;
-  region: string;
-  event: string;
-  impact: "high" | "medium" | "low";
-}
-
-// 静态事件列表（示例数据，可后续接 API）
-const EVENTS: Event[] = [
-  { date: "2026-08-26", time: "20:30", region: "🇺🇸 US", event: "Consumer Confidence", impact: "high" },
-  { date: "2026-08-28", time: "20:30", region: "🇺🇸 US", event: "GDP Q2 (2nd)", impact: "high" },
-  { date: "2026-08-29", time: "20:30", region: "🇺🇸 US", event: "Initial Jobless Claims", impact: "medium" },
-  { date: "2026-08-29", time: "22:00", region: "🇺🇸 US", event: "Pending Home Sales", impact: "low" },
-  { date: "2026-09-01", time: "09:45", region: "🇨🇳 CN", event: "Manufacturing PMI", impact: "high" },
-  { date: "2026-09-01", time: "21:45", region: "🇺🇸 US", event: "ISM Manufacturing PMI", impact: "high" },
-  { date: "2026-09-03", time: "20:15", region: "🇪🇺 EU", event: "ECB Rate Decision", impact: "high" },
-  { date: "2026-09-05", time: "20:30", region: "🇺🇸 US", event: "Non-Farm Payrolls", impact: "high" },
-  { date: "2026-09-05", time: "20:30", region: "🇺🇸 US", event: "Unemployment Rate", impact: "high" },
-];
-
 const IMPACT_COLORS: Record<string, string> = {
   high: "text-down border-down/40 bg-down/10",
   medium: "text-warn border-warn/40 bg-warn-dim",
@@ -55,10 +35,12 @@ export default async function CalendarPage({ params }: PageProps<"/[locale]/cale
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-5 py-10 sm:py-14">
       <HeroCard label={en ? "Calendar" : "日历"} title={en ? "Economic Calendar" : "重要经济事件"}>
-        {en ? "Key economic releases that may move markets. Times in UTC+8." : "可能影响市场的关键经济数据发布。时间为北京时间。"}
+        {en
+          ? `A sample calendar: the releases below span ${calendarSampleWindow()}. It never updates on its own, and it is not investment advice.`
+          : `示例日历：下面这几条发布覆盖 ${calendarSampleWindow()}，不会自动更新，也不构成任何投资建议。`}
       </HeroCard>
       <ul className="space-y-2">
-        {EVENTS.map((e, i) => (
+        {CALENDAR_EVENTS.map((e, i) => (
           <li
             key={i}
             className={`flex items-center gap-4 rounded-xl border px-4 py-3 ${IMPACT_COLORS[e.impact]}`}
