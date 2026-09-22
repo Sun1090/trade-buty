@@ -40,6 +40,10 @@
     {
       "number": 164,
       "reason": "工作未丢失，换了载体：#164 删的是 `src/lib/i18n.ts` 里 18 条首页改版遗留的死文案，而它 rebase 到 main 时与刚合并的 #163（往相邻行加 `home.nextTipLabel`）冲突，本仓库禁止 force push，于是在最新 origin/main 上 cherry-pick 重做为 PR #165（手工解冲突、保留 #163 那一行）。补丁等价可用 `git cherry` 验证；验证 additionally 做了「删前删后各构建一次、456 个预渲染页面可见文本逐页比对」（454 页一致，另 2 页只是 changelog 的最近提交列表随 HEAD 变化）。"
+    },
+    {
+      "number": 197,
+      "reason": "工作未丢失，换了载体：#197 分支与 #196 在 docs/roadmap.md 同一锚点各插入一条 R16 决策项，GitHub 的 update-branch 报 RebaseConflictError，而更新分支需要 force push（本仓库禁止）。于是在最新 origin/main(38d0cb3) 上把 0ee6a99 重新落地为 d8ecc8b（PR #198），冲突只有 roadmap.md 一处、按 R16.12 → R16.13 顺序保留两条。九个实质文件的补丁已用 git diff 逐字比对为 0 行差异；#197 的远程分支随关闭删除，本地副本在确认等价后才删。"
     }
   ]
 }
