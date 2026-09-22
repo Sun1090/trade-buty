@@ -30,6 +30,8 @@
 - `enqueueWrite` 抽到 `sync-layer-queue-fallback.ts`，内部 dynamic import `sync-queue-store` → 阻断 layout 直接静态引用
 - `buildQueueExecutor` 抽到独立模块 `sync-queue-executor.ts`，便于 lazy import 单独成 chunk
 
+**拆分自身的代价**：动态 import 会失败（该 chunk 首载就没下成功、或发布后旧 hash 404），而调用点是 fire-and-forget。所以 `sync-layer-queue-fallback.ts` 把这类写入缓冲在模块内存里，等 chunk 可用时按同一去重/截断口径补落盘，并就地吞掉失败（`service worker` 只预缓存 `offline.html`，JS chunk 一律走网络）。
+
 **净结果**：内容页 +12KB gzip（不可消除——Next/React + Supabase 客户端 + sync-layer 共同构成的"登录态基础设施"）。
 
 **预算调整**（`scripts/check-bundle.mjs`）：

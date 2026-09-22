@@ -9,6 +9,8 @@ const h = vi.hoisted(() => {
     hasEnv: true,
     session: null as { user: { id: string; email: string | null } } | null,
     listeners: [] as EventListener[],
+    /** 落盘重试与重放的先后：缓冲必须先落盘，这一轮 flush 才看得见它 */
+    seq: [] as string[],
   };
   return {
     state,
@@ -29,7 +31,12 @@ const h = vi.hoisted(() => {
     touchLastVisit: vi.fn<(...args: unknown[]) => void>(),
     getLastVisitAt: vi.fn<() => number | null>(() => null),
     shouldShowReturnNudge: vi.fn<(...args: unknown[]) => boolean>(() => false),
-    flushPersistedQueue: vi.fn<(...args: unknown[]) => Promise<void>>(async () => undefined),
+    flushPersistedQueue: vi.fn<(...args: unknown[]) => Promise<void>>(async () => {
+      state.seq.push("flush");
+    }),
+    retryBufferedWrites: vi.fn<() => Promise<void>>(async () => {
+      state.seq.push("retry");
+    }),
     buildQueueExecutor: vi.fn<(...args: unknown[]) => () => void>(() => () => undefined),
   };
 });
@@ -54,6 +61,9 @@ vi.mock("@/lib/sync-queue-store", () => ({
 vi.mock("@/lib/sync-queue-executor", () => ({
   buildQueueExecutor: (...args: unknown[]) => h.buildQueueExecutor(...args),
 }));
+vi.mock("@/lib/sync-layer-queue-fallback", () => ({
+  retryBufferedWrites: () => h.retryBufferedWrites(),
+}));
 
 import { AuthProvider, useAuth } from "./auth-provider";
 
@@ -70,6 +80,7 @@ beforeEach(() => {
   h.state.hasEnv = true;
   h.state.session = null;
   h.state.listeners = [];
+  h.state.seq = [];
   h.setAuthState.mockClear();
   h.hydrateFromCloud.mockClear();
   h.unsubscribe.mockClear();
@@ -168,6 +179,21 @@ describe("AuthProvider", () => {
     await waitFor(() => expect(h.state.listeners.length).toBe(1));
     unmount();
     expect(h.unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("buffers offline writes to disk before the persisted queue is replayed", async () => {
+    h.state.session = { user: { id: "u9", email: null } };
+    renderProvider();
+    await waitFor(() => expect(h.flushPersistedQueue).toHaveBeenCalled());
+    expect(h.state.seq).toEqual(["retry", "flush"]);
+
+    // 网络恢复：这一轮 flush 同样要先给缓冲一个落盘机会
+    h.state.seq = [];
+    act(() => {
+      window.dispatchEvent(new Event("online"));
+    });
+    await waitFor(() => expect(h.flushPersistedQueue).toHaveBeenCalledTimes(2));
+    expect(h.state.seq).toEqual(["retry", "flush"]);
   });
 
   it("records the visit and nudges returning learners", async () => {

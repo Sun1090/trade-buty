@@ -129,8 +129,14 @@ docs/knowledge/
 - 冲突元数据记录在 `tb-cloud-sync-meta`，供 UI 说明同步状态。
 - 云端不可用时仍保留本机行为；游客模式不加载账号 chunk。
 
-核心实现位于 `src/lib/sync-layer.ts`、`src/lib/sync-queue-*.ts` 和
-`src/lib/sync-conflicts.ts`。
+持久写队列本身在一个独立的异步 chunk 里（R9.6 体积守门），而这个 chunk 偶尔会拿不到：
+页面加载时它就没下成功、或发布后旧 hash 已经 404。此时待入队的写入先留在内存缓冲区
+（同一去重与截断口径，上限 `MAX_QUEUE`），等下一次入队或网络恢复后的 flush 重试落盘。
+边界要写清：缓冲只活在当前页面会话，这期间关掉标签页仍会丢那部分云端补传——本机
+`localStorage` 的学习数据不受影响。
+
+核心实现位于 `src/lib/sync-layer.ts`、`src/lib/sync-queue-*.ts`、
+`src/lib/sync-layer-queue-fallback.ts` 和 `src/lib/sync-conflicts.ts`。
 
 ### 5.3 数据库边界
 
