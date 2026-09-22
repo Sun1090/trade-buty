@@ -64,7 +64,7 @@ SRS 字段云端空值不覆盖本地计划（R5.7）；目标档位**本地意�
 
 ## 5. PWA 离线兜底（R13.13）
 
-Service Worker 采用**最小缓存边界**：安装期只预缓存 `public/offline.html` 一个静态应用壳，不缓存页面 HTML、RSC payload、API、`search-index.json` 或 `knowledge-assets`。因此断网导航会显示明确的离线引导页，而不是可能过期的课程内容；联网时所有内容请求仍直接走网络，与 §4 的即时更新契约一致。
+Service Worker 采用**最小缓存边界**：安装期只预缓存 `public/offline.html` 一个静态应用壳，不缓存页面 HTML、RSC payload、API、`search-index.json` 或 `knowledge-assets`。因此**文档级导航**（首次进入、地址栏输入、刷新、从站外链接点进来）断网时会显示明确的离线引导页，而不是可能过期的课程内容；应用内点链接走的是 RSC 请求，`sw.js` 只对 `request.mode === "navigate"` 兜底，所以那条路径由 `src/app/error.tsx` 承接，不是离线引导页。联网时所有内容请求仍直接走网络，与 §4 的即时更新契约一致。
 
 | 资源 | 缓存策略 | 说明 |
 |---|---|---|
