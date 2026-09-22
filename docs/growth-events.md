@@ -19,6 +19,7 @@
 | 事件 | 触发点 | 允许字段 | 用途 |
 | --- | --- | --- | --- |
 | `share_card_download` | 分享卡 / 落地页下载 | `card`, `locale`, `surface`, `trigger`, `outcome` | 识别分享素材生成漏斗与失败率 |
+| `share_card_shared` | 卡面图片交给系统分享面板成功 | `card`, `locale`, `surface`, `outcome`（只有 `succeeded`） | 与 `share_card_download/trigger=share` 分开：面板成功时不再谎报一次下载；两者相除即平台支持率 |
 | `share_preview_opened` | 站内分享卡成功生成预览 | `card`, `locale` | 比较预览与直接下载的使用偏好 |
 | `share_link_copy` | 复制分享链接成功或失败 | `card`, `locale`, `outcome` | 观察复制链路成功率 |
 | `share_landing_cta_clicked` | 分享落地页 CTA 点击 | `card`, `locale`, `destination` | 判断访客进入学习路线还是回放训练 |
@@ -51,9 +52,14 @@
 
 ### 分享
 
-1. `share_card_download` / `outcome=started`
-2. `share_card_download` / `outcome=succeeded|failed`
-3. 若使用链接：`share_link_copy` / `outcome=succeeded|failed`
+1. `share_card_download` / `outcome=started`（点了「分享」或按触发条件起的下载）
+2. 交付结果二选一：图片进了系统分享面板 → `share_card_shared` / `outcome=succeeded`；
+   面板不收文件、退回下载目录 → `share_card_download` / `outcome=succeeded`；两条都不会同时出现
+3. 失败只记在 `share_card_download` / `outcome=failed`（画布拿不到图）；用户在面板里主动取消
+   **什么都不记**，既不算成功也不算失败
+4. 若使用链接：`share_link_copy` / `outcome=succeeded|failed`
+
+`share_card_shared ÷ (share_card_shared + share_card_download/succeeded[trigger=share])` 即面板支持率。
 
 预览是独立分支：只有成功生成 canvas 预览才写 `share_preview_opened`。
 

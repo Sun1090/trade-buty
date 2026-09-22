@@ -19,7 +19,7 @@ describe("growth event privacy audit", () => {
   it("accepts the tracked console-only implementation and catalog", () => {
     const { errors, eventNames } = auditGrowthEventPrivacy(fixture());
     expect(errors).toEqual([]);
-    expect(eventNames).toHaveLength(8);
+    expect(eventNames).toHaveLength(9);
   });
 
   it("does not treat forbidden APIs in comments as executable sinks", () => {
@@ -107,7 +107,7 @@ describe("growth event privacy audit", () => {
       stdio: ["ignore", "pipe", "pipe"],
     });
 
-    expect(output).toContain("growth event privacy audit passed: 8 events");
+    expect(output).toContain("growth event privacy audit passed: 9 events");
   });
 
   it("exits non-zero and reports all audit failures", () => {

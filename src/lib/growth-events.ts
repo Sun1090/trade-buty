@@ -12,6 +12,7 @@
 
 export const GROWTH_EVENT_NAMES = [
   "share_card_download",
+  "share_card_shared",
   "share_preview_opened",
   "share_link_copy",
   "share_landing_cta_clicked",
@@ -37,6 +38,13 @@ export type GrowthEvent =
       surface: ShareSurface;
       trigger: ShareDownloadTrigger;
       outcome: GrowthOutcome;
+    }
+  | {
+      name: "share_card_shared";
+      card: ShareCardKind;
+      locale: GrowthLocale;
+      surface: ShareSurface;
+      outcome: Extract<GrowthOutcome, "succeeded">;
     }
   | {
       name: "share_preview_opened";
@@ -110,6 +118,22 @@ export function normalizeGrowthEvent(event: GrowthEvent): GrowthEvent | null {
         surface: event.surface,
         trigger: event.trigger,
         outcome: event.outcome,
+      };
+    case "share_card_shared":
+      if (
+        !isShareCard(event.card) ||
+        !isLocale(event.locale) ||
+        !SURFACES.has(event.surface) ||
+        event.outcome !== "succeeded"
+      ) {
+        return null;
+      }
+      return {
+        name: "share_card_shared",
+        card: event.card,
+        locale: event.locale,
+        surface: event.surface,
+        outcome: "succeeded",
       };
     case "share_preview_opened":
       if (!isShareCard(event.card) || !isLocale(event.locale)) return null;
