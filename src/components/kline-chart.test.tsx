@@ -3,6 +3,8 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { KlineChart } from "./kline-chart";
+import { getDict } from "@/lib/i18n";
+import { COMPACT_CHART_CANDLES, FULL_CHART_CANDLES } from "@/lib/chart-density";
 
 // lightweight-charts 在 jsdom 下没有 canvas，用探针替身接管 series 生命周期。
 const mocks = vi.hoisted(() => {
@@ -325,6 +327,34 @@ describe("KlineChart 网络质量分支", () => {
     expect(screen.queryByTestId("chart-density-toggle")).toBeNull();
   });
 
+  /**
+   * 低带宽只改两件事：暂停实时推送、不给「切到完整视图」的入口。根数由视口决定
+   * （density 只看 viewport），所以桌面慢网仍按完整视图取数。那句提示曾经写死
+   * 「已切换为 180 根 K 线精简模式」——在桌面宽度下是一句假话。
+   */
+  it("慢网提示不承诺它没做的降根数（桌面宽度仍按完整视图取数）", async () => {
+    mocks.networkQuality = "slow";
+    const zh = { ...dict, slowNetwork: getDict("zh").chart.slowNetwork };
+    const { unmount } = render(<KlineChart dict={zh} />);
+    await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
+    const note = screen.getByTestId("network-quality-note").textContent ?? "";
+    expect(note).toContain("网络较慢");
+    expect(note, "根数由视口决定，低带宽不改").not.toMatch(/\d+\s*根/);
+    expect(mocks.fetchKlines).toHaveBeenCalledWith(
+      "BTCUSDT",
+      "1h",
+      expect.objectContaining({ limit: FULL_CHART_CANDLES }),
+    );
+    unmount();
+
+    const en = { ...dict, slowNetwork: getDict("en").chart.slowNetwork };
+    render(<KlineChart dict={en} />);
+    await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
+    const enNote = screen.getByTestId("network-quality-note").textContent ?? "";
+    expect(enNote.toLowerCase()).toContain("slow network");
+    expect(enNote, "en 同样不能声称切到 180 根").not.toMatch(/\d+[- ]candle/);
+  });
+
   it("在线切换为离线后展示离线态", async () => {
     const { rerender } = render(<KlineChart dict={dict} />);
     await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
@@ -385,6 +415,32 @@ describe("KlineChart 移动端密度", () => {
         expect.objectContaining({ limit: 500 }),
       ),
     );
+  });
+
+  // 视图说明里的根数必须就是这次取数用的那个数：写死文字与 chart-density 常量
+  // 各说一套，就会重演 slowNetwork 那句假话。
+  it("精简/完整视图说明的根数等于实际取数上限", async () => {
+    mocks.matchMobile = true;
+    installMatchMedia(true);
+    for (const locale of ["zh", "en"] as const) {
+      const labels = getDict(locale).chart;
+      expect(labels.compactNote, `${locale} 的紧凑说明要留占位符`).toContain("{n}");
+      expect(labels.fullNote, `${locale} 的完整说明要留占位符`).toContain("{n}");
+      mocks.fetchKlines.mockClear();
+      const { unmount } = render(
+        <KlineChart dict={{ ...dict, compactNote: labels.compactNote, fullNote: labels.fullNote }} />,
+      );
+      await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
+      const note = screen.getByText(/根 K 线|candles/).textContent ?? "";
+      expect(note).not.toContain("{n}");
+      expect(mocks.fetchKlines).toHaveBeenCalledWith(
+        "BTCUSDT",
+        "1h",
+        expect.objectContaining({ limit: COMPACT_CHART_CANDLES }),
+      );
+      expect(note, `窄屏说明的根数要等于取数上限（${locale}）`).toContain(String(COMPACT_CHART_CANDLES));
+      unmount();
+    }
   });
 
   it("低带宽下隐藏密度切换按钮", async () => {
@@ -582,5 +638,19 @@ describe("KlineChart 实时 WebSocket 更新", () => {
       ),
     );
     expect(MockWebSocket.instances.length).toBe(0);
+  });
+
+  // 慢网提示写着「恢复后自动继续」，这条就是钉住那半句：网络回到 online 时不用刷新页面。
+  it("慢网不建立实时连接，网络恢复后自动重连", async () => {
+    mocks.networkQuality = "slow";
+    const { rerender } = render(<KlineChart dict={dict} />);
+    await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
+    expect(MockWebSocket.instances.length).toBe(0);
+
+    act(() => {
+      mocks.networkQuality = "online";
+    });
+    rerender(<KlineChart dict={dict} />);
+    await waitFor(() => expect(MockWebSocket.instances.length).toBe(1));
   });
 });
