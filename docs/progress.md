@@ -5601,3 +5601,26 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：运行期变化全在显示口径、文案与客户端交付路径。最保守的一条是导出剔除 `sb-*`：它只会让产物少一部分内容，而少掉的那部分是可接管账户的凭证。回滚 `git revert c2b90f9` 撤版本号与更新日志，或逐条 revert 单个修复；Vercel 可先把 Production Deployment 切回上一构建止血，随后仍用 revert 收敛历史。无迁移，因此不需要数据库回滚路径。
 - 下一项：①配额窗口过去后重跑 `ops:smoke-prod`，把 0.7.7 的真实上线结论补进本条；②继续按「界面声称了数据没做到的事」倒查，剩余候选：`enqueueWriteLazy` 的动态 import 缺 `catch`（离线下队列 chunk 未缓存时入队自身会抛未处理拒绝）、导出仍含 `tb-data-owner`（账户 UUID）是否适合出现在可转发文件里；③#178（AGENTS.md 产品边界）由维护者自提，未代为合并。
 - 更新时间：2026-09-23 01:35（Asia/Shanghai）。
+
+---
+
+## 2026-09-23 — 离线写队列在队列 chunk 拿不到时丢写入（PR #191）
+
+- 里程碑 / 版本：v0.7.7 之后的常规修复批次（未判级，等攒够一批再定）。
+- 状态：已推送、PR **#191** 开启中；分支 `fix/offline-queue-chunk-failure`（`c97561d` 修复 + 测试 + 文档，`7efd372` 时钟卫生报告再生成）。
+- 问题（上一条记录里的候选①坐实）：`queueFailedWrite` 用 `void enqueueWriteLazy(...)` 把失败的云端写入交给队列，而队列实现 `sync-queue-store` 在独立异步 chunk 里（R9.6 体积守门）。这一页没拿到那个 chunk 时 `import()` 直接 reject——`service worker` 只预缓存 `offline.html`，JS chunk 一律走网络，所以「首载就失败 / 断网后重试 / 发布后旧 hash 已 404」都会命中。后果两条：fire-and-forget 链上留未处理 Promise 拒绝；R9.5 承诺的「入队而非丢弃」在这条路径上真的把写入丢了。
+- 完成内容：
+  - `src/lib/sync-layer-queue-fallback.ts`：`lazyEnqueueWrite` 改为永不 reject，写入先进模块内存缓冲（去重键 `kind|payloadKey`、上限 `MAX_QUEUE` 沿用 `enqueueUnique` / `trimQueue` 同一口径），落盘成功才丢出缓冲，`enqueueWrite` 抛错则整条留着；新增 `retryBufferedWrites()` 与 `pendingWriteCount()`；dev 警告一次成型，生产构建里 `process.env.NODE_ENV` 分支被摇掉。
+  - `src/components/auth-provider.tsx`：`flushQueueAfterLogin` 先 `await retryBufferedWrites()` 再重放，缓冲里的写入赶得上这一轮；三条 fire-and-forget 动态 import 链（`last-visit` 与两条 hydrate）补 `.catch(() => {})`，与 `reading-time` / `daily-goal` 既有写法一致。
+  - `docs/architecture.md` §5.2、`docs/perf-notes.md` §R9.6：按「缓冲只活在当前页面会话，这期间关掉标签页仍会丢那部分云端补传（本机 `localStorage` 学习数据不受影响）」写清边界，不假称跨会话恢复。
+- 变更文件：`src/lib/sync-layer-queue-fallback.ts`、`src/lib/sync-layer-queue-fallback.test.ts`、`src/components/auth-provider.tsx`、`src/components/auth-provider.test.tsx`、`docs/architecture.md`、`docs/perf-notes.md`、`docs/test-clock-hygiene.md`、`docs/progress.md`。
+- 验证命令和结果：
+  - `sync-layer-queue-fallback.test.ts` 4 → **11 例**、`auth-provider.test.tsx` 9 → **10 例**。逐条变异验证：去掉 swallow → 2 红；去掉 `remember` → 8 红；去掉落盘成功后的 `delete` → 3 红；去掉身份门 → 2 红；去掉 `MAX_QUEUE` 上限 → 1 红；去掉 flush 前的 `retryBufferedWrites()` → 顺序那条红。全部还原后复跑。
+  - `npm test` **276 文件 / 2681 条**全绿；`test:coverage` statements **95.91%** / branches 91.09% / functions 95.81% / lines 97.86%（阈值 84/77/83/87 未下调）；`lint --max-warnings=0` 与 `tsc --noEmit` 干净。
+  - `npm run build` + `check:bundle` ✅ 454 条路由在预算内，队列 store 仍是独立 **13.3KB gzip** chunk（`tb-sync-queue-owner` 只在 `18hl501nz75z2.js` 里）——`sync-queue.ts` 随 `MAX_QUEUE` 进 layout 图，但没有把 store 并进共享 chunk。
+  - `npm run e2e` ✅ **137 通过**（端口 3100 先 `lsof` 确认空闲，避免复用到遗留的旧构建服务）；`check:docs` / `check:secrets` / `check:test-clock-hygiene` / `check:constitution` 全绿。
+  - 顺带订正一条我先写错后改对的说法：「每次离线写入都会丢」是过强的——页面正常加载时 Next 会把该 chunk 列进 layout 的异步脚本，已下成功过的 `import()` 走模块表不再触网，真正的触发条件是「这一页没拿到过那个 chunk」。
+- 阻塞：无新增。`BLOCKED_EXTERNAL` 不变（Vercel 构建配额决定 0.7.7 何时上线；生产 AI 运行期配置在控制台）；R16.7 / R15.2 / R16.10 / R16.11 等用户拍板；#178 是维护者自提的 AGENTS.md，未代为合并。
+- 风险 / 回滚：纯客户端交付路径，无迁移、无接口形状变化。缓冲只在「原本必然丢」的路径上生效，成功路径的入队语义与顺序不变（串行化后反而更严格）；`git revert c97561d` 单独可撤。
+- 下一项：①#191 合并后继续倒查，下一条候选是导出仍含 `tb-data-owner`（账户 UUID）是否适合出现在可转发文件里（该键只被 `account-mirror` 用于本机归属判定，导出无导入/恢复路径）；②配额窗口过去后重跑 `ops:smoke-prod`，补 0.7.7 的真实上线结论；③攒够一批后判 0.7.8。
+- 更新时间：2026-09-23 02:15（Asia/Shanghai）。
