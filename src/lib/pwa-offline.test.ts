@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import vm from "node:vm";
 import { describe, expect, it } from "vitest";
 import manifest from "@/app/manifest";
 import robots from "@/app/robots";
@@ -66,6 +67,156 @@ describe("离线页（R13.13）", () => {
   it("明确说明本地学习数据保留、联网能力受限（不承诺收益/离线可用）", () => {
     expect(OFFLINE_HTML).toContain("保存在本机");
     expect(OFFLINE_HTML).toContain("需要联网");
+  });
+});
+
+describe("离线页恢复逻辑（R13.13）", () => {
+  const SCRIPT = /<script>([\s\S]*?)<\/script>/.exec(OFFLINE_HTML)?.[1] ?? "";
+
+  interface Harness {
+    statusText: () => string;
+    fetchCalls: { url: string; init?: RequestInit }[];
+    reloads: number;
+    session: Map<string, string>;
+    dispatch: (type: string) => void;
+    clickRetry: () => void;
+    runTimers: () => Promise<void>;
+  }
+
+  /** 在 vm 沙箱里跑离线页的真实脚本：探针成功之前不许 reload。 */
+  async function loadScript(options: {
+    onLine: boolean;
+    probeOutcome?: ("ok" | "fail")[];
+    budget?: number;
+  }): Promise<Harness> {
+    const outcomes = options.probeOutcome ?? ["ok"];
+    const fetchCalls: { url: string; init?: RequestInit }[] = [];
+    const timers: (() => void)[] = [];
+    const onlineHandlers: (() => void)[] = [];
+    let retryHandler: (() => void) | null = null;
+    let reloads = 0;
+    const status = { textContent: "" };
+    const session = new Map<string, string>();
+    if (options.budget !== undefined) {
+      session.set("tb-offline-auto-reloads", JSON.stringify({ n: options.budget, t: Date.now() }));
+    }
+
+    const sandbox = {
+      document: {
+        getElementById: (id: string) =>
+          id === "status"
+            ? status
+            : {
+                addEventListener: (_type: string, cb: () => void) => {
+                  retryHandler = cb;
+                },
+              },
+      },
+      window: {
+        addEventListener: (type: string, cb: () => void) => {
+          if (type === "online") onlineHandlers.push(cb);
+        },
+      },
+      navigator: { onLine: options.onLine } as { onLine: boolean },
+      location: {
+        pathname: "/zh/path",
+        reload: () => {
+          reloads += 1;
+        },
+      },
+      sessionStorage: {
+        getItem: (key: string) => (session.has(key) ? session.get(key)! : null),
+        setItem: (key: string, value: string) => session.set(key, value),
+        removeItem: (key: string) => session.delete(key),
+      },
+      fetch: (url: string, init?: RequestInit) => {
+        fetchCalls.push({ url, init });
+        const outcome = outcomes[Math.min(fetchCalls.length - 1, outcomes.length - 1)];
+        return outcome === "ok"
+          ? Promise.resolve({ ok: true })
+          : Promise.reject(new Error("network down"));
+      },
+      setTimeout: (cb: () => void) => {
+        timers.push(cb);
+        return timers.length;
+      },
+    };
+    vm.runInNewContext(SCRIPT, sandbox);
+    // 让开局那一次探测的 promise 链走完（成功/失败都反映到 reloads / timers 上）
+    await new Promise((resolve) => setImmediate(resolve));
+
+    return {
+      statusText: () => status.textContent,
+      fetchCalls,
+      get reloads() {
+        return reloads;
+      },
+      session,
+      dispatch: (type: string) => {
+        // 真实浏览器里 online 事件必然伴随 navigator.onLine=true，沙箱照此办理
+        if (type === "online") {
+          sandbox.navigator.onLine = true;
+          onlineHandlers.forEach((cb) => cb());
+        }
+      },
+      clickRetry: () => retryHandler?.(),
+      runTimers: async () => {
+        const queued = timers.splice(0, timers.length);
+        queued.forEach((cb) => cb());
+        await new Promise((resolve) => setImmediate(resolve));
+      },
+    };
+  }
+
+  it("断网时不探测也不重载，只挂上 online 监听", async () => {
+    const h = await loadScript({ onLine: false });
+    expect(h.fetchCalls).toHaveLength(0);
+    expect(h.reloads).toBe(0);
+    h.dispatch("online");
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(h.fetchCalls[0]?.url).toBe("/zh/path");
+    expect(h.fetchCalls[0]?.init).toMatchObject({ method: "HEAD", cache: "no-store" });
+  });
+
+  it("online 之后先探到通才 reload，并把状态改成重新加载", async () => {
+    const h = await loadScript({ onLine: false });
+    h.dispatch("online");
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(h.reloads).toBe(1);
+    expect(h.statusText()).toContain("正在重新加载");
+    expect(JSON.parse(h.session.get("tb-offline-auto-reloads") ?? "{}").n).toBe(1);
+  });
+
+  it("探针失败时退避重试，网络真通之前绝不重载", async () => {
+    const h = await loadScript({ onLine: false, probeOutcome: ["fail", "fail", "ok"] });
+    h.dispatch("online");
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(h.reloads).toBe(0); // 第一次探测失败，只有一次待排队的退避
+    await h.runTimers();
+    expect(h.reloads).toBe(0); // 第二次仍失败
+    await h.runTimers();
+    expect(h.reloads).toBe(1); // 第三次通了才重载
+  });
+
+  it("reload 抢跑的那一份文档（开局已在线）自己会继续探测", async () => {
+    // online 事件已经用掉、不会有第二次：这是过去把用户卡在「已联网的离线页」上的那条路径
+    const h = await loadScript({ onLine: true });
+    expect(h.fetchCalls).toHaveLength(1);
+    expect(h.reloads).toBe(1);
+  });
+
+  it("短时间反复自动重载会收手，改为提示用户手动点按钮", async () => {
+    const h = await loadScript({ onLine: true, budget: 3 });
+    expect(h.reloads).toBe(0);
+    expect(h.statusText()).toContain("点击上方按钮");
+  });
+
+  it("手动 Retry 清空自动重载预算并立刻重载", async () => {
+    const h = await loadScript({ onLine: false, budget: 3 });
+    h.clickRetry();
+    expect(h.reloads).toBe(1);
+    expect(h.session.has("tb-offline-auto-reloads")).toBe(false);
+    expect(h.statusText()).toContain("正在重试");
   });
 });
 

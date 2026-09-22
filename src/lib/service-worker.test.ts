@@ -18,7 +18,7 @@ const SW_SOURCE = readFileSync(SW_PATH, "utf8");
 const OFFLINE_HTML = readFileSync(OFFLINE_PATH, "utf8");
 
 const ORIGIN = "http://localhost";
-const CURRENT_CACHE = "trade-buty-offline-v1";
+const CURRENT_CACHE = "trade-buty-offline-v2";
 
 type WorkerListener = (event: unknown) => void;
 
@@ -78,7 +78,7 @@ function createHarness(
       openedCaches.push(name);
       return cache;
     },
-    keys: async () => [CURRENT_CACHE, "trade-buty-offline-v0"],
+    keys: async () => [CURRENT_CACHE, "trade-buty-offline-v1"],
     delete: deleteMock,
   };
 
@@ -133,7 +133,7 @@ describe("service worker 离线兜底（R13.13）", () => {
     await runLifecycle(h, "activate");
 
     expect(h.deleteMock).toHaveBeenCalledTimes(1);
-    expect(h.deleteMock).toHaveBeenCalledWith("trade-buty-offline-v0");
+    expect(h.deleteMock).toHaveBeenCalledWith("trade-buty-offline-v1");
     expect(h.claim).toHaveBeenCalledTimes(1);
   });
 
