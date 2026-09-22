@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import {
   MAX_ANSWER_CHARS,
+  MAX_FEEDBACK_BODY_BYTES,
   MAX_QUESTION_CHARS,
   PER_MINUTE_LIMIT,
   parseFeedbackBody,
@@ -93,6 +94,22 @@ describe("POST /api/ai/feedback", () => {
   it("畸形 JSON 返回 400", async () => {
     const res = await POST(request("{不是 JSON"));
     expect(res.status).toBe(400);
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  // 匿名可写端点：字段上限要解析完才生效，所以读流阶段的字节闸是唯一挡住超大 body 的东西
+  it("超过请求体字节上限返回 413，不写库也不透传内容", async () => {
+    const res = await POST(
+      request(
+        JSON.stringify({
+          rating: "helpful",
+          question: "q",
+          answer: "物".repeat(MAX_FEEDBACK_BODY_BYTES),
+        }),
+      ),
+    );
+    expect(res.status).toBe(413);
+    expect(await res.json()).toEqual({ error: "Payload too large" });
     expect(insert).not.toHaveBeenCalled();
   });
 

@@ -5,6 +5,7 @@ import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
 import { getServerAuthUser } from "@/lib/supabase/server";
 import { parseJsonLoose } from "@/lib/ai/json-extract";
 import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
+import { readJsonBody } from "@/lib/request-body";
 
 // R7.12：章节导语会调用 LLM，游客/登录分档限流。
 const summaryLimiter = createRateLimiter({ guestLimit: 20, authedLimit: 60 });
@@ -17,6 +18,11 @@ export interface SummaryBody {
 
 const MAX_SLUG_CHARS = 64;
 const MAX_TITLE_CHARS = 200;
+/**
+ * 请求体字节上限：字段上限要解析完才生效，所以读流阶段单独设闸。
+ * slug + title 的字符上限按 CJK 的 UTF-8 上界 ×3 折算，再加 JSON 结构开销。
+ */
+export const MAX_SUMMARY_BODY_BYTES = (MAX_SLUG_CHARS + MAX_TITLE_CHARS) * 3 + 512;
 /** 兜底返回的模型原文上限 */
 const MAX_SUMMARY_CHARS = 800;
 
@@ -60,13 +66,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let raw1: unknown;
-    try {
-      raw1 = await req.json();
-    } catch {
+    const read = await readJsonBody(req, MAX_SUMMARY_BODY_BYTES);
+    if (!read.ok) {
+      if (read.reason === "too-large") {
+        return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+      }
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
-    const body = parseSummaryBody(raw1);
+    const body = parseSummaryBody(read.value);
     if (!body) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }

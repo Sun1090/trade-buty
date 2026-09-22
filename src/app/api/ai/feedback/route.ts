@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient, getServerAuthUser } from "@/lib/supabase/server";
 import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
+import { readJsonBody } from "@/lib/request-body";
 
 export interface FeedbackBody {
   rating: "helpful" | "unhelpful";
@@ -11,6 +12,12 @@ export interface FeedbackBody {
 /** 反馈文本长度上限：匿名也能写库，必须有界，避免单请求塞入任意大内容 */
 export const MAX_QUESTION_CHARS = 2_000;
 export const MAX_ANSWER_CHARS = 8_000;
+/**
+ * 请求体字节上限：字段上限只在**解析之后**才生效，缓冲本身还得单独设闸。
+ * 两个字段各自的字符上限按 CJK 的 UTF-8 上界 ×3 折算，再加 1 KB JSON 结构开销。
+ */
+export const MAX_FEEDBACK_BODY_BYTES =
+  (MAX_QUESTION_CHARS + MAX_ANSWER_CHARS) * 3 + 1_024;
 
 // R7.12：端点是「匿名可写库」的——RLS 放行 `user_id is null` 的插入，
 // 因此应用层是唯一的闸门。没有配额时，伪造请求即可无上限往 ai_feedback
@@ -61,13 +68,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let raw: unknown;
-  try {
-    raw = await req.json();
-  } catch {
+  const parsed = await readJsonBody(req, MAX_FEEDBACK_BODY_BYTES);
+  if (!parsed.ok) {
+    if (parsed.reason === "too-large") {
+      return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+    }
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const body = parseFeedbackBody(raw);
+  const body = parseFeedbackBody(parsed.value);
   if (!body) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }

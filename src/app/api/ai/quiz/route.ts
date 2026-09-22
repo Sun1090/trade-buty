@@ -12,6 +12,7 @@ import { QUIZZES } from "@/lib/quizzes";
 import { parseJsonLoose } from "@/lib/ai/json-extract";
 import { BoundedMap, sweepExpired } from "@/lib/bounded-map";
 import { createRateLimiter } from "@/lib/ai/rate-limit";
+import { readJsonBody } from "@/lib/request-body";
 
 // R7.12：AI 出题会调用 LLM，按用户限流（缓存命中不消耗生成预算，但仍走限流防刷）。
 const quizLimiter = createRateLimiter({ guestLimit: 40, authedLimit: 40 });
@@ -38,6 +39,14 @@ const MAX_VARIANT_ITEMS = 5;
 // QUIZZES 的键是英文篇章 slug（getting-started / technical-analysis …），不是数字。
 // 这里只校验 slug 形状，真正的存在性由下面的 QUIZZES 查找兜底：取不到原题即 400。
 const CHAPTER_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * 请求体字节上限：`CHAPTER_SLUG_RE`/条数上限都要整包解析完才生效，读流阶段单独设闸。
+ * 按「变体 5 个条目 + 章节模式 1 个 slug」估算，每个条目留 slug 上限 + 64 字节的键名
+ * 与下标开销，×3 是 CJK 的 UTF-8 上界，再加 JSON 结构余量。
+ */
+export const MAX_QUIZ_BODY_BYTES =
+  (MAX_VARIANT_ITEMS + 1) * (MAX_CHAPTER_SLUG_CHARS + 64) * 3 + 1_024;
 
 /**
  * POST: 根据用户错题生成 AI 变体题。
@@ -68,12 +77,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let raw1: unknown;
-  try {
-    raw1 = await req.json();
-  } catch {
+  const read = await readJsonBody(req, MAX_QUIZ_BODY_BYTES);
+  if (!read.ok) {
+    if (read.reason === "too-large") {
+      return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+    }
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
+  const raw1 = read.value;
   if (typeof raw1 !== "object" || raw1 === null) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient, getServerAuthUser } from "@/lib/supabase/server";
 import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
+import { readJsonBody } from "@/lib/request-body";
 
 
 // R7.12：与 /api/ai/feedback 同理——RLS 放行匿名插入，应用层必须自己设闸。
@@ -20,6 +21,12 @@ interface CitationClickBody {
   doc?: string;
   question?: string;
 }
+
+/**
+ * 请求体字节上限：字段各自有上限（chapter 100 / doc 200 / question 500 字符），
+ * 但那些校验发生在整包已经缓冲并解析之后；按 CJK 的 UTF-8 上界 ×3 折算再加结构开销。
+ */
+export const MAX_CITATION_BODY_BYTES = (100 + 200 + 500) * 3 + 512;
 
 /** 纯校验：合法返回规范化后的字段，否则 null（导出便于单测） */
 export function parseCitationClick(
@@ -59,13 +66,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let raw: unknown;
-  try {
-    raw = await req.json();
-  } catch {
+  const read = await readJsonBody(req, MAX_CITATION_BODY_BYTES);
+  if (!read.ok) {
+    if (read.reason === "too-large") {
+      return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+    }
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const parsed = parseCitationClick(raw);
+  const parsed = parseCitationClick(read.value);
   if (!parsed) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { POST } from "./route";
+import { MAX_QUIZ_BODY_BYTES, POST } from "./route";
 import { resolveAuthUser } from "@/lib/supabase/auth-result";
 
 const getUser = vi.fn();
@@ -38,6 +38,15 @@ describe("POST /api/ai/quiz 输入校验（R7.12）", () => {
   it("非 JSON / 非对象请求体返回 400", async () => {
     expect((await POST(request(null, "{坏 JSON"))).status).toBe(400);
     expect((await POST(request("字符串"))).status).toBe(400);
+    expect(chat).not.toHaveBeenCalled();
+  });
+
+  // 字段上限要整包解析完才生效，读流阶段的字节闸才挡得住超大 body
+  it("超过请求体字节上限返回 413，不调检索与模型", async () => {
+    const res = await POST(request(null, JSON.stringify({ chapter: "物".repeat(MAX_QUIZ_BODY_BYTES) })));
+    expect(res.status).toBe(413);
+    expect(await res.json()).toEqual({ error: "Payload too large" });
+    expect(retrieve).not.toHaveBeenCalled();
     expect(chat).not.toHaveBeenCalled();
   });
 

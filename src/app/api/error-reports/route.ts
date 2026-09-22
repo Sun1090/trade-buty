@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
+import { readBoundedBody } from "@/lib/request-body";
 import {
   ERROR_REPORT_ALLOWED_KEYS,
   MAX_DIGEST_LENGTH,
@@ -61,31 +62,7 @@ export function parseErrorReportPayload(value: unknown): ErrorReportPayload | nu
   return { level, scope: record.scope, kind: record.kind, ...(digest ? { digest } : {}) };
 }
 
-/** 有界读取请求体：超过上限立即断流并返回 null，避免超大 body 撑爆实例内存。 */
-async function readBoundedBody(req: NextRequest, maxBytes: number): Promise<string | null> {
-  const reader = req.body?.getReader();
-  if (!reader) return "";
-  const decoder = new TextDecoder();
-  let total = 0;
-  let text = "";
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (!value) continue;
-      total += value.byteLength;
-      if (total > maxBytes) {
-        await reader.cancel();
-        return null;
-      }
-      text += decoder.decode(value, { stream: true });
-    }
-    text += decoder.decode();
-    return text;
-  } catch {
-    return null;
-  }
-}
+/** 有界读取请求体的实现见 `src/lib/request-body.ts`：站内所有接收 JSON 的公开端点共用一把尺子。 */
 
 /** POST：接收匿名、无身份的诊断信号；成功与主动丢弃都返回 202，不泄露内部状态。 */
 export async function POST(req: NextRequest) {

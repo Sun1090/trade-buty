@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { parsePlanBody, POST } from "./route";
+import { MAX_PLAN_BODY_BYTES, parsePlanBody, POST } from "./route";
 import { resolveAuthUser } from "@/lib/supabase/auth-result";
 
 const mocks = vi.hoisted(() => ({
@@ -132,6 +132,21 @@ describe("POST /api/ai/plan 限流（R7.12）", () => {
 
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("Invalid JSON");
+    expect(chat).not.toHaveBeenCalled();
+  });
+
+  // 字段上限要整包解析完才生效，读流阶段的字节闸才挡得住超大 body
+  it("超过请求体字节上限返回 413，不调模型", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "plan-large-user" } },
+      error: null,
+    });
+    const res = await POST(
+      request(JSON.stringify({ doneChapters: ["物".repeat(MAX_PLAN_BODY_BYTES)] }), true),
+    );
+
+    expect(res.status).toBe(413);
+    expect(await res.json()).toEqual({ error: "Payload too large" });
     expect(chat).not.toHaveBeenCalled();
   });
 
