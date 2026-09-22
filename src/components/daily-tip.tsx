@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { getRandomTip, getSeedTip } from "@/lib/tips";
 
 /** 交易心得卡：水合首帧取确定值，挂载后再换成随机一条 */
-export function DailyTip({ locale }: { locale: string }) {
+export function DailyTip({
+  locale,
+  nextTipLabel,
+}: {
+  locale: string;
+  nextTipLabel: string;
+}) {
   const [tip, setTip] = useState(() => getSeedTip(locale));
 
   useEffect(() => {
@@ -26,7 +32,7 @@ export function DailyTip({ locale }: { locale: string }) {
       <button
         onClick={refresh}
         className="text-xs text-faint hover:text-accent transition shrink-0 whitespace-nowrap"
-        aria-label="Next tip"
+        aria-label={nextTipLabel}
       >
         ↻
       </button>

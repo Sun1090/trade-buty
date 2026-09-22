@@ -61,6 +61,7 @@ const zh = {
     streakDays: "天连续",
     streakLongest: "最长",
     syncedLabel: "已云端存档，换设备不丢",
+    nextTipLabel: "换一条心得",
     stats: [
       ["27", "篇章体系"],
       ["173", "篇深度课程"],
@@ -472,6 +473,7 @@ const en: Dict = {
     streakDays: "day streak",
     streakLongest: "best",
     syncedLabel: "Synced to cloud",
+    nextTipLabel: "Next tip",
     stats: [["27", "Chapters"], ["173", "In-depth lessons"], ["42k+", "Lines of content"], ["$0", "Free forever"]] as [string, string][],
     principlesTitle: "Why trust us",
     principlesLabel: "Principles",
