@@ -39,6 +39,12 @@ const dict = {
   emptyHint: "去做测验", browseCta: "浏览课程",
 };
 
+/** 相对今天偏移 n 天的本地正午时间戳：避开时区/夏令时边界，测试不依赖运行时刻 */
+function localAtOffset(days: number): number {
+  const [y, m, d] = shiftDate(localDateStr(), days).split("-").map(Number);
+  return new Date(y, m - 1, d, 12, 0, 0).getTime();
+}
+
 function seed() {
   const today = localDateStr();
   const yesterday = shiftDate(today, -1);
@@ -91,5 +97,29 @@ describe("ReviewClient SRS（R5.3/R5.4/R5.12）", () => {
     }));
     render(<ReviewClient quizzes={quizzes} dict={dict} locale="zh" />);
     expect(JSON.parse(store.get("tb-wrong")!)["ghost:99"]).toBeUndefined();
+  });
+
+  // 头部计数与每行徽章必须同一把尺子：无 srs_due 的条目按 R5.6 回填，不能一会儿算到期一会儿不算
+  it("旧数据（无 srs_due）回填后，头部计数与行内徽章一致", () => {
+    store.set("tb-wrong", JSON.stringify({
+      // 今天答错、回填到期日是「明天」→ 不该算今日到期
+      "spot:0": { chapterNum: "spot", questionIdx: 0, picked: 0, at: localAtOffset(0) },
+      // 5 天前答错、回填到期日是 4 天前 → 既到期又过期
+      "spot:1": { chapterNum: "spot", questionIdx: 1, picked: 1, at: localAtOffset(-5) },
+    }));
+    const { container } = render(<ReviewClient quizzes={quizzes} dict={dict} locale="zh" />);
+    expect(container.textContent).toContain("2 道错题，1 道今日到期（1 道已过期）");
+    expect(container.textContent).toContain("过期 4 天");
+    expect(container.textContent).toContain("1 天后");
+  });
+
+  it("回填后仍未到期时不计入今日到期，也不展示过期提醒", () => {
+    store.set("tb-wrong", JSON.stringify({
+      "spot:0": { chapterNum: "spot", questionIdx: 0, picked: 0, at: localAtOffset(0) },
+    }));
+    const { container } = render(<ReviewClient quizzes={quizzes} dict={dict} locale="zh" />);
+    expect(container.textContent).toContain("1 道错题，0 道今日到期");
+    expect(container.textContent).not.toContain("已过期");
+    expect(screen.getByText(/今天没有到期的复习/)).toBeInTheDocument();
   });
 });
