@@ -5736,3 +5736,23 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：`git revert c247ba3 f46e486` 即可，无数据面影响。发布后若发现页面窗口需要调，只改 `CHANGELOG_WINDOW` 一个常量，门禁会把文案与列表一起钉住。
 - 下一项：①本 PR 合并、打 `v0.7.9` tag、`check:release-tag`、Vercel 构建落地后 `ops:smoke-prod` 复跑并记录时间戳；②清理两条内容已确证在 main 上的本地陈旧分支（`fix/calendar-sample-honesty`、`chore/drop-dead-home-copy`）；③继续倒查「声称 vs 事实」：`docs/test-clock-hygiene.md` 台账上仍有 **10 处未受控定时器**，是下一个入口。
 - 更新时间：2026-09-23 07:12（Asia/Shanghai）。
+
+## 2026-09-23 — v0.7.9 合并、打 tag 与生产部署核对
+
+- 状态：**main 已发布 v0.7.9，生产尚未跟上（外部配额阻塞）**。
+- 里程碑 / 版本：v0.7.9。
+- 分支 / 提交：PR **#208** 三条提交 rebase 合并 → main = `67b31ff`（`55b5f12` fix(changelog) · `5435b24` chore(release) · `67b31ff` docs(progress)）；annotated tag **`v0.7.9`** 打在发布提交 `5435b24` 并已推送。远端分支 `chore/release-0.7.9` 由 GitHub 自动删除，本地 `main` 已快进到 `67b31ff`。
+- 完成内容：
+  1. `npm run check:release-tag`：✅ 13 条发布记录的 tag 均已落地（最新 0.7.9 → v0.7.9）。
+  2. 合并前 CI：`ci` **pass**（7m39s）、`db-tests` **pass**、CodeQL **pass**；`Vercel` **fail**（`Deployment rate limited — retry in 24 hours`，账户级 24h 构建配额）。按既有判据 Vercel 红不是合并阻塞，必需检查只有前三个。
+  3. 打 tag 后跑 `npm run ops:smoke-prod` 复核对齐：**8/10**。
+- 验证命令和结果：
+  - `ops:smoke-prod` @ 2026-09-23 07:19（Asia/Shanghai）：
+    - ❌ `GET /zh/changelog → 含最新发布版本` —— 页面里没有 0.7.9，即**生产构建落后于 main**，与 Vercel 配额限流一致，不是站内回归（这条断言存在的意义就是当部署探针）。
+    - ❌ `POST /api/ai/chat 游客：护栏路径 200 且模型路径不 5xx` —— 状态 502 而护栏路径正常，缺的是部署快照里的 `AI_API_URL` / `AI_MODEL` / `AI_API_KEY` 或出口网络，即既有 `BLOCKED_EXTERNAL`。
+    - 其余 8 条全过（中英首页与知识页的风险提示、sitemap、robots、分享落地页、游客会话判定）。
+  - `git verify-tag v0.7.9` 报 `no signature found`：本仓库标签不签名，与 v0.7.1–v0.7.8 一致，不是异常。
+- 阻塞：①Vercel 账户级构建配额——生产要等窗口恢复后自动构建（或手动触发），届时重跑 `ops:smoke-prod` 并把时间戳补进本条；②生产 AI 运行期配置（用户侧）。
+- 风险 / 回滚：tag 已落地但生产未切换，此期间 `/zh/changelog` 线上仍是 0.7.8 的清单——页面对外没有做出任何「已是最新版」的承诺，无需处置。回滚 = `git revert 5435b24` 并删标签。
+- 下一项：①配额恢复后复跑冒烟并补写结论；②PR **#209**（时钟卫生 10 → 6）等 CI；③待拍板项不变：R15.2 / R16.7 / R16.10 / R16.11 / R16.12 / R16.13 / **R16.16**（示例日历三条路，推荐改成教学内容）。
+- 更新时间：2026-09-23 07:22（Asia/Shanghai）。
