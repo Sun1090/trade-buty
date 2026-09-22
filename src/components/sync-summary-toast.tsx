@@ -59,7 +59,7 @@ export function SyncSummaryToast() {
         <p className="text-sm font-semibold text-[var(--foreground)]">{t.syncSummaryTitle}</p>
         <button
           type="button"
-          aria-label="dismiss"
+          aria-label={t.closeLabel}
           onClick={() => setSummary(null)}
           className="text-[var(--muted)] hover:text-[var(--foreground)]"
         >

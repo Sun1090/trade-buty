@@ -69,7 +69,7 @@ export function ReturnNudgeToast() {
         </p>
         <button
           type="button"
-          aria-label="dismiss"
+          aria-label={t.closeLabel}
           onClick={() => setOpen(false)}
           className="text-[var(--muted)] hover:text-[var(--foreground)]"
         >

@@ -67,7 +67,7 @@ describe("ReturnNudgeToast (R9.8)", () => {
     expect(screen.getByTestId("return-nudge-toast")).toBeTruthy();
     // 关闭
     act(() => {
-      fireEvent.click(screen.getByLabelText("dismiss"));
+      fireEvent.click(screen.getByLabelText("关闭"));
     });
     expect(screen.queryByTestId("return-nudge-toast")).toBeNull();
     // 再次派发——sessionStorage 标记仍在，不渲染
@@ -119,7 +119,7 @@ describe("ReturnNudgeToast (R9.8)", () => {
     render(<ReturnNudgeToast />);
     emitNudge();
     act(() => {
-      fireEvent.click(screen.getByLabelText("dismiss"));
+      fireEvent.click(screen.getByLabelText("关闭"));
     });
     expect(screen.queryByTestId("return-nudge-toast")).toBeNull();
   });

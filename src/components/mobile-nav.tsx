@@ -11,7 +11,15 @@ interface NavItem {
 }
 
 /** 移动端导航：窄屏汉堡按钮 + 抽屉菜单 */
-export function MobileNav({ items, locale }: { items: NavItem[]; locale: string }) {
+export function MobileNav({
+  items,
+  locale,
+  menuLabel,
+}: {
+  items: NavItem[];
+  locale: string;
+  menuLabel: string;
+}) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = `mobile-nav-${locale}`;
@@ -26,7 +34,7 @@ export function MobileNav({ items, locale }: { items: NavItem[]; locale: string 
     <div className="sm:hidden">
       <button
         onClick={() => setOpen((v) => !v)}
-        aria-label="Menu"
+        aria-label={menuLabel}
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         className="p-2 min-h-10 min-w-10 inline-flex items-center justify-center rounded-lg text-muted hover:text-foreground hover:bg-white/5 transition"
@@ -45,7 +53,7 @@ export function MobileNav({ items, locale }: { items: NavItem[]; locale: string 
           id={menuId}
           role="dialog"
           aria-modal="true"
-          aria-label="Menu"
+          aria-label={menuLabel}
           tabIndex={-1}
           className="absolute top-14 left-0 right-0 border-b border-[var(--border)] bg-[var(--background)] shadow-lg z-50"
         >

@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 
-export function LanguageToggle() {
+export function LanguageToggle({ label }: { label: string }) {
   const pathname = usePathname() ?? "/";
   const router = useRouter();
 
@@ -22,8 +22,8 @@ export function LanguageToggle() {
   return (
     <button
       onClick={toggle}
-      aria-label="切换语言 / Switch language"
-      title="中文 / EN"
+      aria-label={label}
+      title={label}
       className="px-2 py-2 rounded-lg text-muted hover:text-foreground hover:bg-white/5 active:scale-90 transition text-xs font-mono"
     >
       {pathname.startsWith("/en") ? "中" : "EN"}
