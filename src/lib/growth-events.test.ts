@@ -16,6 +16,7 @@ describe("growth event contract", () => {
   it("covers every declared event name with the exact same count", () => {
     expect(GROWTH_EVENT_NAMES).toEqual([
       "share_card_download",
+      "share_card_shared",
       "share_preview_opened",
       "share_link_copy",
       "share_landing_cta_clicked",

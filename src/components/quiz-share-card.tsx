@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CARD_SIZE, cardFontFor, drawQuizCard, type ShareLocale } from "@/lib/share-card";
 import { downloadCanvasAsPng } from "@/lib/download";
+import { runShareCardFlow } from "@/lib/share-card-flow";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { trackGrowthEvent, type ShareDownloadTrigger } from "@/lib/growth-events";
 
@@ -124,7 +125,16 @@ export function QuizShareCard({
   }
 
   async function handleShare() {
-    await tryDownload("share");
+    const outcome = await runShareCardFlow({
+      card: "quiz",
+      locale,
+      surface: "owner",
+      filename,
+      title: labels.share,
+      draw,
+      getCanvas: () => canvasRef.current,
+    });
+    setDownloadFailed(outcome === "failed");
   }
 
   async function handlePreview() {
