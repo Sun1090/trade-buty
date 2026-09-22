@@ -266,3 +266,40 @@ describe("删除账户时被级联删除的每张表都在文案里点名", () =
     }
   });
 });
+
+/** 从源码里读出的具名数字常量（隐私页要引用的就是这一个数，不是文案里的第二个数） */
+function numericConst(file: string, name: string): string {
+  const src = fs.readFileSync(path.join(process.cwd(), file), "utf8");
+  const m = src.match(new RegExp(`export const ${name}\\s*=\\s*(\\d+)`));
+  expect(m, `${file} 里的 ${name} 必须是具名数字常量，隐私页才有唯一可引用的数`).toBeTruthy();
+  return m![1];
+}
+
+describe("本机保留窗口的数与代码同源", () => {
+  it("学习时长台账的天数、回放历史的轮数都取自常量", () => {
+    const keepDays = numericConst("src/lib/study-time.ts", "STUDY_LEDGER_KEEP_DAYS");
+    const keepRounds = numericConst("src/lib/replay-history-limit.ts", "REPLAY_HISTORY_KEEP");
+
+    const chunk = paragraph(/保留最近/, /keeps the (?:most recent|latest)/i);
+    const strings = localeStringsIn(chunk);
+    expect(strings.length, "这一段必须有中英两条文案").toBeGreaterThanOrEqual(2);
+    for (const text of strings) {
+      expect(text, `台账窗口必须是 ${keepDays} 天（与 STUDY_LEDGER_KEEP_DAYS 同源）`).toContain(keepDays);
+      expect(text, `回放轮数必须是 ${keepRounds} 轮（与 REPLAY_HISTORY_KEEP 同源）`).toContain(keepRounds);
+    }
+  });
+
+  it("本地写入与云端合并共用同一个回放轮数上限", () => {
+    // 两处各写各的数，就会「都保留最近 100 轮」却留着不同的 100 轮：
+    // 合并那一步能把本机刚留下的几轮裁掉，云端取数也能比上限少拉几轮。
+    numericConst("src/lib/replay-history-limit.ts", "REPLAY_HISTORY_KEEP");
+    for (const file of ["src/lib/replay-store.ts", "src/lib/sync-layer.ts"]) {
+      const src = fs.readFileSync(path.join(process.cwd(), file), "utf8");
+      expect(src, `${file} 必须引用 REPLAY_HISTORY_KEEP`).toContain("REPLAY_HISTORY_KEEP");
+      expect(
+        [...src.matchAll(/\.slice\(-\d+\)|\.limit\(\d+\)/g)].map((m) => m[0]),
+        `${file} 里不该再有写死的尾部截断 / 取数上限字面量`,
+      ).toEqual([]);
+    }
+  });
+});

@@ -1,5 +1,6 @@
 /** 回放训练历史 + 最佳连击：localStorage + 云端双写 */
 import { tryDispatchProgressEvent } from "./progress-helpers";
+import { REPLAY_HISTORY_KEEP } from "./replay-history-limit";
 import { isRecord, readStorageJson } from "./storage-json";
 import { syncReplayHistoryWrite, syncReplayBestUpsert } from "./sync-layer";
 
@@ -63,7 +64,7 @@ export function readReplayHistory(): ReplayRecord[] {
 export function saveReplayRecord(rec: Omit<ReplayRecord, "at">) {
   const all = readReplayHistory();
   const record: ReplayRecord = { ...rec, at: Date.now() };
-  const trimmed = [...all, record].slice(-100);
+  const trimmed = [...all, record].slice(-REPLAY_HISTORY_KEEP);
   try {
     localStorage.setItem(KEY, JSON.stringify(trimmed));
     tryDispatchProgressEvent();
