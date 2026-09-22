@@ -5520,7 +5520,7 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   - **数据库不变量**：`supabase/tests/sync_and_constraints.sql` 第 7 节（26 → 30 断言）把「指向 `auth.users` 的外键必须显式 `ON DELETE CASCADE`/`SET NULL`」「带 `user_id` 的表必须有该外键」升级为目录级断言，并 pin 住 `ai_citation_clicks` 的有意 `SET NULL`。
 - 变更文件：`src/app/[locale]/privacy/page.tsx`、`src/app/[locale]/privacy/privacy-endpoints.test.ts`（新）、`src/app/[locale]/faq/page.tsx`、`src/lib/{learn-stats,learning-overview,quiz-score,quiz-score-trend,quiz-store,stats-consistency,tips,i18n}.ts`、`src/components/{daily-tip,ai-chat,chapter-rail,doc-list,path-progress,path-global-progress,quiz,chapter-exam-card,radar-chart,share-card-preview,mobile-nav,theme-toggle,language-toggle,return-nudge-toast,sync-summary-toast}.tsx`、`src/app/[locale]/layout.tsx`、`e2e/runtime-health.spec.ts`（新）、`supabase/tests/sync_and_constraints.sql`、`scripts/{faq-candidates.mjs,faq-candidates.test.mjs,db-assertion-counts.mjs,db-assertion-counts.test.mjs}`、`docs/{env.md,ops.md,roadmap.md,database-testing.md,description-dupes.md,glossary-coverage.md}`、`package.json`、`.github/workflows/ci.yml` 及各对应测试文件。
 - 验证命令和结果：
-  - `npx vitest run`：272 → 274 文件、2601 → **2629 条全绿**；`npm run test:coverage` statements 96.37% / branches 91.48% / functions 96.18% / lines 98.31%（阈值 84/77/83/87 未下调）。
+  - `npx vitest run`：272 → 275 文件、2601 → **2644 条全绿**；`npm run test:coverage` statements 96.01% / branches 91.24% / functions 95.92% / lines 97.92%（阈值 84/77/83/87 未下调）。
   - `npm run lint`（--max-warnings=0）、`npm run typecheck`、`npm run build`（474 个静态页）干净。
   - `npm run db:test`：8 + 40 + **30** 断言绿，含 0008/0009 回滚 → 重放演练；`npm run backup:drill` 绿。
   - `npx playwright test e2e/runtime-health.spec.ts e2e/full-site.spec.ts`：44 passed；`e2e/mobile-overflow` 17/17。
