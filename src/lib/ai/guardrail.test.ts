@@ -24,8 +24,11 @@ describe("matchSensitiveRequest", () => {
     expect(matchSensitiveRequest("")).toBeNull();
   });
 
-  it("超长输入截断后判定不崩", () => {
+  it("超长输入不因截断漏判（垫满无关文字再问荐股仍然命中）", () => {
     expect(matchSensitiveRequest("止损".repeat(500))).toBeNull();
+    // 500 字符正是过去的截断点：曾经「前面垫 501 个『止损』再问必涨」就绕过红线
+    expect(matchSensitiveRequest("止损".repeat(600) + "这只股票必涨吗")).toBe("profit-promise");
+    expect(matchSensitiveRequest("基础概念说明".repeat(400) + "推荐一只股票")).toBe("stock-pick");
   });
 });
 

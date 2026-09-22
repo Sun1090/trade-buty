@@ -33,7 +33,9 @@ export function looksLikeRecommendation(text: string): boolean {
 }
 
 export function matchSensitiveRequest(text: string): SensitiveCategory | null {
-  const t = text.trim().slice(0, 500);
+  // 不截断：截断等于给「前面垫 500 个无关字再问荐股」留了口子。
+  // 长度上限由入口的 parseChatBody 负责（单条 ≤8000 字、≤40 轮），护栏拿到的一定是已界定输入。
+  const t = text.trim();
   if (!t) return null;
   for (const { category, re } of PATTERNS) {
     if (re.test(t)) return category;
