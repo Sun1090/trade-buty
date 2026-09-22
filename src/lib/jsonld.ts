@@ -1,4 +1,4 @@
-import { SITE_URL } from "./site";
+import { REPOSITORY_URL, SITE_URL } from "./site";
 
 /**
  * Structured-data builders shared by server components and the build-time
@@ -9,7 +9,6 @@ import { SITE_URL } from "./site";
 const SCHEMA_CONTEXT = "https://schema.org";
 const SITE_NAME = "Trade Buty";
 const LOGO_URL = `${SITE_URL}/icon`;
-const REPOSITORY_URL = "https://github.com/Sun1090/trade-buty";
 
 export type StructuredDataLocale = "zh" | "en";
 

@@ -1,4 +1,6 @@
-import { test, expect } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { expect, test } from "@playwright/test";
 
 /**
  * R7.7：关键用户路径 E2E 冒烟（未登录可达路径）。
@@ -196,16 +198,50 @@ test.describe("无结果页面 CTA（R13.18）", () => {
 });
 
 test.describe("更新日志（发布说明一致）", () => {
-  test("中文页渲染策展版本记录", async ({ page }) => {
+  const totalReleases = () => {
+    const file = path.join(process.cwd(), "src", "data", "release-notes.json");
+    const raw = JSON.parse(readFileSync(file, "utf8")) as {
+      releases: {
+        version: string;
+        name: { zh: string; en: string };
+        highlights: { zh: string[]; en: string[] };
+      }[];
+    };
+    return raw.releases;
+  };
+
+  /**
+   * 页面只列窗口内的版本（整页是预渲染的静态 HTML，全量列出会随发布次数无限增长并
+   * 顶破体积预算），所以这里不能再钉死某个历史版本——它哪天滑出窗口，用例就会假报警。
+   * 改成核对页面自己的两句话：「最近 M 个」要等于真实渲染出来的 section 数，
+   * 「更早的 N 个」要补满发布记录的总条数。
+   */
+  test("中文页的版本数与页面声称的窗口对得上", async ({ page }) => {
     await page.goto("/zh/changelog");
     await expect(page.getByRole("heading", { name: "最近更新" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /v0\.6\.0/ })).toBeVisible();
-    await expect(page.getByText("内容覆盖、AI 质量与学习留存")).toBeVisible();
+    const releases = totalReleases();
+    const text = (await page.locator("main").textContent()) ?? "";
+    const claim = /本页只列最近 (\d+) 个版本，更早的 (\d+) 个版本/.exec(text);
+    expect(claim, "窗口那句说明不见了").not.toBeNull();
+    const [, max, earlier] = claim!;
+    expect(Number(max) + Number(earlier)).toBe(releases.length);
+
+    const ids = await page
+      .locator("[id^='changelog-']")
+      .evaluateAll((els) => els.map((el) => el.id));
+    const rendered = ids.filter((id) => /^changelog-\d+\.\d+\.\d+$/.test(id));
+    expect(rendered).toHaveLength(Number(max));
+    expect(rendered[0]).toBe(`changelog-${releases[0].version}`);
+    await expect(page.getByText(releases[0].name.zh)).toBeVisible();
   });
 
   test("英文页渲染对应语言的发布说明", async ({ page }) => {
     await page.goto("/en/changelog");
-    await expect(page.getByText("Content coverage, AI quality, and learning retention")).toBeVisible();
+    const releases = totalReleases();
+    await expect(page.getByText(releases[0].name.en)).toBeVisible();
+    await expect(
+      page.getByText(releases[0].highlights.zh[0], { exact: false })
+    ).toHaveCount(0);
   });
 });
 
