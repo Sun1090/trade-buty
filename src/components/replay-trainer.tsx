@@ -13,6 +13,7 @@ import { saveReplayRecord, saveReplayBest } from "@/lib/replay-store";
 import { addStudyTime } from "@/lib/study-time";
 import { measureFps, LOW_END_FPS_THRESHOLD, REPLAY_REDUCED_CANDLES } from "@/lib/perf";
 import { ReplayShareCard } from "@/components/replay-share-card";
+import { gradeFromReplayAccuracy } from "@/lib/share-card";
 import { encodeReplay } from "@/lib/share-decode";
 
 const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] as const;
@@ -98,13 +99,12 @@ function initialDifficultyIdx(): number {
   }
 }
 
-function gradeOf(total: number, correct: number): string {
+function gradeLabel(total: number, correct: number): string {
   if (total === 0) return "-";
-  const acc = correct / total;
-  if (acc >= 0.7) return "S";
-  if (acc >= 0.6) return "A";
-  if (acc >= 0.5) return "B";
-  return "C";
+  // 评级口径只有 `gradeFromReplayAccuracy` 一份实现：同一块面板里的分享卡用的就是它，
+  // 它规定少于 3 次猜测样本不足、不给好评。这里曾经另写一份没有该守卫的规则，
+  // 于是 2/2 的一轮在面板上是 S、画到卡上是 C。
+  return gradeFromReplayAccuracy(correct / total, total);
 }
 
 
@@ -493,7 +493,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
               <div className="rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-dim)] p-5 text-center">
                 <p className="text-sm text-faint">{dict.summaryTitle}</p>
                 <p className="mt-2 font-mono text-4xl font-bold text-accent">
-                  {gradeOf(guess.total, guess.correct)}
+                  {gradeLabel(guess.total, guess.correct)}
                 </p>
                 <p className="mt-3 text-sm text-muted">
                   {guess.correct}/{guess.total} · {dict.accuracy}:{" "}
