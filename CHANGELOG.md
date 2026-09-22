@@ -5,6 +5,28 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.8] - 2026-09-23
+
+**离线写入不再静默丢失，五处界面数字回到代码这一侧 / Offline writes stop vanishing; five on-screen numbers now come from the code**
+
+### 中文
+
+- 离线的学习记录不再静默丢掉：写进云端失败的记录要排进离线队列，而队列的代码单独打成一个按需加载的包。如果这一页恰好没拿到那个包（首次加载就失败、断网后重试、或网站刚发布导致旧地址 404），排队这一步本身就会失败——那条记录既进不了队列，也再没人提起它。现在它会先留在内存里排队，等包能加载了（下一次写入，或网络恢复后的自动重放）再补进队列，同一去重与条数上限口径。诚实的边界是：这份内存缓冲只活在当前标签页，这期间关掉页面仍会丢那部分云端补传，你本机的学习数据不受影响。
+- 回放训练里「前多少根是背景走势」跟着你选的难度变了：三档难度的背景根数分别是 50、30、15，而那行说明一直写着「前 30 根为背景走势，从第 31 根开始回放」——选「新手」或「挑战」时，屏幕上报的是中间档的数，连起点第几根也是错的。
+- 行情图表的提示只说它真做了的事：网络较慢时那句「已切换为 180 根 K 线精简模式」在宽屏上是假的——根数由屏幕宽度决定，慢网真正关掉的是实时推送和「显示完整」入口。现在这句话只说暂停推送，而精简/完整视图里的 180 与 500 直接取本次真正请求的根数，文字与请求不可能再各说一套。
+- 「回放历史仅保留最近 100 轮」现在是一个数：本机写入、云端合并、登录取数各写了一遍 100，三处可以各自保留不同的 100 轮，合并那一步还能把本机刚留下的几轮裁掉。收成同一个常量，并让隐私页的 90 天与 100 轮都从代码取值。
+- 「导出我的数据」按钮把文件里真正有什么写清楚了：卡片此前声称「包含浏览器本机存储的全部条目」，而登录会话（访问/刷新令牌）这一族已经不再写入文件——于是一句假话。现在点名被剔掉的那一类，并说明文件里仍带着记录这份数据属于哪个账户的本机标识（这类文件常被下载、转发、贴进 issue）。另外，界面上五处「27 篇章」改为按知识库现算：知识库加一章之后，首页描述、AI 页副标题、学习路径、关于页和 FAQ 不会再留在昨天。
+
+### English
+
+- Offline study records stop vanishing silently: a cloud write that fails is supposed to queue for retry, and that queue lives in a lazily loaded chunk. When the page never got that chunk (it failed on first load, you're offline, or a fresh deploy 404s the old address), the enqueue itself failed — the record reached neither the queue nor anyone's attention. It now waits in an in-memory buffer and is handed to the queue as soon as the chunk loads again (next write, or the automatic replay after the network returns), with the same dedupe and cap rules. The honest limit: that buffer only lives in the current tab, so closing the page during that window still loses that part of the cloud backfill — your local study data is unaffected.
+- The replay trainer's note about context candles now follows the difficulty you picked: the three tiers use 50, 30 and 15 context candles, but the line under the controls always read "First 30 candles are context; replay starts from #31" — wrong number and wrong start for Beginner and Challenge.
+- Chart status notes only claim what the code actually does: on a slow connection the note promised "compact 180-candle mode is active", yet the candle count follows viewport width — what slow network really turns off is live updates and the full-view switch. The note now says only that, and the 180 / 500 in the compact and full view notes are the count actually requested, so text and request can no longer diverge.
+- "Replay history keeps the latest 100 rounds" is now one number: local writes, cloud merge and the login fetch each carried their own literal 100, so the three could keep different sets of 100 and the merge step could trim rounds the device had just saved. It is a single shared constant now, and the privacy page's 90-day and 100-round figures are read from the code.
+- The "Export my data" button says what the file actually contains: the card claimed "all local browser storage entries are included", but the sign-in session (access/refresh tokens) family is no longer written — making that false. The excluded category is now named, along with the local marker that says which account the data belongs to (these files get downloaded, forwarded and pasted into issues). Five places that hardcoded "27 chapters" now count the knowledge base at build time, so adding a chapter no longer leaves the landing page, AI page, learning path, about page and FAQ behind.
+
+参考：[docs/progress.md](docs/progress.md)
+
 ## [0.7.7] - 2026-09-23
 
 **数据导出不含登录凭证、隐私页补齐队列边界，分享面四处订正 / Exports without credentials, honest queue limits, four share-surface fixes**
