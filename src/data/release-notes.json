@@ -1,6 +1,33 @@
 {
   "releases": [
     {
+      "version": "0.7.7",
+      "date": "2026-09-23",
+      "name": {
+        "zh": "数据导出不含登录凭证、隐私页补齐队列边界，分享面四处订正",
+        "en": "Exports without credentials, honest queue limits, four share-surface fixes"
+      },
+      "highlights": {
+        "zh": [
+          "「导出我的数据」不再把登录凭证写进文件：Supabase 的会话（access/refresh token）本来就存在浏览器 localStorage 里，而导出是无差别遍历所有键，于是那份被鼓励下载、转发、贴进 issue 的 JSON 里躺着一张能直接接管账户的凭证。现在按 sb- 前缀整族剔除，并有断言盯着序列化结果里不能出现令牌片段",
+          "隐私政策补上三件它此前没写的事：离线写入队列只留 200 条、第 201 条会把最旧的一条挤掉且不再重试；在同一台设备上切换账户会把上一个账户尚未同步出去的队列直接清空；本机数据并非只存活于 localStorage——几个界面提示状态写在 sessionStorage。删除账户的清单也补齐了 AI 对话记录与最佳连胜两项",
+          "📤「分享我的成绩」真的分享：图片交给系统分享面板（手机上可直接发到微信/Telegram/相册），平台不收图片时才退回原来的下载行为。同一屏里写着「分享」却只做下载的按钮、以及只有埋点没有提示的落地页下载失败，一并改正",
+          "连续打卡分享卡不再画一张空的「近 7 天」日历：分享链接本来只带两个天数、不带逐日记录，此前它等于在「连续 12 天」正下方宣称这一周什么都没学。测验卡片的读屏文字也改用与图上一个算法（此前读屏念 66.7%、图上画 67%）",
+          "两处口径回到单一来源：游客配额提示里的次数上限改读服务端响应头（写死的「10 次」与真实上限是两份真相），生产冒烟把「AI 返回 502」拆成护栏段与模型段——护栏在调用上游之前就返回，它正常就说明缺的是上游配置而不是站内代码"
+        ],
+        "en": [
+          "The data export no longer contains login credentials: the Supabase session (access and refresh tokens) lives in browser localStorage, and the export walked every key indiscriminately - so the JSON users are encouraged to download, forward and paste into issue reports carried a token that can take over an account. The sb- key family is now excluded, with an assertion watching the serialized artifact for any token fragment",
+          "The privacy policy now discloses three things it previously did not: the offline write queue holds 200 entries and a 201st silently evicts the oldest, which is never retried; switching accounts on the same device discards the previous account unsent queue outright; and local data is not localStorage-only - a few interface flags live in sessionStorage. The account-deletion list also gained AI conversations and best replay streak",
+          "The share button now shares: the card image goes to the system share sheet (straight to WeChat, Telegram or Photos on mobile), falling back to the old download only where the platform will not accept the file. Buttons labelled share that merely downloaded a file, and a landing-page download failure that only reached analytics, are fixed as well",
+          "The streak card no longer draws an empty \"last 7 days\" calendar - the share link carries two numbers and no day data, so the old card claimed nothing happened this week directly under \"12 days in a row\". The quiz card screen-reader text now uses the same rounding the image draws (it said 66.7% while the card showed 67%)",
+          "Two numbers return to a single source: the guest quota hint reads the server response header instead of restating a hardcoded 10, and the production smoke test splits \"AI returned 502\" into a guardrail leg and a model leg - the guardrail replies before any upstream call, so a healthy one points at upstream config rather than site code"
+        ]
+      },
+      "docs": [
+        "docs/progress.md"
+      ]
+    },
+    {
       "version": "0.7.6",
       "date": "2026-09-22",
       "name": {
