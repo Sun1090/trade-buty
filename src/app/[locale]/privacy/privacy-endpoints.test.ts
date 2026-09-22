@@ -86,6 +86,22 @@ describe("隐私页与真实网络面一致", () => {
     for (const name of names) expect(copy, name).toContain(name);
   });
 
+  it("AI 上游降级链里的每一家模型商都在隐私页点名", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "src/lib/ai/client.ts"),
+      "utf8",
+    );
+    const chain = /const chain = \[([^\]]+)\]/.exec(source)?.[1] ?? "";
+    const vendors = [...new Set([...chain.matchAll(/"([a-z]+)-/gi)].map((m) => m[1].toLowerCase()))];
+    // 解析不出链条时不许静默变成「全绿」
+    expect(vendors.length).toBeGreaterThanOrEqual(3);
+
+    const copy = fs.readFileSync(PAGE_FILE, "utf8").toLowerCase();
+    for (const vendor of vendors) {
+      expect(copy, `隐私页第三方一节应点名 ${vendor}`).toContain(vendor);
+    }
+  });
+
   it("不再声称未登录时零请求到达服务器", () => {
     const copy = fs.readFileSync(PAGE_FILE, "utf8");
     expect(copy).not.toMatch(/除非你选择登录/);

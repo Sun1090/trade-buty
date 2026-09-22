@@ -46,7 +46,7 @@ export default async function PrivacyPage({ params }: PageProps<"/[locale]/priva
       </section>
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{locale === "en" ? "Third-Party Services" : "第三方服务"}</h2>
-        <p>{locale === "en" ? "Supabase (authentication + database), Binance public API (market data), SenseNova (AI chat), SiliconFlow (AI embeddings). Each service is used only when you explicitly interact with the feature." : "Supabase（认证+数据库）、Binance 公开 API（行情数据）、SenseNova（AI 对话）、硅基流动（AI 向量化）。每项服务仅在你主动使用功能时调用。"}</p>
+        <p>{locale === "en" ? "Supabase (authentication + database) and Binance public API (market data). The AI features are not tied to one vendor: your question is forwarded from our own server to an OpenAI-compatible upstream, falling back in order across Zhipu GLM → DeepSeek → SenseNova (a preferred model can be configured), while RAG embedding lookups go to the same endpoint or a separately configured embedding service. What those upstreams receive is your question text and excerpts of the lessons being retrieved - never your email address or account identifier. Each service is contacted only when you use the corresponding feature." : "Supabase（认证+数据库）、Binance 公开 API（行情数据）。AI 功能不锁死单一厂商：你的提问由本站服务器转发给一个 OpenAI 兼容上游，按「智谱 GLM → DeepSeek → SenseNova」的顺序降级（首选模型可配置），RAG 的向量化走同一端点或单独配置的嵌入服务。这些上游收到的是你的提问文本与被检索到的课程片段，不含你的邮箱或账户标识。每项服务仅在你主动使用对应功能时才被调用。"}</p>
       </section>
       <PrivacyDataExport locale={locale} />
       <section className="space-y-3">
