@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
 
 let quality: "online" | "slow" | "offline" = "online";
 vi.mock("@/components/use-network-quality", () => ({
@@ -86,5 +86,41 @@ describe("MarketTicker（R13.11/R13.12）", () => {
     render(<MarketTicker locale="en" />);
     await waitFor(() => expect(screen.getByText("BTC")).toBeInTheDocument());
     expect(screen.getByText(/Live market · 3 assets/)).toBeInTheDocument();
+  });
+
+  // 比「离线」更常见的破网姿势是 onLine 仍为 true 而请求全失败（PR #139 的同一教训）：
+  // 此时屏幕上的价格已经不再刷新，却还顶着「实时行情」的标题继续显示。
+  it("拿到数据后轮询失败：旧价格标注为上次数据并说明原因，恢复后撤掉标注", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => DATA })
+        .mockResolvedValueOnce({ ok: false, status: 503 })
+        .mockResolvedValue({ ok: true, json: async () => DATA });
+      vi.stubGlobal("fetch", fetchMock);
+      render(<MarketTicker />);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(screen.getByText("BTC")).toBeInTheDocument();
+      expect(screen.queryByText("上次数据")).not.toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5_000);
+      });
+      expect(screen.getByText("BTC")).toBeInTheDocument();
+      expect(screen.getByText("上次数据")).toBeInTheDocument();
+      expect(screen.getByText("行情暂时不可用")).toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5_000);
+      });
+      expect(screen.queryByText("上次数据")).not.toBeInTheDocument();
+      expect(screen.queryByText("行情暂时不可用")).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
