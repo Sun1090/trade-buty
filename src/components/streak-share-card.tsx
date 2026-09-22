@@ -10,7 +10,7 @@ import { trackGrowthEvent, type ShareDownloadTrigger } from "@/lib/growth-events
 interface Props {
   currentStreak: number;
   longestStreak: number;
-  /** 最近 7 天的活动日期（yyyy-MM-dd 字符串数组；缺日期视为未学习） */
+  /** 最近 7 天的活动日期（yyyy-MM-dd 字符串数组；缺日期视为未学习；空数组＝没有逐日数据，日历整块不画） */
   recentDays: { date: string; active: boolean }[];
   locale: ShareLocale;
   siteName?: string;

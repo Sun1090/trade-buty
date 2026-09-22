@@ -13,8 +13,8 @@
  *   - replay: v1|b64(JSON {symbol, interval, correct, total, accuracy-bps, bestStreak, currentStreak, locale})
  *   - streak: v1|b64(JSON {currentStreak, longestStreak, locale})
  *
- * 不在 URL 里塞 7 天日期数组（太大）—— streak 的 recentDays 在落地页用 placeholder 代替，
- * 或省略不放（分享的是 streak 数字本身 + 最长，7 天是个人数据）。
+ * 不在 URL 里塞 7 天日期数组（太大，且 7 天日历是个人数据）——落地页的 streak 卡因此
+ * **整块不画**日历：placeholder 会被读成「这一周什么都没学」，那是一句假话。
  */
 
 export type ShareKind = "quiz" | "replay" | "streak";
