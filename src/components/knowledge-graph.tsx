@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getStageGroups } from "@/lib/path";
 
-/** 27 篇章知识图谱：三阶段分组可视化（SVG 节点 + 连接线） */
+/** 知识库篇章图谱：按阶段分组可视化（SVG 节点 + 连接线），篇章与阶段数都由传入数据决定 */
 export function KnowledgeGraph({ locale }: { locale: string }) {
   const groups = getStageGroups(locale);
 

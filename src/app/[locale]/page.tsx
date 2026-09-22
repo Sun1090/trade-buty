@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getChapters, getDocMetas } from "@/lib/content";
+import { getChapters, getDocMetas, withChapterCount } from "@/lib/content";
 import { knowledgeHref } from "@/lib/hrefs";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/metadata";
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]">) {
   return buildPageMetadata({
     locale,
     title: t.title1,
-    description: t.metaDesc,
+    description: withChapterCount(t.metaDesc),
     path: `/${locale}`,
   });
 }

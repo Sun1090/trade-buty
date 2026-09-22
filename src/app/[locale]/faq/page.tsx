@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { withChapterCount } from "@/lib/content";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/metadata";
 import { HeroCard } from "@/components/hero-card";
@@ -26,7 +27,7 @@ const FAQ_ZH = [
   { q: "Trade Buty 是免费的吗？", a: "完全免费，开源（MIT 许可），不卖课、不荐股、不承诺收益。基础课程永远免费。" },
   { q: "需要注册才能学习吗？", a: "不需要。所有课程、图表、回放、测验都可以游客身份使用，数据存在浏览器本地。登录只是为了跨设备同步进度。" },
   { q: "我的学习进度存在哪？", a: "默认存在浏览器的 localStorage。登录后，进度会同步到 Supabase 云端，换设备也不丢。" },
-  { q: "内容来自哪里？", a: "知识库来自 kline-buty 开源项目，27 个篇章覆盖从入门到期权策略的完整交易知识体系。" },
+  { q: "内容来自哪里？", a: "知识库来自 kline-buty 开源项目，{chapters} 个篇章覆盖从入门到期权策略的完整交易知识体系。" },
   { q: "图表是实时行情吗？", a: "是的，使用 Binance 公开 API 获取实时 K 线数据，支持 BTC/ETH/BNB/SOL 四个币种。" },
   { q: "回放训练是什么？", a: "选取历史行情，逐根 K 线回放，你判断涨跌方向。系统根据正确率、连击数评分，难度可选。" },
   { q: "AI 陪学怎么用？", a: "每篇课程页面底部有 AI 对话入口，可以提问课程相关问题。AI 会基于知识库内容回答，不荐股、不预测。" },
@@ -40,12 +41,12 @@ export default async function FaqPage({ params }: PageProps<"/[locale]/faq">) {
   if (!isLocale(locale)) notFound();
   const en = locale === "en";
 
-  const faqs = en
+  const chosen = en
     ? [
         { q: "Is Trade Buty free?", a: "Completely free, open-source (MIT licensed). No courses sold, no stock tips, no returns promised. Core courses are free forever." },
         { q: "Do I need to register to learn?", a: "No. All courses, charts, replay, and quizzes work as a guest. Data is stored locally in your browser. Login is only for cross-device sync." },
         { q: "Where is my progress stored?", a: "In your browser's localStorage by default. When logged in, progress syncs to Supabase cloud — survives device changes." },
-        { q: "Where does the content come from?", a: "From kline-buty open-source project. 27 chapters cover the full trading knowledge system from basics to options strategies." },
+        { q: "Where does the content come from?", a: "From kline-buty open-source project. {chapters} chapters cover the full trading knowledge system from basics to options strategies." },
         { q: "Is the chart real-time?", a: "Yes, using Binance public API for live candlestick data. Supports BTC/ETH/BNB/SOL." },
         { q: "What is replay training?", a: "Historical market data is played back one candle at a time. You predict up/down. Scored by accuracy and streak. Difficulty selectable." },
         { q: "How does AI tutoring work?", a: "Each lesson page has an AI chat at the bottom. Ask questions about the content. AI answers based on the knowledge base — no tips, no predictions." },
@@ -54,6 +55,8 @@ export default async function FaqPage({ params }: PageProps<"/[locale]/faq">) {
         { q: "Is my data safe?", a: "No tracking data and no tracking cookies. Three things can exist on our servers: your login email (Supabase Auth), the learning progress you choose to sync (Supabase Postgres, RLS-protected), and anonymous rows created when you rate an AI answer or open one of its citations, which carry no account. See the Privacy Policy." },
       ]
     : FAQ_ZH;
+  // 篇章总数由知识库现算，文案里只留 {chapters} 占位符
+  const faqs = chosen.map((item) => ({ q: withChapterCount(item.q), a: withChapterCount(item.a) }));
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-5 py-10 sm:py-14">

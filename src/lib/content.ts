@@ -57,6 +57,19 @@ export function getChapterSlugs(locale: string): string[] {
 }
 
 /**
+ * 知识库的篇章总数——以 zh 为准：en 是逐篇补译，而界面里「N 篇章覆盖完整体系」讲的是
+ * 完整体系有多大。文案一律用 {chapters} 占位符经 `withChapterCount` 代入：
+ * `npm run kb:update` 加一章之后，界面上的数字不会留在昨天。
+ */
+export function totalChapterCount(): number {
+  return getChapterSlugs("zh").length;
+}
+
+export function withChapterCount(text: string): string {
+  return text.replace(/\{chapters\}/g, String(totalChapterCount()));
+}
+
+/**
  * 宽容降级：坏 YAML 的课文不得把 `---` 围栏当正文渲染。按 YAML 口径只切掉**成对**围栏；
  * 找不到闭合围栏时保留原文——那种情况下无法区分 frontmatter 与正文，宁可多显示也不吞内容。
  */

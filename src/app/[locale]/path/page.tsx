@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getStageGroups } from "@/lib/path";
-import { getChapters, getDocMetas } from "@/lib/content";
+import { getChapters, getDocMetas, totalChapterCount, withChapterCount } from "@/lib/content";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/metadata";
 import { PathProgress } from "@/components/path-progress";
@@ -59,9 +59,11 @@ export default async function PathPage({
         <p className="mt-4 text-muted leading-relaxed">{t.path.intro}</p>
         {t.path.translationNote && (
           <p className="mt-4 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-dim)] px-4 py-3 text-sm text-accent">
-            {t.path.translationNote.replace(
-              "{done}",
-              String(groups.reduce((s, g) => s + g.chapters.length, 0))
+            {withChapterCount(
+              t.path.translationNote.replace(
+                "{done}",
+                String(groups.reduce((s, g) => s + g.chapters.length, 0)),
+              ),
             )}
           </p>
         )}
@@ -175,7 +177,9 @@ export default async function PathPage({
       <section className="mt-16">
         <h2 className="text-2xl font-bold">{t.path.label} · Map</h2>
         <p className="mt-2 text-sm text-muted">
-          {locale === "en" ? "27 chapters across 3 stages" : "27 篇章 × 3 阶段"}
+          {locale === "en"
+            ? `${totalChapterCount()} chapters across ${groups.length} stages`
+            : `${totalChapterCount()} 篇章 × ${groups.length} 阶段`}
         </p>
         <div className="mt-6">
           <KnowledgeGraph locale={locale} />
