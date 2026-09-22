@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getStatsDict, STATS_DICTS } from "./i18n-stats";
+import { STUDY_LEDGER_KEEP_DAYS } from "./study-time";
 
 function keysOf(obj: unknown, prefix = ""): string[] {
   if (typeof obj === "function") return [prefix];
@@ -56,5 +57,16 @@ describe("i18n-stats dictionary", () => {
       expect(dict.replayTrendTitle.length).toBeGreaterThan(0);
       expect(dict.replayNoDurations.length).toBeGreaterThan(0);
     }
+  });
+
+  // 台账按日历只保留最近 90 天（study-time 的 STUDY_LEDGER_KEEP_DAYS），
+  // 标签必须带上这个窗口：写成「总学习时长」是在承诺一个并不存在的全历史口径。
+  it("「学习时长」标签写明保留窗口，不声称是全部历史", () => {
+    const zh = getStatsDict("zh").totalStudyTime;
+    const en = getStatsDict("en").totalStudyTime;
+    expect(zh).toContain(`${STUDY_LEDGER_KEEP_DAYS} 天`);
+    expect(en).toContain(`${STUDY_LEDGER_KEEP_DAYS} days`);
+    expect(zh).not.toMatch(/^总/);
+    expect(en).not.toMatch(/^Total/i);
   });
 });

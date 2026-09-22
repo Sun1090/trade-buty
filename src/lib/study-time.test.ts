@@ -9,9 +9,10 @@ vi.stubGlobal("localStorage", {
 });
 vi.stubGlobal("window", { dispatchEvent: () => {} });
 
-const { addStudyTime, getStudySeconds, getTotalStudySeconds, getTodayStudySeconds } = await import(
+const { addStudyTime, getStudySeconds, getTotalStudySeconds, getTodayStudySeconds, STUDY_LEDGER_KEEP_DAYS } = await import(
   "./study-time"
 );
+const { shiftDate } = await import("./date-utils");
 
 beforeEach(() => store.clear());
 
@@ -31,15 +32,30 @@ describe("study-time 台账边界（R4.2）", () => {
     expect(getTotalStudySeconds()).toBe(8 * 3600 + 60);
   });
 
-  it("只保留最近 90 天，最旧条目被丢弃", () => {
+  it("台账按日历保留最近 90 天，窗口外的旧记录裁掉", () => {
+    const newest = "2026-06-30";
+    const edge = shiftDate(newest, -(STUDY_LEDGER_KEEP_DAYS - 1)); // 窗口内最后一天
+    const stale = shiftDate(newest, -STUDY_LEDGER_KEEP_DAYS); // 差一天，落在窗口外
+    addStudyTime("read", 10, stale);
+    addStudyTime("read", 10, edge);
+    addStudyTime("read", 10, newest);
+    const ledger = JSON.parse(store.get("tb-study-time") ?? "{}") as Record<string, unknown>;
+    expect(Object.keys(ledger).sort()).toEqual([edge, newest].sort());
+  });
+
+  it("稀疏用户（记录日横跨一年以上）也不会留下超出 90 天的台账", () => {
     for (let i = 0; i < 95; i++) {
-      const day = `2026-01-${String(i + 1).padStart(2, "0")}`;
-      // 用不同月份避免非法日期干扰；这里只是键名递增
-      addStudyTime("read", 10, `2026-${String(Math.floor(i / 28) + 1).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}`);
-      void day;
+      // 2026-01-01 … 2026-04-11：95 个记录日、101 个日历天
+      const month = Math.floor(i / 28) + 1;
+      const day = (i % 28) + 1;
+      addStudyTime("read", 10, `2026-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
     }
     const ledger = JSON.parse(store.get("tb-study-time") ?? "{}") as Record<string, unknown>;
-    expect(Object.keys(ledger).length).toBe(90);
+    const days = Object.keys(ledger).sort();
+    expect(days.length).toBeLessThanOrEqual(STUDY_LEDGER_KEEP_DAYS);
+    // 锚点是台账里最新的 2026-04-11，往前 90 天 = 2026-01-12，更早的 1 月上旬记录被裁掉
+    expect(days[0]).toBe("2026-01-12");
+    expect(days[days.length - 1]).toBe("2026-04-11");
   });
 
   it("同来源重复累加不覆盖", () => {

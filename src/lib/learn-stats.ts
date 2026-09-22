@@ -57,7 +57,7 @@ export interface LearnStats {
   longestStreak: number;
   /** 总阅读时长（秒）——仅阅读源，保留兼容 */
   totalReadingTime: number;
-  /** R4.2/R4.10：总学习时长（秒），台账去重口径（阅读+测验+回放） */
+  /** R4.2/R4.10：近 90 天学习时长（秒），台账去重口径（阅读+测验+回放）；台账按日历裁剪 */
   totalStudySeconds: number;
   /** 总体完成度百分比 */
   overallPct: number;
