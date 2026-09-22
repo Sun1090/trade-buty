@@ -5448,3 +5448,43 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   的上线结论补进本条；②若还有可修的就继续攒，攒到能改变用户可见结果的一批再判 0.7.5；
   ③R16.7 / R15.2 仍需用户拍板才能动数据模型与留存策略。
 - 更新时间：2026-09-22 14:10（Asia/Shanghai）。
+
+## 2026-09-22 — RELEASE_FREEZE：v0.7.5 已合并打 tag（口径与文案的五个缺陷修复）
+
+- 状态：**已发布到 main 并打 tag**；生产当前停在 **0.7.4**（已上线），0.7.5 尚未被构建（Vercel 24h 配额，见验证结果）。
+- 里程碑 / 版本：**v0.7.5（patch）**。判级理由：`v0.7.4..main` 只有 `fix` / `chore(ops)` / `docs`——
+  统计口径、回放评级口径、分享相关文案本地化与冒烟脚本健壮性，无新增产品能力，
+  也无内容契约 / 数据结构 / 鉴权与数据隔离语义的不兼容变更。
+- 分支 / 提交：发布提交 `0fd5af1` → PR #157 rebase 合并为 `366e86d`；annotated tag `v0.7.5`
+  （tag 对象 `0b5f85a`，指向 `366e86d`），已推送。区间内 6 个提交：
+  `728a22a` 周分钟数口径、`a2adb1b` 冒烟传输层重试、`2a1afa2` 回放评级口径、
+  `d7fb330` + `3724886` 分享卡与落地页文案、`92a74f5` 失败态提示。
+- 完成内容：见上一条审计记录（#150–#153）与本条区间；发布记录条目写入
+  `src/data/release-notes.json`（zh / en 各 4 条 highlights，未发布区块为空），
+  `CHANGELOG.md` 由 `npm run changelog:generate` 生成。
+- 变更文件（发布提交）：`src/data/release-notes.json`、`CHANGELOG.md`、`package.json`、`package-lock.json`。
+- 验证命令和结果：
+  - 冻结前按 `docs/release-checklist.md` 第 3 步的顺序跑完整条链，`CHAIN_EXIT=0`：
+    `test` → `test:coverage` → `lint` → `typecheck` → `build` → `check:mobile` → `check:seo-surface`
+    → `check:search-index` → `check:structured-data` → `check:risk-warning` → `check:constitution`
+    → `check:docs` → `db:test` → `e2e`。
+  - 单测 271 文件 / **2601 条全绿**；覆盖率 statements 96.38%、branches 91.51%、functions 96.18%、
+    lines 98.31%（阈值 84/77/83/87 未下调）；`e2e` **109 通过**；跑完 `git status` 只剩四个发布文件，
+    报告类产物无纯日期 diff。
+  - `check:changelog` ✅（9 条记录一致）；`check:lockfile-repro` ✅（981 个包条目、钉住的 npm 10.9.4 可逐条目复现）；
+    `check:docs` ✅（`package 0.7.5`）；合并打 tag 后 `check:release-tag` ✅「9 条发布记录的 tag 均已落地」。
+  - `ops:work-audit` ✅ 悬空提交 0 · 陈旧本地提交 0 · 未确认的关闭 PR 0；发布分支远端+本地已删除并 `prune`。
+  - `npm run -s ops:smoke-prod` **8/10**：`/zh` 等 8 条通过，红的是两条既有外部项——
+    ① `/zh/changelog` 已含 0.7.4 但还没有 0.7.5 —— **顺带结掉上一轮的待办**：0.7.4 确实上线了（用 `node fetch` 逐版本核对 changelog 页面：0.7.2 / 0.7.3 / 0.7.4 在、0.7.5 不在），生产只是差本次这一个构建（Vercel 仍回 `Deployment rate limited — retry in 24 hours`）；
+    ② 游客 `POST /api/ai/chat` 502（本地同一构建返回 200 SSE，属生产 `AI_API_*` / 上游配额）。
+- 阻塞：`BLOCKED_EXTERNAL` 两条不变（Vercel 生产构建配额、生产 AI 上游配置）。**0.7.4 已上线，0.7.5 待构建**；
+  配额窗口过去后生产会从 main 构建到 0.7.5，届时冒烟以 0.7.5 为期望版本应转绿。
+- 风险 / 回滚：发布提交独立一个 commit，`git revert 0fd5af1`（合并后 `366e86d`）即可撤版本号与更新日志；
+  运行期变化只有展示口径（周分钟数向下取整、少于 3 猜的回放轮次评 `C`）与分享/失败态文案语言。
+  无迁移、无 `supabase/` 变更、无内容契约变更；站点回滚不需要数据库动作，Vercel 也可先把 Production
+  Deployment 切回上一构建止血，再用 revert 收敛历史。
+- 下一项：①配额恢复后重跑 `npm run ops:smoke-prod`，把 0.7.5 的上线结论补进本条；
+  ②继续按「界面声称了数据没做到的事」这一类倒查（本轮已把评级/分钟数/已读数三条口径链走完，
+  剩余可查面在 share 卡的三份重复评级实现与 `FocusMode` 注释与代码不一致等记账项）；
+  ③R16.7 / R15.2 仍需用户拍板才能动数据模型与留存策略。
+- 更新时间：2026-09-22 15:20（Asia/Shanghai）。
