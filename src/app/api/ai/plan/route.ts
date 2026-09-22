@@ -3,6 +3,7 @@ import { chat } from "@/lib/ai/client";
 import { getServerAuthUser } from "@/lib/supabase/server";
 import { parseJsonLoose } from "@/lib/ai/json-extract";
 import { createRateLimiter } from "@/lib/ai/rate-limit";
+import { readJsonBody } from "@/lib/request-body";
 
 // R7.12：学习计划会调用 LLM，按用户限流，避免单账号无限打端点烧预算。
 const planLimiter = createRateLimiter({ guestLimit: 30, authedLimit: 30 });
@@ -18,6 +19,13 @@ const MAX_CHAPTERS = 64;
 const MAX_CHAPTER_LEN = 64;
 /** 兜底返回的模型原文上限（正常路径走 JSON 里的 plan 字段） */
 const MAX_PLAN_CHARS = 600;
+
+/**
+ * 请求体字节上限：上面的字段上限要整包解析完才生效，读流阶段得单独设闸。
+ * 字符上限按 CJK 的 UTF-8 上界 ×3 折算，再加 JSON 结构开销。
+ */
+export const MAX_PLAN_BODY_BYTES =
+  (MAX_CHAPTERS * MAX_CHAPTER_LEN + MAX_PLAN_CHARS) * 3 + 1_024;
 
 function parseChapterList(value: unknown): string[] | null {
   if (value === undefined) return [];
@@ -74,13 +82,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let raw1: unknown;
-    try {
-      raw1 = await req.json();
-    } catch {
+    const read = await readJsonBody(req, MAX_PLAN_BODY_BYTES);
+    if (!read.ok) {
+      if (read.reason === "too-large") {
+        return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+      }
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
-    const body = parsePlanBody(raw1);
+    const body = parsePlanBody(read.value);
     if (!body) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
     const done = body.doneChapters.join("、") || "无";

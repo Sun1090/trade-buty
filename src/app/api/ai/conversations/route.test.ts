@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { AuthSessionMissingError } from "@supabase/supabase-js";
 import {
   MAX_ASSISTANT_MESSAGE_CHARS,
+  MAX_CONVERSATION_BODY_BYTES,
   MAX_SOURCES,
   MAX_USER_MESSAGE_CHARS,
   parseSaveBody,
@@ -173,6 +174,20 @@ describe("GET /api/ai/conversations", () => {
 });
 
 describe("POST /api/ai/conversations", () => {
+  // 字段上限要整包解析完才生效，读流阶段的字节闸才挡得住登录账号灌超大 body
+  it("超过请求体字节上限返回 413，不写库", async () => {
+    const response = await POST(
+      request({
+        userMessage: "物".repeat(MAX_CONVERSATION_BODY_BYTES),
+        assistantMessage: "回答",
+      }),
+    );
+
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ error: "Payload too large" });
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
   it("把来源数组直接写入 jsonb，而不是 JSON 字符串", async () => {
     const sources = [{ chapter: "spot", doc: "order-types" }];
     const response = await POST(

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { POST } from "./route";
+import { MAX_CHAT_BODY_BYTES, POST } from "./route";
 import { retrieve } from "@/lib/ai/rag";
 import { TRUNCATED_MARKER } from "@/lib/ai/streaming";
 import type { RagResult } from "@/lib/ai/rag";
@@ -92,6 +92,18 @@ describe("POST /api/ai/chat 输入校验（R7.12）", () => {
     const res = await POST(request(null, { raw: "{不是 JSON" }));
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: "Invalid JSON" });
+  });
+
+  // 单条消息 8000 字符的上限要解析完才生效；读流阶段的字节闸才是挡超大 body 的那一道
+  it("超过请求体字节上限返回 413，不调模型也不解析整包", async () => {
+    const huge = JSON.stringify({
+      messages: [{ role: "user", content: "物".repeat(MAX_CHAT_BODY_BYTES) }],
+    });
+    const res = await POST(request(null, { raw: huge }));
+    expect(res.status).toBe(413);
+    expect(await res.json()).toEqual({ error: "Payload too large" });
+    expect(streamChat).not.toHaveBeenCalled();
+    expect(chat).not.toHaveBeenCalled();
   });
 
   it("messages 缺失 / 非数组 / 为空 → 400", async () => {

@@ -16,7 +16,13 @@ import {
   type SourceLink,
 } from "@/lib/ai/sources";
 import { getServerAuthUser } from "@/lib/supabase/server";
-import { parseChatBody } from "@/lib/ai/chat-input";
+import {
+  MAX_CHAT_CONTENT_CHARS,
+  MAX_CHAT_TURNS,
+  MAX_CONTINUE_FROM_CHARS,
+  parseChatBody,
+} from "@/lib/ai/chat-input";
+import { readJsonBody } from "@/lib/request-body";
 import { BoundedMap, sweepExpired } from "@/lib/bounded-map";
 import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
 
@@ -32,6 +38,14 @@ const chatLimiter = createRateLimiter({
 const ANSWER_CACHE_MAX = 500;
 const answerCache = new BoundedMap<string, { text: string; at: number }>(ANSWER_CACHE_MAX);
 const CACHE_TTL = 10 * 60 * 1000;
+
+/**
+ * 请求体字节上限。`parseChatBody` 的轮数/单条字符上限（40 × 8000，外加续写的
+ * 16000）只有在整包解析完之后才生效，所以读流阶段必须再设一道闸：匿名请求体
+ * 不该能让实例缓冲到那个量级。字符上限按 CJK 的 UTF-8 上界 ×3 折算，再加结构开销。
+ */
+export const MAX_CHAT_BODY_BYTES =
+  (MAX_CHAT_TURNS * MAX_CHAT_CONTENT_CHARS + MAX_CONTINUE_FROM_CHARS) * 3 + 4_096;
 
 export async function POST(req: NextRequest) {
   // 鉴权（可选）与限流放在解析 body 之前：这样畸形/超大 payload 也计入配额，
@@ -67,13 +81,14 @@ export async function POST(req: NextRequest) {
     }
   };
 
-  let rawBody: unknown;
-  try {
-    rawBody = await req.json();
-  } catch {
+  const read = await readJsonBody(req, MAX_CHAT_BODY_BYTES);
+  if (!read.ok) {
+    if (read.reason === "too-large") {
+      return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+    }
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const body = parseChatBody(rawBody);
+  const body = parseChatBody(read.value);
   if (!body) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }

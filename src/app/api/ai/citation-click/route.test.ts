@@ -1,6 +1,6 @@
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { PER_MINUTE_LIMIT, parseCitationClick, POST } from "./route";
+import { MAX_CITATION_BODY_BYTES, PER_MINUTE_LIMIT, parseCitationClick, POST } from "./route";
 import { resolveAuthUser } from "@/lib/supabase/auth-result";
 
 const mocks = vi.hoisted(() => ({
@@ -91,6 +91,22 @@ describe("POST /api/ai/citation-click", () => {
   it("畸形 JSON 返回 400 且不写库", async () => {
     const res = await POST(request("{不是 JSON"));
     expect(res.status).toBe(400);
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  // 匿名可上报端点：字段上限要解析完才生效，读流阶段的字节闸才挡得住超大 body
+  it("超过请求体字节上限返回 413 且不写库", async () => {
+    const res = await POST(
+      request(
+        JSON.stringify({
+          kind: "source",
+          chapter: "spot",
+          question: "物".repeat(MAX_CITATION_BODY_BYTES),
+        }),
+      ),
+    );
+    expect(res.status).toBe(413);
+    expect(await res.json()).toEqual({ error: "Payload too large" });
     expect(insert).not.toHaveBeenCalled();
   });
 

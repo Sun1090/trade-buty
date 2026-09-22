@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient, getServerAuthUser } from "@/lib/supabase/server";
 import { createRateLimiter } from "@/lib/ai/rate-limit";
+import { readJsonBody } from "@/lib/request-body";
 
 /**
  * 一轮问答 = 两行写入（各可达 8KB / 20KB）。这条路由此前是 AI 系列里唯一没有配额的
@@ -23,6 +24,18 @@ export const MAX_USER_MESSAGE_CHARS = 8_000;
 export const MAX_ASSISTANT_MESSAGE_CHARS = 20_000;
 export const MAX_SOURCES = 20;
 const MAX_SLUG_CHARS = 100;
+
+/**
+ * 请求体字节上限：上面的字段上限要整包解析完才生效，读流阶段得单独设闸。
+ * 两轮正文 + 引用行（每行两个 slug 再加键名开销），字符上限按 CJK 的 UTF-8 上界 ×3
+ * 折算，最后留 1 KB JSON 结构余量。
+ */
+export const MAX_CONVERSATION_BODY_BYTES =
+  (MAX_USER_MESSAGE_CHARS +
+    MAX_ASSISTANT_MESSAGE_CHARS +
+    MAX_SOURCES * (2 * MAX_SLUG_CHARS + 64)) *
+    3 +
+  1_024;
 
 /** 解析并校验一轮对话；导出以便 Route Handler 回归测试覆盖。 */
 export function parseSaveBody(value: unknown): SaveBody | null {
@@ -112,13 +125,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let raw: unknown;
-  try {
-    raw = await req.json();
-  } catch {
+  const read = await readJsonBody(req, MAX_CONVERSATION_BODY_BYTES);
+  if (!read.ok) {
+    if (read.reason === "too-large") {
+      return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+    }
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const body = parseSaveBody(raw);
+  const body = parseSaveBody(read.value);
   if (!body) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
