@@ -131,29 +131,46 @@ describe("POST /api/ai/citation-click", () => {
     expect(JSON.stringify(body)).not.toContain("permission denied");
   });
 
-  it("getUser 返回 error 时返回通用失败文案，不写库且不透传内部错误", async () => {
+  it("getUser 返回 error 时按匿名入库，不透传内部错误（点击不凭空消失）", async () => {
     getUser.mockResolvedValueOnce({ data: { user: null }, error: new Error("secret: trace expired") });
     const res = await POST(
       request(JSON.stringify({ kind: "source", chapter: "spot" })),
     );
 
-    expect(res.status).toBe(500);
+    // RLS 允许 user_id is null 的匿名行；回 500 等于把一次真实点击丢掉，而且没人会重试
+    expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toEqual({ error: "Failed to record click" });
+    expect(body).toEqual({ ok: true });
     expect(JSON.stringify(body)).not.toContain("secret");
-    expect(insert).not.toHaveBeenCalled();
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ user_id: null, chapter: "spot" }));
   });
 
-  it("身份读取异常也返回通用失败文案，不回传内部错误", async () => {
+  it("身份读取异常也按匿名入库，不回传内部错误", async () => {
     getUser.mockRejectedValue(new Error("auth unavailable"));
     const res = await POST(
       request(JSON.stringify({ kind: "source", chapter: "spot" })),
     );
 
-    expect(res.status).toBe(500);
-    const body = await res.json();
-    expect(body.error).toBe("Failed to record click");
-    expect(JSON.stringify(body)).not.toContain("auth unavailable");
+    expect(res.status).toBe(200);
+    expect((await res.json()).ok).toBe(true);
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ user_id: null }));
+  });
+
+  it("同一 NAT 出口下两个登录账号各有自己的配额", async () => {
+    const body = JSON.stringify({ kind: "source", chapter: "spot" });
+    const sharedIp = "192.0.2.7";
+    getUser.mockResolvedValue({ data: { user: { id: "clicker-a" } }, error: null });
+    let last: Awaited<ReturnType<typeof POST>> | undefined;
+    for (let i = 0; i < PER_MINUTE_LIMIT + 1; i++) {
+      last = await POST(request(body, sharedIp));
+    }
+    expect(last!.status).toBe(429);
+
+    getUser.mockResolvedValue({ data: { user: { id: "clicker-b" } }, error: null });
+    insert.mockClear();
+    const other = await POST(request(body, sharedIp));
+    expect(other.status).toBe(200);
+    expect(insert).toHaveBeenCalledTimes(1);
   });
 
   it("单 IP 超过每分钟配额返回 429 且不再写库，其他 IP 不受影响", async () => {

@@ -39,7 +39,21 @@ export function parseFeedbackBody(value: unknown): FeedbackBody | null {
 
 /** POST: 存 AI 回答反馈（登录用户署名，游客匿名） */
 export async function POST(req: NextRequest) {
-  const decision = feedbackLimiter.check(clientIp(req), false);
+  // 先定身份再限流：配额按账号分桶，游客才退回 IP。
+  // 都按 IP 分桶时，同一 NAT/校园网出口的多个账号共用一桶，一个人的脚本会把整栋楼
+  // 的真人反馈一起 429 掉（与 /api/ai/chat 上同一个坑，见 0e752af）。
+  let user: { id: string } | null = null;
+  try {
+    user = await getServerAuthUser();
+  } catch (e) {
+    // 身份不可确定 ≠ 写入该失败：RLS 允许 user_id is null 的匿名行，而调用方是
+    // fire-and-forget，回 500 就等于把一次真人反馈凭空丢掉。
+    console.warn(
+      "[ai/feedback] 身份解析失败，按匿名反馈入库：",
+      e instanceof Error ? e.message : e,
+    );
+  }
+  const decision = feedbackLimiter.check(user?.id ?? clientIp(req), !!user);
   if (!decision.allowed) {
     return NextResponse.json(
       { error: "Rate limit exceeded" },
@@ -59,12 +73,6 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    let user;
-    try {
-      user = await getServerAuthUser();
-    } catch {
-      return NextResponse.json({ error: "Failed to save feedback" }, { status: 500 });
-    }
     const supabase = await createSupabaseServerClient();
 
     const { error } = await supabase.from("ai_feedback").insert({
