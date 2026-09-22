@@ -83,26 +83,21 @@ Vercel 由 `main` 的推送自动触发生产构建（账号有 24h 构建配额
 被限流时记录原因，不要为了「绿」重复空跑）。部署完成后对**生产域名**冒烟：
 
 ```bash
-node -e '
-const base = "https://trade-buty.vercel.app";
-const paths = ["/zh", "/en", "/zh/knowledge/getting-started",
-  "/zh/knowledge/getting-started/candlestick-basics", "/sitemap.xml", "/robots.txt"];
-(async () => {
-  for (const p of paths) {
-    const r = await fetch(base + p);
-    const html = await r.text();
-    console.log(p.padEnd(52), r.status, "risk=" + html.includes("⚠️"));
-  }
-})();'
+npm run ops:smoke-prod   # 默认打 https://trade-buty.vercel.app，逐条打印后汇总，任一失败 exit 1
 ```
 
-必须逐条确认（这些是历史上真出过问题的入口）：
+这 10 条断言不是随手挑的，每一条都对应历史上真出过问题的入口（`docs/ops.md`「生产冒烟」有对照表）：
 
 - `GET /api/auth/session` 匿名访问返回 `200 {"user":null}`，不是 500（游客判定回归，PR #107）。
-- 未登录状态下 AI 问答可用，不返回 502。
+- 未登录状态下 AI 问答可用，不返回 502（429 视为通过：限流生效即端点活着）。
 - 页面 HTML 里带 `⚠️` 风险提示；`/share/*` 落地页同样要带（R14.7）。
+- `/zh/changelog` 必须已出现本次发布的版本号——**合并 ≠ 上线**，配额限流会让生产停在旧构建。
+  读不到本地发布版本号时该条判失败而不是跳过。
 - 预览域受 Vercel Deployment Protection 保护，未授权请求 302 到 SSO，因此自动化冒烟走生产域名
   （见 R14.9，需账号级 protection-bypass 密钥才能真正覆盖预览）。
+
+判断「站内回归」还是「生产环境配置」：同一份构建本地跑 `npm run build && npm run start -- -p 3111`
+再 `SMOKE_BASE_URL=http://localhost:3111 npm run ops:smoke-prod`，两边结果不同即生产侧问题。
 
 ## 6. 记录与收尾
 
