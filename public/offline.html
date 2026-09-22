@@ -152,14 +152,75 @@
       (function () {
         var status = document.getElementById("status");
         var retry = document.getElementById("retry");
+        var BUDGET_KEY = "tb-offline-auto-reloads";
+        var BUDGET_WINDOW_MS = 30000;
+        var MAX_AUTO_RELOADS = 3;
+        var MAX_PROBE_ATTEMPTS = 6;
+
+        function readBudget() {
+          try {
+            var raw = JSON.parse(sessionStorage.getItem(BUDGET_KEY) || "null");
+            if (raw && Date.now() - raw.t < BUDGET_WINDOW_MS) return raw.n;
+          } catch (e) {
+            /* sessionStorage 不可用（隐私模式）或值损坏：按没用过处理 */
+          }
+          return 0;
+        }
+        function spendBudget() {
+          try {
+            sessionStorage.setItem(
+              BUDGET_KEY,
+              JSON.stringify({ n: readBudget() + 1, t: Date.now() })
+            );
+          } catch (e) {
+            /* 记不了账只是少一层保险，不影响恢复本身 */
+          }
+        }
+        function resetBudget() {
+          try {
+            sessionStorage.removeItem(BUDGET_KEY);
+          } catch (e) {
+            /* 同上 */
+          }
+        }
+
         retry.addEventListener("click", function () {
           status.textContent = "正在重试… / Retrying…";
+          resetBudget();
           location.reload();
         });
+
+        // 只有同源请求真的通了才重新加载。online 一到就 reload 不够：那次导航可能抢在
+        // 网络栈恢复之前落地，被 service worker 又送回这一页，而 online 已经用过、不会
+        // 有第二次——用户就停在「已联网的离线页」上出不来（本地实测 3 次里 2 次如此）。
+        function probe(attempt) {
+          fetch(location.pathname, { method: "HEAD", cache: "no-store" }).then(
+            function () {
+              if (readBudget() >= MAX_AUTO_RELOADS) {
+                status.textContent =
+                  "网络已恢复，请点击上方按钮重新加载。 / Back online — use Retry above.";
+                return;
+              }
+              status.textContent =
+                "网络已恢复，正在重新加载… / Back online, reloading…";
+              spendBudget();
+              location.reload();
+            },
+            function () {
+              if (!navigator.onLine || attempt >= MAX_PROBE_ATTEMPTS) return;
+              setTimeout(function () {
+                probe(attempt + 1);
+              }, 500 * (attempt + 1));
+            }
+          );
+        }
+
         window.addEventListener("online", function () {
-          status.textContent = "网络已恢复，正在重新加载… / Back online, reloading…";
-          location.reload();
+          probe(0);
         });
+        // 这一份文档也可能正是「reload 抢跑」后又被送回兜底页的那一份：那时 online 已经
+        // 触发过，所以开局就在线必须自己探一次。
+        if (navigator.onLine) probe(0);
       })();
     </script>
   </body>
