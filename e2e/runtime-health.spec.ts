@@ -97,6 +97,25 @@ async function seedStorage(page: Page) {
 const NETWORK_NOISE =
   /Failed to load resource|net::ERR_|ERR_CONNECTION|ERR_TIMED_OUT|favicon|sw\.js|manifest\.webmanifest|ChunkLoadError|Loading chunk/i;
 
+/**
+ * 行情域名是外部依赖：CI 出口 IP 被 Binance 以 451 拒答，浏览器会把它写成 console.error。
+ * 实时行情那条走 WebSocket，`page.route` 拦不到，所以只能按域名豁免——
+ * 站内没有第一方 WebSocket，也没有对 binance 之外的跨源请求，这条豁免不会盖住自己的缺陷。
+ */
+const EXTERNAL_VENDOR_NOISE = /binance\.com/i;
+
+/**
+ * 行情来自 api.binance.com：CI 出口拿不到它的 CORS 头，浏览器会把这件事记成
+ * console.error——那是门禁噪声，不是站内缺陷。一律挡掉跨源请求：
+ * 每条路由只暴露自己的运行时问题，而失败分支同样是真代码路径。
+ */
+async function blockCrossOrigin(page: Page) {
+  await page.route(
+    (url) => url.hostname !== "localhost" && url.hostname !== "127.0.0.1",
+    (r) => r.abort("blockedbyclient"),
+  );
+}
+
 for (const route of ROUTES) {
   test(`水合后无未捕获错误：${route}`, async ({ page }) => {
     const problems: string[] = [];
@@ -105,10 +124,12 @@ for (const route of ROUTES) {
     });
     page.on("console", (message) => {
       if (message.type() !== "error") return;
-      if (NETWORK_NOISE.test(message.text())) return;
-      problems.push(`console.error: ${message.text().split("\n")[0]}`);
+      const text = message.text();
+      if (NETWORK_NOISE.test(text) || EXTERNAL_VENDOR_NOISE.test(text)) return;
+      problems.push(`console.error: ${text.split("\n")[0]}`);
     });
 
+    await blockCrossOrigin(page);
     await seedStorage(page);
     await page.goto(route, { waitUntil: "domcontentloaded" });
     // 给挂载后的 effects 与一次性重渲染留出时间：水合错误在这些回调里才会浮出来
