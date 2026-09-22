@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/metadata";
 import { HeroCard } from "@/components/hero-card";
+import { legalPageLead } from "@/lib/legal-currency";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -27,7 +28,7 @@ export default async function TermsPage({ params }: PageProps<"/[locale]/terms">
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-5 py-10 sm:py-14 space-y-6 text-sm text-muted leading-relaxed">
       <HeroCard label={locale === "en" ? "Your use" : "使用说明"} title={locale === "en" ? "Terms of Service" : "服务条款"}>
-        {locale === "en" ? "Last updated: 2026" : "更新日期：2026 年"}
+        {legalPageLead(locale, "src/app/[locale]/terms/page.tsx")}
       </HeroCard>
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{locale === "en" ? "Educational Purpose Only" : "仅限教育用途"}</h2>

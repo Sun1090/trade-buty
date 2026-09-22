@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/metadata";
 import { HeroCard } from "@/components/hero-card";
+import { legalPageLead } from "@/lib/legal-currency";
 import { PrivacyDataExport } from "@/components/privacy-data-export";
 
 export function generateStaticParams() {
@@ -28,7 +29,7 @@ export default async function PrivacyPage({ params }: PageProps<"/[locale]/priva
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-5 py-10 sm:py-14 space-y-6 text-sm text-muted leading-relaxed">
       <HeroCard label={locale === "en" ? "Your data" : "你的数据"} title={locale === "en" ? "Privacy Policy" : "隐私政策"}>
-        {locale === "en" ? "Last updated: 2026" : "更新日期：2026 年"}
+        {legalPageLead(locale, "src/app/[locale]/privacy/page.tsx")}
       </HeroCard>
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{locale === "en" ? "Data We Collect" : "我们收集的数据"}</h2>
