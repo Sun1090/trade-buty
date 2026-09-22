@@ -145,12 +145,27 @@ describe("buildPrivacyExport (R9.9)", () => {
     });
   });
 
-  it("localStorage 收集全部条目", () => {
+  it("除登录会话外收集全部条目：导出不带可接管账户的凭证", () => {
     localStorage.setItem("tb-foo", "1");
     localStorage.setItem("tb-bar", "2");
     localStorage.setItem("ext-third-party", "3");
+    // supabase-js 的默认 storageKey：`sb-<project-ref>-auth-token`，值里就是 access/refresh token
+    localStorage.setItem(
+      "sb-unitref01-auth-token",
+      JSON.stringify({
+        access_token: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1MSJ9.c2ln",
+        token_type: "bearer",
+        refresh_token: "rt-secret-value",
+        expires_at: 1_800_000_000,
+      }),
+    );
     const exp = buildPrivacyExport(1_700_000_000_000);
     expect(exp.localStorage).toEqual({ "tb-foo": "1", "tb-bar": "2", "ext-third-party": "3" });
+
+    const serialized = JSON.stringify(exp);
+    for (const secret of ["eyJhbGci", "rt-secret-value", "access_token", "sb-unitref01"]) {
+      expect(serialized, `导出文件里不该出现 ${secret}`).not.toContain(secret);
+    }
   });
 
   it("progress 汇总忽略损坏章节和重复文档", () => {

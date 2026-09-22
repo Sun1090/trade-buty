@@ -2,7 +2,7 @@
  * R9.9：隐私导出。
  *
  * 用户点击"导出我的数据"时，生成一份 JSON 文件下载到本地，包含：
- * 1. localStorage 中全部 key/value（确保用户可完整迁移本机数据）
+ * 1. localStorage 中除登录会话外的全部 key/value（确保用户可完整迁移本机数据）
  * 2. 学习进度摘要（每章已读文档数、错题数、SRS 阶段、当前连续天数、活动日历）
  * 3. 同步状态摘要（上次 hydrate 时间、离线写队列长度、登录态等）
  * 4. schemaVersion / exportedAt 元信息
@@ -11,7 +11,7 @@
  * - 纯函数 `buildPrivacyExport()` 返回可序列化对象（不直接下载，便于测试）
  * - `downloadPrivacyExport()` 浏览器侧触发下载（用 Blob + a.download）
  * - SSR 安全：所有 storage 访问走 try/catch
- * - 不包含 Supabase 服务端数据或用户邮箱；前端只导出本机存储内容
+ * - 不包含 Supabase 服务端数据、用户邮箱或登录会话（`sb-*` 令牌）；前端只导出本机存储的学习数据
  */
 
 import { readProgress } from "./progress";
@@ -86,6 +86,16 @@ function safeStorage(): Storage | null {
   }
 }
 
+/**
+ * 导出必须剔除的键：登录会话材料。
+ * supabase-js 把 `{access_token, refresh_token, expires_at, …}` 写在 localStorage 的
+ * `sb-<project-ref>-auth-token`（默认 storageKey，见 supabase-js 的 defaultStorageKey）。
+ * 那不是「我的学习数据」，而是一张能直接接管账户的凭证——导出文件天生就是要被人下载、
+ * 转发、贴进 issue 的，所以按 `sb-` 前缀整族剔除：这一族的键全部属于 Auth，
+ * 站内自己的键一律 `tb-` 开头，不会误伤学习数据。
+ */
+const SESSION_STORAGE_KEY = /^sb-/;
+
 function collectLocalStorage(): Record<string, string> {
   const ls = safeStorage();
   if (!ls) return {};
@@ -93,10 +103,9 @@ function collectLocalStorage(): Record<string, string> {
   try {
     for (let i = 0; i < ls.length; i++) {
       const k = ls.key(i);
-      if (k) {
-        const v = ls.getItem(k);
-        if (v != null) out[k] = v;
-      }
+      if (!k || SESSION_STORAGE_KEY.test(k)) continue;
+      const v = ls.getItem(k);
+      if (v != null) out[k] = v;
     }
   } catch {
     // ignore
