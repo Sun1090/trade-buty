@@ -60,20 +60,19 @@ const dict = {
   trendTitle: "Course completion trend",
   trendDesc: "Course trend description",
   trendRange: "Last 7 days",
-  trendEmpty: "No trend",
   trendCompletions: "Completed docs",
   trendNewChapters: "Completed chapters",
   trendNoDates: "No completion dates",
   quizTrendTitle: "Quiz score trend",
   quizTrendDesc: "Quiz trend description",
-  quizTrendEmpty: "No quiz attempts",
+  quizTrendEmptyTpl: "No quiz attempts in the last {n} days",
   quizTrendAttempts: "Attempts",
   quizBestInRange: "Best in range",
   quizAvgScore: "Average score",
   quizNoDates: "No quiz dates",
   reviewTrendTitle: "Review efficiency",
   reviewTrendDesc: "Review trend description",
-  reviewTrendEmpty: "No reviews",
+  reviewTrendEmptyTpl: "No reviews in the last {n} days",
   reviewTrendReviews: "Reviews",
   reviewTrendAccuracy: "Accuracy in range",
   reviewTrendMastered: "Mastered in range",
@@ -122,7 +121,7 @@ const dict = {
   ctaReplay: "Start your first round",
   replayTrendTitle: "Replay practice time",
   replayTrendDesc: "Replay trend description",
-  replayTrendEmpty: "No replay rounds",
+  replayTrendEmptyTpl: "No replay rounds in the last {n} days",
   replayTrendRounds: "Replay rounds",
   replayTrendTime: "Time in range",
   replayTrendAvg: "Avg per round",
@@ -341,6 +340,10 @@ describe("StatsClient time-range filter (R12.10)", () => {
     expect(btn7).toHaveAttribute("aria-pressed", "true");
     expect(btn30).toHaveAttribute("aria-pressed", "false");
     expect(screen.getAllByRole("img", { name: /^Last 7 days:/ })).toHaveLength(1);
+    // 空态读屏文案同样要说真话：这三张图此前无论选哪档都念「last 7 days」
+    expect(
+      screen.getAllByRole("img", { name: /in the last 7 days$/ })
+    ).toHaveLength(3);
 
     const { fireEvent } = await import("@testing-library/react");
     fireEvent.click(btn30);
@@ -349,6 +352,9 @@ describe("StatsClient time-range filter (R12.10)", () => {
     expect(screen.getByRole("button", { name: "Last 30 days" })).toHaveAttribute("aria-pressed", "true");
     // 课程趋势 aria 摘要随范围更新
     expect(screen.getByRole("img", { name: /^Last 30 days:/ })).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("img", { name: /in the last 30 days$/ })
+    ).toHaveLength(3);
     // 30 天网格列数生效
     const section = document.querySelector("#course-completion-trend-title")?.closest("section");
     expect(section?.querySelector("div[style]")?.getAttribute("style")).toContain("repeat(30, minmax(0, 1fr))");
