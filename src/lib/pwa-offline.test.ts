@@ -71,8 +71,23 @@ describe("离线页（R13.13）", () => {
 });
 
 describe("离线页恢复逻辑（R13.13）", () => {
-  // 容忍属性与大小写（`<script type=...>`、`<SCRIPT>`），否则抽不到脚本会把用例变成空断言
-  const SCRIPT = /<script[^>]*>([\s\S]*?)<\/script\s*>/i.exec(OFFLINE_HTML)?.[1] ?? "";
+  // 用字符串定位抽取，而不是正则过滤：正则抽 HTML 块一旦写漏（大小写、属性、结束标签里的
+  // 空白），抽到空串就等于 6 条用例全成了空断言。这里直接断言抽到的内容非空。
+  const openTagStart = OFFLINE_HTML.indexOf("<script");
+  const scriptSource = (() => {
+    const openEnd = OFFLINE_HTML.indexOf(">", openTagStart);
+    const close = OFFLINE_HTML.indexOf("<" + "/script", openEnd);
+    return openTagStart >= 0 && openEnd > 0 && close > openEnd
+      ? OFFLINE_HTML.slice(openEnd + 1, close)
+      : "";
+  })();
+
+  it("离线页只有一个内联脚本，抽取不为空（否则下面的沙箱用例都是空断言）", () => {
+    expect(openTagStart).toBeGreaterThanOrEqual(0);
+    expect(OFFLINE_HTML.indexOf("<script", openTagStart + 1)).toBe(-1);
+    expect(scriptSource.length).toBeGreaterThan(100);
+    expect(scriptSource).toContain("location.reload()");
+  });
 
   interface Harness {
     statusText: () => string;
@@ -142,7 +157,7 @@ describe("离线页恢复逻辑（R13.13）", () => {
         return timers.length;
       },
     };
-    vm.runInNewContext(SCRIPT, sandbox);
+    vm.runInNewContext(scriptSource, sandbox);
     // 让开局那一次探测的 promise 链走完（成功/失败都反映到 reloads / timers 上）
     await new Promise((resolve) => setImmediate(resolve));
 
