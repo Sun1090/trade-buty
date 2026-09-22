@@ -25,6 +25,7 @@ const LABELS = {
   ctaPath: "Path",
   ctaReplay: "Replay",
   downloadPng: "下载卡面 PNG",
+  downloadFailed: "下载失败，请重试",
   readyToShare: "可以分享了",
   rendering: "正在生成预览…",
 };
@@ -131,6 +132,28 @@ describe("ShareCardPreview growth events", () => {
         outcome: "failed",
       }),
     );
+    // R13.6：失败不能只进埋点——用户必须看得见（与站内三张卡同一标准）
+    expect(await screen.findByRole("alert")).toHaveTextContent(LABELS.downloadFailed);
+  });
+
+  it("下载成功时不出现失败提示", async () => {
+    const path = encodeQuiz({
+      chapterTitle: "Risk",
+      score: 4,
+      total: 5,
+      percent: 80,
+      locale: "en",
+    });
+    render(<ShareCardPreview kind="quiz" path={path} locale="en" labels={LABELS} />);
+    const button = screen.getByTestId("share-download-btn-quiz");
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+    await waitFor(() =>
+      expect(growthTrack).toHaveBeenLastCalledWith(
+        expect.objectContaining({ outcome: "succeeded" }),
+      ),
+    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
 

@@ -302,13 +302,15 @@ describe("QuizShareCard share URL and preview behavior", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("renders an English preview description with rounded score percentage", async () => {
+  it("renders an English preview description whose percentage is the number the card draws", async () => {
     const { container } = renderCard({ score: 2, total: 3 });
     fireEvent.click(screen.getByTestId("quiz-share-preview-btn"));
 
     await waitFor(() => {
       const img = container.querySelector("img");
-      expect(img?.getAttribute("alt")).toBe('Preview: quiz result card for "Margin Mechanics", 2/3 (66.7%)');
+      // 卡面画的是 formatPercent(66.66…) = "67%"；alt 此前写 "66.7%"，
+      // 读屏用户复述出来的和看见的不是同一张卡
+      expect(img?.getAttribute("alt")).toBe('Preview: quiz result card for "Margin Mechanics", 2/3 (67%)');
     });
   });
 });

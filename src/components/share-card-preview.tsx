@@ -36,6 +36,7 @@ interface Labels {
   ctaPath: string;
   ctaReplay: string;
   downloadPng: string;
+  downloadFailed: string;
   readyToShare: string;
   rendering: string;
 }
@@ -56,6 +57,8 @@ interface Props {
 export function ShareCardPreview({ kind, path, locale, labels }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [ready, setReady] = useState(false);
+  // R13.6：与站内三张卡同一标准——下载失败必须可见，不能只进埋点
+  const [downloadFailed, setDownloadFailed] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -135,6 +138,7 @@ export function ShareCardPreview({ kind, path, locale, labels }: Props) {
     });
     try {
       await downloadCanvasAsPng(canvas, filename);
+      setDownloadFailed(false);
       trackGrowthEvent({
         name: "share_card_download",
         card: kind,
@@ -144,6 +148,7 @@ export function ShareCardPreview({ kind, path, locale, labels }: Props) {
         outcome: "succeeded",
       });
     } catch {
+      setDownloadFailed(true);
       trackGrowthEvent({
         name: "share_card_download",
         card: kind,
@@ -188,6 +193,9 @@ export function ShareCardPreview({ kind, path, locale, labels }: Props) {
           <span className="text-xs text-faint">
             {ready ? labels.readyToShare : labels.rendering}
           </span>
+          {downloadFailed && (
+            <p role="alert" className="basis-full mt-2 text-xs font-medium text-red-500">{labels.downloadFailed}</p>
+          )}
         </div>
       </div>
     </div>
