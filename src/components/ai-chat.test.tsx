@@ -100,8 +100,8 @@ const dict = {
   suggestedLabel: "相关章节",
   examplesLabel: "试试这样问",
   disclaimer: "⚠️ 仅用于学习",
-  guestLimit: "游客每小时限 10 次",
-  quotaRemaining: "游客每小时限 10 次，本小时剩余 {n} 次",
+  guestLimit: "本小时游客提问次数已用完，登录可获更多额度",
+  quotaRemaining: "游客每小时限 {l} 次，本小时剩余 {n} 次",
   quotaLoginHint: "本小时次数已用完，登录可获更多额度",
   contextBannerTpl: "正在基于《{title}》篇章回答",
   followups: ["展开讲讲「{t}」", "「{t}」怎么用？", "「{t}」的误区？"],
@@ -586,9 +586,45 @@ describe("AiChat 配额提示（R1.12）", () => {
     );
     fireEvent.click(rendered[0]);
     expect(
-      await screen.findByText(dict.quotaRemaining.replace("{n}", "7")),
+      await screen.findByText(
+        dict.quotaRemaining.replace("{l}", "10").replace("{n}", "7"),
+      ),
     ).toBeInTheDocument();
     expect(container).toBeDefined();
+  });
+
+  it("游客提示里的上限来自 X-Quota-Limit，不是文案里的常量", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/api/ai/conversations") {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ messages: [] }),
+          } as Response;
+        }
+        if (url === "/api/ai/chat") {
+          return {
+            ok: true,
+            status: 200,
+            headers: quotaHeaders(2, 3),
+            body: makeStreamBody("回答"),
+          } as unknown as Response;
+        }
+        throw new Error(`unexpected fetch: ${url}`);
+      }),
+    );
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    const rendered = [...container.querySelectorAll("button")].filter((b) =>
+      SUGGESTED_QUESTIONS_ZH.includes(b.textContent ?? ""),
+    );
+    fireEvent.click(rendered[0]);
+    const strip = await screen.findByText(
+      dict.quotaRemaining.replace("{l}", "3").replace("{n}", "2"),
+    );
+    expect(strip).toBeInTheDocument();
+    expect(strip.textContent).not.toContain("10");
   });
 
   it("配额用尽时展示登录引导链接", async () => {

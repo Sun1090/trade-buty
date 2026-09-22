@@ -737,7 +737,9 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
           {quota && (
             <p className="mt-1 text-[10px] text-faint">
               {quota.remaining > 0 ? (
-                dict.quotaRemaining.replace("{n}", String(quota.remaining))
+                dict.quotaRemaining
+                .replace("{l}", String(quota.limit))
+                .replace("{n}", String(quota.remaining))
               ) : (
                 <a
                   href={`/${locale}/auth`}
