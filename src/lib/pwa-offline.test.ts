@@ -71,7 +71,8 @@ describe("离线页（R13.13）", () => {
 });
 
 describe("离线页恢复逻辑（R13.13）", () => {
-  const SCRIPT = /<script>([\s\S]*?)<\/script>/.exec(OFFLINE_HTML)?.[1] ?? "";
+  // 容忍属性与大小写（`<script type=...>`、`<SCRIPT>`），否则抽不到脚本会把用例变成空断言
+  const SCRIPT = /<script[^>]*>([\s\S]*?)<\/script>/i.exec(OFFLINE_HTML)?.[1] ?? "";
 
   interface Harness {
     statusText: () => string;
