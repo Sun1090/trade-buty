@@ -5,7 +5,7 @@ import { buildRagContext, SYSTEM_PROMPT } from "@/lib/ai/prompt";
 import { buildHistorySummaryPrompt, buildNoContextGuidance } from "@/lib/ai/prompt";
 import { getRefusalMessage } from "@/lib/ai/prompt";
 import { getChapterTitle } from "@/lib/ai/chapters";
-import { matchSensitiveRequest } from "@/lib/ai/guardrail";
+import { matchSensitiveRequest, type SensitiveCategory } from "@/lib/ai/guardrail";
 import { looksLikeRecommendation } from "@/lib/ai/guardrail";
 import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
 import { TRUNCATED_MARKER } from "@/lib/ai/streaming";
@@ -83,8 +83,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No user message" }, { status: 400 });
   }
 
-  // 输入侧护栏（R1.8）：荐股/收益承诺直接拒绝，不调模型
-  const guardHit = matchSensitiveRequest(lastUserMsg.content);
+  // 输入侧护栏（R1.8）：荐股/收益承诺直接拒绝，不调模型。
+  // 扫**全部**用户轮次而不是最后一条：送进模型的是最近 10 轮（更早的还会被压成摘要喂给模型），
+  // 只看最后一条等于「先问荐股、再发一句继续」就能绕过内容红线。
+  const guardHit = history.reduce<SensitiveCategory | null>(
+    (hit, m) => hit ?? (m.role === "user" ? matchSensitiveRequest(m.content) : null),
+    null,
+  );
   if (guardHit) {
     const headers = new Headers();
     headers.set('Content-Type', 'text/plain; charset=utf-8');
