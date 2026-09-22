@@ -70,6 +70,26 @@ export const releaseNotes: ReleaseNote[] = sortReleaseNotes(raw.releases);
 
 export const unreleasedNote: UnreleasedNote | null = raw.unreleased ?? null;
 
+/**
+ * 更新日志页只呈现最近这么多版本。页面标题是「最近更新」，而且整页是预渲染的静态
+ * HTML：全量列出的话每发一版就长一截，路由体积预算迟早被发布次数本身撑破。
+ */
+export const CHANGELOG_WINDOW = 8;
+
+/**
+ * 页面看到的那批版本，以及被窗口挡在外面、只能去 CHANGELOG.md 读的那批。
+ * 一次返回两者：分两个函数取的话，「更早的 N 个版本」这句话迟早和列表对不上。
+ */
+export function changelogSurface(): {
+  shown: ReleaseNote[];
+  older: ReleaseNote[];
+} {
+  return {
+    shown: releaseNotes.slice(0, CHANGELOG_WINDOW),
+    older: releaseNotes.slice(CHANGELOG_WINDOW),
+  };
+}
+
 export function latestRelease(): ReleaseNote | null {
   return releaseNotes[0] ?? null;
 }
