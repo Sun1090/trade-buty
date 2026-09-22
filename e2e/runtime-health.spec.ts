@@ -116,24 +116,82 @@ async function blockCrossOrigin(page: Page) {
   );
 }
 
+/** 收集运行时错误：未捕获异常零豁免，console 只豁免网络与外部依赖噪声 */
+function watchRuntimeErrors(page: Page): string[] {
+  const problems: string[] = [];
+  page.on("pageerror", (error) => {
+    problems.push(`pageerror: ${error.message.split("\n")[0]}`);
+  });
+  page.on("console", (message) => {
+    if (message.type() !== "error") return;
+    const text = message.text();
+    if (NETWORK_NOISE.test(text) || EXTERNAL_VENDOR_NOISE.test(text)) return;
+    problems.push(`console.error: ${text.split("\n")[0]}`);
+  });
+  return problems;
+}
+
 for (const route of ROUTES) {
   test(`水合后无未捕获错误：${route}`, async ({ page }) => {
-    const problems: string[] = [];
-    page.on("pageerror", (error) => {
-      problems.push(`pageerror: ${error.message.split("\n")[0]}`);
-    });
-    page.on("console", (message) => {
-      if (message.type() !== "error") return;
-      const text = message.text();
-      if (NETWORK_NOISE.test(text) || EXTERNAL_VENDOR_NOISE.test(text)) return;
-      problems.push(`console.error: ${text.split("\n")[0]}`);
-    });
+    const problems = watchRuntimeErrors(page);
 
     await blockCrossOrigin(page);
     await seedStorage(page);
     await page.goto(route, { waitUntil: "domcontentloaded" });
     // 给挂载后的 effects 与一次性重渲染留出时间：水合错误在这些回调里才会浮出来
     await page.waitForTimeout(1_500);
+
+    expect(problems).toEqual([]);
+  });
+}
+
+/**
+ * 交互面：把页内按钮逐条点一遍，只断言「没炸」。
+ *
+ * 导航不报错不代表点着不报错——handler 里的空值解构、越界下标、事件常量写错
+ * 都要点下去才走到。这里刻意不断言点击结果：DOM 结构变了不该让门禁红，
+ * 但点击里炸出来的未捕获异常必须红。可点区域的语义正确性由 mobile-overflow /
+ * full-site 那些按名字定位的用例守着。
+ */
+const CLICK_ROUTES = [
+  "/zh",
+  "/en",
+  "/zh/ai",
+  "/zh/stats",
+  "/zh/review",
+  "/zh/knowledge/getting-started/first-trade",
+] as const;
+const MAX_CLICKS = 14;
+
+for (const route of CLICK_ROUTES) {
+  test(`点击页内按钮不抛未捕获错误：${route}`, async ({ page }) => {
+    const problems = watchRuntimeErrors(page);
+
+    await blockCrossOrigin(page);
+    await seedStorage(page);
+    await page.goto(route, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1_200);
+    const startedAt = page.url();
+    const total = Math.min(await page.locator("button").count(), MAX_CLICKS);
+
+    for (let i = 0; i < total; i++) {
+      try {
+        await page.locator("button").nth(i).click({ timeout: 1_500 });
+      } catch {
+        // 禁用、被遮挡、已卸载：不是运行时错误，交给按名字定位的交互用例去管
+        continue;
+      }
+      await page.waitForTimeout(150);
+      try {
+        await page.keyboard.press("Escape");
+      } catch {
+        // 无焦点可处理时忽略
+      }
+      if (page.url() !== startedAt) {
+        await page.goto(startedAt, { waitUntil: "domcontentloaded" });
+        await page.waitForTimeout(600);
+      }
+    }
 
     expect(problems).toEqual([]);
   });
