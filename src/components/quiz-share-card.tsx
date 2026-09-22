@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CARD_SIZE, cardFontFor, drawQuizCard, type ShareLocale } from "@/lib/share-card";
+import { CARD_SIZE, cardFontFor, drawQuizCard, formatPercent, type ShareLocale } from "@/lib/share-card";
 import { downloadCanvasAsPng } from "@/lib/download";
 import { runShareCardFlow } from "@/lib/share-card-flow";
 import { CopyLinkButton } from "@/components/copy-link-button";
@@ -52,11 +52,13 @@ export function QuizShareCard({
   const percent = total > 0 ? (score / total) * 100 : 0;
   const filename = `trade-buty-quiz-${slugify(chapterTitle)}.png`;
   // R13.2：预览图 alt 必须能被读屏复述出卡片内容，而不只是「预览图」
-  const pctText = Math.round(percent * 10) / 10;
+  // 数字用卡面同一个 formatPercent(percent)：此前 alt 写 33.3%、图上写 33%，
+  // 读屏用户复述出来的是另一张卡。
+  const pctText = formatPercent(percent);
   const contentAlt =
     locale === "zh"
-      ? `${labels.previewAlt}：随堂测成绩，章节「${chapterTitle}」，共 ${score}/${total}（${pctText}%）`
-      : `${labels.previewAlt}: quiz result card for "${chapterTitle}", ${score}/${total} (${pctText}%)`;
+      ? `${labels.previewAlt}：随堂测成绩，章节「${chapterTitle}」，共 ${score}/${total}（${pctText}）`
+      : `${labels.previewAlt}: quiz result card for "${chapterTitle}", ${score}/${total} (${pctText})`;
 
   // 卸载预览 URL 避免内存泄漏
   useEffect(() => {
