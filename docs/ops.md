@@ -172,6 +172,29 @@ LINK_PATROL_ALLOW_EMPTY=1 npm run ops:link-patrol
 
 CI 里是**每月定时任务**（`.github/workflows/link-patrol.yml`，每月 1 日 03:00 UTC），也支持手动 workflow_dispatch 触发；CI 不设置空集豁免，零外链会保持可见失败。
 
+## 生产冒烟（发布检查单第 5 步）
+
+```bash
+npm run ops:smoke-prod                                    # 默认打生产域名
+SMOKE_BASE_URL=http://localhost:3111 npm run ops:smoke-prod   # 打本地生产构建
+```
+
+对**已部署的域名**跑 10 条只读断言，逐条打印后汇总；任一失败 exit 1。断言不是随手挑的，每一条都对应
+历史上真出过问题的入口：
+
+| 断言 | 为什么在清单上 |
+|---|---|
+| `/zh`、`/en`、章节页、课文页 200 且 HTML 含 `⚠️` | 内容红线（风险提示块）与双语路由 |
+| `/sitemap.xml` 是 `<urlset>`、`/robots.txt` 指向 sitemap | 抓取入口退化时页面本身看不出来 |
+| `/zh/changelog` 含最新发布版本号 | 「合并 ≠ 上线」：Vercel 配额限流会让生产停在旧构建（0.7.2 就停过一次） |
+| `/share/streak/<合法载荷>` 200 且含 `⚠️` | R14.7：分享落地页曾经漏掉风险行 |
+| `GET /api/auth/session` 匿名 → `200 {"user":null}` | PR #107：游客被判 500 的回归 |
+| `POST /api/ai/chat` 游客合法载荷 → 不返回 5xx | 游客 AI 问答可用性；429 视为通过（限流生效即端点活着） |
+
+预览域受 Vercel Deployment Protection 保护（未授权请求 302 到 SSO，R14.9），所以默认指向生产域名；
+要覆盖预览需要账号级 protection-bypass 密钥。脚本本身由 `scripts/prod-smoke.test.mjs` 用假站点逐条验证：
+每种退化都必须被抓出来，读不到发布版本号也算失败而不是跳过。
+
 ## Supabase 迁移清单（按文件名顺序执行）
 
 | 迁移 | 内容 |
