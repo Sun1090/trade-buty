@@ -5332,3 +5332,48 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：①请用户检查 Vercel Production Environment 的 `AI_API_*` 与上游配额（唯一用户可见破坏面）；
   ②R16.7 与 R15.2 需要用户拍板选边；③之后转入需要外部条件的项（R14.9/R14.10/R14.11/Q3.x）。
 - 更新时间：2026-09-22 12:10（Asia/Shanghai）。
+
+## 2026-09-22 — RELEASE_FREEZE：v0.7.4 已合并打 tag（展示口径与本地状态的七个缺陷修复）
+
+- 状态：**已发布到 main 并打 tag**；生产部署**尚未确认跟上**（见验证结果，不预先写成通过）。
+- 里程碑 / 版本：**v0.7.4（patch）**。判级理由：`v0.7.3..main` 只有 `fix` / `chore(quality)` / `docs`，
+  无新增产品能力，也无内容契约、数据结构、鉴权/数据隔离语义的不兼容变更。
+- 分支 / 提交：发布提交 `b5691b4`（PR #149，rebase 合并）；tag `v0.7.4` → `b5691b4`（annotated 对象 `475367d`）。
+- 来路（这一轮不是按计划排的）：0.7.3 收口后 roadmap 已无仓库侧可自跑项，于是改为**按分支覆盖率升序倒查源文件**，
+  逐个读组件，五个读下来命中七个真实缺陷——它们都不在 roadmap 上，因为不是「没做的功能」，而是
+  **「界面声称了数据没做到的事」**（说「实时」其实是旧价、说「刚完成」其实是几周前、说「无进度」其实早已答题）。
+  - R16.9（#142）复习页「已过期」与统计导出 `overdue` 不同尺：回填出来的推断日期被标成红色「过期 N 天」。
+  - R15.5（#143）7 个 AI 端点无请求体字节上限（字段上限要整包解析完才生效）+ 新门禁 `check:request-body-bounds`。
+  - #144 行情卡：轮询失败时旧价格继续顶着「实时行情」标题——`navigator.onLine` 为 true 而请求全挂才是常态。
+  - #145 近 7 天迷你条：日期窗口 memo 在 `[locale]` 上，学完一节课旁边的日历亮、它不动；且亮/灭只有颜色一个通道。
+  - #146 课末测验卡：渲染期直接读 localStorage，SSG 首屏与 hydration 打架（`renderToString` 用例钉住），且不订阅 `tb-progress`。
+  - #147 篇章完成庆祝：判据是「这次挂载读到的进度是满的」，回访旧篇章每次都放礼花。
+  - #148 阅读计时：`hidden` 缓存在 `visibilitychange` 回调里，而该事件只在切换时触发——后台标签挂载的课没人读也在累计学习时长。
+- 变更文件（发布提交）：`src/data/release-notes.json`、`CHANGELOG.md`、`package.json`、`package-lock.json`；
+  代码侧变更见上面七个 PR。
+- 验证命令和结果：
+  - 按检查单固定顺序（e2e 放最后）全量跑过一遍：`test` **271 文件 / 2595 用例** → `test:coverage` statements
+    **96.35%**、branches **91.50%**、functions 96.23%、lines 98.31%（阈值 84/77 未下调）→ `lint` 0 警告 →
+    `typecheck` → `build` → `check:mobile` → `check:seo-surface` → `check:search-index` → `check:structured-data`
+    → `check:risk-warning`（lessons 364/364）→ `check:constitution` → `check:docs` → `check:request-body-bounds`
+    （9 个 POST 端点全过闸）→ `db:test`（迁移 + RLS 越权 + 双设备同步 + 0009 回滚重放演练）→ `e2e` **109 通过**。
+  - 锁文件用钉住的 `npx --yes npm@10.9.4 install --package-lock-only` 重算，`check:lockfile-repro` 报
+    「981 个包条目无差异」；锁文件 diff 只有两处 version 行。合并后 `check:release-tag`：8 条记录 tag 全落地。
+  - **生产冒烟（发布后立刻跑）= 8/10，exit 1**：
+    - ❌ `GET /zh/changelog` 里没有 `0.7.4` → 生产构建还没跟上 `main`（Vercel 由 main 推送触发，账号 24h 构建配额；
+      上一次配额窗口恢复时它会自动构建）。**合并 ≠ 上线**，本条不写成通过，部署跟上后重跑再更新。
+    - ❌ `POST /api/ai/chat` 游客合法载荷 → `502`（本地同一构建是 200 SSE）→ Vercel 生产环境变量 / 上游配额，
+      连续两轮未解，属 `BLOCKED_CREDENTIAL`。
+    - 其余 8 条全绿（4 个页面含 `⚠️`、sitemap、robots、`/share/streak`、游客 `auth/session` 200）。
+- 一次「先量再改」的记录：怀疑 `StatsClient` 在渲染期直接读 localStorage 会造成 hydration 不一致（8 处
+  `typeof window === "undefined" ? 兜底 : 读`）。用生产构建 + Playwright 实测：预渲染 HTML 里既没有
+  「0 道错题」也没有「2 道错题」（该块由 `stats && progress` 门控，服务端整块不渲染），控制台 0 条 hydration
+  报错 → **不是缺陷，不做那个 600 行组件的重构**。这一条特意记下，是因为按代码形状推断时它「看起来就像 bug」。
+- 阻塞：`BLOCKED_CREDENTIAL` 两条不变（生产 Vercel 的 AI 上游配置；预览域 Deployment Protection + 构建配额）。
+  需产品决策的仍为 R15.2、R16.7，以及 R15.4④ 的 `/api/auth/signout` 下线与否。
+- 风险 / 回滚：`git revert b5691b4` 撤版本号与发布记录（不改运行期行为）；要撤单个修复就 revert
+  `v0.7.3..v0.7.4` 区间里对应那条。无迁移、无 `supabase/` 变更、无内容契约变更，站点回滚不需要数据库动作；
+  Vercel 也可先把 Production Deployment 切回 0.7.3 构建止血，随后用 revert 收敛历史。
+- 下一项：①生产构建跟上后重跑 `npm run ops:smoke-prod`，把 0.7.4 的上线结论补进本条；②继续按覆盖率倒查组件
+  （share 卡、auth 路由、其余计时/订阅类组件还没读完）；③R16.7 / R15.2 需用户拍板后才能动数据模型。
+- 更新时间：2026-09-22 13:35（Asia/Shanghai）。
