@@ -491,45 +491,85 @@ export function mergeQuizScore(local: { best: number; done: boolean } | null, cl
  */
 export const REPLAY_ROUND_DUP_WINDOW_MS = 10_000;
 
+/** 一轮回放的统计指纹：同一轮不管在哪台设备做的，五个统计量都相同，只有打点时间不同 */
+interface ReplayRound {
+  symbol: string;
+  interval: string;
+  total: number;
+  correct: number;
+  bestStreak: number;
+}
+
+function replayRoundSig(r: ReplayRound): string {
+  return `${r.symbol}|${r.interval}|${r.total}|${r.correct}|${r.bestStreak}`;
+}
+
+/** 云端行 → 本地轮次；`recorded_at` 不可解析时返回 null（坏时间戳不进本地历史） */
+function cloudReplayRound(row: CloudReplay): (ReplayRound & { at: number }) | null {
+  const at = new Date(row.recorded_at).getTime();
+  if (!isFiniteDateMs(at)) return null;
+  return {
+    at,
+    symbol: row.symbol,
+    interval: row.interval,
+    total: row.total,
+    correct: row.correct,
+    bestStreak: row.best_streak,
+  };
+}
+
+/** 云端轮次是否就是本地某一轮（指纹相同、时间只差网络延迟） */
+function matchesLocalReplayRound(
+  localRounds: { sig: string; at: number }[],
+  sig: string,
+  at: number,
+): boolean {
+  return localRounds.some((l) => l.sig === sig && Math.abs(l.at - at) <= REPLAY_ROUND_DUP_WINDOW_MS);
+}
+
 /** 回放记录合并：并集去重（按 at+一轮的统计指纹，并对云端时间差给容忍），取最近 100 */
 export function mergeReplayHistory(local: ReplayRecord[], cloud: CloudReplay[]): ReplayRecord[] {
   const seen = new Set<string>();
   const merged: ReplayRecord[] = [];
-  const roundSig = (r: { symbol: string; interval: string; total: number; correct: number; bestStreak: number }) =>
-    `${r.symbol}|${r.interval}|${r.total}|${r.correct}|${r.bestStreak}`;
   const add = (r: ReplayRecord) => {
-    const sig = `${r.at}|${roundSig(r)}`;
+    const sig = `${r.at}|${replayRoundSig(r)}`;
     if (seen.has(sig)) return;
     seen.add(sig);
     merged.push(r);
   };
   local.forEach(add);
-  const localRounds = local.map((r) => ({ sig: roundSig(r), at: r.at }));
+  const localRounds = local.map((r) => ({ sig: replayRoundSig(r), at: r.at }));
   cloud.forEach((row) => {
-    const at = new Date(row.recorded_at).getTime();
-    if (!isFiniteDateMs(at)) return;
-    const sig = roundSig({
-      symbol: row.symbol,
-      interval: row.interval,
-      total: row.total,
-      correct: row.correct,
-      bestStreak: row.best_streak,
-    });
+    const round = cloudReplayRound(row);
+    if (!round) return;
     // 同一轮的云端行（服务器打点）与本地记录（客户端打点）只差网络延迟，认成本地那条即可
-    if (localRounds.some((l) => l.sig === sig && Math.abs(l.at - at) <= REPLAY_ROUND_DUP_WINDOW_MS)) {
-      return;
-    }
-    add({
-      at,
-      symbol: row.symbol,
-      interval: row.interval,
-      total: row.total,
-      correct: row.correct,
-      bestStreak: row.best_streak,
-    });
+    if (matchesLocalReplayRound(localRounds, replayRoundSig(round), round.at)) return;
+    add(round);
   });
   merged.sort((a, b) => a.at - b.at);
   return merged.slice(-100);
+}
+
+/**
+ * 本次合并会从云端带来几轮新回放——必须与 mergeReplayHistory 同一判据，
+ * 否则Toast 会对着同一批数据既说「新增 N 轮」又说「没有新内容」。
+ * 云端 append-only 不等于每一行都是新的：本机自己上传的行也在里面。
+ */
+export function countNewReplayRounds(local: ReplayRecord[], cloud: CloudReplay[]): number {
+  const localRounds = local.map((r) => ({ sig: replayRoundSig(r), at: r.at }));
+  const counted = new Set<string>();
+  let count = 0;
+  for (const row of cloud) {
+    const round = cloudReplayRound(row);
+    if (!round) continue;
+    const sig = replayRoundSig(round);
+    if (matchesLocalReplayRound(localRounds, sig, round.at)) continue;
+    const key = `${round.at}|${sig}`;
+    if (counted.has(key)) continue; // 云端重复行只算一次
+    counted.add(key);
+    count += 1;
+  }
+  return count;
 }
 
 /** 回放最佳合并：取 max */
@@ -726,7 +766,7 @@ export interface MergeSummary {
   newWrong: number;
   /** 被云端覆盖的测验成绩（云端更高） */
   quizImprovements: number;
-  /** 新增的回放记录 */
+  /** 合并真正会从云端带入的回放轮次数（与 mergeReplayHistory 同一判据，本机上传的那些不算） */
   newReplays: number;
   /** 是否有任何新内容 */
   hasAny: boolean;
@@ -756,7 +796,7 @@ export function diffMergeSummary(
     const l = localQuiz[row.chapter_num];
     return l ? row.best > l.best : row.best > 0;
   }).length;
-  const newReplays = cloudReplay.length; // replay-history 是 append-only，新加的都是新的
+  const newReplays = countNewReplayRounds(localReplay, cloudReplay);
   const hasAny = newProgress + newWrong + quizImprovements + newReplays > 0;
   return { newProgress, newWrong, quizImprovements, newReplays, hasAny };
 }
