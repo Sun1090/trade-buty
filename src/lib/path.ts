@@ -1,4 +1,4 @@
-import { getChapters, type Chapter } from "./content";
+import { chapterRef, getChapters, type Chapter } from "./content";
 
 /** 学习路径分层（依据知识库根 README 的学习路线图）；文案见 i18n */
 export type StageKey = "core" | "practice" | "deep";
@@ -37,4 +37,19 @@ export function getStageGroups(
       .map((n) => bySlug.get(n))
       .filter((c): c is Chapter => !!c),
   }));
+}
+
+/**
+ * 界面文案里凡是提到「路径长什么样」的量，都由分层表和知识库算出来：
+ * `{stages}`（第几站有几站）、`{lastCore}`（主线最后一站的当期标题）、
+ * `{chapter:<slug>}`（某一篇章的当期标题）。
+ * 抄死「三站式 / 第 08 篇 / 06 · 技术分析篇」的句子，在 `kb:update` 之后会一个字都不剩地对。
+ */
+export function withCopyRefs(locale: string, text: string): string {
+  const coreGroup = getStageGroups(locale).find((g) => g.stage.id === "core");
+  const lastCore = coreGroup?.chapters[coreGroup.chapters.length - 1];
+  return text
+    .replace(/\{stages\}/g, String(STAGES.length))
+    .replace(/\{lastCore\}/g, lastCore ? chapterRef(locale, lastCore.slug) : "")
+    .replace(/\{chapter:([a-z0-9-]+)\}/g, (_match, slug: string) => chapterRef(locale, slug));
 }

@@ -70,6 +70,16 @@ export function withChapterCount(text: string): string {
 }
 
 /**
+ * 文案引用某一篇章时只写 slug，渲染时换成知识库**当下**的「NN · 名称」。
+ * 编号与名字都归知识库管：`kb:update` 重排或改名后，抄在界面里的「06 · 技术分析篇」就是假话。
+ * 查不到篇章时退回 slug——宁可露出 slug 也不编一个编号。
+ */
+export function chapterRef(locale: string, slug: string): string {
+  const chapter = getChapters(locale).find((c) => c.slug === slug);
+  return chapter ? chapter.title : slug;
+}
+
+/**
  * 宽容降级：坏 YAML 的课文不得把 `---` 围栏当正文渲染。按 YAML 口径只切掉**成对**围栏；
  * 找不到闭合围栏时保留原文——那种情况下无法区分 frontmatter 与正文，宁可多显示也不吞内容。
  */

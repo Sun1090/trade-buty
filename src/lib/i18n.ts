@@ -59,7 +59,7 @@ const zh = {
   path: {
     label: "Learning Path",
     title: "学习路线",
-    intro: "三站式路径：先走完「入门主线」建立完整认知，再按方向选学进阶与深潜专题。建议顺序学习，不要跳读——第 08 篇会教你为什么。",
+    intro: "路径分 {stages} 站：先走完「入门主线」建立完整认知，再按方向选学进阶与深潜专题。建议顺序学习，不要跳读——主线最后一站「{lastCore}」会告诉你为什么。",
     stages: {
       core: { label: "第一站", title: "入门主线", description: "零基础到建立交易系统，按顺序走完这条线" },
       practice: { label: "第二站", title: "实战进阶", description: "把知识变成操作：实战、生态、量化与数据解读" },
@@ -67,7 +67,7 @@ const zh = {
     },
     readyCta: "准备好了？从第一课开始。",
     translationNote: "",
-    lesson1: "第 01 课 →",
+    lesson1: "进入 {chapter:getting-started} →",
     lessonsUnit: "篇",
   },
   chapter: {
@@ -117,7 +117,7 @@ const zh = {
     label: "Practice",
     title: "真实行情图表",
     embedHeading: "边学边练 · 真实行情",
-    intro: "学完概念，来这里看真盘。对照「06 · 技术分析篇」练习识别 K 线形态与指标——先看懂，再谈操作。",
+    intro: "学完概念，来这里看真盘。对照「{chapter:technical-analysis}」练习识别 K 线形态与指标——先看懂，再谈操作。",
     loading: "加载行情中…",
     error: "行情加载失败，币安 API 可能不可达",
     retry: "重试",
@@ -445,7 +445,7 @@ const en: Dict = {
   path: {
     label: "Learning Path",
     title: "Learning Path",
-    intro: "Three stages: finish the core path for a complete foundation, then pick advanced and deep-dive topics by direction. Study in order — Lesson 08 will show you why.",
+    intro: "{stages} stages: finish the core path for a complete foundation, then pick advanced and deep-dive topics by direction. Study in order — the last stop of the core line, {lastCore}, shows you why.",
     stages: {
       core: { label: "Stage 1", title: "Core Path", description: "From zero to a full trading system, in order" },
       practice: { label: "Stage 2", title: "Advanced Practice", description: "Turning knowledge into action: tactics, ecosystem, quant, data" },
@@ -453,7 +453,7 @@ const en: Dict = {
     },
     readyCta: "Ready? Start from lesson one.",
     translationNote: "🚧 English translation in progress — {done}/{chapters} chapters available so far. The complete Chinese originals are always free.",
-    lesson1: "Lesson 01 →",
+    lesson1: "Open {chapter:getting-started} →",
     lessonsUnit: "chapters",
   },
   chapter: {
@@ -503,7 +503,7 @@ const en: Dict = {
     label: "Practice",
     title: "Live Market Charts",
     embedHeading: "Practice · Live market",
-    intro: "Real crypto charts to pair with your lessons — practice spotting candlestick patterns and indicators from Chapter 06.",
+    intro: "Real crypto charts to pair with your lessons — practice spotting candlestick patterns and indicators from {chapter:technical-analysis}.",
     loading: "Loading market data…",
     error: "Failed to load market data — Binance API may be unreachable",
     retry: "Retry",
