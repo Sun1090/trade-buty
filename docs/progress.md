@@ -5291,3 +5291,44 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   未收口项；随后转 R15.4 的 C 级 AI 边界项。生产侧仍等 Vercel 配额窗口，恢复后重跑
   `npm run ops:smoke-prod` 补 0.7.3 上线结论。
 - 更新时间：2026-09-22 11:45（Asia/Shanghai）。
+
+## 2026-09-22 — 口径收口与请求体上限批次；**0.7.3 已确认上线**（生产冒烟 9/10）
+
+- 状态：R16.9 已合并；R15.4/R15.5 批次在 PR #143 评审中（CI 已跑绿即合并）。
+- 里程碑 / 版本：v0.10（R16 口径一致性）收口 + R15 边界收口。本轮不发版：改动是口径归一与请求体设闸，无新增产品能力。
+- 分支 / 提交：
+  - `fix/review-overdue-caliber` → PR **#142**，rebase 合并为 main `3c96679`（远端分支已删、本地分支经 `--cherry-pick` 确认无独有内容后删除）。
+  - `fix/ai-request-body-bound` → PR **#143**（3 个提交：`fix(api)` 有界读取、`chore(quality)` 门禁、`docs(roadmap)` 收口）。
+- **生产部署结论（补 #5197 那条欠下的账，先前只写了「等配额恢复后重跑」）**：`npm run ops:smoke-prod` → **9/10 通过**。
+  `GET /zh/changelog` 已含 `0.7.3` → **Vercel 构建配额窗口已过、生产确实跟上 main**，v0.7.3 的全部修复（账号镜像归属、
+  写失败队列、回放双计、到期口径、近 90 天窗口、红线多轮护栏、离线恢复、AI 端点配额）此刻是线上状态。
+  仍然 ❌ 的只有一条：`POST /api/ai/chat` 游客合法载荷 → `502`。同一份载荷在本地生产构建是 `200 text/event-stream`，
+  所以这条不是站内回归，而是 **Vercel 生产环境变量（`AI_API_URL` / `AI_API_KEY` / `AI_MODEL`）或上游配额**问题，
+  仍是本轮唯一对用户可见的破坏面，需要用户账号侧权限才能查证（`BLOCKED_CREDENTIAL`）。
+- 完成内容：
+  1. R16.9：复习页「已过期」与 `wrongbook-efficiency.latest.overdue` 收敛到同一把尺子（回填日期只回答「什么时候该出现」，
+     不回答「逾期几天」），并为此**主动改写**了一条 R16.4 时期钉下的断言（详见该条与 #142）。
+  2. R15.5：站内 8 个解析 JSON 的 POST 端点全部改为在读流阶段设字节上限（`src/lib/request-body.ts`），
+     新增门禁 `npm run check:request-body-bounds` 把这条约定钉住；413 与 400 分开，且都断言发生在
+     检索/模型/写库之前。上限一律由该路由自己的字段上限推算（字符 ×3 = CJK UTF-8 上界 + JSON 结构开销）。
+  3. R15.4 其余三条给出去向：②核实为**产品路径打不到**（挂载 AI 出题卡的章节按定义没有固定题库，`fixedQuiz`
+     恒 `undefined`），同时记下「R2.5 的降级到固定题、绝不白屏」这条设计其实是空的；③是进程内限流的固有边界；
+     ④`/api/auth/signout` 零调用方，删除属对外 API 面决策，不擅自下线。
+- 变更文件：`src/lib/request-body.ts`（新）+ 其用例、8 个 `src/app/api/**/route.ts` 及其用例、
+  `scripts/request-body-bounds.{mjs,test.mjs}`（新）、`package.json`、`.github/workflows/ci.yml`、
+  `docs/ops.md` 门禁表、`docs/roadmap.md`、`src/components/review-*`（#142）、`docs/progress.md`。
+- 验证命令和结果（按门禁顺序）：`npm run lint`（0 警告）→ `npm run test:coverage` **271 文件**通过，
+  statements **96.20%**、branches **91.33%**（阈值 84/77 未下调；本轮新增代码使分母变大，绝对值仍在上行通道内）
+  → `npm run typecheck` 0 → `npm run build` 通过 → `npm run check:request-body-bounds`（9 个 POST 端点全过闸）
+  → `npm run check:error-report-privacy`（`readBoundedBody` 搬家后原隐私门禁仍通过）
+  → `scripts/ci-workflow.test.mjs` 19 通过（CI 步骤 ↔ `docs/ops.md` ↔ `package.json` 三方契约）
+  → `npm run check:docs` → `npm run e2e` **109 通过** → `npm run -s ops:work-audit`（分支卫生）
+  → `npm run -s ops:smoke-prod` 9/10（结论见上）。
+  门禁变异验证：把 plan 路由改回 `req.json()` → 新门禁 exit 1 并点名该文件；还原 → exit 0。
+- 阻塞：`BLOCKED_CREDENTIAL` 一条（生产 AI 上游配置），其余 `roadmap` 未勾项全部是 `BLOCKED_EXTERNAL`
+  或需产品决策（R15.2、R16.7、④ 的 auth 端点删除）。本轮之后 roadmap 已无「仓库侧可自跑」的未收口项。
+- 风险 / 回滚：三个提交按主题拆分，`git revert` 任一不影响其余；运行期只新增 413 这一种响应，
+  无迁移、无 `supabase/` 变更、无内容契约变更。
+- 下一项：①请用户检查 Vercel Production Environment 的 `AI_API_*` 与上游配额（唯一用户可见破坏面）；
+  ②R16.7 与 R15.2 需要用户拍板选边；③之后转入需要外部条件的项（R14.9/R14.10/R14.11/Q3.x）。
+- 更新时间：2026-09-22 12:10（Asia/Shanghai）。
