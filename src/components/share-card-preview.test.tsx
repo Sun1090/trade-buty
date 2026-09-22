@@ -24,6 +24,9 @@ const LABELS = {
   ctaBody: "Body",
   ctaPath: "Path",
   ctaReplay: "Replay",
+  downloadPng: "下载卡面 PNG",
+  readyToShare: "可以分享了",
+  rendering: "正在生成预览…",
 };
 
 function installCanvasStub(toBlobResult: Blob | null = new Blob(["png"], { type: "image/png" })) {
@@ -81,6 +84,9 @@ describe("ShareCardPreview growth events", () => {
     render(<ShareCardPreview kind="quiz" path={path} locale="en" labels={LABELS} />);
     const button = screen.getByTestId("share-download-btn-quiz");
     await waitFor(() => expect(button).toBeEnabled());
+    // 下载按钮与状态文字都取自 labels，不再写死英文
+    expect(button).toHaveTextContent("下载卡面 PNG");
+    expect(screen.getByText("可以分享了")).toBeInTheDocument();
     fireEvent.click(button);
     await waitFor(() =>
       expect(growthTrack).toHaveBeenLastCalledWith({
@@ -190,7 +196,7 @@ describe("ShareCardPreview invalid payloads stay un-downloadable", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(title);
     expect(screen.getByText("Invalid body")).toBeInTheDocument();
     expect(screen.getByTestId(`share-download-btn-${kind}`)).toBeDisabled();
-    expect(screen.getByText("Rendering…")).toBeInTheDocument();
+    expect(screen.getByText(LABELS.rendering)).toBeInTheDocument();
   });
 
   it("画布上下文不可用时不置就绪", () => {
@@ -207,7 +213,7 @@ describe("ShareCardPreview invalid payloads stay un-downloadable", () => {
     render(<ShareCardPreview kind="quiz" path={path} locale="en" labels={LABELS} />);
 
     expect(screen.getByTestId("share-download-btn-quiz")).toBeDisabled();
-    expect(screen.getByText("Rendering…")).toBeInTheDocument();
+    expect(screen.getByText(LABELS.rendering)).toBeInTheDocument();
   });
 });
 

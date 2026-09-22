@@ -33,6 +33,9 @@ interface Labels {
   ctaBody: string;
   ctaPath: string;
   ctaReplay: string;
+  downloadPng: string;
+  readyToShare: string;
+  rendering: string;
 }
 
 interface Props {
@@ -178,10 +181,10 @@ export function ShareCardPreview({ kind, path, locale, labels }: Props) {
             data-testid={`share-download-btn-${kind}`}
             className="rounded-full bg-accent-strong text-white dark:text-[#06281c] font-semibold px-5 py-2 text-sm hover:bg-accent transition disabled:opacity-50"
           >
-            ⬇ Download PNG
+            ⬇ {labels.downloadPng}
           </button>
           <span className="text-xs text-faint">
-            {ready ? "Ready to share" : "Rendering…"}
+            {ready ? labels.readyToShare : labels.rendering}
           </span>
         </div>
       </div>
