@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { auditRequestBodyBounds, collectRouteFiles } from "./request-body-bounds.mjs";
+import { auditRequestBodyBounds, collectRouteFiles, run } from "./request-body-bounds.mjs";
 
 const POST_WITH_BOUND = `
 export const MAX_BODY_BYTES = 4_096;
@@ -77,5 +78,50 @@ export async function GET(req) {
     // 至少覆盖 8 个 AI/auth/error-reports 写端点，防止扫描目录写错导致「零违规」的假绿
     expect(postRoutes).toBeGreaterThanOrEqual(8);
     expect(auditRequestBodyBounds(sources)).toEqual([]);
+  });
+
+  it("真实 CLI 入口：通过时 exit 不被调用，违规时 exit(1) 并点名文件", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "request-body-bounds-"));
+    try {
+      const routeDir = path.join(root, "src/app/api/ai/demo");
+      fs.mkdirSync(routeDir, { recursive: true });
+      fs.writeFileSync(path.join(routeDir, "route.ts"), POST_WITH_BOUND);
+
+      const codes = [];
+      const logs = [];
+      run({
+        rootDir: root,
+        log: (message) => logs.push(String(message)),
+        error: () => undefined,
+        exit: (value) => codes.push(value),
+      });
+      expect(codes).toEqual([]);
+      expect(logs[0]).toContain("1 个 POST 端点");
+
+      fs.writeFileSync(
+        path.join(routeDir, "route.ts"),
+        "export async function POST(req) {\n  const body = await req.json();\n  return Response.json(body);\n}\n",
+      );
+      const errors = [];
+      run({
+        rootDir: root,
+        log: () => undefined,
+        error: (message) => errors.push(String(message)),
+        exit: (value) => codes.push(value),
+      });
+      expect(codes).toEqual([1]);
+      expect(errors.join("\n")).toContain("src/app/api/ai/demo/route.ts");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("api 目录不存在时扫到 0 个端点而不是崩掉", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "request-body-bounds-empty-"));
+    try {
+      expect(collectRouteFiles(path.join(root, "src/app/api"))).toEqual([]);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });
