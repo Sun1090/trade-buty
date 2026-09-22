@@ -376,6 +376,9 @@ const zh = {
     ctaBody: "Trade Buty 提供从 K 线到回放训练的中文交易教育课程，全部免费。",
     ctaPath: "开始学习路线 →",
     ctaReplay: "试试回放训练",
+    downloadPng: "下载卡面 PNG",
+    readyToShare: "可以分享了",
+    rendering: "正在生成预览…",
   },
   footer: {
     tagline: "面向全球中文用户的免费中立交易教育平台。分级课程（学）× 真实行情图表与回放（练）。",
@@ -775,6 +778,9 @@ const en: Dict = {
     ctaBody: "Trade Buty offers free Chinese-language trading education — K-lines to replay drills.",
     ctaPath: "Start learning path →",
     ctaReplay: "Try replay training",
+    downloadPng: "Download PNG",
+    readyToShare: "Ready to share",
+    rendering: "Rendering…",
   },
   footer: {
     tagline: "A free & neutral trading education platform for Chinese speakers worldwide. Structured courses (learn) × live charts & replay (practice).",
