@@ -5,6 +5,28 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.6] - 2026-09-22
+
+**首屏水合、进度封顶与隐私披露的缺陷修复 / Fixes for first-paint hydration, capped progress calibers, and privacy disclosures**
+
+### 中文
+
+- 首页与 AI 页的「随机内容」不再在首屏自相打架：每日心得与 AI 示例问题过去在服务器渲染时抽一次随机、浏览器接管后再抽一次，React 因此判定整棵子树不可信并推倒重建；现在静态首屏固定给确定的一条，随机只发生在挂载之后与你点「换一条心得」时
+- 学习数据不再出现超过满额的数：篇章侧栏的 150% 进度、路线页「已读 12/7 课」、课文清单角标 12/7、随堂测「历史最佳 99/3」与雷达图 >100% 全部收口到同一个封顶口径（去重 + 按当前课数/题数封顶），首页完成计数与统计页「总进度」也共用同一份实现；知识库改课留下的旧记录仍在本机，只是不再被算成多读了课
+- 中文读屏不再念英文：汉堡菜单、主题切换、语言切换、提示卡关闭与「换一条心得」等按钮的可访问名称改由字典提供；同时删掉首页改版遗留的 18 条死文案，其中还躺着一个已经不成立的「173 篇深度课程」
+- 隐私政策与 FAQ 按代码真实行为重写：说清未登录时到底有哪两类请求离开浏览器（你主动使用的 AI 助学、匿名崩溃诊断）、AI 上游是「智谱 GLM → DeepSeek → SenseNova」按可用性降级的链路而不是单一供应商、给回答打分与点开引用会匿名写入数据库哪些字段、注销账户后 AI 引用记录会摘掉身份作为匿名行保留，以及登录后 Supabase 会话 cookie 的存在
+- 门禁与工具链加固：22 条关键路由的水合健康检查 + 逐条点击页内按钮的交互面巡检进 CI（外部行情域不再制造假失败）；「注销即清空云端数据」升级为数据库级不变量测试（新表漏写 on delete 即红）；FAQ 候选报告加 k-匿名门槛，单人独条的用户原话不再被提交进公开仓库；文档里引用的 pgTAP 断言数与测试文件对账
+
+### English
+
+- The homepage and AI page no longer fight themselves on first paint: the daily tip and the AI example questions used to pick randomness during server render and again once the browser took over, so React declared the whole subtree untrusted and rebuilt it. The static first paint is now deterministic, and randomness happens only after mount and when you ask for another tip
+- Learning numbers can no longer exceed their own maximum: the 150% chapter rail, "read 12/7 lessons" on the path page, the 12/7 lesson-list badge, "best 99/3" in the quiz card and radar axes above 100% all collapse onto one capped caliber (de-duplicate, cap at the lessons/questions that exist today), and the homepage counter shares the implementation with the stats "overall progress" card; stale records left by content revisions stay on your device, they just no longer count as extra lessons read
+- Screen readers in Chinese no longer read English labels: the menu, theme, language, toast close and next-tip buttons get their accessible names from the dictionary, and 18 dead strings left over from the homepage redesign were deleted - including a "173 in-depth lessons" claim that stopped being true
+- The privacy policy and FAQ now describe what the code actually does: which two kinds of request leave your browser before you log in (the AI tutor you choose to use, and the anonymous crash diagnostic), that the AI upstream is a fallback chain of Zhipu GLM - DeepSeek - SenseNova rather than one vendor, which fields an answer rating or citation click writes anonymously to the database, that citation clicks are detached from your identity and kept when you delete your account, and that Supabase stores a session cookie once you are logged in
+- Gates and tooling hardened: a hydration health check over 22 key routes plus a click sweep over every button on the page now run in CI (the external market-data domain no longer manufactures false failures); "deleting an account clears the cloud" became a database-level invariant test (a new table without an ON DELETE turns it red); the FAQ candidate report gained a k-anonymity floor so one-person question text is never committed to a public repo; and pgTAP assertion counts cited in docs are checked against the test files
+
+参考：[docs/progress.md](docs/progress.md)
+
 ## [0.7.5] - 2026-09-22
 
 **统计口径、回放评级与分享界面文案的缺陷修复 / Fixes to stats caliber, replay grading, and share-screen wording**
