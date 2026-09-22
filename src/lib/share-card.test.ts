@@ -352,29 +352,66 @@ describe("share card drawing entrypoints", () => {
     expect(textCalls(mock)).toContain("5");
   });
 
-  it("draws a zero-day streak card and fills the missing recent days", () => {
+  const streakArgs = (recentDays: { date: string; active: boolean }[]) => ({
+    width: 1080,
+    height: 1080,
+    currentStreak: 12,
+    longestStreak: 12,
+    recentDays,
+    locale: "zh",
+    theme: "dark",
+    siteName: "Trade Buty",
+    font: "system-ui",
+  } as const);
+
+  const SEVEN_DAYS = [
+    { date: "2026-09-16", active: true },
+    { date: "2026-09-17", active: false },
+    { date: "2026-09-18", active: true },
+    { date: "2026-09-19", active: true },
+    { date: "2026-09-20", active: false },
+    { date: "2026-09-21", active: true },
+    { date: "2026-09-22", active: true },
+  ];
+
+  it("有 7 天数据时画日历：7 个方格 + 7 个日期标签 + 「近 7 天」", () => {
     const mock = makeCanvasContext();
-    const ctx = mock.ctx;
-    mock.withGradient(ctx);
+    mock.withGradient(mock.ctx);
+    drawStreakCard({ ctx: mock.ctx, ...streakArgs(SEVEN_DAYS) });
 
-    drawStreakCard({
-      ctx,
-      width: 1080,
-      height: 1080,
-      currentStreak: 0,
-      longestStreak: 0,
-      recentDays: [],
-      locale: "zh",
-      theme: "dark",
-      siteName: "Trade Buty",
-      font: "system-ui",
-    });
-
+    // 方格都落在 y = height - 280 = 800 这一行
+    const cells = mock.calls.filter((c) => c.name === "fillRect" && c.args[1] === 800);
+    expect(cells).toHaveLength(7);
     expect(textCalls(mock)).toContain("学习连续打卡");
-    expect(textCalls(mock)).toContain("0");
-    expect(textCalls(mock)).toContain("连续天数");
-    expect(textCalls(mock)).toContain("最长连胜：0 天");
     expect(textCalls(mock)).toContain("近 7 天");
-    expect(textCalls(mock)).toContain("Trade Buty");
+    expect(textCalls(mock)).toContain("09-16");
+    expect(textCalls(mock)).toContain("09-22");
+  });
+
+  it("没有 7 天数据（落地页只带 streak 两个数）→ 不画空日历，也不写「近 7 天」", () => {
+    const mock = makeCanvasContext();
+    mock.withGradient(mock.ctx);
+    drawStreakCard({ ctx: mock.ctx, ...streakArgs([]) });
+
+    const texts = textCalls(mock);
+    expect(texts).not.toContain("近 7 天");
+    expect(texts).not.toContain("Last 7 days");
+    // 一行都不画：日历那一行（y=800）上没有方格
+    expect(mock.calls.filter((c) => c.name === "fillRect" && c.args[1] === 800)).toHaveLength(0);
+    // 卡片本身照常：连续天数与品牌行仍在
+    expect(texts).toContain("12");
+    expect(texts).toContain("最长连胜：12 天");
+    expect(texts).toContain("Trade Buty");
+  });
+
+  it("英文卡在无数据时同样不写「Last 7 days」", () => {
+    const mock = makeCanvasContext();
+    mock.withGradient(mock.ctx);
+    drawStreakCard({
+      ctx: mock.ctx,
+      ...streakArgs([]),
+      locale: "en",
+    });
+    expect(textCalls(mock)).not.toContain("Last 7 days");
   });
 });
