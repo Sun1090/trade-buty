@@ -22,6 +22,7 @@
     "check:ai-copy": "node scripts/check-ai-copy.mjs",
     "check:growth-event-privacy": "node scripts/growth-event-privacy.mjs",
     "check:error-report-privacy": "node scripts/error-report-privacy.mjs",
+    "check:request-body-bounds": "node scripts/request-body-bounds.mjs",
     "check:env-docs": "node scripts/env-docs.mjs",
     "check:dark-pattern-copy": "node scripts/check-dark-pattern-copy.mjs",
     "check:test-clock-hygiene": "node scripts/check-test-clock-hygiene.mjs",
