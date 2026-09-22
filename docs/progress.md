@@ -5138,3 +5138,58 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   发布说明覆盖 PR #123–#133）；③配额窗口结束后一次构建带上 0.7.2 + 0.7.3 并补四条生产冒烟；
   ④继续盘点学习数据层其余入口（`wrongbook-efficiency` 的 `overdue` 与复习页的口径分歧，以及 R16.7 的设计方案）。
 - 更新时间：2026-09-22 08:35（Asia/Shanghai）。
+
+## 2026-09-22 — 生产冒烟固化为 `ops:smoke-prod`，0.7.2 冒烟实测 9/10：游客 AI 问答在生产 502
+
+- 状态：PR #133 已 rebase 合并进 `main`（`77d7220`，`ci` + `db-tests` 全绿）；本轮分支
+  `ops/production-smoke` 开 PR。**生产部署已经跟上**（配额窗口结束后自动构建），所以任务 #11
+  的四条冒烟判据第一次拿到真实结果。
+- 里程碑 / 版本：v0.10（R16）期间的发布工程补齐；判级 patch，0.7.3 待切。
+- 分支 / 提交：`1fb7568`（脚本 + 契约测试 + `docs/ops.md` + 检查单第 5 步）+ 本条 progress。
+- 完成内容：
+  1. **0.7.2 的四条生产冒烟判据逐条实测**（`docs/v0.7.2-release-review.md`「上线判据」）：
+     - `GET /zh/changelog` 出现 `0.7.2` → **通过**（此前生产停在 0.7.1 构建）。
+     - `GET /share/streak/<合法载荷>` → `200` 且 HTML 含 `⚠️` → **通过**（#116 已上线）。
+     - `GET /api/auth/session` 匿名 → `200 {"user":null}` → **通过**（#107 游客判定未回归）；
+       `/zh`、`/en`、章节页、课文页、`/sitemap.xml`、`/robots.txt` 全部 200，四个页面均含 `⚠️`。
+     - 「未登录 AI 问答可用，不返回 502」→ **失败**：`POST /api/ai/chat` 合法游客载荷返回
+       `502`，`content-type: text/plain`、body 17 字符。
+  2. **定位到生产侧而不是站内回归**（同一判据两侧对照）：`text/plain` + 17 字符只可能出自生成失败的
+     catch 分支（`src/app/api/ai/chat/route.ts:236`），而鉴权失败走的是 `NextResponse.json`（另一种
+     content-type 与更长 body），且 `GET /api/auth/session` 在同一时刻稳定 200 —— 排除 #107 那类游客判定
+     回归。本地用同一份代码 `npm run build && next start -p 3111` 跑同一条载荷 → `200 text/event-stream`
+     并正常流出 RAG 回答。结论：**代码路径健康，生产 Vercel 环境的 `AI_API_URL` / `AI_API_KEY` /
+     `AI_MODEL` 或上游配额有问题**，需要登录 Vercel 项目看 Production Environment Variables 与部署日志。
+  3. **把这段判断固化成 `npm run ops:smoke-prod`**：10 条只读断言逐条打印、任一失败 exit 1，
+     默认打 `https://trade-buty.vercel.app`，`SMOKE_BASE_URL` 可指向本地生产构建（正是上面做对照的方法）。
+     读不到本地最新发布版本号时该条判**失败**而不是跳过；`429` 视为通过（限流生效即端点活着）。
+     检查单第 5 步原来那段内联 `node -e` 只覆盖 6 个路径、不断言游客判定与 AI 可用性，现改为调用脚本，
+     并补上「两边结果不同即生产侧问题」的判断步骤。
+- 变更文件：`scripts/prod-smoke.mjs`（新）、`scripts/prod-smoke.test.mjs`（新）、`package.json`、
+  `docs/ops.md`、`docs/release-checklist.md`、`docs/progress.md`。
+- 验证命令和结果：
+  - `node scripts/prod-smoke.mjs`（打生产）→ **exit 1，9/10 通过**，失败条目正是
+    `POST /api/ai/chat 游客合法载荷 → 不返回 5xx — 状态 502（AI 问答对游客不可用）`。
+  - `SMOKE_BASE_URL=http://localhost:3111 node scripts/prod-smoke.mjs`（打本地生产构建）→
+    **exit 0，10/10 通过**。
+  - `npm run test` → 269 文件 / 2542 用例全绿（新增 1 文件 / 16 用例）；`npm run typecheck` 0 ·
+    `npm run lint` 0 · `npm run check:docs` 0（发布检查单 13 个步骤关键字仍在）。
+  - 变异验证：删掉「页面含 ⚠️」断言 → 对应用例转红；删掉「429 视为通过」→ AI 条目转红。
+    分享载荷那条用站内真编码器 `encodeStreak` 反向钉住，格式漂移会立刻失败。
+  - **一次未复现的红灯（如实记录）**：加入本脚本后的第一次全量运行报 1 条失败，但那次运行与
+    `npm run build` 重写 `.next` 以及两个真实 HTTP 冒烟请求在同一工作树里并发发生，且当时把输出截断到
+    只剩最后 12 行，没能留下失败文件名。此后 6 次全量运行（含一次刻意让 `next start` + 真实冒烟与测试
+    并发的复现尝试）全部绿色，新测试文件单独连跑 5 次 5 绿，CI 今日 5 次合并全绿。判据：**不要把测试
+    套件与 `npm run build` 放在同一工作树并发跑**；若 CI 再次出现同类红灯再按文件定位。
+- 阻塞：新增 `BLOCKED_CREDENTIAL`——生产 AI 问答 502 的根因在 Vercel 项目的环境变量 / 上游配额，
+  需要用户账号级权限查看，仓库侧无法自证也无法修（R14.10 缺告警通道是同一处的盲点）。
+  其余外部阻塞（R14.9 预览 protection-bypass、R14.11 上游内容遗留、R15.2 / R16.7 产品与设计决策）不变。
+- 风险 / 回滚：新增的是一个不进 CI 的人工/发布期脚本与两处文档，运行期零影响；`git revert` 即撤。
+  脚本自身会向生产域名发 10 个只读请求 + 1 次游客 AI 问答（消耗 1 点游客配额），因此**不要**把它挂到
+  每次 PR 的必需检查上。
+- 下一项：①本 PR 过 CI 后 rebase 合并、清理分支；②切 **0.7.3**（patch，发布说明覆盖 PR #123–#133），
+  发布第 5 步直接用 `npm run ops:smoke-prod`，并把「游客 AI 问答 502」作为**已知生产阻塞**写进去而不是
+  假装通过；③继续 AI 边界盘点的四条已核实缺陷：R1.8 护栏只看最后一条用户消息且只看前 500 字符
+  （多轮 + 填充即可绕过红线，最高优先）、答案缓存丢了截断标记且 key 不含章节上下文、
+  feedback / citation-click 仍按 IP 分桶、auth cookie 过期时把反馈与引用点击打成 500 丢数据。
+- 更新时间：2026-09-22 09:05（Asia/Shanghai）。
