@@ -160,8 +160,10 @@ export async function POST(req: NextRequest) {
     ...(isContinue ? [{ role: "user" as const, content: continuePrompt }] : []),
   ];
 
-  // 相同问题缓存（去掉 RAG context 变体，只用用户问题 + locale；续写不读不写）
-  const cacheKey = `${locale}::${lastUserMsg.content.trim().toLowerCase()}`;
+  // 相同问题缓存（只用 locale + 章节上下文 + 用户问题；续写不读不写）。
+  // 章节上下文必须在键里：它会改写 system prompt，缺了这一维，A 在《期货》页问的问题
+  // 会把「结合期货篇章作答」的版本原样发给 10 分钟内问同一句话的所有人。
+  const cacheKey = `${locale}::${ctxTitle ?? "-"}::${lastUserMsg.content.trim().toLowerCase()}`;
   sweepExpired(answerCache, (v) => Date.now() - v.at >= CACHE_TTL, 250);
   const cached = !isContinue ? answerCache.get(cacheKey) : undefined;
   if (cached && Date.now() - cached.at < CACHE_TTL) {
@@ -186,32 +188,35 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 包装流：传输同时累计文本，完成后写入缓存（续写不写缓存，避免污染原问题缓存）
+    // 包装流：传输同时累计文本（续写不写缓存，避免污染原问题缓存）
     const encoder = new TextEncoder();
+    // 一个 decoder 实例贯穿整条流：每片新建 decoder 会把跨片的 UTF-8 多字节字符解成 U+FFFD
+    const decoder = new TextDecoder();
     let acc = "";
     const cachedStream = rawStream.pipeThrough(
       new TransformStream<Uint8Array, Uint8Array>({
         transform(chunk, controller) {
-          acc += new TextDecoder().decode(chunk);
+          acc += decoder.decode(chunk, { stream: true });
           controller.enqueue(chunk);
         },
-        flush() {
+      }),
+    );
+
+    // 截断标记：finish_reason=length 时追加（Markdown 不可见），前端据此展示“继续生成”。
+    // 缓存必须在这一段之后写：标记是这里才拼进 body 的，先写缓存会让命中方拿到一段
+    // 没有标记的半句话——前端看不到「继续生成」，回答就被无声截断了。
+    const markedStream = cachedStream.pipeThrough(
+      new TransformStream<Uint8Array, Uint8Array>({
+        flush(controller) {
+          if (finishReason === "length") {
+            acc += TRUNCATED_MARKER;
+            controller.enqueue(encoder.encode(TRUNCATED_MARKER));
+          }
           if (acc.trim() && !isContinue) {
             answerCache.set(cacheKey, { text: acc, at: Date.now() });
           }
           if (looksLikeRecommendation(acc)) {
             console.warn('[ai/guardrail] 输出疑似荐股，人工抽查', acc.slice(0, 160));
-          }
-        },
-      }),
-    );
-
-    // 截断标记：finish_reason=length 时追加（Markdown 不可见），前端据此展示“继续生成”
-    const markedStream = cachedStream.pipeThrough(
-      new TransformStream<Uint8Array, Uint8Array>({
-        flush(controller) {
-          if (finishReason === "length") {
-            controller.enqueue(encoder.encode(TRUNCATED_MARKER));
           }
         },
       }),
