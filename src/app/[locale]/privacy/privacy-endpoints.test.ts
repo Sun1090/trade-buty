@@ -152,3 +152,117 @@ describe("账户删除后的留存边界也被披露", () => {
     }
   });
 });
+
+/**
+ * 一段 `<p>{locale === "en" ? "…" : "…"}</p>` 里的两条文案。
+ * 只取足够长的字面量，避免把 `locale === "en"` 之类的短串当成文案。
+ */
+function localeStringsIn(chunk: string): string[] {
+  return [...chunk.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]).filter((s) => s.length >= 40);
+}
+
+/** 隐私页里同时含中英两个关键字的那一段 */
+function paragraph(zhMark: string | RegExp, enMark: RegExp): string {
+  const test = typeof zhMark === "string" ? (c: string) => c.includes(zhMark) : (c: string) => zhMark.test(c);
+  const chunk = fs.readFileSync(PAGE_FILE, "utf8").split(/<\/p>/).find((c) => test(c) && enMark.test(c));
+  expect(chunk, `隐私页需要一段同时用中英讲「${String(zhMark)}」`).toBeTruthy();
+  return chunk as string;
+}
+
+/** 迁移里随账户删除一起级联消失的表（FK 指向 auth.users 且 on delete cascade） */
+function accountCascadeTables(): string[] {
+  const dir = path.join(process.cwd(), "supabase/migrations");
+  return fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith(".sql"))
+    .flatMap((f) => {
+      const sql = fs.readFileSync(path.join(dir, f), "utf8");
+      return [...sql.matchAll(/create table (?:if not exists )?[`"']?([\w.]+)[`"']?\s*\(([\s\S]*?)\n\);/gi)]
+        .filter((m) =>
+          m[2].split("\n").some((line) => /references\s+auth\.users/i.test(line) && /on delete cascade/i.test(line)),
+        )
+        .map((m) => m[1].toLowerCase());
+    });
+}
+
+/** 代码里真实写进 sessionStorage 的键 */
+function sessionStorageKeys(dir: string, out = new Set<string>()): Set<string> {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) sessionStorageKeys(full, out);
+    else if (/\.(ts|tsx)$/.test(entry.name) && !entry.name.includes(".test.")) {
+      const src = fs.readFileSync(full, "utf8");
+      for (const m of src.matchAll(/sessionStorage\s*\.\s*setItem\(\s*["'`]([\w-]+)/g)) out.add(m[1]);
+    }
+  }
+  return out;
+}
+
+describe("离线写入队列的真实边界被披露", () => {
+  it("队列长度上限写的是 sync-queue.ts 里的那个常量，不是另一个数", () => {
+    const src = fs.readFileSync(path.join(process.cwd(), "src/lib/sync-queue.ts"), "utf8");
+    const cap = src.match(/export const MAX_QUEUE\s*=\s*(\d+)/);
+    expect(cap, "MAX_QUEUE 必须是具名常量，隐私页才有唯一可引用的数").toBeTruthy();
+
+    const chunk = paragraph("队列", /queue|writes? (?:are|is) retried/i);
+    const strings = localeStringsIn(chunk);
+    expect(strings.length, "这一段必须有中英两条文案").toBeGreaterThanOrEqual(2);
+    for (const text of strings) {
+      expect(text, `文案里的队列上限必须是 ${cap![1]}（与 MAX_QUEUE 同源）`).toContain(cap![1]);
+    }
+  });
+
+  it("超出上限丢最旧、换账户清空未同步写入——两种「不会再同步」都写到", () => {
+    const chunk = paragraph("队列", /queue/i);
+    for (const text of localeStringsIn(chunk)) {
+      const lower = text.toLowerCase();
+      // 丢弃最旧 / 超出上限
+      expect(lower).toMatch(/最旧|oldest|drop|discard|挤掉|超出/);
+      // 同一设备换账户会清掉待同步队列
+      expect(lower).toMatch(/换账户|切换.{0,4}账户|另一个账户|switch(?:ing)? (?:accounts|to another)|another account|account switch/i);
+      expect(lower).toMatch(/清空|清除|不会.{0,6}补传|discard|drop|clear|will not be (?:re)?sent|never (?:re)?sent|not retried/i);
+    }
+  });
+
+  it("本机存储不止 localStorage：写了 sessionStorage 就不能说「只存活于 localStorage」", () => {
+    const keys = sessionStorageKeys(path.join(process.cwd(), "src"));
+    expect(keys.size, "客户端确实在用 sessionStorage，隐私页必须承认这一点").toBeGreaterThan(0);
+
+    const chunk = paragraph("本机", /local storage|localStorage/i);
+    for (const text of localeStringsIn(chunk)) {
+      expect(text.toLowerCase(), "提到本地存储时要把 sessionStorage 那一并算进来").toContain("sessionstorage");
+    }
+  });
+});
+
+describe("删除账户时被级联删除的每张表都在文案里点名", () => {
+  // 新增一张挂 auth.users 的表时，这里会红：先补文案，再补这张表的中文/英文关键字
+  const disclosed: Record<string, string[]> = {
+    progress: ["进度", "progress"],
+    wrongbook: ["错题", "mistake"],
+    quiz_scores: ["测验", "quiz"],
+    replay_history: ["回放", "replay"],
+    replay_best: ["连胜", "streak"],
+    ai_conversations: ["对话", "conversation"],
+    ai_feedback: ["评分", "rating"],
+    user_settings: ["设置", "setting"],
+  };
+
+  it("删除账户那一段列出了全部会随账户消失的表", () => {
+    const tables = accountCascadeTables();
+    expect(tables.length).toBeGreaterThan(0);
+
+    const chunk = paragraph("删除账户", /delete account/i);
+    const lower = chunk.toLowerCase();
+    for (const table of tables) {
+      const keywords = disclosed[table];
+      expect(
+        keywords,
+        `表 ${table} 会随账户删除而级联消失，但隐私页没说清它是什么：请先用中英两种语言写出这一类数据，再补进这张表的关键字`,
+      ).toBeTruthy();
+      for (const keyword of keywords) {
+        expect(lower, `${table} → ${keyword} 必须出现在删除账户那一段`).toContain(keyword);
+      }
+    }
+  });
+});
