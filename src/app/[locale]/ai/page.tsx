@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { withChapterCount } from "@/lib/content";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/metadata";
 import { AiChat } from "@/components/ai-chat";
@@ -17,7 +18,7 @@ export async function generateMetadata({
   return buildPageMetadata({
     locale,
     title: t.label,
-    description: t.subtitle,
+    description: withChapterCount(t.subtitle),
     path: `/${locale}/ai`,
     noindex: true,
   });
@@ -39,5 +40,7 @@ export default async function AiPage({
     );
   }
 
-  return <AiChat locale={locale} dict={t.ai} />;
+  // dict 会原样交给客户端组件，所以 {chapters} 必须在这里代入——
+  // 占位符漏到界面上，用户看到的就是「基于 {chapters} 篇章知识库」。
+  return <AiChat locale={locale} dict={{ ...t.ai, subtitle: withChapterCount(t.ai.subtitle) }} />;
 }
