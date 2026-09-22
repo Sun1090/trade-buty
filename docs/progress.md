@@ -5650,3 +5650,24 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：全部是客户端交付路径、显示口径与文案，无迁移、无接口形状变化。#191 的缓冲只在「原本必然丢」的路径上生效；#198 改了五处 metadata 文案但产物数字不变（仍是 27）。逐条 revert 各自独立。
 - 下一项：①本批收口为 v0.7.8（判级 patch）；②配额窗口过去后重跑 `ops:smoke-prod`，把 0.7.7/0.7.8 的真实上线结论补进发布记录；③继续倒查，剩余候选：FAQ 的「BTC/ETH/BNB/SOL 四个币种」未提图表支持自定义交易对，且 `market-ticker` 的 SYMBOLS 是 3 个而 `replay-trainer` 是 4 个（是否统一属产品口径）。
 - 更新时间：2026-09-23 04:40（Asia/Shanghai）。
+
+---
+
+## 2026-09-23 — 发布冻结：v0.7.8（离线写入保全与「界面数字回到代码」批次）
+
+- 里程碑 / 版本：**v0.7.8**（`package.json` 0.7.7 → 0.7.8）。
+- 状态：已合并、已打 tag 并推送；**生产尚未部署 0.7.8**——Vercel 账号构建配额仍在 `retry in 24 hours`。
+- 判级理由：`v0.7.7..main` 共 11 个提交，全部是缺陷修复、门禁加固与文案订正；无迁移、无接口形状变化、无内容契约变化 → **patch**。批次内容见上一条 #191–#198 记录。
+- 分支 / 提交：`chore/release-0.7.8` → PR **#199**（rebase 合并）→ `6562c73`；tag **`v0.7.8` → `6562c73`**（附注 tag，已推送）。
+- 完成内容：`src/data/release-notes.json` 追加 0.7.8（zh/en 各 5 条 highlights），`CHANGELOG.md` 由 `npm run changelog:generate` 生成，版本号与锁文件同批更新（`check:lockfile-repro` 在 npm 11.19.0 下仍判定可复现）。
+- 变更文件：`src/data/release-notes.json`、`CHANGELOG.md`、`package.json`、`package-lock.json`、`docs/progress.md`。
+- 验证命令和结果（第 3 步顺序，全部本地实测）：
+  - `npm test` **278 文件 / 2698 条**全绿；`test:coverage` statements **95.87%**（9503/9912）/ branches 91.05% / functions 95.73% / lines 97.84%，阈值 84/77/83/87 未下调；`lint --max-warnings=0` 与 `tsc --noEmit` 干净。
+  - 产物门禁在 e2e 之前：`check:mobile` · `check:seo-surface` · `check:search-index` · `check:structured-data` · `check:risk-warning` · `check:quiz-mounts` · `check:bundle`（454 条路由在预算内）· `check:links` 全绿；`npm run e2e` **137 通过**；`npm run db:test` 通过（迁移 + RLS 越权 + 双设备同步 + 回滚演练）。
+  - `check:changelog` ✅；`check:docs` 版本号一致 ✅；合并打 tag 后 `check:release-tag` ✅「12 条发布记录的 tag 均已落地（最新 0.7.8 → v0.7.8）」。
+  - 回滚面核对：`git diff --name-only v0.7.7..HEAD -- supabase/` 为空，`src/app/api/**`、`docs/env.md`、`.github/**` 均无变化 → 无数据库回滚路径需要设计。
+- 生产部署结论（如实记录）：`npm run ops:smoke-prod` → **8/10**。①`GET /zh/changelog` 红：直读生产 HTML，changelog 最新一条是 **0.7.7**（含 0.7.7/0.7.6/0.7.5，不含 0.7.8），而 #199 的 Vercel 检查仍写 `Deployment rate limited — retry in 24 hours` → 是账号级构建配额，不是站内缺陷。**顺带订正上一条 v0.7.7 记录里「生产尚未部署」的判断：配额窗口过去后 0.7.7 已经上线，生产当前就跑着 0.7.7 的构建**——当时那条结论的依据是同一支探针在旧窗口里的读数，窗口切换后没有复跑就下结论，是这次学到的：部署滞后是瞬时状态，结论必须带复跑时间。②游客 AI 那条：护栏路径 200、模型路径 502，脚本按「站内没问题，查上游部署快照里的 `AI_API_URL/AI_MODEL/AI_API_KEY` 或出口网络」归因，与既有 `BLOCKED_EXTERNAL` 一致。其余 8 条（双语首页、课程与课文风险块、sitemap/robots、分享落地页、匿名 session）全绿。
+- 阻塞：`BLOCKED_EXTERNAL` 两条不变——Vercel 构建配额（决定 0.7.8 何时上线）、生产 AI 运行期配置（处置在 Vercel 控制台，改完必须重新部署，见 `docs/env.md`）。R15.2 / R16.7 / R16.10 / R16.11 / R16.12 / R16.13 待用户拍板；#178 是维护者自提的 AGENTS.md，未代为合并。
+- 风险 / 回滚：运行期变化全在客户端交付路径与显示口径。最保守的一条是 #191 的内存缓冲：它只在「原本必然丢」的路径上生效，成功路径的入队语义与顺序不变。回滚 `git revert 6562c73` 撤版本号与更新日志，或逐条 revert 单个修复；Vercel 可先把 Production Deployment 切回 0.7.7 构建止血，随后仍用 revert 收敛历史。无迁移，因此不需要数据库回滚路径。
+- 下一项：①配额窗口过去后重跑 `ops:smoke-prod`，确认 0.7.8 真的上线（并把结论写回本条，附复跑时间）；②继续按「界面声称了数据没做到的事」倒查，下一条候选：FAQ 的「支持 BTC/ETH/BNB/SOL 四个币种」既没提图表可以输入任意 Binance 交易对，也与首页 `market-ticker` 只列 3 个币种不一致——先判「统一成一份清单」还是「各自有意」，再动文案；③R16.12 / R16.13 两条新登记的决策。
+- 更新时间：2026-09-23 05:35（Asia/Shanghai）。
