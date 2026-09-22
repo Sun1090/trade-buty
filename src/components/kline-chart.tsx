@@ -426,7 +426,9 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
       )}
       {isNarrowViewport && (
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-faint">
-          <p aria-live="polite">{density === "compact" ? dict.compactNote : dict.fullNote}</p>
+          <p aria-live="polite">
+            {(density === "compact" ? dict.compactNote : dict.fullNote).replace("{n}", String(dataLimit))}
+          </p>
           {!lowBandwidth && (
             <button
               type="button"
