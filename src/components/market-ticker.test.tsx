@@ -8,6 +8,7 @@ vi.mock("@/components/use-network-quality", () => ({
 }));
 
 import { MarketTicker } from "./market-ticker";
+import { getMarketRefreshDelay } from "@/lib/network-quality";
 
 beforeEach(() => {
   quality = "online";
@@ -58,6 +59,11 @@ describe("MarketTicker（R13.11/R13.12）", () => {
     await waitFor(() =>
       expect(screen.getByTestId("market-network-note")).toHaveTextContent("慢速模式"),
     );
+    // 秒数必须等于真正的轮询间隔，而不是抄在文案里的数字
+    const seconds = (getMarketRefreshDelay("slow") ?? 0) / 1000;
+    const note = screen.getByTestId("market-network-note").textContent ?? "";
+    expect(note).toContain(`每 ${seconds} 秒`);
+    expect(note).not.toContain("{n}");
     expect(fetchMock).toHaveBeenCalled();
   });
 
