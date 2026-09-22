@@ -50,8 +50,7 @@ afterEach(() => {
 describe("OnboardingTour", () => {
   it("未写过 storage 时默认显示第一步", async () => {
     render(<OnboardingTour labels={labels} locale="en" />);
-    // 给 effect 一个 tick
-    await new Promise((r) => setTimeout(r, 50));
+
     const dlg = screen.getByTestId("onboarding-tour");
     expect(dlg.getAttribute("data-step")).toBe("path");
     expect(dlg.textContent).toContain("Step 1");
@@ -60,7 +59,7 @@ describe("OnboardingTour", () => {
 
   it("点击 Next 从 path 推进到 replay", async () => {
     render(<OnboardingTour labels={labels} locale="en" />);
-    await new Promise((r) => setTimeout(r, 50));
+
     const dlg = screen.getByTestId("onboarding-tour");
     fireEvent.click(within(dlg).getByTestId("onboarding-next"));
     await waitFor(() => {
@@ -71,7 +70,7 @@ describe("OnboardingTour", () => {
 
   it("点击 Next 三次后引导完成消失", async () => {
     render(<OnboardingTour labels={labels} locale="en" />);
-    await new Promise((r) => setTimeout(r, 50));
+
     const dlg = screen.getByTestId("onboarding-tour");
     fireEvent.click(within(dlg).getByTestId("onboarding-next")); // -> replay
     fireEvent.click(within(dlg).getByTestId("onboarding-next")); // -> review
@@ -84,7 +83,7 @@ describe("OnboardingTour", () => {
 
   it("点击 skip 后立即关闭并标记完成", async () => {
     render(<OnboardingTour labels={labels} locale="en" />);
-    await new Promise((r) => setTimeout(r, 50));
+
     const dlg = screen.getByTestId("onboarding-tour");
     fireEvent.click(within(dlg).getByTestId("onboarding-skip"));
     await waitFor(() => {
@@ -96,13 +95,13 @@ describe("OnboardingTour", () => {
   it("storage 已完成时不显示", async () => {
     localStorage.setItem("tb-onboarded", "1");
     render(<OnboardingTour labels={labels} locale="en" />);
-    await new Promise((r) => setTimeout(r, 50));
+
     expect(screen.queryByTestId("onboarding-tour")).toBeNull();
   });
 
   it("点击 restart 重置回第一步", async () => {
     render(<OnboardingTour labels={labels} locale="en" />);
-    await new Promise((r) => setTimeout(r, 50));
+
     const dlg = screen.getByTestId("onboarding-tour");
     fireEvent.click(within(dlg).getByTestId("onboarding-restart"));
     expect(dlg.getAttribute("data-step")).toBe("path");
@@ -122,7 +121,7 @@ describe("OnboardingTour", () => {
       restart: "再看一次",
     };
     render(<OnboardingTour labels={zhLabels} locale="zh" />);
-    await new Promise((r) => setTimeout(r, 50));
+
     const dlg = screen.getByTestId("onboarding-tour");
     expect(dlg.getAttribute("data-locale")).toBe("zh");
     expect(dlg.textContent).toContain("第一步");

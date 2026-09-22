@@ -62,7 +62,7 @@ afterEach(() => {
 describe("NewsletterSignup", () => {
   it("未保存时显示表单", async () => {
     render(<NewsletterSignup labels={labels} locale="en" />);
-    await new Promise((r) => setTimeout(r, 30));
+
     expect(screen.getByTestId("newsletter-input")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: labels.emailLabel })).toBeInTheDocument();
     expect(screen.getByTestId("newsletter-submit")).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe("NewsletterSignup", () => {
 
   it("保存有效邮箱后切换到已保存视图", async () => {
     render(<NewsletterSignup labels={labels} locale="en" />);
-    await new Promise((r) => setTimeout(r, 30));
+
     fireEvent.change(screen.getByTestId("newsletter-input"), {
       target: { value: "alice@example.com" },
     });
@@ -84,12 +84,12 @@ describe("NewsletterSignup", () => {
 
   it("无效邮箱不写入并显示错误", async () => {
     render(<NewsletterSignup labels={labels} locale="en" />);
-    await new Promise((r) => setTimeout(r, 30));
+
     fireEvent.change(screen.getByTestId("newsletter-input"), {
       target: { value: "not-an-email" },
     });
     fireEvent.submit(screen.getByTestId("newsletter-submit").closest("form")!);
-    await new Promise((r) => setTimeout(r, 30));
+
     expect(screen.getByRole("alert").textContent).toMatch(/valid email/i);
     expect(localStorage.getItem("tb-newsletter-email")).toBeNull();
   });
@@ -207,7 +207,7 @@ describe("NewsletterSignup", () => {
     });
     try {
       render(<NewsletterSignup labels={labels} locale="en" />);
-      await new Promise((r) => setTimeout(r, 30));
+
       fireEvent.change(screen.getByTestId("newsletter-input"), {
         target: { value: "alice@example.com" },
       });
@@ -223,7 +223,7 @@ describe("NewsletterSignup", () => {
   it("zh locale 时显示中文 desc 且 data-locale=zh", async () => {
     const zh = { ...labels, desc: "邮箱仅本机保存" };
     render(<NewsletterSignup labels={zh} locale="zh" />);
-    await new Promise((r) => setTimeout(r, 30));
+
     expect(screen.getByTestId("newsletter-signup").getAttribute("data-locale")).toBe("zh");
     expect(screen.getByText("邮箱仅本机保存")).toBeInTheDocument();
   });

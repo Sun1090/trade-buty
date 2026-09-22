@@ -36,7 +36,7 @@ afterEach(() => {
 describe("BookmarksClient 空态", () => {
   it("空时显示 emptyLabel 与 CTA", async () => {
     render(<BookmarksClient locale="zh" emptyLabel="还没有收藏课程" />);
-    await new Promise((r) => setTimeout(r, 30));
+
     expect(screen.getByText("还没有收藏课程")).toBeInTheDocument();
     const cta = screen.getByTestId("bookmarks-empty-cta");
     expect(cta).toBeInTheDocument();
@@ -46,7 +46,7 @@ describe("BookmarksClient 空态", () => {
 
   it("en locale 时 CTA 文案走英文且 href 走 /en/path", async () => {
     render(<BookmarksClient locale="en" emptyLabel="No bookmarks" />);
-    await new Promise((r) => setTimeout(r, 30));
+
     const cta = screen.getByTestId("bookmarks-empty-cta");
     expect(cta.getAttribute("href")).toBe("/en/path");
     expect(cta.textContent).toContain("Browse the learning path");
@@ -64,7 +64,7 @@ describe("BookmarksClient 列表态", () => {
       },
     });
     render(<BookmarksClient locale="zh" emptyLabel="空" />);
-    await new Promise((r) => setTimeout(r, 30));
+
     expect(screen.queryByTestId("bookmarks-empty-cta")).toBeNull();
     // 列表 link 指向 /zh/knowledge/...
     expect(screen.getByText("Market Overview")).toBeInTheDocument();
