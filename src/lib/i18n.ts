@@ -3,7 +3,7 @@ export const LOCALES: Locale[] = ["zh", "en"];
 export const DEFAULT_LOCALE: Locale = "en";
 
 const zh = {
-  nav: { path: "学习路线", chart: "行情", replay: "回放", review: "复习", search: "搜索", github: "GitHub 仓库" },
+  nav: { path: "学习路线", chart: "行情", replay: "回放", review: "复习", search: "搜索", github: "GitHub 仓库", menu: "菜单", theme: "切换主题", language: "切换语言" },
   auth: {
     login: "登录",
     logout: "退出",
@@ -44,6 +44,7 @@ const zh = {
     returnNudgeBodyTpl: "继续学习路线，或做一节回放训练找回手感。",
     returnNudgeDismiss: "继续学习",
     returnNudgeLater: "稍后再说",
+    closeLabel: "关闭",
   },
   brand: { name: "Trade Buty", badge: "免费 · 中立" },
   home: {
@@ -413,7 +414,7 @@ const zh = {
 type Dict = typeof zh;
 
 const en: Dict = {
-  nav: { path: "Learn", chart: "Markets", replay: "Replay", review: "Review", search: "Search", github: "GitHub repo" },
+  nav: { path: "Learn", chart: "Markets", replay: "Replay", review: "Review", search: "Search", github: "GitHub repo", menu: "Menu", theme: "Switch theme", language: "Switch language" },
   auth: {
     login: "Log in",
     logout: "Log out",
@@ -454,6 +455,7 @@ const en: Dict = {
     returnNudgeBodyTpl: "Pick up where you left off, or run a quick replay drill.",
     returnNudgeDismiss: "Continue",
     returnNudgeLater: "Maybe later",
+    closeLabel: "Close",
   },
   brand: { name: "Trade Buty", badge: "Free · Neutral" },
   home: {

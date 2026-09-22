@@ -64,6 +64,7 @@ export default async function LocaleLayout({
           <div className="sm:hidden flex items-center gap-1">
             <MobileNav
               locale={locale}
+              menuLabel={t.nav.menu}
               items={[
                 { href: "/path", label: t.nav.path, icon: "📚" },
                 { href: "/chart", label: t.nav.chart, icon: "📈" },
@@ -127,8 +128,8 @@ export default async function LocaleLayout({
               <span className="hidden min-[420px]:inline text-accent font-medium">{t.ai.nav}</span>
             </Link>
             <AuthHeader locale={locale} dict={t.auth} />
-            <LanguageToggle />
-            <ThemeToggle />
+            <LanguageToggle label={t.nav.language} />
+            <ThemeToggle label={t.nav.theme} />
             <a
               href="https://github.com/Sun1090/trade-buty"
               target="_blank"

@@ -109,10 +109,10 @@ test.describe("R13.8 关键可点区域 ≥ 40px", () => {
 
   test("移动端导航支持焦点圈定、Escape 关闭与焦点归还（R13.9）", async ({ page }) => {
     await page.goto("/zh");
-    const trigger = page.getByRole("button", { name: "Menu" });
+    const trigger = page.getByRole("button", { name: "菜单" });
     await trigger.click();
 
-    const dialog = page.getByRole("dialog", { name: "Menu" });
+    const dialog = page.getByRole("dialog", { name: "菜单" });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole("link").first()).toBeFocused();
 

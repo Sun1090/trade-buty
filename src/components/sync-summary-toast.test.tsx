@@ -88,7 +88,7 @@ describe("SyncSummaryToast", () => {
     render(<SyncSummaryToast />);
     emit({ newProgress: 1, newWrong: 0, quizImprovements: 0, newReplays: 0, hasAny: true });
     expect(screen.getByRole("status")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "dismiss" }));
+    fireEvent.click(screen.getByRole("button", { name: "关闭" }));
     expect(screen.queryByRole("status")).toBeNull();
   });
 

@@ -18,17 +18,17 @@ afterEach(() => {
 
 describe("ThemeToggle", () => {
   it("渲染按钮", () => {
-    render(<ThemeToggle />);
+    render(<ThemeToggle label="切换主题" />);
     expect(screen.getByRole("button")).toBeInTheDocument();
   });
 
-  it("有 aria-label", () => {
-    render(<ThemeToggle />);
-    expect(screen.getAllByLabelText(/theme/i).length).toBeGreaterThan(0);
+  it("可访问名称来自传入文案（zh 用户不该听到英文）", () => {
+    render(<ThemeToggle label="切换主题" />);
+    expect(screen.getByRole("button", { name: "切换主题" })).toBeInTheDocument();
   });
 
   it("默认（未设主题）点击切到 light，并写入 localStorage", () => {
-    render(<ThemeToggle />);
+    render(<ThemeToggle label="切换主题" />);
     clickToggle();
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(localStorage.getItem("tb-theme")).toBe("light");
@@ -36,7 +36,7 @@ describe("ThemeToggle", () => {
 
   it("light 主题点击切到 dark 并持久化", () => {
     document.documentElement.dataset.theme = "light";
-    render(<ThemeToggle />);
+    render(<ThemeToggle label="切换主题" />);
     clickToggle();
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(localStorage.getItem("tb-theme")).toBe("dark");
@@ -44,7 +44,7 @@ describe("ThemeToggle", () => {
 
   it("dark 主题点击切回 light", () => {
     document.documentElement.dataset.theme = "dark";
-    render(<ThemeToggle />);
+    render(<ThemeToggle label="切换主题" />);
     clickToggle();
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(localStorage.getItem("tb-theme")).toBe("light");
@@ -52,7 +52,7 @@ describe("ThemeToggle", () => {
 
   it("连续点击在两个主题间往返", () => {
     document.documentElement.dataset.theme = "light";
-    render(<ThemeToggle />);
+    render(<ThemeToggle label="切换主题" />);
     clickToggle();
     clickToggle();
     expect(document.documentElement.dataset.theme).toBe("light");
@@ -63,7 +63,7 @@ describe("ThemeToggle", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("quota exceeded");
     });
-    render(<ThemeToggle />);
+    render(<ThemeToggle label="切换主题" />);
     expect(() => clickToggle()).not.toThrow();
     expect(document.documentElement.dataset.theme).toBe("dark");
   });
