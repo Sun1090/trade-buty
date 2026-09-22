@@ -5079,3 +5079,62 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   ②配额窗口结束后一次构建携带 0.7.2 + 0.7.3，并按 `docs/v0.7.2-release-review.md` 的四条生产冒烟判据补记；
   ③继续 v0.9：学习数据层（连续天数 / SRS / 合并语义）的盘点结论正在整理，按同一标准逐条落为可失败的门禁或修复。
 - 更新时间：2026-09-22 07:12（Asia/Shanghai）。
+
+## 2026-09-22 — 学习数据口径盘点（R16）：失败队列可达、回放双计、到期口径、90 天窗口
+
+- 状态：PR #131（`1e11645` + `81b6196`）与 PR #132（`1d53194`）已合并进 `main`，各自通过 `ci` + `db-tests`；
+  本轮四条修复在 `fix/review-due-and-labels` 上开 PR。`Vercel` 检查仍是账号级构建配额失败（非必需检查，
+  不阻断合并），**生产仍是 0.7.1 构建**，因此今天这些修复尚未上线。
+- 里程碑 / 版本：v0.9（R15）之后新立 **v0.10「学习数据口径一致性」（R16）**。本批次只有缺陷修复、
+  断言与文档，判级为 patch；0.7.3 待本 PR 合并后切。
+- 分支 / 提交（按合并顺序）：
+  - `1e11645`（PR #131）postgrest 的 `{data:null,error}` 结果是失败：写兜底从 `.then(undefined, onReject)`
+    改为同时看 fulfilled 结果里的 `error`，失败队列这才真正可达。
+  - `81b6196`（PR #131）清空错题本同步云端：整表按 `user_id` 删除，失败退回逐条入队重放。
+  - `1d53194`（PR #132）回放把本地完成时刻作为云端时间，合并按统计指纹 + 10 秒容忍窗去重。
+  - `0de7c49` 复习页到期口径统一到 `effectiveSrs()`；`649b504` 学习时长台账按日历保留 90 天并同步标签；
+    `e69ab3c` 合并摘要 `newReplays` 与合并同判据；`dedd1db` roadmap 立 R16。
+- 完成内容：
+  1. **写失败队列是一条死路**（R16.1）：postgrest-js 在 `.then()` 之前把错误吞成 `{data:null,error}`，
+     所以七个写入函数的 `.then(undefined, err => 入队)` 永远不进分支——断网时那次写入既不进云端也不进队列，
+     静默消失。顺带发现原有的两条「客户端存在但写入失败」用例是**假绿**：`vi.doMock` 不会替换已被加载模块的
+     依赖，它们实际走的是无客户端分支。删掉后在 `sync-layer-write-failure.test.ts` 用静态 `vi.mock` 重做，
+     覆盖 6 个写入函数 × {返回 error 入队 / 成功不入队 / rejection 入队 / 响应前换账号则不入队}。
+  2. **「清空错题本」在用户眼里等于没生效**（R16.2）：只删 `tb-wrong`，下次 `hydrateFromCloud` 把整本拉回。
+  3. **每轮回放被统计两次**（R16.3）：`replay_history.recorded_at` 是服务器落库时刻，与客户端 `at` 必然差
+     一段网络延迟，而合并去重键含 `at` → 每次登录本地历史翻倍、统计页轮数虚高。
+  4. **同一屏两个「今日到期」**（R16.4）：`review-client` 的头部计数与排序读原始 `srsDue`，行内徽章、
+     `stats-client`、`streak-recovery-card` 读 `effectiveSrs()`。无 `srs_due` 的条目同时被算成「今日到期」
+     并显示「1 天后」。统一到 `effectiveSrs()`。
+  5. **「总学习时长」和隐私页都在承诺没发生的事**（R16.5）：台账按**条数**裁到 90 条，稀疏用户的 90 条可以
+     横跨一年以上——统计页多承诺了覆盖范围，隐私页的「仅保留最近 90 天」多承诺了删除。改为锚定台账最新一天的
+     日历窗口（不依赖真实时钟，测试不会随日期腐烂），标签改「近 90 天学习时长」，并把两种语言的标签钉回同一常量。
+  6. **合并摘要对「本地云端完全相同」的数据报「新增 N 轮回放」**（R16.6）：`replay_history` 是 append-only，
+     本机自己上传的那一行也在返回结果里，`newReplays = cloudReplay.length` 于是永远等于云端行数，`hasAny` 恒真
+     （原用例的断言写的就是这个 bug）。抽指纹/坏时间戳/容忍窗三个判定为共用函数，摘要只数合并真正带入的轮次。
+  7. **两条不修、写进 roadmap 的结论**：R16.7 复习计划跨设备不收敛（`answered_at` 永不推进、本地 `at` 也被
+     幂等设计保留，两边都不比对方新，后写的一方还无条件覆盖云端）需设计决策；R16.8 streak 36h 宽限窗不看
+     日历跨度，已评估保持现状——正常路径造不出这种状态，收窄的代价是改写一条已固化断言。
+- 变更文件：`src/lib/sync-layer.ts`、`src/lib/sync-layer-diff.test.ts`、`src/lib/sync-layer-write-failure.test.ts`（新）、
+  `src/lib/sync-layer-failure-queue.test.ts`、`src/lib/sync-queue-executor.ts`、`src/lib/replay-store.ts`、
+  `src/lib/wrongbook.ts`、`src/lib/study-time.ts`、`src/lib/study-time.test.ts`、`src/lib/i18n-stats.ts`、
+  `src/lib/i18n-stats.test.ts`、`src/lib/learn-stats.ts`、`src/components/review-client.tsx`、
+  `src/components/review-srs.test.tsx`、`docs/roadmap.md`、`docs/progress.md`。
+- 验证命令和结果：
+  - `npm run test` → 268 文件 / 2531 用例全绿（本轮分支新增 5 条：review-srs 2、study-time 净 1、
+    i18n-stats 1、sync-layer-diff 1；#131/#132 另带来 1 个新文件与队列重写用例）。
+  - **变异验证逐条做足**：把 `review-client` 的到期判定改回原始 `srsDue` → 两条新用例失败，输出正是
+    「1 道今日到期」与同一行「1 天后」并存；把台账裁剪改回 `while (days.length > 90)` → 两条日历窗口用例失败
+    （超窗的 2026-04-01 被留下）；标签改回「总学习时长」→ 守卫用例失败；`newReplays` 改回 `cloudReplay.length`
+    → 摘要与合并一致性两条失败。每次变异都走「复制到 /tmp → 改动 → 还原 → grep 确认」，未使用 checkout/restore。
+  - `npm run typecheck` 0 · `npm run lint` 0（`--max-warnings=0`）· `npm run check:docs` 0（27 章 / 182 篇，版本号一致）。
+  - 覆盖率、build、产物门禁、`db:test`、`e2e` 本 PR 未单独跑：无迁移、无新依赖、无页面结构变更，交由 CI 全量执行，
+    合并前逐条确认。
+- 阻塞：`BLOCKED_EXTERNAL` 延续——Vercel 账号级 24h 构建配额仍未结束，生产部署与冒烟（任务 #11）继续挂起。
+- 风险 / 回滚：无迁移、无 schema 变更、无内容变更，四条可各自 `git revert`。行为侧两处需要留意：统计页
+  「总学习时长」变成「近 90 天学习时长」，且**首次写入时会一次性裁掉超窗的旧台账**（这正是隐私页已承诺的删除）；
+  复习页到期数会比以前小（旧数据不再一律算今日到期）。两者都是把口径对齐到已写下的承诺，不是新策略。
+- 下一项：①本 PR 过 CI 后 rebase 合并、清理分支；②按 `docs/release-checklist.md` 切 **0.7.3**（patch，
+  发布说明覆盖 PR #123–#133）；③配额窗口结束后一次构建带上 0.7.2 + 0.7.3 并补四条生产冒烟；
+  ④继续盘点学习数据层其余入口（`wrongbook-efficiency` 的 `overdue` 与复习页的口径分歧，以及 R16.7 的设计方案）。
+- 更新时间：2026-09-22 08:35（Asia/Shanghai）。
