@@ -9,6 +9,7 @@ import {
 } from "@/lib/milestone-share";
 import { trackGrowthEvent } from "@/lib/growth-events";
 import { copyText } from "@/lib/clipboard";
+import { canWebShare, webShare } from "@/lib/download";
 
 export interface MilestoneShareLabels {
   title: string;
@@ -47,20 +48,20 @@ export function MilestoneShareButton({
     const text = fillShareText(labels.textTpl, stats);
     const url = buildShareUrl(window.location.origin, locale);
 
-    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-      try {
-        await navigator.share({ title: labels.title, text, url });
+    // 能力判定与取消/失败的区分都在 `webShare` 里，这里只决定各分支做什么
+    if (canWebShare()) {
+      const shared = await webShare({ title: labels.title, text, url });
+      if (shared === "shared") {
         setCopied(false);
         trackGrowthEvent({ name: "milestone_share", locale, channel: "web-share", outcome: "succeeded" });
         return;
-      } catch (error) {
-        if ((error as { name?: string } | null)?.name === "AbortError") {
-          // 用户主动取消：尊重选择，不降级成复制，也不记为失败
-          return;
-        }
-        trackGrowthEvent({ name: "milestone_share", locale, channel: "web-share", outcome: "failed" });
-        // 非取消失败继续尝试复制
       }
+      if (shared === "cancelled") {
+        // 用户主动取消：尊重选择，不降级成复制，也不记为失败
+        return;
+      }
+      trackGrowthEvent({ name: "milestone_share", locale, channel: "web-share", outcome: "failed" });
+      // 非取消失败继续尝试复制
     }
 
     const ok = await copyText(`${text} ${url}`);
