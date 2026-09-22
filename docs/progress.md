@@ -5193,3 +5193,59 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   （多轮 + 填充即可绕过红线，最高优先）、答案缓存丢了截断标记且 key 不含章节上下文、
   feedback / citation-click 仍按 IP 分桶、auth cookie 过期时把反馈与引用点击打成 500 丢数据。
 - 更新时间：2026-09-22 09:05（Asia/Shanghai）。
+
+## 2026-09-22 — RELEASE_FREEZE 收口：v0.7.3 已合并打 tag，生产部署再次被 Vercel 配额挡住
+
+- 状态：**已发布（tag 已落地）**，但**生产仍是 0.7.2 构建**。`npm run ops:smoke-prod` 的
+  changelog 探针直接判出「页面里没有 0.7.3，生产构建落后于 main」——这正是把冒烟固化成脚本后要抓的那件事。
+- 里程碑 / 版本：**v0.7.3（patch）**。判级理由：`v0.7.2..main` 的 25 个 commit 全是
+  `fix` / `test` / `docs` / `chore`，没有新增产品能力；R15.1 改的是数据归属语义，但它是修复而非
+  不兼容契约变更（云端行都在，账号重新登录即可恢复），因此不升 minor。
+- 分支 / 提交：发布提交 `4ab89e4`（PR #140，rebase 合并）；tag `v0.7.3` → `4ab89e4`；
+  `npm run check:release-tag` 输出「7 条发布记录的 tag 均已落地（最新 0.7.3 → v0.7.3）」，不再打印待办。
+- 本版本包含：PR #123 #124 #126 #127 #128 #129 #130 #131 #132 #133 #135 #138 #139
+  （#134 / #136 / #137 的工作经 #138 落地，去向记在 `docs/work-audit-ack.json`）。
+- 完成内容（发布动作本身）：
+  1. 发布记录 8 条中英对照、逐条对齐、英文侧无中文残留；`CHANGELOG.md` 全部由
+     `src/data/release-notes.json` 生成，未手改生成物；
+  2. `package.json` 0.7.2 → 0.7.3，锁文件用钉住的 `npx --yes npm@10.9.4 install --package-lock-only`
+     重算，`check:lockfile-repro` 报「981 个包条目无差异」；锁文件 diff 只有两处 version 行；
+  3. 按检查单第 3 步的**固定顺序**跑完全量门禁（e2e 放最后，产物门禁在它之前）：
+     `test` 269 文件 / **2561** 用例 → `test:coverage` statements **96.31%**、branches **91.36%**
+     （阈值 84/77 未下调，本轮只升）→ `lint` 0 → `typecheck` 0 → `build` → `check:mobile`
+     （14 个关键页面 320px 无溢出）→ `check:seo-surface`（sitemap 430 / 页面 454 / 知识库 418 / 未声明 0）
+     → `check:search-index` → `check:structured-data` → `check:risk-warning`（lessons 364/364）
+     → `check:constitution` → `check:docs` → `db:test`（迁移 + RLS 越权 + 双设备同步约束 +
+     0008/0009 回滚重放演练）→ `e2e` **109 通过**。全程 `git status` 干净，报告类产物无纯日期 diff。
+  4. 合并前抓到一个**稳定红灯**并按缺陷处理：e2e 的离线恢复用例在本机 3 次挂 2 次，用同样的流程写脚本
+     实测到「`navigator.onLine` 已为 true、文档却还是离线兜底页」，根因是 `online` 一到就 reload 会抢在
+     网络栈恢复前落地、被 service worker 再送回兜底页，而 `online` 已用完不再有第二次。修成 HEAD 探针探通
+     才重载 + 开局已在线也自探 + 30 秒窗口 3 次预算（PR #139），修完本机连跑两次 109/109。
+     **CI 的时序恰好躲过了这个缺陷**，说明「绿灯的 CI」不等于「恢复路径可用」。
+- 验证命令和结果（生产侧，逐条如实记录）：`npm run ops:smoke-prod` 打生产 → **8/10 通过，exit 1**：
+  - ✅ `/zh`、`/en`、`/zh/knowledge/getting-started`、课文页 200 且含 `⚠️`；
+  - ✅ `/sitemap.xml` 是 `<urlset>`、`/robots.txt` 指向 sitemap；
+  - ✅ `/share/streak/<合法载荷>` 200 且含 `⚠️`（#116 上线确认）；
+  - ✅ `GET /api/auth/session` 匿名 → `200 {"user":null}`（#107 未回归）；
+  - ❌ `/zh/changelog` 没有 `0.7.3` → **生产构建落后于 main**：Vercel 账号级 24h 构建配额
+    （`Deployment rate limited — retry in 24 hours`），0.7.2 当天配额恢复后自动构建过一次，这轮又撞上限；
+  - ❌ `POST /api/ai/chat` 游客合法载荷 → `502`（`content-type: text/plain`、body 17 字符，即生成失败的
+    catch 分支；同一时刻 `/api/auth/session` 稳定 200，本地同一份构建 `next start` 跑同一条载荷是
+    `200 text/event-stream`）→ **生产 Vercel 环境的 `AI_API_URL` / `AI_API_KEY` / `AI_MODEL` 或上游配额问题**。
+- 阻塞：`BLOCKED_CREDENTIAL` 两条，都需要用户账号级权限，仓库侧无法自证也无法修：
+  ①Vercel 生产构建配额（等窗口过去会自动部署，或手动在 Vercel 触发一次 Deploy）；
+  ②生产环境变量里的 AI 上游配置。R14.9（预览 protection-bypass）、R14.10（错误监控与告警通道——
+  正是它让上面这条 502 只能靠手工冒烟发现）、R14.11（上游 kline-buty 内容遗留）不变；
+  产品决策项 R15.2、R16.7 继续挂着。
+- 风险 / 回滚：`git revert 4ab89e4` 撤版本号与发布记录（不改任何运行期行为）；要撤单个修复就 revert
+  `v0.7.3` 区间里对应的那一条，PR #139（离线页 + `sw.js` 的 `CACHE_VERSION`/哈希）需整体回退、不能只退一半。
+  无迁移、无 `supabase/` 变更、无内容契约变更，站点回滚不需要数据库动作；Vercel 也可先把 Production
+  Deployment 切回 0.7.2 构建止血，随后仍用 revert 收敛历史。生产当前就是 0.7.2 构建，所以 0.7.3 的
+  任何回归都还没有暴露给用户。
+- 下一项：①配额窗口结束后（或手动触发部署后）重跑 `npm run ops:smoke-prod`，把「0.7.3 已上线」与
+  游客 AI 问答的结论补进本文件，不预先写成已通过；②请用户检查 Vercel Production Environment 的
+  `AI_API_*` 与上游配额——这是今天唯一的用户可见破坏面；③继续 v0.10：R16.7（复习计划跨设备不收敛，
+  需 `srs_updated_at` 或 `plan_version` 设计）与 `wrongbook-efficiency` 的 `overdue` 口径分歧；
+  ④AI 边界盘点剩下的 C 级项：AI 路由的 body 字节上限只落在 `/api/error-reports`、`ai/quiz` 兜底不过滤
+  locale/difficulty（英文用户可拿到中文卷）、`auth/session` 与 `auth/signout` 站内无调用方。
+- 更新时间：2026-09-22 11:20（Asia/Shanghai）。
