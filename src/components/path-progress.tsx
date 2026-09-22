@@ -2,6 +2,7 @@
 
 import { useLocalProgress } from "@/components/use-local-progress";
 import { ProgressRing } from "@/components/progress-ring";
+import { readDocsForChapter } from "@/lib/learning-overview";
 
 /**
  * 学习路线页：单个章节的已读进度标记。
@@ -15,7 +16,9 @@ export function PathProgress({
   docCount: number;
 }) {
   const progress = useLocalProgress();
-  const read = progress?.[chapterSlug]?.length ?? 0;
+  // 与统计页/路线页总进度同一个口径（去重 + 按本章课数封顶）：
+  // 知识库改课后留下的旧已读键不该把这里写成「12/7」。
+  const read = readDocsForChapter(progress?.[chapterSlug], docCount);
 
   if (read === 0) return null;
 

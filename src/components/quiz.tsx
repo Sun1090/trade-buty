@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ChapterQuiz } from "@/lib/quiz-types";
 import { recordWrong, resolveWrong } from "@/lib/wrongbook";
 import { readQuizProgress, saveQuizProgress, type QuizProgress } from "@/lib/quiz-store";
+import { quizScoreCount, quizScorePct } from "@/lib/quiz-score";
 import { QuizTimer } from "@/components/quiz-timer";
 import { addStudyTime } from "@/lib/study-time";
 import { QuizShareCard } from "@/components/quiz-share-card";
@@ -65,12 +66,9 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
     progress && progress.done
       ? {
           chapterTitle: chapterTitle ?? quiz.title,
-          score: progress.best,
+          score: quizScoreCount(progress.best, quiz.questions.length),
           total: quiz.questions.length,
-          percent:
-            progress.best > 0 && quiz.questions.length > 0
-              ? (progress.best / quiz.questions.length) * 100
-              : 0,
+          percent: quizScorePct(progress.best, quiz.questions.length),
           locale,
         }
       : null,
@@ -170,7 +168,7 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
             <p className="mt-1 text-sm text-muted">
               {dict.questionsUnit}
               {progress?.done && (
-                <span className="ml-2 text-accent">{tpl(dict.bestTpl, { n: progress.best, total: quiz.questions.length })}</span>
+                <span className="ml-2 text-accent">{tpl(dict.bestTpl, { n: quizScoreCount(progress.best, quiz.questions.length), total: quiz.questions.length })}</span>
               )}
               {perfect && <span className="ml-2 text-accent font-medium">· {dict.perfect}</span>}
             </p>
@@ -178,10 +176,10 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
             {progress?.done && (
               <div className="mt-3 flex items-center gap-2">
                 <div className="flex h-2 rounded-full overflow-hidden bg-down/20" style={{ width: `${quiz.questions.length * 12}px` }}>
-                  <div className="bg-accent" style={{ width: `${(progress.best / quiz.questions.length) * 100}%` }} />
+                  <div className="bg-accent" style={{ width: `${quizScorePct(progress.best, quiz.questions.length)}%` }} />
                 </div>
                 <span className="text-xs text-faint font-mono">
-                  {progress.best}/{quiz.questions.length} · {Math.round((progress.best / quiz.questions.length) * 100)}%
+                  {quizScoreCount(progress.best, quiz.questions.length)}/{quiz.questions.length} · {quizScorePct(progress.best, quiz.questions.length)}%
                 </span>
               </div>
             )}
@@ -200,7 +198,7 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
             {progress?.done && (
               <QuizShareCard
                 chapterTitle={chapterTitle ?? quiz.title}
-                score={progress.best}
+                score={quizScoreCount(progress.best, quiz.questions.length)}
                 total={quiz.questions.length}
                 locale={locale}
                 labels={{

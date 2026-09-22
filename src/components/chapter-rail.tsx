@@ -44,11 +44,13 @@ export function ChapterRail({
   dict: RailDict;
 }) {
   const progress = useLocalProgress();
-  const readCount = progress?.[chapterSlug]?.length ?? 0;
+  const readSet = new Set(progress?.[chapterSlug] ?? []);
+  // 只数本章现在真有的课：知识库改课后 localStorage 会留下旧 slug 的已读键，
+  // 按原始长度算会把进度顶过 100%，也和课文清单上的勾选对不上。
+  const readCount = docs.filter((d) => readSet.has(d.slug)).length;
   const pct = docCount > 0 ? Math.round((readCount / docCount) * 100) : 0;
   const done = readCount >= docCount && docCount > 0;
   const [showUnread, setShowUnread] = useState(false);
-  const readSet = new Set(progress?.[chapterSlug] ?? []);
   const unread = docs.filter((d) => !readSet.has(d.slug));
 
   return (

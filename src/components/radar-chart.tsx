@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { readQuizProgress } from "@/lib/quiz-store";
+import { quizScorePct } from "@/lib/quiz-score";
 import { QUIZZES } from "@/lib/quizzes";
 
 /** 知识点掌握度雷达图：5 个最新测验维度的平均正确率（SVG） */
@@ -15,7 +16,7 @@ export function RadarChart({ label, emptyLabel }: { label: string; emptyLabel: s
         value: (() => {
           const p = readQuizProgress(slug);
           if (!p?.done) return 0;
-          return Math.round((p.best / QUIZZES[slug].questions.length) * 100);
+          return quizScorePct(p.best, QUIZZES[slug].questions.length);
         })(),
       }));
       setAxes(prog.slice(0, 5)); // 最近 5 个

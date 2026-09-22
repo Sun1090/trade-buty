@@ -25,7 +25,9 @@ export function DocList({
     );
   }
 
-  const pct = Math.round((readSet.size / metas.length) * 100);
+  // 只数「这一章现在真有的课」：旧键（改课留下的）不在 metas 里，既不算已读也不会把进度顶过 100%
+  const readCount = metas.filter((m) => readSet.has(m.slug)).length;
+  const pct = Math.round((readCount / metas.length) * 100);
   const sorted = unreadFirst
     ? [...metas].sort((a, b) => {
         const ar = readSet.has(a.slug) ? 1 : 0;
@@ -55,7 +57,7 @@ export function DocList({
             {locale === "en" ? "Unread first" : "未读优先"}
           </button>
           <span className="text-xs font-mono text-accent">
-            {readSet.size}/{metas.length}
+            {readCount}/{metas.length}
           </span>
         </div>
       </div>

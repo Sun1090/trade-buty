@@ -8,8 +8,10 @@ import { readReplayHistory, readReplayBest } from "./replay-store";
 import { readStreak, getCurrentStreak } from "./streak";
 import { QUIZZES } from "./quizzes";
 import { readQuizProgress } from "./quiz-store";
+import { quizScorePct } from "./quiz-score";
 import { getTotalReadingTime } from "./reading-time";
 import { getTotalStudySeconds } from "./study-time";
+import { readDocsForChapter } from "./learning-overview";
 
 /**
  * R4.10：已读口径的唯一实现——统计页（aggregateStats）、学习路线页（PathGlobalProgress）
@@ -20,8 +22,11 @@ export function readSummary(
   chapters: { slug: string; docCount: number }[],
 ): { readDocs: number; totalDocs: number; doneChapters: number; overallPct: number } {
   const totalDocs = chapters.reduce((s, c) => s + c.docCount, 0);
-  const readDocs = chapters.reduce((s, c) => s + (progress[c.slug]?.length ?? 0), 0);
-  const doneChapters = chapters.filter((c) => (progress[c.slug]?.length ?? 0) >= c.docCount).length;
+  // 已读数走 learning-overview 的同一口径（去重 + 按篇章课数封顶），
+  // 于是 readDocs 恒 ≤ totalDocs，完成度不可能再出现 150%。
+  const perChapter = chapters.map((c) => readDocsForChapter(progress[c.slug], c.docCount));
+  const readDocs = perChapter.reduce((s, n) => s + n, 0);
+  const doneChapters = perChapter.filter((n, i) => n >= chapters[i].docCount).length;
   const overallPct = totalDocs > 0 ? Math.round((readDocs / totalDocs) * 100) : 0;
   return { readDocs, totalDocs, doneChapters, overallPct };
 }
@@ -74,7 +79,7 @@ export function aggregateStats(chapters: { slug: string; docCount: number }[]): 
   const replayBest = readReplayBest();
   const streak = readStreak();
 
-  const { readDocs, totalDocs, doneChapters } = readSummary(progress, chapters);
+  const { readDocs, totalDocs, doneChapters, overallPct } = readSummary(progress, chapters);
 
   const currentWrong = Object.keys(wrong).length;
 
@@ -85,19 +90,18 @@ export function aggregateStats(chapters: { slug: string; docCount: number }[]): 
     const p = readQuizProgress(slug);
     if (p?.done) {
       quizzesDone++;
-      scores.push(p.best / QUIZZES[slug].questions.length);
+      scores.push(quizScorePct(p.best, QUIZZES[slug].questions.length));
     }
   }
+  // scores 已是百分数（quizScorePct），这里只求均值，不再乘 100
   const avgQuizScore = scores.length > 0
-    ? Math.round((scores.reduce((s, r) => s + r, 0) / scores.length) * 100)
+    ? Math.round(scores.reduce((s, r) => s + r, 0) / scores.length)
     : null;
 
   const replayRounds = replayHistory.length;
   const totalQ = replayHistory.reduce((s, r) => s + r.total, 0);
   const totalC = replayHistory.reduce((s, r) => s + r.correct, 0);
   const replayAccuracy = totalQ > 0 ? Math.round((totalC / totalQ) * 100) : null;
-
-  const overallPct = totalDocs > 0 ? Math.round((readDocs / totalDocs) * 100) : 0;
 
   return {
     readDocs,

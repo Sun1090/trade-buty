@@ -47,6 +47,13 @@ describe("ChapterRail", () => {
     expect(screen.getByText("33%")).toBeInTheDocument();
   });
 
+  it("旧已读键（改课留下的）不计入本章进度，也不会顶过 100%", () => {
+    progress = { "chapter-a": ["d1", "renamed-lesson-a", "renamed-lesson-b", "removed-lesson"] };
+    render(<ChapterRail {...base} />);
+    expect(screen.getByText("1/3 课")).toBeInTheDocument();
+    expect(screen.getByText("33%")).toBeInTheDocument();
+  });
+
   it("未读列表默认收起，aria-expanded=false", () => {
     progress = {};
     render(<ChapterRail {...base} />);
