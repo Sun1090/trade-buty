@@ -39,7 +39,19 @@ export function parseCitationClick(
 
 /** POST: 记录回答内课程引用点击（R1.13，匿名可上报） */
 export async function POST(req: NextRequest) {
-  const decision = citationLimiter.check(clientIp(req), false);
+  // 先定身份再限流：登录用户按账号分桶，游客才退回 IP——同一 NAT 出口下多个账号
+  // 共用一个 IP 桶时，一个人的脚本会把整栋楼的真用户一起 429 掉（/api/ai/chat 同坑，见 0e752af）。
+  let user: { id: string } | null = null;
+  try {
+    user = await getServerAuthUser();
+  } catch (e) {
+    // 身份不可确定 ≠ 该丢数据：RLS 允许 user_id is null 的匿名行，前端是 fire-and-forget。
+    console.warn(
+      "[ai/citation-click] 身份解析失败，按匿名点击入库：",
+      e instanceof Error ? e.message : e,
+    );
+  }
+  const decision = citationLimiter.check(user?.id ?? clientIp(req), !!user);
   if (!decision.allowed) {
     return NextResponse.json(
       { error: "Rate limit exceeded" },
@@ -59,12 +71,6 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    let user;
-    try {
-      user = await getServerAuthUser();
-    } catch {
-      return NextResponse.json({ error: "Failed to record click" }, { status: 500 });
-    }
     const supabase = await createSupabaseServerClient();
 
     const { error } = await supabase.from("ai_citation_clicks").insert({
