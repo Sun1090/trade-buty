@@ -19,6 +19,11 @@ import {
   type ShareKind,
 } from "./share-decode";
 import { getDict, DEFAULT_LOCALE, type Locale } from "./i18n";
+import {
+  gradeFromPercent,
+  gradeFromReplayAccuracy,
+  type Grade,
+} from "./share-card";
 
 /**
  * path 段可能已被 percent-encode（`|` → `%7C`），也可能已经解码过。
@@ -135,18 +140,29 @@ export function kindToLocale(kind: ShareKind, path: string): Locale {
   return decodeStreak(path)?.locale ?? DEFAULT_LOCALE;
 }
 
+/**
+ * 等级字母 → 落地页用词。阈值判定只有 `@/lib/share-card` 那一份实现，这里只管怎么说；
+ * 测验与回放的措辞不同（同是 A，一个说「优秀」一个说「稳健」），所以按类型各一张表。
+ */
+const GRADE_WORDS: Record<"quiz" | "replay", Record<Grade, Record<Locale, string>>> = {
+  quiz: {
+    S: { zh: "满分", en: "S" },
+    A: { zh: "优秀", en: "A" },
+    B: { zh: "及格", en: "B" },
+    C: { zh: "待加强", en: "C" },
+  },
+  replay: {
+    S: { zh: "卓越", en: "S" },
+    A: { zh: "稳健", en: "A" },
+    B: { zh: "及格", en: "B" },
+    C: { zh: "待加强", en: "C" },
+  },
+};
+
 function gradeLabel(percent: number, locale: Locale): string {
-  if (percent >= 100) return locale === "zh" ? "满分" : "S";
-  if (percent >= 80) return locale === "zh" ? "优秀" : "A";
-  if (percent >= 60) return locale === "zh" ? "及格" : "B";
-  return locale === "zh" ? "待加强" : "C";
+  return GRADE_WORDS.quiz[gradeFromPercent(percent)][locale];
 }
 
 function replayGradeLabel(accuracy: number, total: number, locale: Locale): string {
-  // 复用 share-card 里的语义
-  if (total < 3) return locale === "zh" ? "待加强" : "C";
-  if (accuracy >= 0.7) return locale === "zh" ? "卓越" : "S";
-  if (accuracy >= 0.6) return locale === "zh" ? "稳健" : "A";
-  if (accuracy >= 0.5) return locale === "zh" ? "及格" : "B";
-  return locale === "zh" ? "待加强" : "C";
+  return GRADE_WORDS.replay[gradeFromReplayAccuracy(accuracy, total)][locale];
 }

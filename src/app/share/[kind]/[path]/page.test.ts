@@ -274,6 +274,14 @@ describe("gradeLabel 分级覆盖", () => {
     ).title;
     expect(title).toContain("B");
   });
+
+  it("阈值下沿取等：100/80/60 分各归上一档", () => {
+    expect(quizTitle(100)).toContain("满分");
+    expect(quizTitle(80)).toContain("优秀");
+    expect(quizTitle(79.99)).toContain("及格");
+    expect(quizTitle(60)).toContain("及格");
+    expect(quizTitle(59.99)).toContain("待加强");
+  });
 });
 
 describe("replayGradeLabel 分级覆盖", () => {
@@ -315,5 +323,15 @@ describe("replayGradeLabel 分级覆盖", () => {
 
   it("英文准确率 60-69% 显示 A", () => {
     expect(replayTitle(6500, 10, "en")).toContain("A");
+  });
+
+  // 阈值下沿必须和 `gradeFromReplayAccuracy` 同一条线：落地页、预览卡、canvas 卡面
+  // 说的是同一轮成绩，谁在 60% 上多算一档就会当场对不上。
+  it("阈值下沿取等：6000/5000/7000 bps 各归上一档", () => {
+    expect(replayTitle(7000)).toContain("卓越");
+    expect(replayTitle(6000)).toContain("稳健");
+    expect(replayTitle(5000)).toContain("及格");
+    expect(replayTitle(5999)).toContain("及格");
+    expect(replayTitle(4999)).toContain("待加强");
   });
 });
