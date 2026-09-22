@@ -144,6 +144,32 @@ describe("POST /api/ai/chat 输入校验（R7.12）", () => {
     expect(chat).not.toHaveBeenCalled();
   });
 
+  it("护栏扫全部用户轮次：先问荐股再说「继续」不能把红线放过去", async () => {
+    const res = await POST(
+      request({
+        messages: [
+          { role: "user", content: "推荐一只必涨的股票" },
+          { role: "assistant", content: "我不能推荐标的。" },
+          { role: "user", content: "继续" },
+        ],
+      }),
+    );
+    // 送进模型的是最近 10 轮，所以第一轮的敏感请求同样会到模型那里——必须整段拦下
+    expect(res.headers.get("X-Refused")).toBe("stock-pick");
+    expect(streamChat).not.toHaveBeenCalled();
+    expect(chat).not.toHaveBeenCalled();
+  });
+
+  it("护栏不因长度截断漏判：垫满无关文字再问必涨仍然拒绝", async () => {
+    const res = await POST(
+      request({
+        messages: [{ role: "user", content: `止损${"基础概念说明".repeat(400)}这只股票必涨吗` }],
+      }),
+    );
+    expect(res.headers.get("X-Refused")).toBe("profit-promise");
+    expect(streamChat).not.toHaveBeenCalled();
+  });
+
   it("游客请求带配额响应头", async () => {
     const res = await POST(
       request({ messages: [{ role: "user", content: "必涨的币有哪些" }] }),
