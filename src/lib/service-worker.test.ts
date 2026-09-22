@@ -18,7 +18,13 @@ const SW_SOURCE = readFileSync(SW_PATH, "utf8");
 const OFFLINE_HTML = readFileSync(OFFLINE_PATH, "utf8");
 
 const ORIGIN = "http://localhost";
-const CURRENT_CACHE = "trade-buty-offline-v2";
+// 从 sw.js 里读当前缓存名：测试要验的是「worker 用的是自己声明的那个缓存」，
+// 在测试里再抄一份字面量，就变成了每次 bump CACHE_VERSION 都要同步两个地方。
+const CURRENT_CACHE = /const CACHE_VERSION = "([^"]+)"/.exec(SW_SOURCE)?.[1] ?? "";
+// 抽不到就是空串，下面的断言全会变成空断言——先把它钉住
+if (!/^trade-buty-offline-v\d+$/.test(CURRENT_CACHE)) {
+  throw new Error(`sw.js 里的 CACHE_VERSION 读不到或不符合命名（当前：${JSON.stringify(CURRENT_CACHE)}）`);
+}
 
 type WorkerListener = (event: unknown) => void;
 

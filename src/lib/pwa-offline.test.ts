@@ -17,6 +17,20 @@ const SW_SOURCE = readFileSync(
 // 去掉块注释后再做「不触碰内容产物」断言，注释里说明边界不算违规。
 const SW_CODE = SW_SOURCE.replace(/\/\*[\s\S]*?\*\//g, "");
 
+/**
+ * 抽出 `<main>` 里每个可见元素的纯文本，按文档顺序返回。
+ * 这页没有嵌套的可见元素，一层标签足够；抽不到就返回空数组，由用例的非空断言兜住。
+ */
+function mainElements(html: string): { tag: string; text: string }[] {
+  const main = /<main>([\s\S]*?)<\/main>/.exec(html)?.[1] ?? "";
+  const out: { tag: string; text: string }[] = [];
+  for (const m of main.matchAll(/<(p|li|h1|button|a)\b[^>]*>([\s\S]*?)<\/\1>/g)) {
+    const text = m[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    if (text) out.push({ tag: m[1], text });
+  }
+  return out;
+}
+
 describe("PWA manifest（R13.13）", () => {
   it("声明稳定的 app 身份、作用域与中文默认入口", () => {
     const m = manifest();
@@ -62,6 +76,22 @@ describe("离线页（R13.13）", () => {
     expect(OFFLINE_HTML).toContain('id="retry"');
     expect(OFFLINE_HTML).toContain('role="status"');
     expect(OFFLINE_HTML).toContain('aria-live="polite"');
+  });
+
+  it("每一句中文都有对应的英文，en 用户看到的承诺读得懂", () => {
+    const elements = mainElements(OFFLINE_HTML);
+    const chinese = elements.filter((e) => /[\u4e00-\u9fff]/.test(e.text));
+    // 非空断言：整页只有中文时这个门禁也是空的
+    expect(chinese.length, "离线页应当有若干中文句子可查").toBeGreaterThanOrEqual(4);
+    for (const [i, el] of elements.entries()) {
+      if (!/[\u4e00-\u9fff]/.test(el.text)) continue;
+      if (/[A-Za-z]{4,}/.test(el.text)) continue; // 同句里就是双语（按钮/列表的写法）
+      const next = elements[i + 1];
+      expect(
+        next && !/[\u4e00-\u9fff]/.test(next.text) && /[A-Za-z]{4,}/.test(next.text),
+        `中文句「${el.text.slice(0, 18)}…」后面没有一句纯英文对应`,
+      ).toBe(true);
+    }
   });
 
   it("明确说明本地学习数据保留、联网能力受限（不承诺收益/离线可用）", () => {
