@@ -7,6 +7,8 @@ import {
   drawQuizCard,
   drawReplayCard,
   drawStreakCard,
+  gradeFromPercent,
+  gradeFromReplayAccuracy,
   type ShareLocale,
 } from "@/lib/share-card";
 import {
@@ -205,7 +207,7 @@ function summarizeText(
     return {
       title: labels.quizTitleTpl
         .replace("{chapter}", p.chapterTitle)
-        .replace("{grade}", gradeLetter(p.percent))
+        .replace("{grade}", gradeFromPercent(p.percent))
         .replace("{score}", `${p.score}`)
         .replace("{total}", `${p.total}`),
       body: tpl
@@ -223,7 +225,9 @@ function summarizeText(
       title: labels.replayTitleTpl
         .replace("{symbol}", p.symbol)
         .replace("{interval}", p.interval)
-        .replace("{grade}", replayGradeLetter(acc, p.total))
+        // 等级只有 `gradeFromReplayAccuracy` 一份实现：同一张卡的正身（canvas）用的就是它，
+        // 文字替身再抄一份阈值，迟早会念出跟图上一个字母
+        .replace("{grade}", gradeFromReplayAccuracy(p.accuracyBps / 10000, p.total))
         .replace("{correct}", `${p.correct}`)
         .replace("{total}", `${p.total}`),
       body: labels.replayDescTpl
@@ -245,17 +249,4 @@ function summarizeText(
   void locale;
 }
 
-function gradeLetter(percent: number): string {
-  if (percent >= 100) return "S";
-  if (percent >= 80) return "A";
-  if (percent >= 60) return "B";
-  return "C";
-}
 
-function replayGradeLetter(accuracy: number, total: number): string {
-  if (total < 3) return "C";
-  if (accuracy >= 70) return "S";
-  if (accuracy >= 60) return "A";
-  if (accuracy >= 50) return "B";
-  return "C";
-}
