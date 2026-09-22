@@ -112,6 +112,7 @@ function buildAll() {
   const replayTrend = buildReplayTimeTrend({ history: replayHistory, days: 7 });
   const stats = {
     currentWrong: Object.keys(wrongEntries).length,
+    overallPct: 75,
     avgQuizScore: 80,
     replayAccuracy: 67,
   };
@@ -120,6 +121,24 @@ function buildAll() {
 }
 
 describe("auditStatsConsistency", () => {
+  it("统计页自己的百分比也受范围约束：overallPct / avgQuizScore / replayAccuracy", () => {
+    const input = buildAll();
+    input.stats = {
+      currentWrong: input.stats.currentWrong,
+      overallPct: 150,
+      avgQuizScore: 120,
+      replayAccuracy: -5,
+    };
+    const flagged = auditStatsConsistency(input).filter(
+      (i) => i.code === "pct-out-of-range",
+    );
+    expect(flagged.map((i) => i.detail.split("=")[0].trim()).sort()).toEqual([
+      "stats.avgQuizScore",
+      "stats.overallPct",
+      "stats.replayAccuracy",
+    ]);
+  });
+
   it("reports zero issues when all aggregators read the same local facts", () => {
     const issues = auditStatsConsistency(buildAll());
     expect(issues).toEqual([]);
