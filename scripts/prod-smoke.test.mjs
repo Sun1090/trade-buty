@@ -192,7 +192,9 @@ describe("prod-smoke CLI", () => {
     const io = collector();
     const { impl, calls } = fakeFetch({});
     expect(await run({ root: process.cwd(), env: {}, stdout: io.stdout, stderr: io.stderr, fetchImpl: impl })).toBe(1);
-    expect(calls[0].url.startsWith("https://trade-buty.vercel.app")).toBe(true);
+    // 精确断言而不是前缀匹配：`startsWith("https://trade-buty.vercel.app")` 对
+    // `https://trade-buty.vercel.app.evil.example` 同样成立（CodeQL 判 high 的就是这个）
+    expect(calls[0].url).toBe("https://trade-buty.vercel.app/zh");
   });
 });
 
