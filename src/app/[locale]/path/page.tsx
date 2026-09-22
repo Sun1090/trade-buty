@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getStageGroups } from "@/lib/path";
+import { getStageGroups, withCopyRefs } from "@/lib/path";
 import { getChapters, getDocMetas, totalChapterCount, withChapterCount } from "@/lib/content";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/metadata";
@@ -22,7 +22,7 @@ export async function generateMetadata({
   return buildPageMetadata({
     locale,
     title: t.path.title,
-    description: t.path.intro,
+    description: withCopyRefs(locale, t.path.intro),
     path: `/${locale}/path`,
   });
 }
@@ -56,7 +56,7 @@ export default async function PathPage({
           {t.path.label}
         </p>
         <h1 className="text-3xl sm:text-4xl font-bold mt-3">{t.path.title}</h1>
-        <p className="mt-4 text-muted leading-relaxed">{t.path.intro}</p>
+        <p className="mt-4 text-muted leading-relaxed">{withCopyRefs(locale, t.path.intro)}</p>
         {t.path.translationNote && (
           <p className="mt-4 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-dim)] px-4 py-3 text-sm text-accent">
             {withChapterCount(
@@ -169,7 +169,7 @@ export default async function PathPage({
           href={p("/knowledge/getting-started")}
           className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2.5 transition"
         >
-          {t.path.lesson1}
+          {withCopyRefs(locale, t.path.lesson1)}
         </Link>
       </div>
 
