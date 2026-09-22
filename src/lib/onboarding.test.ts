@@ -10,6 +10,7 @@ import {
   ONBOARDING_STORAGE_KEY,
   ONBOARD_STEPS,
 } from "./onboarding";
+import { getDict } from "./i18n";
 
 /**
  * R8.6 onboarding 纯逻辑单测。
@@ -109,5 +110,40 @@ describe("onboarding 存储防御", () => {
 
   it("advanceStep 越界 current 时直接 done", () => {
     expect(advanceStep("bogus" as never)).toBe("done");
+  });
+});
+
+/** 文案里的序号是翻译出来的词，不是占位符：流程表一改，这些词必须跟着改，门禁负责抓到 */
+const ZH_NUM = ["一", "二", "三", "四", "五", "六"];
+const EN_NUM = ["One", "Two", "Three", "Four", "Five", "Six"];
+
+function ordinalPrefix(locale: "zh" | "en", index: number): string {
+  return locale === "zh" ? `第${ZH_NUM[index]}步：` : `Step ${index + 1}: `;
+}
+
+describe("新手引导的步序与文案对得上", () => {
+  it("标题声明的步数就是流程表的长度", () => {
+    expect(ONBOARD_STEPS.length, "流程表本身不能是空的，否则下面全是空转").toBeGreaterThan(1);
+    for (const locale of ["zh", "en"] as const) {
+      const title = getDict(locale).onboarding.title;
+      const n = ONBOARD_STEPS.length;
+      expect(title, `${locale} 的标题没写明步数：${title}`).toContain(
+        locale === "zh" ? `${ZH_NUM[n - 1]}步` : `${EN_NUM[n - 1]} steps`,
+      );
+      expect(Object.keys(getDict(locale).onboarding.steps).length).toBe(n);
+    }
+  });
+
+  it("每一步的标题序号等于它在流程表里的位置", () => {
+    for (const locale of ["zh", "en"] as const) {
+      const steps = getDict(locale).onboarding.steps;
+      ONBOARD_STEPS.forEach((key, i) => {
+        expect(steps[key].title.startsWith(ordinalPrefix(locale, i)), `${locale}/${key} 的标题「${steps[key].title}」不是第 ${i + 1} 步`).toBe(true);
+      });
+      // 序号判定必须能分辨顺序：把两步的标题互换就该红
+      const swapped = [...ONBOARD_STEPS];
+      [swapped[0], swapped[1]] = [swapped[1], swapped[0]];
+      expect(steps[swapped[0]].title.startsWith(ordinalPrefix(locale, 0))).toBe(false);
+    }
   });
 });
