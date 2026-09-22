@@ -351,6 +351,26 @@ test.describe("R13.24 图表与回放确定性交互", () => {
     await expect(chart.getByText("加载行情中…", { exact: true })).toHaveCount(0);
   });
 
+  test("自定义交易对：接受以数字开头的现货对，换币后输入框跟着图上的标的", async ({ page }) => {
+    const requests: string[] = [];
+    await mockBinance(page, requests);
+    await page.goto("/zh/chart");
+    const asked = (symbol: string) =>
+      requests.some((raw) => new URL(raw).searchParams.get("symbol") === symbol);
+    const input = page.getByLabel("自定义交易对");
+    await expect(input).toHaveValue("BTCUSDT");
+
+    // FAQ 声称「可以输入任意以 USDT 计价的币安现货交易对」，1INCHUSDT 是带数字的那一类
+    await input.fill("1inchusdt");
+    await input.press("Enter");
+    await expect.poll(() => asked("1INCHUSDT")).toBe(true);
+    await expect(input).toHaveValue("1INCHUSDT");
+
+    await page.getByRole("button", { name: "交易对 ETHUSDT" }).click();
+    await expect.poll(() => asked("ETHUSDT")).toBe(true);
+    await expect(input).toHaveValue("ETHUSDT");
+  });
+
   test("回放载入确定性历史窗口，切换品种与周期会重新请求", async ({ page }) => {
     const requests: string[] = [];
     await mockBinance(page, requests);

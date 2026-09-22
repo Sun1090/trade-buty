@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { getMarketRefreshDelay } from "@/lib/network-quality";
 import { useNetworkQuality } from "@/components/use-network-quality";
-
-const SYMBOLS = ["BTCUSDT", "ETHUSDT", "SOLUSDT"] as const;
+import { TICKER_SYMBOLS, symbolBase } from "@/lib/chart-symbols";
 
 interface Ticker {
   symbol: string;
@@ -61,7 +60,7 @@ export function MarketTicker({ locale = "zh" }: { locale?: "zh" | "en" }) {
       try {
         const res = await fetch(
           "https://api.binance.com/api/v3/ticker/24hr?symbols=" +
-            JSON.stringify([...SYMBOLS]),
+            JSON.stringify([...TICKER_SYMBOLS]),
           { signal: controller.signal, cache: "no-store" },
         );
         if (!res.ok) throw new Error(`market request failed: ${res.status}`);
@@ -74,7 +73,7 @@ export function MarketTicker({ locale = "zh" }: { locale?: "zh" | "en" }) {
         if (cancelled) return;
         setTickers(
           data.map((item) => ({
-            symbol: item.symbol.replace("USDT", ""),
+            symbol: symbolBase(item.symbol),
             price: parseFloat(item.lastPrice).toLocaleString("en-US", {
               maximumFractionDigits: 4,
             }),
@@ -103,7 +102,7 @@ export function MarketTicker({ locale = "zh" }: { locale?: "zh" | "en" }) {
     };
   }, [networkQuality, retryNonce]);
 
-  const heading = `${dict.heading} · ${SYMBOLS.length} ${locale === "zh" ? "币" : "assets"}`;
+  const heading = `${dict.heading} · ${TICKER_SYMBOLS.length} ${locale === "zh" ? "币" : "assets"}`;
   const networkNote =
     networkQuality === "offline"
       ? dict.offline
@@ -138,7 +137,7 @@ export function MarketTicker({ locale = "zh" }: { locale?: "zh" | "en" }) {
           className="grid grid-cols-3 gap-2"
           aria-label={dict.loading}
         >
-          {SYMBOLS.map((symbol) => (
+          {TICKER_SYMBOLS.map((symbol) => (
             <div
               key={symbol}
               className="h-[72px] animate-pulse rounded-lg bg-[var(--surface-hover)]"

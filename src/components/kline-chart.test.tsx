@@ -524,6 +524,23 @@ describe("KlineChart 交易对与周期切换", () => {
     expect(mocks.fetchKlines).toHaveBeenCalledTimes(1);
   });
 
+  it("换标的后输入框显示的就是图上的那一个", async () => {
+    render(<KlineChart dict={dict} />);
+    await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
+    const typed = screen.getByLabelText("自定义交易对");
+    fireEvent.change(typed, { target: { value: "xrpusdt" } });
+    fireEvent.blur(typed);
+    await waitFor(() =>
+      expect(mocks.fetchKlines).toHaveBeenCalledWith("XRPUSDT", "1h", expect.anything()),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "交易对 ETHUSDT" }));
+    await waitFor(() =>
+      expect(mocks.fetchKlines).toHaveBeenCalledWith("ETHUSDT", "1h", expect.anything()),
+    );
+    // 输入框是非受控的：没有 key 重挂载就会停留在上一个手输的 XRPUSDT
+    expect(screen.getByLabelText("自定义交易对")).toHaveValue("ETHUSDT");
+  });
+
   it("切换周期会重新拉取", async () => {
     render(<KlineChart dict={dict} />);
     await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());

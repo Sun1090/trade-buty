@@ -20,8 +20,8 @@ import {
 } from "@/lib/chart-density";
 import { shouldUseLowBandwidth } from "@/lib/network-quality";
 import { useNetworkQuality } from "@/components/use-network-quality";
+import { CHART_CUSTOM_SYMBOL, CHART_QUICK_SYMBOLS } from "@/lib/chart-symbols";
 
-const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] as const;
 const INTERVALS = ["15m", "1h", "4h", "1d"] as const;
 type ViewportSnapshot = "server" | "mobile" | "desktop";
 
@@ -70,7 +70,7 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
   const chartRef = useRef<IChartApi | null>(null);
   const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
-  const [symbol, setSymbol] = useState<string>("BTCUSDT");
+  const [symbol, setSymbol] = useState<string>(CHART_QUICK_SYMBOLS[0]);
   const [interval_, setInterval_] = useState<string>("1h");
   const [status, setStatus] = useState<
     "loading" | "ready" | "error" | "timeout"
@@ -296,7 +296,7 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex flex-wrap gap-1.5" role="group" aria-label={dict.symbolLabel}>
-          {SYMBOLS.map((s) => (
+          {CHART_QUICK_SYMBOLS.map((s) => (
             <button
               key={s}
               onClick={() => {
@@ -319,14 +319,16 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
               {s}
             </button>
           ))}
+          {/* key={symbol}：非受控输入不会被按钮改写，换标的时重挂载，输入框才始终显示图上的那一个 */}
           <input
+            key={symbol}
             type="text"
             placeholder={dict.customSymbolPlaceholder}
             aria-label={dict.customSymbolLabel}
             defaultValue={symbol}
             onBlur={(e) => {
               const v = e.target.value.trim().toUpperCase();
-              if (v && v !== symbol && /^[A-Z]+USDT$/.test(v)) {
+              if (v && v !== symbol && CHART_CUSTOM_SYMBOL.test(v)) {
                 setSymbol(v);
               }
             }}

@@ -15,8 +15,8 @@ import { measureFps, LOW_END_FPS_THRESHOLD, REPLAY_REDUCED_CANDLES } from "@/lib
 import { ReplayShareCard } from "@/components/replay-share-card";
 import { gradeFromReplayAccuracy } from "@/lib/share-card";
 import { encodeReplay } from "@/lib/share-decode";
+import { REPLAY_SYMBOLS } from "@/lib/chart-symbols";
 
-const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] as const;
 const SYMBOL_NAMES: Record<string, string> = {
   BTCUSDT: "Bitcoin",
   ETHUSDT: "Ethereum",
@@ -122,7 +122,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
     }
   }, []);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-  const [symbol, setSymbol] = useState<string>("BTCUSDT");
+  const [symbol, setSymbol] = useState<string>(REPLAY_SYMBOLS[0]);
   const [interval_, setInterval_] = useState<string>("1h");
   const [round, setRound] = useState(0);
   // R4.2：本轮回放开始时刻（round 变化即新一轮），结束时上报耗时
@@ -359,7 +359,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
           aria-label={dict.symbolLabel}
           className="rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-2.5 py-1.5 font-mono text-xs focus:border-accent"
         >
-          {SYMBOLS.map((s) => (
+          {REPLAY_SYMBOLS.map((s) => (
             <option key={s} value={s}>
               {SYMBOL_NAMES[s] ?? s} ({s})
             </option>
