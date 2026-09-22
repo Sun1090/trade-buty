@@ -110,3 +110,45 @@ describe("隐私页与真实网络面一致", () => {
     expect(copy).not.toMatch(/the only request that reaches us without an account/);
   });
 });
+
+/** 迁移里「账户删除后转为匿名行保留」的表（FK 指向 auth.users 且 on delete set null） */
+function accountDetachedTables(): string[] {
+  const dir = path.join(process.cwd(), "supabase/migrations");
+  return fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith(".sql"))
+    .flatMap((f) => {
+      const sql = fs.readFileSync(path.join(dir, f), "utf8");
+      return [...sql.matchAll(/create table (?:if not exists )?[`"']?([\w.]+)[`"']?\s*\(([\s\S]*?)\n\);/gi)].filter(
+        (m) =>
+          m[2]
+            .split("\n")
+            .some(
+              (line) =>
+                /references\s+auth\.users/i.test(line) && /on delete set null/i.test(line),
+            ),
+      ).map((m) => m[1].toLowerCase());
+    });
+}
+describe("账户删除后的留存边界也被披露", () => {
+  it("讲「删除账户」的那一段，同时说清哪张表会转为匿名行留下", () => {
+    const disclosed: Record<string, string[]> = {
+      "ai_citation_clicks": ["引用", "citation"],
+    };
+    const tables = accountDetachedTables();
+    expect(tables.length).toBeGreaterThan(0);
+
+    const copy = fs.readFileSync(PAGE_FILE, "utf8");
+    // 只看那一段：全文找「引用」这种关键词会永远命中，等于没有门禁
+    const paragraph = copy
+      .split(/<\/p>/)
+      .find((chunk) => /delete account/i.test(chunk) && /删除账户/.test(chunk));
+    expect(paragraph, "隐私页必须有一段同时用中英讲删除账户").toBeTruthy();
+
+    for (const table of tables) {
+      const keywords = disclosed[table];
+      expect(keywords, `新增匿名留存表 ${table}：先在删除账户那一段说明它留下什么，再补进这张表`).toBeTruthy();
+      for (const keyword of keywords) expect(paragraph!.toLowerCase(), `${table} → ${keyword}`).toContain(keyword);
+    }
+  });
+});
