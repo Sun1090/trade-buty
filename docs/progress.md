@@ -5554,3 +5554,28 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：运行期变化全是显示口径与文案——已读数/分数按现有课数与题数封顶、首屏随机延后到挂载后、隐私与 FAQ 措辞、AI 服务商点名。无迁移、无 `supabase/` 结构变更、无 API 形状变化；`git revert eccac28` 撤版本号与更新日志，逐条 revert 亦可；Vercel 可先把 Production Deployment 切回上一构建止血。
 - 下一项：①继续按「界面声称了数据没做到的事」倒查，本轮从 share 面查出的四条（连击卡的空「近 7 天」网格、`mergeQuizScore` 跨总数取 max 造出的「满分」、写着「分享」只做下载、OG 卡 percent 与 score/total 无绑定）逐条复核后修；②R16.7 / R15.2 仍需用户拍板才能动数据模型与留存策略；③生产 AI 运行期配置仍等外部条件。
 - 更新时间：2026-09-22 22:47（Asia/Shanghai）。
+
+---
+
+## 2026-09-23 — 分享面与隐私面的「声称 vs 数据」批次（#179–#187）
+
+- 里程碑 / 版本：v0.7.6 之后的第一批；候选 **0.7.7（patch）**。判级理由：11 个提交里唯一的新能力是修复「分享」按钮名不副实（系统分享面板），其余全是缺陷修复、文案订正与门禁加固；无迁移、无 API 形状变化、无内容契约变化。
+- 状态：PR **#179 #180 #181 #182 #183 #184 #185 #187 已合并**；**#186 待合并**（离线页双语，CI 正在跑）；#178（AGENTS.md 产品边界）由维护者自提，未代为合并。
+- 分支 / 提交（均在 `main`，按合并顺序）：`5499367`(#179) · `b40e16b`+`cbc576d`(#180) · `4c2ee11`(#181) · `5d22179`+`98118d7`(#182) · `74a3fd4`+`5fca5a6`(#183) · `dc1f05a`(#184) · `3a0b2e6`(#185) · `f438422`(#187)。
+- 完成内容：
+  1. **安全（#187）**：「导出我的数据」把 localStorage 全部键写进 JSON，而 supabase-js 默认把会话存在 `sb-<ref>-auth-token`——导出文件里因此带着 access/refresh token，等于一张可接管账户的凭证被鼓励下载转发。按 `sb-` 前缀剔除，并断言序列化产物里不出现令牌片段。
+  2. **隐私页三句假话（#185）**：`离线写入队列会持续重试直到同步成功或账户被删除` 被 `MAX_QUEUE=200` 的 FIFO 截断与 `ensureOwner` 换账户清空两头击穿；「本机数据只存活于 localStorage」被三处 sessionStorage 写入击穿；删除清单漏了 `ai_conversations` 与 `replay_best`。改为从代码取数的门禁：改 `MAX_QUEUE` 不同步文案就红，新增挂 `auth.users` 的级联表没点名就红。
+  3. **分享面四处（#181 #183 #184）**：streak 卡不再在没有逐日数据时画 7 个空格 +「近 7 天」；📤「分享我的成绩」真的调用系统分享面板（不收文件才退回下载），里程碑按钮改复用 `webShare`（此前它被测着却零调用方，能力判定手抄了一份）；落地页下载失败补 `role=alert`，测验卡 alt 与卡面同用 `formatPercent`（此前读屏念 66.7%、图上写 67%）。
+  4. **游客配额文案（#179）**：提示条里写死的「10 次」改读 `X-Quota-Limit`，上限只有一个来源（`/api/ai/chat` 的 `guestLimit`）。
+  5. **冒烟可归因（#180）**：AI 断言拆成护栏段 + 模型段——护栏在调用上游之前返回，它 200 + `X-Refused` 就同时证明函数存活、部署新鲜、红线在位，此时 502 只能是上游。生产实测：护栏 200/1.8s，模型 502/5.4–10.2s。
+  6. **待决策登记**：R16.10（#182，测验「满分」与分享评级用了两个分母）、R16.11（本条所在提交，导出键 `bestPct` 实为各章最高分的均值）。
+- 变更文件：`src/lib/{download,growth-events,share-card,share-decode,privacy-export,sync-*}`、`src/lib/share-card-flow.ts`（新）、`src/components/{quiz,replay,streak}-share-card.tsx`、`src/components/{milestone-share-button,share-card-preview,ai-chat}.tsx`、`src/app/[locale]/{privacy/page.tsx,ai}`、`src/lib/{i18n,i18n-stats}.ts`、`public/{offline.html,sw.js}`、`scripts/prod-smoke.mjs`、对应测试与 `docs/{ops,env,growth-events,caching,roadmap}.md`。
+- 验证命令和结果：
+  - 每一条新断言都做过变异验证：删 `.replace("{l}", String(quota.limit))` 只有配额那条红；把 `|| !refused` 去掉只有「护栏不再回 X-Refused」红；`setDownloadFailed(true)` 去掉只有落地页失败那条红；`shared === "cancelled"` 分支去掉只有「取消不补下载」红；`MAX_QUEUE` 改 250 只有隐私页取数那条红。全部还原后复跑。
+  - 真实浏览器（Playwright/Chromium，生产构建）：卡面像素对照——生产在旧代码下日历行有方格、`近 7 天` 文案带 472 个亮像素，修后为 0，而主数字带 12446 个亮像素两侧一致（证明只少了该少的）；分享按钮 `navigator.share` 收到 `{title,text,url}` 且零下载锚点，抹掉 `navigator.share` 后走复制分支。第一次测量作废：3111 端口被上一会话遗留的 next-server 占着（EADDRINUSE 只写进了没人读的日志），换到确认空闲的端口、核对监听者 PID 后重测。
+  - 门禁：`npm test` 最终 **275 文件 / 2651+** 全绿；`test:coverage` 由 CI 跑（阈值 84/77/83/87 未下调）；`typecheck` 0 错误；`lint --max-warnings=0` 通过；`check:growth-event-privacy` 9 events；`check:docs`、`check:env-docs`、`check:mobile`、`check:dark-pattern-copy`、`check:seo-surface` 全绿；`ops:work-audit` 悬空提交 0。
+  - 队列：每个 PR 合并后对余下的跑 `gh pr update-branch --rebase`（漏掉 `--rebase` 会在 PR 分支上造出 merge commit，本次踩过一次）；每个 PR 的 `ci`+`db-tests`+CodeQL 均为绿后才 rebase 合并。
+- 阻塞：`BLOCKED_EXTERNAL` 不变——生产 Vercel 运行期 `AI_*` 配置/出口需人工在控制台处理；Vercel 构建配额再次耗尽（`Deployment rate limited — retry in 24 hours`），所以 #186 之后的一批仍会落后于 `main`，这是部署滞后不是站内缺陷；R16.7 / R15.2 / R16.10 / R16.11 四条等用户拍板。
+- 风险 / 回滚：全部是显示口径、文案与客户端交付路径，无迁移、无表结构变更。分享面板那条在无面板平台逐字退回旧行为；导出剔除只减少产物内容（如需完整审计可自行导出后本地比对，令牌本就不该进文件）。逐条 revert 各自独立。
+- 下一项：①#186 合并后判一次是否发 0.7.7（倾向发：安全修复 + 四处用户可见缺陷已足够成一批，但配额窗口内的部署滞后要在发布记录里写明）；②继续按「界面声称了数据没做到的事」倒查，剩余候选：`enqueueWriteLazy` 的动态 import 缺 `catch`（离线条 chunk 未缓存时入队本身会抛未处理拒绝）、`privacy-export` 仍包含 `tb-data-owner`（账户 UUID）是否该留在可转发文件里；③R16.7 / R15.2 / R16.10 / R16.11 等决策。
+- 更新时间：2026-09-23 00:50（Asia/Shanghai）。
