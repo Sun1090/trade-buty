@@ -5488,3 +5488,45 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   剩余可查面在 share 卡的三份重复评级实现与 `FocusMode` 注释与代码不一致等记账项）；
   ③R16.7 / R15.2 仍需用户拍板才能动数据模型与留存策略。
 - 更新时间：2026-09-22 15:20（Asia/Shanghai）。
+
+---
+
+## 2026-09-22 — 水合随机、指标封顶与隐私披露批次（#159–#175）
+
+- 里程碑 / 版本：v0.7.5 之后的缺陷修复 + 门禁加固批次，判级 **patch → v0.7.6**（无新增产品能力、无内容契约变更、无迁移）。
+- 状态：全部经 PR 合入 `main`；本条与 v0.7.6 发布提交同批走一个 PR。
+- 分支 / 提交（按合并顺序，rebase 合并后 SHA）：
+  - `f92c287` #159 首页完成计数与「总进度」卡共用已读口径
+  - `513712c` / `8299099` / `0e92506` #160 渲染期不取随机 + 水合健康门禁 + 外部行情域豁免
+  - `f5988d7` #161 无障碍名称进字典
+  - `b6ebe84` #162 水合门禁扩到交互面（逐条点击页内按钮）
+  - `6f4c9c9` #163 「换一条心得」按钮名称进字典
+  - `375715c` + `0a5844c` #165 删除首页 18 条死文案 + 工作去向确认
+  - `8d4f4f0` #166 分享卡等级判定只留一份实现
+  - `4bafc7d` #167 隐私页说清未登录时真实离开的请求
+  - `2b4ae2a` #168 注销即清空升级为目录级数据库不变量
+  - `7a3c36e` #169 env.md 写明 AI key 是构建期烘进静态页
+  - `2e9d468` #170 完成度与分数不再超过分母
+  - `46ce022` + `e85f8a8` #171 第三方服务一节按真实 AI 上游写 + FocusMode 注释对齐
+  - `bec6972` #172 口径对账覆盖统计页自己的三个百分比
+  - `3eea078` #173 删除账户后会留下什么按真实 FK 行为写
+  - `77b18e8` #174 FAQ 候选报告 k-匿名门槛
+  - `eebd61b` #175 pgTAP 断言数与现行文档对账（`check:db-assertion-counts`）
+- 完成内容：
+  - **水合与无障碍**：静态页渲染期不再取随机（每日心得、AI 示例问题改为「确定首屏 + 挂载后随机」），把 `/zh` 等页面一整棵子树被 React 判为不可信、推倒重建（hydration mismatch）的源头去掉；`<html lang>` 与 `data-theme` 的水合属性不匹配一并暴露并处理。汉堡菜单/主题/语言/关闭/换一条心得等按钮的可访问名称全部改由字典提供，中文读屏不再念英文；删掉首页改版遗留的 18 条死文案（含已不成立的「173 篇深度课程」，真实 182 篇）。
+  - **指标不再超过分母**：`readDocsForChapter`（去重 + 按现有课数封顶）升为唯一已读口径，`readSummary`、`PathProgress`、`ChapterRail`、`DocList`、首页计数共用；`aggregateStats` 不再自己重算 `overallPct`；新增纯函数模块 `quiz-score`（`quizScorePct` / `quizScoreCount`）成为测验百分比与卷面分数唯一实现，雷达图、成绩条、分享卡、章节测卡片与趋势图全部改用。修掉的具体假数：侧栏 `150%`、路线卡 `已读 12/7 课`、清单角标 `12/7`、随堂测 `历史最佳 99/3`、雷达图 >100%。
+  - **隐私与文案说实话**：隐私页此前写「除非登录否则不会向服务器发送任何数据」「唯一在无账户时到达服务器的请求是崩溃诊断」「SenseNova（对话）/ 硅基流动（向量化）」「删除账户将删除全部云端数据」——四条分别与代码不符（AI 端点游客可用且反馈/引用匿名落库、上游是三厂商降级链、`ai_citation_clicks` 是 `on delete set null`）。全部改写，Cookie 一节区分本站 `tb-lang` 与登录后 Supabase 会话 cookie；FAQ「数据安全吗」同步。
+  - **门禁与工具链**：新增 `e2e/runtime-health.spec.ts`（22 条关键路由水合后不得有未捕获错误）与点击面巡检（6 路由 × 每条最多 14 次点击，逐条 Escape 复位）；外部行情域在 CI 里不再制造假失败（跨源请求导航前拦截 + `binance.com` 噪声豁免，理由写在文件头）。`check:db-assertion-counts` 把文档引用的 pgTAP 断言数与 `select plan(N)` 对账；FAQ 候选报告加 k-匿名门槛（<3 次的用户原话不进公开产物）。
+  - **数据库不变量**：`supabase/tests/sync_and_constraints.sql` 第 7 节（26 → 30 断言）把「指向 `auth.users` 的外键必须显式 `ON DELETE CASCADE`/`SET NULL`」「带 `user_id` 的表必须有该外键」升级为目录级断言，并 pin 住 `ai_citation_clicks` 的有意 `SET NULL`。
+- 变更文件：`src/app/[locale]/privacy/page.tsx`、`src/app/[locale]/privacy/privacy-endpoints.test.ts`（新）、`src/app/[locale]/faq/page.tsx`、`src/lib/{learn-stats,learning-overview,quiz-score,quiz-score-trend,quiz-store,stats-consistency,tips,i18n}.ts`、`src/components/{daily-tip,ai-chat,chapter-rail,doc-list,path-progress,path-global-progress,quiz,chapter-exam-card,radar-chart,share-card-preview,mobile-nav,theme-toggle,language-toggle,return-nudge-toast,sync-summary-toast}.tsx`、`src/app/[locale]/layout.tsx`、`e2e/runtime-health.spec.ts`（新）、`supabase/tests/sync_and_constraints.sql`、`scripts/{faq-candidates.mjs,faq-candidates.test.mjs,db-assertion-counts.mjs,db-assertion-counts.test.mjs}`、`docs/{env.md,ops.md,roadmap.md,database-testing.md,description-dupes.md,glossary-coverage.md}`、`package.json`、`.github/workflows/ci.yml` 及各对应测试文件。
+- 验证命令和结果：
+  - `npx vitest run`：272 → 274 文件、2601 → **2629 条全绿**；`npm run test:coverage` statements 96.37% / branches 91.48% / functions 96.18% / lines 98.31%（阈值 84/77/83/87 未下调）。
+  - `npm run lint`（--max-warnings=0）、`npm run typecheck`、`npm run build`（474 个静态页）干净。
+  - `npm run db:test`：8 + 40 + **30** 断言绿，含 0008/0009 回滚 → 重放演练；`npm run backup:drill` 绿。
+  - `npx playwright test e2e/runtime-health.spec.ts e2e/full-site.spec.ts`：44 passed；`e2e/mobile-overflow` 17/17。
+  - 每条新断言都做变异验证（删除/回退被测实现必须让**对应**测试变红）：`Math.min` 去掉 → `expected 120 to be 100`；`readSummary` 回到原始长度 → `expected 6 to be 4`；`tb-lang` 改名 → cookie 清单红；去掉「唯一例外」句 → 留存边界红；链条里塞 `moonshot-k1` → 供应商点名红。首版留存门禁曾因 `split(/<\/>/)` 少写一个 `p` 而恒绿，发现后修正并重新证伪。
+  - 真实浏览器 + 生产构建复验：注入 12 条旧已读键与 `best=99` 后逐路由扫描「分子>分母」与 >100% 的进度/分数（15 条路由），除课文正文里的止盈位 `110%` 外零命中；zh/en 隐私页、FAQ、删除账户段落按新文案渲染。
+- 阻塞：`BLOCKED_EXTERNAL` 不变——Vercel 生产 `AI_API_URL/AI_API_KEY/AI_MODEL` 需要人工在控制台配置（`ops:smoke-prod` 10 条里游客 AI 那条仍 502，同一构建本地跑 10/10，`/zh/ai` 生产 HTML 无「未开启」文案说明构建期看得到 key、缺的是运行期或出口），以及 R16.7 / R15.2 两个产品决策。
+- 风险 / 回滚：全部是显示口径与文案，无迁移、无 `supabase/` 结构变更、无 API 形状变化。运行期可见变化：已读数按现有课数封顶（改课留下的旧键不再顶高进度）、测验分数按题数封顶、首屏随机延后到挂载后。逐条 revert 即可，无需数据动作；Vercel 可先切回上一构建止血。
+- 下一项：①本 PR 合并后按 `docs/release-checklist.md` 走完 v0.7.6（tag → 部署 → `ops:smoke-prod` 记录真实上线结论）；②继续按「界面声称了数据没做到的事」倒查，剩余可查面在 share 落地页文案与统计导出的字段级承诺；③Vercel 运行期 AI 配置与 R16.7 / R15.2 仍等外部条件。
+- 更新时间：2026-09-22 21:30（Asia/Shanghai）。
