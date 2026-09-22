@@ -16,7 +16,7 @@
 
 ## 汇总
 
-- 扫描测试文件：275 个，命中文件：10 个
+- 扫描测试文件：278 个，命中文件：10 个
 - clock-in-assertion：0
 - uncontrolled-timer：10
 
@@ -27,7 +27,7 @@
 | uncontrolled-timer | src/components/invite-banner.test.tsx | 94 | `await new Promise((r) => setTimeout(r, 50));` |
 | uncontrolled-timer | src/components/newsletter-signup.test.tsx | 65 | `await new Promise((r) => setTimeout(r, 30));` |
 | uncontrolled-timer | src/components/onboarding-tour.test.tsx | 54 | `await new Promise((r) => setTimeout(r, 50));` |
-| uncontrolled-timer | src/components/replay-trainer.test.tsx | 282 | `await new Promise((r) => setTimeout(r, 700));` |
+| uncontrolled-timer | src/components/replay-trainer.test.tsx | 283 | `await new Promise((r) => setTimeout(r, 700));` |
 | uncontrolled-timer | src/lib/reading-time.test.ts | 14 | `const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));` |
 | uncontrolled-timer | src/lib/sync-layer-queue.test.ts | 79 | `const flush = () => new Promise<void>((r) => setTimeout(r, 0));` |
 | uncontrolled-timer | src/lib/sync-layer-write-failure.test.ts | 128 | `await new Promise((resolve) => setTimeout(resolve, 0));` |
