@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { REPLAY_HISTORY_KEEP } from "./replay-history-limit";
 import {
   mergeProgress,
   mergeWrongbook,
@@ -145,14 +146,14 @@ describe("mergeReplayHistory", () => {
     expect(mergeReplayHistory(local, cloud).length).toBe(2);
   });
 
-  it("超过 100 条只保留最近 100", () => {
-    const local = Array.from({ length: 90 }, (_, i) => mkRec(i));
+  it("超过上限只保留最近 REPLAY_HISTORY_KEEP 条", () => {
+    const local = Array.from({ length: REPLAY_HISTORY_KEEP - 10 }, (_, i) => mkRec(i));
     const cloud = Array.from({ length: 30 }, (_, i) => ({
       symbol: "ETHUSDT", interval: "1h", total: 10, correct: 5, best_streak: 3,
       recorded_at: new Date(100 + i).toISOString(),
     }));
     const out = mergeReplayHistory(local, cloud);
-    expect(out.length).toBe(100);
+    expect(out.length).toBe(REPLAY_HISTORY_KEEP);
   });
 
   it("按 at 升序排列", () => {

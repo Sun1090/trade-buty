@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { REPLAY_HISTORY_KEEP } from "./replay-history-limit";
 
 // Mock sync-layer（避免拉入 Supabase 客户端链）
 vi.mock("./sync-layer", () => ({
@@ -81,8 +82,8 @@ describe("replay-store", () => {
       );
     });
 
-    it("超过 100 条只保留最近 100", () => {
-      for (let i = 0; i < 105; i++) {
+    it("超过上限只保留最近 REPLAY_HISTORY_KEEP 条", () => {
+      for (let i = 0; i < REPLAY_HISTORY_KEEP + 5; i++) {
         saveReplayRecord({
           symbol: `S${i}`,
           interval: "1h",
@@ -92,7 +93,7 @@ describe("replay-store", () => {
         });
       }
       const h = readReplayHistory();
-      expect(h.length).toBe(100);
+      expect(h.length).toBe(REPLAY_HISTORY_KEEP);
       // 最早 5 条被裁掉
       expect(h[0].symbol).toBe("S5");
     });

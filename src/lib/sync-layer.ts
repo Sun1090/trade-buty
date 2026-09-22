@@ -12,6 +12,7 @@ import type { ProgressMap } from "./progress";
 import type { WrongEntry } from "./wrongbook";
 import type { ReplayRecord } from "./replay-store";
 import { isLocalDateStr } from "./date-utils";
+import { REPLAY_HISTORY_KEEP } from "./replay-history-limit";
 import { isRecord, readStorageJson } from "./storage-json";
 
 function safeSupabaseBrowser() {
@@ -547,7 +548,7 @@ export function mergeReplayHistory(local: ReplayRecord[], cloud: CloudReplay[]):
     add(round);
   });
   merged.sort((a, b) => a.at - b.at);
-  return merged.slice(-100);
+  return merged.slice(-REPLAY_HISTORY_KEEP);
 }
 
 /**
@@ -604,7 +605,7 @@ export async function hydrateFromCloud(
       getSupabaseBrowser().from("progress").select("chapter_num, doc_slug").eq("user_id", id),
       getSupabaseBrowser().from("wrongbook").select("chapter_num, question_idx, picked, answered_at, srs_stage, srs_due").eq("user_id", id),
       getSupabaseBrowser().from("quiz_scores").select("chapter_num, best, total, done").eq("user_id", id),
-      getSupabaseBrowser().from("replay_history").select("symbol, interval, total, correct, best_streak, recorded_at").eq("user_id", id).order("recorded_at", { ascending: false }).limit(100),
+      getSupabaseBrowser().from("replay_history").select("symbol, interval, total, correct, best_streak, recorded_at").eq("user_id", id).order("recorded_at", { ascending: false }).limit(REPLAY_HISTORY_KEEP),
       getSupabaseBrowser().from("replay_best").select("best_streak").eq("user_id", id),
       getSupabaseBrowser().from("user_settings").select("daily_goal_min, weekly_goal_min").eq("user_id", id),
     ]);
