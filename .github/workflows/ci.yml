@@ -80,6 +80,8 @@ jobs:
         run: npm run check:request-body-bounds
       - run: npm run check:env-docs
       - run: npm run check:dark-pattern-copy
+      - name: pgTAP 断言数与现行文档对账
+        run: npm run check:db-assertion-counts
       - run: npm run check:docs
       - run: npm run check:changelog
       - name: 发布 tag 核对（R14.3：除最新发布版本外，每条发布记录都必须有同名 tag）

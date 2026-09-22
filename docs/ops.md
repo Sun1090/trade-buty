@@ -29,6 +29,7 @@
 | `npm run check:request-body-bounds` | 站内每个解析 JSON 请求体的端点都经 `src/lib/request-body.ts` 有界读取，且上限是具名常量（R15.4①） | 新端点改用 `readJsonBody(req, MAX_*_BODY_BYTES)`；不得把上限退回行内数字或恢复 `req.json()` |
 | `npm run check:env-docs` | `docs/env.md` 与代码对账：`process.env.*` 读到的运行时变量全部登记、文档无幽灵条目、服务端密钥不出现在 `"use client"` 模块 | 补写 `docs/env.md` 或清理死变量；密钥前缀/暴露面错误必须改代码而不是改文档 |
 | `npm run check:dark-pattern-copy` | 增长表面均已登记，且无紧迫/恐吓/默认勾选等暗黑模式（R13.21–R13.22） | 修正 `growth-surfaces.json` 登记或用户文案 |
+| `npm run check:db-assertion-counts` | 现行文档（`docs/database-testing.md`、`docs/roadmap.md`）引用的 pgTAP 断言数等于 `supabase/tests/*.sql` 的 `select plan(N)`，含「40+30+8 断言」这类聚合写法 | 改断言数后同步现行文档；`docs/progress.md` 是追加式历史记录，不参与对账也不得回改 |
 | `npm run check:docs` | README/AGENTS/plan/About 的内容规模、技术栈、关键承诺与 `package.json` 版本号一致 | 修正漂移文档；发布时同步 bump `package.json` version，不得只改门禁快照 |
 | `npm run check:changelog` | `CHANGELOG.md` 与单一来源 `src/data/release-notes.json`（站点 `/changelog` 页同源）一致：版本/日期格式、新旧排序与双语条目 | 跑 `npm run changelog:generate` 重新生成并提交；不得手工编辑 `CHANGELOG.md` |
 | `npm run check:release-tag` | 发布 tag 核对（R14.3）：除最新发布版本外，每条发布记录都必须有同名 `vX.Y.Z` tag；最新发布版本允许暂缺（rebase 合并改写 SHA，tag 只能在合并后打到 `main`），此时打印待办不判失败 | 在合并后的 `main` 上 `git tag -a vX.Y.Z origin/main -m "..." && git push origin vX.Y.Z`；0.4.0–0.7.0 属门禁上线前的遗留豁免（见 `scripts/release-tag-lib.mjs`），有意不回填以免把过期提交推成生产部署 |
