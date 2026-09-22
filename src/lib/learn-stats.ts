@@ -12,8 +12,8 @@ import { getTotalReadingTime } from "./reading-time";
 import { getTotalStudySeconds } from "./study-time";
 
 /**
- * R4.10：已读口径的唯一实现——统计页（aggregateStats）与学习路线页
- * （PathGlobalProgress）共用，保证两处「已读/完成度」永远一致。
+ * R4.10：已读口径的唯一实现——统计页（aggregateStats）、学习路线页（PathGlobalProgress）
+ * 与首页完成计数（GlobalReadStat）共用，保证三处「已读/完成度」永远一致。
  */
 export function readSummary(
   progress: Record<string, unknown[]>,

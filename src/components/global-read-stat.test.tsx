@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { GlobalReadStat } from "./global-read-stat";
+import { readSummary } from "@/lib/learn-stats";
 
 const state = vi.hoisted(() => ({
   progress: null as Record<string, string[]> | null,
@@ -15,8 +16,13 @@ vi.mock("@/components/auth-provider", () => ({
   useAuth: () => state.user,
 }));
 
+const chapters = [
+  { slug: "getting-started", docCount: 2 },
+  { slug: "spot", docCount: 8 },
+];
+
 const props = {
-  totalDocs: 10,
+  chapters,
   textTpl: "已读 {r}/{t}",
   keepGoing: "继续",
   syncedLabel: "已同步",
@@ -59,5 +65,21 @@ describe("GlobalReadStat", () => {
     state.progress = { spot: ["candlesticks"] };
     render(<GlobalReadStat {...props} />);
     expect(screen.queryByTitle("已同步")).not.toBeInTheDocument();
+  });
+
+  it("站点里已不存在的章节键不计入：与同页「总进度」卡说同一个数", () => {
+    state.progress = {
+      "getting-started": ["doc-a", "doc-b"],
+      spot: ["doc-c"],
+      // 云端 hydrate 合并回来的旧章节键（R5.10 说的「章节改名」残留）
+      "old-chapter-name": Array.from({ length: 12 }, (_, i) => `legacy-${i}`),
+    };
+    const expected = readSummary(state.progress, chapters);
+    render(<GlobalReadStat {...props} />);
+    expect(screen.getByText(new RegExp(`已读 ${expected.readDocs}/${expected.totalDocs}`))).toBeInTheDocument();
+    expect(screen.getByText("继续")).toBeInTheDocument();
+    // 2 + 1 = 3，而不是把旧键的 12 篇也加成 15
+    expect(expected.readDocs).toBe(3);
+    expect(expected.totalDocs).toBe(10);
   });
 });

@@ -54,7 +54,7 @@ export default async function Home({ params }: PageProps<"/[locale]">) {
           <TodayPick chapters={learningChapters} locale={locale} label={locale === "zh" ? "你的下一步" : "Your next step"} hint={locale === "zh" ? "继续课程" : "Continue course"} done={locale === "zh" ? "主线课程已完成，复习或挑战练习吧" : "Core path complete. Review or practise next."} />
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5"><div className="flex items-center justify-between"><p className="text-sm font-semibold">{locale === "zh" ? "总进度" : "Overall progress"}</p><span className="text-xs text-faint">{totalDocs} {locale === "zh" ? "节课" : "lessons"}</span></div><div className="mt-4"><PathGlobalProgress chapters={chapters.map((c) => ({ slug: c.slug, docCount: c.docCount }))} /></div><div className="mt-4"><StreakBadge labels={{ current: locale === "zh" ? "连续学习" : "Streak", longest: locale === "zh" ? "最长" : "Best", days: locale === "zh" ? "天" : "days" }} /></div></div>
         </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2"><GlobalReadStat totalDocs={totalDocs} textTpl={t.home.readTpl} keepGoing={t.home.readKeepGoing} syncedLabel={t.home.syncedLabel} /><DailyTip locale={locale} /></div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2"><GlobalReadStat chapters={chapters.map((chapter) => ({ slug: chapter.slug, docCount: chapter.docCount }))} textTpl={t.home.readTpl} keepGoing={t.home.readKeepGoing} syncedLabel={t.home.syncedLabel} /><DailyTip locale={locale} /></div>
       </div>
     </section>
     <div className="mx-auto max-w-6xl px-5 py-14 sm:py-20">
