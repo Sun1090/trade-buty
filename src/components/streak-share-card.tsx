@@ -17,6 +17,8 @@ interface Props {
   shareUrl?: string;
   labels: {
     share: string;
+    /** 「预览卡面」按钮文案：字典里早有这个键，此前被组件写死成英文 */
+    preview: string;
     previewAlt: string;
     download: string;
     copyLink: string;
@@ -170,7 +172,7 @@ export function StreakShareCard({
         disabled={disabled}
         className="rounded-full border border-border-strong text-muted font-medium px-5 py-2 text-sm min-h-10 hover:border-accent/50 hover:text-accent transition disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        👁 Preview
+        👁 {labels.preview}
       </button>
       {shareUrl && (
         <CopyLinkButton

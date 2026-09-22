@@ -18,6 +18,8 @@ interface Props {
   /** i18n 文案键 */
   labels: {
     share: string;
+    /** 「预览卡面」按钮文案：字典里早有这个键，此前被组件写死成英文 */
+    preview: string;
     previewAlt: string;
     download: string;
     copyLink: string;
@@ -171,7 +173,7 @@ export function QuizShareCard({
         data-testid="quiz-share-preview-btn"
         className="rounded-full border border-border-strong text-muted font-medium px-5 py-2 text-sm min-h-10 hover:border-accent/50 hover:text-accent transition"
       >
-        👁 Preview
+        👁 {labels.preview}
       </button>
       {shareUrl && (
         <CopyLinkButton

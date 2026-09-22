@@ -521,6 +521,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
                     locale={locale}
                     labels={{
                       share: dict.shareReplay,
+                      preview: dict.previewReplay,
                       previewAlt: dict.previewAlt,
                       download: dict.download,
                       copyLink: dict.copyLink,

@@ -15,6 +15,7 @@ const growthTrack = vi.mocked(trackGrowthEvent);
 
 const LABELS = {
   share: "分享战绩",
+  preview: "预览卡面",
   previewAlt: "预览",
   download: "下载",
   copyLink: "复制链接",
@@ -24,6 +25,7 @@ const LABELS = {
 
 const LABELS_EN = {
   share: "Share",
+  preview: "Preview card",
   previewAlt: "Preview",
   download: "Download",
   copyLink: "Copy link",
@@ -125,7 +127,11 @@ describe("ReplayShareCard", () => {
   it("渲染 Share 与 Preview 按钮", () => {
     renderCard();
     expect(screen.getByTestId("replay-share-btn")).toBeInTheDocument();
-    expect(screen.getByTestId("replay-share-preview-btn")).toBeInTheDocument();
+    const preview = screen.getByTestId("replay-share-preview-btn");
+    expect(preview).toBeInTheDocument();
+    // 按钮文案来自传入的字典，不是组件里写死的英文
+    expect(preview).toHaveTextContent("预览卡面");
+    expect(preview).not.toHaveTextContent("Preview");
   });
 
   it("点击 Share 触发 canvas 绘制 + 下载，并按标的与周期命名文件", async () => {
