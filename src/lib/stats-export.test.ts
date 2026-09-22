@@ -18,6 +18,20 @@ const fullInput = {
   goals: { dailyGoalMinutes: 20 },
 };
 
+/** 压成排序后的「section.field」叶子路径清单：字段名契约的可执行形式 */
+function leafPaths(value: Record<string, unknown>, prefix = ""): string[] {
+  const out: string[] = [];
+  for (const [key, child] of Object.entries(value)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (child !== null && typeof child === "object") {
+      out.push(...leafPaths(child as Record<string, unknown>, path));
+    } else {
+      out.push(path);
+    }
+  }
+  return out.sort();
+}
+
 describe("buildStatsExport", () => {
   it("produces a versioned, identifiable payload with stable field names", () => {
     const payload = buildStatsExport(fullInput, new Date("2026-09-11T12:00:00Z"));
@@ -28,6 +42,44 @@ describe("buildStatsExport", () => {
     expect(Object.keys(payload.data).sort()).toEqual(["courses", "engagement", "goals", "quizzes", "replay", "review"]);
     expect(payload.data.courses).toEqual(fullInput.courses);
     expect(payload.data.goals).toEqual(fullInput.goals);
+  });
+
+  /**
+   * 文件自己的契约写着「字段命名稳定：新增字段只追加，不改名、不改语义」
+   * （见 `stats-export.ts` 头部）。这条把契约变成可执行的：整棵叶子路径钉死，
+   * 改名、删除或挪 section 都会红——包括 R16.11 里那两个名不副实的键，
+   * 它们要动就得连着 `STATS_EXPORT_VERSION` 一起动，而不是被顺手改掉。
+   */
+  it("字段命名契约：整棵叶子路径钉死，改名要显式过这里", () => {
+    const payload = buildStatsExport(fullInput, new Date("2026-09-11T12:00:00Z"));
+    const paths = leafPaths(payload as unknown as Record<string, unknown>);
+
+    expect(paths.length, "清单本身不能是空的").toBeGreaterThanOrEqual(22);
+    expect(paths).toEqual([
+      "data.courses.completionPct",
+      "data.courses.doneChapters",
+      "data.courses.readDocs",
+      "data.courses.totalChapters",
+      "data.courses.totalDocs",
+      "data.engagement.currentStreak",
+      "data.engagement.longestStreak",
+      "data.engagement.totalStudySeconds",
+      "data.goals.dailyGoalMinutes",
+      "data.quizzes.bestPct",
+      "data.quizzes.done",
+      "data.quizzes.total",
+      "data.replay.accuracyPct",
+      "data.replay.bestStreak",
+      "data.replay.rounds",
+      "data.review.dueToday",
+      "data.review.overdue",
+      "data.review.pending",
+      "exportedAt",
+      "format",
+      "locale",
+      "version",
+    ]);
+    expect(STATS_EXPORT_VERSION, "改名要连着版本一起决策").toBe(1);
   });
 
   it("sanitizes corrupt numeric inputs and nullable percentages", () => {

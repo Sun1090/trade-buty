@@ -12,6 +12,11 @@
 export const STATS_EXPORT_FORMAT = "trade-buty-stats-export";
 export const STATS_EXPORT_VERSION = 1 as const;
 
+/**
+ * 字段名自 v1 起冻结（文件头契约 + `stats-export.test.ts` 的叶子路径钉死）。
+ * 两个键名不副实，是已登记的待决项 R16.11，选定前别顺手改名或当 bug 修：
+ * `quizzes.bestPct` 装的是各章最高百分比再取平均，`engagement.totalStudySeconds` 是 90 天窗口。
+ */
 export interface StatsExportInput {
   locale: string;
   courses: { readDocs: number; totalDocs: number; doneChapters: number; totalChapters: number; completionPct: number };
