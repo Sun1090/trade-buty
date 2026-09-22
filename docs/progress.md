@@ -5249,3 +5249,45 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   ④AI 边界盘点剩下的 C 级项：AI 路由的 body 字节上限只落在 `/api/error-reports`、`ai/quiz` 兜底不过滤
   locale/difficulty（英文用户可拿到中文卷）、`auth/session` 与 `auth/signout` 站内无调用方。
 - 更新时间：2026-09-22 11:20（Asia/Shanghai）。
+
+## 2026-09-22 — R16.9 收口：复习页的「已过期」与统计导出的 overdue 收敛到同一把尺子
+
+- 状态：本地开发与全量门禁验证完成，已推分支开 PR。
+- 里程碑 / 版本：v0.10（R16 学习数据口径一致性）收尾项；改动只是口径归一，不发版。
+- 分支 / 提交：`fix/review-overdue-caliber`（基于 `a5731ff`）——`c848b56` 修复、`e1540ed` 重钉旧断言、`b22d698` roadmap。
+- 完成内容：
+  - 根因：R16.4 把「今日到期」统一到 `effectiveSrs()` 时，同一把尺子被顺带用在了「已过期」上。
+    回填出来的到期日是**推断值**、不是系统真正排过的复习计划，于是 R5 之前的旧数据、云端
+    `srs_due` 为空的行会被标成红色「过期 4 天」——对用户宣布了一个没人定过的逾期天数，也推翻了
+    `isSrsOverdue` 注释里自己写的「旧数据不标红」（那个 `!due → false` 守卫经过回填后永远拿不到
+    空值，形同死代码）。而版本化统计导出走的是另一套（只认真实 `srsDue`），所以复习页显示的
+    「N 道已过期」与导出 JSON 里的 `overdue` 从来不是同一个数。
+  - 修法是两个口径各归各位、且各自只算一次：`dueToday` 仍按回填（旧数据该出现就出现、仍置顶），
+    `overdue` 只看原始 `srsDue`；条目构造时算成 `ReviewItem.overdue`，头部计数、行内徽章、左边框
+    三处共用同一个结论，不再各写一遍谓词。
+  - **主动改写了一条已固化断言**：`review-srs.test.tsx`「旧数据（无 srs_due）回填后，头部计数与
+    行内徽章一致」把两件不同的事钉在一句期望里——「两处一致」（要保留）与「回填条目算已过期」
+    （正是与统计导出打架的那半）。现在只保留前者，并显式钉住「回填条目不进已过期」。这是本轮唯一
+    一处为了让两处入口同尺而修改既有测试的地方，理由与影响面都单独成提交，便于单独回退。
+- 变更文件：`src/components/review-client.tsx`、`src/components/review-client.test.tsx`、
+  `src/components/review-srs.test.tsx`、`docs/roadmap.md`（R16.4 尾巴改指向 R16.9）、`docs/progress.md`。
+- 验证命令和结果：
+  - 新用例是**跨入口互比**：从渲染出的头部文案里正则取出 `dueToday`/`overdue` 两个数，再与
+    `buildWrongbookEfficiency(...).latest` 比相等——任何一侧改口径都会红。变异验证：把 `overdue`
+    换回复填值 → 只有这条新用例变红（其余 22 条不受影响），改回 `srs.due` 也验证了重钉的那条会红。
+  - `npm run lint`（0 警告）→ `npm run test:coverage`：**269 文件 / 2562 用例全绿**，statements
+    **96.31%**、branches **91.38%**（较上轮 91.36% 略升，阈值 84/77 未动）→ `npm run typecheck` 0
+    → `npm run build` 通过 → `npm run e2e` **109 通过** → `npm run check:docs`、`check:constitution`
+    等契约门禁通过。
+  - **真浏览器复验**（生产构建 `next start` + Playwright，往 `localStorage.tb-wrong` 灌两条数据：
+    一条 5 天前入库无 `srs_due`、一条真实 `srsDue` = 2 天前）：页面头部读作
+    「2 道错题，2 道今日到期（1 道已过期）」，全文无「过期 4 天」、有「过期 2 天」，红色左边框
+    恰好 1 条。修复前同一份数据会读作 2 道已过期并给旧数据打上「过期 4 天」。
+- 阻塞：无。
+- 风险 / 回滚：只改展示层口径，不动存储结构、云端字段、迁移与导出字段语义（`overdue` 的定义从未
+  变过，是站内另一处向它对齐）；`git revert c848b56 e1540ed b22d698` 即可整体撤回。用户可见影响是
+  旧数据不再显示红色逾期天数，复习队列的排序与「今日到期」计数不变。
+- 下一项：R16.7（复习计划跨设备不收敛，需 `srs_updated_at` / `plan_version` 设计决策）是 R16 唯一
+  未收口项；随后转 R15.4 的 C 级 AI 边界项。生产侧仍等 Vercel 配额窗口，恢复后重跑
+  `npm run ops:smoke-prod` 补 0.7.3 上线结论。
+- 更新时间：2026-09-22 11:45（Asia/Shanghai）。
