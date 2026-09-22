@@ -30,8 +30,8 @@ export function PrivacyDataExport({ locale }: { locale: "zh" | "en" }) {
         </h2>
         <p className="mt-2 text-sm text-muted leading-relaxed">
           {locale === "en"
-            ? "Download a JSON copy of your local learning progress, quiz results, replay history, and sync status. All local browser storage entries are included."
-            : "下载一份 JSON 格式的数据副本，包含本机学习进度、测验结果、回放记录和同步状态。包含浏览器本机存储的全部条目。"}
+            ? "Download a JSON copy of your local learning progress, quiz results, replay history, and sync status. Every entry in your browser's local storage is written to the file except your sign-in session (its access and refresh tokens) — so the file also carries the local marker naming which account this data belongs to."
+            : "下载一份 JSON 格式的数据副本，包含本机学习进度、测验结果、回放记录和同步状态。除登录会话（访问与刷新令牌）外，浏览器本机存储的全部条目都会写入文件——文件里因此也带着记录这份数据属于哪个账户的本机标识。"}
         </p>
       </div>
       <button
