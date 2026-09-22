@@ -84,15 +84,17 @@ export function ReviewClient({
   // R5.3：SRS 开启时，到期（含过期）置顶、其余按到期日升序；关闭则按入库时间倒序
   const sorted = srsOn
     ? [...items].sort((a, b) => {
-        const aDue = isSrsDue(a.srsDue, todayStr);
-        const bDue = isSrsDue(b.srsDue, todayStr);
+        const aDue = isSrsDue(a.srs.due, todayStr);
+        const bDue = isSrsDue(b.srs.due, todayStr);
         if (aDue !== bDue) return aDue ? -1 : 1;
         return a.srs.due < b.srs.due ? -1 : a.srs.due > b.srs.due ? 1 : 0;
       })
     : items;
 
-  const dueCount = items.filter((x) => isSrsDue(x.srsDue, todayStr)).length;
-  const overdueCount = items.filter((x) => isSrsOverdue(x.srsDue, todayStr)).length;
+  // 口径统一走 effectiveSrs：无 srs_due 的条目（R5 之前的旧数据、云端 srs_due 为空的行）
+  // 按入库日回填，与每行的徽章、统计页「今日到期」、复习提醒卡片同一把尺子。
+  const dueCount = items.filter((x) => isSrsDue(x.srs.due, todayStr)).length;
+  const overdueCount = items.filter((x) => isSrsOverdue(x.srs.due, todayStr)).length;
 
   /** R5.8：复习应答计入每日目标（1 题记 1 分钟，与台账 quiz 源合并） */
   function creditReview() {
@@ -326,7 +328,7 @@ export function ReviewClient({
               return (
                 <div
                   key={key}
-                  className={`rounded-2xl border border-[var(--border)] border-l-2 bg-[var(--surface)] p-5 ${isSrsOverdue(item.srs.due, todayStr) ? "border-l-[var(--down)]" : isSrsDue(item.srsDue, todayStr) ? "border-l-[var(--accent)]" : "border-l-[var(--border-strong)]"}`}
+                  className={`rounded-2xl border border-[var(--border)] border-l-2 bg-[var(--surface)] p-5 ${isSrsOverdue(item.srs.due, todayStr) ? "border-l-[var(--down)]" : isSrsDue(item.srs.due, todayStr) ? "border-l-[var(--accent)]" : "border-l-[var(--border-strong)]"}`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs text-faint">Q{item.questionIdx + 1}</p>
