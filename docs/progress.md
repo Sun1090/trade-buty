@@ -5579,3 +5579,25 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：全部是显示口径、文案与客户端交付路径，无迁移、无表结构变更。分享面板那条在无面板平台逐字退回旧行为；导出剔除只减少产物内容（如需完整审计可自行导出后本地比对，令牌本就不该进文件）。逐条 revert 各自独立。
 - 下一项：①#186 合并后判一次是否发 0.7.7（倾向发：安全修复 + 四处用户可见缺陷已足够成一批，但配额窗口内的部署滞后要在发布记录里写明）；②继续按「界面声称了数据没做到的事」倒查，剩余候选：`enqueueWriteLazy` 的动态 import 缺 `catch`（离线条 chunk 未缓存时入队本身会抛未处理拒绝）、`privacy-export` 仍包含 `tb-data-owner`（账户 UUID）是否该留在可转发文件里；③R16.7 / R15.2 / R16.10 / R16.11 等决策。
 - 更新时间：2026-09-23 00:50（Asia/Shanghai）。
+
+---
+
+## 2026-09-23 — 发布冻结：v0.7.7（导出凭证、隐私队列边界与分享面批次）
+
+- 里程碑 / 版本：**v0.7.7**（`package.json` 0.7.6 → 0.7.7）。
+- 状态：已合并、已打 tag；**生产尚未部署**——Vercel 账号构建配额再次耗尽。
+- 判级理由：`v0.7.6..main` 共 16 个提交，全是缺陷修复、门禁加固与文案订正；唯一用户可见的新交互是 #183 让 📤 按钮真的调用系统分享面板，它交付的是按钮文案早已承诺的行为、且平台不收图片时逐字退回旧路径 → **patch**。无迁移、无 API 形状变化、无内容契约变化。
+- 分支 / 提交：`chore/release-0.7.7` → PR **#189**（rebase 合并）→ `c2b90f9`；tag **`v0.7.7` → `c2b90f9`**（附注 tag，已推送）。批次内容见上一条 #179–#187 记录（#181–#188 全部已合并）。
+- 完成内容：`src/data/release-notes.json` 追加 0.7.7（zh/en 各 5 条 highlights），`CHANGELOG.md` 由 `npm run changelog:generate` 生成，锁文件用钉住的 npm 10.9.4 重算。
+- 变更文件：`src/data/release-notes.json`、`CHANGELOG.md`、`package.json`、`package-lock.json`、`docs/progress.md`。
+- 验证命令和结果（第 3 步顺序，全部本地实测）：
+  - `npm test` 276 文件 / **2673 条**全绿；`test:coverage` statements **95.88%**（9463/9869），阈值 84/77/83/87 未下调；`lint --max-warnings=0` 通过；`typecheck` 0 错误；`build` **474 页**。
+  - 产物门禁在 e2e 之前：`check:mobile` 14 页 320px 无溢出 · `check:seo-surface` sitemap 430 / 页面 454 / 未声明 0 · `check:search-index` 与 KB 1:1 · `check:structured-data` 454 页 5656 实体 · `check:risk-warning` 课文 364/364 全过（README 40/54，12 review + 2 gap 属上游 R14.11）· `check:constitution` 报告式 186 处命中不变 · `check:docs` 版本号 0.7.7 一致。
+  - `check:changelog` ✅ 11 条一致；`check:lockfile-repro` ✅ 981 条目可复现；合并打 tag 后 `check:release-tag` ✅「11 条 tag 均已落地（最新 0.7.7 → v0.7.7）」。
+  - `npm run db:test` ✅ 迁移 + RLS 越权 + 双设备同步约束 + 5 段回滚演练（含 0009 原子激活的回撤→重放）；`npm run e2e` ✅ **137 通过**（端口先确认空闲再跑，避免复用到上一会话遗留的旧构建服务）。
+  - `git status` 在发布提交前只有 4 个预期文件，报告类产物无纯日期 diff。
+- 生产部署结论（如实记录）：合并 + 打 tag 后 `npm run ops:smoke-prod` → **8/10**。①`GET /zh/changelog` 红：直读生产 HTML 确认「含 0.7.6、不含 0.7.7」，而 #189 上的 Vercel 检查写明 `Deployment rate limited — retry in 24 hours.` —— 是账号级构建配额，不是站内缺陷；②游客 AI 那条这次是**护栏探针本身超时**（重试 2 次仍 aborted），与一小时前实测的「护栏 200 + X-Refused、模型 502」不同，属边缘/冷启动抖动而非新的站内回归；配额窗口过去后重跑时以当时结果为准。其余 8 条（含双语首页、课程与课文风险块、sitemap/robots、分享落地页、匿名 session）全绿。
+- 阻塞：`BLOCKED_EXTERNAL` 两条——Vercel 构建配额（决定 0.7.7 何时上线）、生产 AI 运行期配置（`AI_API_URL/AI_MODEL/AI_API_KEY` 快照或出口，处置在 Vercel 控制台，改完必须重新部署，见 `docs/env.md`）。R16.7 / R15.2 / R16.10 / R16.11 四条等用户拍板。
+- 风险 / 回滚：运行期变化全在显示口径、文案与客户端交付路径。最保守的一条是导出剔除 `sb-*`：它只会让产物少一部分内容，而少掉的那部分是可接管账户的凭证。回滚 `git revert c2b90f9` 撤版本号与更新日志，或逐条 revert 单个修复；Vercel 可先把 Production Deployment 切回上一构建止血，随后仍用 revert 收敛历史。无迁移，因此不需要数据库回滚路径。
+- 下一项：①配额窗口过去后重跑 `ops:smoke-prod`，把 0.7.7 的真实上线结论补进本条；②继续按「界面声称了数据没做到的事」倒查，剩余候选：`enqueueWriteLazy` 的动态 import 缺 `catch`（离线下队列 chunk 未缓存时入队自身会抛未处理拒绝）、导出仍含 `tb-data-owner`（账户 UUID）是否适合出现在可转发文件里；③#178（AGENTS.md 产品边界）由维护者自提，未代为合并。
+- 更新时间：2026-09-23 01:35（Asia/Shanghai）。
