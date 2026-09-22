@@ -15,6 +15,14 @@ describe("PathProgress", () => {
     expect(container.textContent).toContain("3/5");
   });
 
+  it("已读记录多于本章课数时按课数封顶：不出现 3/2 与 150%", () => {
+    const { container } = render(
+      <PathProgress chapterSlug="spot" docCount={2} />
+    );
+    expect(container.textContent).toContain("2/2");
+    expect(container.textContent).not.toContain("3/2");
+  });
+
   it("完成全章显示勾标", () => {
     const { container } = render(
       <PathProgress chapterSlug="spot" docCount={3} />

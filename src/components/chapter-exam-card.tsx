@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { Quiz } from "@/components/quiz";
 import { readQuizProgress, type QuizProgress } from "@/lib/quiz-store";
+import { quizScoreCount } from "@/lib/quiz-score";
 import type { ChapterQuiz } from "@/lib/quiz-types";
 import type { ShareLocale } from "@/lib/share-card";
 
@@ -70,7 +71,7 @@ export function ChapterExamCard({
 
   const bestTpl = dict.bestTpl;
   const bestText = bestTpl
-    .replace("{n}", String(progress?.best ?? 0))
+    .replace("{n}", String(quizScoreCount(progress?.best ?? 0, total)))
     .replace("{total}", String(total));
 
   return (

@@ -95,7 +95,13 @@ export function buildLearningOverview(input: LearningOverviewInput): LearningOve
   };
 }
 
-function readDocsForChapter(docSlugs: string[] | undefined, docCount: number): number {
+/**
+ * 单个篇章「已读几篇」的唯一口径：去重 + 以篇章现有课数封顶。
+ *
+ * 封顶不是美化，是纠错：知识库改课后 slug 会换，localStorage 与云端合并回来的旧键
+ * 仍挂在这个篇章下，按原始长度算就会出现「已读 6/4 篇」「完成度 150%」这种不存在的数。
+ */
+export function readDocsForChapter(docSlugs: readonly unknown[] | undefined, docCount: number): number {
   if (!docSlugs) return 0;
   const unique = new Set(docSlugs.filter((slug) => typeof slug === "string" && slug.length > 0));
   return Math.min(unique.size, Math.max(0, docCount));

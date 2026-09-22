@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { BADGES, getUnlockedBadges, type LearnStats } from "./learn-stats";
+import { BADGES, getUnlockedBadges, readSummary, type LearnStats } from "./learn-stats";
 
 const base: LearnStats = {
   totalDocs: 100,
@@ -96,5 +96,34 @@ describe("getUnlockedBadges", () => {
     };
     const out = getUnlockedBadges(full);
     expect(out.length).toBe(BADGES.length);
+  });
+});
+
+describe("readSummary", () => {
+  const chapters = [
+    { slug: "a", docCount: 2 },
+    { slug: "b", docCount: 2 },
+  ];
+
+  it("按篇章汇总已读数、完成篇章数与百分比", () => {
+    expect(readSummary({ a: ["x", "y"], b: ["x"] }, chapters)).toEqual({
+      readDocs: 3,
+      totalDocs: 4,
+      doneChapters: 1,
+      overallPct: 75,
+    });
+  });
+
+  it("旧已读键不存在的课：按篇章课数封顶，完成度不会超过 100%", () => {
+    expect(readSummary({ a: ["x", "y", "z"], b: ["x", "y", "z"] }, chapters)).toEqual({
+      readDocs: 4,
+      totalDocs: 4,
+      doneChapters: 2,
+      overallPct: 100,
+    });
+  });
+
+  it("没有篇章时不除零", () => {
+    expect(readSummary({}, []).overallPct).toBe(0);
   });
 });

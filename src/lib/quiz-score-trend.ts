@@ -1,4 +1,5 @@
 import { isLocalDateStr, localDateStr, shiftDate } from "./date-utils";
+import { quizScorePct } from "./quiz-score";
 
 export interface QuizChapterInput {
   slug: string;
@@ -55,7 +56,7 @@ const safeNonNegative = (value: unknown): number => {
 
 const safePct = (best: number, total: number): number | null => {
   if (total <= 0 || best <= 0) return null;
-  return Math.round(Math.min(100, Math.max(0, (best / total) * 100)));
+  return quizScorePct(best, total);
 };
 
 export function normalizeQuizLedger(raw: Record<string, unknown> | undefined | null): Record<string, QuizAttemptEntry> {

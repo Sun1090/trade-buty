@@ -37,6 +37,15 @@ describe("DocList", () => {
     expect(screen.getByText("文档B")).toBeInTheDocument();
   });
 
+  it("旧已读键（改课留下的）不计入角标，进度条也不过 100%", () => {
+    store.progress = { spot: ["doc-a", "renamed-x", "removed-y", "gone-z"] } as unknown as ProgressMap;
+    const { container } = render(<DocList metas={metas} chapterSlug="spot" locale="zh" />);
+    expect(screen.getByText("1/2")).toBeInTheDocument();
+    expect(
+      (container.querySelector(".h-full.rounded-full") as HTMLElement).style.width,
+    ).toBe("50%");
+  });
+
   it("显示进度 0/total", () => {
     render(<DocList metas={metas} chapterSlug="spot" locale="zh" />);
     expect(screen.getByText("0/2")).toBeInTheDocument();

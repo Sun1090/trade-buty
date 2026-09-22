@@ -36,15 +36,16 @@ describe("PathGlobalProgress", () => {
     expect(screen.getByText("75%")).toBeInTheDocument();
   });
 
-  it("keeps rendering when recorded reads exceed the doc count", () => {
+  it("记录数超过篇章现有课数时：按课数封顶，进度条只到 100%", () => {
     mocks.useLocalProgress.mockReturnValue({
       "getting-started": ["a", "b", "c"],
       spot: ["a", "b", "c"],
     } as unknown as ProgressMap);
     const { container } = render(<PathGlobalProgress chapters={chapters} />);
     const bar = container.querySelector(".h-full.rounded-full") as HTMLElement;
-    expect(screen.getByText("150%")).toBeInTheDocument();
-    expect(bar.style.width).toBe("150%");
+    expect(screen.getByText("4/4 · 2/2")).toBeInTheDocument();
+    expect(screen.getByText("100%")).toBeInTheDocument();
+    expect(bar.style.width).toBe("100%");
   });
 
   it("handles an empty chapter list without dividing by zero", () => {
