@@ -5377,3 +5377,74 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：①生产构建跟上后重跑 `npm run ops:smoke-prod`，把 0.7.4 的上线结论补进本条；②继续按覆盖率倒查组件
   （share 卡、auth 路由、其余计时/订阅类组件还没读完）；③R16.7 / R15.2 需用户拍板后才能动数据模型。
 - 更新时间：2026-09-22 13:35（Asia/Shanghai）。
+
+## 2026-09-22 — 展示口径审计第二轮：又抓到三个「界面说的和数据不一样」，另附七项测过不改的结论
+
+- 状态：4 个 PR 全部合并进 main；**没有发版**，理由见「阻塞」与「下一项」。
+- 里程碑 / 版本：v0.7.4 之后、0.7.5 待定。roadmap 的 15 个未勾项逐条复核过，全是
+  `BLOCKED_EXTERNAL`（Q2.7/Q2.8/Q3.1-Q3.6/Q5.4、R13.23、R14.9-R14.11）或需产品拍板（R15.2、R16.7），
+  仓库侧无可自跑项——所以继续走 0.7.4 那轮的打法：找「界面声称了数据没做到的事」。
+- 分支 / 提交：
+  - #150 `docs(progress)` → `0385d52`（上一轮的 RELEASE_FREEZE 记录；补回了被 `sed '$d'` 误删的 0.7.3 尾行）。
+  - #151 `fix(stats)` → `728a22a`，分支 `fix/weekly-minutes-caliber` / `11d93bc`。
+  - #152 `fix(ops)` → `a2adb1b`，分支 `chore/smoke-transport-retry` / `9afe5c7`。
+  - #153 `fix(replay)` → `2a1afa2`，分支 `fix/replay-grade-caliber` / `bd4fa96`。
+- 完成内容（四个都是先写复现测试、看它红、再改代码）：
+  1. **统计页两张周卡片对同一段时间报两个分钟数**（#151）。`WeeklyReport` 把每天秒数各自
+     `Math.round(/60)` 再相加，`WeeklySummaryCard` 对整周秒数向下取整：7 天各 30 秒 →「共学 7 分钟」
+     对「共学 3 分钟」。柱状条同错：30 秒的一天画成 100% 高度。新增 `weekMinutes()` 作唯一口径，
+     两边共用（单日标签也不再被抬成「1 分钟」）。钉的是向下取整——`weekly-summary.ts` 开头写明
+     「绝不放松口径凑数」，改成四舍五入会让 `goalAchieved` 更容易达成。
+  2. **回放回合总结的评级与同一块面板里的分享卡不一致**（#153）。`gradeOf()` 自己抄了一份
+     0.7/0.6/0.5 阈值，漏掉 `gradeFromReplayAccuracy` 的「猜测 < 3 不给评级」守卫；竞猜一轮通常只有
+     2 根 K 线，于是 **2/2 全对：面板大字 `S`、旁边画出来的卡 `C`**。既有测试还把 `S` 写死了，一并改钉成
+     「面板字母 === 卡片字母」。`share-card.ts` 注释与 `share-card.test.ts:158` 是方向依据（守卫是故意的）。
+  3. **`ops:smoke-prod` 把网络抖动报成站内故障**（#152）。真实一轮里 `GET /zh → ❌ 请求异常：fetch failed`，
+     手动复跑第一次就 200。现在只有**传输层**异常重试到第 3 次并写明「第几次才连上」；断言不满足走返回值、
+     非传输层异常一次定性，所以重试不会刷白真实回归。
+  4. 上一轮 release 记录的补档（#150）。
+- 测过但不改（证据留档，避免下次重新怀疑）：
+  - 换账号数据隔离：`adoptAccountMirror` 给 `tb-*` 镜像盖归属戳，换账号先 `resetAccountMirror`；
+    注销走 `clearLocalAccountData`。剩下的只是 R15.2 的展示/留存决策。
+  - 隐私导出是否带走凭证：`createBrowserClient`（@supabase/ssr）**用 cookie 存会话**，localStorage 里没有
+    token，`collectLocalStorage()` 全量导出因此不含凭证。
+  - 渲染产物扫描（一次性探针，跑完即删）：生产构建 + Playwright，20 条路由 × zh/en，带完整 seeded 台账，
+    扫 `NaN` / `undefined` / `[object Object]` / `Infinity` 与「分子>分母」的计数 → **零命中**；
+    两轮里的 5 条「疑似」全是正文合法内容（`4.543%`、changelog 里的阈值 `84/77`、`24/7 trading`、课文里的 `110%`）。
+    首轮出现过一次 console 404，三次复跑均不可复现，不定性为缺陷。既然当前抓不到任何真东西，就**没有**把
+    它固化成门禁——一个永远不会红的门禁只会给人假绿。
+  - `useSyncExternalStore` 快照稳定性：14 个调用点全部返回原始值或 `JSON.stringify` 字符串，无重渲染循环类风险。
+  - zh/en 字典深层键一致已由 `i18n.test.ts:48` 守着；`src/` 里没有任何 TODO/FIXME 残留（命中的「暂时」全是文案）。
+  - 陈旧 slug 撑破进度条（`11/4`、`>100%`）当前不可达：`storage-migrate.ts` 已删数字章节键，上游 252 次
+    rename 全在那次双语重构里（近 6 个月 0 次），zh/en 每章 `*.md` 数量现在逐一相等。属**潜在不变量**，
+    不为它写防御代码。
+  - `auth-callback-client` / `focus-mode` / `quiz-share-card` / `ai/chunk.ts` / `image-lightbox` 逐行读完：
+    只有重复实现与小瑕疵（三处评级函数重复、`weekly-report` 里 revoke 一个 data URL 的死代码、
+    `FocusMode` 注释比代码多写了「隐藏侧栏」），无用户可见错误，未动。
+- 变更文件：`src/components/weekly-report.{tsx,test.tsx}`、`src/lib/weekly-summary.ts`、
+  `src/components/replay-trainer.{tsx,test.tsx}`、`scripts/prod-smoke.{mjs,test.mjs}`、`docs/ops.md`、
+  `docs/progress.md`。
+- 验证命令和结果：
+  - 每个改动都先红后绿；两处口径修复各做两次变异（改回旧算法 / 改守卫），确认只有对应断言红；
+    `cp` 备份还原后 `diff -q` + `grep` 确认（本轮无一处遗留探针）。
+  - 本地：`npx vitest run` 目标文件（weekly-report / weekly-summary / stats-client / replay-trainer /
+    share-card / replay-share-card 与 `scripts/` 全部 26 文件）全绿；`npm run typecheck` 0；
+    `npx eslint` 改动文件 0；`npm run -s check:docs` 通过（`package 0.7.4`）。
+  - 全量门禁由每个 PR 的 CI 跑：#151、#152 的 `ci` + `db-tests` + `CodeQL` 均 pass 后才 rebase 合并；
+    `Vercel` 那一条本轮持续红在 `Deployment rate limited — retry in 24 hours`，按既定判断不作合并阻断。
+  - 本轮起点覆盖率：statements 96.36% / branches 91.51% / functions 96.22% / lines 98.31%（阈值 84/77/83/87 未下调）。
+  - `npm run -s ops:work-audit` → 悬空提交 0 · 陈旧本地提交 0 · 未确认的关闭 PR 0；已合并分支远端+本地删除并 `prune`。
+  - `npm run -s ops:smoke-prod` 8/10：`/zh` 一次连通（#152 生效），仍红的两条是外部项——
+    `/zh/changelog` 无 0.7.4（生产构建没跟上）、游客 `POST /api/ai/chat` 502（生产 `AI_API_*`）。
+- 阻塞：`BLOCKED_EXTERNAL` 两条未变，且今天拿到了配额证据——Vercel 明确回 `retry in 24 hours`，
+  所以 **v0.7.4 至今仍未上线**，v0.7.5 的判断也随之挂起（生产没法构建时发版，只会把「changelog 含最新版」
+  这条探针的红点往前挪一格，不产生任何用户可见价值）。游客 AI 502 需要用户在 Vercel 生产环境变量里查
+  `AI_API_URL` / `AI_API_KEY` / `AI_MODEL` 与上游配额。
+- 风险 / 回滚：四个 PR 各一个提交、主题独立，`git revert` 互不影响。运行期行为变化只有三处展示口径
+  （周分钟数向下取整、回放评级可能从 S 变 C、冒烟重试），无迁移、无 `supabase/` 变更、无内容契约变更、
+  无 API 面变化。回放评级那条要留意：短轮次（<3 猜）现在恒为 `C`，这是「样本不足」的既有产品语义，
+  不是新判据。
+- 下一项：①等 Vercel 配额窗口过去后重跑 `npm run ops:smoke-prod`，把 0.7.4（以及累计到那时的 0.7.5 候选）
+  的上线结论补进本条；②若还有可修的就继续攒，攒到能改变用户可见结果的一批再判 0.7.5；
+  ③R16.7 / R15.2 仍需用户拍板才能动数据模型与留存策略。
+- 更新时间：2026-09-22 14:10（Asia/Shanghai）。
