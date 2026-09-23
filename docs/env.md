@@ -1,7 +1,9 @@
 # 环境变量
 
-> 本文件是唯一受版本控制的环境变量说明。`.env*` 全被 gitignore，
-> 本地复制以下变量写入 `.env.local`；线上写入 Vercel → Project Settings → Environment Variables。
+> 本文件是环境变量的权威说明，`.env.example` 是它的可复制版本（`cp .env.example .env.local`）；
+> 除 `.env.example` 外 `.env*` 全被 gitignore，所以真实凭据不会入库。
+> 两份由 `npm run check:env-docs` 与代码三方对账，谁漏了变量或留了幽灵条目都会挂 CI。
+> 线上写入 Vercel → Project Settings → Environment Variables。
 >
 > `NEXT_PUBLIC_` 前缀的变量在构建期内联进浏览器 bundle，可被任何访客读到；
 > 其余变量只在服务端可见。服务端密钥（`SUPABASE_SERVICE_ROLE_KEY`、`ADMIN_TOKEN`、
