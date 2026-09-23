@@ -7,6 +7,10 @@
  * 这里不逐条盯内容仓（那是 kline-buty 的地盘，本仓不得就地改它），而是把「派生出来的文案
  * 必须是纯文本」钉成断言：内容仓哪天再写一篇带链接的开头段，这条就红。
  *
+ * 尖括号一条同属这里：CodeQL 在 `plainText` 上判「值里可能还剩 `<script`」——一条标签正则
+ * 确实挡不住没闭合的尖括号。当前内容里首段与摘要一个尖括号都没有（下面逐条核过），所以这条
+ * 断言今天不为难任何一句真实文案，它挡的是「以后有人写了半截标签却被当成已消毒」那一天。
+ *
  * 运行：`npx vitest run src/lib/derived-copy-claims.test.ts`（跟随 `npm test`）
  */
 import { describe, expect, it } from "vitest";
@@ -24,6 +28,8 @@ describe("派生文案是纯文本", () => {
         expect(chapter.tagline, `${locale}/${chapter.slug} 的导语`).not.toMatch(/\]\(/);
         expect(chapter.tagline, `${locale}/${chapter.slug} 的导语`).not.toContain("**");
         expect(chapter.tagline, `${locale}/${chapter.slug} 的导语`).not.toContain("`");
+        // 半截标签比没消毒更危险：这里要求一个尖括号都不剩（plainText 末尾那一步的存在理由）
+        expect(chapter.tagline, `${locale}/${chapter.slug} 的导语`).not.toMatch(/[<>]/);
       }
     });
 
@@ -35,6 +41,7 @@ describe("派生文案是纯文本", () => {
           expect(doc.description, `${where} 的摘要`).not.toMatch(/\]\(/);
           expect(doc.description, `${where} 的摘要`).not.toContain("**");
           expect(doc.description, `${where} 的摘要`).not.toContain("`");
+          expect(doc.description, `${where} 的摘要`).not.toMatch(/[<>]/);
         }
       }
     });
