@@ -80,6 +80,13 @@ describe("plainText（R16.55：导语与摘要里的 markdown 语法不该原样
     expect(plainText("参数 `risk_pct` 要留得住")).toBe("参数 risk_pct 要留得住");
   });
 
+  it("没闭合的标签留不下尖括号：标签正则吃不掉的那一半由最后一步兜住", () => {
+    // `<script` 没有右尖括号，`</?[a-zA-Z][^>]*>` 匹配不到它
+    expect(plainText("停在 <script 结尾")).toBe("停在 script 结尾");
+    // 嵌套写法会被标签清理整段吃掉，两种情况下都不可能再拼出元素
+    expect(plainText("拼不回来 <scr<scriptipt>")).toBe("拼不回来");
+  });
+
   it("折叠空白并去掉首尾空格", () => {
     expect(plainText("  第一行\n   第二行  ")).toBe("第一行 第二行");
   });
