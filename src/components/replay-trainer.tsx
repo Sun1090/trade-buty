@@ -60,6 +60,7 @@ export interface ReplayDict {
   accuracy: string;
   rounds: string;
   contextNote: string;
+  shortHistory: string;
   disclaimer: string;
   modeBlind: string;
   modeCustom: string;
@@ -158,6 +159,12 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
   }, [difficultyIdx]);
   // 下标已由 initialDifficultyIdx 收敛，这里再兜一层，避免任何未来入口绕过校验
   const context = (DIFFICULTIES[difficultyIdx] ?? DIFFICULTIES[1]).context;
+  /**
+   * 这一轮真正能回放的根数。自定义结束时间落在标的上市之前时，币安回的是
+   * HTTP 200 + `[]`（实测），长度可以小于 context，原先 `klines.length - context`
+   * 直接把「已回放」的分母写成负数。
+   */
+  const availableRounds = klines ? Math.max(klines.length - context, 0) : 0;
   const [idx, setIdx] = useState<number>(context);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<number>(1);
@@ -478,7 +485,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
               {Number(klines[idx - 1].close).toLocaleString(undefined, { maximumFractionDigits: 2 })}
             </span>
           )}
-          {dict.rounds}: {klines ? `${Math.max(idx - context, 0)}/${klines.length - context}` : "-"}
+          {dict.rounds}: {klines ? `${Math.max(Math.min(idx - context, availableRounds), 0)}/${availableRounds}` : "-"}
         </span>
       </div>
 
@@ -493,6 +500,13 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
         {error && (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-muted">
             {dict.fetchError}
+          </div>
+        )}
+        {klines && !error && availableRounds === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-muted">
+            {dict.shortHistory
+              .replace("{n}", String(klines.length))
+              .replace("{m}", String(context + 1))}
           </div>
         )}
       </div>
