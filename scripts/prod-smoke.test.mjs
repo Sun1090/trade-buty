@@ -95,6 +95,28 @@ describe("prod-smoke 断言清单", () => {
     expect(names.some((n) => n.includes("/zh/changelog"))).toBe(true);
   });
 
+  it("文档里写的断言条数 = buildChecks 真正产出的条数", () => {
+    // 「跑 N 条只读断言」是读者判断这份冒烟覆盖多宽的唯一依据。探针加到第 11 条而
+    // 文档还写着 10，读起来就比实际少防了一项——和 R16.30 那类「文档声称流水线没做的事」
+    // 同一族，只是这里在描述列而不是命令列。
+    const n = buildChecks({ expectedVersion: VERSION }).length;
+    const claims = {
+      "docs/ops.md": /跑 (\d+) 条只读断言/,
+      "docs/release-checklist.md": /这 (\d+) 条断言/,
+    };
+    for (const [file, pattern] of Object.entries(claims)) {
+      const found = pattern.exec(fs.readFileSync(file, "utf8"));
+      expect(
+        found,
+        `${file} 里找不到「N 条断言」这句话——改了措辞就要同步这条用例，不许把数字藏起来`,
+      ).toBeTruthy();
+      expect(
+        Number(found[1]),
+        `${file} 写着 ${found[1]} 条，buildChecks 实际产出 ${n} 条`,
+      ).toBe(n);
+    }
+  });
+
   it("课文页丢风险提示 → 点名该页", async () => {
     const routes = healthyRoutes();
     routes["/zh/knowledge/getting-started/candlestick-basics"] = { status: 200, body: "<p>无风险块</p>" };
