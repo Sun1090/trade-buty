@@ -6293,3 +6293,42 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   随后开工 R16.57（篇章「已读」口径收敛：`readDocsForChapter` 自称唯一口径，但 `stats-client.tsx:292/735/813`、
   `chapter-complete-celebration.tsx:45`、`course-completion-trend.ts:111` 各算各的，且 `docCount` 为 0 的篇章
   在 overview 与 trend 两张卡里一边算完成一边不算）。
+
+## 2026-09-24 — v0.7.14 冻结与全量验证（第六批口径清点发布）
+
+- 状态：**待合并**（本仓库禁止直接向 `main` 推送，发布走 PR；tag 只能在合并后补打）。
+- 里程碑 / 版本：**v0.7.14（patch）**。判级只看已合入 `main` 且尚未发布的提交：`v0.7.13` 之后落地的是
+  R16.50（朗读 + 新门禁）、R16.51（16 条写死文案）、R16.53（隐私文案三分）、R16.54（AI 失败态本地化）、
+  R16.55（派生文案收成语）、R16.56（两处注释）、R16.57（已读口径收敛）——全部是缺陷修复、门禁加固与
+  文案订正，没有一项新增产品能力 → patch，不是 minor。
+- 分支 / 提交：`release-v0.7.14`，从 `origin/main` = `0327f48` 切出；两个提交（发布记录与版本号、本条冻结记录）。
+- 冻结前检查：`npm run ops:work-audit` 第一次跑出 **1 条悬空本地提交**（`fix-cloud-badge-claim` 的 R16.59
+  尚未开 PR），按审计自己的提示开 PR #269 后复绿：悬空 0 · 陈旧 0 · 未确认关闭 PR 0；切分支前
+  `git log origin/main..HEAD` 为空。
+- 变更文件：`src/data/release-notes.json`（新增 0.7.14 条目，zh / en 各 **6** 条要点，条数相等）、
+  `CHANGELOG.md`（由发布记录重算，18 条，未发布区块为空）、`package.json` / `package-lock.json`
+  （0.7.14，用钉住的 npm 10.9.4 `install --package-lock-only` 重算）。
+- 验证（本地，按检查单顺序，逐条退出码 0）：`test` 与 `test:coverage` 各 **296 文件 / 2852 条全绿**
+  （语句 95.46% · 分支 90.99% · 函数 95.15% · 行 97.45%；阈值 84 / 77 / 83 / 87 **未下调**），
+  `lint`（`--max-warnings=0`）、`typecheck`、`build`（**474** 页静态产出）、`check:mobile`（14 个关键页
+  320px 无溢出）；构建产物门禁在 e2e 之前跑：`check:seo-surface`（sitemap 430 · 页面 454 · KB 418 · 未声明 0）、
+  `check:search-index`（418 / 418 / 418 对账）、`check:structured-data`（454 页 · 5656 实体）、
+  `check:risk-warning`（lessons 364/364 · readmes 40/54，即上游那 14 篇仍待改，R14.11）、
+  `check:constitution`、`check:docs`（package 0.7.14 与最新发布版本绑定）、`check:bundle`（454 条路由在预算内，
+  AI chunk 隔离 452 条非 AI 路由未引用）、`check:report-freshness`（17 份 · 过期 0 · 未提交 0）、
+  `check:lockfile-repro`（981 个包条目无差异）、`check:changelog`（18 条一致）、
+  `check:release-tag`（18 条 tag 已落地，按流程打印「最新 0.7.14 待合并后补打」而不判失败）；
+  `db:test` 5/5（迁移、RLS 越权、双设备同步约束、回滚 → 重放）；`e2e` **160 passed (2.1m)** 放最后。
+  跑完 `git status` 只剩本次四个发布文件。
+- 阻塞 / 风险：Vercel 24h 构建配额本会话内反复见底（PR #266/#268 的 `Vercel` 检查红过又绿过一次），
+  生产部署可能仍停在旧构建——判据是合并后跑 `npm run ops:smoke-prod`，看 `/zh/changelog` 是否含 0.7.14。
+  预览域冒烟（R14.9）需要账号级 protection-bypass 密钥；Sentry（R14.10）、上游 kline-buty 风险块缺口
+  （R14.11）、访客 AI 偶发 502（部署快照环境变量）在原处。待拍板：R15.2 / R16.7 / R16.10–R16.13 / R16.16 /
+  R16.41 / R16.47 / R16.52，本轮新登记 **R16.58**（「已读」按封顶还是按现存课文取交集）与 **R16.60**
+  （有待传写时 ☁ 只是消失，该不该给一条「还有 N 条待同步」）。PR **#178** 属维护者，不动。
+- 回滚：`git revert` 本次发布提交即可；Vercel 也可把 Production 切回上一构建止血，随后仍用 revert 收敛历史。
+  本次不含数据库迁移、无存储格式变化（R16.57 只改读取口径，不动 `tb-progress` 的写法），回滚不涉数据回退。
+- 下一项：PR 合并 → 在 `main` 上补打 `v0.7.14` → `check:release-tag` 复绿 → 配额窗口允许时跑
+  `npm run ops:smoke-prod`；PR #269（R16.59）排在发布之后合并；随后按已核实的清单开工回放与图表那一组的
+  口径问题（⏭ 跳末尾不改图表序列、训练趋势的空态文案与实际阈值差一轮、趋势 tooltip 少一且英文页写中文、
+  「累计轮次 / 总正确率」其实是最近 100 轮、低端机降级的注释与用例、坏币对被判成 API 不可达）。
