@@ -274,7 +274,9 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
    */
   const fillSeriesTo = useCallback((to: number) => {
     if (!klines || !seriesRef.current) return;
-    // R7.3：低端机只保留最近 REPLAY_REDUCED_CANDLES 根，降低 Canvas 负载
+    // R7.3：全量填图时低端机只截取最近 REPLAY_REDUCED_CANDLES 根，降低 Canvas 负载。
+    // 这条上限是"填图时裁"，不是"屏上永远只有 N 根"——逐根推进走的是下面的 update()，
+    // 不会回头裁剪，所以播放过程中序列可以长过 N。
     const view = lowEnd ? klines.slice(0, to).slice(-REPLAY_REDUCED_CANDLES) : klines.slice(0, to);
     seriesRef.current.setData(
       view.map((k) => ({

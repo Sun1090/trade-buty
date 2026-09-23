@@ -331,7 +331,7 @@ describe("ReplayTrainer 自由模式控制", () => {
 });
 
 describe("ReplayTrainer 低端机降级（R7.3）", () => {
-  it("帧率不达标时只渲染最近 REPLAY_REDUCED_CANDLES 根", async () => {
+  it("全量填图那一步截到最近 REPLAY_REDUCED_CANDLES 根", async () => {
     mocks.measureFps.mockResolvedValue(10);
     render(<ReplayTrainer dict={dict} locale="zh" />);
     await waitFor(() => {
@@ -339,6 +339,19 @@ describe("ReplayTrainer 低端机降级（R7.3）", () => {
       expect(Array.isArray(last)).toBe(true);
       expect(last).toHaveLength(mocks.REPLAY_REDUCED_CANDLES);
     });
+  });
+
+  it("逐根推进走 update()，不回头重设：这条上限是「填图时裁」而非「屏上永远只有 N 根」", async () => {
+    mocks.measureFps.mockResolvedValue(10);
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() =>
+      expect(mocks.series.setData.mock.lastCall?.[0]).toHaveLength(mocks.REPLAY_REDUCED_CANDLES),
+    );
+    const fillsBefore = mocks.series.setData.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "下一根" }));
+    await waitFor(() => expect(mocks.series.update).toHaveBeenCalled());
+    expect(mocks.series.setData.mock.calls.length).toBe(fillsBefore);
+    expect(mocks.series.setData.mock.lastCall?.[0]).toHaveLength(mocks.REPLAY_REDUCED_CANDLES);
   });
 });
 
