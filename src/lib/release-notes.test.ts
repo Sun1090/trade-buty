@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  CHANGELOG_WINDOW,
+  changelogOlderLine,
+  changelogSurface,
   compareReleaseVersions,
   formatReleaseDate,
   isReleaseDate,
@@ -115,5 +118,37 @@ describe("日期格式化", () => {
 
   it("非法日期原样返回", () => {
     expect(formatReleaseDate("not-a-date", "zh")).toBe("not-a-date");
+  });
+});
+
+describe("changelogOlderLine（句子只能由发布记录算出来）", () => {
+  it("当前记录多到需要折叠：窗口与更早条数都是算的", () => {
+    const { older } = changelogSurface();
+    expect(older.length, "数据不再需要折叠时，请重看这几条断言").toBeGreaterThan(0);
+    const zh = changelogOlderLine("zh");
+    const en = changelogOlderLine("en");
+    expect(zh).toContain(`最近 ${CHANGELOG_WINDOW} 个版本`);
+    expect(zh).toContain(`更早的 ${older.length} 个版本`);
+    expect(en).toContain(`the earlier ${older.length} are recorded in`);
+    // 占位符必须都被代入
+    for (const line of [zh, en]) {
+      expect(line).not.toMatch(/\{[a-z]+\}/);
+    }
+  });
+
+  it("窗口外没有版本时整句不出现，而不是「更早的 0 个版本」", () => {
+    const surface = { shown: releaseNotes, older: [] };
+    for (const locale of ["zh", "en"] as const) {
+      expect(changelogOlderLine(locale, surface)).toBeNull();
+    }
+  });
+
+  it("折叠掉一条就多说一条：数字跟着 older 走", () => {
+    const one = changelogOlderLine("zh", {
+      shown: releaseNotes.slice(0, CHANGELOG_WINDOW),
+      older: [note({ version: "0.0.1" })],
+    });
+    expect(one).toContain("更早的 1 个版本");
+    expect(one).not.toContain("更早的 0 个版本");
   });
 });

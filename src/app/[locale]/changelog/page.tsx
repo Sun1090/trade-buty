@@ -8,7 +8,7 @@ import { REPOSITORY_URL } from "@/lib/site";
 /** 发布复盘与 CHANGELOG 外链共用同一前缀，仓库地址本身只在 site.ts 出现一次 */
 const REPO_BLOB = `${REPOSITORY_URL}/blob/main`;
 import {
-  CHANGELOG_WINDOW,
+  changelogOlderLine,
   changelogSurface,
   formatReleaseDate,
   unreleasedNote,
@@ -67,8 +67,6 @@ const COPY = {
     commitsHint: "这里只是技术提交记录，用于核对发布说明与仓库历史。",
     refs: "发布复盘",
     full: "查看完整历史",
-    older:
-      "本页只列最近 {max} 个版本，更早的 {n} 个版本完整记录在",
   },
   en: {
     heroLabel: "Changelog",
@@ -81,8 +79,6 @@ const COPY = {
       "Raw commit log, kept for cross-checking release notes against repository history.",
     refs: "Release review",
     full: "See full history on GitHub",
-    older:
-      "This page lists the most recent {max} releases; the earlier {n} are recorded in",
   },
 } as const;
 
@@ -93,10 +89,8 @@ export default async function ChangelogPage({
   if (!isLocale(locale)) notFound();
   const copy = COPY[locale];
   const commits = getRecentChanges();
-  const { shown, older } = changelogSurface();
-  const olderLine = copy.older
-    .replace("{max}", String(CHANGELOG_WINDOW))
-    .replace("{n}", String(older.length));
+  const { shown } = changelogSurface();
+  const olderLine = changelogOlderLine(locale);
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-5 py-10 sm:py-14">
@@ -183,7 +177,7 @@ export default async function ChangelogPage({
         ))}
       </div>
 
-      {older.length > 0 && (
+      {olderLine !== null && (
         <p className="mt-8 text-xs text-muted">
           {olderLine}{" "}
           <a
