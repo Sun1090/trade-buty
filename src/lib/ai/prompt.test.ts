@@ -170,7 +170,7 @@ describe("buildChapterQuizPrompt", () => {
 
   it("题目 prompt 要求每题带 source 且给出无引用写法", async () => {
     const { PROMPT_VERSION } = await import("./prompt");
-    expect(PROMPT_VERSION).toBe("v1.4.0");
+    expect(PROMPT_VERSION).toBe("v1.5.0");
     const chapter = buildChapterQuizPrompt("行为金融", "ctx", basicZh)[0].content;
     expect(chapter).toContain('"source"');
     expect(chapter).toContain('"none":true');
