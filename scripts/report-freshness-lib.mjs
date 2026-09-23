@@ -24,7 +24,7 @@ const DOCS_PATH = /path\.join\(\s*root\s*,\s*"docs(?:\/([^"]+))?"\s*(?:,\s*"([^"
  */
 export function collectReportInventory(sources) {
   const paths = new Set();
-  for (const { file, source } of sources ?? []) {
+  for (const { source } of sources ?? []) {
     if (!WRITE_REPORT.test(String(source))) continue;
     for (const match of String(source).matchAll(DOCS_PATH)) {
       const tail = match[1] ?? match[2];
