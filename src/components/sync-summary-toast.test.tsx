@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import { SyncSummaryToast } from "./sync-summary-toast";
+import { SYNC_TOAST_AUTO_DISMISS_MS, SyncSummaryToast } from "./sync-summary-toast";
 import type { MergeSummary } from "@/lib/sync-layer";
 
 // jsdom 30 opaque origin → sessionStorage 不可用；挂 mock
@@ -117,5 +117,24 @@ describe("SyncSummaryToast", () => {
     const text = screen.getByRole("status").textContent ?? "";
     expect(text).toContain("新增 1 篇已读");
     expect(text).not.toContain("回放战绩");
+  });
+
+  it("到点自己消失，时长取自 SYNC_TOAST_AUTO_DISMISS_MS（此前这条路径没人测过）", () => {
+    vi.useFakeTimers();
+    try {
+      render(<SyncSummaryToast />);
+      emit({ newProgress: 1, newWrong: 0, quizImprovements: 0, newReplays: 0, hasAny: true });
+      expect(screen.getByRole("status")).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(SYNC_TOAST_AUTO_DISMISS_MS - 1);
+      });
+      expect(screen.getByRole("status")).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(screen.queryByRole("status")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
