@@ -5752,7 +5752,8 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
     - ❌ `POST /api/ai/chat 游客：护栏路径 200 且模型路径不 5xx` —— 状态 502 而护栏路径正常，缺的是部署快照里的 `AI_API_URL` / `AI_MODEL` / `AI_API_KEY` 或出口网络，即既有 `BLOCKED_EXTERNAL`。
     - 其余 8 条全过（中英首页与知识页的风险提示、sitemap、robots、分享落地页、游客会话判定）。
   - `git verify-tag v0.7.9` 报 `no signature found`：本仓库标签不签名，与 v0.7.1–v0.7.8 一致，不是异常。
-- 阻塞：①Vercel 账户级构建配额——生产要等窗口恢复后自动构建（或手动触发），届时重跑 `ops:smoke-prod` 并把时间戳补进本条；②生产 AI 运行期配置（用户侧）。
+- 部署复跑结论（2026-09-23 08:25 Asia/Shanghai）：`npm run ops:smoke-prod` **9/10**——`GET /zh/changelog → 含最新发布版本` 这次通过，即**生产已跑 v0.7.9**，配额窗口的阻塞自行解除。仍红的只有 `POST /api/ai/chat` 游客模型路径 502（护栏路径 200），与站内无关。
+- 阻塞：生产 AI 运行期配置（`AI_API_URL` / `AI_MODEL` / `AI_API_KEY` / 出口，用户侧）。Vercel 构建配额本条已解除。
 - 风险 / 回滚：tag 已落地但生产未切换，此期间 `/zh/changelog` 线上仍是 0.7.8 的清单——页面对外没有做出任何「已是最新版」的承诺，无需处置。回滚 = `git revert 5435b24` 并删标签。
 - 下一项：①配额恢复后复跑冒烟并补写结论；②PR **#209**（时钟卫生 10 → 6）等 CI；③待拍板项不变：R15.2 / R16.7 / R16.10 / R16.11 / R16.12 / R16.13 / **R16.16**（示例日历三条路，推荐改成教学内容）。
 - 更新时间：2026-09-23 07:22（Asia/Shanghai）。
