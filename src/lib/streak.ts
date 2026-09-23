@@ -131,10 +131,7 @@ export function getRecentDays(daysBack = 7): { date: string; active: boolean }[]
   for (let i = daysBack - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const date = `${yyyy}-${mm}-${dd}`;
+    const date = localDateStr(d);
     out.push({ date, active: activity.has(date) });
   }
   return out;

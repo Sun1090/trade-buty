@@ -8,6 +8,8 @@
  * - 「已达成」只基于真实的最近 7 天分钟数，绝不放松口径凑数。
  */
 
+import { localDateStr } from "./date-utils";
+
 export const WEEKLY_GOAL_TIERS = [45, 90, 150] as const;
 export const DEFAULT_WEEKLY_GOAL_MIN = 90;
 
@@ -79,15 +81,11 @@ export function weekMinutes(totalSeconds: number): number {
   return Math.floor((Number.isFinite(totalSeconds) ? totalSeconds : 0) / 60);
 }
 
-function toDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 /** 本地日期边界（含端点）：近 7 个自然日的 [6 天前, 今天] */
 function weekBounds(now: Date): { startStr: string; endStr: string } {
   const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
   const start = new Date(end.getTime() - 6 * DAY_MS);
-  return { startStr: toDateStr(start), endStr: toDateStr(end) };
+  return { startStr: localDateStr(start), endStr: localDateStr(end) };
 }
 
 /** 按本地日历日比较（字符串字典序即日期序），与台账/stats 页的口径一致 */
@@ -96,7 +94,7 @@ function countInRange(values: { at?: unknown }[], startStr: string, endStr: stri
   for (const v of values) {
     const at = typeof v?.at === "number" ? v.at : Number.NaN;
     if (!Number.isFinite(at)) continue;
-    const day = toDateStr(new Date(at));
+    const day = localDateStr(new Date(at));
     if (day >= startStr && day <= endStr) n++;
   }
   return n;

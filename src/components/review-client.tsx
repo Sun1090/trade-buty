@@ -6,6 +6,7 @@ import type { ChapterQuiz, QuizQuestion } from "@/lib/quiz-types";
 import { readWrong, resolveWrong, clearAllWrong, applySrsResult, pruneOrphanWrong, type WrongEntry } from "@/lib/wrongbook";
 import { effectiveSrs, isSrsDue, isSrsOverdue, daysUntilDue, type SrsState } from "@/lib/srs";
 import { addStudyTime } from "@/lib/study-time";
+import { localDateStr } from "@/lib/date-utils";
 import { AiQuiz } from "@/components/ai-quiz";
 
 export interface ReviewDict {
@@ -79,8 +80,7 @@ export function ReviewClient({
   );
   pruneOrphanWrong(validKeys);
 
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const todayStr = localDateStr();
 
   const items: ReviewItem[] = Object.values(wrong)
     .map((e) => {
