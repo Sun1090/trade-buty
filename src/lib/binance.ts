@@ -1,7 +1,14 @@
 /** 币安公开行情 REST 助手（客户端可用，无需 API Key） */
 
+/**
+ * 图表横轴的唯一口径。lightweight-charts 按 UTC 渲染时间戳，而本站习惯用北京时间读数，
+ * 于是 REST 与 WS 两条路都把币安的 UTC 秒往前挪这一截。挪完之后 `Kline.time` 只是一个
+ * 展示坐标，不再等价于真实 epoch，不能拿去和 `Date.now()` 相减。
+ */
+export const DISPLAY_TZ_OFFSET_SEC = 8 * 3600;
+
 export interface Kline {
-  time: number; // UTC 秒
+  time: number; // 展示坐标，见 DISPLAY_TZ_OFFSET_SEC
   open: number;
   high: number;
   low: number;
@@ -27,8 +34,7 @@ export async function fetchKlines(
   if (!res.ok) throw new Error(`行情请求失败 (${res.status})`);
   const raw = (await res.json()) as unknown[][];
   return raw.map((k) => ({
-    // 对齐到 UTC+8 展示习惯
-    time: (Math.floor(Number(k[0]) / 1000) - 8 * 3600) as number,
+    time: Math.floor(Number(k[0]) / 1000) - DISPLAY_TZ_OFFSET_SEC,
     open: Number(k[1]),
     high: Number(k[2]),
     low: Number(k[3]),

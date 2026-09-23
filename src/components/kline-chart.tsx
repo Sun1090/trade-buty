@@ -12,7 +12,7 @@ import {
   type UTCTimestamp,
   type LineData,
 } from "lightweight-charts";
-import { fetchKlines } from "@/lib/binance";
+import { DISPLAY_TZ_OFFSET_SEC, fetchKlines } from "@/lib/binance";
 import {
   MOBILE_CHART_MAX_WIDTH,
   getChartDataLimit,
@@ -256,7 +256,7 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
           const k = msg.k;
           if (!k || !candleRef.current) return;
           const bar = {
-            time: (Math.floor(Number(k.t) / 1000) - 8 * 3600) as UTCTimestamp,
+            time: (Math.floor(Number(k.t) / 1000) - DISPLAY_TZ_OFFSET_SEC) as UTCTimestamp,
             open: Number(k.o),
             high: Number(k.h),
             low: Number(k.l),
