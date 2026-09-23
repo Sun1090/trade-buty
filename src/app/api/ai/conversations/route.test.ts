@@ -9,6 +9,7 @@ import {
   parseSaveBody,
   GET,
   POST,
+  DELETE,
 } from "./route";
 import { resolveAuthUser } from "@/lib/supabase/auth-result";
 
@@ -19,9 +20,23 @@ const db = vi.hoisted(() => {
   const order = vi.fn(() => ({ limit }));
   const eq = vi.fn(() => ({ order }));
   const select = vi.fn(() => ({ eq }));
-  const from = vi.fn(() => ({ insert, select }));
+  // 删除链是 `from().delete().eq(user_id)`；与 select 链共用同一个 eq 会把两种断言搅在一起
+  const delEq = vi.fn(async (): Promise<{ error: { message: string } | null }> => ({ error: null }));
+  const del = vi.fn(() => ({ eq: delEq }));
+  const from = vi.fn(() => ({ insert, select, delete: del }));
   const createSupabaseServerClient = vi.fn(async () => ({ auth: { getUser }, from }));
-  return { getUser, insert, limit, order, eq, select, from, createSupabaseServerClient };
+  return {
+    getUser,
+    insert,
+    limit,
+    order,
+    eq,
+    select,
+    del,
+    delEq,
+    from,
+    createSupabaseServerClient,
+  };
 });
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -275,5 +290,58 @@ describe("POST /api/ai/conversations", () => {
     });
     // 60 次是配额内，配额外的请求一律不写库
     expect(db.insert).toHaveBeenCalledTimes(60);
+  });
+});
+
+describe("DELETE /api/ai/conversations", () => {
+  it("登录用户清空：删除必须带 user_id 过滤", async () => {
+    const response = await DELETE();
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+    expect(db.del).toHaveBeenCalledTimes(1);
+    // 服务端客户端不受 RLS 约束：这个条件就是「只删自己的」唯一的闸
+    expect(db.delEq).toHaveBeenCalledWith("user_id", "user-1");
+  });
+
+  it("游客 401，一条都不删", async () => {
+    db.getUser.mockResolvedValue({ data: { user: null }, error: null });
+
+    const response = await DELETE();
+
+    expect(response.status).toBe(401);
+    expect(db.del).not.toHaveBeenCalled();
+  });
+
+  it("鉴权本身出错时 500，且不碰库、不透传内部错误", async () => {
+    db.getUser.mockResolvedValueOnce({ data: { user: null }, error: new Error("secret: trace expired") });
+
+    const response = await DELETE();
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "Failed to clear conversations" });
+    expect(db.del).not.toHaveBeenCalled();
+  });
+
+  it("删除失败返回 500，不透传数据库内部信息", async () => {
+    db.delEq.mockResolvedValue({ error: { message: "duplicate key value violates unique constraint ai_conversations_pkey" } });
+
+    const response = await DELETE();
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "Failed to clear conversations" });
+  });
+
+  it("同一账号超过清空配额后 429，并带 Retry-After", async () => {
+    // 独立 user id：模块级限流器在同一文件的其它用例里不被干扰
+    db.getUser.mockResolvedValue({ data: { user: { id: "user-clear-flood" } }, error: null });
+    let lastStatus = 0;
+    for (let i = 0; i < 11; i++) {
+      const res = await DELETE();
+      lastStatus = res.status;
+    }
+    expect(lastStatus).toBe(429);
+    // 10 次是配额内，配额外的请求一律不碰库
+    expect(db.del).toHaveBeenCalledTimes(10);
   });
 });
