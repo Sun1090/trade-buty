@@ -77,6 +77,11 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     limit: number;
   } | null>(null);
   const [contextChapter, setContextChapter] = useState<string | null>(null);
+  // 从 URL 带进来的问题：等历史落进 state 后再发，见 pendingAskRef 消费处
+  const pendingAskRef = useRef<{ text: string; ctx: string | null } | null>(
+    null,
+  );
+  const [historySettled, setHistorySettled] = useState(false);
   const [feedback, setFeedback] = useState<
     Record<number, "helpful" | "unhelpful">
   >({});
@@ -120,6 +125,20 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     if (initRef.current) return;
     initRef.current = true;
     (async () => {
+      // R3.7：课末/错题的「问 AI」把问题和章节放在 URL 上带过来。
+      // 参数先解析、先消费：上下文横幅跟历史无关都要出现，问题则等历史落定后再发。
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get("q");
+      const ctx = params.get("ctx");
+      const ct = params.get("ct");
+      if (ctx) {
+        setContextChapter(ctx);
+        if (ct) setContextTitle(ct);
+      }
+      if (q || ctx || ct) {
+        // 地址栏里的问题是一次性交接口：留着的话刷新会把同一个问题再问一遍、白扣配额
+        window.history.replaceState({}, "", window.location.pathname);
+      }
       try {
         const res = await fetch("/api/ai/conversations");
         if (res.ok) {
@@ -149,25 +168,27 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                 }),
               ),
             );
-            return; // 有历史就不走 ?q= 自动发送
           }
         }
       } catch {
         // 拉历史失败不阻断
       }
-      // 无历史时处理 ?q= 参数（R3.7：课末问 AI 带入 ctx/ct 上下文）
-      const params = new URLSearchParams(window.location.search);
-      const q = params.get("q");
-      const ctx = params.get("ctx");
-      const ct = params.get("ct");
-      if (ctx) {
-        setContextChapter(ctx);
-        if (ct) setContextTitle(ct);
-      }
-      if (q) send(q, { contextChapter: ctx ?? null });
+      // send() 读的是渲染期的 messages，所以不能在这里直接调用：
+      // 上面那份历史还没进 state，带旧上下文的多轮请求会被截成空数组。
+      if (q) pendingAskRef.current = { text: q, ctx: ctx ?? null };
+      setHistorySettled(true);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 自动提问：本 effect 与 setHistorySettled 同一次提交后运行，闭包里的 messages 已是恢复好的历史
+  useEffect(() => {
+    if (!historySettled) return;
+    const ask = pendingAskRef.current;
+    if (!ask) return;
+    pendingAskRef.current = null;
+    void send(ask.text, { contextChapter: ask.ctx });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historySettled]);
 
   // 登出或换号：云端历史按身份拉取，上一个账号的对话不能继续留在屏幕上
   // （/api/ai/conversations 只在有会话时返回内容，组件此前从不感知身份变化）。
