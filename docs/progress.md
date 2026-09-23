@@ -5836,3 +5836,48 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   R16.16（示例日历三条路，推荐 ③ 改成教学内容）。
 - 下一项：R16.26 提 PR；这批门禁收口后评估一次 patch 发布（v0.7.10）。
 - 更新时间：2026-09-23 12:22（Asia/Shanghai）。
+
+## 2026-09-23 — 发布冻结：v0.7.10（「说到的都要做到」第三批 + 一处真实缺陷）
+
+- 状态：发布冻结完成，全量门禁通过；提交在发布分支上，等待 PR 合并后在 `main` 上补打 tag
+  （rebase 合并会改写 SHA）。
+- 里程碑 / 版本：**v0.7.10（patch）**。判级依据：`v0.7.9..origin/main` 共 35 个提交，内容是
+  一处用户可见缺陷修复 + 七道门禁/文档收紧，没有内容契约、数据结构、鉴权与数据隔离语义的
+  破坏，也没有新增需要拍板的行为 → patch。
+- 分支 / 提交：`chore/release-0.7.10`，基线 `acfa4cf`（含 PR #225 / #226 / #227 / #229 / #230），
+  发布提交 `b55729e`。
+- 完成内容（细节口径与变异证据在 `docs/roadmap.md` 的 R16.17–R16.31，本条不重抄）：
+  - 缺陷：课末与错题卡上的「问 AI」对**有云端历史的用户**从不发出问题，章节横幅也一起丢
+    （R16.28）——按钮承诺了一次提问，代码只在「没有历史」时兑现。
+  - 门禁：占位符代入巡检（R16.24）→ 界面页再收一档「任何花括号都算泄漏」（R16.29）；
+    风险提示兜底改为对构建产物逐页核对（R16.25）；字典死键预算冻结为 0（R16.21）；
+    入库重算型报告必须等于当场重算（R16.26）；`.env.example` 入库并与代码三方对账（R16.27）；
+    门禁表不许登记流水线里没跑的命令（R16.30）；320px 巡检真正覆盖中英两语并拒绝拿
+    404 页冒充覆盖（R16.31）；AI prompt 补上「不预测走势」（R16.23）。
+  - 发布记录：`src/data/release-notes.json` 新增 0.7.10，zh / en 各 7 条 highlights 成对，
+    `docs` 指向 `docs/roadmap.md`；`CHANGELOG.md` 由 `npm run changelog:generate` 重生成，
+    `check:changelog` 报「14 条版本记录一致、未发布区块为空」。
+  - 版本号：`package.json` 0.7.9 → 0.7.10，锁文件用钉住的 `npx --yes npm@10.9.4 install
+    --package-lock-only` 重算（仅两处版本字段），`check:lockfile-repro` 打印「981 个包条目，
+    无差异」。
+- 验证命令和结果（2026-09-23 13:20–13:36 在发布分支上逐步取真实退出码，46 步 **0 失败**）：
+  - `npm run test`：289 文件 / 2765 条全绿；`npm run test:coverage`：statements 95.63% ·
+    branches 90.94% · functions 95.21% · lines 97.64%（阈值未下调）。
+  - `npm run lint`（`--max-warnings=0`）· `npm run typecheck` · `npm run build` · `check:mobile` exit 0。
+  - 36 道内容与产物门禁逐条 exit 0（`constitution` · `links` · `sitemap` · `seo-surface` ·
+    `search-index` · `bundle` · `structured-data` · `risk-warning`（418 页产物核对）· `nav-chain` ·
+    `relative-links` · `glossary` · `title-terminology` · `description-quality` · `description-dupes` ·
+    `slug-conflicts` · `frontmatter` · `image-alt` · `dead-copy` · `test-clock-hygiene` · `docs` ·
+    `ai-copy` · `dark-pattern-copy` · `quiz-mounts` · `quiz-coverage` · `env-docs` · `kb-*` ·
+    `growth-event-privacy` · `error-report-privacy` · `request-body-bounds` · `db-assertion-counts` ·
+    `changelog` · `lockfile-repro` · `release-tag`）。按既有规程，`check:report-freshness` 排在
+    全部报告步骤之后：17 份报告 · 过期 0 · 未提交 0。
+  - `npm run db:test` exit 0（本地 docker 可用）；`npm run e2e` **160 条通过**（v0.7.9 时是 141，
+    增量来自占位符巡检与两语移动端清单）。
+  - `git status` 在整条链跑完后只剩发布四文件（`src/data/release-notes.json` · `CHANGELOG.md` ·
+    `package.json` · `package-lock.json`），报告类产物无纯日期 diff。
+- 阻塞：无本地阻塞。`check:release-tag` 现打印「最新 0.7.10 待合并后补打 v0.7.10」而不判失败。
+- 风险 / 回滚：发布内容全部来自已合并、已跑过各自门禁的 main 提交，本分支只改发布记录、
+  CHANGELOG 与版本号；回滚用 `git revert b55729e`（或 Vercel 切回上一构建止血），不改写 `main`。
+- 下一项：合并后打 tag `v0.7.10` → 生产部署核对 → `npm run ops:smoke-prod` 逐条记录。
+- 更新时间：2026-09-23 13:38（Asia/Shanghai）。
