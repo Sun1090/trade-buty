@@ -60,8 +60,10 @@ export function buildLearningOverview(input: LearningOverviewInput): LearningOve
     0,
   );
   const totalDocs = input.chapters.reduce((sum, chapter) => sum + Math.max(0, chapter.docCount), 0);
+  // 「完成一章」要求这一章真有课：空篇章（内容仓回填中的英文章、或整章读取失败的章）
+  // 读 0 篇就该算 0/N 未完成，而不是 0>=0 白得一个「已完成」。趋势卡与侧栏本来就这么判。
   const doneChapters = input.chapters.filter(
-    (chapter) => readDocsForChapter(input.progress?.[chapter.slug], chapter.docCount) >= Math.max(0, chapter.docCount),
+    (chapter) => chapter.docCount > 0 && readDocsForChapter(input.progress?.[chapter.slug], chapter.docCount) >= Math.max(0, chapter.docCount),
   ).length;
   const completionPct = totalDocs > 0 ? Math.round((readDocs / totalDocs) * 100) : 0;
 

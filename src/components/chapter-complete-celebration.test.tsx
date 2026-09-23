@@ -92,6 +92,25 @@ describe("ChapterCompleteCelebration (R12.18)", () => {
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
+  // R16.57：本组件曾经自己 JSON.parse 原始存储再取 `.length`，绕开了 readProgress() 的归一化。
+  // 字符串也有 `.length`：{"getting-started": "ab"} 在它眼里是「读了 2 篇」，于是别处都显示
+  // 0/2 未完成时，这里对着一个坏掉的存储值放礼花。
+  it("存储值不是数组时不庆祝（不是这一章读完了，是数据坏了）", () => {
+    store.set("tb-progress", JSON.stringify({ "getting-started": "ab" }));
+    seedCompletion("getting-started", "b", Date.now());
+    render(<ChapterCompleteCelebration chapterSlug="getting-started" docCount={2} locale="zh" />);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  // R16.57：0 课的篇章（英文章节回填中、或课文被整章撤下）没有「读完」可言。
+  // 少了 docCount > 0 这一条，0 >= 0 会为真，台账里残留的旧阅读记录就够放一次礼花。
+  it("0 课的篇章不庆祝", () => {
+    store.set("tb-progress", JSON.stringify({ "getting-started": [] }));
+    seedCompletion("getting-started", "removed-lesson", Date.now());
+    render(<ChapterCompleteCelebration chapterSlug="getting-started" docCount={0} locale="zh" />);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
   it("auto-dismisses after the animation window", async () => {
     store.set("tb-progress", JSON.stringify({ c: ["a"] }));
     seedCompletion("c", "a", Date.now());
