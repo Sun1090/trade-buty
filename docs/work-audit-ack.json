@@ -96,6 +96,10 @@
     {
       "number": 261,
       "reason": "补丁等价，不是丢失：#261 从 3bf077b 切出，#260 先落地后两个 PR 都往 docs/roadmap.md 末尾追加条目，GitHub 的 rebase 因此报 merge conflicts；本仓库禁止 force-push，于是按 #125/#134 的既有办法在最新 origin/main 上重放同两笔（1ffe78b→45d2ca6、8f9ac07→8faf91e），由 PR #263 落地并已合并（main=847424b）。逐条验证：git cherry 判代码那笔为补丁等价（标记 -）；roadmap 那笔标 + 只是因为冲突解决后的补丁文本从「1 条目尾」变成「2 条目尾」，内容经核对确在 main（git show origin/main:docs/roadmap.md | grep -c \"^- [x] R16.54\" = 1）。重放后本地用例 24/24 绿、报告新鲜度核对通过，PR #261 描述里已写明替换关系。"
+    },
+    {
+      "number": 264,
+      "reason": "补丁等价，只是换了载体：#264 从 6b226e6 切出，#263 先落地后两个 PR 都往 docs/roadmap.md 末尾追加条目，GitHub 的 rebase 报 merge conflicts；本仓库禁止 force-push，于是把三笔（3864610→fe4375f、40db531→65ab2fd、efe7ad4→49af66c）按原顺序重放到最新 origin/main(847424b)，由本条 ack 所在的重放 PR 落地（编号见该 PR 的描述与本条提交记录）。冲突只在 roadmap 的追加处，手工保留两条（R16.54 与 R16.56 各一条，文件行数与两条都在已核对）；重放后 toast 用例 9/9 绿、报告新鲜度核对通过。#264 的 PR 评论已写明替换关系，关闭其分支等本 PR 合并后再清理。"
     }
   ]
 }
