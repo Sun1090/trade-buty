@@ -154,6 +154,10 @@ jobs:
       # 「真实定时器未受控」只写进 docs/test-clock-hygiene.md 排队人工判断。
       - name: 测试时钟卫生巡检（R14.6）
         run: npm run check:test-clock-hygiene
+      # R16.21：字典死键预算为 0。字典里没人读的词条只会积累「已经不再成立的文案」，
+      # 所以新造一个没人渲染的键直接判失败，而不是写进报告等人来看。
+      - name: 字典死键巡检（R16.21）
+        run: npm run check:dead-copy
       # E2E 放最后：运行时会向 .next 写入动态 fallback 页，避免污染产物校验
       - run: npm run e2e
       - run: npm run lhci
