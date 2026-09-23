@@ -21,9 +21,14 @@ import { weekMinutes } from "../src/lib/weekly-summary";
  * 因为 `weeklySummaryTpl` 住在 `i18n-stats.ts` 里。
  *
  * 判定按**占位符名**而不是整条模板：只代入一半（`{chapters}` 换成数字、`{done}` 忘了）
- * 时整条模板已经不再连续出现，按模板比对会漏——这条路第一版变异就漏过。代价是组件里
- * 自建的字典（如 `market-ticker.tsx` 的 `const DICT`）不在清单口径内，它的 `{n}` 恰好
- * 与词典重名才顺带被覆盖；一个只用「词典里从没出现过的占位符名」的组件文案仍在网外。
+ * 时整条模板已经不再连续出现，按模板比对会漏——这条路第一版变异就漏过。
+ *
+ * 两档口径：词典词表（`i18n*.ts` 推导）覆盖所有页面；**界面页**（非 `knowledge/`）再叠
+ * 一档「任何 `{名字}` 都不许出现」。分开是因为知识库课文合法带着花括号（`1:{ratio}`
+ * 盈亏比、Python f-string），在那些页面上只能按已知名字判；界面侧则没有这种合法用法，
+ * 于是组件自建字典（`market-ticker.tsx` 的 `const DICT`，形状 `Record<"zh" | "en", …>`，
+ * 根本不在 `i18n*.ts` 口径里）的新占位符名也在网内——原先它只因 `{n}` 与词典重名才被
+ * 顺带覆盖，这个缺口由 R16.29 补上。
  *
  * 三条渲染面各自成断言：
  * 1. 构建产物的可见文本（全部预渲染页面）；
@@ -169,12 +174,28 @@ function htmlSurface(html: string): string {
   return `${text}\n${attributes.join("\n")}\n${meta.join("\n")}`;
 }
 
-function leaksIn(surface: string, tokens: Set<string>): string[] {
+function leaksIn(
+  surface: string,
+  tokens: Set<string>,
+  opts: { anyBrace?: boolean } = {}
+): string[] {
   const found = new Set<string>();
   for (const match of surface.matchAll(TOKEN_RE)) {
-    if (tokens.has(match[1])) found.add(`{${match[1]}}`);
+    if (opts.anyBrace || tokens.has(match[1])) found.add(`{${match[1]}}`);
   }
   return [...found].sort();
+}
+
+/**
+ * 知识库课文合法带着花括号（`1:{ratio}` 盈亏比、Python f-string），所以那里只能按
+ * 「已知占位符名」判。其余页面都是界面文案，一个都不该有——于是这些页面对任何
+ * `{名字}` 都严格，组件自建字典（`market-ticker.tsx` 的 `const DICT`，形状
+ * `Record<"zh" | "en", …>`，不在 `i18n*.ts` 口径里）的新占位符名也逃不掉。
+ */
+const KNOWLEDGE_PAGE = /\/knowledge\//;
+
+function isKnowledgePage(file: string): boolean {
+  return KNOWLEDGE_PAGE.test(file.split(path.sep).join("/"));
 }
 
 function prerenderedPages(): string[] {
@@ -250,6 +271,13 @@ test.describe("占位符不泄漏到界面", () => {
     );
     // 反例自证 2：不在词表里的花括号不许误伤（课文代码示例、盈亏比标注）。
     expect(leaksIn("requests.get(f\"{BASE_URL}/klines\") · 盈亏比 1:{ratio}", tokens)).toEqual([]);
+    // 反例自证 2b：界面页的严格口径必须抓住「词典里从没出现过的占位符名」——组件自建
+    // 字典（`Record<"zh" | "en", …>`，不在 `i18n*.ts` 口径里）的漏网点就在这。
+    // 两条一起看才说明两套口径真的不同，而不是严格那一档空转。
+    expect(leaksIn("慢速模式：每 {slowSeconds} 秒更新一次", tokens)).toEqual([]);
+    expect(
+      leaksIn("慢速模式：每 {slowSeconds} 秒更新一次", tokens, { anyBrace: true })
+    ).toEqual(["{slowSeconds}"]);
     // 反例自证 3：文本节点之外的通道也要能走通（属性里的漏代入）。
     expect(leaksIn(htmlSurface('<div aria-label="近 7 天 {n} 分钟"></div>'), tokens)).toContain("{n}");
     // 反例自证 4：`<code>` 里的占位符名不算泄漏。
@@ -297,6 +325,10 @@ test.describe("占位符不泄漏到界面", () => {
     ).toEqual([]);
 
     expect(pages.length).toBeGreaterThan(400);
+    // 分类不许塌掉：两侧都得有页面。否则「界面页走严格口径」可以静默变成「谁都不严格」。
+    const strictPages = pages.filter((file) => !isKnowledgePage(file));
+    expect(strictPages.length).toBeGreaterThanOrEqual(30);
+    expect(pages.length - strictPages.length).toBeGreaterThan(400);
   });
 
   test("词表覆盖 src/lib 里的每一个字典模块", () => {
@@ -314,8 +346,10 @@ test.describe("占位符不泄漏到界面", () => {
     const failures: string[] = [];
     for (const file of pages) {
       const html = readFileSync(path.join(APP_OUT, file), "utf-8");
-      for (const leak of leaksIn(htmlSurface(html), tokens)) {
-        failures.push(`${file} → ${leak}`);
+      const strict = !isKnowledgePage(file);
+      const note = strict ? "（界面页严格口径）" : "";
+      for (const leak of leaksIn(htmlSurface(html), tokens, { anyBrace: strict })) {
+        failures.push(`${file} → ${leak}${note}`);
       }
     }
     expect(failures.slice(0, 12), failures.join("\n")).toEqual([]);
@@ -333,8 +367,10 @@ test.describe("占位符不泄漏到界面", () => {
 
   for (const route of HYDRATED_ROUTES) {
     test(`${route} 水合后仍无残留 {占位符}`, async ({ page }) => {
+      // 这些路由都在界面侧：一旦有人把它们挪进知识库，严格口径会静默退化，所以先钉住分类
+      expect(isKnowledgePage(route), route).toBe(false);
       await openWithStudyHistory(page, route);
-      expect(leaksIn(await domSurface(page), tokens), route).toEqual([]);
+      expect(leaksIn(await domSurface(page), tokens, { anyBrace: true }), route).toEqual([]);
     });
   }
 
@@ -349,7 +385,7 @@ test.describe("占位符不泄漏到界面", () => {
       .replace("{n}", String(total))
       .replace("{avg}", String(Math.round(total / SEED_DAY_SECONDS.length)));
     expect(surface, "本地台账没有渲染出周报文案（水合或数据通路失效）").toContain(expected);
-    expect(leaksIn(surface, tokens), "/zh/stats").toEqual([]);
+    expect(leaksIn(surface, tokens, { anyBrace: true }), "/zh/stats").toEqual([]);
   });
 
   test("回访提醒 toast 的 {days} 代入正确", async ({ page }) => {
@@ -362,7 +398,7 @@ test.describe("占位符不泄漏到界面", () => {
     const toast = page.getByTestId("return-nudge-toast");
     await expect(toast).toBeVisible({ timeout: 10_000 });
     const text = await toast.innerText();
-    expect(leaksIn(text, tokens), text).toEqual([]);
+    expect(leaksIn(text, tokens, { anyBrace: true }), text).toEqual([]);
     // 天数为正整数才说明代入真的发生过（`setDays` 兜底 7）
     expect(text).toMatch(/\d/);
   });
