@@ -28,6 +28,7 @@ export function StreakBadge({ labels }: { labels: { current: string; longest: st
     <div className="inline-flex items-center gap-3 rounded-full border border-[var(--accent)]/30 bg-[var(--accent-dim)] px-4 py-2">
       <span className="text-lg" aria-hidden>🔥</span>
       <div className="flex items-baseline gap-1.5">
+        <span className="text-xs text-muted">{labels.current}</span>
         <span className="font-mono text-lg font-bold text-accent">{streak}</span>
         <span className="text-xs text-muted">{labels.days}</span>
       </div>
