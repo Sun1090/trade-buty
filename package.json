@@ -56,7 +56,7 @@
     "check:search-index": "node scripts/check-search-index.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
     "check:structured-data": "node scripts/check-structured-data.mjs",
-    "e2e": "playwright test e2e/smoke.spec.ts e2e/mobile-overflow.spec.ts e2e/pwa-offline.spec.ts e2e/metadata-routes.spec.ts e2e/static-surface.spec.ts e2e/full-site.spec.ts e2e/runtime-health.spec.ts e2e/light-contrast.spec.ts",
+    "e2e": "playwright test e2e/smoke.spec.ts e2e/mobile-overflow.spec.ts e2e/pwa-offline.spec.ts e2e/metadata-routes.spec.ts e2e/static-surface.spec.ts e2e/full-site.spec.ts e2e/runtime-health.spec.ts e2e/light-contrast.spec.ts e2e/placeholder-leak.spec.ts",
     "e2e:visual": "playwright test e2e/visual.spec.ts",
     "lhci": "lhci autorun",
     "check:mobile": "node scripts/check-mobile.mjs",
