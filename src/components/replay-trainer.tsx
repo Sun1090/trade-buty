@@ -11,6 +11,7 @@ import {
 import { fetchKlines, fetchRandomHistoryWindow, type Kline } from "@/lib/binance";
 import { saveReplayRecord, saveReplayBest } from "@/lib/replay-store";
 import { addStudyTime } from "@/lib/study-time";
+import { localDateStr, localDayEndMs } from "@/lib/date-utils";
 import { measureFps, LOW_END_FPS_THRESHOLD, REPLAY_REDUCED_CANDLES } from "@/lib/perf";
 import { ReplayShareCard } from "@/components/replay-share-card";
 import { gradeFromReplayAccuracy } from "@/lib/share-card";
@@ -132,10 +133,11 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
     roundStartRef.current = Date.now();
   }, [round]);
   const [customMode, setCustomMode] = useState(false);
-  const [endDateInput, setEndDateInput] = useState(() => {
-    const d = new Date(Date.now() - 30 * 86400_000);
-    return d.toISOString().slice(0, 10);
-  });
+  // 日界一律按本地日历取：UTC 口径会把 UTC+8 用户每天前 8 小时判成昨天，
+  // 日期选择器于是禁止选择今天。
+  const [endDateInput, setEndDateInput] = useState(() =>
+    localDateStr(new Date(Date.now() - 30 * 86400_000)),
+  );
   const [customEnd, setCustomEnd] = useState<number | null>(null);
   // R7.3：低端机降级——帧率不达标时减少可见 K 线密度
   const [lowEnd, setLowEnd] = useState(false);
@@ -424,14 +426,15 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
               <input
                 type="date"
                 value={endDateInput}
-                max={new Date().toISOString().slice(0, 10)}
+                max={localDateStr()}
                 onChange={(e) => setEndDateInput(e.target.value)}
                 className="rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1.5 font-mono text-xs text-foreground focus:border-accent [color-scheme:dark]"
               />
             </label>
             <button
               onClick={() => {
-                const ms = Date.parse(endDateInput + "T00:00:00Z");
+                // 输入是本地日历日，上界就该落在该本地日结束时；按 UTC 午夜换算会砍掉当天尾部
+                const ms = localDayEndMs(endDateInput);
                 if (!Number.isNaN(ms)) {
                   setCustomEnd(ms);
                   setRound((r) => r + 1);

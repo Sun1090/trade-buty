@@ -9,7 +9,8 @@ vi.stubGlobal("localStorage", {
 });
 vi.stubGlobal("window", { dispatchEvent: () => {} });
 
-const { localDateStr, isLocalDateStr, shiftDate, daysBetween } = await import("./date-utils");
+const { localDateStr, isLocalDateStr, localDayEndMs, shiftDate, daysBetween } =
+  await import("./date-utils");
 const { addStudyTime, getStudySeconds, getStudySeries, getTotalStudySeconds } = await import("./study-time");
 
 describe("date-utils（R4.8）", () => {
@@ -25,6 +26,39 @@ describe("date-utils（R4.8）", () => {
     expect(isLocalDateStr("2026-13-01")).toBe(false);
     expect(isLocalDateStr("2026-00-10")).toBe(false);
     expect(isLocalDateStr("2026-9-01")).toBe(false);
+  });
+
+  it("localDayEndMs 给出该本地日的最后一毫秒", () => {
+    for (const dateStr of ["2026-09-05", "2024-02-29", "2026-12-31", "2027-01-01"]) {
+      const ms = localDayEndMs(dateStr);
+      expect(localDateStr(new Date(ms)), `${dateStr} 应落在该日内`).toBe(dateStr);
+      expect(localDateStr(new Date(ms + 1))).toBe(shiftDate(dateStr, 1));
+    }
+  });
+
+  it("跨时区都按本地日历取，不吃 UTC 口径", () => {
+    const original = process.env.TZ;
+    const restore = () => {
+      if (original === undefined) delete process.env.TZ;
+      else process.env.TZ = original;
+    };
+    try {
+      // CI 恒为 UTC，那里「本地」与「UTC」不可区分；必须钉住东西两侧各一个时区
+      for (const tz of ["Asia/Shanghai", "America/New_York"]) {
+        process.env.TZ = tz;
+        const ms = localDayEndMs("2026-09-05");
+        expect(localDateStr(new Date(ms)), `${tz} 应落回当日`).toBe("2026-09-05");
+        expect(localDateStr(new Date(ms + 1)), `${tz} 的 1ms 后应进次日`).toBe("2026-09-06");
+      }
+    } finally {
+      restore();
+    }
+  });
+
+  it("localDayEndMs 对不存在的日历日期返回 NaN，而不是滚到邻近日期", () => {
+    for (const bad of ["2026-02-31", "2026-13-01", "2026-9-1", "", "2026-09-05T00:00:00Z"]) {
+      expect(Number.isNaN(localDayEndMs(bad)), `${bad} 不该被接受`).toBe(true);
+    }
   });
 
   it("shiftDate 跨月/跨年加减", () => {
