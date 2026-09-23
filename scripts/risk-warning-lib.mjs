@@ -69,9 +69,17 @@ function countByStatus(rows) {
 }
 
 /** 渲染 Markdown 报告：课程按 locale 汇总（全绿时一行带过），README 逐行列出。 */
-export function renderRiskWarningMarkdown({ generatedAt, results }) {
+/**
+ * @param {{
+ *   generatedAt: string,
+ *   results: object[],
+ *   fallback?: { checked: number, fallbackPages: number } | null,
+ * }} report
+ */
+export function renderRiskWarningMarkdown({ generatedAt, results, fallback }) {
   const lessons = results.filter((row) => row.kind === "lesson");
   const readmes = results.filter((row) => row.kind === "readme");
+  const nonPass = results.filter((row) => row.status !== "pass").length;
   const lessonByLocale = ["zh", "en"].map((locale) => {
     const rows = lessons.filter((row) => row.locale === locale);
     const counts = countByStatus(rows);
@@ -91,6 +99,12 @@ export function renderRiskWarningMarkdown({ generatedAt, results }) {
     "> gap = 完全缺失。上游缺口本身不阻断（知识库内容改动需在 kline-buty 仓库进行）。",
     "> 章节导语页与课文页都会对不合规正文展示本地化兜底提示；两处接线由本门禁阻断式校验，",
     "> 但本表仍统计上游原文，避免把未修复内容误报为 pass。",
+    ...(fallback
+      ? [
+          `> 构建产物侧同次核对：${fallback.checked} 个页面逐一比对，兜底块正好出现在`,
+          `> ${fallback.fallbackPages} 个页面上（上游非 pass 共 ${nonPass} 篇），pass 页面零叠块。`,
+        ]
+      : []),
     "",
     "## 课程正文（lesson）",
     ...lessonByLocale,
@@ -149,4 +163,53 @@ export function auditFallbackWiring(pages) {
     }
   }
   return issues;
+}
+
+/**
+ * `RiskWarningNotice` 渲染出的兜底块标记（`<aside role="note">`）。
+ *
+ * 不用「页面上有没有 ⚠️ 风险提示 字样」当标记：合规正文自己就带这个标题，
+ * 实测 404 篇 pass 页面里 403 篇有该字样，只有 `role="note"` 能区分兜底块与正文块。
+ */
+export const FALLBACK_BLOCK = /<aside\b[^>]*\brole="note"/i;
+
+/** 一行覆盖率记录对应的站内路由。 */
+export function knowledgeRoute(row) {
+  return row.kind === "readme"
+    ? `/${row.locale}/knowledge/${row.chapter}`
+    : `/${row.locale}/knowledge/${row.chapter}/${row.document}`;
+}
+
+/**
+ * 兜底接线是否真的落到构建产物上：与上游状态**双向**对照。
+ *
+ * `auditFallbackWiring` 只看页面源码里有没有那个调用，属于「写了大概会生效」；
+ * 红线要的是「这几页确实带着风险提示」。两侧都可能坏：兜底条件写反、路由换了
+ * 渲染分支、正文判定变了，都会让源码仍然有那个调用而页面上没有块。
+ * 反向同样成立——上游已合规却仍叠兜底，是重复展示。
+ */
+export function auditFallbackRendering({ rows, readArtifact }) {
+  const issues = [];
+  let checked = 0;
+  let fallbackPages = 0;
+  for (const row of rows ?? []) {
+    const route = knowledgeRoute(row);
+    const html = readArtifact(row, route);
+    if (typeof html !== "string") {
+      issues.push(`${route}: 找不到构建产物，无法核对兜底提示（请先 npm run build）`);
+      continue;
+    }
+    checked += 1;
+    const rendered = FALLBACK_BLOCK.test(html);
+    if (rendered) fallbackPages += 1;
+    if (row.status !== "pass" && !rendered) {
+      issues.push(
+        `${route}: 上游缺合规风险块（${row.status}），站内兜底提示却没有渲染`,
+      );
+    }
+    if (row.status === "pass" && rendered) {
+      issues.push(`${route}: 上游已有合规风险块，站内仍叠了一层兜底（重复展示）`);
+    }
+  }
+  return { issues, checked, fallbackPages };
 }
