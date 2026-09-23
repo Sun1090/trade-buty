@@ -59,6 +59,21 @@ export function loadQueueAndNextId(): { queue: QueueItem[]; nextId: number } {
   return { queue, nextId };
 }
 
+/** 队列内容变化的事件名：界面用它把「还有写着没推上去」这件事反映出来 */
+export const QUEUE_EVENT = "tb-sync-queue";
+
+/**
+ * 通知读侧「待上传条数可能变了」。写入失败时也要通知：长度是按 localStorage 现算的，
+ * 存不进去同样是一种变化。
+ */
+function announceQueueChange(): void {
+  try {
+    window.dispatchEvent(new Event(QUEUE_EVENT));
+  } catch {
+    // 无 window（SSR）时静默
+  }
+}
+
 /** 原子写回队列 + nextId */
 function persist(queue: QueueItem[], nextId: number): void {
   try {
@@ -67,6 +82,7 @@ function persist(queue: QueueItem[], nextId: number): void {
   } catch {
     // ignore — 队列是 best-effort
   }
+  announceQueueChange();
 }
 
 /**
@@ -144,6 +160,7 @@ export function clearPersistedQueue(): void {
   } catch {
     // ignore
   }
+  announceQueueChange();
 }
 
 /** 当前队列长度（调试 / UI 显示用） */
