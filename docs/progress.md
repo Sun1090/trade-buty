@@ -6140,3 +6140,55 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   `npm run ops:smoke-prod`，届时判据变成「`/zh/changelog` 含 0.7.13」；随后继续清点还没扫过的界面。
 - 更新时间：2026-09-23 23:14（Asia/Shanghai）。
 
+## 2026-09-23 — v0.7.13 合并、打 tag 与生产部署核对（配额窗口仍在）
+
+- 状态：**v0.7.13 已合并、已打 tag；生产仍停在旧构建**。
+- 合并：PR **#257** → `196b7e4`（发布记录与版本号）+ `09e33ef`（上一条冻结记录）。必需检查全绿
+  （`ci` 9m52s、`db-tests` 45s、CodeQL、两个 Analyze）。PR 上的 `Vercel` 检查这次直接写着
+  **`Deployment rate limited — retry in 24 hours`**——前两次发布只能推断「配额没清」，这一次是
+  第一手证据：窗口内生产构建根本没被允许排队。
+- tag：附注 **`v0.7.13` → `09e33ef`** 已推送；`npm run check:release-tag` ✅
+  「17 条发布记录的 tag 均已落地（最新 0.7.13 → v0.7.13）」，不再打印待办。
+- 部署核对（`npm run ops:smoke-prod` 打生产域）：**8/10**，两条红都是环境侧不是站内：
+  - `GET /zh/changelog → 含最新发布版本` 红：页面里没有 0.7.13，生产落后于 `main`。这一条读的是本地
+    发布记录里的版本号，配额清掉后无需改代码即转绿。
+  - `POST /api/ai/chat 游客` 红：护栏路径 200、模型路径 502 → 部署快照缺 `AI_API_URL` / `AI_MODEL` /
+    `AI_API_KEY` 或出口不通（长期外部阻塞，R14.x 已登记）。
+  - 其余 8 条（两语言首页风险提示、篇章页与课文页、sitemap、robots、分享落地页、匿名 session）全绿。
+- 待上线内容提醒：`main` 上已合并但生产未带出的版本有三档——0.7.11、0.7.12、0.7.13，配额清掉后的
+  一次部署会同时带上；判据以最新一档为准（`/zh/changelog` 含 0.7.13）。
+- 风险 / 回滚：v0.7.13 回滚 = `git revert 196b7e4`（无数据迁移）；Vercel 亦可把 Production 切回上一
+  构建止血。
+- 下一项：#258（R16.50 朗读整篇念 + 新门禁）过 CI 后合并；配额窗口清掉后重跑 `ops:smoke-prod` 写回本条。
+- 更新时间：2026-09-23 23:55（Asia/Shanghai）。
+
+## 2026-09-23 — R16.50：朗读只念前 3000 字，以及一条新门禁
+
+- 状态：**PR #258 待合并**（分支 `fix/read-aloud-full-lesson`，从 `origin/main` = `09e33ef` 切出）。
+- 缺陷：`src/components/read-aloud.tsx` 把课文 `.slice(0, 3000)` 后交给一条 utterance，而 3000 管的
+  是**整篇课文**——`content/kline-buty` 的 182 篇中文课里 173 篇超过它（中位数 6,646 字，最长 13,074），
+  中位课文有一半以上从没进过引擎；那条唯一挂着 `onend` 的 utterance 报完后按钮从「停止」退回「朗读」，
+  于是「这一截念完了」被演成「整篇念完了」。原有用例还把这条上限当契约写死，所以它看起来像设计。
+- 改法：`READ_ALOUD_CHUNK_CHARS` 改为**每条** utterance 的上限，按空行分段装满多条排队 `speak`，
+  单段超限才硬切；`onend` 只挂队尾，任一条 `onerror` 清空整队并退回待命，课文为空不进入播放态；
+  同一处写死的 `title="语速"` 改成按 locale 取的 `rateLabel`（英文界面不再出中文提示）。
+- 新门禁：`npm run check:localized-labels`（`scripts/check-localized-labels.mjs`）——`src` 下的 `.tsx`
+  （测试文件除外）里 `title` / `aria-label` / `alt` / `placeholder` / `label` 的字面量含中日韩文字即失败。
+  登记进 `.github/workflows/ci.yml` 与 `docs/ops.md`（`scripts/ci-workflow.test.mjs` 的契约核对两侧），
+  新增测试文件让时钟巡检台账从 291 个文件重算到 292（`docs/test-clock-hygiene.md` 一并提交）。
+  判据只看 CJK，「把英文写死在同一处」它认不出来——脚本头与手册都写明了这半边靠按 locale 的用例兜。
+- 分支 / 提交：`7c420ea`（fix）+ `0ab4042`（test(gates)）+ `bdf7693`（docs(ledger)）+ `c2bb0f1`
+  （docs(roadmap) 登记 R16.50）+ 本条进度。
+- 验证（本地，逐条退出码 0）：`test`、`lint`、`typecheck`、`build`、`check:mobile`、`check:seo-surface`、
+  `check:search-index`、`check:structured-data`、`check:risk-warning`、`check:constitution`、
+  `check:dead-copy`、`check:localized-labels`、`check:bundle`、`check:docs`、`check:report-freshness`
+  （17 份报告 · 过期 0 · 未提交 0）、`e2e` 全绿，跑完 `git status` 干净。`db:test` 未跑（不含迁移与 SQL）。
+- 变异核对三条：只交一条 chunk → 「长课文整篇排队念」红；`onend` 挂到每条 → 「只有队尾那条念完才回到
+  待命」红；临时塞一个 `title="临时探针"` 的文件 → 门禁 exit 1 并打印整改路径（探针文件当场删除）。
+- 阻塞 / 风险：**明确未验证**的部分——Chrome 对长时间连续朗读有已知的自行停顿问题，本地无法验证朗读
+  音频，本次没碰它，切成多条既不改变也不恶化该行为，本条也不声称解决。合入后 `main` 的内容比 v0.7.13
+  多一处修复 → 下一个待发仍是 patch（v0.7.14）。Vercel 配额与上游 kline-buty 内容缺口不变；PR #178 不动。
+- 回滚：`git revert` 本分支的四个提交即可，无数据迁移；门禁一侧回滚只是少一道巡检，不影响站点行为。
+- 下一项：#258 过 CI 后合并并继续清点未扫的界面；配额清掉后重跑 `npm run ops:smoke-prod`。
+- 更新时间：2026-09-23 23:56（Asia/Shanghai）。
+
