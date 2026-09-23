@@ -57,6 +57,7 @@
 | 生成内容质量报告（R10.1–R10.6 / R10.17） | 在当前提交上按序重跑 `kb:inventory`、`kb:gap-priority`、`kb:accept`、`kb:translation-status`、`check:title-terminology`、`check:description-quality`、`check:risk-warning` 七份内容报告 | 按脚本报告修复内容或契约；报告式命令不会用人工旧快照替代当前结果。入库的纯重算型报告（R14.5）只在内容真的变化时重写，因此报告头的日期读作「内容最后一次变化」，内容未变时不随机器重跑而刷新；按日追加的历史快照（`kb:translation-status`、`kb:diff`）不受此约束 |
 | 内容质量报告归档（CI artifact，R10.17） | 上述当前提交报告及 docs/*.json 随 CI 归档 7 天 | 下载 artifact 分派人工整改；不得只更新 artifact 而不提交内容源修复 |
 | `npm run check:test-clock-hygiene` | 测试时钟卫生巡检（R14.6）：`expect(...)` 里直接读 `Date.now()`/`performance.now()` 的断言**即失败**（该口径无已知误报）；使用真实 `setTimeout`/`setInterval` 且同文件从不使用受控时钟的测试只列报告 `docs/test-clock-hygiene.md` | 前者改为注入时钟或 `vi.useFakeTimers()` + `setSystemTime()`，不接受重跑；后者逐条人工判断，确需保留的在评审里写明理由。出现偶发 flaky 时先查这张表 |
+| `npm run check:dead-copy` | 字典死键巡检（R16.21）：`src/lib/i18n*.ts` 词条若在 `src/`（字典文件自身除外）、`e2e/`、`scripts/` 的非测试代码里没有任何引用点即失败。预算冻结在 `scripts/dead-copy-budget.json`，当前为 **0**；提取到的词条数低于下限同样失败（否则台账会变成空转） | 直接删掉没人读的词条（连同假字典里的引用）；确需保留的在 PR 里写明理由并上调预算，不得为了变绿而加 `// eslint-disable` 式的豁免 |
 | `npm run e2e` | 全站、320px 移动端、PWA 离线、根级元数据路由、根级静态表面/软 404 契约与分享落地页、扩展核心闭环（R13.24） | 修复可访问性、响应式或交互回归；不得只重跑忽略 flaky |
 | `npm run lhci` | 关键 URL 的性能/可访问性/最佳实践/SEO 断言 | 修复真实退化；阈值调整必须附测量证据 |
 | `db-tests` · `docker pull supabase/postgres:17.6.1.155` | 拉取与线上一致的 Supabase Postgres 17 镜像，供迁移/RLS/同步门禁使用（Q2.8 / Q5.4） | 核对镜像 tag 是否仍在；不要改用本地随意镜像绕过 |
