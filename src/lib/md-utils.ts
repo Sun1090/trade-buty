@@ -1,11 +1,35 @@
 /** Markdown 纯函数工具——从 content.ts 抽出，可独立测试 */
 
+/**
+ * 把一小段 markdown 收成纯文本：只处理「会被当成界面文案」的那几种写法。
+ *
+ * 课文正文走 `rewriteLinks`（`content.ts`）把相对链接换成站内路由，但**导语与摘要**
+ * 不走那条路——它们是从原文里截出来的，链接语法就原样留在卡片文字和
+ * `<meta name="description">` 里（`forex-trading/README.md:3` 那一条把
+ * `[09-市场与品种专题篇/01-外汇市场.md](…)` 送进了 22 个页面的可见文字）。
+ * 内容仓的原文不该改（那是 kline-buty 的地盘），所以在本侧把它读成人类看得懂的话。
+ *
+ * 已知取舍：反引号只删记号、不保护内容，所以 `` `<br>` `` 这种「行内代码里写着尖括号」
+ * 会被随后的标签清理一起吃掉。全仓 364 篇课文 + 54 篇章 README 的首段与 description 里
+ * 没有任何一处这种写法（`^description:.*\`<` 与 `^>.*\`<` 均无命中），因此不做代码区间保护。
+ */
+export function plainText(input: string): string {
+  return input
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // 内联链接 [文字](地址)
+    .replace(/\[([^\]]*)\]\[[^\]]*\]/g, "$1") // 引用式链接 [文字][标签]
+    .replace(/<\s*(https?:\/\/[^>]*)>\s*/gi, "$1") // 尖括号包起来的裸链接
+    .replace(/<\/?[a-zA-Z][^>]*>/g, "") // 行内 HTML 标签
+    .replace(/`/g, "") // 行内代码的反引号
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** 读正文第一段有效段落（跳过标题/frontmatter/引用前缀），去粗体，截 120 字 */
 export function readFirstParagraph(md: string): string {
   for (const line of md.split("\n")) {
     const t = line.trim();
     if (!t || t.startsWith("#") || t.startsWith("---")) continue;
-    return t.replace(/^>\s*/, "").replace(/\*\*/g, "").slice(0, 120);
+    return plainText(t.replace(/^>\s*/, "").replace(/\*\*/g, "")).slice(0, 120);
   }
   return "";
 }
