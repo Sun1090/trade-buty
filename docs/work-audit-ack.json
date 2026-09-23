@@ -72,6 +72,10 @@
     {
       "number": 228,
       "reason": "换载体重放：#227 合入后本分支的 docs/roadmap.md 文末追加与 main 的 R16.29 撞在同一锚点，GitHub 的 update-branch --rebase 报 RebaseConflictError，而更新已推送分支需要 force push（本仓库禁止）。于是从 main=aed6fa4 重建为 test/ops-gate-ghost-guard-v2 并 cherry-pick 原提交 0fbea3c；scripts/ci-workflow.test.mjs 的补丁与 #228 相对 origin/main 的 diff 逐字节一致（git diff 0 行差异），roadmap 冲突按编号顺序保留 R16.29 在前、R16.30 在后。重放过程中有一个把未解冲突标记一起提交的中间提交（683cf53），随后用 3a7fe48 单独修正并在最终树上验证 grep 标记计数为 0。"
+    },
+    {
+      "number": 235,
+      "reason": "换载体重放：#235 与刚合并的 #234 都在 docs/roadmap.md 文末追加登记（R16.34 / R16.33 撞在同一锚点），GitHub 的 update-branch --rebase 成功后 rebase 合并仍报冲突，而更新已推送分支需要 force push（本仓库禁止）。于是从 main=536747c 重建为 test/ops-patrol-claims-v2，按原顺序 cherry-pick 三个提交（de7b450→678decc、cf3ce70→83b20a4、2458c53→a45dbcf）。四个实质文件（scripts/faq-candidates.mjs、scripts/link-patrol.mjs、scripts/ops-patrol-claims.test.mjs、docs/ops.md）加台账 docs/test-clock-hygiene.md 的补丁逐字节一致（git diff 对 364fef2..origin/test/ops-patrol-claims 与 536747c..HEAD 逐文件比对，diff 输出为空）；roadmap 冲突按编号顺序保留 R16.33 在前、R16.34 在后。重放后的树上重新跑过 check:test-clock-hygiene（工作区无差异）与 24 条相关用例全绿。PR #235 在本 PR 合入后关闭，关闭前保持 open 以免 main 上的 ops:work-audit 因确认记录尚未落地而判红。"
     }
   ]
 }
