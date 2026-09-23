@@ -56,13 +56,17 @@ function timeoutLabel(timeoutMs) {
   return `timeout(${Math.round(timeoutMs / 1000)}s)`;
 }
 
+/** 巡检参数：单个链接的墙钟预算与总尝试次数（1 次 + 重试 1 次）。 */
+export const DEFAULT_TIMEOUT_MS = 10_000;
+export const DEFAULT_ATTEMPTS = 2;
+
 /**
  * 检查单个 URL。网络层错误重试一次；HTTP 状态失败立即返回，避免无意义重试。
  * 返回 null 表示可达，否则返回可操作的短错误字符串。
  */
 export async function checkExternalLink(
   url,
-  { fetchImpl = globalThis.fetch, timeoutMs = 10_000, retries = 2 } = {},
+  { fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS, retries = DEFAULT_ATTEMPTS } = {},
 ) {
   let lastError = "unknown";
   for (let attempt = 0; attempt < retries; attempt += 1) {
