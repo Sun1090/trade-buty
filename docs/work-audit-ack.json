@@ -100,6 +100,10 @@
     {
       "number": 264,
       "reason": "补丁等价，只是换了载体：#264 从 6b226e6 切出，#263 先落地后两个 PR 都往 docs/roadmap.md 末尾追加条目，GitHub 的 rebase 报 merge conflicts；本仓库禁止 force-push，于是把三笔（3864610→fe4375f、40db531→65ab2fd、efe7ad4→49af66c）按原顺序重放到最新 origin/main(847424b)，由本条 ack 所在的重放 PR 落地（编号见该 PR 的描述与本条提交记录）。冲突只在 roadmap 的追加处，手工保留两条（R16.54 与 R16.56 各一条，文件行数与两条都在已核对）；重放后 toast 用例 9/9 绿、报告新鲜度核对通过。#264 的 PR 评论已写明替换关系，关闭其分支等本 PR 合并后再清理。"
+    },
+    {
+      "number": 262,
+      "reason": "补丁等价，只是换了载体：#262 从 6b226e6 切出，其间 #263 与 #265 先落地，两个 PR 都往 docs/roadmap.md 末尾追加条目，GitHub 的 rebase 报 merge conflicts；本仓库禁止 force-push，于是把五笔（1f666db→fe6705d、fd8019f→8322053、f2fbfea→b6f00cd、2bebe7b→c879fdf、bc78319→ea78ae6）按原顺序重放到最新 origin/main(92b723e)，由本条 ack 所在的重放 PR 落地。两处冲突都只在 roadmap 的追加行，手工保留全部条目并按编号排好（R16.53–R16.56 各一条，文件 558 行、无冲突标记）；重放后 md-utils / 派生文案扫描 / 路线页量词三组用例 26/26 绿。"
     }
   ]
 }
