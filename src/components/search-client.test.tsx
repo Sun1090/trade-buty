@@ -318,12 +318,17 @@ describe("SearchClient 最近搜索（回归：与 debounce 后的检索词对�
 });
 
 describe("SearchClient pagination and filtering", () => {
-  const manyEntries = Array.from({ length: 23 }, (_, i) => ({
-    url: `/zh/knowledge/ch${i}/${String(i).padStart(2, "0")}`,
-    title: `章节 ${i} 保证金`,
-    chapter: i === 22 ? "none" : "spot",
-    text: `保证金 第 ${i} 条`,
-  }));
+  const manyEntries = [
+    ...Array.from({ length: 23 }, (_, i) => ({
+      url: `/zh/knowledge/ch${i}/${String(i).padStart(2, "0")}`,
+      title: `章节 ${i} 保证金`,
+      // 第 23 条落在另一个篇章，且排在首页 20 条之后
+      chapter: i === 22 ? "late" : "spot",
+      text: `保证金 第 ${i} 条`,
+    })),
+    // 索引里存在的篇章，但对本次查询一条都不命中——真正的「该篇章暂无匹配」
+    { url: "/zh/knowledge/empty/01", title: "空篇章课程", chapter: "empty", text: "与本查询无关" },
+  ];
 
   beforeEach(() => {
     storage.clear();
@@ -337,16 +342,40 @@ describe("SearchClient pagination and filtering", () => {
     vi.unstubAllGlobals();
   });
 
-  it("loads the first page and reveals more results without duplicating rows", async () => {
+  /**
+   * 页头那句「{n} 条结果」说的是命中数，不是这一页渲染了几行。
+   * 旧实现读的是分页之后再筛选的 `filtered.length`，23 条命中会写成 20 条。
+   */
+  it("counts matches, not the rows currently on screen", async () => {
     render(<SearchClient dict={dict} />);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "保证金" } });
 
     expect(await screen.findByRole("button", { name: "加载更多" })).toBeInTheDocument();
+    expect(screen.getByText("23 条结果")).toBeInTheDocument();
     expect(document.querySelectorAll("a[data-search-result-index]")).toHaveLength(20);
 
     fireEvent.click(screen.getByRole("button", { name: "加载更多" }));
     await waitFor(() => expect(screen.queryByRole("button", { name: "加载更多" })).toBeNull());
     expect(document.querySelectorAll("a[data-search-result-index]")).toHaveLength(23);
+    expect(screen.getByText("23 条结果")).toBeInTheDocument();
+  });
+
+  /**
+   * 筛选必须发生在截断之前：命中的那一行排在第 21 位之后时，
+   * 旧实现会对着确实存在的结果说「该篇章暂无匹配」，而且翻页也翻不到。
+   */
+  it("reaches a chapter's matches even when they rank past the first page", async () => {
+    render(<SearchClient dict={dict} />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "保证金" } });
+
+    const filter = await screen.findByRole("combobox", { name: dict.filterLabel });
+    fireEvent.change(filter, { target: { value: "late" } });
+
+    await waitFor(() => expect(screen.getByText("1 条结果")).toBeInTheDocument());
+    expect(screen.queryByText(/暂无匹配/)).toBeNull();
+    const rows = document.querySelectorAll("a[data-search-result-index]");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveAttribute("href", "/zh/knowledge/ch22/22");
   });
 
   it("shows a recoverable zero-filter state and clears the chapter filter", async () => {
@@ -355,11 +384,11 @@ describe("SearchClient pagination and filtering", () => {
 
     fireEvent.keyDown(screen.getByRole("searchbox"), { key: "Escape" });
     const filter = await screen.findByRole("combobox", { name: dict.filterLabel });
-    fireEvent.change(filter, { target: { value: "none" } });
+    fireEvent.change(filter, { target: { value: "empty" } });
 
     await waitFor(() => expect(screen.getByText(dict.filterZeroCta)).toBeInTheDocument());
     expect(document.querySelectorAll("a[data-search-result-index]")).toHaveLength(0);
-    expect(screen.getByText(/「none」暂无匹配/)).toBeInTheDocument();
+    expect(screen.getByText(/「empty」暂无匹配/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByText(dict.filterZeroCta));
     expect(document.querySelectorAll("a[data-search-result-index]")).toHaveLength(20);
