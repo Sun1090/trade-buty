@@ -5989,3 +5989,41 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：继续「界面 / 文档的说法 vs 代码与数据的事实」倒查的下一批表面；
   配额窗口清掉后补跑生产冒烟并把结论写回本条。
 - 更新时间：2026-09-23 17:20（Asia/Shanghai）。
+
+## 2026-09-23 — v0.7.12 冻结与 15 步全量验证
+
+- 状态：**发布分支已切出、本地全量门禁绿，等待 PR 合并后补打 tag**。
+- 里程碑 / 版本：**v0.7.12（patch）**。判级理由：v0.7.11 之后合入 `main` 的三件事全是缺陷修复与
+  门禁加固，没有新增产品能力。
+- 内容（只看已合入 main 的提交）：
+  - **R16.37**（`63f70e6` + `097bf3d`，PR #242）：本地生产冒烟先确认量的是当前构建，端口上驻留的旧
+    `next start` 不再能把旧构建的红算成本次的、或把本次的红藏成绿。
+  - **R16.38**（`6fd98f4` + `2aa0215`，PR #243）：回放自定义模式的截止日期改按本地日历取界——`max` 与
+    初始值此前走 `toISOString()`（UTC+8 用户每天 00:00–08:00 选不了今天），换算此前把本地日历日读成
+    UTC 午夜（当天后半段被静默砍掉）。
+  - **R16.39**（`8cd4ea6` + `5458689`，PR #244）：图表横轴的 8 小时位移收敛为 `DISPLAY_TZ_OFFSET_SEC`
+    单一常量，REST 与 WebSocket 两条路共用；此前两处分写且 WS 断言不核对 `time`，口径错开时实时更新
+    覆盖不到最后一根 K 线。
+- 分支 / 提交：`chore/release-v0.7.12`（`5c01c75` 发布记录与版本号 + 本条冻结记录），从
+  `origin/main` = `5458689` 切出。
+- 冻结前检查：`npm run ops:work-audit` = 悬空 0 · 陈旧 0 · 未确认 0；`git log origin/main..HEAD` 为空。
+- 变更文件：`src/data/release-notes.json`（新增 0.7.12 条目，zh/en 各 3 条要点）、`CHANGELOG.md`
+  （重算，16 条）、`package.json` / `package-lock.json`（0.7.12，用钉住的 npm 10.9.4 重算）。
+- 验证（本地，按检查单顺序）：`test`、`test:coverage` 各 **290 文件 / 2794 条全绿**，`lint`、
+  `typecheck`、`build`、`check:mobile`、`check:seo-surface`、`check:search-index`、
+  `check:structured-data`、`check:risk-warning`、`check:constitution`、`check:docs`、
+  `check:report-freshness`、`db:test`、`e2e`（**160 passed**）全部退出 0；跑完 `git status` 干净。
+  元数据门禁：`check:lockfile-repro`（981 个包条目无差异）、`check:changelog`（16 条一致、未发布区块为空）、
+  `check:docs`（package 0.7.12 与最新发布版本绑定）、`check:release-tag` 按流程打印「最新 0.7.12 待合并后补打」。
+  三件事各自的变异核对：R16.38 六组、R16.39 三组、R16.37 两组，全部点名转红，不存在空转断言。
+- 阻塞 / 风险：**Vercel 24h 构建配额仍未清掉**——v0.7.11 的生产部署就是被它挡住（合并后 35 分钟没有任何
+  新 Production 构建，`main` 提交上的 Vercel 状态写着 `retry in 24 hours`），所以本次发布同样只能先合后等；
+  配额窗口清掉后一次部署会同时带上 0.7.11 与 0.7.12。生产游客 AI 问答 502 属上游配置（缺
+  `AI_API_URL` / `AI_MODEL` / `AI_API_KEY` 或出口不通）。待拍板：R15.2 / R16.7 / R16.10–R16.13 / R16.16；
+  上游 kline-buty 的风险块缺口只能在上游改；PR **#178** 属维护者，不动。
+- 回滚：`git revert` 发布提交 `5c01c75`（或 Vercel 把 Production 切回上一构建止血），不改写 `main`、
+  不 force push。本次不含数据迁移，回滚不涉及数据回退。
+- 下一项：PR 合并 → rebase 后在 `main` 上补打 `v0.7.12` → `check:release-tag` 复绿 → 配额清掉后跑
+  `npm run ops:smoke-prod`，届时判据变成「`/zh/changelog` 含 0.7.12」。
+- 更新时间：2026-09-23 18:28（Asia/Shanghai）。
+
