@@ -1,6 +1,27 @@
 {
   "releases": [
     {
+      "version": "0.7.12",
+      "date": "2026-09-23",
+      "name": {
+        "zh": "时间口径归一（回放与图表）",
+        "en": "Time calibers made consistent (replay and charts)"
+      },
+      "highlights": {
+        "zh": [
+          "自定义回放的截止日期输入改按本地日历取界：UTC+8 用户每天 00:00–08:00 不再被禁止选择今天，选中的那一天也不再被当成在 UTC 午夜提前收口——此前窗口会静默少掉当天后半段",
+          "图表横轴的时区位移收敛成单一常量，REST 与 WebSocket 两条路共用：此前两处各写一遍、而实时帧的断言根本没核对时间戳，口径一错开实时更新就不再覆盖最后一根 K 线",
+          "本地跑生产冒烟前先确认量的是当前构建：端口上驻留的上一次 next start 会让整轮结果失真（旧构建的缺陷算成本次的红、本次的缺陷藏成绿），现在标识对不上就直接失败且一条断言都不跑"
+        ],
+        "en": [
+          "The custom replay end date now reads the local calendar: users at UTC+8 are no longer blocked from picking today between 00:00 and 08:00, and the day you pick no longer closes early at UTC midnight, which silently dropped the back half of it",
+          "The chart's timezone offset is now a single constant shared by the REST and WebSocket paths. It had been hand-copied twice while the live-frame assertion never checked the timestamp, so any drift meant a live update stopped overwriting the last candle",
+          "Local production smoke now proves it measured the build you just made: a leftover next start on the port skews the entire run (an old build's defects get billed to this release, this release's defects read as green), so a BUILD_ID mismatch now exits 1 without running any assertion"
+        ]
+      },
+      "docs": ["docs/roadmap.md"]
+    },
+    {
       "version": "0.7.11",
       "date": "2026-09-23",
       "name": {
