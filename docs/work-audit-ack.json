@@ -104,6 +104,10 @@
     {
       "number": 262,
       "reason": "补丁等价，只是换了载体：#262 从 6b226e6 切出，其间 #263 与 #265 先落地，两个 PR 都往 docs/roadmap.md 末尾追加条目，GitHub 的 rebase 报 merge conflicts；本仓库禁止 force-push，于是把五笔（1f666db→fe6705d、fd8019f→8322053、f2fbfea→b6f00cd、2bebe7b→c879fdf、bc78319→ea78ae6）按原顺序重放到最新 origin/main(92b723e)，由本条 ack 所在的重放 PR 落地。两处冲突都只在 roadmap 的追加行，手工保留全部条目并按编号排好（R16.53–R16.56 各一条，文件 558 行、无冲突标记）；重放后 md-utils / 派生文案扫描 / 路线页量词三组用例 26/26 绿。"
+    },
+    {
+      "number": 271,
+      "reason": "补丁等价，只是换了载体：#271 从 a017d99 之前的 main 切出，#269（R16.59/16.60）先落地后两个 PR 都往 docs/roadmap.md 末尾追加条目，GitHub 侧 gh pr update-branch --rebase 报 RebaseConflictError；本仓库禁止 force-push，于是把两笔按原顺序重放到 origin/main(a017d99)：c2d1db5→bda62aa（代码）、2f3698c→391ba29（R16.61 台账），冲突只在 roadmap 的追加处，手工保留全部条目并按编号排好（R16.59/60/61 各一条，文件无冲突标记）。逐文件验证等价：git rev-parse 比对 HEAD 与 origin/fix-replay-skip 的 src/components/replay-trainer.tsx、src/components/replay-trainer.test.tsx 两个 blob，两个 OID 相同（roadmap 那笔按设计不同，因为要接住 #269 的两条）。重放后 replay 三组用例（trend/trainer/history）42/42 绿、typecheck 与 eslint --max-warnings=0 干净。#271 与本条 ack 所在 PR 合并后关闭。"
     }
   ]
 }
