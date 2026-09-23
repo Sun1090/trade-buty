@@ -251,8 +251,11 @@ describe("AiChat 清空对话", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "清空对话" }));
     body.release();
-    await waitFor(() => expect(screen.queryByText("流式回答内容")).toBeNull());
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    // 输入框随 loading 一起解禁，而 loading 在归档判断之后的 finally 里才置回：
+    // 等到它就能确定「归档那一刻已经发生」，不用靠墙钟定时器赌一个 tick。
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("问任何交易问题")).not.toBeDisabled()
+    );
 
     // 归档发生在流结束后：没有这道闸，刚清掉的这轮会被 POST 原样写回去
     expect(calls.some((call) => call.method === "POST" && call.url === "/api/ai/conversations")).toBe(false);
