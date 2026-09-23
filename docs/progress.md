@@ -6401,3 +6401,52 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：按已核实清单继续 #101（即 R16.64 的落地候选）、#102–#106（低端机降级注释、坏币对被判成 API 不可达、
   自定义模式「新一轮」拿到同一批 K 线、`已回放 0/-30` 的负分母、ticker ▲% 其实是滚动 24 小时）。
 - 更新时间：2026-09-24 05:30（Asia/Shanghai）。
+
+## 2026-09-24 — #272 落地、#273 换载体重放并并入行情窗口修复（R16.65 / R16.66），以及两次自己踩到的取证失误
+
+- 版本 / 状态：**未发版**（0.7.14 已在生产）。当前分支 `fix-market-claims-v2`（从 `origin/main` = `38a877b` 切出），
+  三个提交：`895b868`（R16.65 坏币对文案，重放自 `4d699b0`）、`7136c26`（R16.66 行情 24 小时窗口，
+  重放自 `8787d6a`）、本条台账与确认文档所在提交。
+- 落地：PR **#272**（R16.61 跳末填图 / R16.62 趋势空态 / R16.63 tooltip 差一与中英混排）rebase 合并 →
+  main 走到 `38a877b`；**#271** 随之关闭（评论写明替换关系，确认台账 `docs/work-audit-ack.json` 已在 main 上）。
+  #272 第一次 CI 红在 `check:report-freshness`——见下面「取证失误 ①」。
+- 完成内容：
+  1. **R16.65**：图表把「这个现货交易对不存在」说成「币安 API 可能不可达」。实测币安答的是
+     HTTP 400 + `{"code":-1121}`（`NOTAREALPAIR`、`1000PEPEUSDT` 两例当场 curl），而 `fetchKlines`
+     把一切非 2xx 压成同一个 `Error`、组件统一判 `status="error"`，屏幕上还配一个必然无效的「重试」。
+     现在只有「400 且 code 恰为 -1121」走新的 `InvalidMarketSymbolError` → `badSymbol` 状态 →
+     一条独立文案；400 带别的 code、400 带非 JSON 响应体都退回原文案。
+  2. **R16.66**：首页行情卡的 `▲ x%` 取自 `/api/v3/ticker/24hr` 的 `priceChangePercent`（比的是 24 小时前），
+     与刚轮询到的价格并排、共用「实时行情」标题，却没有任何一处说窗口。补一行整宽的 `changeNote`；
+     用例不写死 24，而是从**当场发出的请求 URL** 里正则抓窗口数字再断言屏上同源。
+- 变更文件：`src/lib/binance.ts`、`src/components/kline-chart.tsx`、`src/components/chart-embed.tsx`、
+  `src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx`、`src/lib/i18n.ts`、`src/lib/chart-symbols.ts`、
+  `src/components/market-ticker.tsx`，用例 `binance.test.ts` / `kline-chart.test.tsx` / `market-ticker.test.tsx`，
+  文档 `docs/roadmap.md`（R16.65 / R16.66）、`docs/work-audit-ack.json`（#273 的确认）、本条。
+- 验证：`npm test` **296 文件 / 2861 条**绿（本批 +4：binance 3、chart 1；行情 +2）；`typecheck`、
+  `lint --max-warnings=0` 干净；`check:localized-labels` / `dead-copy` / `glossary` / `ai-copy` / `docs` /
+  `links` / `report-freshness` 全绿；`npm run build` 后 `check:mobile` 14 页 320px 无溢出、
+  `check:bundle` 454 条路由在预算内（行情那行加在首页卡片里，这两条门禁就是为它跑的）；
+  `e2e/placeholder-leak.spec.ts` 11/11（含 `/zh/replay` 水合面）。
+  重放等价核对：`src/` 下 10 个文件与 `origin/fix-chart-bad-symbol-copy` 逐 blob 相同；
+  `src/lib/i18n.ts` 按设计不同（要同时含 #272 的 `trendEmpty` 与本批的 `badSymbol`，两键各 2 处已 grep 核对）。
+- 变异核对：R16.65 两组（摘掉 `code` 判断 → 两条红并打印 `expected … to throw /行情请求失败 \(400\)/ but got '没有这个交易对：BTCUSDT'`；
+  `setStatus("badSymbol")` 退回 `error` → 该条红 `Unable to find an element with the text: 没有这个交易对`）；
+  R16.66 三组（删掉渲染行 → 两条新用例红；文案窗口改 1 小时而端点不动 → 同源用例红；只改端点不改文案 → 同一条红）。
+- 取证失误 ①（**门禁能力被高估**，已写进项目记忆）：`check:report-freshness` **从不重算**——它只看
+  `git status` 里那份清单有没有被改动。单独跑它时打印的「17 份 · 过期 0 · 未提交 0」对「入库台账是否过期」
+  零证明；只有 CI 那种「先跑生产步骤、再跑本门禁」的序列才有意义。我就这样把 #272 送上去，CI 才报出
+  `docs/test-clock-hygiene.md` 过期（跳末那笔把 `replay-trainer.test.tsx` 的命中行从 303 推到 307，
+  而这份台账记录的正是**行号**）。本地补跑 `check:test-clock-hygiene` 并重算提交（`895a464`，随 #272 rebase 落地为 `38a877b`）后 CI 转绿。
+  顺带一条同类盲区：`check:localized-labels` 看不见模板字符串里的中文（R16.63 已当场探针自证）。
+- 取证失误 ②（未复现的一次红，**没留住日志**）：本批第一次全量 `npm test` 报
+  `Tests 1 failed | 2858 passed`，可我当时用 `| tail -12` 取摘要，把失败用例的名字与断言一起丢掉了；
+  随后同一棵树 1 次全量 + 3 次全量 + 6 次定点重跑（`kline-chart` / `binance` / `chart-embed`）全绿，
+  所以这条只能记成「一次未复现、且未能归因」，不能记成「已修」或「无问题」。
+  教训已单独落记忆：要诊断的跑必须整份落盘再 grep。
+- 阻塞 / 风险：无新增。R16.66 那行是纯显示文案，R16.65 只在 `code === -1121` 时改变判类，
+  两者都不动存储格式与请求参数；回滚 = `git revert` 本批提交。待拍板清单不变
+  （R15.2 / R16.7 / R16.10–R16.13 / R16.16 / R16.41 / R16.47 / R16.52 / R16.58 / R16.60 / **R16.64**）。
+- 下一项：#273 由本 PR 取代后关闭；随后按清单继续 #102（低端机降级的注释与用例）、#104（自定义模式
+  「新一轮」拿到同一批 K 线）、#106（`已回放 0/-30` 的负分母）。
+- 更新时间：2026-09-24 07:55（Asia/Shanghai）。

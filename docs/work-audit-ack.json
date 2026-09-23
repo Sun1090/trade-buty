@@ -108,6 +108,10 @@
     {
       "number": 271,
       "reason": "补丁等价，只是换了载体：#271 从 a017d99 之前的 main 切出，#269（R16.59/16.60）先落地后两个 PR 都往 docs/roadmap.md 末尾追加条目，GitHub 侧 gh pr update-branch --rebase 报 RebaseConflictError；本仓库禁止 force-push，于是把两笔按原顺序重放到 origin/main(a017d99)：c2d1db5→bda62aa（代码）、2f3698c→391ba29（R16.61 台账），冲突只在 roadmap 的追加处，手工保留全部条目并按编号排好（R16.59/60/61 各一条，文件无冲突标记）。逐文件验证等价：git rev-parse 比对 HEAD 与 origin/fix-replay-skip 的 src/components/replay-trainer.tsx、src/components/replay-trainer.test.tsx 两个 blob，两个 OID 相同（roadmap 那笔按设计不同，因为要接住 #269 的两条）。重放后 replay 三组用例（trend/trainer/history）42/42 绿、typecheck 与 eslint --max-warnings=0 干净。#271 与本条 ack 所在 PR 合并后关闭。"
+    },
+    {
+      "number": 273,
+      "reason": "补丁等价，只是换了载体：#273 从 a017d99 切出，#272（R16.61–R16.64）先落地，两个 PR 都往 docs/roadmap.md 末尾追加条目，GitHub 侧 gh pr update-branch 273 --rebase 报 RebaseConflictError；本仓库禁止 force-push，故把那笔重放到 origin/main(38a877b) 之上：4d699b0→895b868，并按既有惯例把另一条待落地的独立修复（首页行情窗口 8787d6a→7136c26，分支 fix-ticker-change-window，本来就没开 PR）合进同一条分支，两轮重放合成一轮 CI。冲突只在 roadmap 追加处（R16.65 排在 R16.64 之后，文件 567 行、无冲突标记）；src/lib/i18n.ts 逐 blob 比对为 DIFF 是按设计——重放版要同时含 #272 的 trendEmpty 与本条的 badSymbol，两个键各 2 处（zh/en）已 grep 核对。其余 10 个 src/ 文件与 origin/fix-chart-bad-symbol-copy 的 blob 完全相同。#273 与本条 ack 所在 PR 合并后关闭。"
     }
   ]
 }
