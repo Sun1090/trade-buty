@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFirstParagraph, extractH1, titleOrder } from "./md-utils";
+import { plainText, readFirstParagraph, extractH1, titleOrder } from "./md-utils";
 
 describe("readFirstParagraph", () => {
   it("跳过标题取首段", () => {
@@ -60,5 +60,35 @@ describe("titleOrder", () => {
 
   it("非数字开头返回 999", () => {
     expect(titleOrder("入门 01")).toBe(999);
+  });
+});
+
+describe("plainText（R16.55：导语与摘要里的 markdown 语法不该原样上屏）", () => {
+  it("内联链接只留链接文字", () => {
+    expect(plainText("后者请看 [15-量化实战篇](../quant-practice/) 的清单")).toBe(
+      "后者请看 15-量化实战篇 的清单",
+    );
+  });
+
+  it("引用式链接、尖括号裸链与行内 HTML 标签一起收掉", () => {
+    expect(
+      plainText("见 [下一章][ref]，源页 <https://example.com>，换行标记 <br> 也不该留下"),
+    ).toBe("见 下一章，源页 https://example.com，换行标记 也不该留下");
+  });
+
+  it("反引号只删记号：`code` 里的普通文字保留", () => {
+    expect(plainText("参数 `risk_pct` 要留得住")).toBe("参数 risk_pct 要留得住");
+  });
+
+  it("折叠空白并去掉首尾空格", () => {
+    expect(plainText("  第一行\n   第二行  ")).toBe("第一行 第二行");
+  });
+
+  it("readFirstParagraph 走同一个出口：链接语法不再出现在截出来的导语里", () => {
+    expect(
+      readFirstParagraph(
+        "# 09 · 外汇篇\n\n> [09-市场与品种专题篇/01-外汇市场.md](../markets-instruments/forex-market.md) 讲清了外汇的「概念」\n",
+      ),
+    ).toBe("09-市场与品种专题篇/01-外汇市场.md 讲清了外汇的「概念」");
   });
 });
