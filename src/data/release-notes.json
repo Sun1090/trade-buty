@@ -1,6 +1,33 @@
 {
   "releases": [
     {
+      "version": "0.7.14",
+      "date": "2026-09-24",
+      "name": {
+        "zh": "把话说回到代码这一侧（第六批）",
+        "en": "Making the copy match the code (round six)"
+      },
+      "highlights": {
+        "zh": [
+          "「朗读」真的把整篇念完：过去整篇课文被截到 3000 字交给一条语音任务，而 182 篇里有 173 篇比它长（中位数 6,646 字）——念完那一截按钮就从「停止」退回「朗读」，界面把「这一截念完了」演成「整篇念完了」。现在按段落切成多条排队朗读，只有最后一条负责收尾，任何一条出错就把整队退回待命",
+          "16 条只写了中文一版的界面文案改按语言取值，判据也从「屏幕阅读器会念的属性」扩到人眼直接看到的按钮文字：英文访客从错题本下载的 .txt 曾经是一份中文表头，测验的「跳过」、课程分享卡上的三行同样不分语言。同时收拢出一份被两个组件各自抄了 18 个字段的答案字典",
+          "隐私页与 FAQ 改口：AI 反馈与引用点击不是「不含账户」——未登录时确实匿名，登录后每一行都带着账户标识写进库里；文案按实现的两种情形分别说明，并加一条扫描用例，让任何不带登录态限定的「不含账户」式说法无法再次出现",
+          "AI 出错时不再把上游状态串摆到界面上：过去 401 的 Login required、429 的 Rate limit exceeded 会原样出现在中文页面里，现在 401 说「登录后可生成学习计划」、429 说清楚还要等几分钟，其余分支念本站自己的文案；生成失败后按钮也不再消失，可以直接重试",
+          "章节导语与课文摘要不再漏出 markdown 语法：这些短句是从原文里截出来的、不走链接改写那条通道，于是 [09-市场与品种专题篇/01-外汇市场.md](../…) 这种写法原样印在 22 个预渲染页面的可见文字上，两处还进了 <meta name=\"description\">。内容仓原文一字未动，本侧收成语；路线页那一行数的其实是课文，量词却写着 chapters，一并改回 lessons",
+          "两处注释在替代码说话，如今按事实改写：合并摘要的 toast 写的是 5 秒自动消失、按用户去重，代码是 8 秒、按标签页且键里没有任何身份；聊天路由把「保留最近 10 轮」写成 10 组问答。篇章「已读几篇」也从四处各算各的收敛成一个出口——其中庆祝组件自己解析原始存储再取长度，字符串也有 .length，于是坏掉的一个值就能让「篇章完成！」的礼花在别处显示 0/2 时放出"
+        ],
+        "en": [
+          "Read aloud now reads the whole lesson: the text was cut to 3000 characters and handed to a single speech task, yet 173 of 182 lessons are longer than that (median 6,646) - and when that slice ended the button flipped back to Read aloud as though the lesson had finished. Lessons are now split by paragraph into a queue where only the last segment ends playback, and any failing segment returns the control to idle",
+          "Sixteen interface strings that existed only in Chinese now follow the visitor's language, and the check behind them widened from attributes a screen reader announces to the button text people actually read: a wrong-book .txt downloaded by an English visitor used to arrive with Chinese column headers, and the quiz Skip button and course share card were the same. A 18-field answer dictionary copied into two components was folded back into one export",
+          "The privacy page and FAQ changed their story: AI feedback and citation clicks are not \"stored without an account\" - they are anonymous while you are logged out, and every row is saved with your account identifier once you are logged in. The copy now describes both cases, and a scan test rejects any future unconditional \"no account\" phrasing that drops the login qualifier",
+          "AI failures no longer put upstream status strings on the screen: Login required from a 401 and Rate limit exceeded from a 429 used to appear verbatim on Chinese pages. A 401 now says a plan needs a login, a 429 says how many minutes to wait, other branches use our own wording, and the generate button stays put so a failed attempt can simply be retried",
+          "Chapter taglines and lesson summaries no longer leak markdown syntax: those short strings are cut out of the source text and never pass through the link rewriter, so a raw [09-…](../…) link was printed as visible copy on 22 prerendered pages and landed in two meta descriptions. The content repository was left untouched and the flattening happens here; the learning-path line counts lessons but was labelled chapters, now corrected",
+          "Two comments were speaking for the code while the code said something else, and are now truthful: the merge-summary toast documented a 5 second per-user dismissal while it actually runs 8 seconds per browser tab with no identity in the key, and the chat route described 10 rounds as 10 exchanges. The per-chapter read count also collapsed from four independent calculations into one owner - one of them parsed raw storage itself and took .length, so a single malformed value could fire the Chapter complete confetti while every other surface still showed 0/2"
+        ]
+      },
+      "docs": ["docs/roadmap.md"]
+    },
+    {
       "version": "0.7.13",
       "date": "2026-09-23",
       "name": {
