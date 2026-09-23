@@ -6423,7 +6423,8 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   `src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx`、`src/lib/i18n.ts`、`src/lib/chart-symbols.ts`、
   `src/components/market-ticker.tsx`，用例 `binance.test.ts` / `kline-chart.test.tsx` / `market-ticker.test.tsx`，
   文档 `docs/roadmap.md`（R16.65 / R16.66）、`docs/work-audit-ack.json`（#273 的确认）、本条。
-- 验证：`npm test` **296 文件 / 2861 条**绿（本批 +4：binance 3、chart 1；行情 +2）；`typecheck`、
+- 验证：`npm test` **296 文件 / 2863 条**绿（#272 落地后 main 为 2857，本批 +6：`binance.test.ts` 3、
+  `kline-chart.test.tsx` 1、`market-ticker.test.tsx` 2）；`typecheck`、
   `lint --max-warnings=0` 干净；`check:localized-labels` / `dead-copy` / `glossary` / `ai-copy` / `docs` /
   `links` / `report-freshness` 全绿；`npm run build` 后 `check:mobile` 14 页 320px 无溢出、
   `check:bundle` 454 条路由在预算内（行情那行加在首页卡片里，这两条门禁就是为它跑的）；
