@@ -278,6 +278,10 @@ describe("ReplayTrainer 自由模式控制", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "跳到结尾" }));
     expect(screen.getByText(/270\/270/)).toBeInTheDocument();
+    // 跳到结尾必须真的把整段填进图表：播放推进走逐根 update()，全量 setData 只在数据变化
+    // 那一刻跑，所以过去只改下标的写法会让图停在上一次的位置，而计数已经在说 270/270。
+    const filled = mocks.series.setData.mock.lastCall?.[0] as unknown[] | undefined;
+    expect(filled, "跳末之后图表应拿到整段 300 根").toHaveLength(300);
     // 到底后播放按钮禁用
     expect(screen.getByRole("button", { name: "播放" })).toBeDisabled();
   });
