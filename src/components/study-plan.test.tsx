@@ -3,7 +3,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { StudyPlan } from "./study-plan";
 
-const dict = { generate: "生成学习计划", generating: "生成中…", title: "AI 学习计划" };
+const dict = {
+  generate: "生成学习计划",
+  generating: "生成中…",
+  title: "AI 学习计划",
+  error: "暂时无法生成学习计划，请稍后重试。",
+  loginRequired: "登录后可生成学习计划",
+};
+const enDict = {
+  generate: "Generate plan",
+  generating: "Generating...",
+  title: "AI Study Plan",
+  error: "Plan generation is unavailable right now",
+  loginRequired: "Log in to generate a study plan",
+};
 
 type Deferred = { resolve: (value: unknown) => void };
 let pending: Deferred;
@@ -91,8 +104,8 @@ describe("StudyPlan", () => {
     );
   });
 
-  it("falls back to a retry message on non-2xx responses", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+  it("非 2xx 时说「稍后重试」，并且重试按钮还在（R16.54：旧写法把失败写进 plan，按钮一起没了）", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500 }));
     render(
       <StudyPlan
         doneChapters={[]}
@@ -102,12 +115,11 @@ describe("StudyPlan", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "生成学习计划" }));
-    expect(
-      await screen.findByText("暂时无法生成学习计划，请稍后重试。"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(dict.error)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "生成学习计划" })).toBeEnabled();
   });
 
-  it("falls back to a retry message when the request throws", async () => {
+  it("请求抛异常时同样只报失败，不吞掉重试入口", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
     render(
       <StudyPlan
@@ -118,8 +130,37 @@ describe("StudyPlan", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "生成学习计划" }));
-    expect(
-      await screen.findByText("暂时无法生成学习计划，请稍后重试。"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(dict.error)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "生成学习计划" })).toBeEnabled();
+  });
+
+  it("未登录点生成说的是「要登录」，不是「等一会儿再试」", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 401 }));
+    render(
+      <StudyPlan
+        doneChapters={[]}
+        wrongChapters={[]}
+        currentChapter="spot"
+        dict={dict}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "生成学习计划" }));
+    expect(await screen.findByText(dict.loginRequired)).toBeInTheDocument();
+    expect(screen.queryByText(dict.error)).not.toBeInTheDocument();
+  });
+
+  it("英文界面拿到的是字典里的英文，不是组件里写死的中文", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 401 }));
+    render(
+      <StudyPlan
+        doneChapters={[]}
+        wrongChapters={[]}
+        currentChapter="spot"
+        dict={enDict}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Generate plan" }));
+    expect(await screen.findByText(enDict.loginRequired)).toBeInTheDocument();
+    expect(screen.queryByText(/暂|请稍后|登录后可生成/)).not.toBeInTheDocument();
   });
 });

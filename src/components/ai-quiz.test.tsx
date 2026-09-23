@@ -27,6 +27,8 @@ const dict = {
   generate: "AI 针对错题出变体题",
   generating: "正在生成…",
   error: "生成失败，请重试",
+  loginRequired: "登录后可用 AI 出题",
+  rateLimited: "请求过于频繁，请稍后再试",
   question: "题目",
   explain: "解析",
   report: "举报题目",
@@ -171,21 +173,33 @@ describe("AiQuiz 入口、错误态与多题流程", () => {
     expect(screen.getByRole("button", { name: /AI 针对错题出变体题/ })).toBeDisabled();
   });
 
-  it("展示 API 错误、非 JSON 错误回退和网络异常", async () => {
+  it("失败文案按状态码分三种说法，不把上游状态串摆到界面上（R16.54）", async () => {
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce({ ok: false, json: async () => ({ error: "登录后才能生成" }) })
-      .mockResolvedValueOnce({ ok: false, json: async () => { throw new Error("bad json"); } })
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ error: "Login required" }) })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: { get: () => "120" },
+        json: async () => ({ error: "Rate limit exceeded" }),
+      })
+      .mockResolvedValueOnce({ ok: false, status: 502, json: async () => ({ error: "AI 服务暂时不可用" }) })
       .mockRejectedValueOnce("offline");
     vi.stubGlobal("fetch", fetchMock);
     render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
 
     fireEvent.click(screen.getByText(dict.generate));
-    expect(await screen.findByText("登录后才能生成")).toBeInTheDocument();
+    expect(await screen.findByText(dict.loginRequired)).toBeInTheDocument();
+    fireEvent.click(screen.getByText(dict.generate));
+    expect(await screen.findByText(`${dict.rateLimited} (2min)`)).toBeInTheDocument();
     fireEvent.click(screen.getByText(dict.generate));
     expect(await screen.findByText(dict.error)).toBeInTheDocument();
     fireEvent.click(screen.getByText(dict.generate));
     expect(await screen.findByText(dict.error)).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    // 上游的三条状态串一条都不该出现在屏幕上
+    for (const raw of ["Login required", "Rate limit exceeded", "AI 服务暂时不可用"]) {
+      expect(screen.queryByText(raw), `上游状态串漏到了界面上：${raw}`).not.toBeInTheDocument();
+    }
   });
 
   it("多题可进入下一题，末题完成后回到生成入口", async () => {

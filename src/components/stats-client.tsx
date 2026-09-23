@@ -813,7 +813,7 @@ export function StatsClient({
         doneChapters={stats.readDocs > 0 ? chapters.filter((c) => (progress?.[c.slug]?.length ?? 0) >= c.docCount).map((c) => c.slug).slice(0, 5) : []}
         wrongChapters={[]}
         currentChapter=""
-        dict={{ generate: locale === "en" ? "Generate plan" : "生成学习计划", generating: locale === "en" ? "Generating..." : "生成中…", title: locale === "en" ? "AI Study Plan" : "AI 学习计划" }}
+        dict={{ generate: locale === "en" ? "Generate plan" : "生成学习计划", generating: locale === "en" ? "Generating..." : "生成中…", title: locale === "en" ? "AI Study Plan" : "AI 学习计划", error: locale === "en" ? "Plan generation is unavailable right now" : "暂时无法生成学习计划，请稍后重试。", loginRequired: locale === "en" ? "Log in to generate a study plan" : "登录后可生成学习计划" }}
       />
 
       {/* 近 7 天迷你条 */}
