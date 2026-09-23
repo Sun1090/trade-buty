@@ -6236,3 +6236,60 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   （R16.50 + R16.51）→ 下一个待发仍是 patch（v0.7.14）。配额清掉后重跑 `npm run ops:smoke-prod`
   （判据：`/zh/changelog` 含最新已发布版本号）。
 - 更新时间：2026-09-24 01:06（Asia/Shanghai）。
+
+
+## 2026-09-24 — 四批接连落地（R16.53 / R16.54 / R16.56 / R16.55）；CodeQL 在 `plainText` 上连报两轮
+
+- 状态：**#260 / #263 / #265 / #266 全部已合并**（每个都是 rebase 合并，无合并提交），`origin/main` = `b00a0d3`。
+  合并时刻（UTC）：#260 17:47、#263 18:30、#265 19:05、#266 19:56。开着的 PR 只剩维护者自己的 #178。
+- 四批内容（逐条判据在 `docs/roadmap.md` 的 R16.53–R16.56）：
+  1. **R16.53（#260）** 隐私页与 FAQ 说「AI 反馈与引用点击不含账户」，而 `src/app/api/ai/{feedback,citation-click}/route.ts`
+     登录后写的就是 `user_id`。文案按实现三分（未登录匿名 / 登录后带账户标识 / 保留期），并加一条扫描用例：
+     任何「不带账户」式的无条件断言必须在同段带上下登录态限定，否则红——旧文案的四句话都能被它抓出来（非空转自证）。
+     另补两条端点用例，钉住登录后 `insert` 收到的确实是 `user_id: "user-77"`。
+  2. **R16.54（#263）** AI 失败态把上游英文状态串（`Login required` / `Rate limit exceeded`）直接摆上界面。
+     改为按状态码走本地字典（401 → 「登录后可生成学习计划」、429 → 带上 `Retry-After` 折算的分钟数），
+     其余分支统一显示本地文案；`study-plan.tsx` 拆出独立的 `failed` 态让按钮仍可重试。用例用「四条 mock 各出一条上游串，
+     界面一条都不许出现」的循环兜住，变异核对时先只改 `!res.ok` 并没有复现泄漏（真正显示的是 `catch` 分支），
+     改 `catch` 才咬住——这条判据的归属按事实记进台账。
+  3. **R16.56（#265）** 合并 toast 的注释写着「5 秒自动消失、按用户去重」，代码是 8 秒、按标签页去重且键里没有任何身份；
+     聊天路由注释把「保留最近 10 轮」写成 10 组问答。时长收敛成一个导出常量 `SYNC_TOAST_AUTO_DISMISS_MS`，
+     注释按事实改写，并加一条假定时器用例（`vi.advanceTimersByTime` 必须包在 `act()` 里才会重渲染）。
+  4. **R16.55（#266）** 派生文案（章节导语、课文摘要）是从原文截出来的，不走 `rewriteLinks`，于是
+     `[09-市场与品种专题篇/01-外汇市场.md](…)` 这种 markdown 语法原样印在 22 个预渲染页面上、两页还进了
+     `<meta name="description">`。内容仓原文不动，本侧新增 `plainText()` 收成语，另修路线页把课文数叫 `chapters`
+     的量词与知识图谱一处不实注释。扫描用例逐条核过全部 zh/en 导语与 300+ 条摘要，并自证扫过的条数。
+- **载体更换**：#261 / #264 / #262 三个 PR 关闭未合并，原因都是 `docs/roadmap.md` 末尾追加撞车（GitHub rebase 报
+  merge conflicts）。本仓库禁止 force-push，按 #125/#134 的既有办法在最新 `origin/main` 上重放同几笔，
+  分别由 #263 / #265 / #266 落地；`docs/work-audit-ack.json` 第 24/25/26 条逐笔写下原 SHA→新 SHA 的映射。
+  合并 #266 后逐笔核对：三个**重放分支**的每一笔在补丁意义上都已在 `main`（`git cherry -v` 全 `-`）；被替换掉的原始 v1 分支
+  （`fix-derived-copy`）另有两笔补丁不等价——`2bebe7b`（R16.55 台账条目，被 `c879fdf` 之后两次改写覆盖）与
+  `bc78319`（那版标签形状正则，被扫描实现 `29d64fc` 取代）。这两笔不是丢失，是被更好的实现盖掉，故按 ack 的映射删掉本地分支。
+- **`main` 一度红**：`847424b` 上「工作保全审计（R14.4）」因 #261 关闭未确认而失败，重跑（`gh run rerun`）无效——
+  缺的不是执行而是那条 ack；由带上 ack 的 #265 恢复为绿。
+- CodeQL 连报两轮：#266 第一版用 `</?[a-zA-Z][^>]*>` 删标签，第二版换成 `<[^>]*>` 再补一步删落单尖括号，
+  两次 `CodeQL` 聚合检查都红（`src/lib/md-utils.ts`，「This string may still contain `<script`」，check-run 107345432575）——
+  该查询只看正则本身像不像消毒器，不认后续步骤。最终把这一步写成逐字符扫描 `dropAngleSpans`，
+  全程不含任何带尖括号的正则，CodeQL 与两个 Analyze job 转绿。同一轮把自己写下的两处过头话改回来
+  （「标签正则挡不住 `<scr<scriptipt>`」不实；「反引号被随后的标签清理吃掉」顺序写反），
+  并把台账 R16.55 的收尾按两轮的事实重写。变异四组逐条点名，见 roadmap 该条。
+- 验证：#260 / #263 / #265 / #266 各自的必需检查（`ci` + `db-tests` + CodeQL 与两个 Analyze）全绿后才 rebase 合并；
+  `Vercel` 在 #266 上仍是 `Deployment rate limited — retry in 24 hours`（账户级 24h 构建配额），按既有判据不是合并门槛。
+  本地另跑：`md-utils` / `content` / `derived-copy-claims` / `lessons-unit` 四文件 57 条用例、`lint`、`typecheck`、
+  `check:docs`、`check:report-freshness`、`check:dead-copy`、`check:test-clock-hygiene`（294 个测试文件，与台账一致）、
+  `check:ai-copy`，退出码均 0。
+- 变更文件（四批合计）：`src/lib/{md-utils,content,i18n,learning-overview}.ts`、`src/lib/derived-copy-claims.test.ts`（新）、
+  `src/components/{ai-quiz,study-plan,stats-client,review-client,quiz,chapter-exam-card,knowledge-graph,sync-summary-toast}.tsx`、
+  `src/app/[locale]/{privacy,faq,path}/*`、`src/app/api/ai/{feedback,citation-click}/route.ts` 与其测试、
+  `src/app/api/ai/chat/route.ts`、`scripts/check-localized-labels.mjs`、`docs/{roadmap,progress,work-audit-ack,test-clock-hygiene}.md|.json`。
+- 分支清点：本轮的本地/远端临时分支大多已随合并消失。`git branch -d` 拒删三个**内容已在 `main`、但 SHA 因 rebase 换过**的本地分支
+  （`fix-toast-history-v2`、`fix/ai-error-copy-v2`、`fix/privacy-ai-account-claim`）——它们的补丁等价性由上面第 24/25/26 条 ack 记录，
+  要清掉需 `git branch -D`，属破坏性操作，留给维护者决定。远端另有 10 个 `fix/*` 分支残留（多为已合并 PR 的遗留），同样只登记不代删。
+- 阻塞 / 风险：Vercel 24h 构建配额未清掉 → `npm run ops:smoke-prod` 与预览冒烟（R14.9）仍待跑；Sentry（R14.10）、
+  上游 kline-buty 内容缺口（R14.11）、访客 AI 偶发 502 均在原处；R16.52（分享卡降级图的品牌行是否中英并列）待拍板。
+- 回滚：四批都是纯文案 / 注释 / 派生文本处理，无迁移、无存储格式变化；`git revert` 对应提交即可，回滚 #266 会让
+  22 个页面的导语退回带 markdown 语法的版本。
+- 下一项：`main` 比 v0.7.13 多六处修复（R16.50–R16.56）→ 按 `docs/release-checklist.md` 发 **v0.7.14**（patch）；
+  随后开工 R16.57（篇章「已读」口径收敛：`readDocsForChapter` 自称唯一口径，但 `stats-client.tsx:292/735/813`、
+  `chapter-complete-celebration.tsx:45`、`course-completion-trend.ts:111` 各算各的，且 `docCount` 为 0 的篇章
+  在 overview 与 trend 两张卡里一边算完成一边不算）。
