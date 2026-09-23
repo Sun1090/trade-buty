@@ -10,6 +10,8 @@
  *   时钟全部可注入（now 参数），测试不依赖真实时间。
  */
 
+import { localDateStr } from "./date-utils";
+
 export type ReminderCadence = "off" | "daily" | "weekly";
 
 export interface ReminderSettings {
@@ -66,11 +68,6 @@ export function saveReminderSettings(next: ReminderSettings): void {
   } catch {
     // ignore
   }
-}
-
-/** 本地日期 YYYY-MM-DD */
-function localDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 /** 本地 ISO 周键（周四定周，ISO-8601），格式 YYYY-Www */

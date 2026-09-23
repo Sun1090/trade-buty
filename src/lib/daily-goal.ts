@@ -6,16 +6,12 @@
  * 打开课程页停留 ≥5 秒即计入当日 read——「打开即算活跃」。
  * 旧版「篇数」目标（tb-daily-goal）保留字段不再读取，新 key 独立。
  */
+import { localDateStr } from "./date-utils";
 import { getTodayStudySeconds } from "./study-time";
 
 const GOAL_KEY = "tb-daily-goal-min";
 
 export const GOAL_TIERS = [5, 15, 30] as const;
-
-function todayStr(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
 /** 读取每日目标分钟数（必须为合法档位，否则回落默认 15） */
 export function getDailyGoalMin(): number {
@@ -32,7 +28,7 @@ export function setDailyGoalMin(n: number): void {
   const clamped = (GOAL_TIERS as readonly number[]).includes(n) ? n : 15;
   try {
     localStorage.setItem(GOAL_KEY, String(clamped));
-    localStorage.setItem("tb-daily-goal-date", todayStr());
+    localStorage.setItem("tb-daily-goal-date", localDateStr());
     window.dispatchEvent(new Event("tb-goal"));
   } catch {
     // ignore

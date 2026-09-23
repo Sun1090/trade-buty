@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { readActivityDates } from "@/lib/activity-calendar";
+import { localDateStr } from "@/lib/date-utils";
 
 const WEEKS = 26; // 最近半年
 const DAYS = 7;
@@ -31,7 +32,7 @@ export function ActivityHeatmap({ label, emptyLabel, locale }: HeatmapProps) {
     for (let day = 0; day < DAYS; day++) {
       const d = new Date(today);
       d.setDate(d.getDate() - (week * DAYS + (DAYS - 1 - day)));
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const key = localDateStr(d);
       cellMap.set(key, activeSet.has(key) ? 1 : 0);
     }
   }
