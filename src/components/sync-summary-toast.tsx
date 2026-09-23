@@ -9,10 +9,14 @@ import type { MergeSummary } from "@/lib/sync-layer";
  * 告诉用户"已为你同步 N 篇进度 / N 条错题 / N 个章节成绩提升"。
  *
  * 设计要点：
- * - 不阻塞登录流程，3 秒后自动消失，可手动关
- * - 同一个 userId 同一会话只弹一次（用 sessionStorage 标记，避免每次 hydrateFromCloud 都触发）
+ * - 不阻塞登录流程，`SYNC_TOAST_AUTO_DISMISS_MS` 之后自动消失，可手动关
+ * - 每个标签页只弹一次（sessionStorage 的标记键是常量、不含账户 id：同一标签页里切换到
+ *   第二个账户再合并，也不会有第二次提示。`MergeSummary` 本身不带身份，要按账户去重得先改事件载荷）
  * - 无 summary 时不渲染（hasAny=false → null）
  */
+/** toast 自动消失的等待时长：用例与注释都按这一个出口，不再各处手抄秒数 */
+export const SYNC_TOAST_AUTO_DISMISS_MS = 8000;
+
 export function SyncSummaryToast() {
   const [summary, setSummary] = useState<MergeSummary | null>(null);
 
@@ -20,7 +24,7 @@ export function SyncSummaryToast() {
     function onSummary(e: Event) {
       const detail = (e as CustomEvent<MergeSummary>).detail;
       if (!detail || !detail.hasAny) return;
-      // 用 sessionStorage 去重：每次页面加载只消费一次
+      // 用 sessionStorage 去重：同一个标签页只消费一次（刷新仍在，关掉标签页才重置）
       try {
         if (sessionStorage.getItem("tb-merge-summary-shown") === "1") return;
         sessionStorage.setItem("tb-merge-summary-shown", "1");
@@ -28,8 +32,7 @@ export function SyncSummaryToast() {
         // ignore
       }
       setSummary(detail);
-      // 8 秒后自动消失
-      window.setTimeout(() => setSummary(null), 8000);
+      window.setTimeout(() => setSummary(null), SYNC_TOAST_AUTO_DISMISS_MS);
     }
     window.addEventListener("tb-merge-summary", onSummary);
     return () => window.removeEventListener("tb-merge-summary", onSummary);
