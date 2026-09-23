@@ -6027,3 +6027,31 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   `npm run ops:smoke-prod`，届时判据变成「`/zh/changelog` 含 0.7.12」。
 - 更新时间：2026-09-23 18:28（Asia/Shanghai）。
 
+## 2026-09-23 — v0.7.12 上线状态、R16.40 落地，以及 404 语言问题的取证
+
+- 状态：**v0.7.12 已合并、已打 tag；生产仍停在旧构建（Vercel 24h 配额）**。R16.40 已合并进 `main`。
+- 里程碑 / 版本：v0.7.12（patch）+ R16.40。
+- 分支 / 提交：
+  - PR **#243**（R16.38 回放截止日期取本地日历）→ `6fd98f4` + `2aa0215`。
+  - PR **#244**（R16.39 图表横轴位移收敛为 `DISPLAY_TZ_OFFSET_SEC`）→ `8cd4ea6` + `5458689`。
+  - PR **#245**（发布）→ `cfe3da0` + `eab35e8`，附注 tag **`v0.7.12` → `eab35e8`** 已推送；
+    `check:release-tag` ✅「16 条发布记录的 tag 均已落地（最新 0.7.12 → v0.7.12）」。
+  - PR **#246**（R16.40 七份私有日历日拼装收敛 + `src/lib/date-caliber.test.ts` 门禁）→
+    `26d4b0d` + `a362143`（含判据扩到全部拼法的一次追加核对）。
+- 部署核对（本次发布后重跑 `npm run ops:smoke-prod`）：**8/10**。
+  - `GET /zh/changelog → 含最新发布版本` 红：页面里没有 0.7.12。合并后 `main` 的提交上
+    **完全没有 Vercel 的 check run**（只有 `ci` / `db-tests` / 两个 Analyze），即生产构建连尝试都没登记；
+    配额窗口内 Preview 仍能构建（#246 的 `Vercel Preview Comments` 为 pass），与 v0.7.11 那次观察一致。
+  - `POST /api/ai/chat 游客` 红：护栏路径 200、模型路径 502，仍是部署快照缺 `AI_API_URL` / `AI_MODEL` /
+    `AI_API_KEY` 或出口不通（长期外部阻塞）。
+  - 其余 8 条全绿。配额清掉后预期这一条转绿变成 9/10，且判据读的是本地发布记录（0.7.12），无需改代码。
+- 取证过程中新发现（**未修，已登记为 R16.41**）：中文 URL 走错时 404 用英文回答、CTA 指向 `/en`。
+  试过 `[locale]/[...rest]/page.tsx` + `[locale]/not-found.tsx`，`next build` 崩在预渲染：not-found 边界
+  拿不到 `params`，且边界会随每个 `[locale]` 页面在构建期渲染，任何请求期数据都会把 459 页 SSG 拖成动态渲染。
+  三条备选路与载荷数字都写进 roadmap 那一条，等拍板。
+- 门禁与验证：`npx vitest run` **291 文件 / 2798 条绿**；`lint`、`typecheck`、`check:docs`、
+  `check:report-freshness`（17 份报告，过期 0 · 未提交 0）、`check:dead-copy`、`check:db-assertion-counts` 全绿。
+- 风险 / 回滚：v0.7.12 回滚 = `git revert cfe3da0`；R16.40 是纯收敛，行为不变，回滚 = revert 两个提交。
+- 下一项：等 Vercel 配额窗口清掉后重跑生产冒烟并写回本条；R16.41 需要一次产品拍板。
+- 更新时间：2026-09-23 19:05（Asia/Shanghai）。
+
