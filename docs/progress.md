@@ -5757,3 +5757,42 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 风险 / 回滚：tag 已落地但生产未切换，此期间 `/zh/changelog` 线上仍是 0.7.8 的清单——页面对外没有做出任何「已是最新版」的承诺，无需处置。回滚 = `git revert 5435b24` 并删标签。
 - 下一项：①配额恢复后复跑冒烟并补写结论；②PR **#209**（时钟卫生 10 → 6）等 CI；③待拍板项不变：R15.2 / R16.7 / R16.10 / R16.11 / R16.12 / R16.13 / **R16.16**（示例日历三条路，推荐改成教学内容）。
 - 更新时间：2026-09-23 07:22（Asia/Shanghai）。
+
+## 2026-09-23 — v0.7.9 之后的第二批：#214 / #216 / #217 / #218 / #219 落地
+
+- 状态：**已合入 main，生产已跟上**。本条只补记事实与今天的复跑结果；每条改动自己的
+  口径、门禁设计与变异证据写在 `docs/roadmap.md` 的 R16.17–R16.23 条目里，本条不重抄，
+  以免出现两份会互相漂移的记录。
+- 里程碑 / 版本：v0.7.9 之后的未发布工作（尚未切新版本）。
+- 分支 / 提交（main 上的顺序）：
+  - PR **#214**（重开自 #211）`fix(copy): 断档恢复卡不再立 5 分钟门槛` → R16.19。
+  - PR **#216** `fix(copy): 界面说法回到代码事实第三批` → R16.20（法律页「更新日期」改由
+    `git log` 算出）· R16.21 的一部分 · R16.22（FAQ 服务器清单补齐崩溃诊断日志）。
+  - PR **#217** `feat(gates): 字典死键巡检接进 CI，预算冻结为 0` → R16.21；配套
+    `44ac072`（门禁）与 `7d6caa5`（删掉 4 条无渲染点词条，403 → 399）。
+  - PR **#218** `feat(ai): prompt 补上「不预测走势」` → R16.23，落地为 `497c41d`。
+  - PR **#219** `refactor(changelog): 「更早的 N 个版本」改由会返回 null 的构造函数给出`
+    → 落地为 `542e250`（R16.17 的收尾：把「没有更早版本」这一支从页面里挪进
+    `changelogOlderLine()`，返回 null 时整句不出现）。
+  - 被合并取代而关闭的 **#211 / #212 / #213 / #215**：去向记在
+    `docs/work-audit-ack.json`（四条均为「换载体重放」，源码 diff 逐字节一致）。
+  - 台账再生：`5340a70`、`c1777f0`。
+- 验证命令和结果（2026-09-23 上午在本分支重跑，即 main = `542e250` 的内容）：
+  - `npm run typecheck` · `npm run lint`（`--max-warnings=0`）exit 0；`npx vitest run`
+    **288 文件 / 2742 条全绿**。
+  - 24 条产物与内容门禁逐条取真实退出码：**0 条失败**（`constitution` · `links` ·
+    `sitemap` · `seo-surface` · `search-index` · `bundle` · `structured-data` ·
+    `risk-warning` · `nav-chain` · `relative-links` · `glossary` · `title-terminology` ·
+    `description-quality` · `description-dupes` · `slug-conflicts` · `frontmatter` ·
+    `image-alt` · `dead-copy`（死键 0 / 预算 0）· `test-clock-hygiene` · `docs` ·
+    `ai-copy` · `dark-pattern-copy` · `quiz-mounts` · `quiz-coverage`）。按发布检查单的
+    既有规程，这批跑在 e2e 之前，量的是干净的 `.next`。
+  - `npm run ops:smoke-prod` @ 10:01（Asia/Shanghai）：**9/10**，`/zh/changelog` 的
+    「含最新发布版本」探针通过，即生产已跟上 v0.7.9 之后的 main。
+- 阻塞：`BLOCKED_EXTERNAL` 一项照旧——生产 AI 游客模型路径 502（`AI_API_URL` /
+  `AI_MODEL` / `AI_API_KEY` / 出口），护栏路径 200，站内无异常。Vercel 24h 构建配额本批
+  未再卡住部署。
+- 待拍板（不阻塞上述任何一条）：R15.2 / R16.7 / R16.10 / R16.11 / R16.12 / R16.13 /
+  R16.16（示例日历三条路，推荐 ③ 改成教学内容）。
+- 下一项：R16.24（界面上的 `{chapters}`：占位符代入门禁），见下一节。
+- 更新时间：2026-09-23 10:05（Asia/Shanghai）。
