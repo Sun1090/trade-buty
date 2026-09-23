@@ -35,7 +35,7 @@ function seedRichLocal(): void {
     "getting-started:a": { chapter: "getting-started", doc: "a", at: at(shiftDate(today, -1)) },
   }));
   store.set("tb-quiz-getting-started", JSON.stringify({ best: 8, done: true }));
-  store.set("tb-quiz-attempt-ledger", JSON.stringify({
+  store.set("tb-quiz-attempts", JSON.stringify({
     "getting-started:1": { chapter: "getting-started", best: 8, total: 10, at: at(today) },
   }));
   store.set("tb-wrong", JSON.stringify({
