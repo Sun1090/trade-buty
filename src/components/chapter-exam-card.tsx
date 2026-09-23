@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { Quiz } from "@/components/quiz";
+import { Quiz, type QuizDict } from "@/components/quiz";
 import { readQuizProgress, type QuizProgress } from "@/lib/quiz-store";
 import { quizScoreCount } from "@/lib/quiz-score";
 import type { ChapterQuiz } from "@/lib/quiz-types";
@@ -11,27 +11,6 @@ function subscribeQuizProgress(onChange: () => void) {
   window.addEventListener("tb-progress", onChange);
   return () => window.removeEventListener("tb-progress", onChange);
 }
-
-type QuizDict = {
-  questionsUnit: string;
-  bestTpl: string;
-  start: string;
-  retry: string;
-  progressTpl: string;
-  correct: string;
-  wrong: string;
-  nextQ: string;
-  finish: string;
-  perfect: string;
-  shareQuiz: string;
-  previewQuiz: string;
-  download: string;
-  previewAlt: string;
-  copyLink: string;
-  copiedLink: string;
-  copyFailed: string;
-  downloadFailed: string;
-};
 
 /**
  * 章节测验入口卡片——每篇课底部无条件显示。

@@ -39,13 +39,14 @@ export default async function Image({ params }: { params: { locale: string; chap
             Trade Buty
           </span>
           <span style={{ color: "#34d399", fontSize: 22, marginLeft: 8 }}>
-            免费中立交易教育
+            {loc === "zh" ? "免费中立交易教育" : "Free, neutral trading education"}
           </span>
         </div>
         {/* 标题 */}
         <div style={{ marginTop: 40, display: "flex", flexDirection: "column", flex: 1, justifyContent: "center" }}>
           <span style={{ color: "#34d399", fontSize: 24, fontWeight: 500, marginBottom: 16 }}>
-            📖 {data ? `${docCount} 篇课程` : ""}
+            {/* R16.51：这张卡拿得到 locale，此前却把中文写死在英文页的分享图上 */}
+            {data ? (loc === "zh" ? `📖 ${docCount} 篇课程` : `📖 ${docCount} lessons`) : ""}
           </span>
           <span style={{ color: "#e9edf5", fontSize: 56, fontWeight: 700, lineHeight: 1.2, maxWidth: 900 }}>
             {title}
@@ -59,7 +60,9 @@ export default async function Image({ params }: { params: { locale: string; chap
         {/* 底部 */}
         <div style={{ display: "flex", alignItems: "center", gap: 24, borderTop: "1px solid rgba(233,237,245,0.09)", paddingTop: 24 }}>
           <span style={{ color: "rgba(233,237,245,0.38)", fontSize: 22 }}>
-            不荐股 · 不导流 · 不承诺收益
+            {loc === "zh"
+              ? "不荐股 · 不导流 · 不承诺收益"
+              : "No stock picks · No referrals · No return promises"}
           </span>
         </div>
       </div>

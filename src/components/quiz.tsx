@@ -11,7 +11,8 @@ import { QuizShareCard } from "@/components/quiz-share-card";
 import type { ShareLocale } from "@/lib/share-card";
 import { encodeQuiz } from "@/lib/share-decode";
 
-interface QuizDict {
+/** 测验卡片与章节目录卡片共用同一份词条契约，所以类型由这里单一出口 */
+export interface QuizDict {
   questionsUnit: string;
   bestTpl: string;
   start: string;
@@ -20,6 +21,7 @@ interface QuizDict {
   correct: string;
   wrong: string;
   nextQ: string;
+  skip: string;
   finish: string;
   perfect: string;
   shareQuiz: string;
@@ -229,7 +231,7 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
           <QuizTimer running={picked === null} />
           {picked === null && (
             <button onClick={skipQ} className="text-xs text-faint hover:text-accent transition underline underline-offset-4">
-              跳过
+              {dict.skip}
             </button>
           )}
           <span className="font-mono text-accent">
