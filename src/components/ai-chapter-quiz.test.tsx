@@ -77,6 +77,13 @@ describe("AiChapterQuizCard", () => {
     const { container } = render(<AiChapterQuizCard chapter="spot" locale="zh" dict={dict} />);
     expect(screen.getByRole("button", { name: dict.start })).toBeInTheDocument();
     expect(container.textContent).toContain(dict.badge);
+    expect(screen.getByText("难度")).toBeInTheDocument();
+  });
+
+  it("英文界面的难度标签是英文（R16.51：这里此前写死中文）", () => {
+    const { container } = render(<AiChapterQuizCard chapter="spot" locale="en" dict={dict} />);
+    expect(screen.getByText("Difficulty")).toBeInTheDocument();
+    expect(container.textContent).not.toContain("难度");
   });
 
   it("难度选择：写入本地偏好并在生成请求中提交 advanced", async () => {

@@ -316,6 +316,26 @@ describe("ReviewClient 导出与清空", () => {
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:wrongbook");
   });
 
+  it("英文界面导出的 txt 四条标签都是英文（R16.51：此前写死中文）", async () => {
+    const createObjectURL = vi.fn(() => "blob:en-export");
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL: vi.fn() });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    render(<ReviewClient quizzes={quizzes} dict={dict} locale="en" />);
+    fireEvent.click(screen.getByText("Export"));
+
+    const [blob] = createObjectURL.mock.calls[0] as unknown as [Blob];
+    const text = await blob.text();
+    expect(text).toContain("Trade Buty wrong-answer export");
+    expect(text).toContain("Exported at: ");
+    expect(text).toContain("Your pick: ");
+    expect(text).toContain("Correct answer: ");
+    // 课文本身的中文不在断言范围内：导出的是访客做错的那道题，语言跟着内容走
+    expect(text).not.toContain("错题本导出");
+    expect(text).not.toContain("导出时间");
+    expect(text).not.toContain("你的选择");
+    expect(text).not.toContain("正确答案");
+  });
+
   it("确认框取消 / 确认分别不调用 / 调用清空", () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<ReviewClient quizzes={quizzes} dict={dict} locale="zh" />);
@@ -357,6 +377,18 @@ describe("ReviewClient 快速重答", () => {
     fireEvent.click(screen.getByText("开始快速重答"));
     fireEvent.click(screen.getByText("返回"));
     expect(screen.getByText(/今天的复习任务/)).toBeInTheDocument();
+  });
+
+  it("英文界面的重答面板整块都是英文（R16.51：这一片的文字此前写死中文）", () => {
+    render(<ReviewClient quizzes={quizzes} dict={dict} locale="en" />);
+    fireEvent.click(screen.getByText("Start a quick redo"));
+    expect(screen.getByText("Random redo")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "A. a" }));
+    expect(screen.getByText(/✅ Correct/)).toBeInTheDocument();
+    expect(screen.getByText("Another random question")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Back"));
+    expect(screen.getByText("Today’s review")).toBeInTheDocument();
+    expect(screen.queryByText("随机抽题重答")).not.toBeInTheDocument();
   });
 });
 
@@ -402,5 +434,15 @@ describe("ReviewClient 分组与跳转", () => {
     expect(heading).toBeInTheDocument();
     const link = screen.getByText("重做本章测验 →").closest("a");
     expect(link).toHaveAttribute("href", "/zh/knowledge/spot/spot-basics");
+  });
+
+  it("英文界面的两条错题出口都是英文（R16.51：这两处此前写死中文）", () => {
+    wrongState.items = { "spot:0": entry({ srsDue: today() }) };
+    render(<ReviewClient quizzes={quizzes} dict={{ ...dict, showAnswer: "Reveal" }} locale="en" />);
+    expect(screen.getByText("Redo this chapter quiz →")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Reveal"));
+    expect(screen.getByText("Ask AI to go deeper")).toBeInTheDocument();
+    expect(screen.queryByText("重做本章测验 →")).not.toBeInTheDocument();
+    expect(screen.queryByText("问 AI 深入理解")).not.toBeInTheDocument();
   });
 });

@@ -65,7 +65,7 @@ export function ReadAloud({
       const utterance = new SpeechSynthesisUtterance(chunk);
       utterance.lang = locale === "zh" ? "zh-CN" : "en-US";
       utterance.rate = rate;
-      // 只有队尾那条念完才算念完：中间每条都回调会把按钮提前放回「朗读」
+      // 只有队尾那条念完才算念完：中间每条都回调一次，按钮会被提前放回待命态
       if (index === lastIndex) utterance.onend = () => setSpeaking(false);
       utterance.onerror = () => {
         speechSynthesis.cancel();

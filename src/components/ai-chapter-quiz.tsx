@@ -128,7 +128,7 @@ export function AiChapterQuizCard({
           </button>
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <span className="text-xs text-faint">难度</span>
+          <span className="text-xs text-faint">{locale === "en" ? "Difficulty" : "难度"}</span>
           {(["basic", "advanced"] as const).map((d) => (
             <button
               key={d}

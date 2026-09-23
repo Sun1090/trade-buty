@@ -19,7 +19,7 @@ const quiz: ChapterQuiz = {
 const dict = {
   questionsUnit: "题", bestTpl: "最佳 {n}/{total}",
   start: "开始", retry: "重试", progressTpl: "{i}/{n}",
-  correct: "对", wrong: "错", nextQ: "下一题", finish: "完成", perfect: "满分",
+  correct: "对", wrong: "错", nextQ: "下一题", skip: "跳过", finish: "完成", perfect: "满分",
   shareQuiz: "分享", previewQuiz: "预览", download: "下载", previewAlt: "预览", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败",
 };
 

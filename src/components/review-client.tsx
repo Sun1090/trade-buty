@@ -196,14 +196,19 @@ export function ReviewClient({
 
   // 按篇章分组
   function exportText() {
-    const lines: string[] = ["Trade Buty 错题本导出", `导出时间：${new Date().toLocaleString()}`, ""];
+    const en = locale === "en";
+    const lines: string[] = [
+      en ? "Trade Buty wrong-answer export" : "Trade Buty 错题本导出",
+      `${en ? "Exported at: " : "导出时间："}${new Date().toLocaleString()}`,
+      "",
+    ];
     for (const [title, group] of groups) {
       lines.push(`## ${title}`);
       for (const item of group) {
         const q = item.quiz.questions[item.questionIdx];
         lines.push(`- ${q.question}`);
-        lines.push(`  你的选择：${String.fromCharCode(65 + item.picked)}`);
-        lines.push(`  正确答案：${String.fromCharCode(65 + q.answer)}`);
+        lines.push(`  ${en ? "Your pick: " : "你的选择："}${String.fromCharCode(65 + item.picked)}`);
+        lines.push(`  ${en ? "Correct answer: " : "正确答案："}${String.fromCharCode(65 + q.answer)}`);
       }
       lines.push("");
     }
@@ -231,8 +236,8 @@ export function ReviewClient({
     return (
       <div className="rounded-2xl border border-[var(--accent)]/30 border-l-4 border-l-[var(--accent)] bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-6">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-xs font-mono text-faint">随机抽题重答</p>
-          <button onClick={() => setRedo(null)} className="text-xs text-faint hover:text-accent transition">返回</button>
+          <p className="text-xs font-mono text-faint">{locale === "en" ? "Random redo" : "随机抽题重答"}</p>
+          <button onClick={() => setRedo(null)} className="text-xs text-faint hover:text-accent transition">{locale === "en" ? "Back" : "返回"}</button>
         </div>
         <p className="font-medium leading-relaxed">{q.question}</p>
         <ul className="mt-5 space-y-2.5">{q.options.map((opt, i) => {
@@ -260,9 +265,15 @@ export function ReviewClient({
         })}</ul>
         {redo.picked !== null && (
           <div className="mt-5 rounded-xl bg-black/20 dark:bg-white/5 p-4 text-sm space-y-3">
-            <p className="font-semibold">{redo.picked === q.answer ? "✅ 正确" : "❌ 错误，正确答案是 " + q.options[q.answer]}</p>
+            <p className="font-semibold">
+              {redo.picked === q.answer
+                ? (locale === "en" ? "✅ Correct" : "✅ 正确")
+                : (locale === "en"
+                  ? `❌ Wrong — the answer is ${q.options[q.answer]}`
+                  : `❌ 错误，正确答案是 ${q.options[q.answer]}`)}
+            </p>
             <p className="text-muted leading-relaxed">{q.explain}</p>
-            <button onClick={startRedo} className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2 text-sm transition">下一道随机题</button>
+            <button onClick={startRedo} className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2 text-sm transition">{locale === "en" ? "Another random question" : "下一道随机题"}</button>
           </div>
         )}
       </div>
@@ -340,7 +351,7 @@ export function ReviewClient({
               href={`/${locale}/knowledge/${chapterSlug}/${quizDocSlug}`}
               className="text-xs text-faint hover:text-accent transition underline underline-offset-4"
             >
-              重做本章测验 →
+              {locale === "en" ? "Redo this chapter quiz →" : "重做本章测验 →"}
             </Link>
           </div>
           <div className="space-y-3">
@@ -425,7 +436,8 @@ export function ReviewClient({
                           href={`/${locale}/ai?q=${encodeURIComponent(item.question.question)}`}
                           className="rounded-full border border-[var(--accent)]/40 bg-[var(--accent-dim)] hover:border-accent/60 text-accent text-xs font-medium px-5 py-2 transition"
                         >
-                          <span aria-hidden>🤖 </span>问 AI 深入理解
+                          <span aria-hidden>🤖 </span>
+                          {locale === "en" ? "Ask AI to go deeper" : "问 AI 深入理解"}
                         </Link>
                       </div>
                     </div>
