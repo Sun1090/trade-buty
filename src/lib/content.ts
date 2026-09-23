@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 import { chapterRank } from "./kb-order";
-import { readFirstParagraph, extractH1, titleOrder } from "./md-utils";
+import { readFirstParagraph, extractH1, titleOrder, plainText } from "./md-utils";
 
 const KNOWLEDGE_ROOT = path.join(
   process.cwd(),
@@ -110,7 +110,7 @@ function parseFrontmatter(
     const fmTitle = parsed.data.title;
     const fmDesc = parsed.data.description;
     if (typeof fmTitle === "string" && fmTitle.trim()) title = fmTitle.trim();
-    if (typeof fmDesc === "string" && fmDesc.trim()) description = fmDesc.trim();
+    if (typeof fmDesc === "string" && fmDesc.trim()) description = plainText(fmDesc);
   } catch {
     content = stripFrontmatterFence(raw);
     console.warn(`[content] frontmatter 解析失败，降级处理: ${fallbackTitle}`);
