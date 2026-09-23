@@ -1,6 +1,31 @@
 {
   "releases": [
     {
+      "version": "0.7.13",
+      "date": "2026-09-23",
+      "name": {
+        "zh": "界面说法与本地账本边界（第五批）",
+        "en": "UI claims and local-ledger boundaries (round five)"
+      },
+      "highlights": {
+        "zh": [
+          "搜索页不再把「加载更多」走成死路：命中数说的是全部命中而不是当前这一页（23 条命中不再写成 20 条），篇章筛选移到分页之前——此前排在第 21 位之后的命中一旦选定篇章就永远翻不到，界面还会对着确实存在的结果说「该篇章暂无匹配」",
+          "换账号不再扫走答题账本：清镜像时按 tb-quiz- 前缀下手的旧判定会把没有云端对应表的 tb-quiz-attempts 一起删掉，测验分数趋势从此永久少一段且无从恢复，而那个文件的头部注释当时明说不会清这类本地记录",
+          "四句替过去说话的文案改口，并加门禁看住：英文覆盖早已补齐到 27 篇章 / 182 课，路径页却还写着「正在翻译中——27/27 章可用」，FAQ 与关于页跟着说同样的话；首页那颗连续徽章也只剩「🔥 3 天」，「连续学习」这个必填标签从来没被渲染出来",
+          "界面上的数字回到代码这一侧：首页那句完成语按组件真正检测的范围来说（它看的是整套 27 章，不是「主线」那一段），多设备冲突提示念的是检测到的分歧处数而不是落盘明细的条数（23 处不再说成 20 处），统计导出里两个名不副实的字段按 v1 → v2 的迁移通道改名",
+          "删掉一份没人读的收藏表：图表币对按钮一直在往浏览器本地写「最近使用的币对」，而全站唯一的读者是它自己那次读改写——界面上从来没有一处念过这份清单，连带两处把它当功能列出的说明一起订正"
+        ],
+        "en": [
+          "Search no longer turns Load more into a dead end: the result count reports all hits rather than the current page (23 hits are no longer written as 20), and chapter filtering now happens before paging - previously any hit past position 20 became unreachable once a chapter was picked, while the page insisted that chapter had no matches at all",
+          "Switching accounts no longer sweeps away the answer ledger: the old prefix-based mirror reset deleted tb-quiz-attempts, which has no cloud table to restore it from, permanently shortening the quiz-score trend - and that file's header comment explicitly promised such local-only records were never cleared",
+          "Four sentences still speaking for a finished phase were rewritten, with a gate to keep them honest: English coverage has long been complete at 27 chapters / 182 lessons, yet the learning path still read \"translation in progress - 27/27 chapters available\", with FAQ and About saying the same, and the home streak pill showed only \"3 days\" because its required Streak label was never rendered",
+          "The numbers on screen moved back to the code side: the home completion line now states the range the component really checks (all 27 chapters, not the core段 alone), the multi-device conflict notice reports how many divergences were detected rather than how many rows were stored (23 no longer reads as 20), and two misnamed statistics-export fields were renamed through the v1 to v2 migration path",
+          "A favorites store nobody reads is gone: the chart's symbol buttons had been writing recently used pairs to browser storage while the only reader was its own read-modify-write, and two documents listed that watchlist as an existing feature"
+        ]
+      },
+      "docs": ["docs/roadmap.md"]
+    },
+    {
       "version": "0.7.12",
       "date": "2026-09-23",
       "name": {
