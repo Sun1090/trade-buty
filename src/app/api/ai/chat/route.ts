@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
     console.error("[ai/chat] RAG failed:", e instanceof Error ? e.message : e);
   }
 
-  // 构造消息：system + rag context + 历史摘要 + 历史（保留最近 5 轮）+ 最新用户消息
+  // 构造消息：system + rag context + 历史摘要 + 历史（保留最近 10 轮 = 5 组问答）+ 最新用户消息
   // 续写：在已有回答后追加“请继续”，不重复 RAG、不走缓存
   // 超长历史（>14 条）时把早期轮次压缩成摘要，避免上下文丢失
   const HISTORY_KEEP = 10;
