@@ -163,3 +163,51 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true });
 }
+
+/**
+ * 清空是破坏性操作，但也是低容量操作：单条删除语句按 user_id 走索引，给一个与写入
+ * 不同量级的独立配额，避免「清空」把额度算进正常存对话的那份预算里。
+ */
+const clearLimiter = createRateLimiter({ guestLimit: 0, authedLimit: 10 });
+
+/**
+ * DELETE: 删除登录用户名下的全部对话。界面上的「清空对话」按钮承诺的就是这件事——
+ * 只做本地 `setMessages([])` 的话，下次进页 GET 又把最近 50 条拉回来，等于没清。
+ */
+export async function DELETE() {
+  let user;
+  try {
+    user = await getServerAuthUser();
+  } catch {
+    return NextResponse.json({ error: "Failed to clear conversations" }, { status: 500 });
+  }
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const decision = clearLimiter.check(user.id, true);
+  if (!decision.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded", retryAfter: decision.retryAfterSec },
+      { status: 429, headers: { "Retry-After": String(decision.retryAfterSec) } },
+    );
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    // 必须带 user_id 过滤：服务端客户端不受 RLS 约束，漏掉这个条件就是删全站。
+    const { error } = await supabase
+      .from("ai_conversations")
+      .delete()
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("[ai/conversations] delete failed:", error.message);
+      return NextResponse.json({ error: "Failed to clear conversations" }, { status: 500 });
+    }
+  } catch (e) {
+    console.error("[ai/conversations] unexpected failure:", e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: "Failed to clear conversations" }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

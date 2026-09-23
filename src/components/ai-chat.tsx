@@ -46,6 +46,7 @@ interface AiDict {
   errorTimeout: string;
   retry: string;
   clear: string;
+  clearFailed: string;
   copy: string;
   copied: string;
   copyFailed: string;
@@ -82,6 +83,8 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     null,
   );
   const [historySettled, setHistorySettled] = useState(false);
+  // 「清空对话」的代际：流式回答结束时要对齐它，否则会把刚清掉的对话写回云端
+  const archiveGenerationRef = useRef(0);
   const [feedback, setFeedback] = useState<
     Record<number, "helpful" | "unhelpful">
   >({});
@@ -272,6 +275,9 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   ) {
     const activeContextChapter = opts.contextChapter ?? contextChapter;
     const baseText = opts.baseText ?? "";
+    // 回答在流式返回时用户可能点了「清空对话」；那一轮不能再被归档回云端，
+    // 否则刚清掉的 history 会被这一次 POST 原样写回去。
+    const generation = archiveGenerationRef.current;
     let sourcesArr:
       { chapter: string; doc: string; title?: string }[] | undefined;
     let suggestedArr: { chapter: string; title: string }[] | undefined;
@@ -377,15 +383,17 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       });
 
       // 存对话到云端（登录用户，fire-and-forget）
-      void fetch("/api/ai/conversations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userMessage: opts.userMessage ?? "",
-          assistantMessage: fullResponse,
-          sources: sourcesArr,
-        }),
-      }).catch(() => {});
+      if (archiveGenerationRef.current === generation) {
+        void fetch("/api/ai/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userMessage: opts.userMessage ?? "",
+            assistantMessage: fullResponse,
+            sources: sourcesArr,
+          }),
+        }).catch(() => {});
+      }
     } catch (e) {
       clearTimeout(timer);
       // R7.6：单次请求失败 = 可恢复错误（用户已见错误框，可重试）
@@ -412,10 +420,17 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     }
   }
 
-  function clear() {
+  async function clear() {
+    // 先作废在途请求的归档权，再清本地，最后删云端：顺序反了会让那一轮又写回来。
+    archiveGenerationRef.current += 1;
     setMessages([]);
     setError(null);
     setFeedback({});
+    // 游客的对话本来就不落库（隐私页也是这么写的），不发无谓的删除请求
+    if (!auth?.id) return;
+    const res = await fetch("/api/ai/conversations", { method: "DELETE" }).catch(() => null);
+    // 云端没删掉却说「已清空」，下次进页历史会整段回来——失败必须可见
+    if (!res?.ok) setError(dict.clearFailed);
   }
 
   async function sendFeedback(
@@ -710,7 +725,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
                   )
                 )
                   return;
-                clear();
+                void clear();
               }}
               className="mb-2 text-xs text-faint hover:text-accent transition"
             >

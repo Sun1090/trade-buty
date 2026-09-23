@@ -4,8 +4,9 @@
  * `/api/ai/conversations` 按会话 cookie 返回内容，而组件过去只在挂载时拉一次、
  * 从不感知身份变化：登出或换号后，A 的问答会一直留在屏幕上给下一个人看。
  */
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { SUGGESTED_QUESTIONS_ZH } from "@/lib/ai/prompt";
 import { AiChat } from "./ai-chat";
 
 type AuthUser = { id: string; email: string | null } | null;
@@ -42,6 +43,7 @@ const dict = {
   errorTimeout: "请求超时，请检查网络后重试",
   retry: "重试",
   clear: "清空对话",
+  clearFailed: "云端对话未能清空，请稍后再试",
   copy: "复制",
   copied: "已复制",
   copyFailed: "复制失败",
@@ -125,5 +127,134 @@ describe("AiChat 账号身份变化", () => {
     rerender(<AiChatProbe />);
 
     expect(await screen.findByText("A 的私密回答")).toBeDefined();
+  });
+});
+
+/** 流式回答：第一块立刻到达，收尾交给 release()——用来在「回答还没结束」时点清空。 */
+function gatedStreamBody(text: string) {
+  const enc = new TextEncoder();
+  let stage = 0;
+  let release: () => void = () => {};
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  return {
+    release,
+    getReader: () => ({
+      async read() {
+        if (stage === 0) {
+          stage = 1;
+          return { done: false, value: enc.encode(text) };
+        }
+        if (stage === 1) {
+          stage = 2;
+          await pending;
+          return { done: true, value: undefined };
+        }
+        return { done: true, value: undefined };
+      },
+    }),
+  };
+}
+
+type FetchCall = { url: string; method: string };
+
+function stubChatFetch(
+  calls: FetchCall[],
+  body: unknown,
+  opts: { deleteStatus?: number; history?: boolean } = {}
+) {
+  return vi.fn(async (url: string, init?: RequestInit) => {
+    const method = String(init?.method ?? "GET");
+    calls.push({ url, method });
+    if (url === "/api/ai/chat") {
+      return { ok: true, status: 200, headers: { get: () => null }, body } as unknown as Response;
+    }
+    if (url === "/api/ai/conversations" && method === "DELETE") {
+      const status = opts.deleteStatus ?? 200;
+      return { ok: status === 200, status, json: async () => ({}) } as Response;
+    }
+    if (url === "/api/ai/conversations" && method === "POST") {
+      return { ok: true, status: 200, json: async () => ({ ok: true }) } as Response;
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        messages: opts.history === false
+          ? []
+          : [{ role: "assistant", content: "A 的私密回答", sources: null }],
+      }),
+    } as Response;
+  });
+}
+
+async function clickSuggestion(): Promise<void> {
+  const target = [...document.querySelectorAll("button")].filter((button) =>
+    SUGGESTED_QUESTIONS_ZH.includes(button.textContent ?? "")
+  )[0];
+  fireEvent.click(target);
+  await screen.findByText("流式回答内容");
+}
+
+describe("AiChat 清空对话", () => {
+  beforeEach(() => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("点「清空对话」连云端那一份一起删，不只是清屏幕", async () => {
+    const calls: FetchCall[] = [];
+    vi.stubGlobal("fetch", stubChatFetch(calls, gatedStreamBody("流式回答内容")));
+    render(<AiChatProbe />);
+    await screen.findByText("A 的私密回答");
+
+    fireEvent.click(screen.getByRole("button", { name: "清空对话" }));
+
+    await waitFor(() =>
+      expect(calls).toContainEqual({ url: "/api/ai/conversations", method: "DELETE" })
+    );
+    expect(screen.queryByText("A 的私密回答")).toBeNull();
+  });
+
+  it("云端没删成时说「未能清空」，不假装已经清空", async () => {
+    const calls: FetchCall[] = [];
+    vi.stubGlobal("fetch", stubChatFetch(calls, gatedStreamBody("流式回答内容"), { deleteStatus: 500 }));
+    render(<AiChatProbe />);
+    await screen.findByText("A 的私密回答");
+
+    fireEvent.click(screen.getByRole("button", { name: "清空对话" }));
+
+    expect(await screen.findByText("云端对话未能清空，请稍后再试")).toBeDefined();
+  });
+
+  it("游客清空不发删除请求：游客的对话本来就不落库", async () => {
+    authValue = null;
+    const calls: FetchCall[] = [];
+    vi.stubGlobal("fetch", stubChatFetch(calls, gatedStreamBody("流式回答内容"), { history: false }));
+    render(<AiChatProbe />);
+    await clickSuggestion();
+
+    fireEvent.click(screen.getByRole("button", { name: "清空对话" }));
+
+    expect(calls.some((call) => call.method === "DELETE")).toBe(false);
+  });
+
+  it("回答还在流式返回时点清空，那一轮不再被写回云端", async () => {
+    const body = gatedStreamBody("流式回答内容");
+    const calls: FetchCall[] = [];
+    vi.stubGlobal("fetch", stubChatFetch(calls, body, { history: false }));
+    render(<AiChatProbe />);
+    await clickSuggestion();
+
+    fireEvent.click(screen.getByRole("button", { name: "清空对话" }));
+    body.release();
+    await waitFor(() => expect(screen.queryByText("流式回答内容")).toBeNull());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // 归档发生在流结束后：没有这道闸，刚清掉的这轮会被 POST 原样写回去
+    expect(calls.some((call) => call.method === "POST" && call.url === "/api/ai/conversations")).toBe(false);
   });
 });

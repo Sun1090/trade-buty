@@ -92,6 +92,7 @@ const dict = {
   errorTimeout: "请求超时，请检查网络后重试",
   retry: "重试",
   clear: "清空对话",
+  clearFailed: "云端对话未能清空，请稍后再试",
   copy: "复制",
   copied: "已复制",
   copyFailed: "复制失败",
