@@ -92,9 +92,8 @@ export function SearchClient({
   // 分页：前 20 条 + 加载更多
   const PAGE_SIZE = 20;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const visibleResults = results.slice(0, visibleCount);
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => setVisibleCount(PAGE_SIZE), [query]);
+  useEffect(() => setVisibleCount(PAGE_SIZE), [query, filterChapter]);
 
   // 所有篇章（用于筛选 dropdown）
   const allChapters = useMemo(() => {
@@ -102,11 +101,17 @@ export function SearchClient({
     return [...new Set(entries.map((e) => e.chapter))].sort();
   }, [entries]);
 
-  // 按篇章筛选后的结果
-  const filtered = useMemo(() => {
-    if (!filterChapter) return visibleResults;
-    return visibleResults.filter((r) => r.chapter === filterChapter);
-  }, [visibleResults, filterChapter]);
+  /**
+   * 按篇章筛选的全部命中——**必须先筛选、后截断**。
+   * 反过来做（先切前 20 条再按篇章过滤）会让排在第 21 位之后的命中永远翻不到，
+   * 页头还会对着确实存在的结果说「该篇章暂无匹配」。
+   */
+  const chapterMatches = useMemo(() => {
+    if (!filterChapter) return results;
+    return results.filter((r) => r.chapter === filterChapter);
+  }, [results, filterChapter]);
+
+  const filtered = chapterMatches.slice(0, visibleCount);
 
   // 有结果时存为最近搜索；用 debounce 后的 query，避免保存尚未执行搜索的半截输入。
   useEffect(() => {
@@ -312,10 +317,10 @@ export function SearchClient({
           </div>
         </div>
       )}
-      {query.trim() && filtered.length > 0 && allChapters.length > 1 && (
+      {query.trim() && chapterMatches.length > 0 && allChapters.length > 1 && (
         <div className="mt-4 flex items-center gap-2">
           <p className="text-sm text-muted">
-            {dict.resultsTpl.replace("{n}", String(filtered.length))}
+            {dict.resultsTpl.replace("{n}", String(chapterMatches.length))}
           </p>
           <select
             value={filterChapter}
@@ -454,7 +459,7 @@ export function SearchClient({
           </ul>
         </div>
       ))}
-      {visibleCount < results.length && (
+      {visibleCount < chapterMatches.length && (
         <button
           onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
           className="mt-6 w-full rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-dim)] hover:border-accent/60 text-accent font-medium py-3 text-sm transition"
