@@ -21,7 +21,7 @@
 | `npm run typecheck` | Next.js 16 路由类型生成 + `tsc --noEmit` | 修复类型错误；不得用 `any`/忽略指令掩盖真实不匹配 |
 | `npm run build` | prebuild 契约/资产/搜索索引/标题同步 + 生产构建 | 按构建错误修内容契约或代码；宽松渲染应 warn+skip，不能静默发布空站 |
 | `npx playwright install --with-deps chromium` | 安装 E2E 所需的固定 Chromium 运行时 | 检查 CI runner 系统依赖与 Playwright 版本 |
-| `npm run check:mobile` | 14 个关键 zh/en 页面在 320px 下无横向溢出（含 R12.21 / R13.10） | 修正布局/滚动容器；不得只放宽测试阈值 |
+| `npm run check:mobile` | ≥10 条核心路径 × 全部语言（`CORE_SUFFIXES` × `LOCALES` 生成）在 320px 下无横向溢出；清单里每条路径还必须真返回 200，防死路径冒充覆盖（含 R12.21 / R13.10） | 修正布局/滚动容器；不得只放宽测试阈值 |
 | 构建耗时报警（CI 内联，R7.10） | lint→build 段超过 240 秒输出 warning | 检查大 chunk、缓存与依赖体积 |
 | `npm run check:ai-copy` | en 字典无中文残留（R3.12） | 修正 i18n.ts en 值 |
 | `npm run check:growth-event-privacy` | 增长事件只留在本机且不携带 URL/身份信息（R13.20） | 删除遥测外发或敏感字段；审计文档作废时重新评审 |
