@@ -131,8 +131,8 @@ function dropCopySourceSubtrees(html: string): string {
 function htmlSurface(html: string): string {
   const body = dropCopySourceSubtrees(
     html
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<script[\s\S]*?<\/script\s*>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style\s*>/gi, " ")
   );
   const attributes: string[] = [];
   for (const tag of body.matchAll(/<\w[\w-]*(\s[^>]*)>/gi)) {
@@ -143,8 +143,8 @@ function htmlSurface(html: string): string {
     }
   }
   const text = body
-    .replace(/<pre[\s\S]*?<\/pre>/gi, " ")
-    .replace(/<code[\s\S]*?<\/code>/gi, " ")
+    .replace(/<pre[\s\S]*?<\/pre\s*>/gi, " ")
+    .replace(/<code[\s\S]*?<\/code\s*>/gi, " ")
     .replace(/<[^>]*>/gi, " ");
   return `${text}\n${attributes.join("\n")}`;
 }
@@ -249,11 +249,17 @@ test.describe("占位符不泄漏到界面", () => {
         tokens
       )
     ).toEqual(["{n}"]);
-    // 反例自证 7：标签名大小写不敏感——`<SCRIPT>` / `<CODE>` 都不许绕过对应的剥离。
+    // 反例自证 7：标签名大小写不敏感、闭合标签的 `>` 前可以有空格——`<SCRIPT>` 与
+    // `</script >` 都不许绕过剥离（CodeQL 先后把这两条判成高危）。
     expect(
       leaksIn(htmlSurface('<p>正常</p><SCRIPT>var a="{n}"</SCRIPT>'), tokens)
     ).toEqual([]);
-    expect(leaksIn(htmlSurface("<p><CODE>{n}</CODE></p>"), tokens)).toEqual([]);
+    expect(
+      leaksIn(htmlSurface('<p>正常</p><script>var a="{n}"</script  >'), tokens)
+    ).toEqual([]);
+    expect(
+      leaksIn(htmlSurface('<p><CODE>{n}</CODE  ><code>{n}</code  ></p>'), tokens)
+    ).toEqual([]);
 
     expect(pages.length).toBeGreaterThan(400);
   });
