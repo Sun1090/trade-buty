@@ -68,6 +68,10 @@
     {
       "number": 223,
       "reason": "换载体重放：#222 合入后本分支的 docs/roadmap.md 追加位置与 R16.25 冲突，本仓禁止 force-push 改写已推送分支，故从 main=f4f3f71 重建为 PR #224 并 cherry-pick 同一个提交（caceb88 → 新提交）。改动文件（.env.example、.gitignore、docs/env.md、scripts/env-docs.mjs、scripts/env-docs.test.mjs）逐字节一致，roadmap 仅按编号顺序多保留 main 的 R16.25 一条。附带理由：#223 的 CI 里 ops:work-audit 判红，是因为 #221 的确认记录随 #222 才进 main，重建到 main 之后该步骤即通过。"
+    },
+    {
+      "number": 228,
+      "reason": "换载体重放：#227 合入后本分支的 docs/roadmap.md 文末追加与 main 的 R16.29 撞在同一锚点，GitHub 的 update-branch --rebase 报 RebaseConflictError，而更新已推送分支需要 force push（本仓库禁止）。于是从 main=aed6fa4 重建为 test/ops-gate-ghost-guard-v2 并 cherry-pick 原提交 0fbea3c；scripts/ci-workflow.test.mjs 的补丁与 #228 相对 origin/main 的 diff 逐字节一致（git diff 0 行差异），roadmap 冲突按编号顺序保留 R16.29 在前、R16.30 在后。重放过程中有一个把未解冲突标记一起提交的中间提交（683cf53），随后用 3a7fe48 单独修正并在最终树上验证 grep 标记计数为 0。"
     }
   ]
 }
