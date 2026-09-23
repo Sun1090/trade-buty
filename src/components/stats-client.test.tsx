@@ -2,6 +2,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { StatsClient } from "./stats-client";
+import { QUIZZES } from "@/lib/quizzes";
+import { STATS_DICTS, type StatsDict } from "@/lib/i18n-stats";
 
 const store = new Map<string, string>();
 vi.stubGlobal("localStorage", {
@@ -25,7 +27,13 @@ const completions = {
   "getting-started:candlestick-basics": { chapter: "getting-started", doc: "candlestick-basics", at: new Date(2026, 8, 4, 12).getTime() },
 };
 
-const dict = {
+/**
+ * 词典夹具从真实 `STATS_DICTS.en` 派生：组件新增一个字段时这里不必逐个补，
+ * 但覆盖的键必须真实存在（`StatsDict` 注解会拒绝拼错或已删的键）。
+ * 之前是 `as unknown as` 双层强转——新字段没补上也不报错，只是渲染出 undefined。
+ */
+const dict: StatsDict = {
+  ...STATS_DICTS.en,
   title: "Stats",
   subtitle: "Stats subtitle",
   readDocs: "Read docs",
@@ -137,7 +145,7 @@ const dict = {
   emptyTitle: "Empty",
   emptyBody: "Empty body",
   emptyCta: "Start",
-} as unknown as Parameters<typeof StatsClient>[0]["dict"];
+};
 
 beforeEach(() => {
   store.clear();
@@ -208,6 +216,30 @@ describe("StatsClient quiz score trend", () => {
     expect(await screen.findByText("Quiz score trend")).toBeInTheDocument();
     expect(screen.queryByText("No quiz dates")).not.toBeInTheDocument();
     expect(screen.getByText("1/1")).toBeInTheDocument();
+  });
+});
+
+describe("StatsClient learning-overview quiz caliber (R16.11)", () => {
+  /**
+   * 这张卡上的百分比不是任何一次的「最好成绩」，而是各章最高分再取平均。
+   * 口径必须写在脸上：不然一个 80% 会被读成「你最好的一次是 80%」。
+   */
+  it("labels the overview quiz percentage with the caliber it actually uses", async () => {
+    const total = QUIZZES["getting-started"].questions.length;
+    store.set("tb-quiz-getting-started", JSON.stringify({ best: total, done: true }));
+    render(<StatsClient chapters={chapters} dict={dict} locale="en" />);
+    await screen.findByText("Learning overview");
+
+    const section = document.querySelector("#learning-overview-title")?.closest("section");
+    expect(section?.textContent).toMatch(/100% · average of chapter bests/);
+  });
+
+  it("shows no caliber for a quiz record that does not exist yet", async () => {
+    render(<StatsClient chapters={chapters} dict={dict} locale="en" />);
+    await screen.findByText("Learning overview");
+
+    const section = document.querySelector("#learning-overview-title")?.closest("section");
+    expect(section?.textContent).not.toContain("average of chapter bests");
   });
 });
 

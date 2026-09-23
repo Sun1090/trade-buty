@@ -420,7 +420,11 @@ export function StatsClient({
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
             <dt className="text-xs text-faint">{dict.overviewQuizzes}</dt>
             <dd className="mt-2 font-mono text-2xl font-bold">{overview.quizzes.done}/{overview.quizzes.total}</dd>
-            <dd className="mt-1 text-xs text-muted">{overview.quizzes.bestPct === null ? "—" : `${overview.quizzes.bestPct}%`}</dd>
+            <dd className="mt-1 text-xs text-muted">
+              {overview.quizzes.avgBestPct === null
+                ? "—"
+                : `${overview.quizzes.avgBestPct}% · ${dict.overviewQuizzesAvg}`}
+            </dd>
           </div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
             <dt className="text-xs text-faint">{dict.overviewReplay}</dt>
@@ -667,7 +671,7 @@ export function StatsClient({
                 overdue: reviewTrend!.latest.overdue,
               },
               engagement: {
-                totalStudySeconds: overview.engagement.totalStudySeconds,
+                studySeconds: overview.engagement.totalStudySeconds,
                 currentStreak: overview.engagement.currentStreak,
                 longestStreak: stats.longestStreak,
               },

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
+import { STUDY_LEDGER_KEEP_DAYS } from "./study-time";
 import {
   STATS_EXPORT_FORMAT,
   STATS_EXPORT_VERSION,
@@ -11,10 +12,10 @@ import {
 const fullInput = {
   locale: "zh",
   courses: { readDocs: 8, totalDocs: 20, doneChapters: 2, totalChapters: 5, completionPct: 40 },
-  quizzes: { done: 3, total: 5, bestPct: 90 },
+  quizzes: { done: 3, total: 5, avgBestPct: 90 },
   replay: { rounds: 12, accuracyPct: 67, bestStreak: 6 },
   review: { pending: 4, dueToday: 2, overdue: 1 },
-  engagement: { totalStudySeconds: 7500, currentStreak: 3, longestStreak: 9 },
+  engagement: { studySeconds: 7500, currentStreak: 3, longestStreak: 9 },
   goals: { dailyGoalMinutes: 20 },
 };
 
@@ -45,16 +46,16 @@ describe("buildStatsExport", () => {
   });
 
   /**
-   * 文件自己的契约写着「字段命名稳定：新增字段只追加，不改名、不改语义」
+   * 文件自己的契约写着「字段命名稳定：改名/改语义要连着版本号一起动」
    * （见 `stats-export.ts` 头部）。这条把契约变成可执行的：整棵叶子路径钉死，
-   * 改名、删除或挪 section 都会红——包括 R16.11 里那两个名不副实的键，
-   * 它们要动就得连着 `STATS_EXPORT_VERSION` 一起动，而不是被顺手改掉。
+   * 顺手改名、删除或挪 section 都会红。R16.11 走的就是这条通道——v1 的两个名不副实
+   * 的键（`bestPct` 装平均、`totalStudySeconds` 其实是窗口合计）随 v2 一并改掉。
    */
   it("字段命名契约：整棵叶子路径钉死，改名要显式过这里", () => {
     const payload = buildStatsExport(fullInput, new Date("2026-09-11T12:00:00Z"));
     const paths = leafPaths(payload as unknown as Record<string, unknown>);
 
-    expect(paths.length, "清单本身不能是空的").toBeGreaterThanOrEqual(22);
+    expect(paths.length, "清单本身不能是空的").toBeGreaterThanOrEqual(23);
     expect(paths).toEqual([
       "data.courses.completionPct",
       "data.courses.doneChapters",
@@ -63,9 +64,10 @@ describe("buildStatsExport", () => {
       "data.courses.totalDocs",
       "data.engagement.currentStreak",
       "data.engagement.longestStreak",
-      "data.engagement.totalStudySeconds",
+      "data.engagement.studySeconds",
+      "data.engagement.studyWindowDays",
       "data.goals.dailyGoalMinutes",
-      "data.quizzes.bestPct",
+      "data.quizzes.avgBestPct",
       "data.quizzes.done",
       "data.quizzes.total",
       "data.replay.accuracyPct",
@@ -79,19 +81,21 @@ describe("buildStatsExport", () => {
       "locale",
       "version",
     ]);
-    expect(STATS_EXPORT_VERSION, "改名要连着版本一起决策").toBe(1);
+    expect(STATS_EXPORT_VERSION, "再改名要连着版本一起决策").toBe(2);
+    // 窗口天数取自裁剪台账的同一个常量：把 90 写死在导出里，改窗口就没人发现
+    expect(payload.data.engagement.studyWindowDays).toBe(STUDY_LEDGER_KEEP_DAYS);
   });
 
   it("sanitizes corrupt numeric inputs and nullable percentages", () => {
     const dirty = JSON.parse(JSON.stringify(fullInput));
     dirty.courses.readDocs = Number.NaN;
-    dirty.quizzes.bestPct = 150;
+    dirty.quizzes.avgBestPct = 150;
     dirty.replay.accuracyPct = -5;
     dirty.engagement.currentStreak = Number.POSITIVE_INFINITY;
     dirty.goals.dailyGoalMinutes = -1;
     const payload = buildStatsExport(dirty);
     expect(payload.data.courses.readDocs).toBe(0);
-    expect(payload.data.quizzes.bestPct).toBe(100);
+    expect(payload.data.quizzes.avgBestPct).toBe(100);
     expect(payload.data.replay.accuracyPct).toBe(0);
     expect(payload.data.engagement.currentStreak).toBe(0);
     expect(payload.data.goals.dailyGoalMinutes).toBe(0);
@@ -101,10 +105,10 @@ describe("buildStatsExport", () => {
     const input = {
       ...fullInput,
       locale: "zh-TW",
-      quizzes: { ...fullInput.quizzes, bestPct: null },
+      quizzes: { ...fullInput.quizzes, avgBestPct: null },
     };
     const payload = buildStatsExport(input);
-    expect(payload.data.quizzes.bestPct).toBeNull();
+    expect(payload.data.quizzes.avgBestPct).toBeNull();
     expect(payload.locale).toBe("zh");
   });
 

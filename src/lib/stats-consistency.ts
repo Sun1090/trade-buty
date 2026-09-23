@@ -127,7 +127,7 @@ export function auditStatsConsistency(input: StatsConsistencyInput): Consistency
   // —— 百分比范围 ——
   const pcts: [string, number | null | undefined][] = [
     ["overview.courses.completionPct", overview.courses.completionPct],
-    ["overview.quizzes.bestPct", overview.quizzes.bestPct],
+    ["overview.quizzes.avgBestPct", overview.quizzes.avgBestPct],
     ["overview.replay.accuracyPct", overview.replay.accuracyPct],
     // learn-stats 那三张卡同样是百分比，此前只被文件头的承诺覆盖、没进清单
     ["stats.overallPct", stats?.overallPct],

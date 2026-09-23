@@ -18,7 +18,8 @@ export interface LearningOverviewInput {
 export type OverviewStatus = "learning" | "new";
 
 export interface LearningOverview {
-  version: 1;
+  /** 结构版本：字段改名/改语义必须连着它一起动（R16.11） */
+  version: 2;
   status: OverviewStatus;
   courses: {
     readDocs: number;
@@ -30,7 +31,8 @@ export interface LearningOverview {
   quizzes: {
     done: number;
     total: number;
-    bestPct: number | null;
+    /** 各章最高百分比再取平均；不是任何一次的「best」（R16.11） */
+    avgBestPct: number | null;
   };
   replay: {
     rounds: number;
@@ -70,7 +72,7 @@ export function buildLearningOverview(input: LearningOverviewInput): LearningOve
   const currentStreak = safeNonNegative(input.currentStreak);
 
   return {
-    version: 1,
+    version: 2,
     status: totalStudySeconds === 0 && currentStreak === 0 && completionPct === 0 ? "new" : "learning",
     courses: {
       readDocs,
@@ -82,7 +84,7 @@ export function buildLearningOverview(input: LearningOverviewInput): LearningOve
     quizzes: {
       done: quizzesDone,
       total: totalQuizzes,
-      bestPct: safePct(input.avgQuizScore ?? undefined),
+      avgBestPct: safePct(input.avgQuizScore ?? undefined),
     },
     replay: {
       rounds: replayRounds,

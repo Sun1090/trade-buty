@@ -18,6 +18,9 @@ vi.stubGlobal("localStorage", {
 
 const { localDateStr, shiftDate } = await import("@/lib/date-utils");
 const zh = (await import("@/lib/i18n-stats")).STATS_DICTS.zh;
+const { STUDY_LEDGER_KEEP_DAYS } = await import("@/lib/study-time");
+const { QUIZZES } = await import("@/lib/quizzes");
+const { quizScorePct } = await import("@/lib/quiz-score");
 
 const chapters = [
   { slug: "getting-started", docCount: 2 },
@@ -96,7 +99,15 @@ describe("R12.24 guest-mode stats degradation", () => {
     const blob = (createObjectURL.mock.calls[0] as unknown[])[0] as Blob;
     const parsed = JSON.parse(await blob.text());
     expect(parsed.format).toBe("trade-buty-stats-export");
-    expect(parsed.version).toBe(1);
+    expect(parsed.version).toBe(2);
+    /**
+     * R16.11：`avgBestPct` / `studySeconds` / `studyWindowDays` 是 v1→v2 改名或新增的键。
+     * 纯函数那份叶子路径清单钉不住这里——它自己喂自己；只有走真实按钮，
+     * 才能抓到 `stats-client` 到 `buildStatsExport` 之间写错的键名。
+     */
+    expect(parsed.data.quizzes.avgBestPct).toBe(quizScorePct(8, QUIZZES["getting-started"].questions.length));
+    expect(parsed.data.engagement.studySeconds).toBe(1800);
+    expect(parsed.data.engagement.studyWindowDays).toBe(STUDY_LEDGER_KEEP_DAYS);
     expect(parsed.data.courses.readDocs).toBe(3);
     expect(parsed.data.quizzes.done).toBe(1);
     expect(parsed.data.replay.rounds).toBe(1);

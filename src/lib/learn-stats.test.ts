@@ -1,5 +1,16 @@
-import { describe, it, expect } from "vitest";
-import { BADGES, getUnlockedBadges, readSummary, type LearnStats } from "./learn-stats";
+// @vitest-environment jsdom
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { aggregateStats, BADGES, getUnlockedBadges, readSummary, type LearnStats } from "./learn-stats";
+import { QUIZZES } from "./quizzes";
+import { quizScorePct } from "./quiz-score";
+
+const store = new Map<string, string>();
+vi.stubGlobal("localStorage", {
+  getItem: (k: string) => store.get(k) ?? null,
+  setItem: (k: string, v: string) => store.set(k, v),
+  removeItem: (k: string) => store.delete(k),
+  clear: () => store.clear(),
+});
 
 const base: LearnStats = {
   totalDocs: 100,
@@ -96,6 +107,43 @@ describe("getUnlockedBadges", () => {
     };
     const out = getUnlockedBadges(full);
     expect(out.length).toBe(BADGES.length);
+  });
+});
+
+describe("aggregateStats quiz caliber", () => {
+  beforeEach(() => store.clear());
+
+  /**
+   * R16.11：`avgQuizScore` 是各章最高百分比的**均值**，统计页把它标成 `avgBestPct`。
+   * 两个分数刻意拉开差距：若实现回退成「取最好的一次」这条必须红。
+   */
+  it("是各章最高分的均值，不是其中最高的那个", () => {
+    const [first, second] = Object.keys(QUIZZES);
+    const totalA = QUIZZES[first].questions.length;
+    const totalB = QUIZZES[second].questions.length;
+    store.set(`tb-quiz-${first}`, JSON.stringify({ best: totalA, done: true }));
+    store.set(`tb-quiz-${second}`, JSON.stringify({ best: 0, done: true }));
+
+    const stats = aggregateStats([{ slug: first, docCount: 1 }]);
+
+    const pctA = quizScorePct(totalA, totalA);
+    const pctB = quizScorePct(0, totalB);
+    expect(pctA).not.toBe(pctB);
+    expect(stats.quizzesDone).toBe(2);
+    expect(stats.avgQuizScore).toBe(Math.round((pctA + pctB) / 2));
+    expect(stats.avgQuizScore).toBeLessThan(pctA);
+  });
+
+  it("只把已完成的篇章计入均值", () => {
+    const [first, second] = Object.keys(QUIZZES);
+    store.set(`tb-quiz-${first}`, JSON.stringify({ best: QUIZZES[first].questions.length, done: true }));
+    store.set(`tb-quiz-${second}`, JSON.stringify({ best: QUIZZES[second].questions.length, done: false }));
+
+    // 未完成的那一章不进分母：均值就是已完成那一章自己的分数
+    expect(aggregateStats([]).avgQuizScore).toBe(100);
+
+    store.set(`tb-quiz-${first}`, JSON.stringify({ best: 1, done: false }));
+    expect(aggregateStats([]).avgQuizScore).toBeNull();
   });
 });
 
