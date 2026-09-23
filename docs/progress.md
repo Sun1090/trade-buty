@@ -5881,3 +5881,28 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   CHANGELOG 与版本号；回滚用 `git revert b55729e`（或 Vercel 切回上一构建止血），不改写 `main`。
 - 下一项：合并后打 tag `v0.7.10` → 生产部署核对 → `npm run ops:smoke-prod` 逐条记录。
 - 更新时间：2026-09-23 13:38（Asia/Shanghai）。
+
+## 2026-09-23 — v0.7.10 合并、打 tag 与生产部署核对
+
+- 状态：**已发布并核对完成**。
+- 里程碑 / 版本：**v0.7.10（patch）**。
+- 分支 / 提交：`chore/release-0.7.10`（`b55729e` 发布 + `3ffdb32` 冻结记录）→ PR **#231**
+  rebase 合并 → `main` = `27031ae`；附注 tag **`v0.7.10` → `27031ae`**，已推送。
+- 部署：合并瞬间 Vercel 状态为 `pending`（同日 04:02 前后该账户还在 24h 构建配额里），
+  随后转为 `Deployment has completed` / success。**合并 ≠ 上线**，本次以生产页探针为准。
+- 生产冒烟 `npm run ops:smoke-prod`（Asia/Shanghai）：
+  - 13:50 首跑 **8/10**：新增的红项是 `/zh/changelog → 页面里没有 0.7.10，生产构建落后于 main`
+    ——当时那次构建还没跑完，属部署时序，不是站内回归。
+  - 13:56 复跑 **9/10**：`/zh/changelog → 含最新发布版本` 通过，即生产确实跟上 v0.7.10；
+    九条只读断言全绿。
+  - 唯一红项仍是 `POST /api/ai/chat 游客 → 状态 502`，同一探针的护栏路径返回 200
+    → 站内代码没问题，是部署快照里的 `AI_API_URL` / `AI_MODEL` / `AI_API_KEY` 或出口网络。
+- 门禁核对：`npm run check:release-tag` ✅「14 条发布记录的 tag 均已落地（最新 0.7.10 → v0.7.10）」，
+  不再打印「待合并后补打」。
+- 分支收尾：已合并 PR 的远端分支由 GitHub 自动删除，本地陈旧分支一并清掉；
+  `ops:work-audit` = 悬空提交 0 · 陈旧本地提交 0 · 未确认的关闭 PR 0。
+- 外部阻塞（不阻塞上述任何一条，需维护者处理）：生产 AI 游客模型路径 502；Vercel 24h
+  构建配额；待拍板 R15.2 / R16.7 / R16.10 / R16.11 / R16.12 / R16.13 / R16.16；PR **#178** 属维护者。
+- 下一项：R16.32（把冒烟条数钉到 `buildChecks()` 的产出）走 PR **#232**；之后继续「界面 /
+  文档的说法 vs 代码与数据的事实」倒查的下一批表面。
+- 更新时间：2026-09-23 13:58（Asia/Shanghai）。
