@@ -71,6 +71,22 @@ vi.mock("@/lib/replay-store", () => ({
 
 vi.mock("@/lib/study-time", () => ({ addStudyTime: mocks.addStudyTime }));
 
+vi.mock("@/lib/study-time", () => ({ addStudyTime: mocks.addStudyTime }));
+
+/** 日界只允许取自本地日历 helper：哨兵值与任何 UTC 换算结果都不相等，写回 UTC 口径当场红 */
+const LOCAL_DAY_END_SENTINEL = 1_700_000_000_123;
+const mockLocalDateStr = vi.fn(() => "1970-01-01");
+vi.mock("@/lib/date-utils", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/date-utils")>("@/lib/date-utils");
+  return {
+    ...actual,
+    localDateStr: (...args: []) => mockLocalDateStr(...args),
+    // 校验照旧（非法日历日仍返回 NaN），只把结果换成 UTC 换算不可能命中的哨兵
+    localDayEndMs: (dateStr: string) =>
+      Number.isNaN(actual.localDayEndMs(dateStr)) ? Number.NaN : LOCAL_DAY_END_SENTINEL,
+  };
+});
+
 vi.mock("@/components/replay-share-card", () => ({
   ReplayShareCard: mocks.shareCard,
 }));
@@ -242,7 +258,8 @@ describe("ReplayTrainer 数据加载", () => {
     expect(symbol).toBe("BTCUSDT");
     expect(interval).toBe("1h");
     expect(opts).toMatchObject({ limit: 300 });
-    expect(opts.endTime).toBe(Date.parse("2024-01-15T00:00:00Z"));
+    // 上界一律交给本地日历 helper 换算；组件自己拼 UTC 午夜就会砍掉当天尾部
+    expect(opts.endTime).toBe(LOCAL_DAY_END_SENTINEL);
     // 无效日期不触发新回合
     fireEvent.change(screen.getByLabelText("截止日期"), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "开始" }));
@@ -483,5 +500,43 @@ describe("ReplayTrainer 上下文说明跟着难度变", () => {
     await waitFor(() =>
       expect(screen.getByText("First 15 candles are context; replay starts from #16.")).toBeInTheDocument(),
     );
+  });
+});
+
+describe("ReplayTrainer 截止日界取本地日历", () => {
+  function openCustomMode(): HTMLInputElement {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    fireEvent.click(screen.getByText(dict.modeCustom));
+    const input = document.querySelector('input[type="date"]') as HTMLInputElement | null;
+    expect(input).not.toBeNull();
+    return input as HTMLInputElement;
+  }
+
+  beforeEach(() => {
+    mockLocalDateStr.mockReset();
+  });
+
+  it("日期上限与默认值都取自本地日历，不是 UTC 口径", () => {
+    mockLocalDateStr.mockReturnValue("2019-03-04");
+    const input = openCustomMode();
+
+    // 哨兵值不可能是今天的 UTC 日期：写回 toISOString() 时这里必红
+    expect(input.getAttribute("max")).toBe("2019-03-04");
+    expect(input.value).toBe("2019-03-04");
+    expect(new Date().toISOString().slice(0, 10)).not.toBe("2019-03-04");
+  });
+
+  it("默认截止日界是本地「今天」往前 30 天", () => {
+    const seen: Date[] = [];
+    mockLocalDateStr.mockImplementation((d?: Date) => {
+      if (d) seen.push(d);
+      return "2019-03-04";
+    });
+    openCustomMode();
+
+    const thirtyDaysAgo = seen.find(
+      (d) => Math.abs(Date.now() - 30 * 86400_000 - d.getTime()) < 5_000,
+    );
+    expect(thirtyDaysAgo, "初始值应由 localDateStr(30 天前) 得出").toBeDefined();
   });
 });

@@ -19,6 +19,13 @@ export function isLocalDateStr(value: unknown): value is string {
     date.getUTCDate() === day;
 }
 
+/** 本地日历日 → 该日 23:59:59.999 的时间戳（毫秒）；非法日历日期返回 NaN。 */
+export function localDayEndMs(dateStr: string): number {
+  if (!isLocalDateStr(dateStr)) return Number.NaN;
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
+}
+
 /** 日期字符串加减天数（走 UTC 正午避免 DST 边界跳变） */
 export function shiftDate(dateStr: string, days: number): string {
   const [y, m, d] = dateStr.split("-").map(Number);
