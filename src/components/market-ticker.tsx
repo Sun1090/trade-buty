@@ -18,6 +18,7 @@ interface MarketTickerDict {
   retry: string;
   error: string;
   stale: string;
+  changeNote: string;
   offline: string;
   slow: string;
 }
@@ -29,6 +30,7 @@ const DICT: Record<"zh" | "en", MarketTickerDict> = {
     retry: "重试",
     error: "行情暂时不可用",
     stale: "上次数据",
+    changeNote: "箭头里的百分比是 24 小时内的涨跌，不是这一笔的变化。",
     offline: "当前离线：已暂停轮询，恢复联网后自动更新。",
     slow: "慢速模式：每 {n} 秒更新一次。",
   },
@@ -38,6 +40,7 @@ const DICT: Record<"zh" | "en", MarketTickerDict> = {
     retry: "Retry",
     error: "Market data is temporarily unavailable",
     stale: "Last available data",
+    changeNote: "The arrow shows the 24-hour change, not this tick.",
     offline: "You are offline. Polling is paused and will resume automatically.",
     slow: "Slow mode: refreshing every {n} seconds.",
   },
@@ -186,6 +189,9 @@ export function MarketTicker({ locale = "zh" }: { locale?: "zh" | "en" }) {
               </div>
             ))}
           </div>
+          {/* 数字取自 /api/v3/ticker/24hr 的 `priceChangePercent`：那根箭头比的是**24 小时前**，
+              而卡片标题说的是价格是实时的——两者同屏却不是一回事，所以窗口要写出来。 */}
+          <p className="mt-2 text-xs text-faint">{dict.changeNote}</p>
           {failed && <p className="mt-2 text-xs text-faint">{dict.error}</p>}
         </div>
       )}
