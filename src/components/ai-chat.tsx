@@ -36,6 +36,61 @@ interface ChatMessage {
   truncated?: boolean;
 }
 
+interface ConversationRow {
+  role: string;
+  content: string;
+  sources?: string | { chapter: string; doc: string; title?: string }[];
+  suggested?: string | { chapter: string; title: string }[];
+}
+
+function parseJsonField<T>(
+  value: ConversationRow["sources"] | ConversationRow["suggested"],
+): T[] | undefined {
+  if (!value) return undefined;
+  return (typeof value === "string" ? JSON.parse(value) : value) as T[];
+}
+
+/**
+ * 云端行 → 界面消息。库里一轮存两行（问 + 答），续写会把同一轮再存一份，
+ * 所以「同一问题 + 前一份带截断标记」要折叠成最新的那一份，否则刷新后
+ * 半截答案和完整答案会并排出现。截断标记在这里剥掉：带着它，「继续生成」
+ * 的入口就再也回不来了（标记本身决定这一轮是否还没说完）。
+ */
+function rowsToMessages(rows: ConversationRow[]): ChatMessage[] {
+  const parsed = rows.map((m) => ({
+    role: m.role as "user" | "assistant",
+    truncated: m.role === "assistant" && hasTruncatedMarker(m.content),
+    content: m.role === "assistant" ? stripTruncatedMarker(m.content) : m.content,
+    sources: parseJsonField<{ chapter: string; doc: string; title?: string }>(m.sources),
+    suggested: parseJsonField<{ chapter: string; title: string }>(m.suggested),
+  }));
+
+  const collapsed: ChatMessage[] = [];
+  for (let i = 0; i < parsed.length; i += 1) {
+    const row = parsed[i];
+    const answer = parsed[i + 1];
+    if (row.role !== "user" || !answer || answer.role !== "assistant") {
+      collapsed.push(row);
+      continue;
+    }
+    const previous = collapsed[collapsed.length - 2];
+    if (
+      collapsed.length >= 2 &&
+      previous?.role === "user" &&
+      previous.content === row.content &&
+      collapsed[collapsed.length - 1]?.truncated
+    ) {
+      // 同一问第二次：上一份是被截断的旧存档，这一份才是完整版
+      collapsed.splice(collapsed.length - 2, 2, row, answer);
+      i += 1;
+      continue;
+    }
+    collapsed.push(row, answer);
+    i += 1;
+  }
+  return collapsed;
+}
+
 interface AiDict {
   placeholder: string;
   title: string;
@@ -147,30 +202,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         if (res.ok) {
           const data = await res.json();
           if (data.messages?.length > 0) {
-            setMessages(
-              data.messages.map(
-                (m: {
-                  role: string;
-                  content: string;
-                  sources?:
-                    string | { chapter: string; doc: string; title?: string }[];
-                  suggested?: string | { chapter: string; title: string }[];
-                }) => ({
-                  role: m.role as "user" | "assistant",
-                  content: m.content,
-                  sources: m.sources
-                    ? typeof m.sources === "string"
-                      ? JSON.parse(m.sources)
-                      : m.sources
-                    : undefined,
-                  suggested: m.suggested
-                    ? typeof m.suggested === "string"
-                      ? JSON.parse(m.suggested)
-                      : m.suggested
-                    : undefined,
-                }),
-              ),
-            );
+            setMessages(rowsToMessages(data.messages));
           }
         }
       } catch {
@@ -244,6 +276,9 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     if (!target || loading || target.role !== "assistant") return;
     setError(null);
     setLoading(true);
+    // 续写补的是同一轮：存档得带上这一轮的问题与来源，否则服务端按畸形载荷拒掉，
+    // 用户看到的完整答案刷新后就又变回半截。
+    const question = messages.slice(0, idx).filter((m) => m.role === "user").pop();
     await runStream(
       messages
         .slice(0, idx + 1)
@@ -251,7 +286,8 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       idx,
       {
         baseText: target.content,
-        userMessage: "",
+        userMessage: question?.content ?? "",
+        archiveSources: target.sources,
         extraBody: { continueFrom: target.content },
       },
     );
@@ -271,10 +307,14 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       userMessage?: string;
       extraBody?: Record<string, unknown>;
       contextChapter?: string | null;
+      archiveSources?: ChatMessage["sources"];
     } = {},
   ) {
     const activeContextChapter = opts.contextChapter ?? contextChapter;
     const baseText = opts.baseText ?? "";
+    // 归档要的这一问题：服务端把空问题判成畸形载荷，所以没有归属问题的续写
+    // 只能放弃存档——发出去也一定是 400，静默失败比不存更糟。
+    const archiveQuestion = opts.userMessage?.trim() ?? "";
     // 回答在流式返回时用户可能点了「清空对话」；那一轮不能再被归档回云端，
     // 否则刚清掉的 history 会被这一次 POST 原样写回去。
     const generation = archiveGenerationRef.current;
@@ -382,15 +422,16 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         return next;
       });
 
-      // 存对话到云端（登录用户，fire-and-forget）
-      if (archiveGenerationRef.current === generation) {
+      // 存对话到云端（登录用户，fire-and-forget）。存的是带截断标记的原文：
+      // 恢复时靠它决定「这一轮还没说完」，并给回「继续生成」的入口。
+      if (archiveQuestion && archiveGenerationRef.current === generation) {
         void fetch("/api/ai/conversations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            userMessage: opts.userMessage ?? "",
-            assistantMessage: fullResponse,
-            sources: sourcesArr,
+            userMessage: archiveQuestion,
+            assistantMessage: rawFull,
+            sources: sourcesArr ?? opts.archiveSources,
           }),
         }).catch(() => {});
       }
