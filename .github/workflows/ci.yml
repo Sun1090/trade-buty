@@ -158,9 +158,9 @@ jobs:
       # 所以新造一个没人渲染的键直接判失败，而不是写进报告等人来看。
       - name: 字典死键巡检（R16.21）
         run: npm run check:dead-copy
-      # R16.50：title / aria-label / alt / placeholder 里写死的中文提示会原样出现在英文界面上
-      # （read-aloud 的 title="语速" 就是那样，而写死的可访问名称此前已手工清过一轮）。
-      - name: 写死单一语言的文案属性巡检（R16.50）
+      # R16.50 + R16.51：属性（title / aria-label / alt / placeholder）与裸 JSX 文本节点里写死的中文
+      # 会原样出现在英文界面上——第一例是 read-aloud 的 title="语速"，第二例是复习页一次七条没问语言的界面字。
+      - name: 写死单一语言的界面文案巡检（R16.50）
         run: npm run check:localized-labels
       # R16.26：以上步骤会重算 docs/ 下的报告，但没人比对「入库版本 == 当场重算结果」，
       # 所以过期是静默的（PR #218 新增测试文件后，时钟卫生台账的扫描数就停在旧值好几个 PR）。
