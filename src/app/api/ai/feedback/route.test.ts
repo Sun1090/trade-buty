@@ -136,6 +136,20 @@ describe("POST /api/ai/feedback", () => {
     });
   });
 
+  it("登录用户的评分带着自己的账户 id 入库（隐私页「登录后会带上账户标识」说的就是这一行）", async () => {
+    getUser.mockResolvedValue({ data: { user: { id: "user-77" } }, error: null });
+    const res = await POST(
+      request(JSON.stringify({ rating: "helpful", question: "q", answer: "a" })),
+    );
+    expect(res.status).toBe(200);
+    expect(insert).toHaveBeenCalledWith({
+      user_id: "user-77",
+      rating: "helpful",
+      question: "q",
+      answer: "a",
+    });
+  });
+
   it("数据库失败返回通用文案，不回传内部错误", async () => {
     insert.mockResolvedValue({
       error: { message: "relation ai_feedback does not exist" },
