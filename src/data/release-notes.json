@@ -1,6 +1,37 @@
 {
   "releases": [
     {
+      "version": "0.7.10",
+      "date": "2026-09-23",
+      "name": {
+        "zh": "界面说法与门禁兑现（第三批）",
+        "en": "UI claims and gates made real (round three)"
+      },
+      "highlights": {
+        "zh": [
+          "课末与错题卡上的「问 AI」不再空手而归：有对话历史的登录用户点进去，问题会接在既有对话后真正发出、章节上下文照常生效；地址栏里的一次性参数随即抹掉，刷新不会重复提问、重复扣配额",
+          "界面文案的占位符代入钉进门禁：459 个预渲染页面的可见文本、placeholder / aria-label / title / alt 属性、标题与 description 家族 meta，以及 6 个路由水合后的 DOM，都不许残留未代入的模板；界面页进一步按「任何花括号都算泄漏」判，组件自建字典不再是网外",
+          "风险提示兜底从「源码里接了线」改为对构建产物逐页核对：418 页逐一比对，兜底块必须正好出现在上游缺块的那 14 页上，多一页少一页都判失败",
+          "入库的重算型报告必须等于 CI 当场重算的结果（新增 check:report-freshness）——此前台账停在旧数字上也能一路全绿",
+          "320px 移动端巡检真的覆盖中英两种语言，并且清单里每条路径必须真返回 200：原先混着一个根本不是页面的反馈路径，那条用例一直在量 404 页、永远不会红",
+          "贡献者的 cp .env.example .env.local 现在真的能跑：该文件入库，并与代码、环境变量文档三方对账，新增变量漏登记即失败",
+          "文案与文档回到事实：法律页「更新日期」改由 git 算出（取不到就不说）、FAQ 的服务器内容清单补齐崩溃诊断日志、断档恢复卡不再立 5 分钟门槛、趋势图空态读屏文案跟随真正选中的时间窗、更新日志页只列最近几版不再把所有历史烤进静态页、字典里没有渲染点的死词条被删除并上线死键门禁、AI system prompt 补上「不预测走势」让 AI 页那句承诺有约束撑着"
+        ],
+        "en": [
+          "The 'Ask AI' buttons at the end of a lesson and on the mistake cards no longer come back empty-handed: signed-in users with existing history now have their question appended to that conversation with the chapter context intact, and the one-shot URL parameters are consumed so a refresh cannot ask twice and burn quota",
+          "Placeholder substitution is now gated: across 459 prerendered pages the visible text, placeholder / aria-label / title / alt attributes, the title and description-family meta tags, plus the hydrated DOM of 6 routes may not contain an unsubstituted template; interface pages additionally treat any brace token as a leak, so component-local dictionaries are no longer outside the net",
+          "The risk-warning fallback is audited against build output page by page instead of trusting that it was wired up: all 418 pages compared, the fallback block must appear on exactly the 14 pages whose upstream content lacks one — one page more or fewer fails the gate",
+          "Committed recomputed reports must equal what CI recomputes on the spot (new check:report-freshness) — previously a ledger frozen at an old number still passed everything",
+          "The 320px mobile sweep really covers both languages now, and every path on its list must return 200: a feedback path that is not a page at all had been measuring the 404 template, a test that could never fail",
+          "Contributors' cp .env.example .env.local finally works: the file is tracked, and it is reconciled three ways against the code and the environment variable docs, so a new variable left unregistered fails the gate",
+          "Copy and docs back to fact: legal pages derive their 'last updated' date from git and stay silent when it cannot be read, the FAQ's server inventory adds the crash-diagnostic logs, the streak-recovery card drops its invented 5-minute threshold, the trend chart's empty-state screen reader text names the range actually selected, the changelog lists only recent releases instead of baking all history into static HTML, dictionary entries with no render site were deleted behind a zero-budget dead-key gate, and the AI system prompt now forbids predicting price direction so the AI page's promise has a constraint behind it"
+        ]
+      },
+      "docs": [
+        "docs/roadmap.md"
+      ]
+    },
+    {
       "version": "0.7.9",
       "date": "2026-09-23",
       "name": {
