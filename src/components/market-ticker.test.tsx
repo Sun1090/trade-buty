@@ -129,4 +129,27 @@ describe("MarketTicker（R13.11/R13.12）", () => {
       vi.useRealTimers();
     }
   });
+
+  it("箭头旁的说明写的窗口，与真正请求的那个窗口是同一个", async () => {
+    const fetchMock = vi.fn(
+      async (_input: string, _init?: RequestInit) => ({ ok: true, json: async () => DATA }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<MarketTicker />);
+    await waitFor(() => expect(screen.getByText("BTC")).toBeInTheDocument());
+    // 数字来自 /ticker/24hr 的 priceChangePercent，所以屏幕上必须说 24 小时
+    const requested = String(fetchMock.mock.calls[0][0]);
+    const hours = /\/ticker\/(\d+)hr\b/.exec(requested)?.[1];
+    expect(hours, `请求的不是带窗口的端点：${requested}`).toBeTruthy();
+    expect(screen.getByText(/小时/).textContent).toContain(hours!);
+  });
+
+  it("英文界面也带出这个窗口，且不残留中文", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => DATA })));
+    render(<MarketTicker locale="en" />);
+    await waitFor(() => expect(screen.getByText("BTC")).toBeInTheDocument());
+    const note = screen.getByText(/24-hour/);
+    expect(note.textContent).toContain("24");
+    expect(note.textContent).not.toMatch(/[㐀-鿿぀-ヿ]/);
+  });
 });
