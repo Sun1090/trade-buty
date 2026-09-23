@@ -260,11 +260,15 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
     };
   }, []);
 
-  // 数据变化 → 全量重设
-  useEffect(() => {
+  /**
+   * 全量把序列填到第 `to` 根。数据变化与「跳到回放末尾」必须走同一条路径：
+   * 播放推进用的是逐根 `update()`，所以跳过整段时如果只改下标，图表会停在原处，
+   * 而上面的价格与「已回放 N/N」已经说到末尾了。
+   */
+  const fillSeriesTo = useCallback((to: number) => {
     if (!klines || !seriesRef.current) return;
     // R7.3：低端机只保留最近 REPLAY_REDUCED_CANDLES 根，降低 Canvas 负载
-    const view = lowEnd ? klines.slice(0, idx).slice(-REPLAY_REDUCED_CANDLES) : klines.slice(0, idx);
+    const view = lowEnd ? klines.slice(0, to).slice(-REPLAY_REDUCED_CANDLES) : klines.slice(0, to);
     seriesRef.current.setData(
       view.map((k) => ({
         time: k.time as UTCTimestamp,
@@ -274,6 +278,11 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
         close: k.close,
       }))
     );
+  }, [klines, lowEnd]);
+
+  // 数据变化 → 全量重设。idx 不进依赖：逐根推进由 stepForward 的 update() 负责
+  useEffect(() => {
+    fillSeriesTo(idx);
   }, [klines, lowEnd]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 推进一根
@@ -619,7 +628,11 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
               {dict.step}
             </button>
             <button
-              onClick={() => klines && setIdx(klines.length)}
+              onClick={() => {
+                if (!klines) return;
+                fillSeriesTo(klines.length);
+                setIdx(klines.length);
+              }}
               disabled={!klines || finished}
               aria-label={dict.skipToEnd}
               className="rounded-full border border-border-strong px-5 py-2.5 text-sm font-medium disabled:opacity-40 hover:border-accent/60 transition"
