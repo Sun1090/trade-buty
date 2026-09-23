@@ -15,7 +15,10 @@ import { writeReport } from "./report-write-lib.mjs";
 
 /** 公开报告的最小样本数（k-匿名门槛） */
 export const K_MIN_COUNT = 3;
-const MAX_QUESTION_LEN = 80;
+/** 用户原话进公开报告前的截断长度 */
+export const MAX_QUESTION_LEN = 80;
+/** 只聚类最近这些天里的 unhelpful 反馈 */
+export const WINDOW_DAYS = 30;
 
 /** 归一 + 计数 + k-匿名过滤，返回按次数降序的问题 */
 export function clusterQuestions(rows, { minCount = K_MIN_COUNT, limit = 20 } = {}) {
@@ -75,7 +78,7 @@ async function run() {
   }
 
   const supabase = createClient(SUPABASE_URL, KEY);
-  const since = new Date(Date.now() - 30 * 86400_000).toISOString();
+  const since = new Date(Date.now() - WINDOW_DAYS * 86400_000).toISOString();
   const { data, error } = await supabase
     .from("ai_feedback")
     .select("question, created_at")
