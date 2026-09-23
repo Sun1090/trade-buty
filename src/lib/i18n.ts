@@ -451,7 +451,7 @@ const en: Dict = {
     readyCta: "Ready? Start from lesson one.",
     translationNote: "📚 English and Chinese cover the same {chapters} chapters. The complete Chinese originals are always free.",
     lesson1: "Open {chapter:getting-started} →",
-    lessonsUnit: "chapters",
+    lessonsUnit: "lessons",
   },
   chapter: {
     introHeading: "Chapter Intro",
