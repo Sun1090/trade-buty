@@ -12,7 +12,7 @@ import {
   type UTCTimestamp,
   type LineData,
 } from "lightweight-charts";
-import { DISPLAY_TZ_OFFSET_SEC, fetchKlines } from "@/lib/binance";
+import { DISPLAY_TZ_OFFSET_SEC, fetchKlines, InvalidMarketSymbolError } from "@/lib/binance";
 import {
   MOBILE_CHART_MAX_WIDTH,
   getChartDataLimit,
@@ -50,6 +50,7 @@ function getServerViewportSnapshot(): ViewportSnapshot {
 interface ChartDict {
   loading: string;
   error: string;
+  badSymbol: string;
   retry: string;
   symbolLabel: string;
   intervalLabel: string;
@@ -73,7 +74,7 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
   const [symbol, setSymbol] = useState<string>(CHART_QUICK_SYMBOLS[0]);
   const [interval_, setInterval_] = useState<string>("1h");
   const [status, setStatus] = useState<
-    "loading" | "ready" | "error" | "timeout"
+    "loading" | "ready" | "error" | "timeout" | "badSymbol"
   >("loading");
   const [lastPrice, setLastPrice] = useState<number | null>(null);
   const [showMA, setShowMA] = useState(false);
@@ -212,9 +213,11 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
         }
 
         setStatus("ready");
-      } catch {
+      } catch (err) {
         if (!cancelled) {
-          setStatus(controller.signal.aborted ? "timeout" : "error");
+          if (controller.signal.aborted) setStatus("timeout");
+          else if (err instanceof InvalidMarketSymbolError) setStatus("badSymbol");
+          else setStatus("error");
         }
       } finally {
         clearTimeout(timeout);
@@ -381,9 +384,9 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
             {dict.loading}
           </div>
         )}
-        {displayStatus === "error" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-muted">
-            <p>{dict.error}</p>
+        {(displayStatus === "error" || displayStatus === "badSymbol") && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center text-sm text-muted">
+            <p>{displayStatus === "badSymbol" ? dict.badSymbol : dict.error}</p>
             <button
               onClick={() => setRetryNonce((value) => value + 1)}
               className="text-accent underline underline-offset-4"

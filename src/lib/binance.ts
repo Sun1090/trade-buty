@@ -25,6 +25,33 @@ export interface Kline {
   volume: number;
 }
 
+/**
+ * 币安对「这个交易对现货没有」不是拒绝连接，而是照常应答一个 400，body 是
+ * `{"code":-1121,"msg":"Invalid symbol."}`（实测：`NOTAREALPAIR` 与只有合约市场的
+ * `1000PEPEUSDT` 都是这一条）。单拆一个错误类型，界面才能把「没有这个交易对」与
+ * 「拿不到行情」分开讲——两者都算「请求失败」时，前者会被说成后者。
+ */
+export class InvalidMarketSymbolError extends Error {
+  constructor(message = "Invalid market symbol") {
+    super(message);
+    this.name = "InvalidMarketSymbolError";
+  }
+}
+
+/** 币安错误码 -1121 = Invalid symbol */
+const BINANCE_INVALID_SYMBOL_CODE = -1121;
+
+/** 上游未必回 JSON（反代给出的 502 页即是），读不出码就当没有码 */
+async function binanceErrorCode(res: Response): Promise<number | undefined> {
+  try {
+    const body: unknown = await res.json();
+    const code = (body as { code?: unknown })?.code;
+    return typeof code === "number" ? code : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function fetchKlines(
   symbol: string,
   interval: string,
@@ -40,7 +67,12 @@ export async function fetchKlines(
     `https://api.binance.com/api/v3/klines?${params.toString()}`,
     { signal: opts?.signal },
   );
-  if (!res.ok) throw new Error(`行情请求失败 (${res.status})`);
+  if (!res.ok) {
+    if (res.status === 400 && (await binanceErrorCode(res)) === BINANCE_INVALID_SYMBOL_CODE) {
+      throw new InvalidMarketSymbolError(`没有这个交易对：${symbol}`);
+    }
+    throw new Error(`行情请求失败 (${res.status})`);
+  }
   const raw = (await res.json()) as unknown[][];
   return raw.map((k) => ({
     time: Math.floor(Number(k[0]) / 1000) - DISPLAY_TZ_OFFSET_SEC,
