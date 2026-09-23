@@ -151,7 +151,7 @@ export default async function ChangelogPage({
                     aria-hidden
                     className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
                   />
-                  <span>{item}</span>
+                  <span data-copy-source="release-note">{item}</span>
                 </li>
               ))}
             </ul>
@@ -209,7 +209,12 @@ export default async function ChangelogPage({
                   </span>
                   <span className="text-xs text-faint">{commit.date}</span>
                 </div>
-                <p className="text-sm text-muted font-mono">{commit.message}</p>
+                {/* 提交标题与发布说明是仓库里的原文，不是词典代入的产物：里面出现
+                    `{chapters}` 之类的花括号属于正常，e2e/placeholder-leak.spec.ts 按
+                    data-copy-source 跳过这些节点。 */}
+                <p className="text-sm text-muted font-mono" data-copy-source="commit">
+                  {commit.message}
+                </p>
               </li>
             ))}
           </ul>
