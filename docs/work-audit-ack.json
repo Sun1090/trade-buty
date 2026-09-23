@@ -76,6 +76,14 @@
     {
       "number": 235,
       "reason": "换载体重放：#235 与刚合并的 #234 都在 docs/roadmap.md 文末追加登记（R16.34 / R16.33 撞在同一锚点），GitHub 的 update-branch --rebase 成功后 rebase 合并仍报冲突，而更新已推送分支需要 force push（本仓库禁止）。于是从 main=536747c 重建为 test/ops-patrol-claims-v2，按原顺序 cherry-pick 三个提交（de7b450→678decc、cf3ce70→83b20a4、2458c53→a45dbcf）。四个实质文件（scripts/faq-candidates.mjs、scripts/link-patrol.mjs、scripts/ops-patrol-claims.test.mjs、docs/ops.md）加台账 docs/test-clock-hygiene.md 的补丁逐字节一致（git diff 对 364fef2..origin/test/ops-patrol-claims 与 536747c..HEAD 逐文件比对，diff 输出为空）；roadmap 冲突按编号顺序保留 R16.33 在前、R16.34 在后。重放后的树上重新跑过 check:test-clock-hygiene（工作区无差异）与 24 条相关用例全绿。PR #235 在本 PR 合入后关闭，关闭前保持 open 以免 main 上的 ops:work-audit 因确认记录尚未落地而判红。"
+    },
+    {
+      "number": 237,
+      "reason": "换载体重放：#237 与 #238 都要在 docs/roadmap.md 文末追加登记（R16.36 与 R16.34），逐条 update-branch 会互相撞上、各烧一轮 CI，而更新已推送分支需要 force push（本仓库禁止）。于是把 #237 的单个提交 1a62efa 与 #238 的四个提交（678decc、83b20a4、2f8e749、56fdfbb→本分支对应件）按原顺序 cherry-pick 到最新 origin/main(aaa9202) 的 test/ops-claims-and-freshness-hints，合并为 PR #239；roadmap 冲突按编号顺序保留 R16.31–R16.36 六条。scripts/report-freshness-lib.mjs、scripts/report-freshness-lib.test.mjs、scripts/check-report-freshness.mjs 三个文件的补丁与 #237 相对 origin/main 的 diff 逐字节一致。过程中出现过一个把未解冲突标记一起提交的本地提交（4c855c7），它从未推送，已用 reset --soft 退回并在解决后重新提交为 203e1a4，最终树上 grep 冲突标记计数为 0。"
+    },
+    {
+      "number": 238,
+      "reason": "换载体重放（与 #235 同一情形、同一批工作）：#238 本身是 #235 的重放，重放到 aaa9202 时又要与 #237 的 R16.36 追加相撞，故其四个提交并入 PR #239 一起落地，内容不变。台账 docs/test-clock-hygiene.md 在新基线上重跑 check:test-clock-hygiene 无工作区差异，13 条相关用例（ops-patrol-claims + report-freshness-lib）全绿。#238 与本条一并在 #239 合入后关闭。"
     }
   ]
 }
