@@ -6103,3 +6103,40 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   说明、回放、404、关于与 FAQ）；配额窗口清掉后补跑 `npm run ops:smoke-prod` 并把结论写回本条。
 - 更新时间：2026-09-23 22:47（Asia/Shanghai）。
 
+## 2026-09-23 — v0.7.13 冻结与全量验证（第五批口径清点发布）
+
+- 状态：**待合并**（PR 未开前不推 `main`；本仓库禁止直接向 `main` 推送）。
+- 里程碑 / 版本：**v0.7.13（patch）**。判级只看已合入 `main` 且尚未发布的提交：`1396c0b` 之前累计的是
+  R16.40 的收敛、R16.42–R16.49 与 R16.11 的缺陷修复与文案订正（PR #246 / #248 / #250 / #252 / #253 / #254 /
+  #255 / #256），没有任何新增产品能力 → patch，不是 minor。R16.40 与 R16.11 都晚于 v0.7.12 的冻结提交
+  （`cfe3da0` / `eab35e8`），所以它们随本版本第一次上线，而不是已经发过。
+- 分支 / 提交：`chore/release-v0.7.13`（`a8bcf3d` 发布记录与版本号 + 本条冻结记录），从
+  `origin/main` = `1396c0b` 切出。
+- 冻结前检查：`npm run ops:work-audit` = 悬空 0 · 陈旧 0 · 未确认 0；`git log origin/main..HEAD` 在切分支前为空；
+  `git remote prune origin` 清掉 4 条已合并的远端跟踪引用（GitHub 已在合并时删掉对应分支）。
+- 变更文件：`src/data/release-notes.json`（新增 0.7.13 条目，zh / en 各 5 条要点）、`CHANGELOG.md`
+  （由发布记录重算，17 条，未发布区块为空）、`package.json` / `package-lock.json`（0.7.13，
+  用钉住的 npm 10.9.4 重算）。
+- 验证（本地，按检查单顺序，逐条退出码）：`test` 与 `test:coverage` 各 **292 文件全绿**
+  （分支 90.94% · 语句 95.62% · 函数 95.23% · 行 97.62%，阈值未动），`lint`、`typecheck`、
+  `build`（474 页静态产出）、`check:mobile`（14 个关键页 320px 无溢出）、`check:seo-surface`
+  （sitemap 430 · 页面 454 · 未声明 0）、`check:search-index`（KB 418 / 索引 418 / 页面 418 对账）、
+  `check:structured-data`（454 页 · 5656 实体）、`check:risk-warning`（lessons 364/364，readmes 40/54
+  即上游那 14 篇仍待改，R14.11）、`check:constitution`（报告式 186 处命中，教育语境豁免）、`check:docs`
+  （package 0.7.13 与最新发布版本绑定）、`check:report-freshness`（17 份报告 · 过期 0 · 未提交 0）、
+  `db:test`（迁移 + RLS 越权 + 双设备同步 + 回滚重放 5 步全过）、`e2e` **160 passed (3.2m)** 全部退出 0；
+  跑完 `git status` 干净。元数据门禁另两条：`check:lockfile-repro`（981 个包条目无差异）、
+  `check:changelog`（17 条一致）、`check:release-tag` 按流程打印「最新 0.7.13 待合并后补打」而不判失败。
+- 阻塞 / 风险：**v0.7.11 与 v0.7.12 的生产部署都还没落地**——`main` 的提交上至今没有 Vercel 的 check run
+  （只有 `ci` / `db-tests` / 两个 Analyze），即 24h 构建配额窗口内生产构建连尝试都没登记；本次同样先合后等，
+  配额清掉后一次部署会同时带上 0.7.11 / 0.7.12 / 0.7.13。生产游客 AI 问答 502 属部署快照缺
+  `AI_API_URL` / `AI_MODEL` / `AI_API_KEY` 或出口不通。待拍板：R15.2 / R16.7 / R16.10–R16.13 / R16.16 /
+  R16.41 / **R16.47**（K 线横轴到底是哪个时区，三条路各有代价）；上游 kline-buty 的风险块缺口只能在上游改；
+  PR **#178** 属维护者，不动。
+- 回滚：`git revert` 发布提交（合并后的 SHA）即可；或 Vercel 把 Production 切回上一构建止血，随后仍用 revert
+  收敛历史。本次不含数据库迁移——R16.11 的导出字段 v1 → v2 是纯本地文件格式改名（`#248` 于 12:32 UTC 合入
+  `main`，在 v0.7.12 冻结之后，因此随本版本第一次上线），回滚不涉及数据回退。
+- 下一项：PR 合并 → rebase 后在 `main` 上补打 `v0.7.13` → `check:release-tag` 复绿 → 配额清掉后跑
+  `npm run ops:smoke-prod`，届时判据变成「`/zh/changelog` 含 0.7.13」；随后继续清点还没扫过的界面。
+- 更新时间：2026-09-23 23:14（Asia/Shanghai）。
+
