@@ -23,7 +23,7 @@ describe("buildLearningOverview", () => {
       currentStreak: 4,
     });
 
-    expect(overview.version).toBe(1);
+    expect(overview.version).toBe(2);
     expect(overview.status).toBe("learning");
     expect(overview.courses).toEqual({
       readDocs: 3,
@@ -32,7 +32,7 @@ describe("buildLearningOverview", () => {
       totalChapters: 2,
       completionPct: 50,
     });
-    expect(overview.quizzes).toEqual({ done: 3, total: 10, bestPct: 82 });
+    expect(overview.quizzes).toEqual({ done: 3, total: 10, avgBestPct: 82 });
     expect(overview.replay).toEqual({ rounds: 7, accuracyPct: 77 });
     expect(overview.engagement).toEqual({ totalStudySeconds: 125, currentStreak: 4 });
   });
@@ -54,7 +54,7 @@ describe("buildLearningOverview", () => {
     const overview = buildLearningOverview({ chapters, totalStudySeconds: 0 });
 
     expect(overview.status).toBe("new");
-    expect(overview.quizzes.bestPct).toBeNull();
+    expect(overview.quizzes.avgBestPct).toBeNull();
     expect(overview.replay.accuracyPct).toBeNull();
   });
 
@@ -70,7 +70,7 @@ describe("buildLearningOverview", () => {
       currentStreak: Number.NaN,
     });
 
-    expect(overview.quizzes).toEqual({ done: 0, total: 0, bestPct: 100 });
+    expect(overview.quizzes).toEqual({ done: 0, total: 0, avgBestPct: 100 });
     expect(overview.replay).toEqual({ rounds: 0, accuracyPct: 0 });
     expect(overview.engagement).toEqual({ totalStudySeconds: 0, currentStreak: 0 });
   });
