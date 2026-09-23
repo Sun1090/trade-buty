@@ -29,7 +29,8 @@ import { weekMinutes } from "../src/lib/weekly-summary";
  * 1. 构建产物的可见文本（全部预渲染页面）；
  * 2. 构建产物里的可见属性（`placeholder` / `aria-label` / `title` / `alt`——读屏与
  *    输入框提示走这条通道，文本节点里没有它们；目前尚无页面在服务端就渲染带占位符的
- *    属性，这条由 `词表、产物面、判定器三样都不空转` 里的夹具自证）；
+ *    属性，这条由 `词表、产物面、判定器三样都不空转` 里的夹具自证）与元数据面
+ *    （`<title>` 与 description 家族 meta——漏代入时用户在标签页与搜索结果里看到）；
  * 3. 水合后的 DOM（只在客户端挂载的文案，服务端 HTML 里根本没有它们）。
  *
  * 误报侧两处处理：① 知识库课文合法带着花括号（Python f-string 与 `1:{ratio}` 盈亏比
@@ -76,6 +77,13 @@ function walkFiles(dir: string, base = dir): string[] {
 
 /** React 文本节点之外的自由文本容器；这些节点整棵跳过，见 `dropCopySourceSubtrees`。 */
 const COPY_SOURCE_ATTR = "data-copy-source";
+/**
+ * 元数据面：`buildPageMetadata` 把同一批词典文案写进 `<title>` 与 description 家族，
+ * 这些地方漏代入用户在搜索结果与标签页里看得到，所以和界面文本同等对待。
+ * 不收 `keywords` 一类杂项 meta，避免把自由文本当词典产物判。
+ */
+const META_KEYS =
+  /^(?:description|og:description|twitter:description|og:title|twitter:title|apple-mobile-web-app-title)$/;
 const VOID_TAGS = new Set([
   "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr",
 ]);
@@ -125,14 +133,19 @@ function dropCopySourceSubtrees(html: string): string {
   return out;
 }
 
-/** 用户可见文本：文本节点 + 可见属性。脚本整段丢掉——RSC payload 原样带着未代入的模板。
- *  标签名大小写不敏感，这些正则一律带 `i`（CodeQL 把不带 `i` 的 `<script>` 剥离判成高危：
- *  一个 `<SCRIPT>` 就能绕过剥离，等于门禁自己开了口子）。 */
+/**
+ * 用户可见文本：文本节点 + 可见属性 + `<title>` / description 家族 meta。
+ *
+ * 脚本整段丢掉——RSC payload 原样带着未代入的模板。标签名大小写不敏感、闭合标签
+ * `>` 前可以有任何空白与残留属性（`</script\n >`），所以这些成对标签的正则一律
+ * `<\/tag[^>]*>` 并带 `i`（CodeQL 连着三轮把写窄的版本判成高危：一个 `<SCRIPT>` 或
+ * 一个 `</script  >` 就能让 payload 留在扫描面上，等于门禁自己开口子）。
+ */
 function htmlSurface(html: string): string {
   const body = dropCopySourceSubtrees(
     html
-      .replace(/<script[\s\S]*?<\/script\s*>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style\s*>/gi, " ")
+      .replace(/<script[\s\S]*?<\/script[^>]*>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style[^>]*>/gi, " ")
   );
   const attributes: string[] = [];
   for (const tag of body.matchAll(/<\w[\w-]*(\s[^>]*)>/gi)) {
@@ -142,11 +155,18 @@ function htmlSurface(html: string): string {
       attributes.push(attr[1]);
     }
   }
+  const meta: string[] = [];
+  for (const m of body.matchAll(/<title[^>]*>([\s\S]*?)<\/title[^>]*>/gi)) meta.push(m[1]);
+  for (const m of body.matchAll(/<meta\b[^>]*>/gi)) {
+    const key = /(?:name|property)\s*=\s*"([^"]*)"/i.exec(m[0])?.[1];
+    const content = /\bcontent\s*=\s*"([^"]*)"/i.exec(m[0])?.[1];
+    if (key && META_KEYS.test(key) && content) meta.push(content);
+  }
   const text = body
-    .replace(/<pre[\s\S]*?<\/pre\s*>/gi, " ")
-    .replace(/<code[\s\S]*?<\/code\s*>/gi, " ")
+    .replace(/<pre[\s\S]*?<\/pre[^>]*>/gi, " ")
+    .replace(/<code[\s\S]*?<\/code[^>]*>/gi, " ")
     .replace(/<[^>]*>/gi, " ");
-  return `${text}\n${attributes.join("\n")}`;
+  return `${text}\n${attributes.join("\n")}\n${meta.join("\n")}`;
 }
 
 function leaksIn(surface: string, tokens: Set<string>): string[] {
@@ -249,8 +269,8 @@ test.describe("占位符不泄漏到界面", () => {
         tokens
       )
     ).toEqual(["{n}"]);
-    // 反例自证 7：标签名大小写不敏感、闭合标签的 `>` 前可以有空格——`<SCRIPT>` 与
-    // `</script >` 都不许绕过剥离（CodeQL 先后把这两条判成高危）。
+    // 反例自证 7：标签名大小写不敏感、闭合标签 `>` 前可以带空白与残留属性——
+    // `<SCRIPT>` / `</script  >` / `</CODE\n x=1>` 都不许绕过对应的剥离。
     expect(
       leaksIn(htmlSurface('<p>正常</p><SCRIPT>var a="{n}"</SCRIPT>'), tokens)
     ).toEqual([]);
@@ -258,7 +278,22 @@ test.describe("占位符不泄漏到界面", () => {
       leaksIn(htmlSurface('<p>正常</p><script>var a="{n}"</script  >'), tokens)
     ).toEqual([]);
     expect(
-      leaksIn(htmlSurface('<p><CODE>{n}</CODE  ><code>{n}</code  ></p>'), tokens)
+      leaksIn(htmlSurface('<p><CODE>{n}</CODE  ><code>{n}</code\n x=1></p>'), tokens)
+    ).toEqual([]);
+    // 反例自证 8：元数据面同口径——`<title>` 与 description 家族漏代入，用户在
+    // 搜索结果与标签页里看到的就是 `{chapters}`。
+    expect(
+      leaksIn(htmlSurface("<head><title>基于 {chapters} 篇章知识库</title></head>"), tokens)
+    ).toContain("{chapters}");
+    expect(
+      leaksIn(
+        htmlSurface('<meta name="description" content="共 {chapters} 篇"><meta property="og:description" content="{total} 课">'),
+        tokens
+      )
+    ).toEqual(["{chapters}", "{total}"]);
+    // 杂项 meta 不算词典代入面（这里刻意不收 keywords）。
+    expect(
+      leaksIn(htmlSurface('<meta name="keywords" content="{chapters}">'), tokens)
     ).toEqual([]);
 
     expect(pages.length).toBeGreaterThan(400);
@@ -275,7 +310,7 @@ test.describe("占位符不泄漏到界面", () => {
     ).toEqual(dictFiles);
   });
 
-  test("全部预渲染页面：文本与可见属性里没有残留的 {占位符}", () => {
+  test("全部预渲染页面：文本、可见属性与元数据里没有残留的 {占位符}", () => {
     const failures: string[] = [];
     for (const file of pages) {
       const html = readFileSync(path.join(APP_OUT, file), "utf-8");
