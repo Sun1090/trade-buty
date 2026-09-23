@@ -135,6 +135,7 @@ const dict: ReplayDict = {
   accuracy: "正确率",
   rounds: "进度",
   contextNote: "历史上下文",
+  shortHistory: "只有 {n} 根，需要 {m} 根",
   fetchError: "行情暂时不可用，请稍后重试",
   disclaimer: "仅为训练用途",
   modeBlind: "盲测",
@@ -542,5 +543,41 @@ describe("ReplayTrainer 截止日界取本地日历", () => {
       (d) => Math.abs(Date.now() - 30 * 86400_000 - d.getTime()) < 5_000,
     );
     expect(thirtyDaysAgo, "初始值应由 localDateStr(30 天前) 得出").toBeDefined();
+  });
+});
+
+describe("ReplayTrainer 历史不够一轮时", () => {
+  const realZh = { ...dict, shortHistory: getDict("zh").replay.shortHistory };
+
+  it("两种语言的文案都留着 {n} 与 {m}，否则下面的断言会退化成匹配静态数字", () => {
+    for (const locale of ["zh", "en"] as const) {
+      const note = getDict(locale).replay.shortHistory;
+      expect(note, locale).toContain("{n}");
+      expect(note, locale).toContain("{m}");
+    }
+  });
+
+  it("分母不写成负数，并说清只有几根、需要几根", async () => {
+    // 自定义结束时间落在标的上市之前：实测币安回 HTTP 200 + 很少几根（甚至 []）
+    mocks.fetchRandomHistoryWindow.mockImplementation(async () => makeKlines(6));
+    render(<ReplayTrainer dict={realZh} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/进度: 0\/0/)).toBeInTheDocument());
+    expect(screen.queryByText(/\/-\d+/)).toBeNull();
+    // 默认难度「进阶」的 context 是 30，所以一轮要 31 根
+    expect(screen.getByText(/只有 6 根/)).toBeInTheDocument();
+    expect(screen.getByText(/需要 31 根/)).toBeInTheDocument();
+  });
+
+  it("一根都没有时说的是同一句话，不是「行情暂时不可用」", async () => {
+    mocks.fetchRandomHistoryWindow.mockImplementation(async () => []);
+    render(<ReplayTrainer dict={realZh} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/只有 0 根/)).toBeInTheDocument());
+    expect(screen.queryByText(getDict("zh").replay.fetchError)).toBeNull();
+  });
+
+  it("够一轮时这句话不出现", async () => {
+    render(<ReplayTrainer dict={realZh} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/进度: 0\/270/)).toBeInTheDocument());
+    expect(screen.queryByText(/不够一轮/)).toBeNull();
   });
 });
