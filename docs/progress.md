@@ -6332,3 +6332,72 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   `npm run ops:smoke-prod`；PR #269（R16.59）排在发布之后合并；随后按已核实的清单开工回放与图表那一组的
   口径问题（⏭ 跳末尾不改图表序列、训练趋势的空态文案与实际阈值差一轮、趋势 tooltip 少一且英文页写中文、
   「累计轮次 / 总正确率」其实是最近 100 轮、低端机降级的注释与用例、坏币对被判成 API 不可达）。
+
+## 2026-09-24 — v0.7.14 合并、打 tag 与生产部署核对（配额窗口清了）
+
+- 版本 / 状态：**v0.7.14 已合并、已打 tag、生产已带上**（连着三次发布里第一次部署核对全绿到位）。
+- 合并：PR **#270** rebase 落地 → `613549d`（发布提交：版本号、CHANGELOG、release notes）+ `02ec2ea`
+  （上一条冻结记录）。必需检查 `ci` / `db-tests` / CodeQL / 两个 Analyze 全绿；`Vercel` 检查当时仍是
+  构建配额红，按惯例不判阻塞。
+- tag：附注 **`v0.7.14`**（tag 对象 `47b330b`，解引用到提交 `02ec2ea`）已推送；
+  `npm run check:release-tag` ✅「18 条发布记录的 tag 均已落地（最新 0.7.14 → v0.7.14）」，不再打印待办。
+- 部署核对（`npm run ops:smoke-prod` 打生产域）：**9/10**。
+  - `GET /zh/changelog → 含最新发布版本` **绿**——生产确实带上了 0.7.14。对照第一手事实：合并之前打同一个
+    生产域读到的是 0.7.13（`grep -o "0\.7\.1[0-9]"` 在页面里同时数到两档，最新一档是 0.7.13），
+    也就是 v0.7.11/#257 那次「配额窗口仍在」的滞后到此才被清掉，0.7.11–0.7.14 一次带齐。
+  - 唯一红仍是 `POST /api/ai/chat 游客`：护栏路径 200、模型路径 502 → 部署快照里的 `AI_API_URL` /
+    `AI_MODEL` / `AI_API_KEY` 或出口网络，站内没有可改的一行（长期外部阻塞，原处已登记）。
+  - 其余 8 条（两语言首页风险提示、篇章页与课文页、sitemap、robots、分享落地页、匿名 session）全绿。
+- 发布之后落地的第一条：PR **#269**（R16.59 ☁「已云端存档」等到离线写队列清空才出现）→ `6b62430` +
+  `a017d99`，必需检查全绿。它排在发布之后合并，正是为了让 0.7.14 的 tag 与生产核对先做完。
+- 阻塞 / 风险：无新增。仍待外部的是 Sentry（R14.10）、预览域冒烟 R14.9（需 protection-bypass 密钥）、
+  GSC / Bing / Vercel Analytics / PostHog、上游 kline-buty 那 14 篇风险块缺口（R14.11）、游客 AI 502。
+  待拍板：R15.2 / R16.7 / R16.10–R16.13 / R16.16 / R16.41 / R16.47 / R16.52 / R16.58 / R16.60。PR **#178** 属维护者，不动。
+- 回滚：`git revert 613549d` 即可；本次发布不含数据库迁移、无存储格式变化，回滚不涉数据回退。
+  Vercel 亦可把 Production 切回上一构建止血，随后仍用 revert 收敛历史。
+- 下一项：回放与图表那一组的口径问题按已核实清单开工（见下一条）。
+- 更新时间：2026-09-24 05:30（Asia/Shanghai）。
+
+## 2026-09-24 — 回放口径第七批：跳末尾、趋势空态、数据点说明（R16.61 / R16.62 / R16.63）
+
+- 版本 / 状态：**未发版**，落在分支 `fix-replay-trend-claims`（从 `origin/main` = `a017d99` 切出），
+  四个提交：`bda62aa`（R16.61 代码）、`391ba29`（R16.61 台账）、`6595b38`（R16.62 / R16.63 代码 + 三条台账）、
+  `0d08ddb`（#271 的换载体确认）。
+- 完成内容：
+  1. **R16.61**（⏭ 跳到回放末尾只搬计数器不搬图表）——这条原本已在 PR **#271** 上 CI 全绿，但 #269 先落地后
+     两个 PR 都在 `docs/roadmap.md` 末尾追加，`gh pr update-branch 271 --rebase` 报 `RebaseConflictError`；
+     本仓库禁 force-push，于是按 #238/#249/#251/#261/#264/#262 的既有办法在 `origin/main` 上重放同两笔
+     （`c2d1db5`→`bda62aa`、`2f3698c`→`391ba29`）。等价核对用 blob 而不是 diff：
+     `git rev-parse HEAD:src/components/replay-trainer.tsx` 与 `origin/fix-replay-skip` 同名文件 OID 相同，
+     `replay-trainer.test.tsx` 亦然（roadmap 那笔按设计不同，它要接住 #269 的两条）。#271 待本 PR 合并后关闭，
+     确认台账 `0d08ddb` 已先写进去。
+  2. **R16.62**（趋势块要用户「再完成一轮」，而它自己那张图要两轮）——`replay-trend.tsx:39` 判 `< 2`，
+     `page.tsx:66` 却把上一张卡的 `histEmpty` 喂给它。新增 `replay.trendEmpty`，门槛数字导出成
+     `REPLAY_TREND_MIN_ROUNDS` 并代入文案里的 `{n}`（同 R16.56「给数字一个出口」）。
+  3. **R16.63**（数据点说明少算一轮，还在英文页面印中文）——`${points.length - i} 轮前` → 该轮的本地日历日
+     （`date-utils.ts:7` 的 `localDateStr`）。中文写在模板字符串里，`check:localized-labels` 看不见：
+     探针自证——把那行原样贴回去跑门禁，退出 0 且照旧打印「✅ 属性与 JSX 文本节点两类都查了」。
+  4. **R16.64** 登记为待办：训练记录卡三个数三种窗口（趋势线 20 轮 / 计数 100 轮 / 连击全历史），
+     标签却都写「累计 / 总 / 最佳」；隐私页那段已经把 100 轮交代给用户，只有这一屏没讲。写清三条路与开工条件，
+     不与本批混做。
+- 变更文件：`src/components/replay-trend.tsx`、`src/components/replay-trend.test.tsx`、
+  `src/app/[locale]/replay/page.tsx`、`src/lib/i18n.ts`（zh `:281` / en `:667` 各一条）、`docs/roadmap.md`、
+  `docs/work-audit-ack.json`；R16.61 的两笔另带 `src/components/replay-trainer.tsx` 与其用例。
+- 验证：`npm test` **296 文件 / 2857 条**绿（本批新增 2 条，重放前后各计一次核对：该文件 5 → 7 条）；
+  `npm run typecheck`、`npm run lint`（`--max-warnings=0`）干净；`check:localized-labels` /
+  `check:dead-copy` / `check:glossary` / `check:translation-history` / `check:ai-copy` 全绿；
+  `check:report-freshness` 17 份 · 过期 0 · 未提交 0；`check:release-tag` ✅ 18 条。
+  新占位符走的是全站那道 `e2e/placeholder-leak.spec.ts`：`npm run build` 后跑该文件 **11/11** 绿（含
+  `/zh/replay 水合后仍无残留`），并直接读构建出的 HTML 正向确认两种语言代入后的成品——
+  「准确率折线要累计 2 轮记录才画得出来。」与 "The accuracy line appears once you have 2 rounds recorded."
+  （`{n}` 只剩在 RSC payload 的 `<script>` 里，那一面门禁本就整段丢掉）。
+- 变异核对四组，逐条点名：门槛退回 `< 1` → 空态两条用例同时红；撤掉 `{n}` 的代入 → 红并打印
+  `expected '准确率折线要累计 {n} 轮记录才画得出来。' to contain '2'`；把 `轮前` 那行贴回去 → tooltip 用例红
+  （`expected '2 轮前 · 30%' to be '2026-03-04 · 30%'`）而 `check:localized-labels` 仍绿（这条正是把守卫落在用例上的理由）；
+  R16.61 那笔沿用 #271 已跑过的核对（删掉 `fillSeriesTo(klines.length)` → 「跳末之后图表应拿到整段 300 根」红）。
+- 阻塞 / 风险：无。R16.62 / R16.63 只改显示与文案，不动 `tb-replay-history` / `tb-replay-best` 的写法，
+  回滚 = `git revert` 本批四个提交；`{n}` 是新增占位符名，若回滚只回一半（留下文案、撤掉代入）会让 /replay
+  空态印出 `{n}`，`e2e/placeholder-leak.spec.ts` 会当场判红，不会静默上线。
+- 下一项：按已核实清单继续 #101（即 R16.64 的落地候选）、#102–#106（低端机降级注释、坏币对被判成 API 不可达、
+  自定义模式「新一轮」拿到同一批 K 线、`已回放 0/-30` 的负分母、ticker ▲% 其实是滚动 24 小时）。
+- 更新时间：2026-09-24 05:30（Asia/Shanghai）。
