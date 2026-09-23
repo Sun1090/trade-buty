@@ -14,6 +14,7 @@ import path from "node:path";
 import {
   assessFreshness,
   collectReportInventory,
+  collectReportProducers,
   renderFreshnessFailure,
   shouldFailFreshness,
 } from "./report-freshness-lib.mjs";
@@ -37,6 +38,15 @@ const sources = fs
   }));
 
 const inventory = collectReportInventory(sources);
+const producers = collectReportProducers(sources);
+/** 巡检器文件名 → 它的 npm 脚本名，让失败信息直接说去哪儿重算。 */
+const commands = {};
+for (const [name, command] of Object.entries(
+  JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf-8")).scripts ?? {},
+)) {
+  const match = /scripts\/([\w.-]+\.mjs)/.exec(String(command));
+  if (match && !commands[match[1]]) commands[match[1]] = name;
+}
 const git = (args) =>
   execFileSync("git", args, { cwd: root, encoding: "utf-8" });
 const statusOutput = inventory.length
@@ -55,7 +65,15 @@ console.log(
 
 if (reason) {
   console.error(
-    renderFreshnessFailure({ reason, inventory, stale, untracked, minReports: MIN_REPORTS })
+    renderFreshnessFailure({
+      reason,
+      inventory,
+      stale,
+      untracked,
+      minReports: MIN_REPORTS,
+      producers,
+      commands,
+    })
   );
   process.exit(1);
 }
