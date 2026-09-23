@@ -64,6 +64,10 @@
     {
       "number": 221,
       "reason": "换载体重放：rebase 到 main 时与 #220 的 docs/roadmap.md（R16.24）冲突，本仓禁止 force-push 改写已推送分支，故从最新 main 重建为 PR #222 逐个 cherry-pick。四个改动文件（scripts/check-risk-warning.mjs、scripts/risk-warning-lib.mjs、scripts/risk-warning-lib.test.mjs、docs/ops.md）逐字节一致，roadmap 仅按编号顺序多保留 main 的 R16.24 一条；重建后的树上 vitest 288 文件 / 2751 条、30 条门禁、e2e 149 条全部重跑通过。"
+    },
+    {
+      "number": 223,
+      "reason": "换载体重放：#222 合入后本分支的 docs/roadmap.md 追加位置与 R16.25 冲突，本仓禁止 force-push 改写已推送分支，故从 main=f4f3f71 重建为 PR #224 并 cherry-pick 同一个提交（caceb88 → 新提交）。改动文件（.env.example、.gitignore、docs/env.md、scripts/env-docs.mjs、scripts/env-docs.test.mjs）逐字节一致，roadmap 仅按编号顺序多保留 main 的 R16.25 一条。附带理由：#223 的 CI 里 ops:work-audit 判红，是因为 #221 的确认记录随 #222 才进 main，重建到 main 之后该步骤即通过。"
     }
   ]
 }
