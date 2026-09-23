@@ -10,8 +10,10 @@ import {
   latestReleaseVersion,
   PAGE_PATHS,
   RISK_WARNING_MARK,
+  localBuildId,
   run,
   runChecks,
+  servedBuildIsStale,
   streakSharePath,
 } from "./prod-smoke.mjs";
 
@@ -322,3 +324,95 @@ function writeReleaseRoot(version) {
   fs.writeFileSync(path.join(dir, "release-notes.json"), JSON.stringify({ releases: [{ version }] }));
   return root;
 }
+
+describe("prod-smoke 本地构建身份", () => {
+  function collector() {
+    const out = [];
+    const err = [];
+    return { out, err, stdout: (line) => out.push(String(line)), stderr: (line) => err.push(String(line)) };
+  }
+
+  function rootWithBuild(buildId) {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "trade-buty-prod-smoke-build-"));
+    const data = path.join(root, "src", "data");
+    fs.mkdirSync(data, { recursive: true });
+    fs.writeFileSync(path.join(data, "release-notes.json"), JSON.stringify({ releases: [{ version: VERSION }] }));
+    if (buildId) {
+      fs.mkdirSync(path.join(root, ".next"), { recursive: true });
+      fs.writeFileSync(path.join(root, ".next", "BUILD_ID"), `${buildId}\n`);
+    }
+    return root;
+  }
+
+  /** 让每个页面的响应体都带上构建标识，模拟「服务确实跑的是这份构建」 */
+  function routesWithBuild(buildId) {
+    const stamped = {};
+    for (const [key, route] of Object.entries(healthyRoutes())) {
+      // AI 那条路由是按载荷分支的函数，改写它的 body 会把护栏头一起弄没
+      if (typeof route === "function") {
+        stamped[key] = route;
+        continue;
+      }
+      let body = `${route.body}${key === "/zh" ? buildId : ""}`;
+      // robots 那条断言比的是「sitemap 指向本域名」，夹具里的生产域名要换成被量的地址
+      if (key === "/robots.txt") body = "User-agent: *\nSitemap: http://localhost:3111/sitemap.xml";
+      stamped[key] = { ...route, body };
+    }
+    return stamped;
+  }
+
+  it("判据本身：没有标识可比时不判过期", () => {
+    expect(servedBuildIsStale({ html: "<html>x</html>", buildId: "abc" })).toBe(true);
+    expect(servedBuildIsStale({ html: "<html>abc</html>", buildId: "abc" })).toBe(false);
+    expect(servedBuildIsStale({ html: "", buildId: "abc" })).toBe(false);
+    expect(servedBuildIsStale({ html: "<html></html>", buildId: null })).toBe(false);
+    expect(localBuildId(rootWithBuild(null))).toBeNull();
+    expect(localBuildId(rootWithBuild(" abc \n"))).toBe("abc");
+  });
+
+  it("localhost 目标 + 驻留的旧构建 → 退出 1，且十条断言一条都不跑", async () => {
+    const io = collector();
+    const { impl, calls } = fakeFetch(healthyRoutes());
+    const code = await run({
+      root: rootWithBuild("stale-build-id"),
+      env: { SMOKE_BASE_URL: "http://localhost:3111" },
+      stdout: io.stdout,
+      stderr: io.stderr,
+      fetchImpl: impl,
+    });
+    expect(code).toBe(1);
+    expect(io.err.join("\n")).toContain("不含本次构建标识");
+    expect(io.out.join("\n")).not.toContain("条断言");
+    expect(calls.map((c) => c.key)).toEqual(["/zh"]);
+  });
+
+  it("localhost 目标 + 构建标识对得上 → 照常跑完全部断言", async () => {
+    const io = collector();
+    const { impl, calls } = fakeFetch(routesWithBuild("fresh-build-id"));
+    const code = await run({
+      root: rootWithBuild("fresh-build-id"),
+      env: { SMOKE_BASE_URL: "http://localhost:3111" },
+      stdout: io.stdout,
+      stderr: io.stderr,
+      fetchImpl: impl,
+    });
+    expect(code).toBe(0);
+    const total = buildChecks({ expectedVersion: VERSION }).length;
+    expect(calls).toHaveLength(total + 2); // 一次身份探针 + 每条断言（AI 占两条）
+  });
+
+  it("打生产域名时不做本地身份核对，也不读 .next", async () => {
+    const io = collector();
+    const { impl, calls } = fakeFetch(healthyRoutes());
+    const code = await run({
+      root: rootWithBuild("some-build-id"),
+      env: { SMOKE_BASE_URL: BASE },
+      stdout: io.stdout,
+      stderr: io.stderr,
+      fetchImpl: impl,
+    });
+    expect(code).toBe(0);
+    expect(calls[0].url).toBe(`${BASE}/zh`);
+    expect(io.err.join("\n")).not.toContain("构建标识");
+  });
+});

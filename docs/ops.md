@@ -185,7 +185,7 @@ CI 里是**每月定时任务**（`.github/workflows/link-patrol.yml`，每月 1
 
 ```bash
 npm run ops:smoke-prod                                    # 默认打生产域名
-SMOKE_BASE_URL=http://localhost:3111 npm run ops:smoke-prod   # 打本地生产构建
+SMOKE_BASE_URL=http://localhost:3111 npm run ops:smoke-prod   # 打本地生产构建（会先核对响应里是不是当前 .next 那次构建）
 ```
 
 对**已部署的域名**跑 10 条只读断言，逐条打印后汇总；任一失败 exit 1。断言不是随手挑的，每一条都对应

@@ -20,6 +20,8 @@ import { fileURLToPath } from "node:url";
 export const DEFAULT_BASE_URL = "https://trade-buty.vercel.app";
 export const RISK_WARNING_MARK = "⚠️";
 const REQUEST_TIMEOUT_MS = 20_000;
+/** 本地目标才做构建身份核对；打生产域名时没有 `.next` 可比。 */
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
 /** 游客 AI 问答的探针问题：中性、无荐股、不触发作侧护栏 */
 export const AI_PROBE_QUESTION = "K 线的上影线代表什么？";
@@ -60,6 +62,23 @@ export function latestReleaseVersion(root = process.cwd()) {
   const releases = JSON.parse(fs.readFileSync(file, "utf8")).releases ?? [];
   const first = releases[0];
   return first && typeof first.version === "string" ? first.version : null;
+}
+
+/** 本地 `.next` 的构建标识；没构建过时返回 null（此时没有可比对象）。 */
+export function localBuildId(root = process.cwd()) {
+  const file = path.join(root, ".next", "BUILD_ID");
+  if (!fs.existsSync(file)) return null;
+  const id = fs.readFileSync(file, "utf8").trim();
+  return id || null;
+}
+
+/**
+ * 端口上驻留着一个旧的 `next start` 时，冒烟量的是那份旧构建：既可能把旧构建的
+ * 缺陷算成本次的红，也可能把本次的缺陷藏成绿。HTML 里带着构建标识，所以能直接分辨。
+ */
+export function servedBuildIsStale({ html, buildId }) {
+  if (!buildId || !html) return false;
+  return !html.includes(buildId);
 }
 
 async function defaultFetch(url, init) {
@@ -250,13 +269,36 @@ export async function run({
 } = {}) {
   const rawBase = env.SMOKE_BASE_URL ?? DEFAULT_BASE_URL;
   let baseUrl;
+  let hostname;
   try {
     const url = new URL(rawBase);
     if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("协议必须是 http(s)");
     baseUrl = url.origin;
+    hostname = url.hostname;
   } catch (error) {
     stderr(`❌ SMOKE_BASE_URL 不可用：${rawBase}（${error instanceof Error ? error.message : String(error)}）`);
     return 1;
+  }
+
+  // 本地目标先确认「量的是哪份构建」：一条驻留的旧 next start 会让整轮结果失真，
+  // 而它读起来和「生产停在旧构建」一模一样。
+  if (LOOPBACK_HOSTS.has(hostname)) {
+    const buildId = localBuildId(root);
+    if (buildId) {
+      let served = "";
+      try {
+        served = await (await fetchImpl(`${baseUrl}/zh`)).text();
+      } catch (error) {
+        stderr(`❌ 无法确认本地构建身份：${baseUrl}/zh 取不到内容（本地 .next 的 buildId 是 ${buildId}）`);
+        stderr(`   ${error instanceof Error ? error.message : String(error)}`);
+        return 1;
+      }
+      if (servedBuildIsStale({ html: served, buildId })) {
+        stderr(`❌ 目标是本地地址，但服务返回的页面里不含本次构建标识（.next/BUILD_ID = ${buildId}）`);
+        stderr("   端口上多半驻留着一个旧的 next start：先停掉它，用当前构建重新起服务再跑。");
+        return 1;
+      }
+    }
   }
 
   const expectedVersion = latestReleaseVersion(root);
