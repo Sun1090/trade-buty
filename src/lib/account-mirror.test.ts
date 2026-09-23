@@ -4,7 +4,10 @@
  * `hydrateFromCloud` 会把上一个账号的镜像并进当前账号并补传到当前账号的云平行。
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 import {
+  PER_CHAPTER_QUIZ_EXCLUSIONS,
   MIRROR_OWNER_KEY,
   adoptAccountMirror,
   getMirrorOwner,
@@ -28,6 +31,14 @@ Object.defineProperty(globalThis, "localStorage", {
   writable: true,
 });
 
+/**
+ * 答题账本与每章成绩同前缀（`tb-quiz-`），却是云端没有对应表的本地独有记录：
+ * 换账号清掉它，测验分数趋势就永久少一段，而且无从恢复。
+ */
+const QUIZ_ATTEMPTS_LEDGER = JSON.stringify({
+  "spot:1": { chapter: "spot", best: 9, total: 10, at: 1 },
+});
+
 /** 换账号后必须消失的镜像；设备偏好与本地独有记录必须留下 */
 function seedMirror() {
   memStore.set("tb-progress", JSON.stringify({ spot: ["risk"] }));
@@ -44,6 +55,7 @@ function seedMirror() {
   // 不该被动到的两类：设备偏好 + 云端没有对应表的本地记录
   memStore.set("tb-theme", "dark");
   memStore.set("tb-quiz-difficulty", "2");
+  memStore.set("tb-quiz-attempts", QUIZ_ATTEMPTS_LEDGER);
   memStore.set("tb-bookmarks", "[]");
   memStore.set("tb-streak", JSON.stringify({ days: 3 }));
 }
@@ -102,6 +114,7 @@ describe("adoptAccountMirror", () => {
     }
     expect(memStore.get("tb-theme")).toBe("dark");
     expect(memStore.get("tb-quiz-difficulty")).toBe("2");
+    expect(memStore.get("tb-quiz-attempts")).toBe(QUIZ_ATTEMPTS_LEDGER);
     expect(memStore.get("tb-bookmarks")).toBe("[]");
     expect(memStore.get("tb-streak")).toBe(JSON.stringify({ days: 3 }));
   });
@@ -154,5 +167,40 @@ describe("resetAccountMirror", () => {
     } finally {
       Object.defineProperty(globalThis, "localStorage", { value: storage, writable: true });
     }
+  });
+});
+
+/**
+ * `tb-quiz-` 这个前缀下同时住着两类东西：属于账号镜像的每章成绩，和云端没有对应表的
+ * 本地独有记录。前者换账号必须清、后者清掉就是真丢数据，而 `startsWith` 分不开它们——
+ * `tb-quiz-attempts` 就是这么被扫走过一次的（R16.46）。
+ * 所以除名单必须跟着库房走：生产代码里每多一个写死的 `tb-quiz-xxx` 键，这里就得红一次，
+ * 逼着写字的人当场回答「这个键归谁」。
+ */
+describe("tb-quiz- 前缀下的键必须逐条定性", () => {
+  const KEY_LITERAL = /"tb-quiz-[a-z][a-z0-9-]*"/g;
+
+  function sourceFiles(dir: string, out: string[] = []): string[] {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) sourceFiles(full, out);
+      else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) out.push(full);
+    }
+    return out;
+  }
+
+  const found = new Set<string>();
+  for (const file of sourceFiles(path.join(process.cwd(), "src"))) {
+    for (const match of fs.readFileSync(file, "utf8").matchAll(KEY_LITERAL)) {
+      found.add(match[0].replaceAll('"', ""));
+    }
+  }
+
+  it("扫描本身扫得到东西（防止正则空转）", () => {
+    expect(found.size, "一个 `tb-quiz-` 字面量键都没扫到，说明扫描写坏了").toBeGreaterThan(0);
+  });
+
+  it("每个写死的键都已经在除名单上", () => {
+    expect([...found].sort()).toEqual([...PER_CHAPTER_QUIZ_EXCLUSIONS].sort());
   });
 });

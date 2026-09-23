@@ -37,9 +37,17 @@ const ACCOUNT_MIRROR_KEYS = [
   "tb-last-cloud-sync",
 ];
 
-/** 每章测验成绩 `tb-quiz-<chapterSlug>`；`tb-quiz-difficulty` 是设备偏好，必须排除 */
+/**
+ * 每章测验成绩 `tb-quiz-<chapterSlug>` 属于账号镜像，换账号必须清；
+ * 但同前缀不等于同归属，这两个是本地独有记录，清掉就是真丢数据（文件头列过）：
+ * - `tb-quiz-difficulty`：设备偏好；
+ * - `tb-quiz-attempts`：答题账本（`quiz-attempt-ledger.ts`），测验分数趋势读的就是它，
+ *   云端没有对应表，换账号后无从恢复。
+ */
+export const PER_CHAPTER_QUIZ_EXCLUSIONS = ["tb-quiz-difficulty", "tb-quiz-attempts"];
+
 function isPerChapterQuizKey(key: string): boolean {
-  return key.startsWith("tb-quiz-") && key !== "tb-quiz-difficulty";
+  return key.startsWith("tb-quiz-") && !PER_CHAPTER_QUIZ_EXCLUSIONS.includes(key);
 }
 
 /** 当前镜像归属的账号；从未盖过戳时返回 null。 */
