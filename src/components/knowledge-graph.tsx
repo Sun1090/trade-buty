@@ -39,7 +39,7 @@ export function KnowledgeGraph({ locale }: { locale: string }) {
                   <span className="min-w-0 text-xs font-medium truncate group-hover:text-accent transition-colors">
                     {c.title}
                   </span>
-                  {/* 完成度小点 */}
+                  {/* 课数条：长度是「本章课数 ÷ 全书最大课数」，与读没读无关 */}
                   <span className="ml-auto w-10 h-1 rounded-full bg-white/10 overflow-hidden shrink-0">
                     <span
                       className="h-full bg-accent rounded-full"
