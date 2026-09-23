@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { GlobalReadStat } from "./global-read-stat";
 import { readSummary } from "@/lib/learn-stats";
 
@@ -31,6 +31,9 @@ const props = {
 beforeEach(() => {
   state.progress = null;
   state.user = null;
+  localStorage.removeItem("tb-sync-queue");
+  localStorage.removeItem("tb-sync-queue-next-id");
+  localStorage.removeItem("tb-sync-queue-owner");
 });
 
 describe("GlobalReadStat", () => {
@@ -65,6 +68,54 @@ describe("GlobalReadStat", () => {
     state.progress = { spot: ["candlesticks"] };
     render(<GlobalReadStat {...props} />);
     expect(screen.queryByTitle("已同步")).not.toBeInTheDocument();
+  });
+
+  // ☁ 的文案是「已云端存档，换设备不丢」——完成时。断网期间的读会先进离线写队列（R9.5），
+  // 这些读已经计入旁边那个数字，却一条都没到云上，此时挂 ☁ 就是一句假承诺。
+  it("还有待上传的写入时不显示云同步标记", () => {
+    localStorage.setItem(
+      "tb-sync-queue",
+      JSON.stringify([
+        {
+          id: 1,
+          kind: "progress",
+          payloadKey: "spot:candlesticks",
+          payload: { chapter_num: "spot", doc_slug: "candlesticks" },
+          at: Date.now(),
+        },
+      ]),
+    );
+    state.progress = { spot: ["candlesticks"] };
+    state.user = { id: "user-1" };
+    render(<GlobalReadStat {...props} />);
+    expect(screen.queryByTitle("已同步")).not.toBeInTheDocument();
+    // 数字本身照常显示：已读是本地事实，不该因为没上传就藏起来
+    expect(screen.getByText(/已读 1\/10/)).toBeInTheDocument();
+  });
+
+  it("队列被重放清空后（tb-sync-queue）标记自己回来", () => {
+    localStorage.setItem(
+      "tb-sync-queue",
+      JSON.stringify([
+        {
+          id: 1,
+          kind: "progress",
+          payloadKey: "spot:candlesticks",
+          payload: { chapter_num: "spot", doc_slug: "candlesticks" },
+          at: Date.now(),
+        },
+      ]),
+    );
+    state.progress = { spot: ["candlesticks"] };
+    state.user = { id: "user-1" };
+    render(<GlobalReadStat {...props} />);
+    expect(screen.queryByTitle("已同步")).not.toBeInTheDocument();
+    // 不重新 render：只靠事件驱动。订阅断掉时这一条就红，而不是被 rerender 蒙过去
+    localStorage.removeItem("tb-sync-queue");
+    act(() => {
+      window.dispatchEvent(new Event("tb-sync-queue"));
+    });
+    expect(screen.getByTitle("已同步")).toHaveTextContent("☁");
   });
 
   it("站点里已不存在的章节键不计入：与同页「总进度」卡说同一个数", () => {

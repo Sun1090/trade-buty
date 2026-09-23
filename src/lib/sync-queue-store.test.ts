@@ -9,6 +9,7 @@ import {
   QUEUE_KEY,
   QUEUE_NEXT_ID_KEY,
   QUEUE_OWNER_KEY,
+  QUEUE_EVENT,
 } from "./sync-queue-store";
 
 // 内存 localStorage
@@ -206,5 +207,27 @@ describe("clearPersistedQueue", () => {
     expect(getQueueLength()).toBe(0);
     expect(memStore.has(QUEUE_KEY)).toBe(false);
     expect(memStore.has(QUEUE_NEXT_ID_KEY)).toBe(false);
+  });
+});
+
+// 待上传条数是界面（首页 ☁「已云端存档」）的判据，所以每次队列变化都必须 announce：
+// 只 announce 入队不 announce 重放/清空，标记会在该出现的时候一直不出现。
+describe("队列变化的通知（tb-sync-queue）", () => {
+  it("入队、重放、清空各通知一次", async () => {
+    const seen: string[] = [];
+    const onChange = () => seen.push(QUEUE_EVENT);
+    window.addEventListener(QUEUE_EVENT, onChange);
+    try {
+      enqueueWrite("progress", "ch:doc", { chapter_num: "ch", doc_slug: "doc" });
+      expect(seen).toHaveLength(1);
+
+      await flushPersistedQueue(async () => true);
+      expect(seen).toHaveLength(2);
+
+      clearPersistedQueue();
+      expect(seen).toHaveLength(3);
+    } finally {
+      window.removeEventListener(QUEUE_EVENT, onChange);
+    }
   });
 });
