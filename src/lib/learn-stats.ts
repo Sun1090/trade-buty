@@ -26,7 +26,8 @@ export function readSummary(
   // 于是 readDocs 恒 ≤ totalDocs，完成度不可能再出现 150%。
   const perChapter = chapters.map((c) => readDocsForChapter(progress[c.slug], c.docCount));
   const readDocs = perChapter.reduce((s, n) => s + n, 0);
-  const doneChapters = perChapter.filter((n, i) => n >= chapters[i].docCount).length;
+  // 空篇章不算完成，与 learning-overview / course-completion-trend / 侧栏同一判据
+  const doneChapters = perChapter.filter((n, i) => chapters[i].docCount > 0 && n >= chapters[i].docCount).length;
   const overallPct = totalDocs > 0 ? Math.round((readDocs / totalDocs) * 100) : 0;
   return { readDocs, totalDocs, doneChapters, overallPct };
 }

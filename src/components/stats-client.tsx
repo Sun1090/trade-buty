@@ -21,7 +21,7 @@ import { aggregateStats, getUnlockedBadges, BADGES, type LearnStats, type Badge 
 import { QUIZZES } from "@/lib/quizzes";
 import { readQuizProgress } from "@/lib/quiz-store";
 import { buildCourseCompletionTrend } from "@/lib/course-completion-trend";
-import { buildLearningOverview, type LearningOverview } from "@/lib/learning-overview";
+import { buildLearningOverview, readDocsForChapter, type LearningOverview } from "@/lib/learning-overview";
 import { buildQuizScoreTrend } from "@/lib/quiz-score-trend";
 import { buildWrongbookEfficiency } from "@/lib/wrongbook-efficiency";
 import { buildReplayTimeTrend } from "@/lib/replay-time-trend";
@@ -289,7 +289,7 @@ export function StatsClient({
     ? (() => {
         for (const chapter of chapters) {
           if (chapter.docCount <= 0) continue;
-          const readCount = (progress[chapter.slug] ?? []).length;
+          const readCount = readDocsForChapter(progress[chapter.slug], chapter.docCount);
           if (readCount < chapter.docCount) continue;
           const quizEntry = quizProgress[chapter.slug];
           const quizDone = Boolean(quizEntry?.done) || (quizEntry?.best ?? 0) > 0;
@@ -732,7 +732,9 @@ export function StatsClient({
 
       {/* R12.6：断档恢复提示（断签且今日未破零时出现） */}
       <StreakRecoveryCard
-        hasUnfinishedChapter={chapters.some((c) => (progress?.[c.slug]?.length ?? 0) < c.docCount)}
+        hasUnfinishedChapter={chapters.some(
+          (c) => readDocsForChapter(progress?.[c.slug], c.docCount) < c.docCount,
+        )}
         locale={locale}
         labels={{
           title: dict.recoveryTitle,
@@ -810,7 +812,7 @@ export function StatsClient({
 
       {/* 学习计划 */}
       <StudyPlan
-        doneChapters={stats.readDocs > 0 ? chapters.filter((c) => (progress?.[c.slug]?.length ?? 0) >= c.docCount).map((c) => c.slug).slice(0, 5) : []}
+        doneChapters={stats.readDocs > 0 ? chapters.filter((c) => c.docCount > 0 && readDocsForChapter(progress?.[c.slug], c.docCount) >= c.docCount).map((c) => c.slug).slice(0, 5) : []}
         wrongChapters={[]}
         currentChapter=""
         dict={{ generate: locale === "en" ? "Generate plan" : "生成学习计划", generating: locale === "en" ? "Generating..." : "生成中…", title: locale === "en" ? "AI Study Plan" : "AI 学习计划", error: locale === "en" ? "Plan generation is unavailable right now" : "暂时无法生成学习计划，请稍后重试。", loginRequired: locale === "en" ? "Log in to generate a study plan" : "登录后可生成学习计划" }}

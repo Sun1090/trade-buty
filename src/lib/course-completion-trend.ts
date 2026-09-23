@@ -1,4 +1,5 @@
 import { isLocalDateStr, localDateStr, shiftDate } from "./date-utils";
+import { readDocsForChapter } from "./learning-overview";
 
 export interface ChapterInput {
   slug: string;
@@ -105,13 +106,14 @@ export function buildCourseCompletionTrend(input: {
   const currentChapterCounts = new Map<string, number>();
   let readDocs = 0;
   for (const chapter of chapters) {
-    const validDocs = new Set(
-      (progress[chapter.slug] ?? []).filter((doc): doc is string => typeof doc === "string" && doc.length > 0),
-    );
-    const count = Math.min(validDocs.size, safeNonNegative(chapter.docCount));
+    const stored = progress[chapter.slug] ?? [];
+    // 已读数走 learning-overview 的唯一口径（去重 + 按篇章课数封顶），不再在此抄第二份
+    const count = readDocsForChapter(stored, safeNonNegative(chapter.docCount));
     currentChapterCounts.set(chapter.slug, count);
     readDocs += count;
-    for (const doc of validDocs) currentDocSet.add(`${chapter.slug}:${doc}`);
+    for (const doc of stored) {
+      if (typeof doc === "string" && doc.length > 0) currentDocSet.add(`${chapter.slug}:${doc}`);
+    }
   }
 
   const warnings: string[] = [];

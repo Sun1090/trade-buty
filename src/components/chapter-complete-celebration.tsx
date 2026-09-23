@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { readProgressCompletions } from "@/lib/progress";
+import { readProgress, readProgressCompletions } from "@/lib/progress";
+import { readDocsForChapter } from "@/lib/learning-overview";
 
 /**
  * 篇章完成庆祝：检测从「未完成→完成」的过渡，弹出 emoji confetti。
@@ -39,28 +40,23 @@ export function ChapterCompleteCelebration({
   const prevDoneRef = useRef(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("tb-progress");
-      const progress = raw ? JSON.parse(raw) : {};
-      const read = progress[chapterSlug]?.length ?? 0;
-      const done = read >= docCount;
-      const lastAt = Object.values(readProgressCompletions())
-        .filter((entry) => entry.chapter === chapterSlug)
-        .reduce((newest, entry) => Math.max(newest, entry.at ?? 0), 0);
-      const justFinished =
-        lastAt > 0 && Date.now() - lastAt <= CELEBRATION_FRESH_WINDOW_MS;
+    // 已读数与「是否读完本章」一律走全站唯一口径 readDocsForChapter + readProgress()：
+    // 直接 JSON.parse 原始存储会把非数组值（字符串也有 `.length`）与重复键算成已读，
+    // 于是礼花在别处都显示 0/2 的场合宣布「篇章完成！」。
+    const read = readDocsForChapter(readProgress()[chapterSlug], docCount);
+    const done = docCount > 0 && read >= docCount;
+    const lastAt = Object.values(readProgressCompletions())
+      .filter((entry) => entry.chapter === chapterSlug)
+      .reduce((newest, entry) => Math.max(newest, entry.at ?? 0), 0);
+    const justFinished = lastAt > 0 && Date.now() - lastAt <= CELEBRATION_FRESH_WINDOW_MS;
 
-      if (done && justFinished && !prevDoneRef.current) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setShow(true);
-        const t = setTimeout(() => setShow(false), 3000);
-        prevDoneRef.current = true;
-        return () => clearTimeout(t);
-      }
-      prevDoneRef.current = done;
-    } catch {
-      // ignore
+    if (done && justFinished && !prevDoneRef.current) {
+      setShow(true);
+      const t = setTimeout(() => setShow(false), 3000);
+      prevDoneRef.current = true;
+      return () => clearTimeout(t);
     }
+    prevDoneRef.current = done;
   }, [chapterSlug, docCount]);
 
   if (!show) return null;
