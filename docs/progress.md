@@ -5796,3 +5796,43 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   R16.16（示例日历三条路，推荐 ③ 改成教学内容）。
 - 下一项：R16.24（界面上的 `{chapters}`：占位符代入门禁），见下一节。
 - 更新时间：2026-09-23 10:05（Asia/Shanghai）。
+
+## 2026-09-23 — 门禁批次第三批：R16.24 / R16.25 / R16.27 落地，R16.26 待发，另修 R16.28
+
+- 状态：**#220 / #222 / #224 已合入 main**；R16.26（重算型报告新鲜度门禁）已在本地分支就绪、
+  等这条批次收口后单独提 PR；R16.28 是本批次期间新抓到的功能缺陷，走本条记录的分支。
+  每条改动自己的口径、门禁设计与变异证据写在 `docs/roadmap.md` 的 R16.24–R16.28 条目里，
+  本条不重抄。
+- 里程碑 / 版本：v0.7.9 之后的未发布工作（尚未切新版本）。
+- 分支 / 提交（main 上的顺序）：
+  - PR **#220** → `d7d458e` R16.24：`e2e/placeholder-leak.spec.ts` 看住词典占位符代入
+    （459 个预渲染页面的可见文本 + 可见属性 + title/description meta + 6 个路由水合后 DOM）。
+  - PR **#222** → `f4f3f71` R16.25：风险提示兜底从「源码里写了」改为对 `.next` 产物逐页核对；
+    本 PR 取代关闭的 **#221**（换载体重放，5 个文件与 #221 逐字节一致）。
+  - PR **#224** → `cc5d113` + `4c534dc` R16.27：`.env.example` 真正入库并与代码、
+    `docs/env.md` 三方对账；本 PR 取代关闭的 **#223**（同样换载体重放，源码 diff 0 行）。
+  - 关闭未合并的 **#221 / #223** 去向记在 `docs/work-audit-ack.json`，`ops:work-audit`
+    现报「未确认的关闭 PR 0」。
+  - 本地待发：分支 `feat/report-freshness-gate`（`04f4541`）→ R16.26，
+    「入库报告必须等于当场重算」门禁；等 #224 落地后再 rebase，避免第三次撞同一段 roadmap 尾部。
+  - 本分支 `fix/ai-handoff-with-history`（`558f29d`）→ R16.28。
+- 验证命令和结果（2026-09-23 中午在 `fix/ai-handoff-with-history` = main `4c534dc` + 一个提交上重跑）：
+  - `npm run typecheck` · `npx eslint`（本次改动文件，0 warning）exit 0；
+    `npx vitest run` **288 文件 / 2752 条全绿**（较上午的 2751 多一条：R16.28 的刷新用例）。
+  - `npm run build`：通过；产物侧门禁逐条取真实退出码，**0 条失败**——
+    `check:risk-warning`（418 页逐一比对，兜底块正好出现在 14 页）、
+    `check:env-docs`（13 个运行时变量 ↔ `.env.example` 13 个键逐项对应）、
+    `check:dead-copy`（399 词条 / 死键 0 / 预算 0）。三份报告重算后 `git status` 干净，
+    即台账与代码没有漂移。
+  - `npm run ops:smoke-prod` @ 12:04（Asia/Shanghai）：**9/10**，唯一红项仍是
+    `POST /api/ai/chat 游客 → 502`（外部模型端点），`/zh/changelog` 的「含最新发布版本」通过。
+- 阻塞：`BLOCKED_EXTERNAL` 一项照旧——生产 AI 游客模型路径 502（`AI_API_URL` /
+  `AI_MODEL` / `AI_API_KEY` / 出口），护栏路径 200，站内无异常。Vercel 检查红的仍是
+  账户 24h 构建配额（`upgradeToPro=build-rate-limit`），按本仓既定判定不作为合并阻塞：
+  #224 就是在 Vercel 红、`ci` / `db-tests` / CodeQL 三项绿的状态下 rebase 合并的。
+- 风险 / 回滚：R16.28 只改 `AiChat` 挂载期的参数消费与发送时机，不动接口、数据结构、
+  配额口径；如需回滚撤回 `558f29d` 即可。
+- 待拍板（不阻塞上述任何一条）：R15.2 / R16.7 / R16.10 / R16.11 / R16.12 / R16.13 /
+  R16.16（示例日历三条路，推荐 ③ 改成教学内容）。
+- 下一项：R16.26 提 PR；这批门禁收口后评估一次 patch 发布（v0.7.10）。
+- 更新时间：2026-09-23 12:22（Asia/Shanghai）。
