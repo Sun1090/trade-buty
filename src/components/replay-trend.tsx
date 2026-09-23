@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { readReplayHistory } from "@/lib/replay-store";
+import { localDateStr } from "@/lib/date-utils";
+
+/** 折线图最少要几轮记录：空态文案里的数字读这个常量 */
+export const REPLAY_TREND_MIN_ROUNDS = 2;
 
 /** 回放训练准确率趋势折线图（SVG，无外部依赖） */
 export function ReplayTrend({
@@ -32,10 +36,12 @@ export function ReplayTrend({
     return () => window.removeEventListener("tb-progress", onChange);
   }, []);
 
-  if (points.length < 2) {
+  if (points.length < REPLAY_TREND_MIN_ROUNDS) {
     return (
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center">
-        <p className="text-sm text-faint">{emptyLabel}</p>
+        <p className="text-sm text-faint">
+          {emptyLabel.replace("{n}", String(REPLAY_TREND_MIN_ROUNDS))}
+        </p>
       </div>
     );
   }
@@ -68,7 +74,7 @@ export function ReplayTrend({
             r={2.5}
             fill={p.acc >= 50 ? "var(--accent)" : "var(--down)"}
           >
-            <title>{`${points.length - i} 轮前 · ${p.acc}%`}</title>
+            <title>{`${localDateStr(new Date(p.at))} · ${p.acc}%`}</title>
           </circle>
         ))}
       </svg>
