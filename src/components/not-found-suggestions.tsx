@@ -18,7 +18,7 @@ interface Props {
 /**
  * R8.11 根级 404 推荐位：
  * - pathname 在知识库路径下：显示 URL 推荐的 3 条最近
- * - pathname 不在知识库路径下：不渲染（由 Popular starters 兜底）
+ * - pathname 不在知识库路径下：不渲染（由下方「从这几篇开始」兜底）
  * - 服务端 SSR 不读 pathname（避免 hydration mismatch），挂载后再读
  */
 export function NotFoundSuggestions({ corpus, heading, subheading }: Props) {

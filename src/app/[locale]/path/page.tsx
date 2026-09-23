@@ -59,12 +59,7 @@ export default async function PathPage({
         <p className="mt-4 text-muted leading-relaxed">{withCopyRefs(locale, t.path.intro)}</p>
         {t.path.translationNote && (
           <p className="mt-4 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-dim)] px-4 py-3 text-sm text-accent">
-            {withChapterCount(
-              t.path.translationNote.replace(
-                "{done}",
-                String(groups.reduce((s, g) => s + g.chapters.length, 0)),
-              ),
-            )}
+            {withChapterCount(t.path.translationNote)}
           </p>
         )}
       </header>
