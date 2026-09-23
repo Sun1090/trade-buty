@@ -5,6 +5,7 @@ import { renderToString } from "react-dom/server";
 import { KlineChart } from "./kline-chart";
 import { getDict } from "@/lib/i18n";
 import { COMPACT_CHART_CANDLES, FULL_CHART_CANDLES } from "@/lib/chart-density";
+import { InvalidMarketSymbolError } from "@/lib/binance";
 
 // lightweight-charts 在 jsdom 下没有 canvas，用探针替身接管 series 生命周期。
 const mocks = vi.hoisted(() => {
@@ -75,6 +76,7 @@ vi.mock("@/components/use-network-quality", () => ({
 const dict = {
   loading: "加载中",
   error: "行情加载失败",
+  badSymbol: "没有这个交易对",
   retry: "重试",
   symbolLabel: "交易对",
   intervalLabel: "周期",
@@ -194,8 +196,16 @@ describe("KlineChart 加载失败与重试", () => {
     expect(screen.queryByText("行情加载失败")).toBeNull();
   });
 
-  it("请求超时（AbortController 触发）展示超时文案", async () => {
-    vi.useFakeTimers();
+  it("交易对不存在时说的是「没有这个交易对」，而不是「API 可能不可达」", async () => {
+    // 币安对不存在的币对是**应答** 400 + code -1121（不是连不上），见 binance.test.ts
+    mocks.fetchKlines.mockRejectedValueOnce(new InvalidMarketSymbolError("没有这个交易对：1000PEPEUSDT"));
+    render(<KlineChart dict={dict} />);
+    await waitFor(() => expect(screen.getByText("没有这个交易对")).toBeInTheDocument());
+    expect(screen.queryByText("行情加载失败")).toBeNull();
+    expect(screen.getByText("重试")).toBeInTheDocument();
+  });
+
+  it("请求超时（AbortController 触发）展示超时文案", async () => {    vi.useFakeTimers();
     mocks.fetchKlines.mockImplementation(
       (_symbol: string, _interval: string, opts: { signal: AbortSignal }) =>
         new Promise((_resolve, reject) => {

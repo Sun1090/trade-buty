@@ -16,7 +16,8 @@ export const CHART_QUICK_SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"] 
 /**
  * 自定义输入框接受的形状：任意以 USDT 计价的币对（图表 setSymbol 用的就是这一份）。
  * 允许数字，因为币安**现货**就有 `1INCHUSDT` 这类以数字开头的标的（实测 ticker/price 返回 200；
- * `1000PEPEUSDT` 只在其合约市场有，现货 -1121 Invalid symbol，输了会得到图表错误态）。
+ * `1000PEPEUSDT` 只在其合约市场有，现货 -1121 Invalid symbol，输了会得到图表那条「币安现货没有这个
+ * 交易对」的错误态——只按形状判，能不能取到数据要等真实应答，见 `binance.ts` 的 `InvalidMarketSymbolError`）。
  */
 export const CHART_CUSTOM_SYMBOL = /^[A-Z0-9]+USDT$/;
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { fetchKlines, fetchRandomHistoryWindow } from "./binance";
+import { fetchKlines, fetchRandomHistoryWindow, InvalidMarketSymbolError } from "./binance";
 
 type FetchFn = (url: string, init?: RequestInit) => Promise<unknown>;
 
@@ -45,6 +45,30 @@ describe("fetchKlines", () => {
   it("非 2xx 抛带状态码的错误", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 451 })));
     await expect(fetchKlines("BTCUSDT", "1d")).rejects.toThrow(/行情请求失败 \(451\)/);
+  });
+
+  it("400 且 code 为 -1121 时判成「交易对不存在」，不是普通的请求失败", async () => {
+    // 实测：`NOTAREALPAIR` 与只有合约市场的 `1000PEPEUSDT` 都是 HTTP 400 + 这个 code
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: false,
+      status: 400,
+      json: async () => ({ code: -1121, msg: "Invalid symbol." }),
+    })));
+    await expect(fetchKlines("1000PEPEUSDT", "1h")).rejects.toBeInstanceOf(InvalidMarketSymbolError);
+  });
+
+  it("400 但 code 不是 -1121 时不越权下结论，仍按请求失败报状态码", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: false,
+      status: 400,
+      json: async () => ({ code: -1120, msg: "Invalid interval." }),
+    })));
+    await expect(fetchKlines("BTCUSDT", "2h")).rejects.toThrow(/行情请求失败 \(400\)/);
+  });
+
+  it("400 的回答不是 JSON（反代给的 HTML 页）时读不出码，也按请求失败处理", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 400 })));
+    await expect(fetchKlines("BTCUSDT", "1h")).rejects.toThrow(/行情请求失败 \(400\)/);
   });
 });
 

@@ -44,6 +44,7 @@ const dict: ChartEmbedDict = {
   heading: "K 线图",
   loading: "加载中",
   error: "出错了",
+  badSymbol: "没有这个交易对",
   retry: "重试",
   symbolLabel: "交易对",
   intervalLabel: "周期",
