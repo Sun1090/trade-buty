@@ -1,5 +1,6 @@
 /**
- * 课程书签收藏：localStorage 存储 + 云端双写
+ * 课程书签收藏：只存这台设备的 localStorage，不进云端
+ * （同步层与 Supabase 迁移里都没有 bookmarks 这张表，别照着「双写」去理解）。
  * key = chapterSlug/docSlug
  */
 import { isRecord, readStorageJson, readNonNegativeNumber } from "./storage-json";
