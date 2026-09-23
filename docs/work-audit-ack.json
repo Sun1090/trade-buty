@@ -48,6 +48,18 @@
     {
       "number": 211,
       "reason": "工作未丢失，只是换了载体（与 #125 / #134 同一情形）：#211 与已合并的 #209 都在 docs/roadmap.md 文末追加登记，产生冲突；本仓库禁止对远端分支 force push，因此从最新 origin/main 重开为 PR #214。重开前用 git diff 对比两个分支相对 origin/main 的补丁，src/lib/i18n-stats.ts 与 src/lib/streak-claims.test.ts 的 diff 逐字节相同（0 行差异），roadmap 冲突按编号顺序保留 R16.17/R16.18/R16.19 三条。#214 合并后可用 git cherry 验证补丁等价。"
+    },
+    {
+      "number": 212,
+      "reason": "工作未丢失，只是换了载体（与 #125 / #134 / #211 同一情形）：本仓库禁止对远端分支 force push，而多条 PR 各自在 docs/roadmap.md 文末追加登记，逐条 update-branch 会互相冲突、各烧一轮 CI。于是把 #212（fix/legal-pages-last-updated，隐私与条款页「更新日期」改由 git 算出） 的 commit 按原顺序 cherry-pick 到最新 origin/main 的合并分支，roadmap 冲突按编号顺序保留 R16.19–R16.22 四条；重放前后用 git show / git diff 对每个源文件比对补丁，三份 diff 与 #212（fix/legal-pages-last-updated，隐私与条款页「更新日期」改由 git 算出） 原分支相对 origin/main 的补丁逐字节相同（0 行差异）。合并后可用 git cherry 验证补丁等价。"
+    },
+    {
+      "number": 213,
+      "reason": "工作未丢失，只是换了载体（与 #125 / #134 / #211 同一情形）：本仓库禁止对远端分支 force push，而多条 PR 各自在 docs/roadmap.md 文末追加登记，逐条 update-branch 会互相冲突、各烧一轮 CI。于是把 #213（fix/stats-range-claims，趋势图空态读屏文案跟随所选时间窗） 的 commit 按原顺序 cherry-pick 到最新 origin/main 的合并分支，roadmap 冲突按编号顺序保留 R16.19–R16.22 四条；重放前后用 git show / git diff 对每个源文件比对补丁，三份 diff 与 #213（fix/stats-range-claims，趋势图空态读屏文案跟随所选时间窗） 原分支相对 origin/main 的补丁逐字节相同（0 行差异）。合并后可用 git cherry 验证补丁等价。"
+    },
+    {
+      "number": 215,
+      "reason": "工作未丢失，只是换了载体（与 #125 / #134 / #211 同一情形）：本仓库禁止对远端分支 force push，而多条 PR 各自在 docs/roadmap.md 文末追加登记，逐条 update-branch 会互相冲突、各烧一轮 CI。于是把 #215（fix/faq-server-kinds，FAQ 服务器内容清单补齐崩溃诊断日志） 的 commit 按原顺序 cherry-pick 到最新 origin/main 的合并分支，roadmap 冲突按编号顺序保留 R16.19–R16.22 四条；重放前后用 git show / git diff 对每个源文件比对补丁，三份 diff 与 #215（fix/faq-server-kinds，FAQ 服务器内容清单补齐崩溃诊断日志） 原分支相对 origin/main 的补丁逐字节相同（0 行差异）。合并后可用 git cherry 验证补丁等价。"
     }
   ]
 }
