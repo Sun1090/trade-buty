@@ -6,6 +6,9 @@ interface PlanDict {
   generate: string;
   generating: string;
   title: string;
+  /** 失败与「没登录」是两件事：这张卡在未登录的 /stats 上也在，点下去必定 401 */
+  error: string;
+  loginRequired: string;
 }
 
 export function StudyPlan({
@@ -20,21 +23,30 @@ export function StudyPlan({
   dict: PlanDict;
 }) {
   const [plan, setPlan] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function generate() {
     setLoading(true);
+    setFailed(null);
     try {
       const res = await fetch("/api/ai/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ doneChapters, wrongChapters, currentChapter }),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (res.status === 401) {
+        setFailed(dict.loginRequired);
+        return;
+      }
+      if (!res.ok) {
+        setFailed(dict.error);
+        return;
+      }
       const data = await res.json();
       setPlan(data.plan);
     } catch {
-      setPlan("暂时无法生成学习计划，请稍后重试。");
+      setFailed(dict.error);
     } finally {
       setLoading(false);
     }
@@ -54,6 +66,8 @@ export function StudyPlan({
           </button>
         )}
       </div>
+      {/* 失败时只写 failed：一次失败不能把「重试」按钮一起吞掉 */}
+      {failed && <p className="text-sm text-down leading-relaxed">{failed}</p>}
       {plan && <p className="text-sm text-muted leading-relaxed">{plan}</p>}
     </div>
   );

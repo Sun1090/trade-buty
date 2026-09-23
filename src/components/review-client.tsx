@@ -460,6 +460,8 @@ export function ReviewClient({
               generate: locale === "en" ? "AI quiz from your wrong answers" : "AI 针对错题出变体题",
               generating: locale === "en" ? "Generating…" : "正在生成…",
               error: locale === "en" ? "Generation failed, retry" : "生成失败，请重试",
+              loginRequired: locale === "en" ? "Log in to use AI quiz" : "登录后可用 AI 出题",
+              rateLimited: locale === "en" ? "Too many requests, try again later" : "请求过于频繁，请稍后再试",
               question: locale === "en" ? "Question" : "题目",
               explain: locale === "en" ? "Explanation" : "解析",
               report: locale === "en" ? "Report question" : "举报题目",
