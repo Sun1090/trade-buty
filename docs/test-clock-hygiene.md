@@ -23,7 +23,7 @@
 | 口径 | 文件 | 行 | 片段 |
 |---|---|---|---|
 | uncontrolled-timer | scripts/check-dark-pattern-copy.test.mjs | 244 | ``setInterval(()=>{},1000); <input autoFocus defaultChecked />`,` |
-| uncontrolled-timer | src/components/replay-trainer.test.tsx | 303 | `await new Promise((r) => setTimeout(r, tickMs * 2 + 200));` |
+| uncontrolled-timer | src/components/replay-trainer.test.tsx | 307 | `await new Promise((r) => setTimeout(r, tickMs * 2 + 200));` |
 | uncontrolled-timer | src/lib/reading-time.test.ts | 14 | `const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));` |
 | uncontrolled-timer | src/lib/sync-layer-queue.test.ts | 79 | `const flush = () => new Promise<void>((r) => setTimeout(r, 0));` |
 | uncontrolled-timer | src/lib/sync-layer-write-failure.test.ts | 128 | `await new Promise((resolve) => setTimeout(resolve, 0));` |
