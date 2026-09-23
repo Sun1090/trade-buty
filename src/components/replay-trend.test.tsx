@@ -7,7 +7,8 @@ vi.mock("@/lib/replay-store", () => ({
   readReplayHistory: () => history,
 }));
 
-import { ReplayTrend } from "./replay-trend";
+import { ReplayTrend, REPLAY_TREND_MIN_ROUNDS } from "./replay-trend";
+import { getDict } from "@/lib/i18n";
 
 beforeEach(() => {
   history = [];
@@ -76,5 +77,33 @@ describe("ReplayTrend（R12.5）", () => {
 
     unmount();
     expect(removeEventListenerSpy).toHaveBeenCalledWith("tb-progress", expect.any(Function));
+  });
+
+  it("数据点的悬浮说明写的是那一轮的本地日期，不是「N 轮前」，也不含中日韩文字", () => {
+    history = [
+      { at: new Date(2026, 2, 4, 12).getTime(), total: 10, correct: 3 },
+      { at: new Date(2026, 2, 5, 12).getTime(), total: 10, correct: 8 },
+    ];
+    render(<ReplayTrend label="趋势" emptyLabel="空" />);
+    const circles = screen.getByRole("img").querySelectorAll("circle");
+    expect(circles[0].querySelector("title")?.textContent).toBe("2026-03-04 · 30%");
+    expect(circles[1].querySelector("title")?.textContent).toBe("2026-03-05 · 80%");
+    // 中文界面读着没问题，英文界面曾经在这里印出「轮前」
+    for (const circle of Array.from(circles)) {
+      expect(circle.querySelector("title")?.textContent).not.toMatch(
+        /[㐀-鿿぀-ヿ]/
+      );
+    }
+  });
+
+  it("趋势块的空态是另一句：门槛数字由常量填进来，屏上不留占位符", () => {
+    history = [{ at: 1, total: 10, correct: 5 }]; // 只有一轮：训练记录卡已经在列，趋势仍是空态
+    const { container } = render(
+      <ReplayTrend label="趋势" emptyLabel={getDict("zh").replay.trendEmpty} />
+    );
+    const shown = container.querySelector("p")?.textContent ?? "";
+    expect(shown).toContain(String(REPLAY_TREND_MIN_ROUNDS));
+    expect(shown).not.toContain("{");
+    expect(getDict("zh").replay.trendEmpty).not.toBe(getDict("zh").replay.histEmpty);
   });
 });

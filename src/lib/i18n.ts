@@ -278,6 +278,7 @@ const zh = {
     histAccuracy: "总正确率",
     histBest: "最佳连击",
     histEmpty: "完成一轮猜涨跌后，这里会出现你的训练记录。",
+    trendEmpty: "准确率折线要累计 {n} 轮记录才画得出来。",
     histRecent: "最近记录",
   },
   search: {
@@ -663,6 +664,7 @@ const en: Dict = {
     histAccuracy: "Overall accuracy",
     histBest: "Best streak",
     histEmpty: "Finish a guess round and your training log will appear here.",
+    trendEmpty: "The accuracy line appears once you have {n} rounds recorded.",
     histRecent: "Recent rounds",
   },
   search: {

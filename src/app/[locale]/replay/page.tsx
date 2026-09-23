@@ -63,7 +63,7 @@ export default async function ReplayPage({
       <div className="mt-8">
         <ReplayTrend
           label={dict.replay.histTitle}
-          emptyLabel={dict.replay.histEmpty}
+          emptyLabel={dict.replay.trendEmpty}
         />
       </div>
     </div>
