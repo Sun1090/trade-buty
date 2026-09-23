@@ -11,6 +11,8 @@ interface AiQuizProps {
   dict: {
     generate: string; generating: string; error: string; question: string; explain: string;
     report: string; reported: string; badge: string; correct: string; wrong: string; next: string; done: string;
+    /** 401 与 429 各自的说法：把「重试没用」和「等一会儿再有结果」混成一句就是假话 */
+    loginRequired: string; rateLimited: string;
   };
 }
 
@@ -49,14 +51,27 @@ export function AiQuiz({ wrongItems, dict, aiEnabled = true }: AiQuizProps & { a
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: wrongItems }),
       });
+      // 上游的 error 字段是英文状态串（`Login required` / `Rate limit exceeded` /
+      // `No matching questions`），摆到界面上就是英文句子插在中文界面里；
+      // 这里只按状态码选本站文案。
+      if (res.status === 401) {
+        setError(dict.loginRequired);
+        return;
+      }
+      if (res.status === 429) {
+        const retryAfter = Number.parseInt(res.headers.get("retry-after") ?? "", 10);
+        const hint = Number.isFinite(retryAfter) ? ` (${Math.ceil(retryAfter / 60)}min)` : "";
+        setError(dict.rateLimited + hint);
+        return;
+      }
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || dict.error);
+        setError(dict.error);
+        return;
       }
       const data = await res.json();
       setQuestions(data.questions);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : dict.error);
+    } catch {
+      setError(dict.error);
     } finally {
       setLoading(false);
     }
