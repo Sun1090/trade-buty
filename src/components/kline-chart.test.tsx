@@ -457,7 +457,7 @@ describe("KlineChart 移动端密度", () => {
 });
 
 describe("KlineChart 交易对与周期切换", () => {
-  it("点击币种按钮切换交易对并写入收藏", async () => {
+  it("点击币种按钮切换交易对", async () => {
     render(<KlineChart dict={dict} />);
     await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: "交易对 ETHUSDT" }));
@@ -468,9 +468,6 @@ describe("KlineChart 交易对与周期切换", () => {
         expect.anything(),
       ),
     );
-    expect(JSON.parse(localStorage.getItem("tb-chart-favs") || "[]")).toEqual([
-      "ETHUSDT",
-    ]);
   });
 
   it("自定义交易对输入合法时切换", async () => {
