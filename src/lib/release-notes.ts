@@ -90,6 +90,29 @@ export function changelogSurface(): {
   };
 }
 
+/** 页面里那句「更早的版本见 CHANGELOG.md」的两种语言模板 */
+const OLDER_RELEASES_LINE: Record<ReleaseLocale, string> = {
+  zh: "本页只列最近 {max} 个版本，更早的 {n} 个版本完整记录在",
+  en: "This page lists the most recent {max} releases; the earlier {n} are recorded in",
+};
+
+/**
+ * 窗口之外确实有版本时才给出这句话。返回 null 而不是「更早的 0 个版本」——
+ * 数字由同一份数据算出来之后，页面只需要判断有没有这句话，不需要再自己数一遍，
+ * 「渲染守卫」和「句子」就不可能各说一套。
+ *
+ * `surface` 参数只为测试注入一个「窗口外没有版本」的发布记录；生产调用不传。
+ */
+export function changelogOlderLine(
+  locale: ReleaseLocale,
+  surface: { shown: ReleaseNote[]; older: ReleaseNote[] } = changelogSurface()
+): string | null {
+  if (surface.older.length === 0) return null;
+  return OLDER_RELEASES_LINE[locale]
+    .replace("{max}", String(CHANGELOG_WINDOW))
+    .replace("{n}", String(surface.older.length));
+}
+
 export function latestRelease(): ReleaseNote | null {
   return releaseNotes[0] ?? null;
 }
