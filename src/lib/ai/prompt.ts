@@ -11,9 +11,12 @@ import type { QuizGenerationStrategy } from "../quiz-strategy";
  * - v1.1.0：v1.0 全文保留；问答逻辑未动，仅接入版本管理
  * - v1.2.0：输入侧护栏（R1.8）将荐股/收益承诺在路由层直接拒绝，减少模型浪费
  * - v1.3.0：AI 出题 schema 增加 source，要求每题绑定可访问知识库章节或显式 none（R11.5/R11.6）
- * - v1.4.0 (当前)：AI 出题 prompt 接入可配置策略，覆盖难度、题量与相关性/tuning 元数据（R11.7/R11.8）
+ * - v1.4.0：AI 出题 prompt 接入可配置策略，覆盖难度、题量与相关性/tuning 元数据（R11.7/R11.8）
+ * - v1.5.0 (当前)：对话 prompt 明确「不预测走势、不给目标价与买卖时点」（R16.23）——
+ *   AI 页副标题一直写着「不荐股、不预测、只讲知识」，而 v1.0.0 起五条约束里没有任何一条
+ *   管预测，输入侧护栏也只拦荐股/收益承诺。这句话此前只有产品替模型许了。
  */
-export const PROMPT_VERSION = "v1.4.0" as const;
+export const PROMPT_VERSION = "v1.5.0" as const;
 
 const SYSTEM_PROMPT_V1 = `你是 Trade Buty 的交易学习助手，帮助用户理解交易知识。
 
@@ -45,6 +48,26 @@ export function getRefusalMessage(category: string, locale: string): string {
   return locale === "en" ? en : zh;
 }
 
+/** v1.5.0：在 v1.0 五条约束之上补上「不预测」这一条（见文件头 changelog） */
+const SYSTEM_PROMPT_V2 = `你是 Trade Buty 的交易学习助手，帮助用户理解交易知识。
+
+## 你的身份与约束
+1. 你是教育者，不是投顾。绝不推荐具体股票、基金、币种或任何标的。
+2. 不承诺任何收益，不暗示"稳赚"。市场有风险，投资需谨慎。
+3. 不预测未来走势，不给目标价、也不给「该在什么时点买卖」；可以讲概率、风险与历史复盘，但要把它们说成分析而不是预知。
+4. 基于检索到的知识库内容回答，不要编造知识库没有的事实。
+5. 如果检索结果不足以回答问题，坦诚告知并建议查看相关章节。
+6. 用用户提问的语言回答（中文问题用中文，英文问题用英文）。
+
+## 回答风格
+- 简洁、准确、有条理。用 Markdown 格式。
+- 涉及概念时给出定义；涉及操作时给步骤；涉及风险时明确提示。
+- 不要泛泛而谈，要具体到可操作。
+- 如果用户问"某标的该不该买/卖"，拒绝并引导回学习方法。
+
+## 免责
+每个涉及具体交易决策的回答末尾附："⚠️ 以上仅为学习内容，不构成投资建议。"`;
+
 /** 版本化 prompt 注册表：新版本在此追加，调用方用 getSystemPrompt 取当前版 */
 const PROMPT_REGISTRY: Record<string, string> = {
   "v1.0.0": SYSTEM_PROMPT_V1,
@@ -52,6 +75,7 @@ const PROMPT_REGISTRY: Record<string, string> = {
   "v1.2.0": SYSTEM_PROMPT_V1,
   "v1.3.0": SYSTEM_PROMPT_V1,
   "v1.4.0": SYSTEM_PROMPT_V1,
+  "v1.5.0": SYSTEM_PROMPT_V2,
 };
 
 export function getSystemPrompt(version: string = PROMPT_VERSION): string {
