@@ -134,6 +134,23 @@ describe("POST /api/ai/citation-click", () => {
     });
   });
 
+  it("登录用户的引用点击带着自己的账户 id 入库（注销时才摘掉，见隐私页）", async () => {
+    getUser.mockResolvedValue({ data: { user: { id: "user-77" } }, error: null });
+    const res = await POST(
+      request(
+        JSON.stringify({ kind: "source", chapter: "spot", doc: "order-types", question: "q" }),
+      ),
+    );
+    expect(res.status).toBe(200);
+    expect(insert).toHaveBeenCalledWith({
+      user_id: "user-77",
+      kind: "source",
+      chapter: "spot",
+      doc: "order-types",
+      question: "q",
+    });
+  });
+
   it("数据库失败返回通用文案，不回传内部错误", async () => {
     insert.mockResolvedValue({
       error: { message: "permission denied for table ai_citation_clicks" },
