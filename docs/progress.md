@@ -5944,5 +5944,9 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   注意 R16.35 改了 `ai_conversations` 的**写入内容**（assistant 正文保留截断标记），回滚代码后旧前端
   仍只是把标记当普通文本处理，不需要数据迁移。
 - 下一项：合并后打 tag `v0.7.11` → 生产部署核对 → `npm run ops:smoke-prod` 逐条记录；
-  之后给 AI 面板补真浏览器 e2e（它至今没有任何 e2e 覆盖，而这两处缺陷都在浏览器里才看得见）。
+  之后给 AI 面板补真浏览器 e2e（它至今没有任何 e2e 覆盖，而这两处缺陷要在真浏览器里才看得见）。
+  前置条件已探明：`/zh/ai` 是否渲染面板由服务端的 `aiEnabledForPage()`（读 `AI_API_KEY`）决定，
+  所以 e2e 要给 webServer 加这个变量；而加上之后 `runtime-health` 的「点遍页内按钮」会真的打到
+  上游模型（本地探针：56/56 仍全绿，但 /zh/ai 那条耗时 14.7s 且日志里是三家上游各 401 的降级链）
+  —— 要进 CI 必须先给 `/api/ai/chat` 加全局桩，否则把外部网络与配额引进门禁。
 - 更新时间：2026-09-23 16:35（Asia/Shanghai）。
