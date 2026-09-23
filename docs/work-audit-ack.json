@@ -92,6 +92,10 @@
     {
       "number": 251,
       "reason": "换载体重放（与 #238/#249 同一情形、同一批工作）：#251 的 ci 已绿，但与先合入的 #252（R16.42/43）在 docs/roadmap.md 末尾追加处相撞，GitHub 侧 rebase 报 RebaseConflictError；本仓库禁止 force push，故在 origin/main 上重放为分支 fix/home-claim-v2，两个提交内容不变、只把 R16.42–45 四条按编号排好，重跑全量门禁与 check:report-freshness 无差异后另开 PR。#251 与本条一并在该 PR 合入后关闭。"
+    },
+    {
+      "number": 261,
+      "reason": "补丁等价，不是丢失：#261 从 3bf077b 切出，#260 先落地后两个 PR 都往 docs/roadmap.md 末尾追加条目，GitHub 的 rebase 因此报 merge conflicts；本仓库禁止 force-push，于是按 #125/#134 的既有办法在最新 origin/main 上重放同两笔（1ffe78b→45d2ca6、8f9ac07→8faf91e），由 PR #263 落地并已合并（main=847424b）。逐条验证：git cherry 判代码那笔为补丁等价（标记 -）；roadmap 那笔标 + 只是因为冲突解决后的补丁文本从「1 条目尾」变成「2 条目尾」，内容经核对确在 main（git show origin/main:docs/roadmap.md | grep -c \"^- [x] R16.54\" = 1）。重放后本地用例 24/24 绿、报告新鲜度核对通过，PR #261 描述里已写明替换关系。"
     }
   ]
 }
