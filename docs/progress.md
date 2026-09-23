@@ -5950,3 +5950,36 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   上游模型（本地探针：56/56 仍全绿，但 /zh/ai 那条耗时 14.7s 且日志里是三家上游各 401 的降级链）
   —— 要进 CI 必须先给 `/api/ai/chat` 加全局桩，否则把外部网络与配额引进门禁。
 - 更新时间：2026-09-23 16:35（Asia/Shanghai）。
+
+## 2026-09-23 — v0.7.11 合并、打 tag 与生产部署核对（被构建配额挡住）
+
+- 状态：**已合并、已打 tag；生产尚未跟上 main，原因是账号 24h 构建配额**。
+- 里程碑 / 版本：**v0.7.11（patch）**。
+- 分支 / 提交：`release/0.7.11`（`95d4fa2` 发布 + `a833bf0` 冻结记录 + `0a6cb42` e2e 前置条件）
+  → PR **#240** rebase 合并 → `main` = `9ce0581`；附注 tag **`v0.7.11` → `9ce0581`**，已推送。
+- 门禁核对：`npm run check:release-tag` ✅「15 条发布记录的 tag 均已落地（最新 0.7.11 → v0.7.11）」，
+  不再打印「待合并后补打」。合并 PR 的必需检查全绿：`ci` 9m23s、`db-tests` 43s、CodeQL 与两个 Analyze 通过。
+- 部署：合并后 35 分钟内**没有任何新的 Production 构建**。`main` 那个提交的 Vercel 状态给出原因：
+  `Vercel failure — Deployment rate limited — retry in 24 hours.`
+  当前挂在 `trade-buty.vercel.app` 上的仍是 `createdAt 2026-09-23T08:04:57Z` 那次构建，即 **#239 之后、
+  发布提交之前**的 main —— 所以线上跑的是 v0.7.10 的记录，不是站内回归。
+  同一个小时里 Preview 还能构建（`52bgfwz38`，08:18Z），说明限流按账户配额计数、不是配置错误。
+- 生产冒烟 `npm run ops:smoke-prod`：首跑 **8/10**。
+  - 红项 1 `GET /zh/changelog → 含最新发布版本`：页面里没有 0.7.11 —— 正是上面那条「生产停在旧构建」探针
+    该报的形态（合并 ≠ 上线），部署跟上后这条会自己转绿。
+  - 红项 2 `POST /api/ai/chat 游客 → 502`，同一探针的护栏路径返回 200：站内代码没问题，
+    是部署快照缺 `AI_API_URL` / `AI_MODEL` / `AI_API_KEY` 或出口网络不通（长期外部阻塞，需维护者处理）。
+  - 其余 8 条（zh/en 首页、章节页、课文页风险提示，sitemap、robots、分享落地页风险提示、
+    游客 `GET /api/auth/session` 返回 `{"user":null}`）全绿。
+- 待办（配额窗口清掉之后，不重复空跑）：再跑一次 `npm run ops:smoke-prod`，预期 `/zh/changelog`
+  转绿变成 9/10；若那时 `/zh/changelog` 仍缺 0.7.11，才需要按「站内回归」查。
+- 分支收尾：#240/#239/#236/#234 合并后远端分支由 GitHub 自动删除，本地已 `git remote prune origin`；
+  重放来源分支 #235/#237/#238 已关闭并留有确认记录，`ops:work-audit` = 悬空 0 · 陈旧 0 · 未确认 0。
+- 外部阻塞：Vercel 24h 构建配额（本次直接挡住了 v0.7.11 上线）；生产 AI 游客模型路径 502；
+  待拍板 R15.2 / R16.7 / R16.10–R16.13 / R16.16；上游 kline-buty 风险块缺口只能在上游改；
+  PR **#178** 属维护者，不动。
+- 回滚：`git revert` 发布提交 `95d4fa2`（或 Vercel 把 Production 切回上一构建止血），不改写 `main`。
+  本次发布不需要数据迁移：R16.35 只改 `ai_conversations` 正文里是否保留截断标记。
+- 下一项：继续「界面 / 文档的说法 vs 代码与数据的事实」倒查的下一批表面；
+  配额窗口清掉后补跑生产冒烟并把结论写回本条。
+- 更新时间：2026-09-23 17:20（Asia/Shanghai）。
