@@ -29,6 +29,20 @@ function jobCommands(job) {
 const opsPath = "docs/ops.md";
 
 /**
+ * 一条命令 → 门禁标识；纯标签（作业名、action 名、行内 shell 片段）返回 null。
+ * 两个方向共用这一份映射，否则「漏登记」与「幽灵登记」会各自漂移。
+ */
+function gateIdentifierOf(text) {
+  const value = String(text).trim();
+  let match;
+  if ((match = /^npm run ([\w:-]+)$/.exec(value))) return match[1];
+  if ((match = /^node (scripts\/[\w.-]+\.mjs)(?:\s|$)/.exec(value))) return match[1];
+  if (value.startsWith("npx playwright install")) return "playwright install";
+  if ((match = /^docker pull ([\w./:@-]+)$/.exec(value))) return match[1];
+  return null;
+}
+
+/**
  * 抽取 ci.yml 里可机检的门禁标识，按作业定义顺序（ci → db-tests）：
  * `npm run X` → X；`node scripts/X.mjs` → scripts/X.mjs；
  * `npx playwright install …` → "playwright install"；`docker pull <image>` → <image>。
@@ -40,12 +54,8 @@ function ciGateIdentifiers(workflow) {
     for (const step of job.steps ?? []) {
       if (!step.run) continue;
       for (const raw of step.run.split("\n")) {
-        const line = raw.trim();
-        let match;
-        if ((match = /^npm run ([\w:-]+)$/.exec(line))) ids.push(match[1]);
-        else if ((match = /^node (scripts\/[\w.-]+\.mjs)/.exec(line))) ids.push(match[1]);
-        else if (line.startsWith("npx playwright install")) ids.push("playwright install");
-        else if ((match = /^docker pull ([\w./:@-]+)/.exec(line))) ids.push(match[1]);
+        const id = gateIdentifierOf(raw);
+        if (id) ids.push(id);
       }
     }
   }
@@ -306,6 +316,57 @@ describe("CI workflow contract", () => {
       missing,
       `docs/ops.md 未登记以下 ci.yml 门禁（新增步骤时需同步门禁表）：\n${missing.join("\n")}`,
     ).toEqual([]);
+  });
+
+  it("docs/ops.md 门禁表不登记 ci.yml 里没有的命令（防幽灵门禁）", () => {
+    const ids = new Set(ciGateIdentifiers(workflow));
+    const ghosts = [];
+    const unreadable = [];
+    let mapped = 0;
+    for (const [index, row] of opsGateRows().entries()) {
+      const cell = row.split("|")[1] ?? "";
+      for (const span of cell.matchAll(/`([^`]+)`/g)) {
+        const id = gateIdentifierOf(span[1]);
+        if (!id) {
+          // 命令形状却没被认出来（例如带了参数）等于这一行不参与核对，必须显式失败，
+          // 不能静默跳过——否则「加一个参数」就能把幽灵门禁放回来。
+          if (/^(?:npm run|node scripts\/|docker pull|npx )/.test(span[1].trim())) {
+            unreadable.push(`门禁表第 ${index + 1} 行：${span[1]}`);
+          }
+          continue; // 作业名、action 名这类标签不参与命令校验
+        }
+        mapped += 1;
+        if (!ids.has(id)) ghosts.push(`门禁表第 ${index + 1} 行：${span[1]}`);
+      }
+    }
+    // 映射退化成「什么都不认」时本条会静默全绿，所以先要求它真的认出了命令
+    expect(mapped, `门禁表里只认出 ${mapped} 条命令，映射器大概坏了`).toBeGreaterThanOrEqual(40);
+    expect(
+      unreadable,
+      `这些单元格像命令却没被认出（请写成裸命令，便于机检）：\n${unreadable.join("\n")}`
+    ).toEqual([]);
+    expect(
+      ghosts,
+      `docs/ops.md 门禁表登记了 ci.yml 里已经不跑的命令（要么把步骤加回流水线，要么删掉这一行）：\n${ghosts.join("\n")}`,
+    ).toEqual([]);
+  });
+
+  it("命令映射本身可分辨：认得的认得，标签不误认", () => {
+    expect(gateIdentifierOf("npm run check:sitemap")).toBe("check:sitemap");
+    expect(gateIdentifierOf("node scripts/db-test.mjs")).toBe("scripts/db-test.mjs");
+    expect(gateIdentifierOf("docker pull supabase/postgres:17.6.1.155")).toBe(
+      "supabase/postgres:17.6.1.155",
+    );
+    expect(gateIdentifierOf("npx playwright install --with-deps chromium")).toBe(
+      "playwright install",
+    );
+    // 标签与行内 shell 不是命令：这些必须返回 null，否则任何表格行都会被当成幽灵。
+    // 反过来，带参数的 `npm run …` 也返回 null——它不该出现在门禁表里，幽灵那条用例
+    // 会把它单独判成「命令形状却没认出」，而不是静默放过。
+    expect(gateIdentifierOf("db-tests")).toBeNull();
+    expect(gateIdentifierOf("actions/checkout@v4")).toBeNull();
+    expect(gateIdentifierOf("echo \"build took ${SECONDS}s\"")).toBeNull();
+    expect(gateIdentifierOf("npm run e2e -- --project=chromium")).toBeNull();
   });
 
   it("docs/ops.md 门禁表首列命令的相对顺序与 ci.yml 一致", () => {
