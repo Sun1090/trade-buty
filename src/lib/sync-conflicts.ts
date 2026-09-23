@@ -22,9 +22,14 @@ export interface SyncConflictItem {
   resolution: "kept-local" | "took-cloud";
 }
 
+/** 明细的存储上限：错题本分歧一次可以出现几十条，整表存进 localStorage 不划算。 */
+export const MAX_STORED_CONFLICT_ITEMS = 20;
+
 export interface SyncConflictRecord {
   at: number;
   items: SyncConflictItem[];
+  /** 检测到的分歧总条数；`items` 可能被 `MAX_STORED_CONFLICT_ITEMS` 截断，念数字不能看它 */
+  total: number;
 }
 
 const KEY = "tb-sync-conflicts";
@@ -96,7 +101,11 @@ export function recordSyncConflicts(items: SyncConflictItem[], at: number = Date
     if (items.length === 0) {
       localStorage.removeItem(KEY);
     } else {
-      const record: SyncConflictRecord = { at: Math.round(at), items: items.slice(0, 20) };
+      const record: SyncConflictRecord = {
+        at: Math.round(at),
+        items: items.slice(0, MAX_STORED_CONFLICT_ITEMS),
+        total: items.length,
+      };
       localStorage.setItem(KEY, JSON.stringify(record));
     }
     window.dispatchEvent(new Event("tb-sync-conflict"));
@@ -105,14 +114,24 @@ export function recordSyncConflicts(items: SyncConflictItem[], at: number = Date
   }
 }
 
-export function readSyncConflicts(storage: Storage = globalThis.localStorage): SyncConflictRecord | null {
+/** 读取记录的解析出口：坏 JSON、缺字段一律当作没有提示（返回 null 即不显示横幅）。 */
+export function parseConflictRecord(raw: string | null): SyncConflictRecord | null {
+  if (!raw) return null;
   try {
-    const raw = storage.getItem(KEY);
-    if (!raw) return null;
     const parsed = JSON.parse(raw) as SyncConflictRecord;
     if (!parsed || !Array.isArray(parsed.items) || parsed.items.length === 0) return null;
     if (!Number.isFinite(parsed.at)) return null;
+    // 旧版本只存明细不存总数，在下一次 hydrate 重算之前按明细条数兜底
+    if (!Number.isFinite(parsed.total)) return { ...parsed, total: parsed.items.length };
     return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function readSyncConflicts(storage: Storage = globalThis.localStorage): SyncConflictRecord | null {
+  try {
+    return parseConflictRecord(storage.getItem(KEY));
   } catch {
     return null;
   }

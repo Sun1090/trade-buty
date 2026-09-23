@@ -29,7 +29,7 @@ import { buildNextSuggestion } from "@/lib/next-suggestion";
 import { getStatsRangeDays, setStatsRangeDays, STATS_RANGE_OPTIONS } from "@/lib/stats-range";
 import { getLastCloudSync } from "@/lib/cloud-sync-meta";
 import { auditStatsConsistency } from "@/lib/stats-consistency";
-import { dismissSyncConflicts, readSyncConflicts } from "@/lib/sync-conflicts";
+import { dismissSyncConflicts, parseConflictRecord } from "@/lib/sync-conflicts";
 import { buildStatsExport, downloadStatsExport } from "@/lib/stats-export";
 import {
   getLastShownKey,
@@ -151,13 +151,8 @@ function SyncConflictNotice({ labels }: { labels: { title: string; bodyTpl: stri
     () => (typeof window === "undefined" ? null : localStorage.getItem("tb-sync-conflicts-dismissed")),
     () => null,
   );
-  let record: ReturnType<typeof readSyncConflicts> = null;
-  try {
-    record = raw ? (JSON.parse(raw) as ReturnType<typeof readSyncConflicts>) : null;
-  } catch {
-    record = null;
-  }
-  if (!record || record.items.length === 0) return null;
+  const record = parseConflictRecord(raw);
+  if (!record) return null;
   if (dismissedAt === String(record.at)) return null;
 
   return (
@@ -165,7 +160,7 @@ function SyncConflictNotice({ labels }: { labels: { title: string; bodyTpl: stri
       <div className="min-w-0">
         <p className="text-sm font-semibold">🔄 {labels.title}</p>
         <p className="mt-1 text-sm text-muted leading-relaxed">
-          {labels.bodyTpl.replace("{n}", String(record.items.length))}
+          {labels.bodyTpl.replace("{n}", String(record.total))}
         </p>
       </div>
       <button

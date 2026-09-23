@@ -421,6 +421,23 @@ describe("StatsClient sync conflict notice (R12.9)", () => {
     await screen.findByRole("button", { name: "Last 7 days" });
     expect(screen.queryByLabelText("Multi-device sync note")).not.toBeInTheDocument();
   });
+
+  it("念的是检测到的分歧处数，不是存下来的明细条数", async () => {
+    // 明细有存储上限，横幅只有这一个数字：数明细会把 23 处说成 2 处。
+    localStorage.setItem(
+      "tb-sync-conflicts",
+      JSON.stringify({
+        at: 555,
+        total: 23,
+        items: [
+          { kind: "goal", key: "daily-goal-min", local: "15", cloud: "30", resolution: "kept-local" },
+          { kind: "wrongbook", key: "spot:1", local: "1/—", cloud: "3/—", resolution: "took-cloud" },
+        ],
+      }),
+    );
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    expect(await screen.findByText(/23 item\(s\) differ/)).toBeInTheDocument();
+  });
 });
 
 describe("StatsClient per-section empty-state CTAs (R12.11)", () => {
