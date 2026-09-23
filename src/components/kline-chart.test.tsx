@@ -62,7 +62,11 @@ vi.mock("lightweight-charts", () => ({
   LineSeries: mocks.LineSeries,
 }));
 
-vi.mock("@/lib/binance", () => ({ fetchKlines: mocks.fetchKlines }));
+// 只桩掉网络取数，横轴口径常量必须用真值：换成本地字面量的话，改常量也测不出来
+vi.mock("@/lib/binance", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/binance")>("@/lib/binance");
+  return { ...actual, fetchKlines: mocks.fetchKlines };
+});
 
 vi.mock("@/components/use-network-quality", () => ({
   useNetworkQuality: () => mocks.networkQuality,
@@ -572,7 +576,14 @@ describe("KlineChart 实时 WebSocket 更新", () => {
       });
     });
     expect(mocks.candleSeries.update).toHaveBeenCalledWith(
-      expect.objectContaining({ open: 1, high: 2, low: 0.5, close: 1.5 }),
+      // 与 REST 侧同一个字面量：两条路口径一旦错开，实时帧就不再覆盖最后一根，而是另起一根
+      expect.objectContaining({
+        time: 1_700_000_000 - 8 * 3600,
+        open: 1,
+        high: 2,
+        low: 0.5,
+        close: 1.5,
+      }),
     );
     expect(screen.getByText("1.5")).toBeInTheDocument();
   });
