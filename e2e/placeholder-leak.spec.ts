@@ -88,7 +88,10 @@ const VOID_TAGS = new Set([
  * 判红的），不是词典没代入。跳过按标签配平做，`<li>` 里再套 `<li>` 也不会截错。
  */
 function dropCopySourceSubtrees(html: string): string {
-  const opener = new RegExp(`<([a-zA-Z][\\w-]*)\\b[^>]*\\b${COPY_SOURCE_ATTR}="[^"]*"[^>]*>`, "g");
+  const opener = new RegExp(
+    `<([a-zA-Z][\\w-]*)\\b[^>]*\\b${COPY_SOURCE_ATTR}="[^"]*"[^>]*>`,
+    "gi"
+  );
   let out = html;
   let match: RegExpExecArray | null;
   opener.lastIndex = 0;
@@ -100,7 +103,7 @@ function dropCopySourceSubtrees(html: string): string {
       opener.lastIndex = start;
       continue;
     }
-    const scan = new RegExp(`</?${tag}\\b[^>]*>`, "g");
+    const scan = new RegExp(`</?${tag}\\b[^>]*>`, "gi");
     scan.lastIndex = start + match[0].length;
     let depth = 1;
     let end = out.length;
@@ -122,25 +125,27 @@ function dropCopySourceSubtrees(html: string): string {
   return out;
 }
 
-/** 用户可见文本：文本节点 + 可见属性。脚本整段丢掉——RSC payload 原样带着未代入的模板。 */
+/** 用户可见文本：文本节点 + 可见属性。脚本整段丢掉——RSC payload 原样带着未代入的模板。
+ *  标签名大小写不敏感，这些正则一律带 `i`（CodeQL 把不带 `i` 的 `<script>` 剥离判成高危：
+ *  一个 `<SCRIPT>` 就能绕过剥离，等于门禁自己开了口子）。 */
 function htmlSurface(html: string): string {
   const body = dropCopySourceSubtrees(
     html
-      .replace(/<script[\s\S]*?<\/script>/g, " ")
-      .replace(/<style[\s\S]*?<\/style>/g, " ")
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
   );
   const attributes: string[] = [];
-  for (const tag of body.matchAll(/<\w[\w-]*(\s[^>]*)>/g)) {
+  for (const tag of body.matchAll(/<\w[\w-]*(\s[^>]*)>/gi)) {
     for (const attr of tag[1].matchAll(
-      new RegExp(`\\b(?:${VISIBLE_ATTRS.join("|")})="([^"]*)"`, "g")
+      new RegExp(`\\b(?:${VISIBLE_ATTRS.join("|")})="([^"]*)"`, "gi")
     )) {
       attributes.push(attr[1]);
     }
   }
   const text = body
-    .replace(/<pre[\s\S]*?<\/pre>/g, " ")
-    .replace(/<code[\s\S]*?<\/code>/g, " ")
-    .replace(/<[^>]*>/g, " ");
+    .replace(/<pre[\s\S]*?<\/pre>/gi, " ")
+    .replace(/<code[\s\S]*?<\/code>/gi, " ")
+    .replace(/<[^>]*>/gi, " ");
   return `${text}\n${attributes.join("\n")}`;
 }
 
@@ -244,6 +249,11 @@ test.describe("占位符不泄漏到界面", () => {
         tokens
       )
     ).toEqual(["{n}"]);
+    // 反例自证 7：标签名大小写不敏感——`<SCRIPT>` / `<CODE>` 都不许绕过对应的剥离。
+    expect(
+      leaksIn(htmlSurface('<p>正常</p><SCRIPT>var a="{n}"</SCRIPT>'), tokens)
+    ).toEqual([]);
+    expect(leaksIn(htmlSurface("<p><CODE>{n}</CODE></p>"), tokens)).toEqual([]);
 
     expect(pages.length).toBeGreaterThan(400);
   });
