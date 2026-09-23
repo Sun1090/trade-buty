@@ -5906,3 +5906,43 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：R16.32（把冒烟条数钉到 `buildChecks()` 的产出）走 PR **#232**；之后继续「界面 /
   文档的说法 vs 代码与数据的事实」倒查的下一批表面。
 - 更新时间：2026-09-23 13:58（Asia/Shanghai）。
+
+## 2026-09-23 — v0.7.11 冻结与 15 步全量验证
+
+- 状态：**已冻结、本地全量验证通过，待合并打 tag**。
+- 里程碑 / 版本：**v0.7.11（patch）**。判级理由：自 v0.7.10 起合入 main 的 13 个提交全是缺陷修复、
+  门禁加固与文档收口（R16.32–R16.36 + 两处 AI 对话缺陷），没有新增产品能力，也没有内容契约或
+  数据隔离语义的不兼容变更 → patch。
+- 分支 / 提交：`release/0.7.11`（`chore(release): ship v0.7.11` + 本条冻结记录）→ PR（待开）。
+- 发布内容（`main` 上 v0.7.10 之后）：
+  - **R16.33 修**：登录用户点「清空对话」只清屏幕、不删云端，下次进页最近 50 条整段回来。
+    新增 `DELETE /api/ai/conversations`（身份异常 500 / 未登录 401 / 独立配额 429），删除只带
+    `.eq("user_id", user.id)` 一个条件；云端没删成在界面上明说；流式回答期间点清空不再把那一轮写回。
+  - **R16.35 修**：「继续生成」补出来的答案从来没进过云端——那一发发的是空问题，被端点判畸形载荷
+    400，而客户端 fire-and-forget 从不看状态码。现在续写带着这一轮的问题与来源入库；截断标记随存档
+    落库，刷新后「继续生成」的入口还在，同一轮的两份存档恢复时折叠成最新一份（真把同一问题问两遍不折叠）。
+  - **R16.32 / R16.34 / R16.36 门禁**：冒烟断言条数由 `buildChecks()` 说了算；手册转述的六个巡检参数
+    （词典组数、FAQ 窗口/门槛/截断、外链超时与重试）逐条钉回代码常量，改写句子绕过核对也判失败；
+    重算型报告过期时门禁直接给出去哪儿重算。
+- 验证（按 `docs/release-checklist.md` 的顺序，15 步全部 exit 0）：`test` · `test:coverage`
+  （290 文件 / 2785 条）· `lint` · `typecheck` · `build` · `check:mobile` · `check:seo-surface` ·
+  `check:search-index` · `check:structured-data` · `check:risk-warning` · `check:constitution` ·
+  `check:docs` · `check:report-freshness` · `db:test`（真实 Supabase 镜像：迁移、RLS 越权、双设备同步
+  约束、回滚重放）· `e2e`（160 条，放最后）。
+- 发布元数据：`check:lockfile-repro` ✅（钉住 npm 10.9.4 重算锁文件，diff 只有版本号两处）·
+  `check:changelog` ✅（15 条版本记录一致、未发布区块为空）· `check:docs` ✅（27 章 / 182 篇，
+  zh/en 对齐，package 0.7.11）· `check:release-tag` 打印「最新 0.7.11 待合并后补打」不判失败。
+- `git status` 在整条链跑完后只剩发布四文件（`src/data/release-notes.json` · `CHANGELOG.md` ·
+  `package.json` · `package-lock.json`），报告类产物无纯日期 diff。
+- 工作保全：`ops:work-audit` = 悬空提交 0 · 陈旧本地提交 0 · 未确认的关闭 PR 0。本轮 #235/#237/#238
+  因 roadmap 文末追加撞锚点且本仓禁止 force push，合并重放为 PR #239 落地，三条确认记录已入 main。
+- 阻塞：无本地阻塞。外部阻塞不变——生产 AI 游客模型路径 502（需 `AI_API_URL` / `AI_MODEL` /
+  `AI_API_KEY` 与出口网络）、Vercel 24h 构建配额、待拍板 R15.2 / R16.7 / R16.10–R16.13 / R16.16、
+  上游 kline-buty 风险块缺口（只能在上游改）、PR #178 属维护者。
+- 风险 / 回滚：发布内容全部来自已合并、已各自跑过门禁的 main 提交，本分支只改发布记录、CHANGELOG
+  与版本号；回滚用 `git revert <发布提交>`（或 Vercel 切回上一构建止血），不改写 `main`。
+  注意 R16.35 改了 `ai_conversations` 的**写入内容**（assistant 正文保留截断标记），回滚代码后旧前端
+  仍只是把标记当普通文本处理，不需要数据迁移。
+- 下一项：合并后打 tag `v0.7.11` → 生产部署核对 → `npm run ops:smoke-prod` 逐条记录；
+  之后给 AI 面板补真浏览器 e2e（它至今没有任何 e2e 覆盖，而这两处缺陷都在浏览器里才看得见）。
+- 更新时间：2026-09-23 16:35（Asia/Shanghai）。
