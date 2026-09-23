@@ -5,6 +5,28 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.11] - 2026-09-23
+
+**界面说法与门禁兑现（第四批） / UI claims and gates made real (round four)**
+
+### 中文
+
+- 「清空对话」不再只清屏幕：登录用户按下按钮会真的删掉云端那一整段历史（新增按身份校验、独立配额的删除端点），云端没删成会在界面上告诉你，而不是下次进页又整段回来
+- 「继续生成」补出来的答案真的存进云端了：那一发原先发的是空问题，被端点判成畸形载荷后静默丢弃；现在续写带着这一轮的问题与来源入库，刷新后被截断的回答也仍然给出续写入口
+- 冒烟断言的条数由代码说了算：加一条探针而不同步两份文档即失败，删掉一道流水线步骤却还留在门禁表里（幽灵登记）同样失败
+- 手册转述的巡检参数逐条钉回代码常量——同义词词典组数、FAQ 聚类窗口与门槛、外链巡检的超时与重试次数；把句子改写成不含数字的措辞来绕过核对也判失败
+- 重算型报告过期时，门禁直接说出去哪儿重算（此前只报「入库版本过期」，读者还得回门禁表顺藤摸是哪一份巡检器写的）
+
+### English
+
+- "Clear chat" no longer just clears the screen: for signed-in users it now really deletes that stored history through a new identity-checked, separately rate-limited endpoint, and a failed server-side delete is reported in the UI instead of the whole thread reappearing on the next visit
+- Answers extended with "Keep going" are actually saved now: that request used to carry an empty question, which the endpoint rejected as a malformed payload and the client silently dropped. A continuation is now stored with its own question and sources, and a restored truncated answer still offers the continue affordance
+- The smoke-test count is decided by the code: adding a probe without updating both documents fails the gate, and so does a step removed from the pipeline that is still listed as guarding the site
+- Every inspection parameter the operations handbook restates is pinned back to its code constant - synonym group count, FAQ clustering window and thresholds, link-patrol timeout and retries - and rewording a sentence to dodge the comparison also fails
+- When a recomputed report is stale, the gate now names the exact command to regenerate it, instead of leaving you to trace which checker wrote the file
+
+参考：[docs/roadmap.md](docs/roadmap.md)
+
 ## [0.7.10] - 2026-09-23
 
 **界面说法与门禁兑现（第三批） / UI claims and gates made real (round three)**
