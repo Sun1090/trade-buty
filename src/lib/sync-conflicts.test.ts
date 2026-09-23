@@ -4,6 +4,7 @@ import {
   areSyncConflictsDismissed,
   detectMergeConflicts,
   dismissSyncConflicts,
+  MAX_STORED_CONFLICT_ITEMS,
   readSyncConflicts,
   recordSyncConflicts,
 } from "./sync-conflicts";
@@ -78,11 +79,39 @@ describe("sync conflict storage", () => {
     expect(readSyncConflicts(storage)).toEqual({
       at: 1234,
       items: [{ kind: "goal", key: "daily-goal-min", local: "15", cloud: "30", resolution: "kept-local" }],
+      total: 1,
     });
     expect(dispatchSpy.mock.calls.some((c) => c[0].type === "tb-sync-conflict")).toBe(true);
 
     recordSyncConflicts([], 2000);
     expect(readSyncConflicts(storage)).toBeNull();
+  });
+
+  it("明细截断存放下，总数仍然是检测到的那一个", () => {
+    const many = Array.from({ length: MAX_STORED_CONFLICT_ITEMS + 5 }, (_, i) => ({
+      kind: "wrongbook" as const,
+      key: `spot:${i}`,
+      local: "1/2026-09-20",
+      cloud: "3/2026-09-25",
+      resolution: "took-cloud" as const,
+    }));
+    recordSyncConflicts(many, 3456);
+    const raw = JSON.parse(store.get("tb-sync-conflicts")!);
+    expect(raw.items).toHaveLength(MAX_STORED_CONFLICT_ITEMS);
+    expect(raw.total).toBe(many.length);
+    expect(readSyncConflicts(localStorageMock as unknown as Storage)?.total).toBe(many.length);
+  });
+
+  it("旧记录没有 total 时按明细条数兜底", () => {
+    store.set(
+      "tb-sync-conflicts",
+      JSON.stringify({ at: 9, items: [{ kind: "goal", key: "k", local: "1", cloud: "2", resolution: "kept-local" }] }),
+    );
+    expect(readSyncConflicts(localStorageMock as unknown as Storage)).toEqual({
+      at: 9,
+      items: [{ kind: "goal", key: "k", local: "1", cloud: "2", resolution: "kept-local" }],
+      total: 1,
+    });
   });
 
   it("tracks dismissal per record timestamp", () => {
