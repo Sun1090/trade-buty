@@ -13,7 +13,12 @@ const RAW = [
 ];
 
 describe("fetchKlines", () => {
-  it("把币安原始数组解析为 Kline 并对齐 UTC+8（时间 -8h）", async () => {
+  /**
+   * 这里的 `- 8 * 3600` 是**位移量**，不是「换成北京时间」：lightweight-charts 只用
+   * `getUTC*` 画刻度，所以减完的坐标在轴上读出来比 UTC 还慢 8 小时（口径之争记 R16.47）。
+   * 写死数字是有意的——改 `DISPLAY_TZ_OFFSET_SEC` 必须同时过这里。
+   */
+  it("把币安原始数组解析为 Kline，并按展示位移往前挪 8 小时", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200, json: async () => RAW })));
     const [k] = await fetchKlines("BTCUSDT", "1h");
     expect(k).toEqual({
