@@ -22,16 +22,34 @@ const DOCS_PATH = /path\.join\(\s*root\s*,\s*"docs(?:\/([^"]+))?"\s*(?:,\s*"([^"
  * 从一个巡检器源码里取出它用 `writeReport` 落盘的报告路径。
  * 不调用 `writeReport` 的脚本一个都不产出——这就是幂等通道的定义域。
  */
-export function collectReportInventory(sources) {
-  const paths = new Set();
-  for (const { source } of sources ?? []) {
+function scanReportPaths(sources) {
+  const pairs = [];
+  for (const { file, source } of sources ?? []) {
     if (!WRITE_REPORT.test(String(source))) continue;
     for (const match of String(source).matchAll(DOCS_PATH)) {
       const tail = match[1] ?? match[2];
-      if (tail) paths.add(`docs/${tail.replace(/^\/+/, "")}`);
+      if (tail) pairs.push({ file, path: `docs/${tail.replace(/^\/+/, "")}` });
     }
   }
-  return [...paths].sort();
+  return pairs;
+}
+
+export function collectReportInventory(sources) {
+  return [...new Set(scanReportPaths(sources).map((pair) => pair.path))].sort();
+}
+
+/**
+ * 报告 → 写它的巡检器。清单只说「哪份过期」，读者还得知道去哪儿重算，
+ * 所以这两份视图必须出自同一次扫描，而不是各扫一遍、各自漂移。
+ */
+export function collectReportProducers(sources) {
+  const producers = new Map();
+  for (const { file, path } of scanReportPaths(sources)) {
+    const files = producers.get(path) ?? [];
+    if (!files.includes(file)) files.push(file);
+    producers.set(path, files);
+  }
+  return producers;
 }
 
 /**
@@ -65,7 +83,15 @@ export function shouldFailFreshness({ inventory, stale, untracked, minReports })
   return stale.length > 0 || untracked.length > 0 ? "stale-reports" : null;
 }
 
-export function renderFreshnessFailure({ reason, inventory, stale, untracked, minReports }) {
+export function renderFreshnessFailure({
+  reason,
+  inventory,
+  stale,
+  untracked,
+  minReports,
+  producers,
+  commands,
+}) {
   if (reason === "inventory-too-small") {
     return [
       `[report-freshness] ❌ 只推导出 ${inventory.length} 份报告（下限 ${minReports ?? 15}）。`,
@@ -75,9 +101,20 @@ export function renderFreshnessFailure({ reason, inventory, stale, untracked, mi
   const lines = ["[report-freshness] ❌ 入库的重算型报告与当场重算不一致："];
   for (const file of stale) {
     lines.push(`  - ${file}：门禁重跑改写了它，说明入库版本是过期的（把重算结果一起提交）`);
+    lines.push(...producerHints(file, producers, commands));
   }
   for (const file of untracked) {
     lines.push(`  - ${file}：巡检器会写它，但它在仓库里不存在（新报告漏提交）`);
+    lines.push(...producerHints(file, producers, commands));
   }
   return lines.join("\n");
+}
+
+/** 指出去哪儿重算：能对上 package.json 脚本名就给 npm run，对不上就给脚本路径。 */
+function producerHints(file, producers, commands) {
+  const files = producers?.get?.(file) ?? producers?.[file] ?? [];
+  return files.map((script) => {
+    const name = commands?.[script];
+    return `      重算：${name ? `npm run ${name}` : `node scripts/${script}`}，然后把新内容一起提交`;
+  });
 }

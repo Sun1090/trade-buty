@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assessFreshness,
   collectReportInventory,
+  collectReportProducers,
   parsePorcelain,
   renderFreshnessFailure,
   shouldFailFreshness,
@@ -33,6 +34,33 @@ describe("collectReportInventory", () => {
   it("ignores scripts that never call the idempotent writer", () => {
     expect(collectReportInventory([{ file: "c.mjs", source: RAW_WRITE }])).toEqual([]);
     expect(collectReportInventory(undefined)).toEqual([]);
+  });
+});
+
+describe("collectReportProducers", () => {
+  it("maps every reported path back to the script that writes it", () => {
+    const producers = collectReportProducers([
+      { file: "a.mjs", source: WRITE },
+      { file: "b.mjs", source: SPLIT },
+      { file: "c.mjs", source: RAW_WRITE },
+    ]);
+    expect(producers.get("docs/test-clock-hygiene.md")).toEqual(["a.mjs"]);
+    expect(producers.get("docs/test-clock-hygiene.json")).toEqual(["a.mjs"]);
+    expect(producers.get("docs/x.md")).toEqual(["b.mjs"]);
+    expect(producers.get("docs/raw.md")).toBeUndefined();
+  });
+
+  it("stays derived from the same scan as the inventory", () => {
+    const sources = [
+      { file: "a.mjs", source: WRITE },
+      { file: "a2.mjs", source: WRITE },
+      { file: "b.mjs", source: SPLIT },
+    ];
+    // 两份视图必须出自同一次扫描：清单里每一份都得有出处，出处也不能多出清单没有的。
+    const inventory = collectReportInventory(sources);
+    const producers = collectReportProducers(sources);
+    expect(inventory).toEqual([...producers.keys()].sort());
+    expect(producers.get("docs/test-clock-hygiene.md")).toEqual(["a.mjs", "a2.mjs"]);
   });
 });
 
@@ -83,6 +111,21 @@ describe("shouldFailFreshness", () => {
       minReports: 1,
     });
     expect(text).toContain("docs/a.md");
+    // 失败信息要指出去哪儿重算，否则读者只知道「过期了」却不知道是谁写的。
+    const hinted = renderFreshnessFailure({
+      reason: "stale-reports",
+      inventory: ["docs/a.md", "docs/b.md"],
+      stale: ["docs/a.md"],
+      untracked: ["docs/b.md"],
+      minReports: 1,
+      producers: new Map([
+        ["docs/a.md", ["check-a.mjs"]],
+        ["docs/b.md", ["tools/b.mjs"]],
+      ]),
+      commands: { "check-a.mjs": "check:a-report" },
+    });
+    expect(hinted).toContain("npm run check:a-report");
+    expect(hinted).toContain("node scripts/tools/b.mjs");
     expect(renderFreshnessFailure({ reason: "inventory-too-small", inventory: [], stale: [], untracked: [], minReports: 15 })).toContain(
       "下限 15",
     );
