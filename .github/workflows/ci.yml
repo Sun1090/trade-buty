@@ -158,6 +158,11 @@ jobs:
       # 所以新造一个没人渲染的键直接判失败，而不是写进报告等人来看。
       - name: 字典死键巡检（R16.21）
         run: npm run check:dead-copy
+      # R16.26：以上步骤会重算 docs/ 下的报告，但没人比对「入库版本 == 当场重算结果」，
+      # 所以过期是静默的（PR #218 新增测试文件后，时钟卫生台账的扫描数就停在旧值好几个 PR）。
+      # 必须排在所有报告生成步骤之后。
+      - name: 报告新鲜度核对（R16.26）
+        run: npm run check:report-freshness
       # E2E 放最后：运行时会向 .next 写入动态 fallback 页，避免污染产物校验
       - run: npm run e2e
       - run: npm run lhci
