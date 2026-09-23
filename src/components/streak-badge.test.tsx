@@ -24,12 +24,18 @@ describe("StreakBadge", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("显示当前连续天数", () => {
+  /**
+   * 这个 pill 上只有一个裸数字时，「3 天」并不等于「连续 3 天」——
+   * `labels.current` 是调用方传进来、被测试名字承诺过、却从没渲染出去的那半句。
+   */
+  it("显示当前连续天数，并把「当前」说在数字前", () => {
     current = 3;
     longest = 3;
-    render(<StreakBadge labels={labels} />);
+    const { container } = render(<StreakBadge labels={labels} />);
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("天")).toBeInTheDocument();
+    expect(screen.getByText(labels.current)).toBeInTheDocument();
+    expect(container.textContent).toContain("当前3天");
   });
 
   it("历史最长大于当前时额外显示最长记录", () => {
