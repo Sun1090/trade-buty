@@ -6192,3 +6192,47 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：#258 过 CI 后合并并继续清点未扫的界面；配额清掉后重跑 `npm run ops:smoke-prod`。
 - 更新时间：2026-09-23 23:56（Asia/Shanghai）。
 
+
+## 2026-09-24 — #258 已合并；R16.51 一轮清掉 16 条写死中文的界面文案
+
+- 状态：**PR #258 已合并**（`MERGED`，2026-09-23 16:07Z，落 `origin/main` = `7ab37c4`，rebase 无合并提交）；
+  **PR #259 待合并**（分支 `fix/review-quiz-copy`，同样从 `origin/main` = `7ab37c4` 切出）。
+- 上一轮收尾：v0.7.13 之后合入的 #258（朗读整篇排队 + 属性巡检门禁）就是本轮的起点，本轮把它的判据
+  从「属性」扩到「裸 JSX 文本节点」，并用扩了判据的门禁自己扫出待办清单。
+- 缺陷：R16.50 那条 `check:localized-labels` 只盯 `title` / `aria-label` / `alt` / `placeholder`，
+  等于只管「屏幕阅读器会念出来」那一半，眼睛直接看到的按钮字没人管。判据扩到 `>…<` 之间的文本后，
+  当场抓出 4 个文件 9 处「这一处根本没问语言」的写法；连着藏在表达式里的字符串共 **16 条界面文案**：
+  复习页 11 条（重答面板 5 条 + 错题列表两条出口 + 错题本 `.txt` 导出的 4 条标签，英文访客下载的
+  是一段中文表头）、AI 章节测验「难度」、测验「跳过」、课程页 OG 分享卡 3 条。
+- 改法：一律改成按 locale 取——「跳过」走 `src/lib/i18n.ts` 新增的 `quiz.skip`（中英各一条，
+  `check:dead-copy` 保证真被读到），其余走 `{locale === "en" ? … : …}`；`QuizDict` 从
+  `chapter-exam-card.tsx` 那份 18 字段抄本收敛成 `quiz.tsx` 单一导出出口（加 `skip` 时 `tsc`
+  在两个组件各报一次同样的缺字段错，改一处不够）。
+- **一处自我订正（记录以免被重新踩一遍）**：最初打算把 OG 卡整类当成「图卡路径拿不到 locale」豁免，
+  这是假的——`src/app/[locale]/knowledge/[chapter]/opengraph-image.tsx:9-10` 取的就是 `params.locale`，
+  分享卡正常渲染的三张也按 `p.locale` 出文案。豁免因此从「所有 OG 卡」缩成分享卡的降级图一处，
+  那张确实两条路上都没有语言信号（`kind` 未知 / payload 解码失败），品牌行要不要中英并列登记为 **R16.52**。
+- 变更文件：`src/components/{quiz,chapter-exam-card,ai-chapter-quiz,review-client,read-aloud}.tsx`、
+  `src/lib/i18n.ts`、`src/app/[locale]/knowledge/[chapter]/opengraph-image.tsx`、
+  四个组件的 `.test.tsx`、`scripts/check-localized-labels{,.test}.mjs`、`docs/{ops,roadmap,progress}.md`、
+  `.github/workflows/ci.yml`。
+- 验证（本地，逐条退出码 0）：`test`（293 文件 / 2826 用例）、`lint`、`typecheck`、`build`、
+  `check:mobile`、`check:seo-surface`、`check:search-index`、`check:structured-data`、
+  `check:risk-warning`、`check:constitution`、`check:dead-copy`（字典 2 / 词条 401 / 死键 0）、
+  `check:localized-labels`、`check:bundle`（454 条路由在预算内）、`check:docs`、`check:changelog`、
+  `check:test-clock-hygiene`（仍 292 个测试文件，台账没动）、`check:report-freshness`（17 份 · 过期 0 ·
+  未提交 0）、`e2e` 160 passed，跑完 `git status` 干净。`db:test` 未跑（不含迁移与 SQL）。
+- 变异核对三组：①重答面板两条裸文本改回写死中文 → 门禁 exit 1 点名两处 + 英文面板用例红；
+  ②`exportText` 的 `const en = locale === "en"` 改成 `false` → 只有导出 txt 那条红；
+  ③错题两条出口改回写死中文 → 门禁点名 2 处 + 对应用例红。还原后门禁 exit 0、`review-client` 26/26 绿。
+  豁免清单那条用例同样核对过：去掉分享卡豁免，门禁就在该文件 `:83` 红。
+- 分支 / 提交：`2ad5e7b`（fix(copy)）+ `5122683`（test(gates)）+ `9318e46`（docs(roadmap)）+ 本条进度。
+- 阻塞 / 风险：判据是中日韩字符，把**英文**写死在同一处它认不出来，那半边靠本轮新增的 5 条按 locale 用例兜，
+  不是门禁兜——这句写进脚本头与手册，不当作已解决。R16.52 属品牌呈现，需拍板。Vercel 配额仍未清掉
+  （PR 检查显示 `Deployment rate limited`），它从来不是合并门槛；上游 kline-buty 内容缺口与访客 AI 502 不变；
+  PR #178 是维护者的，不动。
+- 回滚：`git revert` 本分支四个提交即可，无数据迁移；回滚门禁一侧只少一道巡检，不改站点行为。
+- 下一项：#259 过 CI（`ci` + `db-tests` + CodeQL）后 rebase 合并；合入后 `main` 比 v0.7.13 多两处修复
+  （R16.50 + R16.51）→ 下一个待发仍是 patch（v0.7.14）。配额清掉后重跑 `npm run ops:smoke-prod`
+  （判据：`/zh/changelog` 含最新已发布版本号）。
+- 更新时间：2026-09-24 01:06（Asia/Shanghai）。
