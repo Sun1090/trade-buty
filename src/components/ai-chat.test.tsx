@@ -1322,9 +1322,9 @@ describe("AiChat 初始化历史、自动提问与边界响应", () => {
     return question;
   }
 
-  it("恢复云端历史时解析字符串形式的 sources/suggested，不触发 ?q= 自动发送", async () => {
-    const fetchMock = vi.fn(async (url: string) => {
-      if (url === "/api/ai/conversations") {
+  it("恢复云端历史时解析字符串形式的 sources/suggested，并把 ?q= 追加到历史之后发出", async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/ai/conversations" && !init) {
         return {
           ok: true,
           status: 200,
@@ -1340,16 +1340,35 @@ describe("AiChat 初始化历史、自动提问与边界响应", () => {
           }),
         } as Response;
       }
+      if (url === "/api/ai/chat") {
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+          body: makeStreamBody("自动回答"),
+        } as unknown as Response;
+      }
       throw new Error(`unexpected fetch: ${url}`);
     });
-    window.history.replaceState({}, "", "/zh/ai?q=自动提问");
+    window.history.replaceState({}, "", "/zh/ai?q=自动提问&ctx=futures&ct=期货基础");
     vi.stubGlobal("fetch", fetchMock);
 
     render(<AiChat locale="zh" dict={dict} />);
-    await screen.findByText("历史回答");
+    await screen.findByText("自动回答");
     expect(screen.queryByRole("link", { name: "📖 来源标题" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "📚 推荐章节" })).toHaveAttribute("href", "/zh/knowledge/futures");
-    expect(fetchMock.mock.calls.every(([url]) => url !== "/api/ai/chat")).toBe(true);
+
+    const chatCalls = fetchMock.mock.calls.filter(([url]) => url === "/api/ai/chat");
+    expect(chatCalls).toHaveLength(1);
+    const body = JSON.parse((chatCalls[0][1] as RequestInit).body as string);
+    expect(body.contextChapter).toBe("futures");
+    // 关键：自动提问必须接在恢复出来的历史后面，而不是把历史丢掉重新开一轮
+    expect(body.messages).toEqual([
+      { role: "user", content: "历史问题" },
+      { role: "assistant", content: "历史回答" },
+      { role: "user", content: "自动提问" },
+    ]);
+    expect(screen.getByText(/正在基于《期货基础》篇章回答/)).toBeInTheDocument();
   });
 
   it("无云端历史且 URL 有 q 时自动发送该问题并携带上下文", async () => {
@@ -1367,6 +1386,31 @@ describe("AiChat 初始化历史、自动提问与边界响应", () => {
     const body = JSON.parse((chatCalls[0][1] as RequestInit).body as string);
     expect(body.contextChapter).toBe("futures");
     expect(body.messages.at(-1)).toEqual({ role: "user", content: "什么是杠杆" });
+  });
+
+  it("自动提问后抹掉地址栏里的一次性参数，重新挂载不再问第二遍", async () => {
+    window.history.replaceState({}, "", "/zh/ai?q=只该问一次&ctx=spot");
+    const fetchMock = mockFetch("一次回答");
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { unmount } = render(<AiChat locale="zh" dict={dict} />);
+    await screen.findByText("一次回答");
+    expect(window.location.search).toBe("");
+    expect(window.location.pathname).toBe("/zh/ai");
+    unmount();
+
+    // 等价于用户按刷新：挂载只等历史拉取完成，参数已不在地址栏，就不该再发一次
+    render(<AiChat locale="zh" dict={dict} />);
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(
+          ([url, init]) => url === "/api/ai/conversations" && !init,
+        ).length,
+      ).toBe(2),
+    );
+    expect(
+      fetchMock.mock.calls.filter(([url]) => url === "/api/ai/chat"),
+    ).toHaveLength(1);
   });
 
   it("拉取历史失败后仍可继续提问", async () => {
