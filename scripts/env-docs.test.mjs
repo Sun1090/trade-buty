@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import os from "node:os";
 import { describe, expect, it } from "vitest";
-import { auditEnvDocs, extractDocumentedVars, extractEnvRefs, isClientModule, loadSources, run } from "./env-docs.mjs";
+import { auditEnvDocs, extractDocumentedVars, extractEnvRefs, extractExampleVars, isClientModule, loadSources, loadExample, run } from "./env-docs.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -28,11 +28,53 @@ describe("env docs contract", () => {
     const { errors, required } = auditEnvDocs({
       docs: fs.readFileSync(path.join(ROOT, "docs/env.md"), "utf8"),
       sources: loadSources(),
+      example: loadExample(),
     });
     expect(errors).toEqual([]);
     expect(required).toContain("AI_API_KEY");
     expect(required).toContain("NEXT_PUBLIC_AI_ENABLED");
     expect(required).toContain("SUPABASE_SERVICE_ROLE_KEY");
+    // 三方对账不空转：示例文件与代码读取集今天恰好一一对应，
+    // 任何一侧漂移（新增变量忘了登记示例、或示例留了幽灵）都会让上面 errors 变红。
+    expect(extractExampleVars(loadExample()).size).toBe(required.length);
+  });
+
+  it("flags a variable the code reads that the example file omits", () => {
+    const sources = [
+      ...baseline(),
+      src("src/lib/ai.ts", ts("return process.env.AI_API_KEY;")),
+    ];
+    // 对照：示例文件列全时不报错，否则下面这条断言可能只是 fixture 本身坏了。
+    expect(
+      auditEnvDocs({
+        docs: docs(),
+        sources,
+        example: "NEXT_PUBLIC_SITE_URL=https://example.com\nAI_API_KEY=your_key\n",
+      }).errors
+    ).toEqual([]);
+
+    const { errors } = auditEnvDocs({
+      docs: docs(),
+      sources,
+      example: "NEXT_PUBLIC_SITE_URL=https://example.com\n",
+    });
+    expect(errors.some((e) => e.includes(".env.example 未列出 AI_API_KEY"))).toBe(true);
+  });
+
+  it("flags a ghost variable that only the example file still lists", () => {
+    const { errors } = auditEnvDocs({
+      docs: docs(),
+      sources: baseline(),
+      example: "NEXT_PUBLIC_SITE_URL=https://example.com\nAI_GONE_KEY=whatever\n",
+    });
+    expect(errors.some((e) => e.includes("幽灵") && e.includes("AI_GONE_KEY"))).toBe(true);
+  });
+
+  it("counts commented-out example lines as registered", () => {
+    expect([...extractExampleVars("# AI_RETRIEVAL_JSON=\nADMIN_TOKEN=x")].sort()).toEqual([
+      "ADMIN_TOKEN",
+      "AI_RETRIEVAL_JSON",
+    ]);
   });
 
   it("reads both dot and bracket env access", () => {
@@ -116,12 +158,22 @@ it("runs the real CLI entrypoint success and failure branches", () => {
   fs.writeFileSync(path.join(root, "docs/env.md"), docs());
   fs.writeFileSync(path.join(root, "src/lib/site.ts"), 'export function f() { return process.env.NEXT_PUBLIC_SITE_URL; }\nexport function a() { return process.env.AI_API_KEY; }\n');
   fs.writeFileSync(path.join(root, "next.config.ts"), "const config = { async headers() { return []; } };\n");
+  fs.writeFileSync(path.join(root, ".env.example"), "NEXT_PUBLIC_SITE_URL=https://example.com\nAI_API_KEY=your_key\n");
   try {
     let code = null;
     const logs = [];
     run({ rootDir: root, log: (message) => logs.push(String(message)), error: () => undefined, exit: (value) => { code = value; } });
     expect(code).toBeNull();
     expect(logs[0]).toContain("2 个运行时变量");
+
+    // 示例文件本身缺席（今天 CONTRIBUTING.md 指向的就是一个从未入库的文件）也要报错。
+    fs.rmSync(path.join(root, ".env.example"));
+    let missingCode = null;
+    const missingErrors = [];
+    run({ rootDir: root, log: () => undefined, error: (message) => missingErrors.push(String(message)), exit: (value) => { missingCode = value; } });
+    expect(missingCode).toBe(1);
+    expect(missingErrors.join("\n")).toContain(".env.example 不存在");
+    fs.writeFileSync(path.join(root, ".env.example"), "NEXT_PUBLIC_SITE_URL=https://example.com\nAI_API_KEY=your_key\n");
 
     fs.writeFileSync(path.join(root, "docs/env.md"), docs().replace("`AI_API_KEY`", "AI_API_KEY"));
     let failCode = null;

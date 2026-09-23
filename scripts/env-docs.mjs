@@ -75,12 +75,25 @@ export function isClientModule(source) {
 }
 
 /**
+ * 抽取 `.env.example` 里登记的变量名。被注释掉的可选变量同样算登记——
+ * 那一行本身就是「有这个变量」的说明，贡献者照抄时会取消注释。
+ */
+export function extractExampleVars(example) {
+  const names = new Set();
+  for (const match of String(example).matchAll(/^#?\s*([A-Z][A-Z0-9_]*)\s*=/gm)) {
+    names.add(match[1]);
+  }
+  return names;
+}
+
+/**
  * @param {object} input
  * @param {string} input.docs                docs/env.md 内容
  * @param {Array<{file:string, source:string, isTest?:boolean}>} input.sources
+ * @param {string} [input.example]           .env.example 内容（不传则跳过示例文件对账）
  * @returns {{errors: string[], required: string[], documented: string[]}}
  */
-export function auditEnvDocs({ docs, sources }) {
+export function auditEnvDocs({ docs, sources, example }) {
   const errors = [];
 
   const appRefs = new Map(); // name -> first file that reads it (非测试)
@@ -128,7 +141,31 @@ export function auditEnvDocs({ docs, sources }) {
     errors.push("docs/env.md 必须说明 NEXT_PUBLIC_ 前缀的暴露语义");
   }
 
+  // 4) CONTRIBUTING.md 让贡献者 `cp .env.example .env.local`：那份文件必须存在，
+  //    并且与「代码实际读取的变量」一一对应。少了这一侧对账，示例文件要么指不到
+  //    东西（从未入库），要么在新变量加进来后静默缺席——贡献者照抄完功能不可用。
+  if (typeof example === "string") {
+    const exampleVars = extractExampleVars(example);
+    const requiredSet = new Set(required);
+    for (const name of required) {
+      if (!exampleVars.has(name)) {
+        errors.push(`.env.example 未列出 ${name}（代码在读取它，见 ${appRefs.get(name)}）`);
+      }
+    }
+    for (const name of [...exampleVars].sort()) {
+      if (!requiredSet.has(name)) {
+        errors.push(`.env.example 列了 ${name}，但代码里没有读取它（幽灵条目）`);
+      }
+    }
+  }
+
   return { errors, required, documented: [...documented].sort() };
+}
+
+/** 读 `.env.example`；不存在时返回 null，由调用方判成错误而不是静默跳过。 */
+export function loadExample(root = ROOT) {
+  const file = path.join(root, ".env.example");
+  return fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null;
 }
 
 function walk(dir, out) {
@@ -154,10 +191,15 @@ export function loadSources(root = ROOT) {
 
 export function run({ rootDir = ROOT, log = console.log.bind(console), error = console.error.bind(console), exit = process.exit } = {}) {
   const root = rootDir;
+  const example = loadExample(root);
   const { errors, required } = auditEnvDocs({
     docs: fs.readFileSync(path.join(root, "docs/env.md"), "utf8"),
     sources: loadSources(root),
+    example,
   });
+  if (example === null) {
+    errors.unshift(".env.example 不存在（CONTRIBUTING.md 让贡献者 cp .env.example .env.local）");
+  }
 
   if (errors.length > 0) {
     error("[env-docs] ❌ 环境变量文档与代码不一致：");
@@ -166,7 +208,7 @@ export function run({ rootDir = ROOT, log = console.log.bind(console), error = c
     return;
   }
 
-  log(`[env-docs] ✅ docs/env.md 与代码一致（${required.length} 个运行时变量全部登记，无幽灵条目，无客户端密钥泄漏）`);
+  log(`[env-docs] ✅ docs/env.md 与代码一致（${required.length} 个运行时变量全部登记，无幽灵条目，无客户端密钥泄漏；.env.example 与之逐项对应）`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
