@@ -5964,6 +5964,12 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   当前挂在 `trade-buty.vercel.app` 上的仍是 `createdAt 2026-09-23T08:04:57Z` 那次构建，即 **#239 之后、
   发布提交之前**的 main —— 所以线上跑的是 v0.7.10 的记录，不是站内回归。
   同一个小时里 Preview 还能构建（`52bgfwz38`，08:18Z），说明限流按账户配额计数、不是配置错误。
+  本地同份构建对照（`npm run build && npm start -- -p 3111` 后 `SMOKE_BASE_URL=http://localhost:3111
+  npm run ops:smoke-prod`）跑出 **10/10 全绿**，其中 `POST /api/ai/chat 游客` 在本地通过、在生产 502
+  ——「红项属部署与上游配置」这条从推断变成实测。
+  第一次本地对照差点读反：3111 上驻留着更早一次验证的 `next start`，新进程没绑上端口，冒烟量的是旧构建，
+  于是报「changelog 里没有 0.7.11」。这既可能把旧构建的问题算成本次的红，也可能把本次的问题藏成绿，
+  所以补了机制核对（PR #242）：本地目标必须先证明响应里含当前 `.next/BUILD_ID`。
 - 生产冒烟 `npm run ops:smoke-prod`：首跑 **8/10**。
   - 红项 1 `GET /zh/changelog → 含最新发布版本`：页面里没有 0.7.11 —— 正是上面那条「生产停在旧构建」探针
     该报的形态（合并 ≠ 上线），部署跟上后这条会自己转绿。
