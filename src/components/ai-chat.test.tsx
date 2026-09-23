@@ -22,6 +22,7 @@ import {
   SUGGESTED_QUESTIONS_ZH,
   SUGGESTED_QUESTIONS_EN,
 } from "@/lib/ai/prompt";
+import { TRUNCATED_MARKER } from "@/lib/ai/streaming";
 
 // Keep the streaming-state test deterministic: lazy chunk loading is covered in the
 // production build and E2E, while this unit test should only observe AiChat state.
@@ -1603,5 +1604,133 @@ describe("AiChat 初始化历史、自动提问与边界响应", () => {
     await waitFor(() => expect(unhelpful).toHaveClass("font-medium"));
     fireEvent.click(unhelpful);
     expect(fetchMock.mock.calls.filter(([url]) => url === "/api/ai/feedback")).toHaveLength(1);
+  });
+});
+
+describe("AiChat 续写与云端归档", () => {
+  type Archive = { userMessage: string; assistantMessage: string; sources?: unknown };
+
+  function stubFetch(opts: { history?: unknown[]; sources?: boolean } = {}) {
+    const archives: Archive[] = [];
+    const getHeader = (key: string, continueCall: boolean) => {
+      if (!opts.sources || key !== "X-Sources" || continueCall) return null;
+      return encodeURIComponent(JSON.stringify([{ chapter: "spot", doc: "basics" }]));
+    };
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/ai/conversations" && init?.method === "POST") {
+        archives.push(JSON.parse(String(init.body)) as Archive);
+        return { ok: true, status: 200, json: async () => ({ ok: true }) } as Response;
+      }
+      if (url === "/api/ai/conversations") {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ messages: opts.history ?? [] }),
+        } as Response;
+      }
+      if (url === "/api/ai/chat") {
+        const body = JSON.parse(String(init?.body)) as { continueFrom?: string };
+        const isContinue = Boolean(body.continueFrom);
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: (key: string) => getHeader(key, isContinue) },
+          body: makeStreamBody(
+            body.continueFrom ? "后半段" : `前半段${TRUNCATED_MARKER}`,
+          ),
+        } as unknown as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return archives;
+  }
+
+  function continueButton(): HTMLButtonElement | undefined {
+    return [...document.querySelectorAll("button")].find((b) =>
+      (b.textContent ?? "").includes(dict.continueLabel),
+    ) as HTMLButtonElement | undefined;
+  }
+
+  it("续写的那一轮带着原问题入库，不写空问题", async () => {
+    const archives = stubFetch();
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    const target = [...container.querySelectorAll("button")].filter(
+      (b) => SUGGESTED_QUESTIONS_ZH.includes(b.textContent ?? ""),
+    )[0];
+    const question = target.textContent as string;
+    fireEvent.click(target);
+    await screen.findByText("前半段");
+
+    fireEvent.click(continueButton()!);
+    await screen.findByText("前半段后半段");
+
+    expect(archives).toHaveLength(2);
+    // 存档带截断标记，恢复端才知道「这一轮还没说完」；续写那一份补的是完整答案
+    expect(archives[0].assistantMessage).toBe(`前半段${TRUNCATED_MARKER}`);
+    expect(archives[1].assistantMessage).toBe("前半段后半段");
+    expect(archives[1].userMessage).toBe(question);
+  });
+
+  it("续写存档带上这一轮的来源，恢复时不会丢掉引用", async () => {
+    const archives = stubFetch({ sources: true });
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    fireEvent.click(
+      [...container.querySelectorAll("button")].filter(
+        (b) => SUGGESTED_QUESTIONS_ZH.includes(b.textContent ?? ""),
+      )[0],
+    );
+    await screen.findByText("前半段");
+    fireEvent.click(continueButton()!);
+    await screen.findByText("前半段后半段");
+
+    expect(archives[1].sources).toEqual([{ chapter: "spot", doc: "basics" }]);
+  });
+
+  it("刷新后恢复的截断回答仍然给出「继续生成」，页面上看不到截断标记", async () => {
+    stubFetch({
+      history: [
+        { role: "user", content: "历史问题" },
+        { role: "assistant", content: `前半段${TRUNCATED_MARKER}`, sources: null },
+      ],
+    });
+    render(<AiChat locale="zh" dict={dict} />);
+
+    const answer = await screen.findByText("前半段");
+    expect(continueButton()).toBeDefined();
+    expect(answer.textContent ?? screen.getByRole("button", { name: new RegExp(dict.clear) })).toBeTruthy();
+    expect(document.body.textContent).not.toContain("TRUNCATED");
+  });
+
+  it("同一轮续写后的两份存档，恢复出来只留最新的那一份", async () => {
+    stubFetch({
+      history: [
+        { role: "user", content: "同一个问题" },
+        { role: "assistant", content: `半截答案${TRUNCATED_MARKER}`, sources: null },
+        { role: "user", content: "同一个问题" },
+        { role: "assistant", content: "完整答案", sources: null },
+      ],
+    });
+    render(<AiChat locale="zh" dict={dict} />);
+
+    await screen.findByText("完整答案");
+    expect(screen.queryByText("半截答案")).toBeNull();
+    expect(screen.getAllByText("同一个问题")).toHaveLength(1);
+  });
+
+  it("用户真的把同一个问题问两遍时不折叠，只有上一轮被截断才折叠", async () => {
+    stubFetch({
+      history: [
+        { role: "user", content: "同一个问题" },
+        { role: "assistant", content: "第一次的回答", sources: null },
+        { role: "user", content: "同一个问题" },
+        { role: "assistant", content: "第二次的回答", sources: null },
+      ],
+    });
+    render(<AiChat locale="zh" dict={dict} />);
+
+    await screen.findByText("第二次的回答");
+    expect(screen.getByText("第一次的回答")).toBeDefined();
+    expect(screen.getAllByText("同一个问题")).toHaveLength(2);
   });
 });
