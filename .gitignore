@@ -31,7 +31,10 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
+# CONTRIBUTING.md 让贡献者 `cp .env.example .env.local`，所以示例文件必须入库；
+# scripts/env-docs.mjs 会把它的键与 docs/env.md、代码实际读取的变量三方对账。
 .env*
+!.env.example
 
 # vercel
 .vercel
