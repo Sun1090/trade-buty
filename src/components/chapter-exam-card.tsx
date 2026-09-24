@@ -13,10 +13,11 @@ function subscribeQuizProgress(onChange: () => void) {
 }
 
 /**
- * 章节测验入口卡片——每篇课底部无条件显示。
+ * 章节测验入口卡片——本章有题库时，每篇课文底部都放这一张；没有题库时那个位置是
+ * AI 出题卡片（`[doc]/page.tsx` 的 else 分支），所以不是「无条件」。
  * 复用整章题库（ChapterQuiz），不写新题。
- * 未做：显示题数 + 开始按钮，点击就地展开 Quiz。
- * 已做：显示历史最佳 + 再测一次。
+ * 没做过：显示题数 + 「开始测验」，点击就地展开 Quiz。
+ * 做过：同一行补上历史最佳，按钮换成「再测一次」。
  */
 export function ChapterExamCard({
   quiz,

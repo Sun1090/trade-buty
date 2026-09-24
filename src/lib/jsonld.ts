@@ -125,15 +125,20 @@ export function course(args: {
   };
 }
 
-/** Quiz：用于随堂测挂载的章节。hasPart 列出所有题。 */
+/**
+ * Quiz：只允许在**真正渲染这套题的那个页面**上发。
+ * `pageHref` 是渲染页（多数题库挂在某一节课末尾），`courseHref` 是它所属篇章页——
+ * 两者不是一个 URL：篇章页只有入口卡片，把 Quiz 挂在那里等于对外宣称本页有一整套题。
+ */
 export function quiz(args: {
   /** 题库自身的语言，不是页面语言：`/en` 上挂的仍是中文题 */
   language: string;
   title: string;
-  chapterHref: string;
+  pageHref: string;
+  courseHref: string;
   questions: { text: string }[];
 }) {
-  const url = absoluteUrl(args.chapterHref);
+  const url = absoluteUrl(args.pageHref);
 
   return {
     "@context": SCHEMA_CONTEXT,
@@ -142,7 +147,7 @@ export function quiz(args: {
     name: args.title,
     inLanguage: args.language,
     url,
-    isPartOf: { "@id": `${url}#course` },
+    isPartOf: { "@id": `${absoluteUrl(args.courseHref)}#course` },
     hasPart: args.questions.map((question) => ({
       "@type": "Question",
       text: question.text,

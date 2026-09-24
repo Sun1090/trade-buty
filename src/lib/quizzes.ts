@@ -1177,3 +1177,12 @@ QUIZZES["options-strategies"] = {
     },
   ],
 };
+
+/**
+ * 这套题真正渲染在哪个页面：`docSlug` 指向某一节课的末尾（实测 27 套题库全部如此），
+ * 没挂的才由篇章页内联渲染。篇章页上那张卡片只是个入口，一道题都不渲染，
+ * 所以 Quiz 结构化数据该由谁发，一律问这个函数——不然就是在对外宣称「本页有一整套题」。
+ */
+export function quizHostDocSlug(chapterSlug: string): string | null {
+  return QUIZZES[chapterSlug]?.docSlug ?? null;
+}
