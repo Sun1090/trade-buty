@@ -76,6 +76,7 @@
     "check:kb-changelog": "node scripts/check-kb-changelog.mjs --check",
     "check:translation-history": "node scripts/check-translation-history.mjs",
     "check:kb-parity-budget": "node scripts/check-kb-parity-budget.mjs",
+    "check:kb-en-content": "node scripts/check-kb-en-content.mjs",
     "db:test": "node scripts/db-test.mjs",
     "backup:drill": "node scripts/backup-drill.mjs"
   },

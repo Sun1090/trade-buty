@@ -6566,3 +6566,14 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：本批落地后进入 RELEASE_FREEZE（v0.7.15：☁ 徽标、跳末、趋势块、坏币对、24h 窗口、回放空窗口与「新一轮」、图表输入三处，本批落地时 `v0.7.14..HEAD` 共 24 个提交）；
   随后是 #107（用实测的英文树 CJK 比例关掉 R16.13：27 章 / 182 课与中文逐一对齐，英文课时里 CJK 占比最高 0.61%，>2% 与 >10% 都是 0 篇）。
 - 更新时间：2026-09-24 09:55（Asia/Shanghai）。
+## 2026-09-24 — 把「en 树里到底是不是英文」变成常驻门禁，关掉 R16.13
+
+- 分支 `feat/en-content-evidence-gate`（基线 `ff95680`）。上一批 #276 落地后接手 #107：R16.13 一直停在「需上游核实」，可它里面有一半是本仓能测而没测的——`content/kline-buty` 的 en 树是不是真的成篇英文、还是只把文件名翻成了英文。
+- 改法：新增门禁 `scripts/check-kb-en-content.mjs`，度量口径与阈值集中在纯函数库 `scripts/en-content-lib.mjs`（CJK 段位、正文 = 去掉 frontmatter、长度按码点）。要求 en 树每个 markdown（含 27 个章节 `README.md`，它们在站上会渲染成章首页）非空、CJK 字占比 ≤ 2%、正文不少于同名中文正文的 30%。CI 步骤插在 R10.20 关键章节预算之后（`npm run check:kb-en-content`），并按 `scripts/ci-workflow.test.mjs` 的双向核对同步登记进 `docs/ops.md` 门禁表与新小节。
+- 界面一句都不用改：`src/lib/i18n.ts:67` 的 zh note 是空串（`src/app/[locale]/path/page.tsx:60` 判空即不渲染），en 侧 `:456` 只说覆盖面不说完成度；FAQ 与 404 里「正在翻译中」那几句早在 R16.43 撤掉。全站再搜 `翻译 / translat / bilingual / 双语`，只剩术语表那句「中英对照」——没有一句英文译文地道性上的承诺需要等上游，这条才关得掉。
+- 实测（当场跑 `node scripts/check-kb-en-content.mjs`）：en 与 zh 各 209 个文件、按「章节/文件名」1:1 对齐、0 个找不到同名中文；最高 CJK 占比 0.52%（`reading-list/quant-psychology-books.md`）、超过 2% 的 0 篇；最短的一篇也有同名中文的 1.70 倍（`quant-practice/data-acquisition.md`）；空正文 0。R16.43 当年记的是「最高 0.6%」——差在分母（非空白字符 vs 全部码点），同一棵树两种算法，已写进 roadmap 免得日后被当成漂移。
+- 验证：新增 `scripts/en-content-lib.test.mjs` **14 条**；全量 `npm test` **297 文件 / 2894 条**绿（基线 `ff95680` 为 296/2880），`lint --max-warnings=0`、`typecheck` 干净；`scripts/ci-workflow.test.mjs` 21 条与 `scripts/ops-patrol-claims.test.mjs` 3 条绿（新门禁的登记与表内顺序都在核对范围内）。
+- 变异核对四组：CJK 段起点下移到 0x3000（把中文标点也算字）→ 只红「不数中文标点」；按 UTF-16 单元而非码点计长 → 只红「按码点计」；摘掉 `chars === 0` 的除零守卫 → 红「空正文不除零」并把占比那条一起带红；去掉「无同名中文就不判 thin」的豁免 → 该条与占比那条同时红。门禁脚本另用一棵四个文件的夹具树跑真实负例：中文占八成、只翻开头、frontmatter 之后全空各判对一类并逐条列出，好样不在名单里，退出码 1。
+- 阻塞 / 风险：阈值是**下界**不是质量线（长度比 0.3 在真实英文里几乎不可能自然触发，抓的是占位文件）；上游若塞进 zh-only 文件，红的是本仓 CI，处理方向是把问题指向 kline-buty，本仓不得就地改子模块内容。回滚 = revert 本条提交（CI 步骤与 ops.md 同一条提交里）。待拍板清单：R15.2 / R16.7 / R16.10–R16.12 / R16.16 / R16.41 / R16.47 / R16.52 / R16.58 / R16.60 / R16.64。
+- 下一项：#109，v0.7.15 冻结与发布（☁ 徽标、跳末、趋势块、坏币对、24h 窗口、回放空窗口与「新一轮」、图表输入三处、英文树内容门禁，本批落地时 `v0.7.14..HEAD` 共 27 个提交）。
+- 更新时间：2026-09-24 10:25（Asia/Shanghai）。

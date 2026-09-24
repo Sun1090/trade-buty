@@ -43,6 +43,7 @@
 | `npm run check:kb-changelog` | `kb-manifest.json` 中每篇 sha256 与当前子模块内容逐文件一致；只读、有新增/修改/删除即失败（R10.7） | 跑 `npm run kb:update` 刷新快照与 changelog，同 commit 提交；不得手改 hash 或让 CI 写快照 |
 | `npm run check:translation-history` | 翻译历史快照为最新：当前 KB 覆盖与 docs/translation-history.json 最近快照一致（R10.19） | `npm run kb:translation-status` 重生成并连同两个产物提交 |
 | `npm run check:kb-parity-budget` | 关键章节英文 parity ≥ 预算（docs/kb-parity-budget.json，默认 1.0，R10.20） | 补齐关键章节 en 译文，或先下调预算并说明理由 |
+| `npm run check:kb-en-content` | 英文树内容实测：en 的每个 markdown 非空、CJK 字占比 ≤ 2%、正文长度 ≥ 同名中文的 30%（R16.13） | 到 kline-buty 补英文正文；本仓不得就地改子模块内容 |
 | 新章节 dry-run 冒烟（CI 内联，R10.16 / Q1.7） | `node scripts/dry-run-new-chapter.mjs --draft` 预检契约，并输出索引/sitemap/测验挂载/路径分组四项上线核对 | 按脚本报错补结构；按 checklist 决策固定题和 STAGES 分组 |
 | `npm run check:quiz-mounts` | AST 核验 quizzes.ts 全部挂载的 chapter/docSlug 与最少题数（R6.3） | 修正 chapterNum、docSlug、重复键或题量 |
 | `npm run check:quiz-coverage` | 固定题库覆盖率：27 章 × 每章至少 3 道（R6.4） | 补固定题库或 kb-titles 缺失元数据 |
@@ -90,6 +91,17 @@ npm run check:kb-parity-budget
 ```
 
 关键章节清单维护在 `docs/kb-parity-budget.json`（人工维护，含预算比例与理由）。CI 每次推送核对：关键章节新增 zh 课程未同步 en 译文即失败（比 R10.19 的「快照过期」更强——后者只要求报告最新，不约束内容本身）。
+
+
+## 英文树内容实测（R16.13）
+
+```bash
+npm run check:kb-en-content
+```
+
+上面两道盯的是文件名对不对得上，这条盯内容本身：`content/kline-buty/docs/knowledge/en/` 里每个 markdown（含 27 个章节 `README.md`，它们在站上会渲染成章首页）去掉 frontmatter 之后必须①非空、②CJK 字占比不超过 2%、③不小于同名中文正文的 30%。第③条的下界故意放得极松（英文同内容通常长 1.7–2.6 倍），抓的是「只翻了开头」这种量级。口径与阈值集中在 `scripts/en-content-lib.mjs`，CI 每次推送跑。
+
+2026-09-24 实测：en 与 zh 各 209 个文件、按「章节/文件名」1:1 对齐、0 个找不到同名中文；最高 CJK 占比 0.52%（`reading-list/quant-psychology-books.md`）、最短正文也有同名中文的 1.70 倍（`quant-practice/data-acquisition.md`）、空正文 0 个。这条给界面上「English and Chinese cover the same 27 chapters」那句提供内容层面的下界；译文读起来地不地道仍是 kline-buty 侧的事，站上没有任何一句对地道性做承诺。
 
 
 ## 站内搜索同义词（R10.21）
