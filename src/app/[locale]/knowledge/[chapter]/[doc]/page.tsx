@@ -202,7 +202,7 @@ export default async function DocPage({
             {doc.description}
           </p>
         )}
-        <div className="mt-4 flex items-center gap-3 flex-wrap">
+        <div className="no-print mt-4 flex items-center gap-3 flex-wrap">
           <FontSizeControl
             labels={{
               smaller: tools.fontSmaller,

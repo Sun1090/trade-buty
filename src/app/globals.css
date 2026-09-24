@@ -593,7 +593,9 @@ body {
 
 /* ---------- 打印友好 ---------- */
 @media print {
-  header,
+  /* 只隐藏浏览器外壳：课文标题住在页面自己的 hero <header> 里，
+     整条 header 一起隐藏会把标题、编号、摘要一并从纸上抹掉（e2e/print-surface.spec.ts）。
+     该隐藏的块各自带 .no-print。 */
   nav,
   footer,
   .no-print {
