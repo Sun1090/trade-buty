@@ -14,7 +14,7 @@ import { isRecord, readStorageJson } from "./storage-json";
 
 const KEY = "tb-study-time";
 
-/** 隐私页承诺的保留窗口：台账只保留最近 90 个日历日 */
+/** 隐私页承诺的保留窗口：以台账里最新的那一天为终点向前保留 90 个日历日（锚不是今天，见 `addStudyTime`） */
 export const STUDY_LEDGER_KEEP_DAYS = 90;
 
 export type StudySource = "read" | "quiz" | "replay";
@@ -55,7 +55,7 @@ export function addStudyTime(source: StudySource, seconds: number, day: string =
     entry[source] = Math.min((entry[source] ?? 0) + seconds, 8 * 3600);
     ledger[day] = entry;
     // 按日历裁剪，锚定台账里最新的一天：稀疏用户的 90 条记录可能横跨一年以上，
-    // 按条数裁剪会留下远超 90 天的数据，与隐私页「仅保留最近 90 天」的承诺不符。
+    // 按条数裁剪会留下远超 90 天的数据，与隐私页「以最后一次学习那天为终点向前保留 90 个日历日」的说法不符。
     const days = Object.keys(ledger).sort(); // YYYY-MM-DD 字典序即时间序
     const cutoff = shiftDate(days[days.length - 1], -(STUDY_LEDGER_KEEP_DAYS - 1));
     for (const d of days) {
