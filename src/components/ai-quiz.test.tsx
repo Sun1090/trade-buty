@@ -165,6 +165,28 @@ describe("AiQuiz 错题本打通与幂等（R2.6/R2.8/R2.11）", () => {
     expect(calls).toHaveLength(1);
     expect(JSON.parse(calls[0][1].body as string).rating).toBe("unhelpful");
   });
+
+  it("送出途中也不得提前说「已举报」", async () => {
+    let release: (value: { ok: boolean }) => void = () => {};
+    const fetchMock = vi.fn((url: string) => {
+      if (url === "/api/ai/quiz") return Promise.resolve({ ok: true, json: async () => ({ questions }) });
+      return new Promise<{ ok: boolean }>((resolve) => {
+        release = resolve;
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
+    await generateQuestions();
+    fireEvent.click(screen.getByText("限制单笔亏损"));
+    fireEvent.click(screen.getByText(`⚑ ${dict.report}`));
+    // 请求还挂着：按钮锁住防重复，但话还没说出口
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: `⚑ ${dict.report}` })).toBeDisabled(),
+    );
+    expect(screen.queryByText(dict.reported)).toBeNull();
+    release({ ok: true });
+    await waitFor(() => expect(screen.getByText(dict.reported)).toBeInTheDocument());
+  });
 });
 
 describe("AiQuiz 入口、错误态与多题流程", () => {
