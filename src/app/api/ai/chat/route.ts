@@ -192,6 +192,9 @@ export async function POST(req: NextRequest) {
     headers.set("X-Cache", "HIT");
     if (sources.length > 0) headers.set("X-Sources", encodeURIComponent(JSON.stringify(sources)));
     if (suggested.length > 0) headers.set("X-Suggested", encodeURIComponent(JSON.stringify(suggested)));
+    // 篇章上下文回带的是**服务端认下**的那个标题（不是地址栏里的 `ct`）：未知 slug
+    // 在这条路径上根本不会被注入，前端那条横幅也就不该出现。
+    if (ctxTitle) headers.set("X-Context-Chapter", encodeURIComponent(ctxTitle));
     withQuotaHeaders(headers);
     return new Response(cached.text, { headers });
   }
@@ -252,6 +255,7 @@ export async function POST(req: NextRequest) {
     if (suggested.length > 0) {
       headers.set("X-Suggested", encodeURIComponent(JSON.stringify(suggested)));
     }
+    if (ctxTitle) headers.set("X-Context-Chapter", encodeURIComponent(ctxTitle));
     withQuotaHeaders(headers);
 
     return new Response(markedStream, { headers });

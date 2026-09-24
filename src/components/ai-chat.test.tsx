@@ -17,6 +17,7 @@ import {
   waitFor,
   act,
 } from "@testing-library/react";
+import { getDict } from "@/lib/i18n";
 import { AiChat } from "./ai-chat";
 import { renderToString } from "react-dom/server";
 import {
@@ -63,7 +64,11 @@ function makeStreamBody(text: string) {
 }
 
 /** 区分挂载时的历史拉取（GET）与提问请求（POST chat） */
-function mockFetch(chatText = "回答内容") {
+/**
+ * `contextChapter` 是**服务端**认下并回带的篇章标题（`X-Context-Chapter`）：
+ * 传 `undefined` 就是不回带，等于这次回答没带上下文，或那个 slug 认不出来。
+ */
+function mockFetch(chatText = "回答内容", contextChapter?: string) {
   return vi.fn(async (url: string, init?: RequestInit) => {
     if (url === "/api/ai/conversations" && !init) {
       return {
@@ -76,7 +81,12 @@ function mockFetch(chatText = "回答内容") {
       return {
         ok: true,
         status: 200,
-        headers: { get: () => null },
+        headers: {
+          get: (key: string) =>
+            contextChapter !== undefined && key === "X-Context-Chapter"
+              ? encodeURIComponent(contextChapter)
+              : null,
+        },
         body: makeStreamBody(chatText),
       } as unknown as Response;
     }
@@ -108,7 +118,8 @@ const dict = {
   retryInTpl: "约 {n} 分钟后重试",
   quotaRemaining: "游客每小时限 {l} 次，本小时剩余 {n} 次",
   quotaLoginHint: "本小时次数已用完，登录可获更多额度",
-  contextBannerTpl: "正在基于《{title}》篇章回答",
+  // 横幅的句式子从字典取：这几条断言比的就是渲染出来的那句真话，手抄一份就会漂（R16.66 那一族）。
+  contextBannerTpl: getDict("zh").ai.contextBannerTpl,
   followups: ["展开讲讲「{t}」", "「{t}」怎么用？", "「{t}」的误区？"],
   helpful: "有用",
   unhelpful: "无用",
@@ -281,7 +292,10 @@ describe("AiChat 空状态与首屏示例问题", () => {
         return {
           ok: true,
           status: 200,
-          headers: { get: () => null },
+          headers: {
+            get: (key: string) =>
+              key === "X-Context-Chapter" ? encodeURIComponent("现货基础") : null,
+          },
           body: makeStreamBody("自动回答"),
         } as unknown as Response;
       }
@@ -298,7 +312,7 @@ describe("AiChat 空状态与首屏示例问题", () => {
       messages: [{ role: "user", content: "自动问题" }],
     });
     expect(
-      screen.getByText("📖 正在基于《现货基础》篇章回答"),
+      screen.getByText("📖 《现货基础》篇章已作为参考上下文带上"),
     ).toBeInTheDocument();
     window.history.replaceState({}, "", "/zh/ai");
   });
@@ -949,20 +963,47 @@ describe("AiChat 追问链与课程上下文（R3.4/R3.7）", () => {
     expect(chatCount).toBe(2);
   });
 
-  it("带 ct 参数时展示课程上下文横幅", async () => {
-    window.history.replaceState({}, "", "/zh/ai?ctx=spot&ct=现货基础");
-    vi.stubGlobal("fetch", mockFetch());
-    render(<AiChat locale="zh" dict={dict} />);
+  /**
+   * R16.178：这条横幅以前印的是地址栏里的 `ct`——访客可以自己写的一段文本，而且在任何
+   * 请求发生**之前**就挂出来（同 R16.142「首帧替服务端抢答」那一族）。服务端那一头做的只是
+   * 「认得这个 slug 就往 system prompt 追加一句请优先结合该篇章」，未知 slug 静默忽略。
+   * 现在横幅只跟着服务端回带的 `X-Context-Chapter` 走，文案也只说代码真做的那件事。
+   */
+  it("横幅的标题来自服务端回带的那个，不是地址栏里可自定的 ct", async () => {
+    window.history.replaceState({}, "", "/zh/ai?ctx=spot&ct=我编的篇章");
+    vi.stubGlobal("fetch", mockFetch("章节回答", "现货基础"));
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    // 还没有任何一次回答：这一屏不许替服务端断言「正在基于某篇章回答」
+    expect(screen.queryByText(/篇章已作为参考上下文带上/)).not.toBeInTheDocument();
+
+    const ask = [...container.querySelectorAll("button")].find((b) =>
+      SUGGESTED_QUESTIONS_ZH.includes(b.textContent ?? ""),
+    )!;
+    fireEvent.click(ask);
+    await screen.findByText("章节回答");
     expect(
-      await screen.findByText("📖 正在基于《现货基础》篇章回答"),
+      screen.getByText("📖 《现货基础》篇章已作为参考上下文带上"),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/我编的篇章/)).not.toBeInTheDocument();
     window.history.replaceState({}, "", "/zh/ai");
   });
 
-  it("ctx 无 ct 时自动提问携带 contextChapter，不展示上下文横幅", async () => {
+  it("服务端没回带篇章（slug 认不出来）时，这条横幅根本不出现", async () => {
+    window.history.replaceState({}, "", "/zh/ai?ctx=not-a-chapter&ct=现货基础");
+    vi.stubGlobal("fetch", mockFetch("无上下文回答"));
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    const ask = [...container.querySelectorAll("button")].find((b) =>
+      SUGGESTED_QUESTIONS_ZH.includes(b.textContent ?? ""),
+    )!;
+    fireEvent.click(ask);
+    await screen.findByText("无上下文回答");
+    expect(screen.queryByText(/篇章已作为参考上下文带上/)).not.toBeInTheDocument();
+    window.history.replaceState({}, "", "/zh/ai");
+  });
+
+  it("自动提问携带 contextChapter，横幅等服务端确认后才出现", async () => {
     window.history.replaceState({}, "", "/zh/ai?ctx=spot&q=带章节问题");
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      void init;
       if (url === "/api/ai/conversations")
         return {
           ok: true,
@@ -970,10 +1011,18 @@ describe("AiChat 追问链与课程上下文（R3.4/R3.7）", () => {
           json: async () => ({ messages: [] }),
         } as Response;
       if (url === "/api/ai/chat") {
+        expect(JSON.parse(String((init as RequestInit).body))).toMatchObject({
+          contextChapter: "spot",
+        });
         return {
           ok: true,
           status: 200,
-          headers: { get: () => null },
+          headers: {
+            get: (key: string) =>
+              key === "X-Context-Chapter"
+                ? encodeURIComponent("现货基础")
+                : null,
+          },
           body: makeStreamBody("带章节回答"),
         } as unknown as Response;
       }
@@ -982,18 +1031,7 @@ describe("AiChat 追问链与课程上下文（R3.4/R3.7）", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(<AiChat locale="zh" dict={dict} />);
 
-    await screen.findByText("带章节问题");
-    await screen.findByText("带章节回答");
-    const chatCall = fetchMock.mock.calls.find(
-      ([url]) => url === "/api/ai/chat",
-    )?.[1] as RequestInit;
-    expect(JSON.parse(chatCall.body as string)).toMatchObject({
-      messages: [{ role: "user", content: "带章节问题" }],
-      contextChapter: "spot",
-    });
-    expect(
-      screen.queryByText("📖 正在基于《现货基础》篇章回答"),
-    ).not.toBeInTheDocument();
+    await screen.findByText("📖 《现货基础》篇章已作为参考上下文带上");
     window.history.replaceState({}, "", "/zh/ai");
   });
 });
@@ -1501,13 +1539,16 @@ describe("AiChat 初始化历史、自动提问与边界响应", () => {
         return {
           ok: true,
           status: 200,
-          headers: { get: () => null },
+          headers: {
+            get: (key: string) =>
+              key === "X-Context-Chapter" ? encodeURIComponent("期货基础") : null,
+          },
           body: makeStreamBody("自动回答"),
         } as unknown as Response;
       }
       throw new Error(`unexpected fetch: ${url}`);
     });
-    window.history.replaceState({}, "", "/zh/ai?q=自动提问&ctx=futures&ct=期货基础");
+    window.history.replaceState({}, "", "/zh/ai?q=自动提问&ctx=futures");
     vi.stubGlobal("fetch", fetchMock);
 
     render(<AiChat locale="zh" dict={dict} />);
@@ -1525,19 +1566,23 @@ describe("AiChat 初始化历史、自动提问与边界响应", () => {
       { role: "assistant", content: "历史回答" },
       { role: "user", content: "自动提问" },
     ]);
-    expect(screen.getByText(/正在基于《期货基础》篇章回答/)).toBeInTheDocument();
+    expect(
+      screen.getByText("📖 《期货基础》篇章已作为参考上下文带上"),
+    ).toBeInTheDocument();
   });
 
   it("无云端历史且 URL 有 q 时自动发送该问题并携带上下文", async () => {
-    window.history.replaceState({}, "", "/zh/ai?q=什么是杠杆&ctx=futures&ct=期货基础");
-    const fetchMock = mockFetch("上下文回答");
+    window.history.replaceState({}, "", "/zh/ai?q=什么是杠杆&ctx=futures");
+    const fetchMock = mockFetch("上下文回答", "期货基础");
     vi.stubGlobal("fetch", fetchMock);
 
     render(<AiChat locale="zh" dict={dict} />);
     await screen.findByText("上下文回答");
 
     expect(screen.getByText("什么是杠杆")).toBeInTheDocument();
-    expect(screen.getByText(/正在基于《期货基础》篇章回答/)).toBeInTheDocument();
+    expect(
+      screen.getByText("📖 《期货基础》篇章已作为参考上下文带上"),
+    ).toBeInTheDocument();
     const chatCalls = fetchMock.mock.calls.filter((args) => args[0] === "/api/ai/chat");
     expect(chatCalls).toHaveLength(1);
     const body = JSON.parse((chatCalls[0][1] as RequestInit).body as string);
