@@ -44,7 +44,7 @@ describe("ChapterCompleteCelebration (R12.18)", () => {
   it("shows neutral localized copy when mounted on a just-completed chapter, never when incomplete", async () => {
     // 未完成：挂载不庆祝
     store.set("tb-progress", JSON.stringify({ "getting-started": ["a"] }));
-    const first = render(<ChapterCompleteCelebration chapterSlug="getting-started" docCount={2} locale="zh" />);
+    const first = render(<ChapterCompleteCelebration chapterSlug="getting-started" docSlugs={["a", "b"]} locale="zh" />);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     first.unmount();
 
@@ -52,7 +52,7 @@ describe("ChapterCompleteCelebration (R12.18)", () => {
     // 庆祝，但文案只肯定学习完成
     store.set("tb-progress", JSON.stringify({ "getting-started": ["a", "b"] }));
     seedCompletion("getting-started", "b", Date.now());
-    render(<ChapterCompleteCelebration chapterSlug="getting-started" docCount={2} locale="zh" />);
+    render(<ChapterCompleteCelebration chapterSlug="getting-started" docSlugs={["a", "b"]} locale="zh" />);
     expect(screen.getByRole("status")).toHaveTextContent("篇章完成！");
     expect(screen.queryByText(/盈利|收益|赚|胜率|profit|gain|return/i)).not.toBeInTheDocument();
 
@@ -72,14 +72,14 @@ describe("ChapterCompleteCelebration (R12.18)", () => {
       "b",
       Date.now() - CELEBRATION_FRESH_WINDOW_MS - 60_000,
     );
-    render(<ChapterCompleteCelebration chapterSlug="getting-started" docCount={2} locale="zh" />);
+    render(<ChapterCompleteCelebration chapterSlug="getting-started" docSlugs={["a", "b"]} locale="zh" />);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   // 登录换设备时进度会从云端补回来，本机却没有阅读时间戳——那不是在设备上刚读完的
   it("云端同步来、本机没有阅读记录的进度不庆祝", () => {
     store.set("tb-progress", JSON.stringify({ "getting-started": ["a", "b"] }));
-    render(<ChapterCompleteCelebration chapterSlug="getting-started" docCount={2} locale="zh" />);
+    render(<ChapterCompleteCelebration chapterSlug="getting-started" docSlugs={["a", "b"]} locale="zh" />);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
@@ -88,7 +88,7 @@ describe("ChapterCompleteCelebration (R12.18)", () => {
   it("窗口内（10 分钟前刚读完）仍然庆祝", () => {
     store.set("tb-progress", JSON.stringify({ "getting-started": ["a", "b"] }));
     seedCompletion("getting-started", "b", Date.now() - 9 * 60_000);
-    render(<ChapterCompleteCelebration chapterSlug="getting-started" docCount={2} locale="zh" />);
+    render(<ChapterCompleteCelebration chapterSlug="getting-started" docSlugs={["a", "b"]} locale="zh" />);
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
@@ -98,7 +98,7 @@ describe("ChapterCompleteCelebration (R12.18)", () => {
   it("存储值不是数组时不庆祝（不是这一章读完了，是数据坏了）", () => {
     store.set("tb-progress", JSON.stringify({ "getting-started": "ab" }));
     seedCompletion("getting-started", "b", Date.now());
-    render(<ChapterCompleteCelebration chapterSlug="getting-started" docCount={2} locale="zh" />);
+    render(<ChapterCompleteCelebration chapterSlug="getting-started" docSlugs={["a", "b"]} locale="zh" />);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
@@ -107,14 +107,48 @@ describe("ChapterCompleteCelebration (R12.18)", () => {
   it("0 课的篇章不庆祝", () => {
     store.set("tb-progress", JSON.stringify({ "getting-started": [] }));
     seedCompletion("getting-started", "removed-lesson", Date.now());
-    render(<ChapterCompleteCelebration chapterSlug="getting-started" docCount={0} locale="zh" />);
+    render(<ChapterCompleteCelebration chapterSlug="getting-started" docSlugs={[]} locale="zh" />);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  // R16.122：封顶挡不住「旧键顶上新课数」。改课留下的废键 + 只读了两篇真课时，
+  // 同一页课文清单勾着 2/7，礼花却按 7/7 放——清单看得见课表，所以庆祝也必须按课表数。
+  it("存储里有废键顶出的『满读数』时不庆祝", () => {
+    store.set(
+      "tb-progress",
+      JSON.stringify({ "getting-started": ["a", "b", "旧-1", "旧-2", "旧-3"] }),
+    );
+    seedCompletion("getting-started", "旧-3", Date.now());
+    render(
+      <ChapterCompleteCelebration
+        chapterSlug="getting-started"
+        docSlugs={["a", "b", "c", "d", "e", "f", "g"]}
+        locale="zh"
+      />
+    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("把废键换成第 7 篇真课的键之后才庆祝", () => {
+    store.set(
+      "tb-progress",
+      JSON.stringify({ "getting-started": ["a", "b", "c", "d", "e", "f", "g"] }),
+    );
+    seedCompletion("getting-started", "g", Date.now());
+    render(
+      <ChapterCompleteCelebration
+        chapterSlug="getting-started"
+        docSlugs={["a", "b", "c", "d", "e", "f", "g"]}
+        locale="zh"
+      />
+    );
+    expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
   it("auto-dismisses after the animation window", async () => {
     store.set("tb-progress", JSON.stringify({ c: ["a"] }));
     seedCompletion("c", "a", Date.now());
-    render(<ChapterCompleteCelebration chapterSlug="c" docCount={1} locale="en" />);
+    render(<ChapterCompleteCelebration chapterSlug="c" docSlugs={["a"]} locale="en" />);
     expect(screen.getByRole("status")).toHaveTextContent("Chapter complete!");
     await act(async () => {
       vi.advanceTimersByTime(3100);

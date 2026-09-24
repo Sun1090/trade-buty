@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { readProgress, readProgressCompletions } from "@/lib/progress";
-import { readDocsForChapter } from "@/lib/learning-overview";
+import { readDocsInChapter } from "@/lib/learning-overview";
 
 /**
  * 篇章完成庆祝：检测从「未完成→完成」的过渡，弹出 emoji confetti。
@@ -29,22 +29,27 @@ export const CELEBRATION_EMOJIS = ["🎉", "📖", "✨", "✅", "📚", "🎓"]
 
 export function ChapterCompleteCelebration({
   chapterSlug,
-  docCount,
+  docSlugs,
   locale = "zh",
 }: {
   chapterSlug: string;
-  docCount: number;
+  /** 这一章现在真有的课文——礼花只数这些，旧键不算 */
+  docSlugs: readonly string[];
   locale?: string;
 }) {
   const [show, setShow] = useState(false);
   const prevDoneRef = useRef(false);
+  // 数组 prop 每次渲染都是新身份，进依赖会让 effect 每帧重跑；比较用拼接串
+  const slugKey = docSlugs.join("|");
 
   useEffect(() => {
-    // 已读数与「是否读完本章」一律走全站唯一口径 readDocsForChapter + readProgress()：
-    // 直接 JSON.parse 原始存储会把非数组值（字符串也有 `.length`）与重复键算成已读，
-    // 于是礼花在别处都显示 0/2 的场合宣布「篇章完成！」。
-    const read = readDocsForChapter(readProgress()[chapterSlug], docCount);
-    const done = docCount > 0 && read >= docCount;
+    // 已读数与「是否读完本章」走 readDocsInChapter：存储键 ∩ 这一章现在真有的课。
+    // 只封顶（readDocsForChapter）挡不住旧键顶数：5 个废键 + 2 篇真课 = 封顶 7/7，
+    // 于是同一页课文清单勾着 2/7、礼花却在喊「篇章完成！」。
+    // 直接 JSON.parse 原始存储更不行：字符串也有 `.length`，重复键也照算。
+    const current = slugKey === "" ? [] : slugKey.split("|");
+    const read = readDocsInChapter(readProgress()[chapterSlug], current);
+    const done = current.length > 0 && read >= current.length;
     const lastAt = Object.values(readProgressCompletions())
       .filter((entry) => entry.chapter === chapterSlug)
       .reduce((newest, entry) => Math.max(newest, entry.at ?? 0), 0);
@@ -57,7 +62,7 @@ export function ChapterCompleteCelebration({
       return () => clearTimeout(t);
     }
     prevDoneRef.current = done;
-  }, [chapterSlug, docCount]);
+  }, [chapterSlug, slugKey]);
 
   if (!show) return null;
 

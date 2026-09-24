@@ -14,8 +14,11 @@ import { getTotalStudySeconds } from "./study-time";
 import { readDocsForChapter } from "./learning-overview";
 
 /**
- * R4.10：已读口径的唯一实现——统计页（aggregateStats）、学习路线页（PathGlobalProgress）
+ * R4.10：聚合面的已读口径——统计页（aggregateStats）、学习路线页（PathGlobalProgress）
  * 与首页完成计数（GlobalReadStat）共用，保证三处「已读/完成度」永远一致。
+ *
+ * 这里按篇章封顶（`readDocsForChapter`）而不是按课表取交集：这三处只拿到每章的课数，
+ * 拿不到 slug 列表。知道课表的界面（课文清单、侧栏、篇章礼花）走 `readDocsInChapter`。
  */
 export function readSummary(
   progress: Record<string, unknown[]>,

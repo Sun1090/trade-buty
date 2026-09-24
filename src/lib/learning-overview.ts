@@ -100,10 +100,31 @@ export function buildLearningOverview(input: LearningOverviewInput): LearningOve
 }
 
 /**
- * 单个篇章「已读几篇」的唯一口径：去重 + 以篇章现有课数封顶。
+ * 「这一章现在真有的课里，已读几篇」的严格口径：存储键 ∩ 章内课表。
  *
- * 封顶不是美化，是纠错：知识库改课后 slug 会换，localStorage 与云端合并回来的旧键
- * 仍挂在这个篇章下，按原始长度算就会出现「已读 6/4 篇」「完成度 150%」这种不存在的数。
+ * 用于**手上拿得到课表**的地方：课文清单的勾选数、侧栏进度、篇章完成的礼花。
+ * 它们必须与清单上勾了哪几篇一模一样——封顶（下面的 `readDocsForChapter`）挡不住
+ * 「旧键顶上新课数」：改课留下 5 个废键 + 只读了 2 篇真课时，封顶照样给 7/7，
+ * 于是同一页清单写着 2/7、礼花却喊「篇章完成！」。
+ */
+export function readDocsInChapter(
+  stored: readonly unknown[] | undefined,
+  currentSlugs: readonly string[]
+): number {
+  if (!stored) return 0;
+  const set = new Set(
+    stored.filter((slug): slug is string => typeof slug === "string" && slug.length > 0)
+  );
+  return currentSlugs.reduce((n, slug) => (set.has(slug) ? n + 1 : n), 0);
+}
+
+/**
+ * 聚合面的封顶口径：只知道「这一章有几篇」（docCount）、拿不到课表时，
+ * 去重后按课数封顶。统计页、路线页总进度、PathProgress 用它——
+ * 那些界面上一屏之内没有课文清单可对照，封顶就足以挡住「已读 6/4 篇」「完成度 150%」。
+ *
+ * 它不是「已读几篇」的唯一口径：知道课表的地方一律用 `readDocsInChapter`，
+ * 否则同一屏会给出两个答案（R16.122）。
  */
 export function readDocsForChapter(docSlugs: readonly unknown[] | undefined, docCount: number): number {
   if (!docSlugs) return 0;
