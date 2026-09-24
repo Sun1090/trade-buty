@@ -8,6 +8,7 @@ import {
   prepareForRender,
 } from "@/lib/content";
 import { knowledgeHref } from "@/lib/hrefs";
+import { stageOfChapter } from "@/lib/path";
 import { QUIZZES } from "@/lib/quizzes";
 import { suggestFromPath } from "@/lib/url-suggest";
 import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
@@ -88,6 +89,7 @@ export default async function ChapterPage({
     );
   }
   const docs = getDocMetas(locale, slug);
+  const stage = stageOfChapter(slug);
   const { chapter, introContent } = data;
   const { next: nextChapter } = getAdjacentChapters(locale, slug);
   const showRiskWarningFallback = shouldShowRiskWarningFallback(introContent);
@@ -136,9 +138,13 @@ export default async function ChapterPage({
           aria-hidden
         />
         <div className="relative">
-          <p className="text-xs font-mono text-accent uppercase tracking-widest">
-            {t.chapter.progressLabel}
-          </p>
+          {/* 眉标说这一篇属于哪一阶段（与 /path 同一张分层表）；
+              进度在本页的课文清单上，不在这个只有标题和导语的区块里谎称 */}
+          {stage && (
+            <p className="text-xs font-mono text-accent uppercase tracking-widest">
+              {t.path.stages[stage].label} · {t.path.stages[stage].title}
+            </p>
+          )}
           <h1 className="mt-2 text-2xl sm:text-3xl font-bold">{chapter.title}</h1>
           <p className="mt-2 text-sm text-muted leading-relaxed">
             {chapter.tagline}

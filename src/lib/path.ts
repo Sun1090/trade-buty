@@ -23,6 +23,14 @@ export const STAGES: Stage[] = [
   },
 ];
 
+/**
+ * 某一篇章属于哪一阶段；没登记进分层表就是 `null`。
+ * `/path` 按表分组展示，篇章页的眉标也问同一处——不另立一套归属。
+ */
+export function stageOfChapter(slug: string): StageKey | null {
+  return STAGES.find((s) => s.chapterNums.includes(slug))?.id ?? null;
+}
+
 export function getStageGroups(
   locale: string
 ): {
