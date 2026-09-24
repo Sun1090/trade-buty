@@ -69,7 +69,7 @@ const quizzes: ChapterQuiz[] = [
 ];
 
 const dict = {
-  title: "错题本", intro: "说明", label: "错题", showAnswer: "看答案",
+  title: "错题本", label: "错题", showAnswer: "看答案",
   yourPick: "你选", correctPick: "正确", resolved: "已掌握", empty: "空空如也",
   emptyHint: "去做测验", browseCta: "浏览课程",
 };
