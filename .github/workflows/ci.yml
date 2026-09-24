@@ -100,6 +100,8 @@ jobs:
         run: npm run check:translation-history
       - name: 关键章节英文 parity 预算（R10.20）
         run: npm run check:kb-parity-budget
+      - name: 英文树内容实测（R16.13）
+        run: npm run check:kb-en-content
       - name: 新章节 dry-run 冒烟（R10.16）
         run: |
           mkdir -p /tmp/draft-ch/demo
