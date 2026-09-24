@@ -32,6 +32,7 @@ export default async function SearchPage({
   const clientDict = {
     placeholder: search.placeholder,
     noResults: search.noResults,
+    loading: search.loading,
     resultsTpl: search.resultsTpl,
     emptyHint: search.emptyHint,
     browseCta: search.browseCta,

@@ -33,6 +33,7 @@ export function SearchClient({
     placeholder: string;
     resultsTpl: string;
     noResults: string;
+    loading: string;
     emptyHint: string;
     browseCta: string;
     recentLabel: string;
@@ -75,6 +76,22 @@ export function SearchClient({
     return () => clearTimeout(t);
   }, [query]);
 
+  /**
+   * 每条页面都嵌了 `SearchAction`（`/search?q={search_term_string}`，`src/lib/jsonld.ts`），
+   * 搜索引擎据此送来的链接是带着查询词的；这个组件此前从不去读它，于是那条承诺把人送到
+   * 一个空输入框前面。首帧不能读 URL（SSG 出来的那一帧对所有访客都一样），所以水合后
+   * 立刻把它接进输入框——与 AI 页读 `?q=` 的做法同一条路径。
+   */
+  useEffect(() => {
+    const incoming = new URLSearchParams(window.location.search).get("q")?.trim();
+    if (!incoming) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setQuery(incoming);
+    setSuggestOpen(true);
+    void loadIndex();
+    // 只在挂载时读一次：之后用户改输入框不该被 URL 拽回去（本页不写 URL）。
+  }, []);
+
   const saveRecent = useCallback((q: string) => {
     const trimmed = q.trim();
     if (!trimmed) return;
@@ -116,7 +133,7 @@ export function SearchClient({
   /**
    * 按篇章筛选的全部命中——**必须先筛选、后截断**。
    * 反过来做（先切前 20 条再按篇章过滤）会让排在第 21 位之后的命中永远翻不到，
-   * 页头还会对着确实存在的结果说「该篇章暂无匹配」。
+   * 页头还会对着确实存在的结果说「这篇里没有匹配」。
    */
   const chapterMatches = useMemo(() => {
     if (!filterChapter) return results;
@@ -268,7 +285,7 @@ export function SearchClient({
         />
         {!query && (
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 rounded border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-xs text-faint font-mono">
-            ⌘K
+            ⌘K / Ctrl K
           </kbd>
         )}
         {suggestOpen && suggestions.length > 0 && (
@@ -351,7 +368,10 @@ export function SearchClient({
         </div>
       )}
       {query.trim() && results.length > 0 && filtered.length === 0 && (
-        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm text-muted">
+        <div
+          data-testid="search-filter-zero"
+          className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm text-muted"
+        >
           <span>
             {dict.filterZeroTpl
               .replace("{chapter}", filterChapter)
@@ -381,7 +401,17 @@ export function SearchClient({
           </button>
         </div>
       )}
-      {query.trim() && !indexError && results.length === 0 && (
+      {query.trim() && !indexError && !entries && (
+        <p
+          data-testid="search-index-loading"
+          className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center text-sm text-muted"
+        >
+          {dict.loading}
+        </p>
+      )}
+      {/* entries 还没到位时不判「没有匹配」：索引是 1.8 MB 的异步下载，
+          在这一帧说「无结果」对任何有命中的词都是一句假话。 */}
+      {query.trim() && !indexError && entries && results.length === 0 && (
         <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center">
           <p className="text-3xl" aria-hidden>🔍</p>
           <p className="mt-3 font-medium">{dict.noResults}</p>

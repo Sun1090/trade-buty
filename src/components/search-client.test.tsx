@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { SearchClient } from "./search-client";
+import { getDict } from "@/lib/i18n";
 
 const { mockPush, pathnameState } = vi.hoisted(() => ({
   mockPush: vi.fn(),
@@ -36,6 +37,7 @@ const dict = {
   placeholder: "搜索课程",
   resultsTpl: "{n} 条结果",
   noResults: "没有匹配的结果",
+  loading: "搜索索引加载中…",
   emptyHint: "换个关键词试试，或者从学习路线开始。",
   browseCta: "从学习路线开始 →",
   recentLabel: "最近搜索",
@@ -43,8 +45,9 @@ const dict = {
   didYouMean: "你是不是想找",
   triedSynTpl: "已按同义说法搜索：{terms}",
   gapHint: "该主题可能尚未收录。",
-  filterZeroTpl: "「{chapter}」暂无匹配，站内共有 {n} 条相关结果",
-  filterZeroCta: "查看全部结果",
+  // 这两条取自真实字典：夹具用第三种写法，断言就永远对不上上线的那句（R16.151）
+  filterZeroTpl: getDict("zh").search.filterZeroTpl,
+  filterZeroCta: getDict("zh").search.filterZeroCta,
   filterLabel: "按篇章筛选",
   indexError: "搜索索引暂时加载失败，请检查网络后重试。",
   retry: "重试",
@@ -330,7 +333,7 @@ describe("SearchClient pagination and filtering", () => {
       chapter: i === 22 ? "late" : "spot",
       text: `保证金 第 ${i} 条`,
     })),
-    // 索引里存在的篇章，但对本次查询一条都不命中——真正的「该篇章暂无匹配」
+    // 索引里存在的篇章，但对本次查询一条都不命中——真正的「这篇里没有匹配」
     { url: "/zh/knowledge/empty/01", title: "空篇章课程", chapter: "empty", text: "与本查询无关" },
   ];
 
@@ -366,7 +369,7 @@ describe("SearchClient pagination and filtering", () => {
 
   /**
    * 筛选必须发生在截断之前：命中的那一行排在第 21 位之后时，
-   * 旧实现会对着确实存在的结果说「该篇章暂无匹配」，而且翻页也翻不到。
+   * 旧实现会对着确实存在的结果说「这篇里没有匹配」，而且翻页也翻不到。
    */
   it("reaches a chapter's matches even when they rank past the first page", async () => {
     render(<SearchClient dict={dict} />);
@@ -376,7 +379,7 @@ describe("SearchClient pagination and filtering", () => {
     fireEvent.change(filter, { target: { value: "late" } });
 
     await waitFor(() => expect(screen.getByText("1 条结果")).toBeInTheDocument());
-    expect(screen.queryByText(/暂无匹配/)).toBeNull();
+    expect(screen.queryByTestId("search-filter-zero")).toBeNull();
     const rows = document.querySelectorAll("a[data-search-result-index]");
     expect(rows).toHaveLength(1);
     expect(rows[0]).toHaveAttribute("href", "/zh/knowledge/ch22/22");
@@ -392,7 +395,12 @@ describe("SearchClient pagination and filtering", () => {
 
     await waitFor(() => expect(screen.getByText(dict.filterZeroCta)).toBeInTheDocument());
     expect(document.querySelectorAll("a[data-search-result-index]")).toHaveLength(0);
-    expect(screen.getByText(/「empty」暂无匹配/)).toBeInTheDocument();
+    // 断言的是字典里那一句代入 chapter 与命中数之后的原文，不是夹具的另一套写法
+    expect(
+      within(screen.getByTestId("search-filter-zero")).getByText(
+        dict.filterZeroTpl.replace("{chapter}", "empty").replace("{n}", "23"),
+      ),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByText(dict.filterZeroCta));
     expect(document.querySelectorAll("a[data-search-result-index]")).toHaveLength(20);
@@ -630,5 +638,87 @@ describe("SearchClient 按语言分区（R16.85）", () => {
     expect(rows).toHaveLength(2);
     for (const row of rows) expect(row.getAttribute("href")).toMatch(/^\/en\//);
     expect(screen.queryByText("订单类型")).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * 搜索页上两处「还没知道就开口」的状态：
+ * ① 索引是一份 1.8 MB 的异步下载（`public/search-index.json`，`public/sw.js` 明确不缓存它），
+ *    下载完成之前 `results` 恒为 `[]`。空结果卡片此前只看「有没有输入」和「有没有报错」，
+ *    于是它对任何有命中的词先喊一句「没有匹配的结果」。
+ * ② 每条页面都嵌着 `SearchAction`（`/search?q={search_term_string}`，`src/lib/jsonld.ts`），
+ *    而这个组件此前从不读那个参数：按承诺送来的链接落地是一个空输入框。
+ */
+describe("SearchClient 索引未到位的一帧，与 ?q= 深链", () => {
+  const HITS = [
+    { url: "/zh/knowledge/spot/stop-loss", title: "止损", chapter: "05 · 现货篇", text: "止损单 固定损失" },
+  ];
+
+  beforeEach(() => {
+    storage.clear();
+    pathnameState.path = "/zh/search";
+    history.replaceState(null, "", "/zh/search");
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    history.replaceState(null, "", "/");
+  });
+
+  it("索引还在下载的那一帧印「加载中」，不印「没有匹配的结果」", async () => {
+    let release: ((value: unknown) => void) | null = null;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() => new Promise((resolve) => { release = resolve; })),
+    );
+    render(<SearchClient dict={dict} />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "止损" } });
+
+    expect(await screen.findByTestId("search-index-loading")).toHaveTextContent(dict.loading);
+    expect(screen.queryByText(dict.noResults)).toBeNull();
+    expect(screen.queryByTestId("search-empty-cta")).toBeNull();
+
+    await act(async () => {
+      release!({ ok: true, json: async () => HITS });
+    });
+    // 结果标题被 <mark> 高亮过，按文本数会撞两次，所以数的是结果那一行
+    await waitFor(() =>
+      expect(document.querySelectorAll("a[data-search-result-index]")).toHaveLength(1),
+    );
+    expect(screen.queryByTestId("search-index-loading")).toBeNull();
+  });
+
+  it("索引到位之后，只有真的没命中才说「没有匹配的结果」", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => HITS }));
+    render(<SearchClient dict={dict} />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "查无此词" } });
+
+    expect(await screen.findByText(dict.noResults)).toBeInTheDocument();
+    expect(screen.queryByTestId("search-index-loading")).toBeNull();
+  });
+
+  /**
+   * 输入框右侧那颗提示chip此前只写 ⌘K，而 `search-hotkey.tsx` 两个修饰键都接
+   * （`e.metaKey || e.ctrlKey`），`search-hotkey.test.tsx` 还专门有一条「Ctrl+K（Windows/Linux）同样跳转」。
+   * 对着非 Mac 键盘印一个 Mac 才有的键，等于把这条快捷键对一半访客说错。
+   */
+  it("快捷键提示把处理器真接的两个修饰键都写出来", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    render(<SearchClient dict={dict} />);
+    const hint = document.querySelector("kbd")?.textContent ?? "";
+    expect(hint, "旧写法只印 ⌘K，Windows/Linux 访客按它找不到键").toContain("⌘");
+    expect(hint).toContain("Ctrl");
+  });
+
+  it("SearchAction 承诺的 ?q= 真的被搜出来", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => HITS }));
+    history.replaceState(null, "", "/zh/search?q=%E6%AD%A2%E6%8D%9F");
+    render(<SearchClient dict={dict} />);
+
+    await waitFor(() => expect(screen.getByRole("searchbox")).toHaveValue("止损"));
+    await waitFor(() =>
+      expect(document.querySelectorAll("a[data-search-result-index]")).toHaveLength(1),
+    );
+    expect(screen.queryByText(dict.noResults)).toBeNull();
   });
 });
