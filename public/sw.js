@@ -10,8 +10,8 @@
  * returning visitors keep serving the previous copy from the old cache.
  * src/lib/service-worker.test.ts guards the structure of this file.
  */
-// OFFLINE_PAGE_SHA256: 61b54494d4703862fa1162f9112305b692df5b978641bb5831a17cc56626259d
-const CACHE_VERSION = "trade-buty-offline-v3";
+// OFFLINE_PAGE_SHA256: 04745b3b02c211d41d5d99e75bfaf69c9b5503c6431962ad380f740639e51b68
+const CACHE_VERSION = "trade-buty-offline-v4";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
