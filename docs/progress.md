@@ -6755,3 +6755,75 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 落地过程：#289 在本批推送期间以 rebase 合入 main（头 `92f7ef5`，其中 `e1f2871` 那笔把「两轮探查各 0 条发现」的错账订正到底），本分支随即 rebase 到它上面——`docs/roadmap.md`、`docs/progress.md` 两处尾部冲突按「两段都留」解决，`src/lib/i18n.ts` 与课文页 `page.tsx` 因为 #289 也改过而逐字节重算过一遍（两侧改动并存，本批的 +19 行不变），重放后的树跑通 303 文件 / 2975 条。
 - 下一项：#291 等 `ci` 与 `db-tests` 绿后 rebase 合并。可执行的下一条已经排着：把 R16.78 那条线补完（计数型门禁的下限改成「相对上一次入库快照不得下降」），以及第三只眼还没扫过的表面——课程正文渲染管线与 `/path` 的进度条。
 - 更新时间：2026-09-24 19:16（Asia/Shanghai）。
+
+## 2026-09-24 — 课文渲染管线的第十二轮：目录指向不存在的锚点、站内链开新标签、屏幕上印着星号、打印出来没有标题（R16.110–R16.117，#291 → #292）
+
+- 状态：**PR #291 已合并**（`MERGED`，2026-09-24 11:30Z，落 `origin/main` = `d97f3ed`，rebase 无合并提交，
+  头分支由 GitHub 自动删除）；**PR #292 待合并**（分支 `fix/lesson-render-pipeline-claims`，
+  从 `d97f3ed` 切出，六笔：`307b46b` 渲染管线三处 + `563d535` 台账 + `2201e15` 重算报告 +
+  `3424cea` 朗读 + `326b4f0` 门禁自订正 + `98c8cd6` 打印）。
+- 起点是上一轮自己写下的「下一项」：课文正文渲染管线。这一轮把那条线扫完了，六条改掉、
+  两条复核不成立、一条待拍板（R16.117）。
+- 缺陷（全部先在**生产构建产物 / 真实浏览器**里量出偏差，改完复测）：
+  1. **R16.110 目录锚点是死的**：`extractHeadings` 吃没转换过的原文、正文吃 `prepareForRender`
+     之后那份，`<KbBadge t="最基础" />` 变成「【最基础】」后 slug 就变了。364 篇课文页里 8 页
+     带 14 条死锚点（12 条来自目录）。改成一个 `rendered` 两边同源 → 复测只剩 2 条，
+     且那 2 条是课文自己手写的锚点差一个前导 `-`（登记 **R16.114**，修在上游 kline-buty）。
+  2. **R16.111 1009 条站内课文链全部 `target="_blank"` 挂着 ↗**：`isInternal` 认无前缀的
+     `/knowledge`，`rewriteLinks` 吐的是 `/zh/knowledge/…`，`next/link` 那条分支是死代码。
+     旧用例用手写 `/knowledge/spot` 夹具，恰好是生产者不会产出的形状，替 bug 作证；
+     新用例的夹具由 `prepareForRender` 现算，生产者与消费者再也无法各说各话。复测 `_blank` 归零。
+  3. **R16.112 屏幕上印着 1654 处 `**`**：CommonMark 的 flanking 规则不认中文（`的**<mark>杠杆</mark>**交易`、
+     `**「重点」**` 都判不能开启）。挂 `remark-cjk-friendly@2.3.1`（MIT，peer `unified ^11`，
+     与 react-markdown 10 对齐；理由登记 `docs/deps.md`、管线写进 `docs/architecture.md`），
+     降到 24 处 / 17 页，剩下全是课文原文星号本身没配对。锁文件按 CI 钉住的 npm 10.9.4 重生成。
+  4. **R16.113 一条测试标题承诺了组件从未设置的 `decoding=async`**：改成它真正钉住的东西，
+     没有为一个没实测过收益的属性改渲染行为。
+  5. **R16.115 朗读念的是标记本身**：字符黑名单删得掉尖括号、删不掉标记里的字——`<mark>x</mark>`
+     念成「mark x mark」、链接地址照念、表格分隔行念成串冒号。新增 `speechText()`，并把朗读的输入
+     换成正文渲染那一份字符串。按四条判据扫整棵树：旧实现在有 368 篇留收尾标签 / 368 篇留标签名 /
+     422 篇留整行横线，改后 0。
+  6. **R16.116 `globals.css` 注释写着「打印友好」，印出来却没有标题**：`@media print` 整条隐藏
+     `header`，而课文 `<h1>` 正住在页面自己的 hero `<header>` 里；该隐藏的固定侧栏、进度栏、
+     ☰ 浮钮、课文工具条反倒原样上纸（Chromium `emulateMedia(print)` 实测 `H1 visible=false`）。
+     改成外壳各自带 `.no-print`，**没有**用 `aside { display: none }` 偷懒——兜底风险提示也是 `<aside>`，
+     那是内容宪法要求随课文一起印出来的。新增 `e2e/print-surface.spec.ts`（zh/en 各一条）。
+- **两处自我订正（记录以免被当成顺手改）**：
+  ① 第一笔 fix 的提交信息写「188 篇 / 1712 处」，那是第一版扫描的口径（把 `<pre>`/`<code>` 里合法的
+  星号算进分母、且跳过所有 README 章节首页），与最终门禁不是同一个分母；同口径真实数字是
+  **179 篇 / 1654 处**，`563d535` 已把测试注释与台账一起改过来。
+  ② 朗读的第一版噪音判据是照着「新实现删了什么」写的（`\]\(`、完整标签形状），把 `speechText`
+  换回旧黑名单后全树扫描**照样绿**——旧黑名单把 `[`、`]`、`(`、`)`、`>` 一起删了，判据要找的字符串
+  压根不存在。改成认收尾斜杠 / 标签名 / 整行横线这三类与实现无关的形状（`326b4f0`），同一处变异
+  当场报 1158 条命中，还原后 0。
+- 变更文件：`src/components/{markdown,read-aloud,toc,chapter-rail,learning-sidebar}.tsx`、
+  `src/components/{markdown,read-aloud}.test.tsx`、`src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx`、
+  `src/app/[locale]/layout.tsx`、`src/app/globals.css`、`package.json` + `package-lock.json`（新依赖）、
+  `e2e/print-surface.spec.ts`（新增）、`docs/{deps,architecture,ops,roadmap,progress,test-clock-hygiene}.md`。
+- 验证（本地，逐条退出码 0）：`lint`（`--max-warnings=0`）、`typecheck`、`build`（474 页静态产物）、
+  `test`（305 文件 / 2997 条，见下方那条红）、`test:coverage`（语句 95.22%，阈值 84）、`e2e` **162 passed**、`check:lockfile-repro`
+  （985 个包条目无差异）、`check:bundle`、`check:links` / `relative-links` / `nav-chain` /
+  `structured-data` / `sitemap` / `seo-surface` / `changelog` / `docs` / `dead-copy` /
+  `localized-labels` / `test-clock-hygiene` / `secrets` / `ai-copy` / `dark-pattern-copy`、
+  `check:report-freshness`（17 份 · 漂移 0 · 未提交 0）。产物级复测三条数字见上面各条。
+- **一次「读失败的命令，不是读退出码」**：全量测试那次后台任务回报 exit 0，日志里其实是
+  `1 failed | 2996 passed` —— `scripts/e2e-suite.test.mjs` 抓到我把 `e2e/scratch-print.spec.ts`
+  当临时探针文件放了进去而没登记进 `e2e` 清单。删掉探针、登记正式 spec 之后该门禁自然过。
+  这道「新增 spec 忘记登记就静默不进 CI」的门禁本轮第一次抓到我自己的临时文件，说明它是活的。
+- 变异核对六组，各自红在它该红的那条：目录退回原文提取（6 条锚点用例红，逐条点名死链）；
+  撤掉 `INTERNAL_HREF`（3 条，`expected '_blank' to be null`）；摘掉 CJK 插件（全树扫描 1654 > 24）；
+  `speechText` 换回旧黑名单（全树 1158 条命中）；标签正则放宽成 `<[^>]+>`（`A < B 且 C > D` 那条红）；
+  打印这一条不需要人造变异——**修复前的实测就是变异**，两条用例全部以
+  「课文标题必须印得出来 → unexpected value hidden」失败，而第一版判据用 `button:has-text("☰")`
+  被 strict mode 挡下（页面有三颗 ☰），改按容器定位，判据本身没放松。
+- 阻塞 / 风险：`remark-cjk-friendly` 是本轮唯一新增的运行时依赖，它改变的是**解析**而不是内容，
+  风险面是「作者本就想印字面星号」的地方从此变粗体——按整棵树扫过的结果这种写法不存在
+  （剩下的 24 处全是原文星号没配对，插件也动不了它们）。`.no-print` 五处是纯打印媒体样式，
+  屏幕渲染零变化（`e2e/mobile-overflow`、`check:mobile`、`visual` 基线未动）。R16.114 需要上游
+  kline-buty 改两条锚点；R16.117（<1280px 同时挂着内嵌目录与 ☰ 浮动目录）等维护者拍板。
+  生产仍是 0.7.15（0.7.16 排在 Vercel 24h 构建配额后面），本轮不追构建。
+- 下一项：#292 等 `ci` / `db-tests` / CodeQL 绿后 rebase 合并。排队中的下一条：第三只眼还没扫过的
+  `/path` 进度条与学习路径页那一组计数；另有 R16.78 那条线没补完（计数型门禁的下限改成
+  「相对上一次入库快照不得下降」），以及待拍板清单 R15.2 / R16.7 / R16.10–12 / R16.16 / R16.41 /
+  R16.47 / R16.52 / R16.58 / R16.60 / R16.90 / R16.97 / R16.98 / R16.107 / R16.108 / R16.109 / R16.117。
+- 更新时间：2026-09-24 19:58（Asia/Shanghai）。
