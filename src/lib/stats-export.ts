@@ -10,10 +10,12 @@
  * - 对损坏本地数据容错：所有数字来源都经过聚合器/账本读的防崩假体。
  */
 
+import { isLocalDateStr } from "./date-utils";
 import { STUDY_LEDGER_KEEP_DAYS } from "./study-time";
+import { REPLAY_HISTORY_KEEP } from "./replay-history-limit";
 
 export const STATS_EXPORT_FORMAT = "trade-buty-stats-export";
-export const STATS_EXPORT_VERSION = 2 as const;
+export const STATS_EXPORT_VERSION = 3 as const;
 
 /**
  * 字段名自 v1 起冻结（文件头契约 + `stats-export.test.ts` 的叶子路径钉死）。
@@ -23,14 +25,30 @@ export const STATS_EXPORT_VERSION = 2 as const;
  * 是「近 N 天窗口」的合计（台账本来就只留这些）。走文件头写明的迁移通道：改名 + 版本号 +1，
  * 不顺手改也不追加同义键。窗口天数不再藏进键名（那个数会变），改为随行给出
  * `engagement.studyWindowDays`，值取自裁剪台账用的同一个常量。
+ *
+ * **v2 → v3（R16.182）**：v2 里 `replay` 那一层的三个数说的是两个不同的窗口，文件里却一个字
+ * 都没写——`rounds` / `accuracyPct` 数的是本地台账，而这份台账在写入时就按
+ * `REPLAY_HISTORY_KEEP` 裁过（第 101 轮之后 `rounds` 永远停在 100），旁边的 `bestStreak`
+ * 取的却是全量记录。同一族的第二处：`studyWindowDays` 说 90 天，可台账是按**最新有记录的那一天**
+ * 锚定裁剪的，四个月没学习的人拿到的那 90 天并不以导出日结尾。于是改名 `bestStreak` →
+ * `allTimeBestStreak`（全量这件事写进名字），并随行给出两个窗口的边界：`replay.historyRoundCap`
+ * 与 `engagement.studyWindowFirstDay` / `studyWindowLastDay`——三个数都取自裁剪台账用的同一份
+ * 常量和同一份台账，不写死、也不让读者去猜导出日就是窗口尾。
  */
 export interface StatsExportInput {
   locale: string;
   courses: { readDocs: number; totalDocs: number; doneChapters: number; totalChapters: number; completionPct: number };
   quizzes: { done: number; total: number; avgBestPct: number | null };
-  replay: { rounds: number; accuracyPct: number | null; bestStreak: number };
+  replay: { rounds: number; accuracyPct: number | null; allTimeBestStreak: number };
   review: { pending: number; dueToday: number; overdue: number };
-  engagement: { studySeconds: number; currentStreak: number; longestStreak: number };
+  engagement: {
+    studySeconds: number;
+    currentStreak: number;
+    longestStreak: number;
+    /** 台账实际覆盖的头尾两天（`YYYY-MM-DD`）；空台账两头都是 null */
+    studyWindowFirstDay: string | null;
+    studyWindowLastDay: string | null;
+  };
   goals: { dailyGoalMinutes: number };
 }
 
@@ -42,7 +60,10 @@ export interface StatsExportPayload {
   data: {
     courses: StatsExportInput["courses"];
     quizzes: StatsExportInput["quizzes"];
-    replay: StatsExportInput["replay"];
+    replay: StatsExportInput["replay"] & {
+      /** 本地回放台账最多保留的轮数——`rounds` 与 `accuracyPct` 看的都是这一窗 */
+      historyRoundCap: number;
+    };
     review: StatsExportInput["review"];
     engagement: StatsExportInput["engagement"] & {
       /** `studySeconds` 覆盖的天数，取自裁剪台账的同一个常量 */
@@ -55,6 +76,9 @@ export interface StatsExportPayload {
 const clampNonNegative = (n: number): number => (Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0);
 const clampPct = (n: number | null): number | null =>
   n === null || !Number.isFinite(n) ? null : Math.min(100, Math.max(0, Math.round(n)));
+/** 窗口边界只认本地日历日；形状不对就当没有，不在文件里留一个说不清是哪天的字符串 */
+const dayOrNull = (d: string | null): string | null =>
+  typeof d === "string" && isLocalDateStr(d) ? d : null;
 
 /** 构建版本化导出负载（纯函数；时间可注入便于测试） */
 export function buildStatsExport(input: StatsExportInput, now: Date = new Date()): StatsExportPayload {
@@ -79,7 +103,8 @@ export function buildStatsExport(input: StatsExportInput, now: Date = new Date()
       replay: {
         rounds: clampNonNegative(input.replay.rounds),
         accuracyPct: clampPct(input.replay.accuracyPct),
-        bestStreak: clampNonNegative(input.replay.bestStreak),
+        historyRoundCap: REPLAY_HISTORY_KEEP,
+        allTimeBestStreak: clampNonNegative(input.replay.allTimeBestStreak),
       },
       review: {
         pending: clampNonNegative(input.review.pending),
@@ -89,6 +114,8 @@ export function buildStatsExport(input: StatsExportInput, now: Date = new Date()
       engagement: {
         studySeconds: clampNonNegative(input.engagement.studySeconds),
         studyWindowDays: STUDY_LEDGER_KEEP_DAYS,
+        studyWindowFirstDay: dayOrNull(input.engagement.studyWindowFirstDay),
+        studyWindowLastDay: dayOrNull(input.engagement.studyWindowLastDay),
         currentStreak: clampNonNegative(input.engagement.currentStreak),
         longestStreak: clampNonNegative(input.engagement.longestStreak),
       },

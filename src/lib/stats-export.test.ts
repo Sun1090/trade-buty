@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
+import { REPLAY_HISTORY_KEEP } from "./replay-history-limit";
 import { STUDY_LEDGER_KEEP_DAYS } from "./study-time";
 import {
   STATS_EXPORT_FORMAT,
@@ -13,9 +14,17 @@ const fullInput = {
   locale: "zh",
   courses: { readDocs: 8, totalDocs: 20, doneChapters: 2, totalChapters: 5, completionPct: 40 },
   quizzes: { done: 3, total: 5, avgBestPct: 90 },
-  replay: { rounds: 12, accuracyPct: 67, bestStreak: 6 },
+  replay: { rounds: 12, accuracyPct: 67, allTimeBestStreak: 6 },
   review: { pending: 4, dueToday: 2, overdue: 1 },
-  engagement: { studySeconds: 7500, currentStreak: 3, longestStreak: 9 },
+  // 尾日刻意落在导出日（2026-09-11）之前：这就是 R16.182 那处——台账锚在最后一条记录那天，
+  // 一份四个月没学习的人的文件里的「近 90 天」并不是「今天往前 90 天」。
+  engagement: {
+    studySeconds: 7500,
+    currentStreak: 3,
+    longestStreak: 9,
+    studyWindowFirstDay: "2026-05-02",
+    studyWindowLastDay: "2026-06-30",
+  },
   goals: { dailyGoalMinutes: 20 },
 };
 
@@ -55,7 +64,7 @@ describe("buildStatsExport", () => {
     const payload = buildStatsExport(fullInput, new Date("2026-09-11T12:00:00Z"));
     const paths = leafPaths(payload as unknown as Record<string, unknown>);
 
-    expect(paths.length, "清单本身不能是空的").toBeGreaterThanOrEqual(23);
+    expect(paths.length, "清单本身不能是空的").toBeGreaterThanOrEqual(26);
     expect(paths).toEqual([
       "data.courses.completionPct",
       "data.courses.doneChapters",
@@ -66,12 +75,15 @@ describe("buildStatsExport", () => {
       "data.engagement.longestStreak",
       "data.engagement.studySeconds",
       "data.engagement.studyWindowDays",
+      "data.engagement.studyWindowFirstDay",
+      "data.engagement.studyWindowLastDay",
       "data.goals.dailyGoalMinutes",
       "data.quizzes.avgBestPct",
       "data.quizzes.done",
       "data.quizzes.total",
       "data.replay.accuracyPct",
-      "data.replay.bestStreak",
+      "data.replay.allTimeBestStreak",
+      "data.replay.historyRoundCap",
       "data.replay.rounds",
       "data.review.dueToday",
       "data.review.overdue",
@@ -81,9 +93,11 @@ describe("buildStatsExport", () => {
       "locale",
       "version",
     ]);
-    expect(STATS_EXPORT_VERSION, "再改名要连着版本一起决策").toBe(2);
+    expect(STATS_EXPORT_VERSION, "再改名要连着版本一起决策").toBe(3);
     // 窗口天数取自裁剪台账的同一个常量：把 90 写死在导出里，改窗口就没人发现
     expect(payload.data.engagement.studyWindowDays).toBe(STUDY_LEDGER_KEEP_DAYS);
+    // 回放那一窗同理：`rounds` / `accuracyPct` 至多数这么多个最近轮次，上限随行给出
+    expect(payload.data.replay.historyRoundCap).toBe(REPLAY_HISTORY_KEEP);
   });
 
   it("sanitizes corrupt numeric inputs and nullable percentages", () => {
@@ -110,6 +124,44 @@ describe("buildStatsExport", () => {
     const payload = buildStatsExport(input);
     expect(payload.data.quizzes.avgBestPct).toBeNull();
     expect(payload.locale).toBe("zh");
+  });
+
+  /**
+   * R16.182：文件里那两个窗口得自己说清自己。`studyWindowDays = 90` 只说了跨度，
+   * 没说这一窗锚在哪一天——四个月没学习的人看到 `exportedAt = 今天` 会以为
+   * `studySeconds` 覆盖的是「今天往前 90 天」，而那正是假的。
+   */
+  it("学习时长那一窗点名头尾两天，导出日不被当成窗口尾", () => {
+    const payload = buildStatsExport(fullInput, new Date("2026-09-11T12:00:00Z"));
+    expect(payload.exportedAt).toBe("2026-09-11T12:00:00.000Z");
+    expect(payload.data.engagement.studyWindowFirstDay).toBe("2026-05-02");
+    expect(payload.data.engagement.studyWindowLastDay).toBe("2026-06-30");
+    // 尾日不是导出日：这两件事必须各写各的，谁也不替谁推导
+    expect(payload.data.engagement.studyWindowLastDay).not.toBe(payload.exportedAt.slice(0, 10));
+  });
+
+  it("空台账与形状不对的边界日落为 null，不留在文件里", () => {
+    const empty = buildStatsExport({
+      ...fullInput,
+      engagement: {
+        ...fullInput.engagement,
+        studyWindowFirstDay: null,
+        studyWindowLastDay: null,
+      },
+    });
+    expect(empty.data.engagement.studyWindowFirstDay).toBeNull();
+    expect(empty.data.engagement.studyWindowLastDay).toBeNull();
+
+    const malformed = buildStatsExport({
+      ...fullInput,
+      engagement: {
+        ...fullInput.engagement,
+        studyWindowFirstDay: "2026-5-2",
+        studyWindowLastDay: "昨天",
+      },
+    });
+    expect(malformed.data.engagement.studyWindowFirstDay).toBeNull();
+    expect(malformed.data.engagement.studyWindowLastDay).toBeNull();
   });
 
   it("round-trips through JSON without loss", () => {

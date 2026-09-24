@@ -685,7 +685,7 @@ export function StatsClient({
               replay: {
                 rounds: overview.replay.rounds,
                 accuracyPct: overview.replay.accuracyPct,
-                bestStreak: Math.max(replayBestStreak, replayTrend!.allTime.bestStreak),
+                allTimeBestStreak: Math.max(replayBestStreak, replayTrend!.allTime.bestStreak),
               },
               review: {
                 pending: reviewTrend!.latest.pending,
@@ -694,6 +694,9 @@ export function StatsClient({
               },
               engagement: {
                 studySeconds: overview.engagement.totalStudySeconds,
+                // 台账裁剪锚在「最新有记录的那一天」，窗口尾不能拿导出日代替（R16.182）
+                studyWindowFirstDay: stats.studyWindowFirstDay,
+                studyWindowLastDay: stats.studyWindowLastDay,
                 currentStreak: overview.engagement.currentStreak,
                 longestStreak: stats.longestStreak,
               },

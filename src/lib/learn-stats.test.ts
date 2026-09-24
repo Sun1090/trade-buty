@@ -29,6 +29,8 @@ const base: LearnStats = {
   longestStreak: 0,
   totalReadingTime: 0,
   totalStudySeconds: 0,
+  studyWindowFirstDay: null,
+  studyWindowLastDay: null,
   overallPct: 0,
 };
 
@@ -131,6 +133,8 @@ describe("getUnlockedBadges", () => {
       longestStreak: 30,
       totalReadingTime: 3600,
       totalStudySeconds: 7200,
+      studyWindowFirstDay: "2026-05-02",
+      studyWindowLastDay: "2026-09-11",
       overallPct: 60,
     };
     const out = getUnlockedBadges(full);
@@ -160,6 +164,26 @@ describe("aggregateStats quiz caliber", () => {
     expect(stats.quizzesDone).toBe(2);
     expect(stats.avgQuizScore).toBe(Math.round((pctA + pctB) / 2));
     expect(stats.avgQuizScore).toBeLessThan(pctA);
+  });
+
+  /**
+   * R16.182：导出文件要能说出「那 90 天」到底是哪一段。总时数与窗口边界读的是同一本台账，
+   * 所以由同一次 `aggregateStats` 一起交出——分两处读就会各说一天。
+   */
+  it("台账实际覆盖的头尾两天和总时数一起交出", () => {
+    expect(aggregateStats([])).toMatchObject({
+      totalStudySeconds: 0,
+      studyWindowFirstDay: null,
+      studyWindowLastDay: null,
+    });
+    store.set(
+      "tb-study-time",
+      JSON.stringify({ "2026-06-30": { read: 600 }, "2026-05-02": { read: 1200 } }),
+    );
+    const stats = aggregateStats([]);
+    expect(stats.totalStudySeconds).toBe(1800);
+    expect(stats.studyWindowFirstDay).toBe("2026-05-02");
+    expect(stats.studyWindowLastDay).toBe("2026-06-30");
   });
 
   it("只把已完成的篇章计入均值", () => {

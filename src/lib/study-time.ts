@@ -104,6 +104,16 @@ export function getTotalStudySeconds(): number {
   return Object.keys(ledger).reduce((sum, day) => sum + getStudySeconds(day).total, 0);
 }
 
+/**
+ * 台账实际覆盖的头尾两天（`YYYY-MM-DD`，本地日历；台账为空时两头都是 null）。
+ * 裁剪锚在「最新有记录的那一天」（见 `addStudyTime` 里的 cutoff），所以隔了一段没学习之后，
+ * 总秒数覆盖的并不是「今天往前 90 天」——要说清这一点只能把这两天点名出来。
+ */
+export function getStudyLedgerSpan(): { firstDay: string | null; lastDay: string | null } {
+  const days = Object.keys(readLedger()).sort(); // YYYY-MM-DD 字典序即时间序
+  return { firstDay: days[0] ?? null, lastDay: days[days.length - 1] ?? null };
+}
+
 /** 今日学习秒数（便捷） */
 export function getTodayStudySeconds(): DayStudy {
   return getStudySeconds(localDateStr());

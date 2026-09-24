@@ -9,7 +9,7 @@ vi.stubGlobal("localStorage", {
 });
 vi.stubGlobal("window", { dispatchEvent: () => {} });
 
-const { addStudyTime, getStudySeconds, getTotalStudySeconds, getTodayStudySeconds, STUDY_LEDGER_KEEP_DAYS } = await import(
+const { addStudyTime, getStudySeconds, getTotalStudySeconds, getTodayStudySeconds, getStudyLedgerSpan, STUDY_LEDGER_KEEP_DAYS } = await import(
   "./study-time"
 );
 const { shiftDate } = await import("./date-utils");
@@ -58,8 +58,24 @@ describe("study-time 台账边界（R4.2）", () => {
     expect(days[days.length - 1]).toBe("2026-04-11");
   });
 
-  it("同来源重复累加不覆盖", () => {
-    addStudyTime("read", 120, "2026-09-05");
+  /**
+   * 导出文件要点名「那 90 天」的头尾（R16.182）：台账锚在最新有记录的那一天，
+   * 四个月没学习的人覆盖的并不是「导出日往前 90 天」，所以这两天得能问出来。
+   */
+  it("getStudyLedgerSpan 给出台账实际覆盖的头尾两天，与写入顺序无关", () => {
+    expect(getStudyLedgerSpan()).toEqual({ firstDay: null, lastDay: null });
+    addStudyTime("read", 10, "2026-04-11");
+    addStudyTime("read", 10, "2026-01-12");
+    addStudyTime("read", 10, "2026-03-02");
+    expect(getStudyLedgerSpan()).toEqual({ firstDay: "2026-01-12", lastDay: "2026-04-11" });
+  });
+
+  it("形状不对的台账键不算进窗口边界", () => {
+    store.set("tb-study-time", JSON.stringify({ "2026-9-5": { read: 10 }, later: { read: 10 }, "2026-09-05": { read: 10 } }));
+    expect(getStudyLedgerSpan()).toEqual({ firstDay: "2026-09-05", lastDay: "2026-09-05" });
+  });
+
+  it("同来源重复累加不覆盖", () => {    addStudyTime("read", 120, "2026-09-05");
     addStudyTime("read", 180, "2026-09-05");
     expect(getStudySeconds("2026-09-05").read).toBe(300);
   });

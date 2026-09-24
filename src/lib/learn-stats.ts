@@ -10,7 +10,7 @@ import { QUIZZES } from "./quizzes";
 import { readQuizProgress } from "./quiz-store";
 import { quizScorePct } from "./quiz-score";
 import { getTotalReadingTime } from "./reading-time";
-import { getTotalStudySeconds } from "./study-time";
+import { getStudyLedgerSpan, getTotalStudySeconds } from "./study-time";
 import { readDocsForChapter } from "./learning-overview";
 
 /**
@@ -72,6 +72,13 @@ export interface LearnStats {
    * （`study-time.ts` 的 `addStudyTime`），所以久不打开的人这里可能是几个月前的账。
    */
   totalStudySeconds: number;
+  /**
+   * `totalStudySeconds` 那本台账实际覆盖的头尾两天（`YYYY-MM-DD`，空台账为 null）。
+   * 裁剪锚在最后一条记录那天，所以导出的文件必须把这两天写出来——只写「90 天」
+   * 会让读者按导出日往前数，而那正是久不打开的人身上不成立的一件事（R16.182）。
+   */
+  studyWindowFirstDay: string | null;
+  studyWindowLastDay: string | null;
   /** 总体完成度百分比 */
   overallPct: number;
 }
@@ -111,6 +118,9 @@ export function aggregateStats(chapters: { slug: string; docCount: number }[]): 
   const totalC = replayHistory.reduce((s, r) => s + r.correct, 0);
   const replayAccuracy = totalQ > 0 ? Math.round((totalC / totalQ) * 100) : null;
 
+  // 窗口边界与上面的总时数读的是同一本 `tb-study-time`（同一个同步块，不会各说一天）
+  const studySpan = getStudyLedgerSpan();
+
   return {
     readDocs,
     totalDocs,
@@ -128,6 +138,8 @@ export function aggregateStats(chapters: { slug: string; docCount: number }[]): 
     longestStreak: streak.longest,
     totalReadingTime: getTotalReadingTime(),
     totalStudySeconds: getTotalStudySeconds(),
+    studyWindowFirstDay: studySpan.firstDay,
+    studyWindowLastDay: studySpan.lastDay,
     overallPct,
   };
 }
