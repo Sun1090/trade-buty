@@ -12,6 +12,7 @@ import {
   sortReleaseNotes,
   unreleasedNote,
   type ReleaseNote,
+  type UnreleasedNote,
 } from "./release-notes";
 
 function note(
@@ -62,13 +63,37 @@ describe("发布记录数据", () => {
     expect(latestRelease()).toEqual(releaseNotes[0]);
   });
 
-  it("未发布条目与已发布条目结构一致", () => {
-    if (!unreleasedNote) return;
-    expect(isReleaseDate(unreleasedNote.date)).toBe(true);
-    expect(unreleasedNote.highlights.zh.length).toBeGreaterThan(0);
-    expect(unreleasedNote.highlights.en).toHaveLength(
-      unreleasedNote.highlights.zh.length,
+  /**
+   * R16.161：这一条以前第一行就是 `if (!unreleasedNote) return;`，而 `release-notes.json`
+   * 只有一个顶层键 `releases`——于是它从来没有断言过任何东西。今天的真实数据仍然没有
+   * `unreleased`（`changelog/page.tsx` 那一节因此整块不渲染，实测两语页面的 HTML 里
+   * 「未发布 / Unreleased」0 次），所以形状的证明改由一份**一定会跑**的夹具承担；
+   * 哪天有人往 JSON 里加了这一节，同一套规则也会立刻套到真数据上。
+   */
+  it("未发布条目与已发布条目结构一致（夹具那一跑永远会跑）", () => {
+    const check = (note: UnreleasedNote, from: string) => {
+      expect(isReleaseDate(note.date), `${from}：日期不是 YYYY-MM-DD`).toBe(true);
+      expect(note.highlights.zh.length, `${from}：一条亮点都没有`).toBeGreaterThan(0);
+      expect(note.highlights.en, `${from}：英文半边数量对不上`).toHaveLength(
+        note.highlights.zh.length,
+      );
+    };
+
+    check(
+      {
+        date: "2099-01-01",
+        highlights: { zh: ["甲", "乙"], en: ["A", "B"] },
+      },
+      "夹具",
     );
+    // 正向对照：一份少了英文条目的夹具必须过不了，否则上面三行是摆设
+    expect(() =>
+      check(
+        { date: "2099-01-01", highlights: { zh: ["甲", "乙"], en: ["A"] } },
+        "坏夹具",
+      ),
+    ).toThrow();
+    if (unreleasedNote) check(unreleasedNote, "真实数据");
   });
 });
 
