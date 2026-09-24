@@ -42,7 +42,10 @@ export default async function ChartPage({
         <p className="text-muted">{locale === "zh" ? "练习方法：先描述趋势，再标出关键位置，最后回到课程验证你的判断。" : "Practice loop: describe the trend, mark key levels, then return to the lesson to verify your reasoning."}</p>
       </div>
       <div className="flex items-center justify-end mb-3">
-        <FullscreenToggle targetId="chart-container" label={{ enter: "全屏", exit: "退出" }} />
+        <FullscreenToggle
+          targetId="chart-container"
+          label={{ enter: t.chart.fullscreenEnter, exit: t.chart.fullscreenExit }}
+        />
       </div>
       <div id="chart-container">
         <KlineChart dict={t.chart} />

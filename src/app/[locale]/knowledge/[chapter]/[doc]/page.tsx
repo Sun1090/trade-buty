@@ -343,6 +343,7 @@ export default async function DocPage({
               intervalLabel: t.chart.intervalLabel,
               customSymbolLabel: t.chart.customSymbolLabel,
               customSymbolPlaceholder: t.chart.customSymbolPlaceholder,
+              chartNameTpl: t.chart.chartNameTpl,
               compactNote: t.chart.compactNote,
               fullNote: t.chart.fullNote,
               showFull: t.chart.showFull,

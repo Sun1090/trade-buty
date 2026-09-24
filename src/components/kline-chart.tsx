@@ -57,6 +57,7 @@ interface ChartDict {
   intervalLabel: string;
   customSymbolLabel: string;
   customSymbolPlaceholder: string;
+  chartNameTpl: string;
   compactNote: string;
   fullNote: string;
   showFull: string;
@@ -394,7 +395,7 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
         data-network-quality={networkQuality}
         className="relative rounded-2xl border border-[var(--border-strong)] bg-[var(--surface)] overflow-hidden"
         role="img"
-        aria-label={`${symbol} chart`}
+        aria-label={dict.chartNameTpl.replace("{symbol}", symbol)}
       >
         <div ref={containerRef} className={density === "compact" ? "h-[300px]" : "h-[420px]"} />
         {displayStatus === "loading" && (

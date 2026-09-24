@@ -83,6 +83,7 @@ const dict = {
   intervalLabel: "周期",
   customSymbolLabel: "自定义交易对",
   customSymbolPlaceholder: "如 DOGEUSDT",
+  chartNameTpl: "{symbol} 蜡烛图",
   compactNote: "紧凑模式",
   fullNote: "完整模式",
   showFull: "显示完整",
@@ -458,6 +459,25 @@ describe("KlineChart 移动端密度", () => {
         expect.objectContaining({ limit: COMPACT_CHART_CANDLES }),
       );
       expect(note, `窄屏说明的根数要等于取数上限（${locale}）`).toContain(String(COMPACT_CHART_CANDLES));
+      unmount();
+    }
+  });
+
+  // 图表区是 role="img"，读屏念的就是它那个名字。曾经写成 `${symbol} chart`，
+  // 中文界面于是被念成英文；巡检判据只认中日韩字符，抓不住「把英文写死」这一半，靠这条兜。
+  it("图表的读屏名字跟着界面语言走，标的代得进去", async () => {
+    for (const locale of ["zh", "en"] as const) {
+      const labels = getDict(locale).chart;
+      expect(labels.chartNameTpl, `${locale} 的读屏模板要留占位符`).toContain("{symbol}");
+      const { unmount } = render(
+        <KlineChart dict={{ ...dict, chartNameTpl: labels.chartNameTpl }} />,
+      );
+      await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
+      const name = screen.getByTestId("kline-chart").getAttribute("aria-label") ?? "";
+      expect(name).toContain("BTCUSDT");
+      expect(name).not.toContain("{symbol}");
+      const cjk = /[一-鿿㐀-䶿]/;
+      expect(cjk.test(name), `读屏名字的语言要和界面一致（${locale}）`).toBe(locale === "zh");
       unmount();
     }
   });
