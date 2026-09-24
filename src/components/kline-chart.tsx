@@ -67,6 +67,7 @@ interface ChartDict {
   intervalLabel: string;
   customSymbolLabel: string;
   customSymbolPlaceholder: string;
+  lastPriceLabel: string;
   chartNameTpl: string;
   compactNote: string;
   fullNote: string;
@@ -362,8 +363,11 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
         </div>
           <div className="flex flex-wrap items-center gap-3">
             {lastPrice !== null && (
-              <span className="font-mono text-sm text-accent">
-                {formatPrice(lastPrice)}
+              <span className="flex items-baseline gap-1.5">
+                <span className="text-xs text-faint">{dict.lastPriceLabel}</span>
+                <span className="font-mono text-sm text-accent">
+                  {formatPrice(lastPrice)}
+                </span>
               </span>
             )}
             <div className="flex flex-wrap gap-1.5" role="group" aria-label={dict.intervalLabel}>

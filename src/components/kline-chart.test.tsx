@@ -83,6 +83,7 @@ const dict = {
   intervalLabel: "周期",
   customSymbolLabel: "自定义交易对",
   customSymbolPlaceholder: "如 DOGEUSDT",
+  lastPriceLabel: "最新价",
   chartNameTpl: "{symbol} 蜡烛图",
   compactNote: "紧凑模式",
   fullNote: "完整模式",
@@ -359,6 +360,25 @@ describe("KlineChart 加载失败与重试", () => {
     // 只钉小数部分：千分位分隔符随 locale 而变，`5678` 漏出来就是这一支退化了。
     expect(screen.getByText(/^[\d,.]+\.57$/)).toBeInTheDocument();
     expect(screen.queryByText(/5678/)).toBeNull();
+  });
+
+  /**
+   * 那格数字曾经是一个没有名字的裸数字：只有看得见的人才知道它是价格。标签取自字典，
+   * 所以两种界面语言各查一遍，顺带保证「非空」这件事由真渲染负责而不是由类型负责。
+   */
+  it("价格读数带着它自己的名字，两种语言都不裸", async () => {
+    for (const locale of ["zh", "en"] as const) {
+      const labels = getDict(locale).chart;
+      const { unmount } = render(
+        <KlineChart dict={{ ...dict, lastPriceLabel: labels.lastPriceLabel }} />,
+      );
+      await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
+      const name = screen.getByText(labels.lastPriceLabel);
+      expect(name).toBeInTheDocument();
+      // 名字和数字得在同一个容器里：隔开了就等于读屏仍会念到一串没有归属的数字。
+      expect(name.parentElement?.textContent).toContain("140");
+      unmount();
+    }
   });
 
   it("换交易对时，上一张图的读数立刻消失", async () => {
