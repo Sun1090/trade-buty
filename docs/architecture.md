@@ -97,7 +97,11 @@ docs/knowledge/
 
 `src/lib/content.ts` 在构建/服务端读取 Markdown，使用 `gray-matter` 解析 frontmatter。
 缺字段时回退到文件名或首个 H1；解析失败只告警并继续。渲染前会剥离知识库历史 VitePress
-构件、重写相对链接和 `_assets/` 路径，保证站内导航和图片可用。
+构件、重写相对链接和 `_assets/` 路径，保证站内导航和图片可用。正文由
+`src/components/markdown.tsx` 渲染，除了 GFM 还挂了 `remark-cjk-friendly`：CommonMark 的
+强调规则不认中文句子，`的**粗体**交易` 这类写法在默认解析器里会印出字面星号。
+课文页的目录（`src/lib/toc.ts`）与正文必须吃**同一份**转换后的字符串，否则目录里的锚点
+在页面上不存在。
 
 ### 4.3 更新流程
 

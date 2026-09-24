@@ -135,7 +135,10 @@ export default async function DocPage({
 
   const chapterTitle = getChapterTitle(locale, chapterSlug);
   const aiEnabled = aiEnabledForPage();
-  const headings = extractHeadings(doc.content);
+  // 目录必须从真正送进 <Markdown> 的那份字符串里提取：转换器会改写标题行里的
+  // <KbBadge> 等内容，用原文提取出的 id 在页面上不存在。
+  const rendered = prepareForRender(doc.content, locale, chapterSlug);
+  const headings = extractHeadings(rendered);
   const estimatedMinutes = estimateReadingMinutes(doc.content);
   const tools = t.docTools;
   const tocLabel = locale === "en" ? "On this page" : "本页目录";
@@ -278,7 +281,7 @@ export default async function DocPage({
       )}
       <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
         <Markdown
-          content={prepareForRender(doc.content, locale, chapterSlug)}
+          content={rendered}
           interactiveImages
           interactiveImageLabel={tools.lightboxOpen}
         />

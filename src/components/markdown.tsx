@@ -1,11 +1,15 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkCjkFriendly from "remark-cjk-friendly";
 import rehypeRaw from "rehype-raw";
 import rehypeSlug from "rehype-slug";
 import Link from "next/link";
 
+// rewriteLinks 把课文里的相对链接改写成 /{locale}/knowledge/…，正文里的 #锚点 也在本页
+const INTERNAL_HREF = /^(?:#|\/(?:[a-z]{2}\/)?knowledge\/)/;
+
 function isInternal(href?: string) {
-  return !!href && href.startsWith("/knowledge");
+  return !!href && INTERNAL_HREF.test(href);
 }
 
 export function Markdown({
@@ -20,7 +24,7 @@ export function Markdown({
   return (
     <div className="kb-prose">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkCjkFriendly]}
         rehypePlugins={[rehypeRaw, rehypeSlug]}
         components={{
           a({ href, children, ...props }) {

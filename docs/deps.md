@@ -11,6 +11,7 @@
 | @supabase/supabase-js + @supabase/ssr | 数据库/鉴权官方客户端（RLS + 浏览器/服务端双端） | 手写 REST 无法覆盖 auth 会话管理与 RLS 语义 |
 | postgres + drizzle-orm | 服务端直连 Postgres（RAG 向量检索 rpc、管理端读） | supabase-js 匿名 key 受 RLS 限制，管理操作需直连 |
 | react-markdown + remark-gfm | 知识库 Markdown 渲染（GFM 表格/任务列表是课程刚需） | 自己写解析器无法覆盖 GFM 边界，安全（无 dangerouslySetInnerHTML） |
+| remark-cjk-friendly | CommonMark 的强调 flanking 规则按拉丁文字写死：`的**<mark>杠杆</mark>**交易` 这种「`**` 前面是汉字、后面紧跟标点」的写法判不能开启，屏幕上印出字面星号。2026-09-24 实测 418 篇课文里 188 篇、共 1712 处；配上该插件后降到 24 处（剩下的都是课文原文星号本身没配对） | 在 `prepareForRender` 里正则改写只能覆盖 `<mark>` 这一种邻接（课文里 `**「重点」**` 同样会漏），而要自己判 flanking 就得重写一遍 CommonMark 的分隔符规则；知识库是只读 submodule，不能去上游把 `**` 换成 `<strong>` |
 | rehype-raw | 知识库含内联 HTML（`<mark>` 等 VitePress 迁移产物） | 需渲染原文内联标签 |
 | rehype-slug | 标题锚点（目录跳转契约） | 无替代 |
 | github-slugger | 与 rehype-slug 一致的锚点算法（TOC 生成） | 自写 slug 算法会和锚点不一致 |
