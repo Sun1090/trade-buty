@@ -84,20 +84,29 @@ export async function fetchKlines(
   }));
 }
 
+/**
+ * 抽一个历史窗口的结束时刻：落在 `notAfterMs`（默认现在）往前 7 ~ 180 天之间。
+ *
+ * 往前留 7 天是为了不贴着当前价格；下界 180 天是取样跨度，不是「历史只有 180 天」。
+ * 这里曾有一行 `Math.max(count * stepMs, Date.now() - 180d)` 想保证「窗口不越过有记录的最早
+ * 时间」，但 `count * stepMs` 是**时长**（约 2.6e10），拿去和**绝对时间戳**（约 1.8e12）取
+ * max 永远输给对方，所以它从未生效过；标的历史不够长时币安本就返回较少根数，由调用方自行处理。
+ *
+ * 盲盒模式与自定义模式的「新一轮」都走这一个函数，两条路才是同一个取样口径。
+ */
+export function sampleHistoryWindowEndMs(notAfterMs?: number): number {
+  const ceiling = Date.now();
+  const anchor = Math.min(notAfterMs ?? ceiling, ceiling);
+  const maxEnd = anchor - 7 * 24 * 3600_000;
+  const minEnd = anchor - 180 * 24 * 3600_000;
+  return Math.floor(minEnd + Math.random() * Math.max(maxEnd - minEnd, 1));
+}
+
 /** 随机选取一个过去的历史窗口（避免偷看当前价格），返回该窗口的 K 线 */
 export async function fetchRandomHistoryWindow(
   symbol: string,
   interval: string,
   count = 300
 ): Promise<Kline[]> {
-  // 距今 7 天 ~ 180 天前的任意窗口。
-  // 这里曾有一行 `Math.max(count * stepMs, Date.now() - 180d)` 想保证「窗口不越过有记录的最早
-  // 时间」，但 `count * stepMs` 是**时长**（约 2.6e10），拿去和**绝对时间戳**（约 1.8e12）取
-  // max 永远输给对方，所以它从未生效过；标的历史不够长时币安本就返回较少根数，由调用方自行处理。
-  const maxEnd = Date.now() - 7 * 24 * 3600_000;
-  const minEnd = Date.now() - 180 * 24 * 3600_000;
-  const endTime = Math.floor(
-    minEnd + Math.random() * Math.max(maxEnd - minEnd, 1)
-  );
-  return fetchKlines(symbol, interval, { endTime, limit: count });
+  return fetchKlines(symbol, interval, { endTime: sampleHistoryWindowEndMs(), limit: count });
 }

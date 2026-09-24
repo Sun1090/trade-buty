@@ -8,7 +8,7 @@ import {
   type ISeriesApi,
   type UTCTimestamp,
 } from "lightweight-charts";
-import { fetchKlines, fetchRandomHistoryWindow, type Kline } from "@/lib/binance";
+import { fetchKlines, fetchRandomHistoryWindow, sampleHistoryWindowEndMs, type Kline } from "@/lib/binance";
 import { saveReplayRecord, saveReplayBest } from "@/lib/replay-store";
 import { addStudyTime } from "@/lib/study-time";
 import { localDateStr, localDayEndMs } from "@/lib/date-utils";
@@ -208,7 +208,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
     }
   }, [guessMode, klines, idx, guess.total, guess.correct, guess.best, round, symbol, interval_]);
 
-  // 载入随机历史窗口
+  // 载入这一轮的 K 线：盲盒模式抽随机历史窗口，自定义模式锚定在 customEnd 那一天之前
   useEffect(() => {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -233,6 +233,19 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
       cancelled = true;
     };
   }, [symbol, interval_, round, customMode, customEnd, context]);
+
+  // 「新一轮」：只 bump round 在自定义模式里等于**重发同一个请求**——取数用的是同一个
+  // customEnd，回来的还是刚才那 300 根，用户重放的是同一段行情，而这一轮照样会被记进训练记录。
+  // 所以自定义模式下先往前另抽一段，并把「截止日期」跟着挪到那一段真正结束的那天：
+  // 那一格说的是屏幕上这段 K 线结束于哪天，不是用户上一次手输的值。
+  const startNewRound = () => {
+    if (customMode && customEnd) {
+      const nextEnd = sampleHistoryWindowEndMs(customEnd);
+      setCustomEnd(nextEnd);
+      setEndDateInput(localDateStr(new Date(nextEnd)));
+    }
+    setRound((r) => r + 1);
+  };
 
   // 图表初始化
   useEffect(() => {
@@ -465,7 +478,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
           </>
         )}
         <button
-          onClick={() => setRound((r) => r + 1)}
+          onClick={startNewRound}
           className="px-3 py-1.5 rounded-lg text-xs border border-accent/40 bg-accent-dim text-accent hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition"
         >
           {dict.newRound}
@@ -535,7 +548,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
                 </p>
                 <div className="mt-4 flex flex-wrap justify-center gap-3">
                   <button
-                    onClick={() => setRound((r) => r + 1)}
+                    onClick={startNewRound}
                     className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-6 py-2 transition"
                   >
                     {dict.newRound}
