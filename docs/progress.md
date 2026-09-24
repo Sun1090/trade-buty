@@ -6827,3 +6827,26 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   「相对上一次入库快照不得下降」），以及待拍板清单 R15.2 / R16.7 / R16.10–12 / R16.16 / R16.41 /
   R16.47 / R16.52 / R16.58 / R16.60 / R16.90 / R16.97 / R16.98 / R16.107 / R16.108 / R16.109 / R16.117。
 - 更新时间：2026-09-24 19:58（Asia/Shanghai）。
+
+---
+
+## 2026-09-24 — 路线页的四把尺子、篇章页替测验认下的账，与礼花数错了课（R16.118–R16.124，#292 → #293）
+
+- 状态：本地全量验证完成，已推分支待开 PR；本轮不追 Vercel 构建。
+- 里程碑 / 版本：v0.7.16 冻结后的「说法 vs 事实」第十三轮（承接 #292 的 R16.118/R16.119 产物复测）。
+- 分支 / 提交：`fix/path-chapter-number-claims`，基于合并后的 `origin/main`（115653d）。
+- 完成内容：
+  - **R16.118 产物复测收口**：用真实算法逐篇复算并与构建产物对表，`trading-practice/a-share-playbook` 从旧口径 8 分钟变成产物上印的 16 分钟、`markets-instruments/reits-real-estate` 9→15、`crypto-perpetuals/perp-trading-risk` 10→16、`technical-analysis/indicators` 11→14，抽样 7 篇的产物数字与新算法**逐一相等**（旧算法在同样本上都偏低）。
+  - **R16.120 路线页四套序号并存**：时间轴「路径第几位」、卡片 `chapterRank`（0 起）、图谱按阶段各自从 01 数起、首页卡「首页第几张」，而全站通用编号是标题自带的 `NN ·`——实测 27 篇有 19 篇两套号不一致，导语那句「主线最后一站『08 · 入土篇』」正对着它自己那个写着 09 的圆点。三处裸序号撤掉（时间轴改圆点、图谱节点改成图例那颗圆点、卡片只留带单位词的课数），`Chapter.order` 字段连同 `content.ts:15`「来自 README H1 的 NN 序号」、`kb-order.ts:2`「与 zh 版 01–27 对应」两处假注释一起改。
+  - **R16.121 Quiz 结构化数据跟着渲染走**：54 个篇章路由（zh/en × 27）每页都把一整套中文题干列进自己的 `hasPart`，而它们只有一张入口卡片。`quiz()` 的 `chapterHref` 拆成 `pageHref` + `courseHref`，宿主判断收进 `quizHostDocSlug()`；`check:quiz-mounts` 既然早就硬性要求每套题挂在一节真实课文上，篇章页那个内联分支（连 `Quiz`/`quiz`/`QUIZ_BANK_LANGUAGE` 三个导入）一并删。产物复测：篇章路由 54/54 不再发 Quiz，`zh|en/getting-started/first-trade` 各发一个指向自己的 `#quiz`。
+  - **R16.122 礼花数错了课**：封顶口径只夹到 `docCount`，挡不住「废键顶上新课数」——7 篇的章、存着 2 真 + 5 废键时给 7/7，于是同一页课文清单写着 2/7、`ChapterCompleteCelebration` 却放「篇章完成！」。新增严格口径 `readDocsInChapter(存储键, 章内课表)`，清单/侧栏/礼花三处统一用它；统计页与总进度只拿到课数、继续用封顶，两处「唯一口径 / 唯一实现」的注释改成写清各自边界。R16.58 那条待决分歧据此收敛为「同一屏必须同一口径」。
+  - **R16.123 眉标不再谎称进度**：篇章页 hero 的 eyebrow 用 `t.chapter.progressLabel`（「篇章进度」），底下只有标题、导语和「📚 N 课」。改成报它属于哪一阶段（新增 `stageOfChapter()`，与 `/path` 分层表同一所有者），`progressLabel` 键保留（课文页侧栏真的在用）。产物复测：`zh/getting-started` 眉标「第一站 · 入门主线」、`en/trading-practice`「Stage 2 · Advanced Practice」，四篇抽样页面正文里再无「篇章进度 / Chapter progress」。
+  - **R16.124 登记待拍板**：`/en` 篇章页的入口卡片直接把中文题库标题当界面文字印出来（`page.tsx:197` 的「入门基础 · 随堂测」配着下一行英文 `3 questions`）。与 R16.109 同族但那是「挂不挂」，这是「英文界面印中文数据」，动它要新增两语字典键并改 27+182 页可见文案，本轮不动。
+  - 顺手修掉 `chapter-exam-card.tsx` docblock 的两处假说法（不是「无条件显示」；「未做/已做」是读者状态不是待办）。
+- 新增门禁：`path/chapter-number-claims.test.tsx`（5 条，渲染真实路线页+首页，条目里不许出现「文字只有一个数字」的元素）、`knowledge/quiz-jsonld-claims.test.tsx`（7 条，渲染篇章页/宿主课文/同章另一节 + 27 套题宿主存在性）、`knowledge/[chapter]/hero-stage-eyebrow.test.tsx`（6 条）、`knowledge-graph.test.tsx` 条长改成比例断言 100/50/40/20 并加「课数相同则等长、更多则更长」、`path.test.ts` 加 STAGES 覆盖 CHAPTER_ORDER 与 `stageOfChapter` 一致性、`check:structured-data` 加「一页最多一个 Quiz / 篇章页零个 / `@id`·`url` 必须等于本页」与题库套数 × 语言数的总分母。
+- 变更文件：`src/app/[locale]/{page.tsx,path/page.tsx,knowledge/[chapter]/page.tsx,knowledge/[chapter]/[doc]/page.tsx}`、`src/components/{knowledge-graph,chapter-complete-celebration,chapter-rail,doc-list,chapter-exam-card}.tsx`、`src/lib/{content,kb-order,learning-overview,learn-stats,path,quizzes,jsonld}.ts`、`scripts/check-structured-data.mjs`、对应测试与 `docs/{roadmap,progress,test-clock-hygiene}.md`。
+- 验证（本地，逐条退出码 0）：`lint`（`--max-warnings=0`）、`typecheck`、`build`（454 页静态产物：chapter 54 / lesson 364 / home 2 / faq 2 / other 32）、`test`（308 文件 / 3027 条）、`test:coverage`（语句 95.18%，分支 90.92%，函数 95.16%，行 97.17%；阈值 84）、`e2e`（**162 passed** / 2.6m，本轮没有新增 spec，条目数与上轮一致）、`check:structured-data`（454 页 · 5656 实体）、`check:bundle`、`check:links`（8958 条站内链接无死链）、`check:sitemap`（418 知识页 · zh/en 各 209）、`check:seo-surface`、`check:changelog`、`check:quiz-mounts`（27 章挂载）、`check:quiz-coverage`（81 道固定题）、`check:nav-chain`、`check:docs`、`check:dead-copy`（字典 2 / 词条 420 / 死键 0 / 未读字段 0）、`check:localized-labels`、`check:test-clock-hygiene`（307 文件，报告随本轮三个新测试文件从 304 涨到 307）、`check:report-freshness`（17 份 · 漂移 0）。
+- 变异核对五组，各自红在它该红的那条：三处裸序号装回去（4 条用例点名「03 挂在『0304 · 股票篇…』上」）；篇章页恢复无条件发 Quiz、课文页去掉宿主判断（4 条红，报出多认领的页）；`readDocsInChapter` 换回封顶口径（废键用例红——**且第一版夹具抓不到**：5 个键对 7 篇课时封顶本来就不算读完，补成 7 个键才逼出分叉，另记一次提交）；图谱分母退回「每阶段几篇」（两条比例断言红，`expected 100 to be greater than 100`）；眉标退回 `progressLabel`（正向断言找不到阶段名）。
+- 阻塞 / 风险：本轮唯一的行为变化是给篇章页换了眉标、给礼花换了口径——后者只会**少放**礼花（废键多的用户原来会被误庆祝），不会少报进度；统计页/总进度仍按封顶，与清单在极端脏数据下仍可能差几篇，这一条留在 R16.58→R16.122 的注释里说明边界。R16.124 需要拍板。生产仍是 0.7.15（0.7.16 排在 Vercel 24h 构建配额后面）。
+- 下一项：#293 等 `ci` / `db-tests` / CodeQL 绿后 rebase 合并。排队中的下一条：`/stats` 与 `/review` 两组计数还没经过这一轮的眼睛；R16.78 那条线未补完（计数型门禁下限改成「相对上一次入库快照不得下降」）；待拍板清单 R15.2 / R16.7 / R16.10–12 / R16.16 / R16.41 / R16.47 / R16.52 / R16.60 / R16.90 / R16.97 / R16.98 / R16.107 / R16.108 / R16.109 / R16.117 / R16.124（R16.58 已收敛，移出清单）。
+- 更新时间：2026-09-24 21:30（Asia/Shanghai）。
