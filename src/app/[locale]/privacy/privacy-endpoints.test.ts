@@ -302,6 +302,20 @@ describe("本机保留窗口的数与代码同源", () => {
     for (const text of strings) {
       expect(text, `台账窗口必须是 ${keepDays} 天（与 STUDY_LEDGER_KEEP_DAYS 同源）`).toContain(keepDays);
       expect(text, `回放轮数必须是 ${keepRounds} 轮（与 REPLAY_HISTORY_KEEP 同源）`).toContain(keepRounds);
+      /**
+       * R16.183：光有数还不够。裁剪锚在「台账里最后有记录的那一天」（`addStudyTime` 的 cutoff），
+       * 不是今天，所以「最近 90 天」这种墙上时钟写法对几个月没打开的人是假的——
+       * 这一半要由锚点措辞来钉。
+       */
+      const isZh = /[一-鿿]/.test(text);
+      expect(
+        isZh ? text.includes("最后一次学习") : /ending at the day you last studied/i.test(text),
+        `台账窗口必须点出锚点（${isZh ? "zh" : "en"}）`,
+      ).toBe(true);
+      expect(
+        text,
+        `不许把台账窗口写成墙上时钟的「最近 ${keepDays} 天」那一类说法`,
+      ).not.toMatch(isZh ? /最近\s*90\s*天/ : /most recent\s+90\s+days|latest\s+90\s+days/i);
     }
   });
 
