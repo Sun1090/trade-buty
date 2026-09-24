@@ -120,16 +120,19 @@ describe("ChapterSummaryAi（R3.5/R3.6/R3.9/R3.11）", () => {
     expect(store.get("tb-summary-v2-zh-spot")).toBeUndefined();
   });
 
-  it("失败降级：整个入口隐藏，不展示错误文案（R3.6）", async () => {
-    vi.stubGlobal("fetch", setup(false));
-    const { container } = render(
+  it("失败不再卸掉整张卡片：说清失败，按钮也还在（R16.77 改掉 R3.6 的整卡隐藏）", async () => {
+    const fetchMock = setup(false);
+    vi.stubGlobal("fetch", fetchMock);
+    render(
       <ChapterSummaryAi chapter="spot" title="现货" locale="zh" dict={dict} />,
     );
     fireEvent.click(screen.getByText(dict.generate));
-    await waitFor(() =>
-      expect(container.querySelector("section, div")).toBeNull(),
-    );
-    expect(container.textContent).not.toContain(dict.error);
+
+    expect(await screen.findByText(dict.error)).toBeInTheDocument();
+    // 「请重试」不是空话：同一个按钮还在，点它真的再发一次
+    fireEvent.click(screen.getByText(dict.generate));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText("本章讲市场结构与参与者。")).toBeNull();
   });
 
   it("aiEnabled=false 或总开关关闭时不渲染（R3.9/3.10）", () => {
