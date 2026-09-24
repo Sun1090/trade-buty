@@ -65,6 +65,7 @@ export default async function ReplayPage({
         <ReplayTrend
           label={dict.replay.histTitle}
           emptyLabel={dict.replay.trendEmpty}
+          scopeLabel={dict.replay.trendScopeTpl}
         />
       </div>
     </div>
