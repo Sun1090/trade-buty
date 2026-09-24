@@ -163,6 +163,22 @@ describe("组件字典接口的未读字段 (R16.78)", () => {
     );
   });
 
+  it("接口里夹一行注释不会把整张接口判废", () => {
+    // 真实代码就是这样失配的：给 AiDict 补一个字段时顺手写了一行 `/** … */`，
+    // 那一路检查当场少扫一张接口，而接口总数的下限（10）根本察觉不到
+    const withComments = READ_FIXTURE.replace(
+      "  heading: string;",
+      "  /** 标题：一行块注释也是注释，不是字段 */\n  heading: string;"
+    ).replace("  tail: string;", "  tail: string; // 收尾那句");
+    const dicts = extractDictInterfaces(withComments);
+    expect(dicts).toHaveLength(1);
+    expect(dicts[0].fields).toEqual(["heading", "hints", "tail", "neverRead"]);
+    const unread = findUnreadDictFields({
+      files: [{ file: "fixture.tsx", source: withComments }],
+    });
+    expect(unread.map((entry) => entry.field)).toEqual(["neverRead"]);
+  });
+
   it("判定是逐文件的：别的文件读过同一个字段名不算数", () => {
     // 这正是整键口径看不见这一类的原因——页面装配点就是「别的文件」
     const unread = findUnreadDictFields({

@@ -85,9 +85,17 @@ export function extractDictInterfaces(source) {
     let allCopy = true;
     let end = i + 1;
     for (; end < lines.length && !/^\}/.test(lines[end]); end++) {
-      const line = lines[end];
-      if (!line.trim() || line.trim().startsWith("//") || line.trim().startsWith("*")) continue;
-      const member = DICT_MEMBER.exec(line);
+      // 注释行不算字段：接口里写一行 `/** … */` 说明就把整张接口判废，是最难发现的失配
+      const code = lines[end].replace(/\s*\/\/[^/]*$/, "");
+      const trimmed = code.trim();
+      if (
+        !trimmed ||
+        trimmed.startsWith("/*") ||
+        trimmed.startsWith("*") ||
+        trimmed.endsWith("*/")
+      )
+        continue;
+      const member = DICT_MEMBER.exec(code);
       if (!member || !COPY_TYPE.test(member[2])) {
         allCopy = false;
         continue;
