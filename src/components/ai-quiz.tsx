@@ -4,13 +4,14 @@ import { useState } from "react";
 import { applySrsResult } from "@/lib/wrongbook";
 import { addStudyTime } from "@/lib/study-time";
 import { isAiGloballyDisabled } from "@/lib/ai-toggle";
+import { sendAiFeedback, type ReportStatus } from "@/lib/ai-feedback";
 
 interface AiQuizProps {
   /** 用户错题列表（篇章+题号） */
   wrongItems: { chapterNum: string; questionIdx: number }[];
   dict: {
     generate: string; generating: string; error: string; question: string; explain: string;
-    report: string; reported: string; badge: string; correct: string; wrong: string; next: string; done: string;
+    report: string; reported: string; reportFailed: string; badge: string; correct: string; wrong: string; next: string; done: string;
     /** 401 与 429 各自的说法：把「重试没用」和「等一会儿再有结果」混成一句就是假话 */
     loginRequired: string; rateLimited: string;
     /** 等待时长整句由字典出，包括单位：把 `min` 拼到中文界面里就是半句英文残话 */
@@ -34,7 +35,7 @@ export function AiQuiz({ wrongItems, dict, aiEnabled = true }: AiQuizProps & { a
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
-  const [reported, setReported] = useState<Record<number, boolean>>({});
+  const [reported, setReported] = useState<Record<number, ReportStatus>>({});
 
   // R3.9/R3.10：AI 关闭时隐藏入口
   if (aiEnabled === false || isAiGloballyDisabled()) return null;
@@ -98,16 +99,17 @@ export function AiQuiz({ wrongItems, dict, aiEnabled = true }: AiQuizProps & { a
     applySrsResult(src.chapterNum, src.questionIdx, i === q.answer, i);
   }
 
-  /** R2.11：题目质量举报（fire-and-forget） */
-  function report(idx: number) {
-    if (reported[idx]) return;
-    setReported((prev) => ({ ...prev, [idx]: true }));
+  /** R2.11：题目质量举报——送出成功才改口，失败要看得见、也要能再点一次 */
+  async function report(idx: number) {
+    if (reported[idx] === "sending" || reported[idx] === "sent") return;
+    setReported((prev) => ({ ...prev, [idx]: "sending" }));
     const q = questions[idx];
-    void fetch("/api/ai/feedback", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rating: "unhelpful", question: q?.question ?? "", answer: q?.explain ?? "" }),
-    }).catch(() => {});
+    const sent = await sendAiFeedback({
+      rating: "unhelpful",
+      question: q?.question ?? "",
+      answer: q?.explain ?? "",
+    });
+    setReported((prev) => ({ ...prev, [idx]: sent ? "sent" : "failed" }));
   }
 
   function next() {
@@ -188,9 +190,13 @@ export function AiQuiz({ wrongItems, dict, aiEnabled = true }: AiQuizProps & { a
             <button
               onClick={() => report(current)}
               className="text-xs text-faint hover:text-down transition disabled:opacity-50"
-              disabled={reported[current]}
+              disabled={reported[current] === "sending" || reported[current] === "sent"}
             >
-              {reported[current] ? dict.reported : `⚑ ${dict.report}`}
+              {reported[current] === "sent"
+                ? dict.reported
+                : reported[current] === "failed"
+                  ? `⚠ ${dict.reportFailed}`
+                  : `⚑ ${dict.report}`}
             </button>
           </div>
         </div>
