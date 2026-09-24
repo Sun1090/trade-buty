@@ -57,6 +57,18 @@ export function SearchClient({
   const [suggestIdx, setSuggestIdx] = useState(-1);
   const [indexError, setIndexError] = useState(false);
   const router = useRouter();
+  const locale = usePathname()?.split("/")[1] || "en";
+
+  /**
+   * 搜索按语言分区。索引是一个文件装下 zh 与 en 各 209 篇（两棵树逐篇互为译文，
+   * R10.19 的 parity 快照与 R16.13 的英文树内容门禁撑着这件事），所以跨语言扫一遍
+   * 不会多找到任何一篇独有的课文，只会让中文页的篇章筛选长出 54 个选项（同一篇章
+   * 的中英两个名字各一条），而「止损」的 108 条结果里 37 条是访客没要的英文页。
+   */
+  const localeEntries = useMemo(
+    () => (entries ?? []).filter((entry) => entry.url.startsWith(`/${locale}/`)),
+    [entries, locale],
+  );
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(query), 200);
@@ -82,12 +94,12 @@ export function SearchClient({
   const results = useMemo(() => {
     const q = debouncedQ.trim().toLowerCase();
     if (!q || !entries) return [];
-    return entries
+    return localeEntries
       .map((e) => ({ e, s: scoreWithSynonyms(e, q) }))
       .filter(({ s }) => s > 0)
       .sort((a, b) => b.s - a.s)
       .map(({ e }) => e);
-  }, [debouncedQ, entries]);
+  }, [debouncedQ, entries, localeEntries]);
 
   // 分页：前 20 条 + 加载更多
   const PAGE_SIZE = 20;
@@ -98,8 +110,8 @@ export function SearchClient({
   // 所有篇章（用于筛选 dropdown）
   const allChapters = useMemo(() => {
     if (!entries) return [];
-    return [...new Set(entries.map((e) => e.chapter))].sort();
-  }, [entries]);
+    return [...new Set(localeEntries.map((e) => e.chapter))].sort();
+  }, [entries, localeEntries]);
 
   /**
    * 按篇章筛选的全部命中——**必须先筛选、后截断**。
@@ -119,12 +131,12 @@ export function SearchClient({
     if (debouncedQ.trim() && results.length > 0) saveRecent(debouncedQ);
   }, [debouncedQ, results.length, saveRecent]);
 
-  const locale = usePathname()?.split("/")[1] || "en";
+  /** 热门词就放在搜索框下面，点它等于替访客跑一次搜索：那条上写的词必须真能搜到东西。 */
   const hotTerms = locale === "en"
     ? ["stop loss", "candlestick", "leverage", "margin", "trend"]
-    : ["止损", "K线", "杠杆", "保证金", "趋势"];
+    : ["止损", "K 线", "杠杆", "保证金", "趋势"];
 
-  // R10.22：无结果诊断候选池——同义词组词条在前（短、精确），后接索引标题/篇章
+  // R10.22：无结果诊断候选池——同义词组词条在前（短、精确），后接**本语言**索引的标题/篇章
   const suggestionCandidates = useMemo(() => {
     const pool: string[] = [];
     const seen = new Set<string>();
@@ -135,12 +147,12 @@ export function SearchClient({
       pool.push(raw.trim());
     };
     for (const g of SYNONYM_GROUPS) for (const t of g.terms) push(t);
-    for (const e of entries ?? []) {
+    for (const e of localeEntries) {
       push(e.title);
       push(e.chapter);
     }
     return pool;
-  }, [entries]);
+  }, [localeEntries]);
 
   // R10.22：零结果诊断——只在全局零命中时计算（复用同义词组匹配 + 编辑距离）
   const diag = useMemo(() => {
@@ -162,15 +174,15 @@ export function SearchClient({
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q || !entries) return [];
-    const titleHits = entries.filter((e) => e.title.toLowerCase().includes(q));
+    const titleHits = localeEntries.filter((e) => e.title.toLowerCase().includes(q));
     if (titleHits.length > 0) return titleHits.slice(0, 6);
-    return entries
+    return localeEntries
       .map((e) => ({ e, s: scoreWithSynonyms(e, q) }))
       .filter(({ s }) => s > 0)
       .sort((a, b) => b.s - a.s)
       .slice(0, 6)
       .map(({ e }) => e);
-  }, [query, entries]);
+  }, [query, entries, localeEntries]);
 
   // R13.25 / Q2.6：索引加载失败必须有降级 UI（原来的裸 fetch 会让「加载失败」伪装成「无结果」）。
   async function loadIndex(): Promise<boolean> {
