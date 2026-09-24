@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { StatsClient } from "./stats-client";
 import { QUIZZES } from "@/lib/quizzes";
 import { STATS_DICTS, type StatsDict } from "@/lib/i18n-stats";
@@ -712,5 +712,46 @@ describe("成就徽章按语言取值（R16.73）", () => {
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
     expect(await screen.findByText("第一步")).toBeInTheDocument();
     expect(screen.queryByText("First step")).toBeNull();
+  });
+});
+
+/**
+ * R16.175：`/api/ai/plan` 认真校验 `wrongChapters` 并把它拼成
+ * 「我错题所在的篇章：无」送进 prompt，而 `/stats` 这一侧写死 `[]`——
+ * 一条被接收、被读取、却永远为空的通道。两条用例一头一尾：错题本篇数决定报几篇
+ * （同一篇错两题不许报两遍），错题本空时它就该是空的（免得第一条只是在断言一个常量数组）。
+ */
+describe("AI 学习计划收到的是错题本里那几篇", () => {
+  async function planBody(wrong: Record<string, unknown>) {
+    if (Object.keys(wrong).length > 0) store.set("tb-wrong", JSON.stringify(wrong));
+    const bodies: Array<{ wrongChapters: string[] }> = [];
+    // 只换 `fetch` 这一颗：`vi.unstubAllGlobals()` 会把文件顶上那枚 localStorage 夹具
+    // 一起撤掉，下一条用例就落到真 localStorage 上渲染，红得找不到北。
+    const spy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (_url: RequestInfo | URL, init?: RequestInit) => {
+        bodies.push(JSON.parse(String(init?.body)) as { wrongChapters: string[] });
+        return { ok: true, status: 200, json: async () => ({ plan: "下一步" }) } as Response;
+      });
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    fireEvent.click(await screen.findByText("生成学习计划"));
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    spy.mockRestore();
+    return bodies[0];
+  }
+
+  it("错题本里有几篇就报几篇，同一篇错两题不报两遍", async () => {
+    const at = Date.now();
+    const body = await planBody({
+      "getting-started:0": { chapterNum: "getting-started", questionIdx: 0, picked: 1, at, srsStage: 0, srsDue: localDateStr() },
+      "getting-started:1": { chapterNum: "getting-started", questionIdx: 1, picked: 2, at, srsStage: 0, srsDue: localDateStr() },
+      "risk-management:0": { chapterNum: "risk-management", questionIdx: 0, picked: 1, at, srsStage: 0, srsDue: localDateStr() },
+    });
+    expect([...body.wrongChapters].sort()).toEqual(["getting-started", "risk-management"]);
+  });
+
+  it("对照：错题本为空时这条就该是空的", async () => {
+    const body = await planBody({});
+    expect(body.wrongChapters).toEqual([]);
   });
 });
