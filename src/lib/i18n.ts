@@ -86,7 +86,7 @@ const zh = {
   doc: {
     practiceTitle: "📖 学完这篇，去看真盘",
     practiceBody: "在真实行情图表里找找这篇内容提到的概念，看懂了再继续。",
-    practiceCta: "打开实时行情 →",
+    practiceCta: "打开行情图 →",
     relatedCourses: "相关课程",
     prev: "上一篇",
     next: "下一篇",
@@ -456,7 +456,7 @@ const en: Dict = {
     readKeepGoing: "keep going",
     syncedLabel: "Synced to cloud",
     nextTipLabel: "Next tip",
-    metaDesc: "Free neutral trading education for global learners: {chapters} structured chapters + live charts and replay training. No stock picks, no referrals, no profit promises.",
+    metaDesc: "Free neutral trading education for global learners: {chapters} structured chapters + real charts and replay training. No stock picks, no referrals, no profit promises.",
   },
   path: {
     label: "Learn",
@@ -489,8 +489,8 @@ const en: Dict = {
   },
   doc: {
     practiceTitle: "📖 Done reading? See the real market",
-    practiceBody: "Find the concepts from this lesson on the live chart — understand before you continue.",
-    practiceCta: "Open live chart →",
+    practiceBody: "Find the concepts from this lesson on the real chart — understand before you continue.",
+    practiceCta: "Open the chart →",
     relatedCourses: "Related lessons",
     prev: "Previous",
     next: "Next",
@@ -519,8 +519,8 @@ const en: Dict = {
   },
   chart: {
     label: "Markets",
-    title: "Live Market Charts",
-    embedHeading: "Practice · Live market",
+    title: "Real Market Charts",
+    embedHeading: "Practice · Real market",
     intro: "Real crypto charts to pair with your lessons — practice spotting candlestick patterns and indicators from {chapter:technical-analysis}.",
     loading: "Loading market data…",
     error: "Failed to load market data — Binance API may be unreachable",
@@ -782,7 +782,7 @@ const en: Dict = {
     rendering: "Rendering…",
   },
   footer: {
-    tagline: "A free & neutral trading education platform for Chinese speakers worldwide. Structured courses (learn) × live charts & replay (practice).",
+    tagline: "A free & neutral trading education platform for Chinese speakers worldwide. Structured courses (learn) × real charts & replay (practice).",
     disclaimer: "⚠️ Risk notice: All content is for study and research only and does not constitute investment advice. Markets are risky.",
     navHeading: "Navigate",
     source: "Content from kline-buty",
