@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { fetchKlines, fetchRandomHistoryWindow, InvalidMarketSymbolError } from "./binance";
+import {
+  fetchKlines,
+  fetchRandomHistoryWindow,
+  sampleHistoryWindowEndMs,
+  InvalidMarketSymbolError,
+} from "./binance";
 
 type FetchFn = (url: string, init?: RequestInit) => Promise<unknown>;
 
@@ -96,5 +101,32 @@ describe("fetchRandomHistoryWindow", () => {
     }
     // 0 与 0.999 之间应当摊开约 173 天；钳位生效过的话这里会塌成同一个点
     expect(ends[1] - ends[0]).toBeGreaterThan(30 * 24 * 3600_000);
+  });
+});
+
+describe("sampleHistoryWindowEndMs", () => {
+  /** 刻意取一个过去的时刻当上界（2023-11-14），免得断言要跟 Date.now() 抢时间 */
+  const ANCHOR = 1_700_000_000_000;
+  const DAY = 24 * 3600_000;
+
+  it("给定上界时落在它往前 7 ~ 180 天之间，两个端点各钉一次", () => {
+    vi.spyOn(Math, "random").mockReturnValueOnce(0).mockReturnValueOnce(0.999999);
+    expect(sampleHistoryWindowEndMs(ANCHOR)).toBe(ANCHOR - 180 * DAY);
+    expect(sampleHistoryWindowEndMs(ANCHOR)).toBeLessThanOrEqual(ANCHOR - 7 * DAY);
+  });
+
+  it("上界在未来时按现在夹住，不抽出一个还没发生的时刻", () => {
+    vi.spyOn(Math, "random").mockReturnValueOnce(0.999999);
+    expect(sampleHistoryWindowEndMs(Date.now() + 30 * DAY)).toBeLessThanOrEqual(
+      Date.now() - 7 * DAY,
+    );
+  });
+
+  it("不给上界就是盲盒口径：往前 7 ~ 180 天，不贴着当前价格", () => {
+    const before = Date.now();
+    vi.spyOn(Math, "random").mockReturnValueOnce(0).mockReturnValueOnce(0.999999);
+    expect(sampleHistoryWindowEndMs()).toBeGreaterThanOrEqual(before - 180 * DAY);
+    const after = Date.now();
+    expect(sampleHistoryWindowEndMs()).toBeLessThanOrEqual(after - 7 * DAY);
   });
 });

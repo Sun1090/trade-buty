@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => {
     remove: vi.fn(),
     timeScale: () => ({ fitContent: vi.fn() }),
   };
+  const SAMPLE_BACK_MS = 10 * 24 * 3600_000;
   return {
     series,
     chart,
@@ -45,6 +46,9 @@ const mocks = vi.hoisted(() => {
     saveReplayBest: vi.fn(),
     addStudyTime: vi.fn(),
     shareCard: vi.fn(() => null),
+    // 取样口径本身由 `binance.test.ts` 管；这里只要一个「必定比上界早」的确定值
+    SAMPLE_BACK_MS,
+    sampleHistoryWindowEndMs: vi.fn((notAfterMs?: number) => (notAfterMs ?? 0) - SAMPLE_BACK_MS),
   };
 });
 
@@ -56,6 +60,7 @@ vi.mock("lightweight-charts", () => ({
 vi.mock("@/lib/binance", () => ({
   fetchKlines: mocks.fetchKlines,
   fetchRandomHistoryWindow: mocks.fetchRandomHistoryWindow,
+  sampleHistoryWindowEndMs: mocks.sampleHistoryWindowEndMs,
 }));
 
 vi.mock("@/lib/perf", () => ({
@@ -75,12 +80,12 @@ vi.mock("@/lib/study-time", () => ({ addStudyTime: mocks.addStudyTime }));
 
 /** 日界只允许取自本地日历 helper：哨兵值与任何 UTC 换算结果都不相等，写回 UTC 口径当场红 */
 const LOCAL_DAY_END_SENTINEL = 1_700_000_000_123;
-const mockLocalDateStr = vi.fn(() => "1970-01-01");
+const mockLocalDateStr = vi.fn((date?: Date): string => (date ? "1970-01-01" : "1970-01-02"));
 vi.mock("@/lib/date-utils", async () => {
   const actual = await vi.importActual<typeof import("@/lib/date-utils")>("@/lib/date-utils");
   return {
     ...actual,
-    localDateStr: (...args: []) => mockLocalDateStr(...args),
+    localDateStr: (...args: [Date?]) => mockLocalDateStr(...args),
     // 校验照旧（非法日历日仍返回 NaN），只把结果换成 UTC 换算不可能命中的哨兵
     localDayEndMs: (dateStr: string) =>
       Number.isNaN(actual.localDayEndMs(dateStr)) ? Number.NaN : LOCAL_DAY_END_SENTINEL,
@@ -162,6 +167,8 @@ beforeEach(() => {
   mocks.fetchRandomHistoryWindow.mockImplementation(async () => makeKlines());
   mocks.fetchKlines.mockReset();
   mocks.fetchKlines.mockImplementation(async () => makeKlines());
+  // 只清调用记录：mockReset 会连取样实现一起清成 undefined
+  mocks.sampleHistoryWindowEndMs.mockClear();
   mocks.measureFps.mockReset();
   mocks.measureFps.mockResolvedValue(60);
   mocks.saveReplayRecord.mockClear();
@@ -265,6 +272,79 @@ describe("ReplayTrainer 数据加载", () => {
     fireEvent.change(screen.getByLabelText("截止日期"), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "开始" }));
     expect(mocks.fetchKlines).toHaveBeenCalledTimes(1);
+  });
+
+  it("自定义模式的「新一轮」往前另取一段，截止日期跟着这段真正结束的那天", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: "自定义" }));
+    const dateInput = screen.getByLabelText("截止日期") as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: "2024-01-15" } });
+    fireEvent.click(screen.getByRole("button", { name: "开始" }));
+    await waitFor(() => expect(mocks.fetchKlines).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: "新一轮" }));
+    await waitFor(() => expect(mocks.fetchKlines).toHaveBeenCalledTimes(2));
+
+    // 取样以「当前锚点」为上界，走 binance 那一个 helper（与盲盒同一口径）
+    expect(mocks.sampleHistoryWindowEndMs).toHaveBeenCalledWith(LOCAL_DAY_END_SENTINEL);
+    const [, , second] = mocks.fetchKlines.mock.calls[1];
+    expect(second).toMatchObject({ limit: 300 });
+    const sampled = LOCAL_DAY_END_SENTINEL - mocks.SAMPLE_BACK_MS;
+    expect(second.endTime).toBe(sampled);
+    // 日期框从此说的是这一段真正结束的那天，而不是用户上一次手输的值
+    expect(dateInput.value).not.toBe("2024-01-15");
+    expect(
+      mockLocalDateStr.mock.calls.some(
+        ([d]) => d instanceof Date && d.getTime() === sampled,
+      ),
+      "截止日期应由取样出来的结束时刻经本地日历 helper 得出",
+    ).toBe(true);
+  });
+
+  it("盲盒模式的「新一轮」照旧抽随机窗口，不去挪自定义的锚点", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: "新一轮" }));
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(2));
+    expect(mocks.sampleHistoryWindowEndMs).not.toHaveBeenCalled();
+    expect(mocks.fetchKlines).not.toHaveBeenCalled();
+  });
+
+  it("切到自定义但还没选日期时，「新一轮」没有可挪的锚点，仍是随机窗口", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(1));
+
+    // 模式本身在取数依赖里：切过去就会重新载入一次（此时还没有可锚定的日期）
+    fireEvent.click(screen.getByRole("button", { name: "自定义" }));
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(2));
+
+    fireEvent.click(screen.getByRole("button", { name: "新一轮" }));
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(3));
+    expect(mocks.sampleHistoryWindowEndMs).not.toHaveBeenCalled();
+  });
+
+  it("回到盲盒之后，「新一轮」不许改写用户填过的截止日期", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: "自定义" }));
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(2));
+    fireEvent.change(screen.getByLabelText("截止日期"), { target: { value: "2024-01-15" } });
+    fireEvent.click(screen.getByRole("button", { name: "开始" }));
+    await waitFor(() => expect(mocks.fetchKlines).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: dict.modeBlind }));
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(3));
+    fireEvent.click(screen.getByRole("button", { name: "新一轮" }));
+    await waitFor(() => expect(mocks.fetchRandomHistoryWindow).toHaveBeenCalledTimes(4));
+
+    // 日期框在盲盒模式下不渲染，切回来才知道有没有被偷偷挪走
+    fireEvent.click(screen.getByRole("button", { name: "自定义" }));
+    expect((screen.getByLabelText("截止日期") as HTMLInputElement).value).toBe("2024-01-15");
+    expect(mocks.sampleHistoryWindowEndMs).not.toHaveBeenCalled();
   });
 });
 
