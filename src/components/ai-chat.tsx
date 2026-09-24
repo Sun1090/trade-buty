@@ -121,6 +121,8 @@ interface AiDict {
   quotaLoginHint: string;
   helpful: string;
   unhelpful: string;
+  /** 反馈送出失败时要看得见，并且那颗按钮还能再点一次 */
+  feedbackFailed: string;
 }
 
 export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
@@ -129,9 +131,9 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // 「重试」必须重跑那件失败的事。清空对话的失败与提问的失败动作不同：
-  // 前者要再发一次 DELETE，后者要重发最后那句问题——混用会既删不掉云端、又把警告藏起来。
-  const [retryClear, setRetryClear] = useState(false);
+  // 「重试」必须重跑那件失败的事。三条路各不相同：send 失败要重发上一句提问，clear 失败要
+  // 再发一次 DELETE，feedback 失败则只能再点一次那颗评分按钮（这一栏没有它能重的事，就干脆不摆按钮）。
+  const [retryKind, setRetryKind] = useState<"send" | "clear" | "none">("send");
   // R3.7：课程落地上下文（?ctx=章节 slug & ct=章节标题，课末「问 AI」按钮带入）
   const [contextTitle, setContextTitle] = useState<string | null>(null);
   // 游客配额（服务端仅对未登录请求返回 X-Quota-* 头；登录用户为 null 不展示）
@@ -254,6 +256,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
     setError(null);
+    setRetryKind("send");
     setInput("");
 
     const userMsg: ChatMessage = { role: "user", content: trimmed };
@@ -488,7 +491,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     setMessages([]);
     setError(null);
     setFeedback({});
-    setRetryClear(false);
+    setRetryKind("send");
     // 游客的对话本来就不落库（隐私页也是这么写的），不发无谓的删除请求
     if (!auth?.id) return;
     const res = await fetch("/api/ai/conversations", { method: "DELETE" }).catch(() => null);
@@ -496,7 +499,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     // 而且那颗「重试」要真的再去删一次（消息已经被清了，重发提问那条路径是空转）。
     if (!res?.ok) {
       setError(dict.clearFailed);
-      setRetryClear(true);
+      setRetryKind("clear");
     }
   }
 
@@ -505,13 +508,13 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     rating: "helpful" | "unhelpful",
     msg: ChatMessage,
   ) {
-    if (feedback[msgIdx]) return; // 已反馈过
+    if (feedback[msgIdx]) return; // 这一条已经点过了（在途、或服务端已收下），不重复提交
     setFeedback((prev) => ({ ...prev, [msgIdx]: rating }));
     // 找对应的用户问题
     const userQ = [...messages.slice(0, msgIdx)]
       .reverse()
       .find((m) => m.role === "user");
-    void fetch("/api/ai/feedback", {
+    const res = await fetch("/api/ai/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -519,7 +522,17 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         question: userQ?.content ?? "",
         answer: msg.content,
       }),
-    }).catch(() => {});
+    }).catch(() => null);
+    if (res?.ok) return;
+    // 按下去了就等于「已反馈」，是替服务器作了个假的应：那条评分根本没落库
+    // （答案超长的会被拒、离线时 fetch 直接抛）。退回去，让按钮可以再点一次。
+    setFeedback((prev) => {
+      const next = { ...prev };
+      delete next[msgIdx];
+      return next;
+    });
+    setError(dict.feedbackFailed);
+    setRetryKind("none");
   }
 
   /** R1.13：引用点击上报（fire-and-forget，失败静默） */
@@ -763,22 +776,24 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         <div className="px-4 pb-2">
           <div className="mx-auto max-w-3xl rounded-xl border border-[var(--down)]/30 bg-[var(--down)]/10 p-3 flex items-center justify-between gap-3">
             <p className="text-sm text-down">{error}</p>
-            <button
-              onClick={() => {
-                if (retryClear) {
-                  void clear();
-                  return;
-                }
-                setError(null);
-                send(
-                  messages.filter((m) => m.role === "user").pop()?.content ||
-                    "",
-                );
-              }}
-              className="text-xs text-accent underline underline-offset-4 shrink-0"
-            >
-              {dict.retry}
-            </button>
+            {retryKind !== "none" && (
+              <button
+                onClick={() => {
+                  if (retryKind === "clear") {
+                    void clear();
+                    return;
+                  }
+                  setError(null);
+                  send(
+                    messages.filter((m) => m.role === "user").pop()?.content ||
+                      "",
+                  );
+                }}
+                className="text-xs text-accent underline underline-offset-4 shrink-0"
+              >
+                {dict.retry}
+              </button>
+            )}
           </div>
         </div>
       )}

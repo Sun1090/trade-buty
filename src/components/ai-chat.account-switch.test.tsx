@@ -61,6 +61,7 @@ const dict = {
   followups: ["展开讲讲「{t}」", "「{t}」怎么用？", "「{t}」的误区？"],
   helpful: "有用",
   unhelpful: "无用",
+  feedbackFailed: "这条反馈没送出去，请再点一次",
 };
 
 /** 历史接口按当前身份返回：A 有自己的对话，游客没有，B 只有一句开场。 */
