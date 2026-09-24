@@ -105,6 +105,7 @@ describe("getUnlockedBadges", () => {
     it("解锁条件是「此刻错题本为空」，不许写成用户清过错题", () => {
       // check 只看当下的 currentWrong，数据里没有任何「曾经错过」的历史
       const badge = BADGES.find((b) => b.id === "wrongbook-empty");
+      if (!badge) throw new Error("wrongbook-empty 徽章不见了");
       const zh = `${badge.name.zh}${badge.desc.zh}`;
       const en = `${badge.name.en} ${badge.desc.en}`.toLowerCase();
       expect(zh).not.toMatch(/清零|清空/);
