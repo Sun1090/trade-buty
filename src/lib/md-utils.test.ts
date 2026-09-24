@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { plainText, readFirstParagraph, extractH1, titleOrder } from "./md-utils";
+import { plainText, readFirstParagraph, extractH1, titleOrder, dropInlineTags } from "./md-utils";
 
 describe("readFirstParagraph", () => {
   it("跳过标题取首段", () => {
@@ -99,5 +99,23 @@ describe("plainText（R16.55：导语与摘要里的 markdown 语法不该原样
         "# 09 · 外汇篇\n\n> [09-市场与品种专题篇/01-外汇市场.md](../markets-instruments/forex-market.md) 讲清了外汇的「概念」\n",
       ),
     ).toBe("09-市场与品种专题篇/01-外汇市场.md 讲清了外汇的「概念」");
+  });
+});
+
+describe("dropInlineTags 只吃标签形状，不吃比较句", () => {
+  it("成对的内联标签整段去掉，标签之间的文字留着", () => {
+    expect(dropInlineTags("门槛、<mark>杠杆</mark>与<b>波动</b>")).toBe("门槛、杠杆与波动");
+    expect(dropInlineTags('<div class="callout"><p>提示</p></div>')).toBe("提示");
+  });
+
+  it("< 后面不是字母就不是标签：比较句原样保留", () => {
+    // 与 dropAngleSpans 的分工：那个用于几十字的界面文案（首段/摘要，实测零命中），
+    // 整篇课文里 `<` 多数是比较，按「配最近的 >」吞会吃掉真句子。
+    expect(dropInlineTags("回撤 < 20% 且估值 > 中位数")).toBe("回撤 < 20% 且估值 > 中位数");
+    expect(dropInlineTags("当 K1<K2 时到期")).toBe("当 K1<K2 时到期");
+  });
+
+  it("没有闭合的 `<b` 只删不得，后面的字照常留着", () => {
+    expect(dropInlineTags("停在 <b 结尾")).toBe("停在 <b 结尾");
   });
 });

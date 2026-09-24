@@ -67,6 +67,47 @@ function dropAngleSpans(input: string): string {
   return out;
 }
 
+/**
+ * 只吃掉**长得像标签**的尖括号片段：`<` 后面紧跟字母或 `/`，且同一行内有配对的 `>`。
+ * 与 `dropAngleSpans` 的分工是「这一段是短界面文案，还是整篇课文」：
+ *
+ * - `dropAngleSpans` 连不闭合的 `<script` 也不留，用于首段/摘要那种几十字的串；
+ * - 整篇课文里 `<` 与 `>` 多数是数学比较（`风险 < 2% 且收益 > 1%`、`K1<K2`），
+ *   按「第一个 `<` 配最近那个 `>`」吞掉就会把中间的真句子吃掉——实测
+ *   `/<[^>]+>/g` 在 118 个课文文件里吞掉 144,762 个字符，67 篇的
+ *   「预计阅读 N 分钟」因此被低估（最多 8 分钟）。
+ *
+ * 同样写成扫描而不是正则：CodeQL 的 incomplete-html-sanitization 只看正则本身的形状
+ * （见 `plainText` 的说明），而这里要的也不是消毒。
+ */
+export function dropInlineTags(input: string): string {
+  let out = "";
+  let i = 0;
+  while (i < input.length) {
+    const ch = input[i];
+    if (ch !== "<") {
+      out += ch;
+      i += 1;
+      continue;
+    }
+    const after = input[i + 1];
+    const isTagStart = after === "/" || (after !== undefined && /[a-zA-Z]/.test(after));
+    if (!isTagStart) {
+      out += ch; // `A < B`：这个括号不是标签，原样留着
+      i += 1;
+      continue;
+    }
+    const close = input.indexOf(">", i + 1);
+    if (close === -1) {
+      out += ch; // 没有配对的 `>`：只删不得，后面的字照常留着
+      i += 1;
+      continue;
+    }
+    i = close + 1;
+  }
+  return out;
+}
+
 /** 读正文第一段有效段落（跳过标题/frontmatter/引用前缀），去粗体，截 120 字 */
 export function readFirstParagraph(md: string): string {
   for (const line of md.split("\n")) {

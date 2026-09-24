@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { dropInlineTags } from "@/lib/md-utils";
 
 /**
  * 每条 utterance 的字数上限（R16.50）。这个数原先管的是**整篇课文**：182 篇中文课里
@@ -21,14 +22,13 @@ export const READ_ALOUD_CHUNK_CHARS = 3000;
  * 368 篇留标签名、422 篇留一整行横线；现在要求一处都不留。
  */
 export function speechText(md: string): string {
+  const withoutMedia = md
+    .replace(/^---[\s\S]*?---\n?/, "")
+    // 图片只留替代文字，链接只留锚文——URL 不是念给人听的
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
   return (
-    md
-      .replace(/^---[\s\S]*?---\n?/, "")
-      // 图片只留替代文字，链接只留锚文——URL 不是念给人听的
-      .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
-      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-      // 内联标签整段去掉（要求 < 后面紧跟字母，`A < B 且 C > D` 这种比较不会被吃掉）
-      .replace(/<\/?[a-zA-Z][a-zA-Z0-9-]*(?:\s[^<>]*)?\/?>/g, "")
+    dropInlineTags(withoutMedia)
       // 表格的分隔行整行丢弃，剩下的单元格用空格断句
       .replace(/^[ \t]*\|?[ \t]*:?-{2,}[ \t|:-]*$\n/gm, "")
       // 块标记：标题井号、引用竖线、列表符号
