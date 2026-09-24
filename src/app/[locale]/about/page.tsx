@@ -30,7 +30,7 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-5 py-10 space-y-8">
-      <HeroCard label="About" title={en ? "About Trade Buty" : "关于 Trade Buty"}>
+      <HeroCard label={en ? "About" : "关于"} title={en ? "About Trade Buty" : "关于 Trade Buty"}>
         {en ? "A free & neutral trading education platform." : "一个免费中立的交易教育平台。"}
       </HeroCard>
       <section className="prose-sm space-y-4 text-muted leading-relaxed">
