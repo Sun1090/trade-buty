@@ -45,6 +45,7 @@ const dict: ChartEmbedDict = {
   loading: "加载中",
   error: "出错了",
   badSymbol: "没有这个交易对",
+  customSymbolRejected: "没认出来：要写成 XXXUSDT",
   retry: "重试",
   symbolLabel: "交易对",
   intervalLabel: "周期",
