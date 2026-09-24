@@ -62,22 +62,15 @@ describe("根级 404 的两处说法", () => {
     }
   });
 
-  it("「用上面/下面的搜索」指的方向就是按钮真的在的位置", () => {
-    const hint = getDict(DEFAULT_LOCALE).notFound.suggestHint;
-    const token = hint.match(DIRECTION)?.[0] ?? "";
-    expect(token, `suggestHint 里没有方向词，那条断言无从核对：${hint}`).toBeTruthy();
-    expect(
-      [...(hint.match(new RegExp(DIRECTION.source, "gi")) ?? [])].length,
-      "一句里出现两个方向词，抠出来的那个不能作数",
-    ).toBe(1);
-
+  it("「用上面/下面的搜索」指的方向就是按钮真的在的位置（两种语言都要对）", () => {
+    const rendered = getDict(DEFAULT_LOCALE).notFound.suggestHint;
     const { container, unmount } = pageText();
     const searchLink = container.querySelector('a[href$="/search"]');
     expect(searchLink, "这一页没有搜索入口").toBeTruthy();
     // 文档序里祖先在前、后代在后，所以「最后一个含这句的元素」就是最内层那一个——
     // 拿外层容器来比位置会把它「包含」按钮这件事读成「按钮在下面」。
     const matches = Array.from(container.querySelectorAll("p,div,span")).filter((el) =>
-      (el.textContent ?? "").includes(hint),
+      (el.textContent ?? "").includes(rendered),
     );
     expect(matches.length, "渲染出来的正文里找不到 suggestHint 那句").toBeGreaterThan(0);
     const hintNode = matches[matches.length - 1];
@@ -86,11 +79,21 @@ describe("根级 404 的两处说法", () => {
     const preceding = 2;
     const linkIsAbove =
       (hintNode!.compareDocumentPosition(searchLink!) & preceding) === preceding;
-    const promisesAbove = /上面|above/i.test(token);
-    expect(
-      promisesAbove,
-      `按钮在提示${linkIsAbove ? "上方" : "下方"}，文案却写「${token}」`,
-    ).toBe(linkIsAbove);
     unmount();
+
+    // 这一页只按 DEFAULT_LOCALE 出一版（R16.41），可中英两份字典都有这句话——
+    // 页面结构不分语言，所以两份都得对着同一个实测顺序核。
+    for (const locale of ["zh", "en"] as const) {
+      const hint = getDict(locale).notFound.suggestHint;
+      const tokens = hint.match(new RegExp(DIRECTION.source, "gi")) ?? [];
+      expect(tokens.length, `${locale} 那句里的方向词不是一个，无从核对：${hint}`).toBe(1);
+      expect(
+        /上面|above/i.test(tokens[0] ?? ""),
+        `${locale}：按钮在提示${linkIsAbove ? "上方" : "下方"}，文案却写「${tokens[0]}」`,
+      ).toBe(linkIsAbove);
+    }
+
+    // 禁令的自证：旧写法承诺的方向与 DOM 实测相反，所以上面那条抓得住它
+    expect(/上面|above/i.test("如果不是你要的，用下面搜索：")).not.toBe(linkIsAbove);
   });
 });
