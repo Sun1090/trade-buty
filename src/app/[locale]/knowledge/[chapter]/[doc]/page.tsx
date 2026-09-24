@@ -22,7 +22,6 @@ import { ChapterExamCard } from "@/components/chapter-exam-card";
 import { AiChapterQuizCard } from "@/components/ai-chapter-quiz";
 import { LessonAskAi } from "@/components/lesson-ask-ai";
 import { TermExplainer } from "@/components/term-explainer";
-import { getChapterTitle } from "@/lib/ai/chapters";
 import { aiEnabledForPage } from "@/lib/ai-toggle";
 import { ChapterRail } from "@/components/chapter-rail";
 import { MarkRead } from "@/components/mark-read";
@@ -133,7 +132,6 @@ export default async function DocPage({
       }
     : null;
 
-  const chapterTitle = getChapterTitle(locale, chapterSlug);
   const aiEnabled = aiEnabledForPage();
   // 目录必须从真正送进 <Markdown> 的那份字符串里提取：转换器会改写标题行里的
   // <KbBadge> 等内容，用原文提取出的 id 在页面上不存在。
@@ -389,7 +387,7 @@ export default async function DocPage({
 
       {/* 问 AI（R3.1/R3.7/R3.8：带章节上下文，置于测验/练习之后，可一键关闭） */}
       <LessonAskAi
-        href={`${p("/ai")}?q=${encodeURIComponent(locale === "en" ? `Summarize the key points of "${doc.title}"` : `帮我总结《${doc.title}》的要点`)}&ctx=${encodeURIComponent(chapterSlug)}&ct=${encodeURIComponent(chapterTitle ?? "")}`}
+        href={`${p("/ai")}?q=${encodeURIComponent(locale === "en" ? `Summarize the key points of "${doc.title}"` : `帮我总结《${doc.title}》的要点`)}&ctx=${encodeURIComponent(chapterSlug)}`}
         label={`${t.ai.askAbout} ${doc.title}`}
         chapter={chapterSlug}
         enabled={aiEnabled}

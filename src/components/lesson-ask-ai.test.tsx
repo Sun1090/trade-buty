@@ -8,8 +8,8 @@ const { isAiGloballyDisabled } = await import("@/lib/ai-toggle");
 afterEach(cleanup);
 
 describe("LessonAskAi（R3.1/R3.9/R3.11）", () => {
-  it("渲染链接：href 携带 q/ctx/ct 三个参数", () => {
-    const href = "/zh/ai?q=%E5%B8%AE%E6%88%91%E6%80%BB%E7%BB%93&ctx=spot&ct=%E7%8E%B0%E8%B4%A7";
+  it("渲染链接：href 原样带上（R16.178 之后是 q + ctx 两个参数，标题由服务端回带）", () => {
+    const href = "/zh/ai?q=%E5%B8%AE%E6%88%91%E6%80%BB%E7%BB%93&ctx=spot";
     render(<LessonAskAi href={href} label="问 AI：梳理本课要点" chapter="spot" />);
     const link = screen.getByRole("link");
     expect(link.getAttribute("href")).toBe(href);

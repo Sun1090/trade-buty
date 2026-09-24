@@ -321,25 +321,36 @@ describe("POST /api/ai/chat RAG 接线（R1.6 / R2.1）", () => {
     expect(sent.at(-1)).toEqual({ role: "user", content: "Continue." });
   });
 
-  it("已知 contextChapter 注入用户上下文，未知章节静默忽略", async () => {
+  it("已知 contextChapter 注入用户上下文并回带同一个标题，未知章节静默忽略", async () => {
     streamOf(["ok"]);
-    await POST(
+    const known = await POST(
       request({
         messages: [{ role: "user", content: "我在这章有个问题" }],
         contextChapter: "behavioral-finance",
       }),
     );
     expect(systemPromptOf()).toContain("用户上下文");
+    /**
+     * R16.178：前端那条横幅印的必须是**这里**认下的那个标题，而不是地址栏里的 `ct`。
+     * 所以断言的不是某个字面量，而是「回带的标题 == 注入 prompt 的那个标题」这件事本身，
+     * 以及未知 slug 时根本没有这个头（于是没有横幅）。
+     */
+    const injected = systemPromptOf().match(/用户正在学习《(.+?)》篇章/)?.[1];
+    expect(injected, "prompt 里没找到注入的篇章标题，这条断言就无从比对").toBeTruthy();
+    const echoed = known.headers.get("X-Context-Chapter");
+    expect(echoed).not.toBeNull();
+    expect(decodeURIComponent(echoed ?? "")).toBe(injected);
 
     streamChat.mockClear();
     streamOf(["ok"]);
-    await POST(
+    const unknown = await POST(
       request({
         messages: [{ role: "user", content: "未知章节的问题" }],
         contextChapter: "no-such-chapter",
       }),
     );
     expect(systemPromptOf()).not.toContain("用户上下文");
+    expect(unknown.headers.get("X-Context-Chapter")).toBeNull();
   });
 });
 

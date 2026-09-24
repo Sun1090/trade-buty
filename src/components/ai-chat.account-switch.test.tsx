@@ -7,6 +7,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { SUGGESTED_QUESTIONS_ZH } from "@/lib/ai/prompt";
+import { getDict } from "@/lib/i18n";
 import { AiChat } from "./ai-chat";
 
 type AuthUser = { id: string; email: string | null } | null;
@@ -57,7 +58,7 @@ const dict = {
   retryInTpl: "约 {n} 分钟后重试",
   quotaRemaining: "游客每小时限 {l} 次，本小时剩余 {n} 次",
   quotaLoginHint: "本小时次数已用完，登录可获更多额度",
-  contextBannerTpl: "正在基于《{title}》篇章回答",
+  contextBannerTpl: getDict("zh").ai.contextBannerTpl,
   followups: ["展开讲讲「{t}」", "「{t}」怎么用？", "「{t}」的误区？"],
   helpful: "有用",
   unhelpful: "无用",

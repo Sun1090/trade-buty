@@ -199,12 +199,11 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       const params = new URLSearchParams(window.location.search);
       const q = params.get("q");
       const ctx = params.get("ctx");
-      const ct = params.get("ct");
-      if (ctx) {
-        setContextChapter(ctx);
-        if (ct) setContextTitle(ct);
-      }
-      if (q || ctx || ct) {
+      // R3.7 / R16.178：地址栏只带篇章 slug。标题不在这里回填——`ct` 那种由访客可写的
+      // 文本当界面文案，等于让 URL 替站点说话；标题要等响应头（`X-Context-Chapter`）
+      // 确认服务端认下了这个篇章之后才显示。
+      if (ctx) setContextChapter(ctx);
+      if (q || ctx) {
         // 地址栏里的问题是一次性交接口：留着的话刷新会把同一个问题再问一遍、白扣配额
         window.history.replaceState({}, "", window.location.pathname);
       }
@@ -352,6 +351,10 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       if (qLimit && qRemaining) {
         setQuota({ limit: parseInt(qLimit), remaining: parseInt(qRemaining) });
       }
+      // 篇章横幅由服务端回带的那个标题驱动：没有这个头就说明这次请求没带上下文、
+      // 或者 slug 认不出来（`route.ts` 里未知章节是静默忽略的），横幅随之消失。
+      const ctxChapter = res.headers.get("X-Context-Chapter");
+      setContextTitle(ctxChapter ? decodeURIComponent(ctxChapter) : null);
 
       if (res.status === 429) {
         const retryAfter = Number.parseInt(res.headers.get("retry-after") ?? "", 10);
