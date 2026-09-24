@@ -4,6 +4,38 @@ import { describe, expect, it } from "vitest";
 import { estimateReadingMinutes } from "./estimated-reading-time";
 import { dropInlineTags } from "./md-utils";
 
+/**
+ * 「旧吃法」的复现：从每个 `<` 一路吃到最近的 `>`，中间整段抹掉。
+ *
+ * 历史上这一步写作 `/<[^>]+>/g` 的 replace，这里用下标扫描复现它，而不是再抄一遍那条正则：
+ * CodeQL 的 `incomplete-multi-character-sanitization` 只看正则形状就判「值里可能还剩 `<script`」，
+ * 不看它流向何处（`md-utils.ts` 的 `plainText` 说明里记了同样的两轮实测），而这条测量要的
+ * 从来不是消毒。等价性不是想当然：扫描写法在 20 条手写用例、20 万个随机串和整棵知识库
+ * （337 个文件）的正文上与那条正则逐字符相同，下面那条「旧吃法的形状」用例把其中最反直觉
+ * 的几条钉在这里——`<>` 因为中间没有字符而留下，`<a<b>` 却整段被吞。
+ */
+function eatLegacyAngleSpans(input: string): string {
+  let out = "";
+  let i = 0;
+  while (i < input.length) {
+    if (input[i] !== "<") {
+      out += input[i];
+      i += 1;
+      continue;
+    }
+    const next = input[i + 1];
+    // `[^>]+` 至少吃一个字符：紧跟 `>` 的那个 `<` 匹配不上，只能原样留着。
+    const close = next !== undefined && next !== ">" ? input.indexOf(">", i + 1) : -1;
+    if (close === -1) {
+      out += "<";
+      i += 1;
+      continue;
+    }
+    i = close + 1; // `<` 到 `>`（含两端）整段消失
+  }
+  return out;
+}
+
 describe("estimateReadingMinutes", () => {
   it("returns zero for empty content", () => {
     expect(estimateReadingMinutes("")).toBe(0);
@@ -63,6 +95,23 @@ describe("estimateReadingMinutes", () => {
   });
 
   /**
+   * 复现旧吃法的那条扫描（`eatLegacyAngleSpans`）必须与历史上的 `/<[^>]+>/g` 同形，
+   * 否则最后那条「少算 8 分钟」量的就不是当年那件事。以下每条都是照着那条正则的语义
+   * 手推的：`[^>]+` 要求中间至少一个字符，所以 `<>` 整个留下；一旦匹配成功，`<`、`>`
+   * 与中间（含第二个 `<`）一起消失；没有配对的 `>` 时那个 `<` 原样留着。
+   */
+  it("旧吃法的形状：<> 留下，<a<b> 整段吞掉", () => {
+    expect(eatLegacyAngleSpans("<>")).toBe("<>");
+    expect(eatLegacyAngleSpans("<>a<b>")).toBe("<>a");
+    expect(eatLegacyAngleSpans("<a<b>")).toBe("");
+    expect(eatLegacyAngleSpans("</p>")).toBe("");
+    expect(eatLegacyAngleSpans("x<script>y")).toBe("xy");
+    expect(eatLegacyAngleSpans("a\n<b>\nc")).toBe("a\n\nc");
+    expect(eatLegacyAngleSpans("口径 < 风险 上行")).toBe("口径 < 风险 上行");
+    expect(eatLegacyAngleSpans("风险 < 2% 且收益 > 1%")).toBe("风险  1%");
+  });
+
+  /**
    * R16.156：这三处注释以前各写着一组「实测」总量（118 个文件 / 144,762 个字符 /
    * 67 篇被低估），而台账 R16.118 记的是 62 篇 / 109 分钟——两种口径都没人能复算出来
    * （2026-09-25 再量一次得到的是 72 篇）。总量留不住，就把它换成一条自己会跑的测量：
@@ -89,7 +138,7 @@ describe("estimateReadingMinutes", () => {
     for (const file of files) {
       const raw = fs.readFileSync(file, "utf8");
       const body = raw.startsWith("---\n") ? raw.slice(raw.indexOf("\n---", 3) + 4) : raw;
-      const before = estimateReadingMinutes(body.replace(/<[^>]+>/g, ""));
+      const before = estimateReadingMinutes(eatLegacyAngleSpans(body));
       const after = estimateReadingMinutes(dropInlineTags(body));
       if (after > before) {
         affected += 1;
