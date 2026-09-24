@@ -359,6 +359,7 @@ export function StatsClient({
 
   const unlocked = getUnlockedBadges(stats);
   const locked = BADGES.filter((b) => !b.check(stats));
+  const badgeLocale = locale === "zh" ? "zh" : "en";
 
   // R4.5：新用户空态——不给一片 0，给行动建议
   if (stats.overallPct === 0 && stats.totalStudySeconds === 0 && stats.currentStreak === 0) {
@@ -851,8 +852,8 @@ export function StatsClient({
               className="rounded-2xl border border-[var(--accent)]/40 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-4 text-center"
             >
               <p className="text-3xl" aria-hidden>{b.icon}</p>
-              <p className="mt-2 text-sm font-semibold">{b.name}</p>
-              <p className="mt-1 text-xs text-faint">{b.desc}</p>
+              <p className="mt-2 text-sm font-semibold">{b.name[badgeLocale]}</p>
+              <p className="mt-1 text-xs text-faint">{b.desc[badgeLocale]}</p>
             </div>
           ))}
           {locked.map((b: Badge) => (
@@ -861,8 +862,8 @@ export function StatsClient({
               className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-center opacity-40"
             >
               <p className="text-3xl" aria-hidden>🔒</p>
-              <p className="mt-2 text-sm font-semibold">{b.name}</p>
-              <p className="mt-1 text-xs text-faint">{b.desc}</p>
+              <p className="mt-2 text-sm font-semibold">{b.name[badgeLocale]}</p>
+              <p className="mt-1 text-xs text-faint">{b.desc[badgeLocale]}</p>
             </div>
           ))}
         </div>
