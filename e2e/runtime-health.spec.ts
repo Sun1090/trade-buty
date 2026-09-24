@@ -84,9 +84,17 @@ async function seedStorage(page: Page) {
       { symbol: "BTCUSDT", interval: "1h", correct: 4, total: 5, at: Date.now(), durationMs: 90_000 },
     ]),
     "tb-replay-best": JSON.stringify({ symbol: "BTCUSDT", interval: "1h", bestStreak: 3 }),
-    "tb-bookmarks": JSON.stringify([
-      { url: "/zh/knowledge/getting-started/first-trade", title: "第一笔交易", at: Date.now() },
-    ]),
+    "tb-bookmarks": JSON.stringify({
+      // 写入端的真实形状：key 是 `chapter/doc`，值必须带 chapter 与 doc。
+      // 曾经这里种的是数组 [{url,title,at}]，`readBookmarks` 的 isRecord 当场整份拒收，
+      // 于是这一轮健康巡检里的 /zh/bookmarks 永远只在跑空态。
+      "getting-started/first-trade": {
+        chapter: "getting-started",
+        doc: "first-trade",
+        title: "第一笔交易",
+        at: Date.now(),
+      },
+    }),
   };
   await page.addInitScript((entries) => {
     for (const [key, value] of Object.entries(entries)) localStorage.setItem(key, value);
