@@ -7031,3 +7031,19 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：用户可见变化三处，都在 `/chart` 与课文侧边那张图上——换标的/换周期的瞬间那格数字会先消失（以前留着旧标的的价格）、小于 1 的价格现在带完整小数（`SHIBUSDT` 从「0」变成 `0.0000092`）、慢网提示那句话改口（不再断言用户网络慢，改为点明两种可能原因）。数据、请求、WS 行为一律不动。回滚：`git revert c6a21a7 8ac44c1 a0eea85` 三笔即可，无迁移、无外部依赖。
 - 下一项：本条 PR 合并后接着做队列里能自主推进的两条——**R16.181**（那格价格是一串没有名字的裸数字：要新增 `chart.*` 字典键 zh/en + 两处手写夹具 + `page.tsx` 侧的逐字段装配，所以单独立项）、**R16.182**（导出的 stats 文件里 `replay.rounds` 是被 `REPLAY_HISTORY_KEEP = 100` 裁过的窗口而 `bestStreak` 是全量、`engagement.studyWindowDays` 说的 90 天其实锚在「最新有记录的那一天」，属于带版本的导出格式变更）。等人的三条仍是 R16.159（根级 404 中英并列）、R16.164（内容仓 tagline，须去 kline-buty 改口）、**R16.174**（AI 变体题按位置认领来源错题并把 SRS 记进错题本，三条走向都要人拍板）。
 - 更新时间：2026-09-25（Asia/Shanghai）。
+
+---
+
+## 2026-09-25 — 那格最新价有了自己的名字（R16.181，第二十轮补票）
+
+- 状态：本地全量验证完成（build 474/474 页、exit 0 / **42 条 `check:*` 逐条跑过，42 绿 0 红** / 316 文件 3163 条单测 / `npm run e2e` 164 条全绿（statements 95.11%、branches 90.73%、functions 95.21%、lines 97.08%，与 #301 逐项相同）/ lint（`--max-warnings=0`）/ typecheck / `git diff --check` 干净）；四笔提交在 `feat/chart-price-label`，基线 `origin/main = 6075935`（即 R16.179 / R16.180 那条 PR #301 合并后的头）。
+- 里程碑 / 版本：同一个表面（`/chart` 工具栏）的下一格，不开新版本；等本条 PR 合并后按 patch 节奏走。
+- 分支 / 提交：`feat/chart-price-label` → PR **#302**，`5aa89a7`（新键 + 可见标签 + 三处装配 + 用例）→ `5d9d3e7`（用例补上「语种和界面一致」那一半）→ `081bf5c`（台账 R16.181 关掉）→ 本条 `docs(progress)` 提交。
+- 完成内容：**R16.181** 修完 R16.179 之后那格数字不再说谎，但**只有看得见的人知道它是价格**：渲染处是一个裸 `<span>{formatPrice(lastPrice)}</span>`，既没有可见标签也没有 `aria-label`，而同一条工具栏上别的控件都有名字（`customSymbolLabel`、`intervalLabel`，图表区自己还有 `chartNameTpl` 那个 `role="img"` 的读屏名）。屏幕阅读器读到的是一串凭空出现的数字。改法是新增 `chart.lastPriceLabel`（zh「最新价」/ en "Last price"）并把名字**摆在数字左边看得见的位置**，而不是塞进 `aria-label`——「只有读屏用户知道」和「只有看得见的人知道」是同一个毛病的两面，可见标签一次治两头。叫「最新价」是代码真给的那个数：加载时取末根 K 线的 `close`，WS 增量写回的也是那根 K 线的 `c`；实时被暂停时旁边另有 R16.180 那句说明它为什么不动，所以这个名字没有替访客多许诺「正在跳」。
+- 新增 / 加强门禁：`src/components/kline-chart.test.tsx` 42 → 43 条，一条用例做三件事——两种界面语言各渲染一遍（标签取自 `getDict(locale).chart`，不是手抄字面量）、断言名字与数字在同一个容器里（隔开了就等于读屏仍会念到一串没有归属的数字）、断言**屏上那句**的语种和界面一致（照 `chartNameTpl` 那条的写法判中日韩字符；巡检判据只认中文，抓不住「把英文写死在中文界面」这一半）。`chart-embed.test.tsx` 的手写夹具同步补这个键（不增用例）。装配链上另有四处必须同起同落（i18n 的 zh / en 两份、`ChartDict`、`ChartEmbedDict` 与它的转抄、`page.tsx:361` 的逐字段拼装），漏任何一处 `tsc --noEmit` 就红，所以不为此另写用例——类型检查就是这一半的门禁。
+- 变更文件（7 个，`git diff --name-only origin/main..HEAD` 实测，本条进度提交之前）：`src/lib/i18n.ts`、`src/components/kline-chart.tsx`、`src/components/chart-embed.tsx`、`src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx`、`src/components/kline-chart.test.tsx`、`src/components/chart-embed.test.tsx`、`docs/roadmap.md`。
+- 验证（本地逐条退出码 0）：`npm run build`（474/474，exit 0）→ 42 条 `check:*` 一条一条跑（`checks_pass=42 checks_fail=0`，日志 `/tmp/verify-chart.log`）→ `npm run test:coverage`（316 文件 / 3163 条，比 #301 的 3162 正好多本轮新增那一条；statements 95.11%（10408/10942）、branches 90.73%（7406/8162）、functions 95.21%（2110/2216）、lines 97.08%（9190/9466））→ `npm run e2e`（164 条，CI 第 178 行同一条命令）→ `lint` / `typecheck` / `git diff --check`。另外单独跑过 `check:dead-copy`（新键要有真读者）、`check:localized-labels`、`check:ai-copy`、`check:mobile`（14 个关键页面 320px 无溢出：标签靠工具栏既有的 `flex-wrap` 换行）、`check:docs`，各退出码 0。
+- 变异核对 2 组探针（脚本 `/tmp/probe-r16181.sh`，带锁目录拒绝并发、替换前断言锚点 `HITS==1`、每组跑完 `git checkout --` 还原并核对 `git diff --quiet` 无 `NOT byte-identical`）：① 撤掉标签那个 `<span>` → 只红在「价格读数带着它自己的名字，两种语言都不裸」（1 failed | 42 passed）；② 把 zh 的 `lastPriceLabel` 换成 `"Last price"` → 也只红在这同一条。日志 `/tmp/r16181-P{1,2}.log`。
+- 阻塞 / 风险：用户可见变化一处——`/chart` 与课文侧边那张图的工具栏里，那格数字左边多了一个标签（zh「最新价」/ en "Last price"），窄屏靠既有的 `flex-wrap` 换行。请求、WS、数据一律不动。回滚：`git revert` 那四笔即可，无迁移、无外部依赖。
+- 下一项：本条 PR 合并后做 **R16.182**（导出的 stats 文件里 `replay.rounds` 是被 `REPLAY_HISTORY_KEEP = 100` 裁过的窗口而 `bestStreak` 是全量、`engagement.studyWindowDays` 说的 90 天其实锚在「最新有记录的那一天」——属于带版本的导出格式变更，不在文案层）。等人的三条仍是 R16.159（根级 404 中英并列）、R16.164（内容仓 tagline，须去 kline-buty 改口）、R16.174（AI 变体题按位置认领来源错题并把 SRS 记进错题本，三条走向都要人拍板）。
+- 更新时间：2026-09-25（Asia/Shanghai）。
