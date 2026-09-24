@@ -19,6 +19,8 @@ vi.stubGlobal("localStorage", {
 const { localDateStr, shiftDate } = await import("@/lib/date-utils");
 const zh = (await import("@/lib/i18n-stats")).STATS_DICTS.zh;
 const { STUDY_LEDGER_KEEP_DAYS } = await import("@/lib/study-time");
+const { REPLAY_HISTORY_KEEP } = await import("@/lib/replay-history-limit");
+const { STATS_EXPORT_VERSION } = await import("@/lib/stats-export");
 const { QUIZZES } = await import("@/lib/quizzes");
 const { quizScorePct } = await import("@/lib/quiz-score");
 
@@ -80,6 +82,12 @@ describe("R12.24 guest-mode stats degradation", () => {
 
   it("guest export produces a complete versioned payload", async () => {
     seedRichLocal();
+    /**
+     * R16.182：把台账改成「最后一次学习是 120 天前」——窗口头尾必须跟着台账走，
+     * 而不是跟着导出那一刻的日期走。这一层只有走真实按钮才验得到。
+     */
+    const idleDay = shiftDate(today, -120);
+    store.set("tb-study-time", JSON.stringify({ [idleDay]: { read: 1800 } }));
     const createObjectURL = vi.fn(() => "blob:mock");
     const revokeObjectURL = vi.fn();
     vi.stubGlobal("URL", { ...URL, createObjectURL, revokeObjectURL });
@@ -99,7 +107,7 @@ describe("R12.24 guest-mode stats degradation", () => {
     const blob = (createObjectURL.mock.calls[0] as unknown[])[0] as Blob;
     const parsed = JSON.parse(await blob.text());
     expect(parsed.format).toBe("trade-buty-stats-export");
-    expect(parsed.version).toBe(2);
+    expect(parsed.version).toBe(STATS_EXPORT_VERSION);
     /**
      * R16.11：`avgBestPct` / `studySeconds` / `studyWindowDays` 是 v1→v2 改名或新增的键。
      * 纯函数那份叶子路径清单钉不住这里——它自己喂自己；只有走真实按钮，
@@ -108,6 +116,13 @@ describe("R12.24 guest-mode stats degradation", () => {
     expect(parsed.data.quizzes.avgBestPct).toBe(quizScorePct(8, QUIZZES["getting-started"].questions.length));
     expect(parsed.data.engagement.studySeconds).toBe(1800);
     expect(parsed.data.engagement.studyWindowDays).toBe(STUDY_LEDGER_KEEP_DAYS);
+    // R16.182：两个窗口的边界各来自一份常量 / 一本台账，键名与值都要走通一次
+    expect(parsed.data.replay.historyRoundCap).toBe(REPLAY_HISTORY_KEEP);
+    expect(parsed.data.replay.allTimeBestStreak).toBe(4);
+    expect(parsed.data.engagement.studyWindowFirstDay).toBe(idleDay);
+    expect(parsed.data.engagement.studyWindowLastDay).toBe(idleDay);
+    // 窗口尾不是导出日：这两件事在文件里各写各的
+    expect(parsed.data.engagement.studyWindowLastDay).not.toBe(String(parsed.exportedAt).slice(0, 10));
     expect(parsed.data.courses.readDocs).toBe(3);
     expect(parsed.data.quizzes.done).toBe(1);
     expect(parsed.data.replay.rounds).toBe(1);
