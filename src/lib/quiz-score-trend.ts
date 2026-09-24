@@ -103,7 +103,10 @@ export function buildQuizScoreTrend(input: {
     const raw = progress[chapter.slug];
     const best = raw ? safeNonNegative(raw.best) : 0;
     const total = safeNonNegative(chapter.questions);
-    const done = Boolean(raw?.done) || best > 0;
+    // 只认 `done` 这一个标记，不拿「有分数」当「做完了」：概览卡的「测验完成」读的就是
+    // `p?.done`，这里多算一个 `|| best > 0` 会让同一屏两张卡在 `{best: 5, done: false}`
+    // 这种存档上印出两个不同的数。
+    const done = Boolean(raw?.done);
     currentByChapter.set(chapter.slug, { best: Math.min(best, total || best), total: total || Math.max(1, best), done });
   }
 
@@ -113,9 +116,12 @@ export function buildQuizScoreTrend(input: {
   const orderedAttempts = Object.entries(attempts).flatMap(([key, rawEntry]) => {
     const chapter = typeof rawEntry.chapter === "string" && rawEntry.chapter ? rawEntry.chapter : key.split(":")[0];
     if (!chapter || !currentByChapter.has(chapter)) return [];
+    // 有效性看形状，不看分数：0 分是一套真做完的测验，只是最高分为 0。
+    // 早先拿 `best <= 0` 当垃圾过滤器，代价是把这类完成整条抹掉（测验次数、平均得分都不算它）。
+    if (!Number.isFinite(Number(rawEntry.best)) || Number(rawEntry.best) < 0) return [];
+    if (!Number.isFinite(Number(rawEntry.at)) || Number(rawEntry.at) <= 0) return [];
     const total = Math.max(1, safeNonNegative(rawEntry.total) || safeNonNegative(currentByChapter.get(chapter)!.total));
     const best = Math.min(safeNonNegative(rawEntry.best), total);
-    if (best <= 0) return [];
     return [{ chapter, best, total, at: safeNonNegative(rawEntry.at), date: dateOfTimestamp(rawEntry.at, today) }];
   }).sort((a, b) => (a.at - b.at) || a.chapter.localeCompare(b.chapter));
 
@@ -139,10 +145,12 @@ export function buildQuizScoreTrend(input: {
         bestScoreText = `${event.best}/${event.total}`;
       }
     }
-    if (bestPct !== null && events.length > 0) {
-      dayScores.set(date, { attempts: events.length, bestPct, bestScoreText });
-      const dayBest = events.reduce((top, event) => (event.best > (top?.best ?? -1) ? event : top), null as { best: number; total: number } | null);
-      if (dayBest && (bestInRangeScore === null || dayBest.best > bestInRangeScore)) {
+    const dayBest = events.reduce((top, event) => (event.best > (top?.best ?? -1) ? event : top), null as { best: number; total: number } | null);
+    if (dayBest) {
+      // 「做了几套」和「考了多少分」是两件事。早先这两件捆在 `bestPct !== null` 一个条件上，
+      // 于是全 0 分的那天在「测验次数」里凭空消失——同一页的概览卡却照样把这套题算成完成。
+      dayScores.set(date, { attempts: events.length, bestPct: bestPct ?? 0, bestScoreText });
+      if (bestInRangeScore === null || dayBest.best > bestInRangeScore) {
         bestInRangeScore = dayBest.best;
         bestInRangeTotal = dayBest.total;
         bestInRangePct = safePct(dayBest.best, dayBest.total);
@@ -158,7 +166,8 @@ export function buildQuizScoreTrend(input: {
     });
   }
 
-  const currentScores = [...currentByChapter.values()].filter((item) => item.done && item.best > 0).map((item) => ({
+  // 与统计页概览卡（learn-stats 的 `p?.done`）同一判据：做过就算完成，0 分也是分数
+  const currentScores = [...currentByChapter.values()].filter((item) => item.done).map((item) => ({
     ...item,
     pct: safePct(item.best, item.total) ?? 0,
   }));
