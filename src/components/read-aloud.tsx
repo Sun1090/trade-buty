@@ -10,8 +10,38 @@ import { useState } from "react";
  */
 export const READ_ALOUD_CHUNK_CHARS = 3000;
 
-/** 段落优先装满每条；单段本身超限才硬切（表格那种没有空行的长段就是这么撞上的） */
-function splitForSpeech(text: string, limit: number): string[] {
+/**
+ * 把课文压成念得出口的纯文本。喂进来的必须是**正文渲染用的那一份字符串**
+ * （prepareForRender 之后），这样朗读与屏幕上的课文同源；这里只负责把标记去掉。
+ *
+ * 旧实现是一串字符黑名单（`[#*`~\[\]()>|]`），它删得掉星号却删不掉标记的**内容**：
+ * `<mark>杠杆</mark>` 念出来是「mark 杠杆 mark」，`[骗局识别](../pitfalls/scam-detection.md)`
+ * 念出来是「骗局识别点点 pitfalls 斜杠 scam-detection 点 md」，表格分隔行
+ * `|:---|:---|` 念成一串冒号。实测四篇课文各留 14–34 处这类噪音。
+ */
+export function speechText(md: string): string {
+  return (
+    md
+      .replace(/^---[\s\S]*?---\n?/, "")
+      // 图片只留替代文字，链接只留锚文——URL 不是念给人听的
+      .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+      // 内联标签整段去掉（要求 < 后面紧跟字母，`A < B 且 C > D` 这种比较不会被吃掉）
+      .replace(/<\/?[a-zA-Z][a-zA-Z0-9-]*(?:\s[^<>]*)?\/?>/g, "")
+      // 表格的分隔行整行丢弃，剩下的单元格用空格断句
+      .replace(/^[ \t]*\|?[ \t]*:?-{2,}[ \t|:-]*$\n/gm, "")
+      // 块标记：标题井号、引用竖线、列表符号
+      .replace(/^#{1,6}[ \t]+/gm, "")
+      .replace(/^>[ \t]?/gm, "")
+      .replace(/^[ \t]*[-*+][ \t]+/gm, "")
+      // 强调与行内代码的记号
+      .replace(/[*_~`|]/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  );
+}
+
+/** 段落优先装满每条；单段本身超限才硬切（表格那种没有空行的长段就是这么撞上的） */function splitForSpeech(text: string, limit: number): string[] {
   const chunks: string[] = [];
   let current = "";
   for (const para of text.split(/\n{2,}/)) {
@@ -54,11 +84,7 @@ export function ReadAloud({
       setSpeaking(false);
       return;
     }
-    const clean = text
-      .replace(/^---[\s\S]*?---\n?/, "")
-      .replace(/[#*`~\[\]()>|]/g, "")
-      .replace(/\n{3,}/g, "\n\n");
-    const chunks = splitForSpeech(clean, READ_ALOUD_CHUNK_CHARS);
+    const chunks = splitForSpeech(speechText(text), READ_ALOUD_CHUNK_CHARS);
     if (chunks.length === 0) return;
     const lastIndex = chunks.length - 1;
     chunks.forEach((chunk, index) => {

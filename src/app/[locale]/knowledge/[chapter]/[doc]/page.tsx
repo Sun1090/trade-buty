@@ -224,7 +224,7 @@ export default async function DocPage({
             failedLabel={locale === "en" ? "Copy failed — select and copy manually" : "复制失败，请手动选择复制"}
             testId="page-copy-link-btn"
           />
-          <ReadAloud text={doc.content} label={locale === "en" ? "Read aloud" : "朗读"} playingLabel={locale === "en" ? "Stop" : "停止"} rateLabel={locale === "en" ? "Speaking rate" : "语速"} locale={locale} />
+          <ReadAloud text={rendered} label={locale === "en" ? "Read aloud" : "朗读"} playingLabel={locale === "en" ? "Stop" : "停止"} rateLabel={locale === "en" ? "Speaking rate" : "语速"} locale={locale} />
           <FocusMode label={locale === "en" ? "Focus" : "专注"} activeLabel={locale === "en" ? "Exit focus" : "退出专注"} />
           <span className="ml-auto flex items-center gap-3">
             {estimatedMinutes > 0 && (
