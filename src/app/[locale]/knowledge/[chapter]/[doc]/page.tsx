@@ -337,6 +337,7 @@ export default async function DocPage({
               loading: t.chart.loading,
               error: t.chart.error,
               badSymbol: t.chart.badSymbol,
+              customSymbolRejected: t.chart.customSymbolRejected,
               retry: t.chart.retry,
               symbolLabel: t.chart.symbolLabel,
               intervalLabel: t.chart.intervalLabel,

@@ -51,6 +51,7 @@ interface ChartDict {
   loading: string;
   error: string;
   badSymbol: string;
+  customSymbolRejected: string;
   retry: string;
   symbolLabel: string;
   intervalLabel: string;
@@ -72,6 +73,8 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
   const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const [symbol, setSymbol] = useState<string>(CHART_QUICK_SYMBOLS[0]);
+  // 形状闸门拒收的那次输入：不清空框里的字（要让用户改得动），但必须把「图上还是原来那个标的」说出来
+  const [rejectedSymbol, setRejectedSymbol] = useState<string | null>(null);
   const [interval_, setInterval_] = useState<string>("1h");
   const [status, setStatus] = useState<
     "loading" | "ready" | "error" | "timeout" | "badSymbol"
@@ -302,7 +305,10 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
           {CHART_QUICK_SYMBOLS.map((s) => (
             <button
               key={s}
-              onClick={() => setSymbol(s)}
+              onClick={() => {
+                setRejectedSymbol(null);
+                setSymbol(s);
+              }}
               aria-label={`${dict.symbolLabel} ${s}`}
               aria-pressed={s === symbol}
               className={`px-3 py-1.5 rounded-lg font-mono text-xs transition ${
@@ -323,8 +329,15 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
             defaultValue={symbol}
             onBlur={(e) => {
               const v = e.target.value.trim().toUpperCase();
-              if (v && v !== symbol && CHART_CUSTOM_SYMBOL.test(v)) {
+              if (!v || v === symbol) {
+                setRejectedSymbol(null);
+                return;
+              }
+              if (CHART_CUSTOM_SYMBOL.test(v)) {
+                setRejectedSymbol(null);
                 setSymbol(v);
+              } else {
+                setRejectedSymbol(v);
               }
             }}
             onKeyDown={(e) => {
@@ -370,6 +383,11 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
           </button>
         </div>
       </div>
+      {rejectedSymbol && (
+        <p role="status" className="-mt-2 mb-3 text-xs text-faint">
+          {dict.customSymbolRejected}
+        </p>
+      )}
       <div
         data-testid="kline-chart"
         data-density={density}
@@ -387,12 +405,16 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
         {(displayStatus === "error" || displayStatus === "badSymbol") && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center text-sm text-muted">
             <p>{displayStatus === "badSymbol" ? dict.badSymbol : dict.error}</p>
-            <button
-              onClick={() => setRetryNonce((value) => value + 1)}
-              className="text-accent underline underline-offset-4"
-            >
-              {dict.retry}
-            </button>
+            {/* 「重试」重发的是同一个请求：币安已经答过 400「没有这个交易对」，再点一次只会拿到同一句。
+                这个状态下唯一的补救是换标的，所以按钮不出现——留着它就是给一条必定无效的动作让位。 */}
+            {displayStatus === "error" && (
+              <button
+                onClick={() => setRetryNonce((value) => value + 1)}
+                className="text-accent underline underline-offset-4"
+              >
+                {dict.retry}
+              </button>
+            )}
           </div>
         )}
         {displayStatus === "timeout" && (

@@ -13,6 +13,7 @@ export interface ChartEmbedDict {
   loading: string;
   error: string;
   badSymbol: string;
+  customSymbolRejected: string;
   retry: string;
   symbolLabel: string;
   intervalLabel: string;
@@ -58,6 +59,7 @@ export function LazyChartEmbed({ dict }: { dict: ChartEmbedDict }) {
             loading: dict.loading,
             error: dict.error,
             badSymbol: dict.badSymbol,
+            customSymbolRejected: dict.customSymbolRejected,
             retry: dict.retry,
             symbolLabel: dict.symbolLabel,
             intervalLabel: dict.intervalLabel,

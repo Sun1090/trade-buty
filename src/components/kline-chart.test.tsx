@@ -77,6 +77,7 @@ const dict = {
   loading: "加载中",
   error: "行情加载失败",
   badSymbol: "没有这个交易对",
+  customSymbolRejected: "没认出来：要写成 XXXUSDT",
   retry: "重试",
   symbolLabel: "交易对",
   intervalLabel: "周期",
@@ -196,13 +197,17 @@ describe("KlineChart 加载失败与重试", () => {
     expect(screen.queryByText("行情加载失败")).toBeNull();
   });
 
-  it("交易对不存在时说的是「没有这个交易对」，而不是「API 可能不可达」", async () => {
+  it("交易对不存在时说的是「没有这个交易对」，而不是「API 可能不可达」，也不给一个必定无效的「重试」", async () => {
     // 币安对不存在的币对是**应答** 400 + code -1121（不是连不上），见 binance.test.ts
     mocks.fetchKlines.mockRejectedValueOnce(new InvalidMarketSymbolError("没有这个交易对：1000PEPEUSDT"));
     render(<KlineChart dict={dict} />);
     await waitFor(() => expect(screen.getByText("没有这个交易对")).toBeInTheDocument());
     expect(screen.queryByText("行情加载失败")).toBeNull();
-    expect(screen.getByText("重试")).toBeInTheDocument();
+    // 形状提示是另一件事：那次是本地闸门就没让过，这次是币安答了「现货没有」
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    // 「重试」重发的是同一个请求，拿回的必然是同一句 400
+    expect(screen.queryByText("重试")).toBeNull();
+    expect(mocks.fetchKlines).toHaveBeenCalledTimes(1);
   });
 
   it("请求超时（AbortController 触发）展示超时文案", async () => {    vi.useFakeTimers();
@@ -495,7 +500,7 @@ describe("KlineChart 交易对与周期切换", () => {
     );
   });
 
-  it("自定义交易对非法时不切换", async () => {
+  it("自定义交易对非法时不切换，但要说清没接受、并且留着用户打的字", async () => {
     render(<KlineChart dict={dict} />);
     await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
     const input = screen.getByLabelText("自定义交易对");
@@ -507,6 +512,40 @@ describe("KlineChart 交易对与周期切换", () => {
       "1h",
       expect.anything(),
     );
+    // 静默丢弃是让输入框变成假话：框里写着 DOGE，图上还是 BTCUSDT，而且没有任何回应
+    expect(screen.getByRole("status").textContent).toBe(dict.customSymbolRejected);
+    expect(screen.getByLabelText("自定义交易对")).toHaveValue("DOGE");
+  });
+
+  it("改对形状之后重新提交，提示随之消失", async () => {
+    render(<KlineChart dict={dict} />);
+    await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
+    const input = screen.getByLabelText("自定义交易对");
+    fireEvent.change(input, { target: { value: "DOGE" } });
+    fireEvent.blur(input);
+    expect(screen.getByRole("status")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("自定义交易对"), { target: { value: "DOGEUSDT" } });
+    fireEvent.blur(screen.getByLabelText("自定义交易对"));
+    await waitFor(() =>
+      expect(mocks.fetchKlines).toHaveBeenCalledWith("DOGEUSDT", "1h", expect.anything()),
+    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("点快捷币对按钮也能撤掉那条未接受的提示", async () => {
+    render(<KlineChart dict={dict} />);
+    await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
+    const input = screen.getByLabelText("自定义交易对");
+    fireEvent.change(input, { target: { value: "usdt" } });
+    fireEvent.blur(input);
+    expect(screen.getByRole("status")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "交易对 ETHUSDT" }));
+    await waitFor(() =>
+      expect(mocks.fetchKlines).toHaveBeenCalledWith("ETHUSDT", "1h", expect.anything()),
+    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("自定义交易对回车触发失焦提交", async () => {
