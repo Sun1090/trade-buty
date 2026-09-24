@@ -5,6 +5,30 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.16] - 2026-09-24
+
+**把没送到屏幕上的那几句补上（第八批） / Shipping the lines that never reached the screen (round eight)**
+
+### 中文
+
+- 测验页那两句各承诺一个数字，现在真的有了：标题下面不再是以量词开头的残话（「道概念题 · 即时判分」→「3 道概念题 · 即时判分」），答题时那句「已答对」后面也跟上了实际数量，英文不再以冒号收尾
+- 章节 AI 导读生成失败时卡片不再整张消失：以前点一下「生成摘要」只剩一次旋转，然后连标题带按钮一起没了，再试只能刷新页面；现在留在原地说明失败，按钮还在，可以直接再点一次
+- 学习统计那一屏的三处说法与事实对齐：成就墙按界面语言取值（英文页不再夹中文）、学习日历标题只数图里真点得亮的日子（更早的记录另写「另有 N 天早于这张图」，不再把半年前的存在说成最近的勤奋）、掌握度雷达只画真的做过测验的章节并按最近一次作答排序
+- 限流提示不再把英文单位拼进中文句子：以前访客额度用尽时看到的是「…登录可获更多额度 (2min)」，现在整句由字典出，中文说「约 2 分钟后重试」、英文说 'Retry in about 2 min'，读不到等待时长时不再写「约 0 分钟后重试」
+- 统计页那句「上次云同步」改口成它真正记录的事：那个时间戳只在从云端合并时打点，随写随推的上传从不更新它，所以刚推完数据看到的却是三天前——现在写「上次从云端合并」，并且补了一条用例保证登录用户真的能看到这一行
+- 字典死键巡检长出第二只眼，并修好它自己的两处自伤：以前「词条在页面装配了、组件却从不读」这种键算活着（章节导读那句失败提示就是这么藏了很久的），现在按组件逐个字段判定；同时修掉接口里一行注释就把整张接口缴出扫描、以及下限悬在远低于实际的常数上这两处让检查静默变瞎的缺陷
+
+### English
+
+- The two quiz-page lines that promised a number now deliver one: the heading is no longer a phrase that starts with a bare measure word (it now carries the real question count), and the progress line finally shows how many you have answered instead of ending in a colon
+- A failed chapter summary no longer deletes its own card: clicking 'Generate summary' used to spin once and then take the title and the button away, leaving a page refresh as the only retry. The card now stays, says what failed, and keeps the button live
+- Three claims on the learning-stats screen now match the code: the achievement wall reads in the interface language (no Chinese badges on English pages), the study calendar counts only the days actually lit in the grid (older days are reported separately as 'earlier than this chart'), and the mastery radar plots only chapters whose quiz you really took, ordered by your most recent attempt
+- Rate-limit copy no longer pastes an English unit into a Chinese sentence: a guest who hits the ceiling used to see a trailing '(2min)'; the whole line now comes from the dictionary ('约 2 分钟后重试' in Chinese, 'Retry in about 2 min' in English), and when no wait time is reported the sentence simply omits it rather than claiming 'about 0 minutes'
+- The stats page's 'Last cloud sync' now says what it actually records: that timestamp is only stamped when the device merges from the cloud, never when a write is pushed, so right after uploading you could be shown a moment from three days ago. It now reads 'Last merged from cloud', with a test proving a signed-in user really sees the line
+- The dead-copy audit gained a second pass and fixed two ways it was blinding itself: a dictionary entry wired into a page but never read by the component that declares it used to count as alive (that is how the summary error line stayed invisible for so long), alongside a single comment line that dropped whole interfaces from the scan and floors set so far below reality that a shrinking scan stayed green
+
+参考：[docs/roadmap.md](docs/roadmap.md)
+
 ## [0.7.15] - 2026-09-24
 
 **把话说回到代码这一侧（第七批） / Making the copy match the code (round seven)**
