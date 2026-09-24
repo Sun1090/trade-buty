@@ -209,7 +209,7 @@ describe("knowledge-base filesystem contract", () => {
   it("reads chapter metadata, introductions and adjacent chapters", () => {
     const chapters = getChapters("zh");
     const first = chapters[0];
-    expect(first).toMatchObject({ slug: "getting-started", order: 0 });
+    expect(first).toMatchObject({ slug: "getting-started", title: expect.stringMatching(/^01 · /) });
     expect(first.title).toContain("入门");
     expect(first.tagline.length).toBeGreaterThan(0);
     expect(first.docCount).toBeGreaterThan(0);

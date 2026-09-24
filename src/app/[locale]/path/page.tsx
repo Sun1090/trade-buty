@@ -91,14 +91,13 @@ export default async function PathPage({
           {core.chapters.map((c, i) => (
             <li key={c.slug} className="relative pl-9">
               <span
-                className={`absolute -left-[15px] top-6 flex h-7 w-7 items-center justify-center rounded-full font-mono text-xs font-bold ${
+                aria-hidden="true"
+                className={`absolute -left-[8px] top-[31px] h-3.5 w-3.5 rounded-full ${
                   i === 0
-                    ? "bg-accent text-[#06281c]"
-                    : "bg-[var(--surface)] border border-[var(--accent)]/40 text-accent"
+                    ? "bg-accent"
+                    : "bg-[var(--surface)] border-2 border-[var(--accent)]/40"
                 }`}
-              >
-                {String(i + 1).padStart(2, "0")}
-              </span>
+              />
               <Link
                 href={p(`/knowledge/${c.slug}`)}
                 className="group flex items-baseline justify-between gap-6 rounded-xl px-5 py-4 hover:bg-[var(--surface-hover)] transition"
@@ -133,6 +132,8 @@ export default async function PathPage({
             <h2 className="text-2xl font-bold mt-2">{g.stageText.title}</h2>
             <p className="mt-2 text-sm text-muted">{g.stageText.description}</p>
           </header>
+          {/* 条目上不再另印序号：标题自带的 `NN ·` 才是全站通用的篇章编号，
+              再挂一个「路径第几位」会让同一行出现两个互相矛盾的数（实测 19/27 不一致）。 */}
           <div className="grid gap-2.5 sm:grid-cols-2 mt-8">
             {g.chapters.map((c) => (
               <Link
@@ -140,16 +141,13 @@ export default async function PathPage({
                 href={p(`/knowledge/${c.slug}`)}
                 className="group min-w-0 flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] transition"
               >
-                <span className="flex items-baseline gap-3 min-w-0">
-                  <span className="font-mono text-xs text-accent">{String(c.order).padStart(2, "0")}</span>
-                  <span className="truncate font-medium group-hover:text-accent transition-colors">
-                    {c.title}
-                  </span>
+                <span className="min-w-0 truncate font-medium group-hover:text-accent transition-colors">
+                  {c.title}
                 </span>
                 <span className="shrink-0 flex items-center gap-2">
                   <PathProgress chapterSlug={c.slug} docCount={c.docCount} />
                   <span className="font-mono text-xs text-faint">
-                    {c.docCount}
+                    {c.docCount} {t.path.lessonsUnit}
                   </span>
                 </span>
               </Link>
