@@ -116,6 +116,10 @@
     {
       "number": 287,
       "reason": "补丁等价，只是换了载体（与 #125/#134/#211 同一情形）：#287 从 #286 的分支尾部切出，所以它的 origin/main..分支 里同时含 #286 那 6 笔（c7b545a…dbe2f86）；#286 以 rebase 落地（main=3961cdd…af112f4，git cherry 全为 `-`）后，#287 的分支基线落在旧 main 上，而分支保护 strict 要求与基线同步，更新已推送分支需要 force push（本仓库禁止），因此该 PR 从未跑过 ci。按既有办法从最新 origin/main(af112f4) 重开分支 fix/ui-claims-round-9，只重放它真正新增的 9 笔（053b190…fe916d8 → 1aecf04…1aec08e），另开 PR #288。等价性用最强的一种核对：两条分支的 tree OID 完全相同（git rev-parse HEAD^{tree} 与 origin/fix/search-locale-and-honest-labels^{tree} 都是 11a66f430bc16e00743333c3e5f096c8dc40619b），即全部文件内容逐字节一致，无需再逐 blob 比对。#288 合入后 main 上即有这 9 笔的内容，#287 的远端分支随后清理。"
+    },
+    {
+      "number": 290,
+      "reason": "补丁等价，只是换了载体（与 #125/#134/#211/#287 同一情形）：#290 从 #289 合入前的 main(4cc3946) 起分支，#289 以 rebase 落地（main 头 92f7ef5）之后，两条分支都在 docs/roadmap.md 与 docs/progress.md 的文件尾部追加，GitHub 判定 CONFLICTING/DIRTY；更新已推送分支需要 force push（本仓库禁止），所以把 15 笔整体 rebase 到最新 origin/main 后重开分支 fix/review-ai-export-claims-round-11b，另开 PR #291。等价性核对：两条分支相对各自基线的改动文件集完全相同（35 个），逐文件的 patch 除 `src/lib/i18n.ts` 与 `src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx` 外全部逐字节一致——那两个文件正是 #289 也改过的（chartNameTpl 的字典穿线与图表语言键），rebase 后两侧改动并存（字典里 #289 的 6 处与本批的 12 处都在，本批的 +19 行增删数不变）；两处文档冲突按「两段都留」解决。rebase 后的树跑通 303 个测试文件 / 2975 条用例。#290 的 15 笔内容因此没有一扇门被关丢：全部在 #291 里。"
     }
   ]
 }
