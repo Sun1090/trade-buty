@@ -327,6 +327,7 @@ export default async function DocPage({
               advanced: t.ai.aiQuizAdvanced,
               report: t.ai.aiQuizReport,
               reported: t.ai.aiQuizReported,
+              reportFailed: t.ai.aiQuizReportFailed,
             }}
           />
         )}

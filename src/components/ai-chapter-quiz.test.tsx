@@ -46,6 +46,7 @@ const dict = {
   advanced: "进阶",
   report: "举报题目",
   reported: "已举报",
+  reportFailed: "举报没送出去，点这里重试",
 };
 
 const questions = [
