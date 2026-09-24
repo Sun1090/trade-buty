@@ -6617,3 +6617,21 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：无迁移、无存储变化。R16.77 反转的是一条已勾选的决定（R3.6），理由与新旧两条口径都写在 roadmap。若产品侧坚持「失败即隐身」，`git revert 754b461` 撤的就是干净的一半——那个提交只含 `chapter-summary-ai.*` 两个文件，测验页那两个数字在 `efccc61` 里不受牵连；反过来若只否掉 R16.76 的英文改句，`git revert efccc61` 同理。待拍板清单不变：R15.2 / R16.7 / R16.10–R16.12 / R16.16 / R16.41 / R16.47 / R16.52 / R16.58 / R16.60 / R16.64。
 - 下一项：#110（Vercel 构建配额恢复后复跑 `ops:smoke-prod`，判据 `/zh/changelog` 出现 0.7.15）；随后开工 #111（R16.78 的组件字典字段级死键检查）。
 - 更新时间：2026-09-24 12:24（Asia/Shanghai）。
+
+
+## 2026-09-24 — 给死键巡检补第二只眼：组件声明了、却从不读的字段（R16.78 收口）
+
+- 分支 `fix/dict-field-dead-keys`，基线 `2eeb09e`（#281 合并后的 main）。两个提交：`1fb4191` 删掉真实的第 2 条命中 `ReviewDict.intro`，`b53a82b` 给 `check:dead-copy` 加第二路口径。来源是上一批登记的那条待办：R16.77 的 `dict.error` 从头到尾没有渲染点，而门禁一声没响。
+- 为什么整键口径注定看不见这一类：它的判据是「字典词条在 `src/`（字典文件自身除外）、`e2e/`、`scripts/` 里有没有任何非字典引用点」，装配点 `error: t.chapter.aiSummaryError` 恰好就是这样一个引用，于是键算「活着」。危险恰恰在这种键上——改字典的人看着装配点，真心以为改到了界面。所以第二路判的是**接住它的那个组件读没读**，而不是键有没有人引用。
+- 口径三条（都写在 `scripts/dead-copy-lib.mjs` 的注释里，判定逐文件）：① 只认名字里带 `Dict` 的接口，且该接口**全部字段都是文案**（`string` 或 `string[]`）才判——混进回调或嵌套对象的整个跳过（`login-client.tsx` 的 `AuthDict`、`study-plan.tsx` 的 `PlanDict` 因此不在范围内：没有类型系统就别装作看得懂语义）。② 判定逐文件，别的文件读过同一个字段名不算数，这正是要补的那一目。③ 字段名在声明块之外以**任意形态**出现都算读过。
+- 第三条是被真实仓库教的，不是偷懒：第一版只认 `dict.<字段>` 与解构，在 `src/` 上报出 4 条未读，其中 **3 条是误报**——`replay-trainer.tsx` 的三个难度标签走 `{ labelKey: "difficultyNew" }` + `dict[d.labelKey]` 这条动态键的路，字符串常量就是它的读取点。剩下那 1 条是真的（`ReviewDict.intro`）。放宽到「任意形态」之后误报归零，而 R16.77 那一处仍然抓到：`error` 那个词在改动前的 `chapter-summary-ai.tsx` 里只出现在声明行。
+- 接地测试（不是自证式地跑一遍新代码）：把最终规则倒回 `b69c361` 的真实文件上跑，报出来正好是 `chapter-summary-ai.tsx · Dict.error` 与 `review-client.tsx · ReviewDict.intro` **两条、零误报**——一个是本轮已修的、一个是本轮顺手删的；当前 `src/` 全仓认出 16 个字典接口、未读字段 0。
+- `ReviewDict.intro` 的处理要说清删的是哪一半：错题本卡片的导语一直是 `review/page.tsx` 自己在 `HeroCard` 里渲染的（`{t.review.intro}`，同一句还进 meta description），组件从不读 `dict.intro`，接口留着它等于强迫每个调用方递一句被丢掉的话。字典键本身照旧留着，它有真实引用点、不是死键；删的是接口字段和两处测试夹具里的 `intro: "说明"`。这条与 R16.77 的区别在装配形状：那边是逐字段装配（`error: t.chapter.aiSummaryError`），这边是整组透传（`dict={t.review}`），所以字段名在别的文件里根本不单独出现——两路都判得着，因为判定看的是声明文件内部。
+- 预算与自检：第二路复用同一个 `scripts/dead-copy-budget.json`，新增 `dictFieldBudget` 取 **0**；缺任一键直接判失败——原先 `dead.length > undefined` 恒为 false，预算文件被改坏会把门禁变成最安静的那种空转。另外加了「认出的接口数低于下限（10）即失败」，防止声明写法演进后新那一路悄悄扫不到东西。报告 `docs/dead-copy.md` 多一张表，`docs/ops.md` 那一行同时讲清两路口径与保守方向。
+- 变更文件：`scripts/dead-copy-lib.mjs`、`scripts/check-dead-copy.mjs`、`scripts/dead-copy-budget.json`、`scripts/dead-copy-lib.test.mjs`、`docs/dead-copy.md`、`docs/ops.md`、`src/components/review-client.tsx` 与两处夹具、`docs/roadmap.md`、本条。
+- 验证：`npm test` **297 文件 / 2910 条**绿（#281 落地后基线 2905，新加 5 条）；`lint --max-warnings=0`、`typecheck` 干净；`rm -rf .next && npm run build` 后按 CI 顺序跑完 39 道产物/内容门禁全绿（`check:mobile` 14 页、`check:seo-surface`、`check:search-index` 418/418/418、`check:structured-data` 454 页 · 5656 实体、`check:risk-warning` lessons 364/364 · readmes 40/54、`check:kb-en-content`、`check:dead-copy` 两路 0/0…）；`check:report-freshness` 先红了一次——`docs/dead-copy.md` 是重算出来还没提交的版本，提交后复绿；最后 `npm run e2e` **160 条全绿**。
+- 变异核对（五组，都要求「改坏就红」而不是多一条绿）：lib 里把声明块也算进正文 → 3 条红；`COPY_TYPE` 放宽成什么类型都收 → 「混合接口整个跳过」红；读法收紧成只认 `dict.<字段>` → 动态键那条红；端到端把 `intro: string;` 塞回 `ReviewDict` → 脚本退出码 1 且点名 `ReviewDict.intro`；预算文件删掉 `dictFieldBudget` 键 → 退出码 1 打印「两路检查现在都是空转的」。
+- 提交历史订正（透明起见记一条）：`b53a82b` 的第一版正文把第一轮误报写成「4 条里 1 条误报」，与事实反了（4 条里 3 条误报）。在推送前用 `git reset --soft HEAD~1` 重打了一次正文，树内容一字未动，`git log --oneline` 从 `12483d9` 变成 `b53a82b`；这条不是共享历史改写——远端从来没有过它。
+- 阻塞 / 风险：无迁移、无存储格式变化；新增的两处下限（词条 300 / 接口 10）与两个预算（0 / 0）都是会让门禁**更凶**的常量，将来调低任何一项都要在 PR 里写理由。已知的口径边界照旧写进报告：这一路没有类型系统，接口换个不带 `Dict` 的名字、或往接口里塞一个回调，就会从判定里掉出去——所以它跟着 R16.21 一样是「宁可漏报」。待拍板清单不变：R15.2 / R16.7 / R16.10–R16.12 / R16.16 / R16.41 / R16.47 / R16.52 / R16.58 / R16.60 / R16.64（#101 即 R16.64 的三个窗口口径）。
+- 下一项：#110——#281 已合并、生产构建滚动后复跑 `npm run ops:smoke-prod`，判据仍是 `/zh/changelog` 出现 0.7.15；随后回到那轮扫描剩下的两条候选（限流提示把英文 `min` 拼进本地化文案、`上次云同步 {t}` 只反映云端读取而非最近一次上传），核实成立就登记开工。
+- 更新时间：2026-09-24 12:47（Asia/Shanghai）。
