@@ -27,6 +27,16 @@ export const QUEUE_NEXT_ID_KEY = "tb-sync-queue-next-id";
 /** Account that owns the pending writes. Legacy unowned entries cannot be replayed safely. */
 export const QUEUE_OWNER_KEY = "tb-sync-queue-owner";
 
+/**
+ * 被队列上限挤掉的写入条数（R16.139）。
+ *
+ * `trimQueue` 超过 `MAX_QUEUE` 就丢最旧的条目，而那些条目是**还没上传成功的写**。
+ * 丢完剩下的传完以后，队列长度回到 0，界面那句「已云端存档，换设备不丢」就会重新出现，
+ * 对着一条从来没到过云端的记录说谎。这个计数器就是那件事的账：只要它非零，
+ * 「已存档」这个说法就不成立（见 `getUnarchivedWriteCount`）。
+ */
+export const QUEUE_DROPPED_KEY = "tb-sync-queue-dropped";
+
 function ensureOwner(ownerId: string): boolean {
   try {
     const storage = globalThis.localStorage;
@@ -34,6 +44,7 @@ function ensureOwner(ownerId: string): boolean {
     if (storage.getItem(QUEUE_OWNER_KEY) === ownerId) return true;
     storage.removeItem(QUEUE_KEY);
     storage.removeItem(QUEUE_NEXT_ID_KEY);
+    storage.removeItem(QUEUE_DROPPED_KEY);
     storage.setItem(QUEUE_OWNER_KEY, ownerId);
     return true;
   } catch {
@@ -61,6 +72,29 @@ export function loadQueueAndNextId(): { queue: QueueItem[]; nextId: number } {
 
 /** 队列内容变化的事件名：界面用它把「还有写着没推上去」这件事反映出来 */
 export const QUEUE_EVENT = "tb-sync-queue";
+
+/** 被队列上限挤掉、因此永远传不出去的写入条数（读不到就当没有） */
+export function getDroppedWrites(): number {
+  try {
+    const raw = globalThis.localStorage?.getItem(QUEUE_DROPPED_KEY);
+    if (!raw || !/^\d+$/.test(raw)) return 0;
+    const parsed = Number(raw);
+    return Number.isSafeInteger(parsed) ? parsed : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** 记上 N 条被挤掉的未上传写入；变化沿 `QUEUE_EVENT` 通知读侧 */
+export function recordDroppedWrites(count: number): void {
+  if (!(count > 0)) return;
+  try {
+    globalThis.localStorage?.setItem(QUEUE_DROPPED_KEY, String(getDroppedWrites() + count));
+  } catch {
+    // ignore — 队列本来就是 best-effort，记不上账也不该影响主流程
+  }
+  announceQueueChange();
+}
 
 /**
  * 通知读侧「待上传条数可能变了」。写入失败时也要通知：长度是按 localStorage 现算的，
@@ -100,6 +134,10 @@ export function enqueueWrite(
   const { queue, nextId } = loadQueueAndNextId();
   const updated = enqueueUnique(queue, kind, payloadKey, payload, now, nextId);
   const trimmed = trimQueue(updated);
+  if (trimmed.length < updated.length) {
+    // 被挤掉的是「还没传上去」的写：记下来，让「已云端存档」那句话不再对它们成立
+    recordDroppedWrites(updated.length - trimmed.length);
+  }
   // 若入队导致 id 推进到 nextId+1，更新持久化
   let persistedNextId = nextId;
   if (updated.length > queue.length) {
@@ -157,6 +195,7 @@ export function clearPersistedQueue(): void {
     globalThis.localStorage?.removeItem(QUEUE_KEY);
     globalThis.localStorage?.removeItem(QUEUE_NEXT_ID_KEY);
     globalThis.localStorage?.removeItem(QUEUE_OWNER_KEY);
+    globalThis.localStorage?.removeItem(QUEUE_DROPPED_KEY);
   } catch {
     // ignore
   }
@@ -166,6 +205,16 @@ export function clearPersistedQueue(): void {
 /** 当前队列长度（调试 / UI 显示用） */
 export function getQueueLength(): number {
   return loadQueueAndNextId().queue.length;
+}
+
+/**
+ * 「有几条本机写入还没到云上」= 队列里等传的 + 被上限挤掉、永远传不出去的。
+ *
+ * 那句「已云端存档，换设备不丢」的判据必须是这个数，而不是队列长度：队列被
+ * `MAX_QUEUE` 截断之后剩下的条目照样会 flush 成 0，那时无队列 ≠ 无丢失。
+ */
+export function getUnarchivedWriteCount(): number {
+  return getQueueLength() + getDroppedWrites();
 }
 
 /** `useSyncExternalStore` 的订阅端：入队、清空、另一个标签页写队列时都会通知。 */

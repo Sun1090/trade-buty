@@ -34,6 +34,7 @@ beforeEach(() => {
   localStorage.removeItem("tb-sync-queue");
   localStorage.removeItem("tb-sync-queue-next-id");
   localStorage.removeItem("tb-sync-queue-owner");
+  localStorage.removeItem("tb-sync-queue-dropped");
 });
 
 describe("GlobalReadStat", () => {
@@ -113,6 +114,24 @@ describe("GlobalReadStat", () => {
     // 不重新 render：只靠事件驱动。订阅断掉时这一条就红，而不是被 rerender 蒙过去
     localStorage.removeItem("tb-sync-queue");
     act(() => {
+      window.dispatchEvent(new Event("tb-sync-queue"));
+    });
+    expect(screen.getByTitle("已同步")).toHaveTextContent("☁");
+  });
+
+  // R16.139：队列被 MAX_QUEUE 截断时丢掉的是「还没传上去」的写。剩下的传完，
+  // 队列长度归零，只看长度的判据就会重新承诺「换设备不丢」——那条记录其实从没上过云。
+  it("被上限挤掉过写入：队列空了也不显示云同步标记", () => {
+    localStorage.setItem("tb-sync-queue", "[]");
+    localStorage.setItem("tb-sync-queue-dropped", "3");
+    state.progress = { spot: ["candlesticks"] };
+    state.user = { id: "user-1" };
+    render(<GlobalReadStat {...props} />);
+    expect(screen.queryByTitle("已同步")).not.toBeInTheDocument();
+    expect(screen.getByText(/已读 1\/10/)).toBeInTheDocument();
+    // 账被清掉（注销 / 删号）之后标记才回来，仍然只靠事件驱动
+    act(() => {
+      localStorage.removeItem("tb-sync-queue-dropped");
       window.dispatchEvent(new Event("tb-sync-queue"));
     });
     expect(screen.getByTitle("已同步")).toHaveTextContent("☁");

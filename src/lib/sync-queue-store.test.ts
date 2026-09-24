@@ -5,10 +5,14 @@ import {
   flushPersistedQueue,
   clearPersistedQueue,
   getQueueLength,
+  getDroppedWrites,
+  getUnarchivedWriteCount,
+  recordDroppedWrites,
   loadQueueAndNextId,
   QUEUE_KEY,
   QUEUE_NEXT_ID_KEY,
   QUEUE_OWNER_KEY,
+  QUEUE_DROPPED_KEY,
   QUEUE_EVENT,
 } from "./sync-queue-store";
 
@@ -229,5 +233,77 @@ describe("队列变化的通知（tb-sync-queue）", () => {
     } finally {
       window.removeEventListener(QUEUE_EVENT, onChange);
     }
+  });
+});
+
+/**
+ * R16.139：被 `MAX_QUEUE` 挤掉的那些条目是**还没上传成功**的写。
+ * 界面那句「已云端存档，换设备不丢」以前只看队列长度——剩下的传完，队列归零，
+ * 标记就回来对着一条从来没到过云端的记录说「不丢」。这里钉的是那本新账。
+ */
+describe("被队列上限挤掉的写入留下账", () => {
+  const overflow = (n: number) => {
+    for (let i = 0; i < n; i++) enqueueWrite("progress", `k${i}`, { i }, i);
+  };
+
+  it("挤掉 5 条：队列 200、账上 5、未归档 205", () => {
+    overflow(205);
+    expect(getQueueLength()).toBe(200);
+    expect(getDroppedWrites()).toBe(5);
+    expect(getUnarchivedWriteCount()).toBe(205);
+  });
+
+  it("剩下的全部传完，账不清零：未归档仍然 >0", async () => {
+    overflow(205);
+    await flushPersistedQueue(async () => true);
+    expect(getQueueLength()).toBe(0);
+    expect(getDroppedWrites()).toBe(5);
+    expect(getUnarchivedWriteCount()).toBe(5);
+  });
+
+  it("清空队列（注销 / 删号）把账一起清掉", () => {
+    overflow(205);
+    clearPersistedQueue();
+    expect(getDroppedWrites()).toBe(0);
+    expect(getUnarchivedWriteCount()).toBe(0);
+    expect(memStore.has(QUEUE_DROPPED_KEY)).toBe(false);
+  });
+
+  it("换账号：上一个账号丢的写不算在新账号头上", () => {
+    for (let i = 0; i < 205; i++) enqueueWrite("progress", `k${i}`, { i }, i, "user-a");
+    expect(getDroppedWrites()).toBe(5);
+    enqueueWrite("progress", "fresh", { x: 1 }, 999, "user-b");
+    expect(getDroppedWrites()).toBe(0);
+    expect(memStore.get(QUEUE_OWNER_KEY)).toBe("user-b");
+  });
+
+  it("账上的值不是非负安全整数就当没有", () => {
+    for (const value of ["abc", "-3", "1.5", "", "99999999999999999999"]) {
+      memStore.set(QUEUE_DROPPED_KEY, value);
+      expect(getDroppedWrites(), `读 ${value} 应该回 0`).toBe(0);
+    }
+  });
+
+  it("记 0 条或负数：什么都不写，也不通知", () => {
+    const seen: string[] = [];
+    const onChange = () => seen.push(QUEUE_EVENT);
+    window.addEventListener(QUEUE_EVENT, onChange);
+    try {
+      recordDroppedWrites(0);
+      recordDroppedWrites(-2);
+      recordDroppedWrites(Number.NaN);
+      expect(getDroppedWrites()).toBe(0);
+      expect(memStore.has(QUEUE_DROPPED_KEY)).toBe(false);
+      expect(seen).toHaveLength(0);
+    } finally {
+      window.removeEventListener(QUEUE_EVENT, onChange);
+    }
+  });
+
+  it("补记（离线兜底缓冲挤掉的）累加到同一本账", () => {
+    recordDroppedWrites(2);
+    recordDroppedWrites(3);
+    expect(getDroppedWrites()).toBe(5);
+    expect(getUnarchivedWriteCount()).toBe(5);
   });
 });

@@ -499,6 +499,17 @@ describe("StatsClient data source label (R12.8)", () => {
     expect(await screen.findByLabelText(/changes awaiting upload/)).toBeInTheDocument();
     expect(screen.queryByText("Local + cloud")).not.toBeInTheDocument();
   });
+
+  // R16.139：队列超过 MAX_QUEUE 时丢的是最旧的**未上传**条目。剩下的传完后队列是空的，
+  // 只看队列长度就会重新印出「本机 + 云端」这句完成时的话。
+  it("被上限挤掉过写入：队列为空也不宣称「本机 + 云端」已完成", async () => {
+    authState.user = { id: "u1" };
+    store.set("tb-sync-queue", "[]");
+    store.set("tb-sync-queue-dropped", "4");
+    render(<StatsClient chapters={chapters} dict={dict} locale="en" />);
+    expect(await screen.findByLabelText(/changes awaiting upload/)).toBeInTheDocument();
+    expect(screen.queryByText("Local + cloud")).not.toBeInTheDocument();
+  });
 });
 
 describe("StatsClient sync conflict notice (R12.9)", () => {

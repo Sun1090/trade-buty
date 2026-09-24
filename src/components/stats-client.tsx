@@ -30,7 +30,7 @@ import { getStatsRangeDays, setStatsRangeDays, STATS_RANGE_OPTIONS } from "@/lib
 import { getLastCloudSync } from "@/lib/cloud-sync-meta";
 import { auditStatsConsistency } from "@/lib/stats-consistency";
 import { dismissSyncConflicts, parseConflictRecord } from "@/lib/sync-conflicts";
-import { getQueueLength, subscribeQueueLength } from "@/lib/sync-queue-store";
+import { getUnarchivedWriteCount, subscribeQueueLength } from "@/lib/sync-queue-store";
 import { buildStatsExport, downloadStatsExport } from "@/lib/stats-export";
 import {
   getLastShownKey,
@@ -244,12 +244,13 @@ export function StatsClient({
     () => null,
   );
   /**
-   * 离线写队列里还压着几条。断网时的写会先进队列（R9.5），它们已经算进页面上的数字，
-   * 却一条都没到云上——所以「本机 + 云端」这句完成时的话，条件是「登录了且队列空」，
-   * 不是「登录了」。与首页那枚 ☁ 同一个口径（R16.59）。
+   * 有几条本机写入还没到云上 = 队列里等传的 + 被 `MAX_QUEUE` 挤掉、永远传不出去的（R16.139）。
+   * 断网时的写会先进队列（R9.5），它们已经算进页面上的数字，却一条都没到云上——
+   * 所以「本机 + 云端」这句完成时的话，条件是「登录了且一个都没落下」，不是「登录了」。
+   * 与首页那枚 ☁ 同一个口径（R16.59），同一个函数（`getUnarchivedWriteCount`）。
    */
-  const queuedWrites = useSyncExternalStore(subscribeQueueLength, getQueueLength, () => 0);
-  const sourceLabel = !user ? dict.sourceLocal : queuedWrites === 0 ? dict.sourceCloud : dict.sourceCloudPending;
+  const unarchivedWrites = useSyncExternalStore(subscribeQueueLength, getUnarchivedWriteCount, () => 0);
+  const sourceLabel = !user ? dict.sourceLocal : unarchivedWrites === 0 ? dict.sourceCloud : dict.sourceCloudPending;
   const courseTrend = stats && progress
     ? buildCourseCompletionTrend({ chapters, progress, completions, days: rangeDays })
     : null;

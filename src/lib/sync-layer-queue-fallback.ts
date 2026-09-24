@@ -30,6 +30,12 @@ const pendingWrites = new Map<string, PendingWrite>();
 /** 串行化落盘：并发写入按调用先后入队，重放顺序才等于用户操作顺序 */
 let drainChain: Promise<void> = Promise.resolve();
 let warned = false;
+/**
+ * 缓冲区自己挤掉过多少条。缓冲只活在当前会话，掉电即丢，所以这里先记在内存，
+ * 等队列 chunk 能加载时（下一次 `flushPendingWrites`）原样交给持久化的计数器——
+ * 否则「被上限挤掉」这件事在离线兜底这条路上就完全没人记账（R16.139）。
+ */
+let bufferDrops = 0;
 
 function remember(write: PendingWrite): void {
   pendingWrites.set(`${write.kind}|${write.payloadKey}`, write);
@@ -38,11 +44,16 @@ function remember(write: PendingWrite): void {
     const oldest = pendingWrites.keys().next().value;
     if (oldest === undefined) return;
     pendingWrites.delete(oldest);
+    bufferDrops += 1;
   }
 }
 
 async function flushPendingWrites(): Promise<void> {
   const store = await import("./sync-queue-store");
+  if (bufferDrops > 0) {
+    store.recordDroppedWrites(bufferDrops);
+    bufferDrops = 0;
+  }
   for (const [id, write] of [...pendingWrites]) {
     if (!write.isCurrent()) {
       pendingWrites.delete(id);
