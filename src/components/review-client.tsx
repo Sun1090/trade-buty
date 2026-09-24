@@ -11,7 +11,6 @@ import { AiQuiz } from "@/components/ai-quiz";
 
 export interface ReviewDict {
   title: string;
-  intro: string;
   empty: string;
   emptyHint: string;
   showAnswer: string;
