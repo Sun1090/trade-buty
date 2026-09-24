@@ -6590,3 +6590,16 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 回滚：`git revert` 发布提交 `d4cb8cf` 即可；Vercel 也可把 Production 切回上一构建止血，随后仍用 revert 收敛历史。本次不含数据库迁移、无存储格式变化（英文树那条是只读门禁，不写内容仓），回滚不涉数据回退。
 - 下一项：配额窗口恢复后跑 `npm run ops:smoke-prod`，判据是 `/zh/changelog` 出现 0.7.15 且那条转绿（游客 AI 502 仍按外部项单列）；随后回到清单：#101（R16.64 三种窗口口径）与 R16.60（待传提示）需要产品拍板，能自主推进的先从门禁与文案清点里挑。
 - 更新时间：2026-09-24 11:03（Asia/Shanghai）。
+## 2026-09-24 — /stats 那一屏的三处说法与事实对不上（R16.73 / R16.74 / R16.75）
+
+- 分支 `fix/stats-badge-i18n`（基线 `52e039f`，即 v0.7.15 tag 之后的 main）。来路：v0.7.15 撞配额之后做了一轮只读的「说法 vs 事实」扫描，抓出六条候选，本轮先做证据最硬的三条（全在 `stats` 这一屏），余下几条逐条核实后再登记。
+- R16.73 成就墙：`BADGES` 的 `name` / `desc` 直接从 `src/lib/learn-stats.ts` 渲染成界面文字（`stats-client.tsx:854`、`:855`、`:864`、`:865`），R16.50 那道门禁扫的是 JSX 属性与裸文本节点，看不见住在 lib 里的中文，于是英文访客的成就是 第一步 / 月度王者 / 回放连击王。类型收成 `{ zh, en }`——少写一边就是编译错误，不靠巡检兜底。顺带 `wrongbook-empty`：条件是 `readDocs > 0 && currentWrong === 0`，数据里没有任何「曾经错过」的历史，一道没错的人同样满足，可它写「清空错题 / 错题本清零」，把一个状态说成一个动作；判定逻辑一字未动，只把名字改回它断言的事（「没错题 / Clean sheet」）。
+- R16.74 学习日历：标题数的是 `readActivityDates()` 的全部记录，而格子只画 26 周——记录本身保留 365 天，窗口外的日子点不亮任何一格却照样进那个数；单位还写死 `day/days`，中文界面印「学习日历 · 3 days」。现在标题数图里真亮着的格子，窗口外另给一句「另有 N 天早于这张图」，单位按 `locale` 走；空态仍按「有没有任何记录」判，不把有旧记录的人说成没学过。原有那条 `labels the grid with the recorded day count` 断言的正是这个 bug（两条窗口外的日期被数成 2），改写后它成为新口径的第一条证据。
+- R16.75 掌握度雷达：旧实现把 27 章题库整个映射成轴、没做过的记 0 分再取前五章——那是题库源顺序的前五章，注释却写「最近 5 个」（作答日期在 `tb-quiz-attempts` 账本里，组件从没读过）。形状因此把「没测过」画成「0 分掌握」，刻度点还按 `value >= 50` 全部判成未达标；而轴恒为 5 让 `axes.length === 0` 那条空态永远走不到，「完成测验后查看掌握度」是一句渲染不出来的死文案——`check:dead-copy` 也看不见它，那套管字典键，不管组件内联串。现在轴只收 `done` 的章节、按账本最近一次 `at` 排序（无日期的不编日期、排后面，与旁边 `quizTrendDesc` 同口径），上限仍是 5 根；不足 `RADAR_MIN_AXES = 3` 根围不出多边形于是真走空态，文案里的数字由这一个常量生成。账本字段类型是 `unknown`（对 localStorage 一律放宽），组件里自己收窄——第一版没收窄，被 `tsc` 当场拦下。
+- 变更文件：`src/lib/learn-stats.ts`、`src/components/stats-client.tsx`、`src/components/activity-heatmap.tsx`、`src/components/radar-chart.tsx` 与各自用例，加 `docs/roadmap.md`（登记 R16.73–R16.75）。
+- 验证：`npm test` **297 文件 / 2903 条**绿（基线 2894，+9：learn-stats 2、stats-client 2、heatmap 3、radar 2）；`test:coverage` 语句 95.49% · 分支 90.96% · 函数 95.29% · 行 97.47%，阈值 84 / 77 / 83 / 87 未下调；`lint --max-warnings=0`、`typecheck` 干净；`check:localized-labels` / `dead-copy` / `ai-copy` / `docs` / `report-freshness`（17 份 · 过期 0 · 未提交 0）/ `test-clock-hygiene`（clock-in-assertion 0，报告式 6 处不变）全绿。
+- 变异核对七组：`badgeLocale` 钉成 `"zh"` → 只红英文那条渲染用例；往某个 `en` 字段塞汉字 → 只红「英文版里不留汉字」；文案改回「清空错题 / 错题本清零」→ 只红语义那条而「两版齐全」仍绿（两条断言各管各的）；`inWindow` 退回 `activeSet.size` → 只红两条窗口用例；`dayUnit` 钉成英文 → 红「中文界面写天」与那条 0 天的窗口用例；让未做过的章节重回雷达轴 → 5 条红；去掉按日期排序 → 只红排序那条。
+- 同一轮扫描还剩四条候选，逐条核实后再登记：测验页 `第 {i} / {n} 题 · 已答对` 后面没有数字（`i18n.ts:98` 与渲染点 `quiz.tsx:229`）、`{n} 道概念题` 的量词没带数（`quiz.tsx:171`）、章节页 AI 摘要失败时的「生成失败，请重试」根本没有渲染点（组件失败即整卡隐藏），以及限流提示把英文 `min` 拼进本地化文案、`上次云同步 {t}` 只反映云端读取而非最近一次上传。
+- 阻塞 / 风险：本轮无迁移、无存储格式变化，`RADAR_MIN_AXES = 3` 是一个可读性阈值而非产品口径（文案跟着这一个常量走，改数即改文案）。待拍板清单不变：R15.2 / R16.7 / R16.10–R16.12 / R16.16 / R16.41 / R16.47 / R16.52 / R16.58 / R16.60 / R16.64。
+- 下一项：本批走 PR；随后把上面四条候选核实并登记开工。Vercel 构建配额恢复后跑 `npm run ops:smoke-prod`（#110），判据仍是 `/zh/changelog` 出现 0.7.15。
+- 更新时间：2026-09-24 11:54（Asia/Shanghai）。
