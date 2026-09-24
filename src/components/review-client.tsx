@@ -18,6 +18,9 @@ export interface ReviewDict {
   correctPick: string;
   resolved: string;
   browseCta: string;
+  /** 默认（SRS 开）模式的两个按钮，复习页 intro 点名的是它们 */
+  srsMastered: string;
+  srsNotYet: string;
 }
 
 interface Item extends WrongEntry {
@@ -414,13 +417,13 @@ export function ReviewClient({
                               onClick={() => markMastered(item)}
                               className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] text-sm font-semibold px-6 py-3 transition"
                             >
-                              {locale === "en" ? "Got it" : "掌握了"}
+                              {dict.srsMastered}
                             </button>
                             <button
                               onClick={() => markNotYet(item)}
                               className="rounded-full border border-[var(--border-strong)] hover:border-[var(--down)]/60 text-sm font-medium px-6 py-3 text-muted transition"
                             >
-                              {locale === "en" ? "Not yet — try tomorrow" : "还没掌握，明天再见"}
+                              {dict.srsNotYet}
                             </button>
                           </>
                         ) : (

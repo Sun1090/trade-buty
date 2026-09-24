@@ -223,7 +223,7 @@ const zh = {
   review: {
     label: "复习",
     title: "错题本",
-    intro: "测验里答错的题会自动收进这里。看懂解析后点「已掌握」移出；重做同章测验答对也会自动出库。",
+    intro: "测验里答错的题会自动收进这里。看懂解析后点「掌握了」，题目会排到 1/3/7/14/30 天这五档间隔的下一档，走完最后一档才出库；点「还没掌握，明天再见」则退回第一档。直接重做同章测验并答对，会立刻出库。",
     empty: "错题本空空如也",
     emptyHint: "去做几道测验题，答错的会自动收进这里。",
     browseCta: "去学习路线 →",
@@ -231,6 +231,8 @@ const zh = {
     yourPick: "你的选择",
     correctPick: "正确答案",
     resolved: "✓ 已掌握，移出错题本",
+    srsMastered: "掌握了",
+    srsNotYet: "还没掌握，明天再见",
   },
   replay: {
     label: "Practice",
@@ -613,7 +615,7 @@ const en: Dict = {
   review: {
     label: "Review",
     title: "Wrong Answer Book",
-    intro: "Questions you missed are collected here automatically. Read the explanation and mark as mastered; answering correctly on a retake also removes them.",
+    intro: "Questions you missed are collected here automatically. Read the explanation and tap “Got it”: the question moves to the next of five review intervals (1, 3, 7, 14, 30 days) and only leaves the book after the last one. “Not yet — try tomorrow” sends it back to the first interval. Answering it correctly in a chapter retake removes it right away.",
     empty: "Nothing here yet",
     emptyHint: "Take some quizzes — wrong answers land here automatically.",
     browseCta: "Browse learning path →",
@@ -621,6 +623,8 @@ const en: Dict = {
     yourPick: "Your pick",
     correctPick: "Correct answer",
     resolved: "✓ Mastered, remove",
+    srsMastered: "Got it",
+    srsNotYet: "Not yet — try tomorrow",
   },
   replay: {
     label: "Practice",
