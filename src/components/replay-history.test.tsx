@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import { ReplayHistory } from "./replay-history";
 import type { ReplayRecord } from "@/lib/replay-store";
+import { REPLAY_HISTORY_KEEP } from "@/lib/replay-history-limit";
 
 // 可控的 store 桩：组件每次渲染/收到 tb-progress 事件都会回读
 const { store } = vi.hoisted(() => ({
@@ -24,6 +25,7 @@ const dict = {
   histEmpty: "还没有训练记录",
   histRecent: "最近",
   histBest: "最佳",
+  histScopeTpl: "只统计最近 {n} 轮",
 };
 
 function rec(over: Partial<ReplayRecord> & { at: number }): ReplayRecord {
@@ -67,6 +69,13 @@ describe("ReplayHistory", () => {
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("57%")).toBeInTheDocument();
     expect(screen.getByText("5")).toBeInTheDocument();
+  });
+
+  it("脚注里的轮数上限由 REPLAY_HISTORY_KEEP 代入，不留花括号", () => {
+    store.history = [rec({ at: 1_000, total: 4, correct: 1 })];
+    const { container } = render(<ReplayHistory dict={dict} />);
+    expect(screen.getByText(`只统计最近 ${REPLAY_HISTORY_KEEP} 轮`)).toBeInTheDocument();
+    expect(container.textContent).not.toContain("{n}");
   });
 
   it("最近记录按时间倒序展示，准确率 ≥50% 用强调色、<50% 用下跌色", () => {
