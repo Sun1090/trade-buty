@@ -23,7 +23,7 @@ import { scanFloorViolation } from "./scan-floor-lib.mjs";
 const root = process.cwd();
 const KB = path.join(root, "content/kline-buty/docs/knowledge");
 /** 实测（2026-09-24）en 与 zh 两棵树各 209 个 md。树空了却仍判绿，等价于把「英文覆盖同一批课文」这句话收回。 */
-const MIN_LOCALE_FILES = 200;
+export const MIN_LOCALE_FILES = 200;
 
 if (!fs.existsSync(KB)) {
   console.error("[en-content] 知识库缺失：请先 git submodule update --init");
