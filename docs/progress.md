@@ -6997,3 +6997,19 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：用户可见的变化共九处——zh `/ai` 撞上限时的句子（登录 / 游客两种身份各一句）、「清空失败」时那颗按钮的行为（真的再发一次 DELETE）、评分失败多出一条可见提示且不再留下「已反馈」的样子（旧的一条用例标题写的是相反的话，已改）；zh/en `/stats` 三张时段卡改名（点出「期间」）、「待复习 12/40」改「今日到期 / 错题本」、混合计时记录下多出一句「旧回放记录缺少耗时数据」、全部读完那句 CTA 改口点学习路线（跳转目标本来就是 `/path`，没改）；`/stats` 的 AI 学习计划 prompt 现在真的带错题篇章（模型输出可能与以前不同，这是接线的目的而非副作用）。数据口径一处：单表被 RLS 拒掉时不再刷新「上次从云端合并」的时间戳——已有时间戳不消失，只是不再前进。流程风险一处：`check:scan-counts` 从此会让「删掉一批文件」的提交变红，认账要跑 `--update-baseline` 并把理由写进提交信息（这正是 R16.166 要的摩擦）。回滚：本轮 13 笔都是独立话题，`git revert` 单笔即可，无迁移、无外部依赖。
 - 下一项：PR 推上去等 `ci` + `db-tests` + CodeQL 绿后 rebase 合并；然后做 R16.178（篇章横幅改由服务端回带的标题驱动，`ct` 参数下线）。等人的三条：R16.159（根级 404 中英并列，与 R16.52 同一个待拍板问题）、R16.164（内容仓 tagline，须去 kline-buty 改口）、**R16.174（AI 变体题按位置认领来源错题并把 SRS 记进错题本——三条走向都要人拍板：逐题回指并校验 / 变体题不再写 SRS / 明确当成排程策略并改口径）**。
 - 更新时间：2026-09-25（Asia/Shanghai）。
+
+---
+
+## 2026-09-25 — 那条从地址栏读来的篇章横幅（R16.178，第十九轮补票）
+
+- 状态：本地全量验证完成（build 474 页 / **42 条 `check:*` 逐条跑过，42 绿 0 红** / 316 文件 3159 条单测 / 覆盖率四项 / `npm run e2e` 164 条全绿 / lint / typecheck / `git diff --check` 全 0）；两笔提交在 `fix/ai-context-banner-truth`（基线 `origin/main = b47d187`，即第十九轮 PR #299 合并后的头）。
+- 里程碑 / 版本：#299 合并后同一话题的补票，不开新版本；等本条 PR 合并后按 patch 节奏走。
+- 分支 / 提交：`fix/ai-context-banner-truth`，`db17799`（横幅改由服务端回带的标题驱动）→ `bc1d69a`（台账 R16.178 关掉）。
+- 完成内容：**R16.178** `/ai` 那条「正在基于《X》篇章回答」的横幅是三处叠加的产物——① `ai-chat.tsx` 一进页面就把地址栏的 `ct` 原样填进横幅，在任何请求发生之前就替服务端断言了一件还没发生的事（R16.142「SSG 首帧抢答」那一族）；② `ct` 是访客可以自己写的文本，客户端从不核对它对应哪个 `ctx`；③ 服务端那一头做的只是「认得这个 slug 就往 system prompt 追加一句请**优先结合**该篇章」（`route.ts:163-168`），未知 slug 静默忽略，而 RAG 检索按问题走、不按篇章收窄。也就是说横幅许诺的是结果，代码做的是请求。改法是台账里写下的那个走向：`/api/ai/chat` 在两条成功路径（缓存命中、流式）各回带一个 `X-Context-Chapter`，值就是那里已经算出来的 `ctxTitle`；前端横幅只跟着这个头走（没有头就没有横幅，读到一个不认识的 slug 亦然），文案改成代码真做的那件事（zh「《X》篇章已作为参考上下文带上」/ en "The "X" chapter is included as reference context"）。`ct` 随之下线：`page.tsx` 为了拼这个参数专门在服务端解析过一次 `getChapterTitle`，那份解析连同 import 一起删掉了。
+- 新增 / 加强门禁：`ai-chat.test.tsx` 的夹具 `contextBannerTpl` 与 `ai-chat.account-switch.test.tsx` 的同一条，由手抄字面量改成 `getDict("zh").ai.contextBannerTpl`（R16.66 那一族：抄一份就会漂），断言用渲染出的整句比对；组件侧三条用例——URL 写 `ct=我编的篇章` 而服务端回带「现货基础」→ 屏上只能出现后者且前者一次都不许有、未知 slug 时整条横幅不出现、`ctx`+`q` 自动提问那条路径同样要等确认之后才有横幅；路由侧把断言写成**从注入 prompt 的那句里抠出标题、要求回带的正是它**（不比字面量），未知 slug 时断言这个头为 `null`。合计 3158 → 3159 条（+1：组件侧净增一条，路由侧是改写原有用例）。
+- 变更文件（8 个）：`src/app/api/ai/chat/route.ts`、`src/components/ai-chat.tsx`、`src/lib/i18n.ts`、`src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx`、`src/app/api/ai/chat/route.test.ts`、`src/components/ai-chat.test.tsx`、`src/components/ai-chat.account-switch.test.tsx`、`src/components/lesson-ask-ai.test.tsx`（hand-off 契约的用例标题与夹具 URL）、`docs/roadmap.md`、`docs/progress.md`。
+- 验证（本地，逐条退出码 0）：`npm run build`（474/474）→ 42 条 `check:*` 逐条（`checks_pass=42 checks_fail=0`，日志 `/tmp/r20-verify.log`）→ `npm run test:coverage`（316 文件 / 3159 条；statements 95.11%、branches 90.73%、functions 95.21%、lines 97.08%，四项都在阈值上，与 #299 那一版逐位对齐）→ `npm run e2e`（164 条，CI 第 178 行同一条命令）→ `lint` / `typecheck` / `git diff --check`。
+- 变异核对 3 组探针（脚本 `/tmp/probe-r16178.sh`，每组跑完 `git checkout --` 还原并自证 `git status --short` 为空）：① 让前端重新去信 `ct` → 只红在「横幅的标题来自服务端回带的那个」这一条；② 服务端撤掉 `X-Context-Chapter`（两处 `if` 同时改）→ 红在路由那条「回带标题 == 注入标题」；③ 前端读到了也不显示（`setContextTitle(null)`）→ 五条断言横幅存在的用例一起红。红在哪条用例上逐条记在 `/tmp/r16178-*.log`。
+- 阻塞 / 风险：用户可见变化两处——横幅的出现时机从「进页面就有」变成「第一次回答被服务端认下之后才有」（没有 `q` 的 hand-off 会先看到空横幅，问一句才出现），以及横幅那句话本身改口（不再许诺「基于该篇章回答」）。数据与链接不动；`/ai` 的 URL 少一个 `ct` 参数，旧链接带着它也只是被忽略（不再有读者）。回滚：`git revert db17799 bc1d69a` 两笔即可，无迁移。
+- 下一项：本条 PR 合并后回到队列——等人的三条仍是 R16.159（根级 404 中英并列）、R16.164（内容仓 tagline）、R16.174（AI 变体题按位置认领来源错题，SRS 记进错题本）；能自主推进的下一步是继续换表面扫「说法 vs 事实」（尚未覆盖的屏：`/chart` 的指标卡与提醒、`/glossary` 的词条计数、导出的 stats 字段）。
+- 更新时间：2026-09-25（Asia/Shanghai）。
