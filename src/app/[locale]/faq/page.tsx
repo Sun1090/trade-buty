@@ -8,6 +8,11 @@ import {
 } from "@/lib/chart-symbols";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/metadata";
+import {
+  SERVER_DATA_KIND_COUNT,
+  joinKindsEn,
+  joinKindsZh,
+} from "@/lib/server-data-kinds";
 import { HeroCard } from "@/components/hero-card";
 import { JsonLd } from "@/components/json-ld";
 import { faqPage } from "@/lib/jsonld";
@@ -42,7 +47,7 @@ const REPLAY_SCOPE_EN = REPLAY_SAME_AS_CHART
 
 const FAQ_ZH = [
   { q: "Trade Buty 是免费的吗？", a: "完全免费，开源（MIT 许可），不卖课、不荐股、不承诺收益。基础课程永远免费。" },
-  { q: "需要注册才能学习吗？", a: "不需要。所有课程、图表、回放、测验都可以游客身份使用，数据存在浏览器本地。登录只是为了跨设备同步进度。" },
+  { q: "需要注册才能学习吗？", a: "不需要。所有课程、图表、回放、测验都可以游客身份使用，数据存在浏览器本地。登录是为了换设备接着学：进度会同步到云端，你与 AI 的对话正文也会存进你的账户。" },
   { q: "我的学习进度存在哪？", a: "默认存在浏览器的 localStorage。登录后，进度会同步到 Supabase 云端，换设备也不丢。" },
   { q: "内容来自哪里？", a: "知识库来自 kline-buty 开源项目，{chapters} 个篇章覆盖从入门到期权策略的完整交易知识体系。" },
   { q: "图表是实时行情吗？", a: `是的，K 线数据来自 Binance 公开 API。图表提供 ${symbolListLabel(CHART_QUICK_SYMBOLS)} 共 ${CHART_QUICK_SYMBOLS.length} 个快捷币对，也可以直接输入任意以 USDT 计价的币安现货交易对。${REPLAY_SCOPE_ZH}` },
@@ -50,7 +55,7 @@ const FAQ_ZH = [
   { q: "AI 陪学怎么用？", a: "每篇课程页面底部有 AI 对话入口，可以提问课程相关问题。AI 会基于知识库内容回答，不荐股、不预测。" },
   { q: "AI 章节摘要是怎么生成的？", a: "篇章页的「AI 章节摘要」卡片，点击后会用 RAG 检索本章内容，由 AI 生成一段导语。生成后缓存在本地。" },
   { q: "支持哪些语言？", a: "中文和英文，两种语言覆盖同样的 {chapters} 个篇章；默认英文，可在右上角切换。" },
-  { q: "数据安全吗？", a: "不收集追踪数据、没有追踪 cookie。服务器上可能存在三类内容：登录邮箱（Supabase Auth）、你选择同步的学习进度（Supabase Postgres，受 RLS 行级安全保护），以及 AI 回答评分与引用点击产生的记录（未登录时是匿名行，登录后会带上你的账户标识，两类都不含邮箱与设备标识）。以上三类是会被存下来的内容；页面崩溃诊断另有短期服务端日志，不写入数据库。细节见隐私政策。" },
+  { q: "数据安全吗？", a: `不收集追踪数据、没有追踪 cookie。关于你的数据，服务端数据库里只可能存在 ${SERVER_DATA_KIND_COUNT} 类：${joinKindsZh()}。这就是入库的全部内容；页面崩溃诊断另有短期服务端日志，不写入数据库。细节见隐私政策。` },
 ];
 
 export default async function FaqPage({ params }: PageProps<"/[locale]/faq">) {
@@ -61,7 +66,7 @@ export default async function FaqPage({ params }: PageProps<"/[locale]/faq">) {
   const chosen = en
     ? [
         { q: "Is Trade Buty free?", a: "Completely free, open-source (MIT licensed). No courses sold, no stock tips, no returns promised. Core courses are free forever." },
-        { q: "Do I need to register to learn?", a: "No. All courses, charts, replay, and quizzes work as a guest. Data is stored locally in your browser. Login is only for cross-device sync." },
+        { q: "Do I need to register to learn?", a: "No. All courses, charts, replay, and quizzes work as a guest, and the data stays in your browser. Login is there for cross-device sync: your progress syncs to the cloud, and the AI conversation text is saved to your account." },
         { q: "Where is my progress stored?", a: "In your browser's localStorage by default. When logged in, progress syncs to Supabase cloud — survives device changes." },
         { q: "Where does the content come from?", a: "From kline-buty open-source project. {chapters} chapters cover the full trading knowledge system from basics to options strategies." },
         { q: "Is the chart real-time?", a: `Yes — candlestick data comes from Binance's public API. The chart has ${CHART_QUICK_SYMBOLS.length} quick pairs (${symbolListLabel(CHART_QUICK_SYMBOLS)}) and accepts any Binance spot pair quoted in USDT that you type in. ${REPLAY_SCOPE_EN}` },
@@ -69,7 +74,7 @@ export default async function FaqPage({ params }: PageProps<"/[locale]/faq">) {
         { q: "How does AI tutoring work?", a: "Each lesson page has an AI chat at the bottom. Ask questions about the content. AI answers based on the knowledge base — no tips, no predictions." },
         { q: "How are AI chapter summaries generated?", a: "The 'AI Chapter Summary' card on chapter pages uses RAG to retrieve chapter content, then AI generates a one-paragraph intro. Cached locally." },
         { q: "What languages are supported?", a: "Chinese and English — both cover the same {chapters} chapters. Default is English; switch in the top right." },
-        { q: "Is my data safe?", a: "No tracking data and no tracking cookies. Three things can exist on our servers: your login email (Supabase Auth), the learning progress you choose to sync (Supabase Postgres, RLS-protected), and the rows created when you rate an AI answer or open one of its citations — anonymous while you are logged out, saved with your account identifier once you are logged in, and never with your email address or a device identifier. Those three are what gets stored; page-crash diagnostics additionally go to short-lived server logs and are never written to a database. See the Privacy Policy." },
+        { q: "Is my data safe?", a: `No tracking data and no tracking cookies. As for your data, only ${SERVER_DATA_KIND_COUNT} kinds can sit in our database: ${joinKindsEn()}. That is everything that gets stored; page-crash diagnostics additionally go to short-lived server logs and are never written to a database. See the Privacy Policy.` },
       ]
     : FAQ_ZH;
   // 篇章总数由知识库现算，文案里只留 {chapters} 占位符

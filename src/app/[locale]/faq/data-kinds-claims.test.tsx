@@ -5,10 +5,16 @@
  * 明确写了崩溃诊断会写入短期服务端日志。问 FAQ 的人据此会以为服务器上除了那三类什么
  * 都没有。这里要求两页对同一件事给出同一份清单，并保留旧写法作为禁令的自证。
  */
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
 import type { ReactElement } from "react";
 
+import {
+  SERVER_DATA_KIND_COUNT,
+  SERVER_DATA_KINDS,
+} from "@/lib/server-data-kinds";
 import FaqPage from "./page";
 import PrivacyPage from "../privacy/page";
 
@@ -68,7 +74,7 @@ describe("FAQ 与隐私页对「服务器上有什么」说同一份清单", () 
     for (const locale of ["zh", "en"] as const) {
       const text = await faqAnswer(locale);
       expect(text).toMatch(LOG_CLAIM);
-      // 三类被存下来的内容仍然各自点名
+      // 抽三类各自点名（整份清单对着表逐条点名的是下面那条）
       expect(text).toMatch(/Supabase Auth/);
       expect(text).toMatch(/RLS|行级安全/);
       expect(text).toMatch(/评分|rate/i);
@@ -140,5 +146,99 @@ describe("两页不得无条件宣称 AI 那两类记录匿名", () => {
         expect(text, `${locale} ${name} 没说清带上的是什么`).toMatch(ACCOUNT_ID_RE);
       }
     }
+  });
+});
+
+/**
+ * R16.147：「服务器上有几类你的数据」由 `src/lib/server-data-kinds.ts` 一次决定。
+ * FAQ 原先手数到「三类」就收尾，把登录后入库的 AI 对话正文漏在了外面；隐私页也只说
+ * 「游客的对话不入库」，从没正面说过登录后的会入库——于是同一个问题两页给两份答案。
+ * 下面三条分别钉住：数字来自那张表、每一类在两页都点得到名、表本身对着 schema 不缺项。
+ */
+const LEGACY_FAQ_ANSWER_EN =
+  "No tracking data and no tracking cookies. Three things can exist on our servers: your login email (Supabase Auth), the learning progress you choose to sync (Supabase Postgres, RLS-protected), and the rows created when you rate an AI answer or open one of its citations. Those three are what gets stored; page-crash diagnostics additionally go to short-lived server logs and are never written to a database. See the Privacy Policy.";
+
+/** FAQ 里那个类数必须由表代入：断言直接写着表算出来的那一个数 */
+const COUNT_CLAIM_ZH = `只可能存在 ${SERVER_DATA_KIND_COUNT} 类：`;
+const COUNT_CLAIM_EN = `only ${SERVER_DATA_KIND_COUNT} kinds can sit in our database:`;
+
+describe("「服务器上可能有几类你的数据」由一张表决定，不再手数", () => {
+  it("禁令抓得住旧写法（旧句里没有表代入后那个数）", () => {
+    expect(LEGACY_FAQ_ANSWER).not.toContain(COUNT_CLAIM_ZH);
+    expect(LEGACY_FAQ_ANSWER_EN.toLowerCase()).not.toContain(COUNT_CLAIM_EN.toLowerCase());
+  });
+
+  it("中英两版 FAQ 印的都是表里那个类数", async () => {
+    expect(await faqAnswer("zh")).toContain(COUNT_CLAIM_ZH);
+    expect((await faqAnswer("en")).toLowerCase()).toContain(COUNT_CLAIM_EN.toLowerCase());
+  });
+
+  it("表里每一类在 FAQ 与隐私页都就地出现", async () => {
+    const [faqZh, faqEn, privZh, privEn] = [
+      await faqAnswer("zh"),
+      await faqAnswer("en"),
+      await privacyText("zh"),
+      (await privacyText("en")).toLowerCase(),
+    ];
+    for (const kind of SERVER_DATA_KINDS) {
+      expect(faqZh, `FAQ 中文没点名「${kind.zh}」`).toContain(kind.zh);
+      expect(faqEn, `FAQ 英文没点名「${kind.en}」`).toContain(kind.en);
+      expect(privZh, `隐私页中文没点名「${kind.privacyZh}」`).toContain(kind.privacyZh);
+      expect(privEn, `隐私页英文没点名「${kind.privacyEn}」`).toContain(
+        kind.privacyEn.toLowerCase()
+      );
+    }
+  });
+
+  it("隐私页正面说出登录后的对话会入库（旧文案只说了游客那一半）", async () => {
+    const zh = await privacyText("zh");
+    const en = (await privacyText("en")).toLowerCase();
+    expect(zh).toMatch(/登录后的对话[^。]*会被写入我们的数据库/);
+    expect(en).toMatch(/conversations started once you are logged in are written to our database/);
+    // 旧写法：只有游客那句，读完只会以为对话永远不入库
+    expect(
+      "Conversations started while you are logged out are never written to our database.".toLowerCase()
+    ).not.toMatch(/conversations started once you are logged in are written to our database/);
+  });
+});
+
+/**
+ * `src/lib/supabase/schema.ts` 里带 `user_id` 的表名。清单完整性对着它清点，
+ * 不对着手感：新增一张属于你的表，FAQ 那个「N 类」就必须跟着变。
+ */
+function userOwnedTables(): string[] {
+  const src = fs.readFileSync(
+    path.join(process.cwd(), "src/lib/supabase/schema.ts"),
+    "utf8"
+  );
+  const out: string[] = [];
+  for (const match of src.matchAll(/pgTable\("([a-z_]+)",\s*\{([\s\S]*?)\n\}\)/g)) {
+    if (/uuid\("user_id"\)/.test(match[2])) out.push(match[1]);
+  }
+  return out;
+}
+
+describe("清单收编了 schema 里每一张带 user_id 的表", () => {
+  it("扫描本身认得出已知的两张（认不出就是断言在空转）", () => {
+    const tables = userOwnedTables();
+    expect(tables).toContain("progress");
+    expect(tables).toContain("ai_conversations");
+  });
+
+  it("一张都不落在清单之外，也不归进两类", () => {
+    const tables = userOwnedTables();
+    const covered = SERVER_DATA_KINDS.flatMap((kind) => kind.covers);
+    expect(
+      new Set(covered).size,
+      "同一张表被两类点名，「几类」就说不清了"
+    ).toBe(covered.length);
+    expect(
+      tables.filter((t) => !covered.includes(t)),
+      "这些表属于某个账户，却没有任何一类文案提到过它"
+    ).toEqual([]);
+    expect(
+      covered.filter((c) => !tables.includes(c)),
+      "清单点名了 schema.ts 里并不带 user_id 的表"
+    ).toEqual([]);
   });
 });
