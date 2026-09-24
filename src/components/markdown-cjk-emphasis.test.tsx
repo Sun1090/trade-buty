@@ -35,6 +35,32 @@ function lessons(root: string) {
   return out;
 }
 
+/**
+ * 把 `<pre>` / `<code>` 区段整段挖掉，只留正文。
+ *
+ * 写成扫描而不是 `html.replace(/<pre[\s\S]*?<\/pre>/g, "")`：CodeQL 的
+ * `js/incomplete-html-sanitization` 只看正则形状就判「值里可能还剩 `<script`」
+ * （本轮就在产物上报了 4 条），而本仓的既有惯例同样是「尖括号清理走扫描」
+ * （`src/lib/md-utils.ts` 里写着同一条教训）。
+ * 也不能改成在 markdown 层删代码围栏：课文里有缩进式代码块，删不干净，
+ * 数字会从 24 涨到 32 并把「代码里的字面星号」错算成缺陷。
+ */
+function outsideCode(html: string): string {
+  let out = "";
+  let i = 0;
+  for (;;) {
+    const pre = html.indexOf("<pre", i);
+    const code = html.indexOf("<code", i);
+    const open = pre === -1 ? code : code === -1 ? pre : Math.min(pre, code);
+    if (open === -1) return out + html.slice(i);
+    out += html.slice(i, open);
+    const tag = html.startsWith("<pre", open) ? "pre" : "code";
+    const close = html.indexOf(`</${tag}>`, open);
+    if (close === -1) return out + html.slice(open);
+    i = close + tag.length + 3;
+  }
+}
+
 const KB_ROOT = "content/kline-buty/docs/knowledge";
 /** 2026-09-24 实测：{zh,en} 两棵树各 209 个 markdown（课文 + 章节首页），共 418 */
 const MIN_LESSON_FILES = 400;
@@ -74,11 +100,8 @@ describe("整棵内容树里的字面星号有上限", () => {
         const [locale, chapter] = rel.split("/");
         const raw = fs.readFileSync(f, "utf8");
         const prepared = prepareForRender(raw.replace(/^---[\s\S]*?---\n/, ""), locale, chapter);
-        const html = renderToStaticMarkup(<Markdown content={prepared} />)
-          .replace(/<script[\s\S]*?<\/script>/g, "")
-          .replace(/<style[\s\S]*?<\/style>/g, "")
-          .replace(/<pre[\s\S]*?<\/pre>/g, "")
-          .replace(/<code[\s\S]*?<\/code>/g, "");
+        // 代码块与行内代码里的 `**` 是字面量，本来就该原样印出来，所以不进统计（`outsideCode`）
+        const html = outsideCode(renderToStaticMarkup(<Markdown content={prepared} />));
         const hits = (html.match(/\*\*/g) ?? []).length;
         if (hits > 0) offenders.push(`${rel}(${hits})`);
         total += hits;
