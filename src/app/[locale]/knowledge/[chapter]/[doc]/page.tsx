@@ -13,10 +13,10 @@ import { knowledgeHref } from "@/lib/hrefs";
 import { suggestFromPath } from "@/lib/url-suggest";
 import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
 import { JsonLd } from "@/components/json-ld";
-import { article, breadcrumbList } from "@/lib/jsonld";
+import { article, breadcrumbList, quiz } from "@/lib/jsonld";
 import { getDict, isLocale, type Locale } from "@/lib/i18n";
 import { buildPageMetadata, buildSoftNotFoundMetadata } from "@/lib/metadata";
-import { QUIZZES } from "@/lib/quizzes";
+import { QUIZ_BANK_LANGUAGE, quizHostDocSlug, QUIZZES } from "@/lib/quizzes";
 import { Markdown } from "@/components/markdown";
 import { ChapterExamCard } from "@/components/chapter-exam-card";
 import { AiChapterQuizCard } from "@/components/ai-chapter-quiz";
@@ -247,6 +247,19 @@ export default async function DocPage({
           chapterHref: chapter ? `/${locale}/knowledge/${chapterSlug}` : undefined,
         })}
       />
+      {/* 这套题的宿主就是本节（篇章页的入口卡片指向这里）；同章其他课文底部放的是同一张
+          入口卡片，但 Quiz 结构化数据只由宿主这一页发，免得一个实体被多个页面认领 */}
+      {QUIZZES[chapterSlug] && quizHostDocSlug(chapterSlug) === docSlug && (
+        <JsonLd
+          data={quiz({
+            language: QUIZ_BANK_LANGUAGE,
+            title: QUIZZES[chapterSlug]!.title,
+            pageHref: `/${locale}/knowledge/${chapterSlug}/${docSlug}`,
+            courseHref: `/${locale}/knowledge/${chapterSlug}`,
+            questions: QUIZZES[chapterSlug]!.questions.map((q) => ({ text: q.question })),
+          })}
+        />
+      )}
       {/* R8.10：面包屑导航（搜索引擎可识别层级） */}
       <JsonLd
         data={breadcrumbList([

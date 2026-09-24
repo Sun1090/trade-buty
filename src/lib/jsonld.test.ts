@@ -174,7 +174,8 @@ describe("quiz", () => {
     const out = quiz({
       language: "zh-CN",
       title: "入门基础 · 随堂测",
-      chapterHref: "/zh/knowledge/getting-started",
+      pageHref: "/zh/knowledge/getting-started/first-trade",
+      courseHref: "/zh/knowledge/getting-started",
       questions: [
         { text: "阳线说明什么？" },
         { text: "市价单与限价单的区别？" },
@@ -188,11 +189,29 @@ describe("quiz", () => {
     expect(parts[1]!["@type"]).toBe("Question");
   });
 
-  it("语言取的是题库自己的，不是页面的——/en 章节页挂的仍是这套中文题", () => {
+  it("实体指向渲染那一页，isPartOf 才指向篇章的 Course", () => {
+    const out = quiz({
+      language: "zh-CN",
+      title: "入门基础 · 随堂测",
+      pageHref: "/zh/knowledge/getting-started/first-trade",
+      courseHref: "/zh/knowledge/getting-started",
+      questions: [{ text: "阳线说明什么？" }],
+    });
+    // 题在某一节课末尾渲染，Quiz 实体就得写那一页的 URL；
+    // 挂在篇章页（只有入口卡片）就是谎报「本页有一整套题」。
+    expect(out["@id"]).toBe(`${SITE_URL}/zh/knowledge/getting-started/first-trade#quiz`);
+    expect(out.url).toBe(`${SITE_URL}/zh/knowledge/getting-started/first-trade`);
+    expect((out.isPartOf as Record<string, string>)["@id"]).toBe(
+      `${SITE_URL}/zh/knowledge/getting-started#course`,
+    );
+  });
+
+  it("语言取的是题库自己的，不是页面的——/en 上挂的仍是这套中文题", () => {
     const out = quiz({
       language: "zh-CN",
       title: "行为金融篇 · 随堂测",
-      chapterHref: "/en/knowledge/behavioral-finance",
+      pageHref: "/en/knowledge/behavioral-finance/behavioral-playbook",
+      courseHref: "/en/knowledge/behavioral-finance",
       questions: [{ text: "「损失厌恶」描述的是哪种现象？" }],
     });
     expect(out.inLanguage).toBe("zh-CN");

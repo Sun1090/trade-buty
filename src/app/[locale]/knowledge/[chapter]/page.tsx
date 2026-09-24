@@ -8,7 +8,7 @@ import {
   prepareForRender,
 } from "@/lib/content";
 import { knowledgeHref } from "@/lib/hrefs";
-import { QUIZ_BANK_LANGUAGE, QUIZZES } from "@/lib/quizzes";
+import { QUIZ_BANK_LANGUAGE, quizHostDocSlug, QUIZZES } from "@/lib/quizzes";
 import { suggestFromPath } from "@/lib/url-suggest";
 import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
 import { JsonLd } from "@/components/json-ld";
@@ -103,7 +103,7 @@ export default async function ChapterPage({
         <span>{chapter.title}</span>
       </nav>
 
-      {/* R8.10：结构化数据（Course + Quiz + BreadcrumbList） */}
+      {/* R8.10：结构化数据（Course + BreadcrumbList；Quiz 只在测验真的渲染在本页时才发） */}
       <JsonLd
         data={course({
           locale,
@@ -125,12 +125,14 @@ export default async function ChapterPage({
           `/${locale}/knowledge/${slug}`,
         )}
       />
-      {QUIZZES[slug] && (
+      {/* 只有测验真的在本页渲染（没挂到某一节课）时才发 Quiz 结构化数据 */}
+      {QUIZZES[slug] && quizHostDocSlug(slug) === null && (
         <JsonLd
           data={quiz({
             language: QUIZ_BANK_LANGUAGE,
             title: QUIZZES[slug]!.title,
-            chapterHref: `/${locale}/knowledge/${slug}`,
+            pageHref: `/${locale}/knowledge/${slug}`,
+            courseHref: `/${locale}/knowledge/${slug}`,
             questions: QUIZZES[slug]!.questions.map((q) => ({ text: q.question })),
           })}
         />
