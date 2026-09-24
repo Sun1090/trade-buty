@@ -84,7 +84,9 @@ const zh = {
     rangeDaysTpl: "近 {n} 天",
     sourceLocal: "本机数据",
     sourceCloud: "本机 + 云端",
-    sourceSyncedTpl: "上次云同步 {t}",
+    /** 这个时刻只在「从云端合并」那条路径上打点（`sync-layer.ts` 的 `recordCloudSync()`），
+     * 随写随推的双写从不更新它——所以说「上次同步」会把三天前那次合并说成刚才。 */
+    sourceSyncedTpl: "上次从云端合并 {t}",
     conflictTitle: "多设备同步提示",
     conflictBodyTpl: "另一台设备有 {n} 处数据与本机不同，已自动合并：目标档位保留本机，错题复习计划取较新一条。",
     conflictDismiss: "知道了",
@@ -205,7 +207,7 @@ const en: StatsDict = {
     rangeDaysTpl: "Last {n} days",
     sourceLocal: "This device",
     sourceCloud: "Local + cloud",
-    sourceSyncedTpl: "Last cloud sync {t}",
+    sourceSyncedTpl: "Last merged from cloud {t}",
     conflictTitle: "Multi-device sync note",
     conflictBodyTpl: "{n} item(s) differ from another device and were merged automatically: your daily goal stays as set here, and the newer review plan wins.",
     conflictDismiss: "Got it",
