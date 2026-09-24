@@ -54,7 +54,7 @@ export function ChapterRail({
   const unread = docs.filter((d) => !readSet.has(d.slug));
 
   return (
-    <aside className="hidden xl:block">
+    <aside className="no-print hidden xl:block">
       <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-2 space-y-6">
         {/* 篇章进度卡片 */}
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">

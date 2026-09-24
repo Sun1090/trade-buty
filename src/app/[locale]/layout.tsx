@@ -48,7 +48,7 @@ export default async function LocaleLayout({
       <JsonLd data={siteGraph(locale)} />
       <AuthProvider>
       <LearningSidebar locale={locale} labels={{ learn: t.nav.path, practice: t.nav.replay, review: t.nav.review, stats: t.stats.nav, bookmarks: t.bookmarks.nav, search: t.nav.search, ai: t.ai.nav }} />
-      <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md" style={{ boxShadow: "inset 0 -1px 0 rgba(52,211,153,0.08)" }}>
+      <header className="no-print sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md" style={{ boxShadow: "inset 0 -1px 0 rgba(52,211,153,0.08)" }}>
         <div className="mx-auto max-w-6xl px-4 sm:px-5 h-14 sm:h-16 flex items-center justify-between">
           <Link
             href={p("/")}

@@ -80,7 +80,7 @@ export function Toc({ items, heading }: { items: TocItem[]; heading: string }) {
       </nav>
 
       {/* 移动端浮动按钮 + 抽屉 */}
-      <div className="2xl:hidden fixed right-4 bottom-20 z-40">
+      <div className="no-print 2xl:hidden fixed right-4 bottom-20 z-40">
         <button
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
