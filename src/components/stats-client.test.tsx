@@ -281,6 +281,29 @@ describe("StatsClient 测验完成 caliber (R16.125)", () => {
   });
 });
 
+/**
+ * R16.126：详细统计栅格那一格印的是**各章最高分再取平均**，不是「答对了多少」。
+ * 它曾经只写着「准确率」——同一个数在上面的学习概览那块叫「平均得分 · 各章最高分的平均」，
+ * 在测验趋势卡叫「平均得分」，在这一格却叫「准确率」，而重做刷满的 100% 并不是准确率。
+ */
+describe("StatsClient 测验平均分的标签说的是它算的那件事", () => {
+  it("卡片自带口径，且这个数不再顶着裸的「准确率」", async () => {
+    const total = QUIZZES["getting-started"].questions.length;
+    store.set("tb-quiz-getting-started", JSON.stringify({ best: total, done: true }));
+    render(<StatsClient chapters={chapters} dict={dict} locale="en" />);
+    await screen.findByText("Learning overview");
+
+    const label = [...document.querySelectorAll("p")].find(
+      (node) => node.textContent === "Average score · average of chapter bests",
+    );
+    expect(label, "卡片没写出它的口径").toBeTruthy();
+    // 标签与它旁边那个数是一对：只断言两个字符串都在页面上，换错格子也测不出来
+    expect(label!.previousElementSibling?.textContent).toBe("100%");
+    expect(screen.queryByText("Accuracy"), "「准确率」这三个字在这一屏只属于回放").not.toBeInTheDocument();
+    expect(screen.getByText("Replay Accuracy")).toBeInTheDocument();
+  });
+});
+
 describe("StatsClient learning-overview quiz caliber (R16.11)", () => {
   /**
    * 这张卡上的百分比不是任何一次的「最好成绩」，而是各章最高分再取平均。
