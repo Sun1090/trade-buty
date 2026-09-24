@@ -19,6 +19,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/** 只为了让 `mock.calls[0][0]` 是有类型的第一参数，而不是零参元组 */
+type FetchFn = (url: string, init?: RequestInit) => Promise<unknown>;
+
 const DATA = [
   { symbol: "BTCUSDT", lastPrice: "60000.5", priceChangePercent: "1.23" },
   { symbol: "ETHUSDT", lastPrice: "3000", priceChangePercent: "-2.50" },
@@ -131,9 +134,7 @@ describe("MarketTicker（R13.11/R13.12）", () => {
   });
 
   it("箭头旁的说明写的窗口，与真正请求的那个窗口是同一个", async () => {
-    const fetchMock = vi.fn(
-      async (_input: string, _init?: RequestInit) => ({ ok: true, json: async () => DATA }),
-    );
+    const fetchMock = vi.fn<FetchFn>(async () => ({ ok: true, json: async () => DATA }));
     vi.stubGlobal("fetch", fetchMock);
     render(<MarketTicker />);
     await waitFor(() => expect(screen.getByText("BTC")).toBeInTheDocument());
