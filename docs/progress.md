@@ -6512,8 +6512,9 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   本地门禁顺序上还抓到一次假红：`check:search-index` 与 `check:structured-data` 读的是 `.next/server/app/**`，
   而 `npm run e2e` 里 `smoke` / `static-surface` 会请求 `/zh/knowledge/nonexistent-chapter` 这类 404 探针，
   跑着的生产服务器把它们预渲染进 `.next`，于是这两个门禁当场报「构建页面 421 / 多出 3 个」。
-  CI 的顺序是 build → 这两个 → e2e 收尾，所以只有本地会踩。清掉 `.next` 重跑 build 后两者即绿
-  （418 / 454 页）。CI 里那 40 条 `check:*` 门禁本批全部在本地跑过一遍，顺序也照 CI：build → 产物类门禁 → e2e。
+  `docs/release-checklist.md` §3 本来就写着「构建产物门禁必须在 e2e 之前」——是我在本地没照它排。
+  CI 的顺序是 build → 这两个 → e2e 收尾，所以只有本地会踩。清掉 `.next` 重跑 build 后两者即绿（418 / 454 页）。
+  CI 里那 40 条 `check:*` 门禁本批全部在本地跑过一遍。
 - 阻塞 / 风险：无新增。R16.67 只改显示与判类，不动存储与请求参数；R16.68 纯文档 + 用例；
   R16.69 改的是「新一轮」按钮在自定义模式下的取数上界，不动历史记录与云端字段——但**同一批历史不再会在
   自定义模式里被当成多轮**，因此合并后老用户「累计轮次」里的重复轮次仍留在记录里（不追溯删，删就是改历史）。
