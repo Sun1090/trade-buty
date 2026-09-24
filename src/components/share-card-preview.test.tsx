@@ -248,41 +248,43 @@ describe("ShareCardPreview grade thresholds", () => {
 
   afterEach(cleanup);
 
+  // 等级由百分比判，而百分比只来自分子分母（链接里自带的那个解码时不采信），
+  // 所以走阈值要改动的是 score/total，不是 percent 字段。
   it.each([
-    [100, "S"],
-    [80, "A"],
-    [60, "B"],
-    [59.9, "C"],
-  ] as const)("quiz percent %s 映射为等级 %s", (percent, grade) => {
+    [10, 10, "S"],
+    [8, 10, "A"],
+    [6, 10, "B"],
+    [59, 100, "C"],
+  ] as const)("quiz %i/%i 映射为等级 %s", (score, total, grade) => {
     const path = encodeQuiz({
       chapterTitle: "Risk",
-      score: 1,
-      total: 1,
-      percent,
+      score,
+      total,
+      percent: 0,
       locale: "en",
     });
     render(<ShareCardPreview kind="quiz" path={path} locale="en" labels={LABELS} />);
 
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-      `Risk · ${grade} · 1/1`,
+      `Risk · ${grade} · ${score}/${total}`,
     );
   });
 
   it.each([
-    [8000, 10, "S"],
-    [6500, 10, "A"],
-    [5500, 10, "B"],
-    [4000, 10, "C"],
-    [9000, 2, "C"],
+    [8, 10, "S"],
+    [65, 100, "A"],
+    [55, 100, "B"],
+    [4, 10, "C"],
+    [2, 2, "C"],
   ] as const)(
-    "replay accuracyBps=%s total=%s 映射为等级 %s",
-    (accuracyBps, total, grade) => {
+    "replay %i/%i 映射为等级 %s",
+    (correct, total, grade) => {
       const path = encodeReplay({
         symbol: "ETHUSDT",
         interval: "4h",
-        correct: 1,
+        correct,
         total,
-        accuracyBps,
+        accuracyBps: 0,
         bestStreak: 1,
         currentStreak: 1,
         locale: "en",
@@ -290,7 +292,7 @@ describe("ShareCardPreview grade thresholds", () => {
       render(<ShareCardPreview kind="replay" path={path} locale="en" labels={LABELS} />);
 
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-        `ETHUSDT 4h ${grade} 1/${total}`,
+        `ETHUSDT 4h ${grade} ${correct}/${total}`,
       );
     },
   );

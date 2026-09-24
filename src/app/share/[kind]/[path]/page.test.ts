@@ -11,6 +11,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { encodeQuiz, encodeReplay, encodeStreak, detectKind } from "@/lib/share-decode";
+import { quizScorePct } from "@/lib/quiz-score";
 import {
   normalizeShareSegment,
   resolveShareLanding,
@@ -230,8 +231,8 @@ describe("summarizeForMeta 英文有效载荷", () => {
         encodeReplay({
           symbol: "X",
           interval: "1h",
-          correct: 6,
-          total: 10,
+          correct: 55,
+          total: 100,
           accuracyBps: 5500,
           bestStreak: 2,
           currentStreak: 1,
@@ -252,48 +253,54 @@ describe("summarizeForMeta 英文有效载荷", () => {
 });
 
 describe("gradeLabel 分级覆盖", () => {
-  function quizTitle(percent: number) {
+  // 百分比由 score/total 算出来（解码时不采信链接里自带的 percent），所以分级覆盖要动分子。
+  // percent 就按站方编码时那一式填，夹具和真实链接说的是同一句话。
+  function quizTitle(score: number, total = 10, locale: "zh" | "en" = "zh") {
     return summarizeForMeta(
       "quiz",
-      encodeQuiz({ chapterTitle: "C", score: 7, total: 10, percent, locale: "zh" }),
+      encodeQuiz({
+        chapterTitle: "C",
+        score,
+        total,
+        percent: quizScorePct(score, total),
+        locale,
+      }),
     ).title;
   }
 
   it("60-79 分显示及格", () => {
-    expect(quizTitle(70)).toContain("及格");
+    expect(quizTitle(7)).toContain("及格");
   });
 
   it("低于 60 分显示待加强", () => {
-    expect(quizTitle(50)).toContain("待加强");
+    expect(quizTitle(5)).toContain("待加强");
   });
 
   it("英文 60-79 显示 B", () => {
-    const title = summarizeForMeta(
-      "quiz",
-      encodeQuiz({ chapterTitle: "C", score: 7, total: 10, percent: 70, locale: "en" }),
-    ).title;
-    expect(title).toContain("B");
+    expect(quizTitle(7, 10, "en")).toContain("B");
   });
 
   it("阈值下沿取等：100/80/60 分各归上一档", () => {
-    expect(quizTitle(100)).toContain("满分");
-    expect(quizTitle(80)).toContain("优秀");
-    expect(quizTitle(79.99)).toContain("及格");
-    expect(quizTitle(60)).toContain("及格");
-    expect(quizTitle(59.99)).toContain("待加强");
+    expect(quizTitle(10)).toContain("满分");
+    expect(quizTitle(8)).toContain("优秀");
+    // 整数题数算不出 79.99%，取能落进 79 档的最大值：79/100
+    expect(quizTitle(79, 100)).toContain("及格");
+    expect(quizTitle(6)).toContain("及格");
+    expect(quizTitle(59, 100)).toContain("待加强");
   });
 });
 
 describe("replayGradeLabel 分级覆盖", () => {
-  function replayTitle(accuracyBps: number, total = 10, locale: "zh" | "en" = "zh") {
+  // 同 quiz：万分比由命中的两数算出来（与 replay-trainer 编码那一一式子一致）
+  function replayTitle(correct: number, total = 10, locale: "zh" | "en" = "zh") {
     return summarizeForMeta(
       "replay",
       encodeReplay({
         symbol: "BTCUSDT",
         interval: "1h",
-        correct: 6,
+        correct,
         total,
-        accuracyBps,
+        accuracyBps: Math.round((correct / total) * 10_000),
         bestStreak: 3,
         currentStreak: 1,
         locale,
@@ -302,36 +309,36 @@ describe("replayGradeLabel 分级覆盖", () => {
   }
 
   it("总题数不足 3 判为待加强", () => {
-    expect(replayTitle(9000, 2)).toContain("待加强");
+    expect(replayTitle(2, 2)).toContain("待加强");
   });
 
   it("准确率 >=70% 显示卓越", () => {
-    expect(replayTitle(8000)).toContain("卓越");
+    expect(replayTitle(8)).toContain("卓越");
   });
 
   it("准确率 60-69% 显示稳健", () => {
-    expect(replayTitle(6500)).toContain("稳健");
+    expect(replayTitle(65, 100)).toContain("稳健");
   });
 
   it("准确率 50-59% 显示及格", () => {
-    expect(replayTitle(5500)).toContain("及格");
+    expect(replayTitle(55, 100)).toContain("及格");
   });
 
   it("准确率低于 50% 显示待加强", () => {
-    expect(replayTitle(4000)).toContain("待加强");
+    expect(replayTitle(4)).toContain("待加强");
   });
 
   it("英文准确率 60-69% 显示 A", () => {
-    expect(replayTitle(6500, 10, "en")).toContain("A");
+    expect(replayTitle(65, 100, "en")).toContain("A");
   });
 
   // 阈值下沿必须和 `gradeFromReplayAccuracy` 同一条线：落地页、预览卡、canvas 卡面
   // 说的是同一轮成绩，谁在 60% 上多算一档就会当场对不上。
-  it("阈值下沿取等：6000/5000/7000 bps 各归上一档", () => {
-    expect(replayTitle(7000)).toContain("卓越");
-    expect(replayTitle(6000)).toContain("稳健");
-    expect(replayTitle(5000)).toContain("及格");
-    expect(replayTitle(5999)).toContain("及格");
-    expect(replayTitle(4999)).toContain("待加强");
+  it("阈值下沿取等：7000/6000/5000 bps 各归上一档", () => {
+    expect(replayTitle(7000, 10_000)).toContain("卓越");
+    expect(replayTitle(6000, 10_000)).toContain("稳健");
+    expect(replayTitle(5000, 10_000)).toContain("及格");
+    expect(replayTitle(5999, 10_000)).toContain("及格");
+    expect(replayTitle(4999, 10_000)).toContain("待加强");
   });
 });
