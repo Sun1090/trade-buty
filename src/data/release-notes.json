@@ -1,5 +1,32 @@
 {
   "releases": [
+{
+      "version": "0.7.15",
+      "date": "2026-09-24",
+      "name": {
+        "zh": "把话说回到代码这一侧（第七批）",
+        "en": "Making the copy match the code (round seven)"
+      },
+      "highlights": {
+        "zh": [
+          "☁「已云端存档」等到离线写队列真的清空才出现：过去只要某一次写成功就亮徽标，队列里还压着没送出去的分片时界面已经在说「都上云了」；现在徽标的时态与实际排空一致，没排空时说的是「还要传」",
+          "回放的「跳到末尾」真的把整段填进图表：以前它只把播放位置挪到最后一根，图表上仍停在你看到的那一段；⏭ 现在按末尾重画整段，趋势块也改口——历史不够一轮时直说缺多少根，分母不再写成负数",
+          "行情卡片那个百分比说清楚了是 24 小时的涨跌，不是「这一跳」的变化；箭头旁边一句话把窗口口径交代完，不会再让人以为刷新一次数字就该变",
+          "自定义模式的「新一轮」往前另取一段历史：以前按下去只是把同一批请求重发一遍，屏幕上还是那一轮；现在会在你填的截止日期之前重新取样，日期输入框跟着走，也不会反过来改写你手动填过的截止日",
+          "图表交易对输入的三种失败各得到一句真话：形状不对当场在输入框下面说清规则、改对之后自动消失；币安现货没有这个标的时说「没有这个交易对」而不是「API 可能不可达」（浏览器读不到跨源的 400，改由一次 ping 判定主机活着但没有这个标的），并且不再给一个点了必然得到同一句的「重试」",
+          "英文树的内容下限变成常驻门禁：en 目录里每个文件都必须去掉头信息之后非空、中日韩字占比不超过 2%、正文不少于同名中文的 30%。当场实测 209 个文件与中文 1:1 对齐、最高占比 0.52%、最短的一篇也有中文的 1.70 倍——界面上那句「英文与中文覆盖同样的 27 个篇章」现在有内容层面的支撑，不再只是目录数"
+        ],
+        "en": [
+          "The ☁ \"Saved to cloud\" badge now waits until the offline write queue has actually drained: it used to light up after a single successful write while chunks were still queued, so the interface said everything was upstream while it was not. The tense matches reality now, and a partially queued write says \"still to send\".",
+          "\"Jump to end\" in replay really redraws the whole segment into the chart: previously it only moved the playhead to the last candle and left the chart showing the slice you were looking at. ⏭ now repaints the series up to the end, and the trend block stops asking for a round you already did - when the window is too short it says how many candles are missing instead of printing a negative denominator.",
+          "The percentage on the market card now says out loud that it is a rolling 24-hour change, not this tick, so a refresh no longer looks like it failed to update the number.",
+          "\"New round\" in custom mode really takes a different slice of history: pressing it used to resend the identical request and leave you on the same round. It now samples a fresh window before the end date you filled in and moves the date input with it - without overwriting a deadline you typed yourself.",
+          "The chart's symbol input answers each of its three failures truthfully: a malformed pair is called out under the box and the note clears once you fix it; a pair Binance spot does not list is reported as \"no such trading pair\" rather than \"Binance API may be unreachable\" (a browser cannot read that cross-origin 400, so a single ping decides whether the host is alive but the symbol missing), and the failure state no longer offers a \"Retry\" that is guaranteed to return the same sentence.",
+          "The English tree got a standing content gate: every file under en/ must have a non-empty body after its frontmatter, keep CJK characters under 2%, and be at least 30% as long as its Chinese counterpart. Measured on the spot: 209 files aligned 1:1 with Chinese, the highest CJK share is 0.52%, and the shortest file is still 1.70x its Chinese source - so \"English and Chinese cover the same 27 chapters\" now has content behind it, not just directory counts."
+        ]
+      },
+      "docs": ["docs/roadmap.md"]
+    },
     {
       "version": "0.7.14",
       "date": "2026-09-24",
