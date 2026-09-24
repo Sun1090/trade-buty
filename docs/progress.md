@@ -6451,3 +6451,37 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：#273 由本 PR 取代后关闭；随后按清单继续 #102（低端机降级的注释与用例）、#104（自定义模式
   「新一轮」拿到同一批 K 线）、#106（`已回放 0/-30` 的负分母）。
 - 更新时间：2026-09-24 07:55（Asia/Shanghai）。
+## 2026-09-24 — 回放口径第八批：历史不够一轮与低端机降级（R16.67 / R16.68）
+
+- 版本 / 状态：**未发版**（生产仍是 0.7.14）。分支 `fix-replay-degradation-claims`（从 `origin/main` = `38a877b` 切出），
+  四个提交：`e0e9845`（R16.67 分母与空窗口）、`eaf85a4`（R16.68 注释与用例）、`ee118da`（时钟台账重算）与本条 docs 提交。#274（图表 + 行情，重放 #273）与本条并行在飞。
+- 完成内容：
+  1. **R16.67**：「已回放 0/-24」。自定义结束时间拨到标的上市之前时，币安回的是 **HTTP 200 + `[]`**
+     （实测 `BTCUSDT`/`1d`/`endTime=1500000000000` → 0 根；`1503360000000` → 6 根），而 `replay-trainer.tsx:481`
+     的分母 `klines.length - context` 没有下限，图面空白、价格条隐藏，屏幕上只剩一句负数。
+     现在分母走 `availableRounds`（`:167`，唯一出口），并给这个状态一句独立于「行情暂时不可用」的真话
+     （`i18n.ts:266` zh / `:653` en，`{n}`/`{m}` 由现场数字代入）。
+  2. **R16.68**：R7.3「低端机只保留最近 N 根」只在**全量填图**那一步成立，逐根推进走 `update()` 不回头裁
+     （真实常量 150、窗口 300，`perf.ts:29`），而 `replay-trainer.test.tsx:334` 的用例标题抄的就是那句注释——
+     绿色给假话盖章。按事实改写注释与标题，并补一条用例钉住「推进一根不触发全量重设」这个边界。
+     没有动手让承诺成立：逐根封顶就得每根 `setData()` 重设整段，正是 R16.61 为了播放能跑而拆掉的路径；
+     代价与取舍写在 R16.68 里，将来要封顶得连带重设计推进路径。
+- 变更文件：`src/components/replay-trainer.tsx`、`src/components/replay-trainer.test.tsx`、
+  `src/lib/i18n.ts`、`docs/roadmap.md`（R16.67 / R16.68）、`docs/test-clock-hygiene.md`（307 → 308）、本条。
+- 验证：`replay-trainer.test.tsx` **33 条**绿（+5：空窗口 4 条、降级边界 1 条）；全量 `npm test`
+  **296 文件 / 2862 条**绿（本分支基线 `38a877b` 为 2857）；`typecheck`、`lint --max-warnings=0` 干净；
+  `check:localized-labels` / `dead-copy` / `glossary` / `ai-copy` / `docs` / `constitution` /
+  `report-freshness` 全绿；构建后 `e2e/placeholder-leak.spec.ts`（新文案带 `{n}`/`{m}`，这道门禁的口径）
+  与 `e2e/mobile-overflow.spec.ts`（覆盖层落在 320px 的图上）两条一起跑，**39 条全绿**。
+  时钟台账这次**主动重算**——上一批（#272）就是因为漏了它而在 CI 才红，原因已写进项目记忆：
+  `check:report-freshness` 从不重算，单独跑它等于零证明，而该台账记的是命中**行号**。
+- 变异核对四组，逐条点名：分母退回 `klines.length - context` → `Unable to find an element with the text: /进度: 0\/0/`；
+  撤掉空窗口覆盖层 → 两条红（`只有 6 根`、`只有 0 根`）；`availableRounds` 改成不扣 context →
+  该文件 33 条里 **17 条**红（新增那条 + 16 条既有），证明这个出口是全场共用的那一个；
+  `useEffect` 依赖加 `idx`（推进即全量重设）→ 新增的降级边界那条红 `expected 2 to be 1`，其余 32 条仍绿。
+  恢复一律用 `git checkout -- <文件>`（提交之后再变异），不再手写还原。
+- 阻塞 / 风险：无新增。R16.67 只改显示与判类，不动存储与请求参数；R16.68 纯文档 + 用例。
+  回滚 = `git revert` 本批提交。待拍板清单不变（R15.2 / R16.7 / R16.10–R16.13 / R16.16 / R16.41 /
+  R16.47 / R16.52 / R16.58 / R16.60 / R16.64）。
+- 下一项：#104（自定义模式点「新一轮」拿回的仍是同一批 K 线）；随后是 #101（R16.64 的三口径窗口，待拍板）。
+- 更新时间：2026-09-24 08:25（Asia/Shanghai）。
