@@ -77,10 +77,11 @@ export function SearchClient({
   }, [query]);
 
   /**
-   * 每条页面都嵌了 `SearchAction`（`/search?q={search_term_string}`，`src/lib/jsonld.ts`），
-   * 搜索引擎据此送来的链接是带着查询词的；这个组件此前从不去读它，于是那条承诺把人送到
-   * 一个空输入框前面。首帧不能读 URL（SSG 出来的那一帧对所有访客都一样），所以水合后
-   * 立刻把它接进输入框——与 AI 页读 `?q=` 的做法同一条路径。
+   * 每个语言页都在 locale 布局里嵌了一份 `SearchAction`（`/search?q={search_term_string}`，
+   * `src/lib/jsonld.ts` 的 `siteGraph`），搜索引擎据此送来的链接是带着查询词的；
+   * 这个组件此前从不去读它，于是那条承诺把人送到一个空输入框前面。首帧不能读 URL
+   * （SSG 出来的那一帧对所有访客都一样），所以水合后立刻把它接进输入框——
+   * 与 AI 页读 `?q=` 的做法同一条路径。
    */
   useEffect(() => {
     const incoming = new URLSearchParams(window.location.search).get("q")?.trim();

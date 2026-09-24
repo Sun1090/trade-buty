@@ -67,6 +67,11 @@ export function siteGraph(locale: StructuredDataLocale) {
         name: SITE_NAME,
         inLanguage: inLanguage(locale),
         publisher: organizationReference(),
+        /**
+         * 这份承诺要有兑现：`/search` 那个组件真的会读 `?q=` 并搜出来
+         * （`src/components/search-client.tsx`），`search-client.test.tsx` 与
+         * `e2e/full-site.spec.ts` 各钉一条。R16.149 之前它只是写着，没人接。
+         */
         potentialAction: {
           "@type": "SearchAction",
           target: {
