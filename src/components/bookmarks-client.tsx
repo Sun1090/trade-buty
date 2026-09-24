@@ -11,27 +11,25 @@ export function BookmarksClient({
   locale: string;
   emptyLabel: string;
 }) {
-  const [bookmarks, setBookmarks] = useState<BookmarkEntry[]>([]);
   /**
    * 收藏只存在这台设备的 localStorage 里，SSG 预渲染的那份 HTML 一条都看不见它。
-   * 所以在读完之前，这一页不许替访客断言「还没有收藏课程」——那句对每一个已经收藏过
+   * `null` = 还没读过，此时不许替访客断言「还没有收藏课程」——那句对每一个已经收藏过
    * 的人都是假的，而且关掉 JS 就永远是假的（`bookmark-count.tsx` 同口径：没读过就不说话）。
    */
-  const [loaded, setLoaded] = useState(false);
+  const [bookmarks, setBookmarks] = useState<BookmarkEntry[] | null>(null);
 
   useEffect(() => {
     const update = () => setBookmarks(Object.values(readBookmarks()).sort((a, b) => b.at - a.at));
     update();
-    setLoaded(true);
     window.addEventListener("tb-bookmarks", update);
     return () => window.removeEventListener("tb-bookmarks", update);
   }, []);
 
-  if (bookmarks.length === 0) {
+  if (!bookmarks || bookmarks.length === 0) {
     return (
       <div className="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] to-[var(--surface)] p-10 text-center">
         <p className="text-4xl" aria-hidden>☆</p>
-        {loaded && <p className="mt-4 font-semibold">{emptyLabel}</p>}
+        {bookmarks && <p className="mt-4 font-semibold">{emptyLabel}</p>}
         <div className="mt-5 flex flex-wrap justify-center gap-3">
           <Link
             href={`/${locale}/path`}
