@@ -39,16 +39,31 @@ export function ActivityHeatmap({ label, emptyLabel, locale }: HeatmapProps) {
 
   const W = WEEKS * 12;
   const H = DAYS * 12;
-  const activeCount = activeSet.size;
+  // 图上点得亮的格子数——标题里的数字必须就是这张图画出来的东西。
+  // 记录本身保留 365 天（`activity-calendar.ts` 的 `slice(-365)`），比这张 26 周的图长一倍，
+  // 所以窗口外的日子单独交代，不混进这个数。
+  const inWindow = [...cellMap.values()].filter((value) => value > 0).length;
+  const earlier = activeSet.size - inWindow;
+  const dayUnit =
+    locale === "zh" ? "天" : inWindow === 1 ? "day" : "days";
+  const earlierNote =
+    locale === "zh"
+      ? `（另有 ${earlier} 天早于这张图）`
+      : ` (${earlier} earlier than this chart)`;
   const pathHref = `/${locale}/path`;
   const ctaText = locale === "en" ? "Start a lesson →" : "去学第一课 →";
 
   return (
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
       <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-3">
-        {label} · {activeCount} {activeCount <= 1 ? "day" : "days"}
+        {label} · {inWindow} {dayUnit}
+        {earlier > 0 && (
+          <span data-testid="activity-heatmap-earlier" className="font-normal normal-case">
+            {earlierNote}
+          </span>
+        )}
       </p>
-      {activeCount === 0 ? (
+      {activeSet.size === 0 ? (
         <div data-testid="activity-heatmap-empty" className="space-y-3">
           <p className="text-sm text-faint">{emptyLabel}</p>
           <Link
