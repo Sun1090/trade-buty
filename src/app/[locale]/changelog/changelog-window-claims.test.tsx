@@ -107,3 +107,32 @@ describe("更新日志页关于自己列了哪些版本的两句话", () => {
     expect(shownReleases[0].version).toBe(releaseNotes[0].version);
   });
 });
+
+/**
+ * R16.154：那一排链接以前顶着「发布复盘 / Release review」这个名字，而窗口里 8 个版本
+ * 挂的文档全是 `docs/roadmap.md`（`src/data/release-notes.json`：0.7.9–0.7.16 每条 `docs`
+ * 都是 roadmap；整份数据里 `*-release-review.md` 只有 4 条，都属于折叠掉的老版本）。
+ * 名字与它挂的东西必须由同一份数据决定：只有窗口里**每一条**链接都是发布复盘，
+ * 页面才许写「发布复盘」。
+ */
+describe("发布条目的引用标签与它挂的文档是同一种东西", () => {
+  const docs = releaseNotes
+    .slice(0, CHANGELOG_WINDOW)
+    .flatMap((r) => (r as { docs?: string[] }).docs ?? []);
+
+  it("窗口里确实挂着引用（否则下面那条是对着空集立的规矩）", () => {
+    expect(docs.length).toBeGreaterThan(0);
+    expect(docs).toContain("docs/roadmap.md");
+  });
+
+  it("链接不全是发布复盘时，两种语言的页面都不许写「发布复盘 / Release review」", async () => {
+    const allReviews = docs.every((d) => /-release-review\.md$/.test(d));
+    expect(allReviews, "窗口里的引用今天已经不全是 roadmap，请重看这一条的设定").toBe(false);
+    for (const locale of ["zh", "en"] as const) {
+      const { text } = await renderPage(locale);
+      expect(text, `${locale} 页给非复盘文档挂上了复盘的名字`).not.toMatch(
+        locale === "zh" ? /发布复盘/ : /Release review/i,
+      );
+    }
+  });
+});
