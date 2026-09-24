@@ -1093,16 +1093,16 @@ describe("AiChat 回答操作与对话管理", () => {
     const stalled = new Promise<void>((resolve) => {
       release = resolve;
     });
-    let firstOut = false;
+    const chunks = ["正在生成的回答", "迟到的后半段"];
+    let next = 0;
     const body = {
       getReader: () => ({
         read: async () => {
-          if (!firstOut) {
-            firstOut = true;
-            return { done: false, value: enc.encode("正在生成的回答") };
-          }
-          await stalled; // 第二块卡在途中：这期间用户点了「清空对话」
-          return { done: true, value: undefined };
+          if (next === 1) await stalled; // 第二块停在用户点清空的那一瞬间
+          const text = chunks[next];
+          if (text === undefined) return { done: true, value: undefined };
+          next += 1;
+          return { done: false, value: enc.encode(text) };
         },
       }),
     };
@@ -1140,6 +1140,56 @@ describe("AiChat 回答操作与对话管理", () => {
     });
     await waitFor(() => expect(screen.queryByText(dict.thinking)).toBeNull());
     expect(screen.queryByText(/正在生成的回答/)).toBeNull();
+    expect(screen.queryByText(/迟到的后半段/), "清空之后迟到的那一块把回答写回来了").toBeNull();
+    expect(screen.queryByText(dict.errorTimeout)).toBeNull();
+    expect(screen.queryByText(dict.error)).toBeNull();
+  });
+
+  it("abort 掉的那条 read() 以 AbortError 结束：不留回答，也不弹错误框", async () => {
+    const enc = new TextEncoder();
+    let signal: AbortSignal | null | undefined;
+    let firstOut = false;
+    const body = {
+      getReader: () => ({
+        read: async () => {
+          if (!firstOut) {
+            firstOut = true;
+            return { done: false, value: enc.encode("正在生成的回答") };
+          }
+          // 真实 fetch 的口径：signal 一被 abort，在途的 read() 就以 AbortError 收场
+          return new Promise((_resolve, reject) => {
+            const fail = () =>
+              reject(new DOMException("The user aborted a request.", "AbortError"));
+            if (signal?.aborted) fail();
+            else signal?.addEventListener("abort", fail, { once: true });
+          });
+        },
+      }),
+    };
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/ai/conversations") {
+        return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+      }
+      if (url === "/api/ai/chat") {
+        signal = init?.signal;
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+          body,
+        } as unknown as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(window, "confirm").mockImplementation(() => true);
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    fireEvent.click(suggestedButtons(container)[0]);
+    await screen.findByText("正在生成的回答");
+
+    fireEvent.click(screen.getByRole("button", { name: dict.clear }));
+    await waitFor(() => expect(screen.queryByText(/正在生成的回答/)).toBeNull());
+    // 错误框是给真失败准备的：用户自己掐掉的这一轮不该被说成「请求超时」或「出错了」
     expect(screen.queryByText(dict.errorTimeout)).toBeNull();
     expect(screen.queryByText(dict.error)).toBeNull();
   });
