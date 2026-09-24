@@ -98,9 +98,11 @@ describe("隐私页与真实网络面一致", () => {
     // 解析不出链条时不许静默变成「全绿」
     expect(vendors.length).toBeGreaterThanOrEqual(3);
 
-    const copy = fs.readFileSync(PAGE_FILE, "utf8").toLowerCase();
+    // R16.162：以前这里读的是整页源码——把某一家挪到 Cookie 段、甚至挪进注释里都照样绿，
+    // 而断言消息说的是「第三方一节应点名」。用同文件已有的 paragraph() 把射程收到那一节。
+    const sectionText = section("Third-Party Services", "第三方服务").toLowerCase();
     for (const vendor of vendors) {
-      expect(copy, `隐私页第三方一节应点名 ${vendor}`).toContain(vendor);
+      expect(sectionText, `隐私页第三方一节应点名 ${vendor}`).toContain(vendor);
     }
   });
 
@@ -168,6 +170,18 @@ function paragraph(zhMark: string | RegExp, enMark: RegExp): string {
   const test = typeof zhMark === "string" ? (c: string) => c.includes(zhMark) : (c: string) => zhMark.test(c);
   const chunk = fs.readFileSync(PAGE_FILE, "utf8").split(/<\/p>/).find((c) => test(c) && enMark.test(c));
   expect(chunk, `隐私页需要一段同时用中英讲「${String(zhMark)}」`).toBeTruthy();
+  return chunk as string;
+}
+
+/** 隐私页某一节的源码文本：按 `</section>` 切，再要求两种语言的**节标题**都在其中。
+ *  不能只按 `</p>` 找关键字——AI 那一段正文就写着「“第三方服务”一节 / named under
+ *  Third-Party Services」，按关键字先命中的是它，而它不点名任何一家模型商。 */
+function section(titleEn: string, titleZh: string): string {
+  const chunk = fs
+    .readFileSync(PAGE_FILE, "utf8")
+    .split(/<\/section>/)
+    .find((c) => c.includes(`"${titleEn}"`) && c.includes(`"${titleZh}"`));
+  expect(chunk, `隐私页缺「${titleZh}」这一节`).toBeTruthy();
   return chunk as string;
 }
 
