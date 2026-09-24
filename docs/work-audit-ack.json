@@ -112,6 +112,10 @@
     {
       "number": 273,
       "reason": "补丁等价，只是换了载体：#273 从 a017d99 切出，#272（R16.61–R16.64）先落地，两个 PR 都往 docs/roadmap.md 末尾追加条目，GitHub 侧 gh pr update-branch 273 --rebase 报 RebaseConflictError；本仓库禁止 force-push，故把那笔重放到 origin/main(38a877b) 之上：4d699b0→895b868，并按既有惯例把另一条待落地的独立修复（首页行情窗口 8787d6a→7136c26，分支 fix-ticker-change-window，本来就没开 PR）合进同一条分支，两轮重放合成一轮 CI。冲突只在 roadmap 追加处（R16.65 排在 R16.64 之后，文件 567 行、无冲突标记）；src/lib/i18n.ts 逐 blob 比对为 DIFF 是按设计——重放版要同时含 #272 的 trendEmpty 与本条的 badSymbol，两个键各 2 处（zh/en）已 grep 核对。其余 10 个 src/ 文件与 origin/fix-chart-bad-symbol-copy 的 blob 完全相同。#273 与本条 ack 所在 PR 合并后关闭。"
+    },
+    {
+      "number": 287,
+      "reason": "补丁等价，只是换了载体（与 #125/#134/#211 同一情形）：#287 从 #286 的分支尾部切出，所以它的 origin/main..分支 里同时含 #286 那 6 笔（c7b545a…dbe2f86）；#286 以 rebase 落地（main=3961cdd…af112f4，git cherry 全为 `-`）后，#287 的分支基线落在旧 main 上，而分支保护 strict 要求与基线同步，更新已推送分支需要 force push（本仓库禁止），因此该 PR 从未跑过 ci。按既有办法从最新 origin/main(af112f4) 重开分支 fix/ui-claims-round-9，只重放它真正新增的 9 笔（053b190…fe916d8 → 1aecf04…1aec08e），另开 PR #288。等价性用最强的一种核对：两条分支的 tree OID 完全相同（git rev-parse HEAD^{tree} 与 origin/fix/search-locale-and-honest-labels^{tree} 都是 11a66f430bc16e00743333c3e5f096c8dc40619b），即全部文件内容逐字节一致，无需再逐 blob 比对。#288 合入后 main 上即有这 9 笔的内容，#287 的远端分支随后清理。"
     }
   ]
 }
