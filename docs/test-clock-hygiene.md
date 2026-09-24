@@ -16,14 +16,14 @@
 
 ## 汇总
 
-- 扫描测试文件：310 个，命中文件：6 个
+- 扫描测试文件：311 个，命中文件：6 个
 - clock-in-assertion：0
 - uncontrolled-timer：6
 
 | 口径 | 文件 | 行 | 片段 |
 |---|---|---|---|
 | uncontrolled-timer | scripts/check-dark-pattern-copy.test.mjs | 244 | ``setInterval(()=>{},1000); <input autoFocus defaultChecked />`,` |
-| uncontrolled-timer | src/components/replay-trainer.test.tsx | 389 | `await new Promise((r) => setTimeout(r, tickMs * 2 + 200));` |
+| uncontrolled-timer | src/components/replay-trainer.test.tsx | 388 | `await new Promise((r) => setTimeout(r, tickMs * 2 + 200));` |
 | uncontrolled-timer | src/lib/reading-time.test.ts | 14 | `const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));` |
 | uncontrolled-timer | src/lib/sync-layer-queue.test.ts | 79 | `const flush = () => new Promise<void>((r) => setTimeout(r, 0));` |
 | uncontrolled-timer | src/lib/sync-layer-write-failure.test.ts | 128 | `await new Promise((resolve) => setTimeout(resolve, 0));` |
