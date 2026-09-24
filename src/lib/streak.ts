@@ -55,7 +55,9 @@ export function readStreak(): StreakData {
 
 /**
  * 记录今日学习活动（调一次即可，幂等——同一天多次调用不增天数）。
- * 应在 markRead / recordWrong / saveQuizProgress 等处调用。
+ * 调用方：`progress.ts` 的 markRead、`wrongbook.ts` 的 recordWrong / resolveWrong、
+ * `progress-helpers.ts`。随堂测不直接调它——答对走 resolveWrong、答错走 recordWrong，
+ * 两条都已经记过活动，所以做完一套题必然算一天。
  */
 export function touchStreak(): void {
   try {

@@ -1,11 +1,15 @@
 /**
- * R16.57：篇章「已读几篇」全站只有一个出口。
+ * R16.57：**封顶**这把尺只有一个出口。
  *
- * `readDocsForChapter`（`learning-overview.ts`）的注释自称为「唯一口径」，但曾经有四处在它旁边
+ * `readDocsForChapter`（`learning-overview.ts`）曾经自称「已读几篇的唯一口径」，而四处在它旁边
  * 各算各的：`course-completion-trend.ts` 抄了一份等价的去重+封顶、`stats-client.tsx` 三处直接取
  * 数组原始长度、`chapter-complete-celebration.tsx` 干脆自己 `JSON.parse(localStorage)` 再取长度。
  * 前三处在真实数据上算得一样（`readProgress()` 已经去过重），所以这条用例钉的是「不许再长出一
- * 份第二口径」；最后那处不一样——它绕开了 `readProgress()` 的归一化，见下面组件用例。
+ * 份第二封顶」；最后那处不一样——它绕开了 `readProgress()` 的归一化，见下面组件用例。
+ *
+ * R16.122 之后确实有了第二把尺：`readDocsInChapter`（存储键 ∩ 章内课表），用在拿得到课表的三处
+ * （课文清单、侧栏进度、完成礼花），它比封顶更严。本文件只管封顶这把尺的四个消费者；
+ * 两边的边界写在 `learning-overview.ts` 各自的注释里。
  *
  * 「空篇章算不算完成」是这条口径唯一的真实分歧：趋势卡与课文侧栏判 `docCount > 0`，
  * overview 与 `readSummary` 只判 `>= docCount`，于是章节数为 0 的篇章（英文章节回填期间、
@@ -35,7 +39,7 @@ const JUNK_PROGRESS = {
   "empty-chapter": [],
 } as unknown as Record<string, string[]>;
 
-describe("已读数只有一个口径", () => {
+describe("封顶口径只有一个出口", () => {
   it("同一份脏进度喂给四个消费者，读数与完成章数一致", () => {
     const expectedReadDocs = 4; // getting-started 2（封顶）+ spot 2 + 空章 0
     const expectedDoneChapters = 1; // 只有 getting-started；空篇章不算
@@ -74,7 +78,7 @@ describe("已读数只有一个口径", () => {
 
   /**
    * 进度封顶这件事的原有语义仍然在：读完的键比篇章课数多（旧课文被改名的那部分不在本节
-   * 范围，见 roadmap 的 R16.58），读数不得超过总课数，完成度不会超过 100%。
+   * 范围，R16.122 已按「同一屏同一口径」收敛），读数不得超过总课数，完成度不会超过 100%。
    */
   it("已读数不会顶过篇章课数", () => {
     const progress = { spot: ["c", "d", "e", "f", "g"] } as unknown as Record<string, string[]>;
