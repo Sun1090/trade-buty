@@ -339,6 +339,28 @@ describe("KlineChart 加载失败与重试", () => {
     expect(screen.queryByText("0")).toBeNull();
   });
 
+  /**
+   * 小数位按量级递减，`≥1000` 是 `formatPrice` 的第一支：退成「一律四位」时屏上会漏出
+   * `1234.5678` 这种三位噪声小数（真实 K 线收盘价来自币安，粒度比这粗得多）。
+   */
+  it("四位数价格只印到两位小数", async () => {
+    mocks.fetchKlines.mockResolvedValueOnce([
+      {
+        time: 1_700_000_000,
+        open: 1234.56,
+        high: 1234.5678,
+        low: 1234.5,
+        close: 1234.5678,
+        volume: 1,
+      },
+    ]);
+    render(<KlineChart dict={dict} />);
+    await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
+    // 只钉小数部分：千分位分隔符随 locale 而变，`5678` 漏出来就是这一支退化了。
+    expect(screen.getByText(/^[\d,.]+\.57$/)).toBeInTheDocument();
+    expect(screen.queryByText(/5678/)).toBeNull();
+  });
+
   it("换交易对时，上一张图的读数立刻消失", async () => {
     render(<KlineChart dict={dict} />);
     await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
