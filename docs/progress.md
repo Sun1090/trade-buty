@@ -6451,37 +6451,68 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：#273 由本 PR 取代后关闭；随后按清单继续 #102（低端机降级的注释与用例）、#104（自定义模式
   「新一轮」拿到同一批 K 线）、#106（`已回放 0/-30` 的负分母）。
 - 更新时间：2026-09-24 07:55（Asia/Shanghai）。
-## 2026-09-24 — 回放口径第八批：历史不够一轮与低端机降级（R16.67 / R16.68）
 
-- 版本 / 状态：**未发版**（生产仍是 0.7.14）。分支 `fix-replay-degradation-claims`（从 `origin/main` = `38a877b` 切出），
-  四个提交：`e0e9845`（R16.67 分母与空窗口）、`eaf85a4`（R16.68 注释与用例）、`ee118da`（时钟台账重算）与本条 docs 提交。#274（图表 + 行情，重放 #273）与本条并行在飞。
+## 2026-09-24 — 回放口径第八批：空窗口、低端机口径与自定义「新一轮」（R16.67 / R16.68 / R16.69）
+
+- 版本 / 状态：**未发版**（生产仍是 0.7.14）。分支 `fix-replay-custom-new-round`，基线 `origin/main` = `128ecf8`
+  （#274 已 rebase 落地，#273 随之关闭），六个提交：`0e2e355`（R16.67 分母与空窗口）、`d21cfc5`（R16.68 注释与用例）、
+  `bfa5617`（时钟台账）、`1d53ced`（两条台账登记）、`e45405c`（R16.69 自定义「新一轮」）与本条台账所在提交。
+  本批原从 `38a877b` 切出、单独跑过一个 `fix-replay-degradation-claims` 分支（`e0e9845`…`987e42c`，从未推送）；
+  #274 落地后整条 rebase 到新 main 并接上 R16.69。逐提交核对：`e0e9845`=`0e2e355`、`eaf85a4`=`d21cfc5`、
+  `ee118da`=`bfa5617` 三对 `git patch-id --stable` 完全相同（`60ef3849…`/`82285c8a…`/`57b216e1…`），
+  只有那条台账提交（`987e42c`→`1d53ced`）不同——roadmap 末尾现在要跟 R16.65 / R16.66 交错，重放必然改写它自己的上下文。
+  故只保留这一个 PR，不另开第二条在飞分支。
 - 完成内容：
   1. **R16.67**：「已回放 0/-24」。自定义结束时间拨到标的上市之前时，币安回的是 **HTTP 200 + `[]`**
-     （实测 `BTCUSDT`/`1d`/`endTime=1500000000000` → 0 根；`1503360000000` → 6 根），而 `replay-trainer.tsx:481`
+     （实测 `BTCUSDT`/`1d`/`endTime=1500000000000` → 0 根；`1503360000000` → 6 根），而 `replay-trainer.tsx:503`
      的分母 `klines.length - context` 没有下限，图面空白、价格条隐藏，屏幕上只剩一句负数。
      现在分母走 `availableRounds`（`:167`，唯一出口），并给这个状态一句独立于「行情暂时不可用」的真话
-     （`i18n.ts:266` zh / `:653` en，`{n}`/`{m}` 由现场数字代入）。
+     （`i18n.ts:267` zh / `:655` en，`{n}`/`{m}` 由现场数字代入）。
   2. **R16.68**：R7.3「低端机只保留最近 N 根」只在**全量填图**那一步成立，逐根推进走 `update()` 不回头裁
-     （真实常量 150、窗口 300，`perf.ts:29`），而 `replay-trainer.test.tsx:334` 的用例标题抄的就是那句注释——
+     （真实常量 150、窗口 300，`perf.ts:29`），而 `replay-trainer.test.tsx:414` 的用例标题抄的就是那句注释——
      绿色给假话盖章。按事实改写注释与标题，并补一条用例钉住「推进一根不触发全量重设」这个边界。
      没有动手让承诺成立：逐根封顶就得每根 `setData()` 重设整段，正是 R16.61 为了播放能跑而拆掉的路径；
      代价与取舍写在 R16.68 里，将来要封顶得连带重设计推进路径。
+  3. **R16.69**：自定义模式点「新一轮」只是把 `round` 加一，取数用的还是同一个 `customEnd`——币安对同一个
+     `endTime` 回的是同一段 300 根，用户重放的是刚才那段行情，而这一轮照样 `saveReplayRecord` 记进训练记录。
+     把「往前另抽一段」的取样口径从 `fetchRandomHistoryWindow` 里抽成 `sampleHistoryWindowEndMs(notAfterMs?)`
+     （`src/lib/binance.ts:97`，盲盒路径行为不变），「新一轮」以当前锚点为上界抽样，并把「截止日期」输入框
+     跟着挪到那一段真正结束的那天——不这么做的话，那一格就会写着用户选的日子、画的却是更早的一段。
 - 变更文件：`src/components/replay-trainer.tsx`、`src/components/replay-trainer.test.tsx`、
-  `src/lib/i18n.ts`、`docs/roadmap.md`（R16.67 / R16.68）、`docs/test-clock-hygiene.md`（307 → 308）、本条。
-- 验证：`replay-trainer.test.tsx` **33 条**绿（+5：空窗口 4 条、降级边界 1 条）；全量 `npm test`
-  **296 文件 / 2862 条**绿（本分支基线 `38a877b` 为 2857）；`typecheck`、`lint --max-warnings=0` 干净；
+  `src/lib/i18n.ts`、`src/lib/binance.ts`、`src/lib/binance.test.ts`、`docs/roadmap.md`（R16.67 / R16.68 / R16.69）、
+  `docs/test-clock-hygiene.md`（`replay-trainer.test.tsx` 的命中行 308 → 388）、本条。
+- 验证：`replay-trainer.test.tsx` **37 条**绿（+9：空窗口 4 条、降级边界 1 条、自定义「新一轮」4 条）；
+  `binance.test.ts` **11 条**绿（本批 +3，#274 +3）；全量 `npm test` **296 文件 / 2875 条**绿
+  （基线 `128ecf8` 为 2863）；`typecheck`、`lint --max-warnings=0` 干净；
   `check:localized-labels` / `dead-copy` / `glossary` / `ai-copy` / `docs` / `constitution` /
   `report-freshness` 全绿；构建后 `e2e/placeholder-leak.spec.ts`（新文案带 `{n}`/`{m}`，这道门禁的口径）
   与 `e2e/mobile-overflow.spec.ts`（覆盖层落在 320px 的图上）两条一起跑，**39 条全绿**。
   时钟台账这次**主动重算**——上一批（#272）就是因为漏了它而在 CI 才红，原因已写进项目记忆：
   `check:report-freshness` 从不重算，单独跑它等于零证明，而该台账记的是命中**行号**。
-- 变异核对四组，逐条点名：分母退回 `klines.length - context` → `Unable to find an element with the text: /进度: 0\/0/`；
+  本批自己踩到的一次：`sampleHistoryWindowEndMs` 那条「上界在未来」用例把 `Date.now()` 写进了 `expect(...)`
+  语句里，巡检当场判为 `clock-in-assertion` 1 条并 exit 1 —— 改成先把时刻取成 `sampled` / `after` 两个局部量
+  再断言，台账回到 `clock-in-assertion 0`（墙钟读数不该出现在断言里，这是这条巡检存在的理由）。
+- 变异核对十组，逐条点名。R16.67 三组：分母退回 `klines.length - context` → `Unable to find an element with the text: /进度: 0\/0/`；
   撤掉空窗口覆盖层 → 两条红（`只有 6 根`、`只有 0 根`）；`availableRounds` 改成不扣 context →
-  该文件 33 条里 **17 条**红（新增那条 + 16 条既有），证明这个出口是全场共用的那一个；
-  `useEffect` 依赖加 `idx`（推进即全量重设）→ 新增的降级边界那条红 `expected 2 to be 1`，其余 32 条仍绿。
-  恢复一律用 `git checkout -- <文件>`（提交之后再变异），不再手写还原。
-- 阻塞 / 风险：无新增。R16.67 只改显示与判类，不动存储与请求参数；R16.68 纯文档 + 用例。
+  该文件 37 条里 **17 条**红（新增那条 + 16 条既有），证明这个出口是全场共用的那一个。
+  R16.68 一组：`useEffect` 依赖加 `idx`（推进即全量重设）→ 只有新增的降级边界那条红（`1 failed | 36 passed`）。
+  R16.69 六组：`startNewRound` 退回只 bump round → 自定义那条红；撤掉 `setEndDateInput(...)` → 红在
+  `expected '2024-01-15' not to be '2024-01-15'`；改成 `localDateStr()`（不传取样时刻）→ 红在
+  「截止日期应由取样出来的结束时刻经本地日历 helper 得出」（第二条断言不是第一条的复读）；守卫放宽成只看
+  `customEnd` → 红在「回到盲盒之后不许改写用户填过的截止日期」；`sampleHistoryWindowEndMs` 去掉 `Math.min`
+  夹住 → 红在「上界在未来时按现在夹住」；7 天与 180 天对调 → `binance.test.ts` 4 条红（新增 3 条 + 既有的
+  「抽样确实是随机的」）。恢复一律用 `git checkout -- <文件>`（提交之后再变异），不再手写还原。
+- 文档引用重核：rebase 到 `128ecf8` 之后，本批两条台账里 10 个 `file:line` 全部失效并重新指到位
+  （`replay-trainer.tsx:481`→`:503`、`:213`→`:220`、`:443-458`→`:456-468`、`:270`→`:290`，
+  `replay-trainer.test.tsx:334`→`:414`，`binance.ts:62-64`→`:91-93`，`i18n.ts:266/:653`→`:267/:655` 等），
+  另修 `main` 上五条已漂移的旧引用（R16.62 的 `i18n.ts:281/:667`→`:283/:671`、R16.65 的
+  `i18n.ts:120/:506`→`:121/:509`、`chart-symbols.ts:21`→`:22`、`kline-chart.tsx:215`→`:216`）。
+  每一条都按「该行现在印着什么」比对，不是按位移量推算。
+- 阻塞 / 风险：无新增。R16.67 只改显示与判类，不动存储与请求参数；R16.68 纯文档 + 用例；
+  R16.69 改的是「新一轮」按钮在自定义模式下的取数上界，不动历史记录与云端字段——但**同一批历史不再会在
+  自定义模式里被当成多轮**，因此合并后老用户「累计轮次」里的重复轮次仍留在记录里（不追溯删，删就是改历史）。
   回滚 = `git revert` 本批提交。待拍板清单不变（R15.2 / R16.7 / R16.10–R16.13 / R16.16 / R16.41 /
   R16.47 / R16.52 / R16.58 / R16.60 / R16.64）。
-- 下一项：#104（自定义模式点「新一轮」拿回的仍是同一批 K 线）；随后是 #101（R16.64 的三口径窗口，待拍板）。
-- 更新时间：2026-09-24 08:25（Asia/Shanghai）。
+- 下一项：#101（R16.64 的三口径窗口，待拍板）与 #107（用实测的英文树 CJK 比例关掉 R16.13）；本批合并后
+  删掉已被取代的本地分支 `fix-replay-degradation-claims` 与 `fix-replay-custom-new-round`（远端只留 PR 那一条）。
+- 更新时间：2026-09-24 09:05（Asia/Shanghai）。
