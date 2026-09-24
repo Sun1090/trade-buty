@@ -39,7 +39,7 @@ const KB_ROOT = "content/kline-buty/docs/knowledge";
 /** 2026-09-24 实测：{zh,en} 两棵树各 209 个 markdown（课文 + 章节首页），共 418 */
 const MIN_LESSON_FILES = 400;
 /**
- * 摘掉 remark-cjk-friendly 后这个数字回到 1712；剩下的这一小截是课文原文里
+ * 摘掉 remark-cjk-friendly 后这个数字回到 1654（179 篇），剩下的这一小截是课文原文里
  * 本身就配对的 `**`（漏了一个后半个星号、或写了 `****`），属于知识库要修的行，
  * 不是渲染管线能猜出来的。修一篇就少一处，所以只设上限不设下限。
  */
