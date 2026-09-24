@@ -387,6 +387,32 @@ describe("StatsClient replay practice time", () => {
     expect(section?.textContent).toContain("5m 0s"); // 期间时长 300s
     expect(section?.textContent).toContain("6");     // 历史最佳连击（tb-replay-best 优先）
   });
+
+  /**
+   * R16.176：「平均每轮」的分母从来都只是**带计时**的那些轮（`replay-time-trend.ts:168`），
+   * 而旁边那张「期间回放轮数」数的是窗口里的全部轮次。以前那句解释只在
+   * 「一条计时都没有」时出现，于是混着记的用户（两条旧记录 + 一条新的）看到 3 与 5m 0s 并排，
+   * 谁也不知道它们不同域。这条用例要的就是那两句数字**同时**在场、解释也在场。
+   */
+  it("混合记录：轮数与平均不同域时，那句解释必须在场", async () => {
+    const at = Date.now();
+    store.set("tb-replay-history", JSON.stringify([
+      { at, symbol: "BTCUSDT", interval: "1h", total: 10, correct: 7, bestStreak: 4 },
+      { at, symbol: "ETHUSDT", interval: "1h", total: 10, correct: 8, bestStreak: 5 },
+      { at, symbol: "BTCUSDT", interval: "1h", total: 10, correct: 9, bestStreak: 6, durationSec: 300 },
+    ]));
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+
+    expect(await screen.findByText("Replay practice time")).toBeInTheDocument();
+    const section = document.querySelector("#replay-time-trend-title")?.closest("section");
+    const dd = (label: string) =>
+      [...(section?.querySelectorAll("dt") ?? [])]
+        .find((dt) => dt.textContent === label)
+        ?.parentElement?.querySelector("dd")?.textContent;
+    expect(dd("Replay rounds")).toBe("3");
+    expect(dd("Avg per round")).toBe("5m 0s");
+    expect(screen.getByText("No replay durations")).toBeInTheDocument();
+  });
 });
 
 describe("StatsClient personalized next suggestion (R12.7)", () => {
