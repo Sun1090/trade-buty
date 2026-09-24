@@ -6485,8 +6485,9 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   `binance.test.ts` **11 条**绿（本批 +3，#274 +3）；全量 `npm test` **296 文件 / 2875 条**绿
   （基线 `128ecf8` 为 2863）；`typecheck`、`lint --max-warnings=0` 干净；
   `check:localized-labels` / `dead-copy` / `glossary` / `ai-copy` / `docs` / `constitution` /
-  `report-freshness` 全绿；构建后 `e2e/placeholder-leak.spec.ts`（新文案带 `{n}`/`{m}`，这道门禁的口径）
-  与 `e2e/mobile-overflow.spec.ts`（覆盖层落在 320px 的图上）两条一起跑，**39 条全绿**。
+  `report-freshness` 全绿；`npm run build` 之后 `npm run e2e`（九份 spec，含 `placeholder-leak` 与
+  `mobile-overflow`——新文案带 `{n}`/`{m}`，覆盖层落在 320px 的图上）**160 条全绿**，
+  `check:mobile` 14 页 320px 无溢出、`check:bundle` 454 条路由在预算内。
   时钟台账这次**主动重算**——上一批（#272）就是因为漏了它而在 CI 才红，原因已写进项目记忆：
   `check:report-freshness` 从不重算，单独跑它等于零证明，而该台账记的是命中**行号**。
   本批自己踩到的一次：`sampleHistoryWindowEndMs` 那条「上界在未来」用例把 `Date.now()` 写进了 `expect(...)`
@@ -6508,6 +6509,11 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   另修 `main` 上五条已漂移的旧引用（R16.62 的 `i18n.ts:281/:667`→`:283/:671`、R16.65 的
   `i18n.ts:120/:506`→`:121/:509`、`chart-symbols.ts:21`→`:22`、`kline-chart.tsx:215`→`:216`）。
   每一条都按「该行现在印着什么」比对，不是按位移量推算。
+  本地门禁顺序上还抓到一次假红：`check:search-index` 与 `check:structured-data` 读的是 `.next/server/app/**`，
+  而 `npm run e2e` 里 `smoke` / `static-surface` 会请求 `/zh/knowledge/nonexistent-chapter` 这类 404 探针，
+  跑着的生产服务器把它们预渲染进 `.next`，于是这两个门禁当场报「构建页面 421 / 多出 3 个」。
+  CI 的顺序是 build → 这两个 → e2e 收尾，所以只有本地会踩。清掉 `.next` 重跑 build 后两者即绿
+  （418 / 454 页）。CI 里那 40 条 `check:*` 门禁本批全部在本地跑过一遍，顺序也照 CI：build → 产物类门禁 → e2e。
 - 阻塞 / 风险：无新增。R16.67 只改显示与判类，不动存储与请求参数；R16.68 纯文档 + 用例；
   R16.69 改的是「新一轮」按钮在自定义模式下的取数上界，不动历史记录与云端字段——但**同一批历史不再会在
   自定义模式里被当成多轮**，因此合并后老用户「累计轮次」里的重复轮次仍留在记录里（不追溯删，删就是改历史）。
