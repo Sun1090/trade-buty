@@ -358,6 +358,7 @@ export default async function DocPage({
               intervalLabel: t.chart.intervalLabel,
               customSymbolLabel: t.chart.customSymbolLabel,
               customSymbolPlaceholder: t.chart.customSymbolPlaceholder,
+              lastPriceLabel: t.chart.lastPriceLabel,
               chartNameTpl: t.chart.chartNameTpl,
               compactNote: t.chart.compactNote,
               fullNote: t.chart.fullNote,
