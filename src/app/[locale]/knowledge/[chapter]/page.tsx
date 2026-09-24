@@ -97,7 +97,7 @@ export default async function ChapterPage({
     <div className="mx-auto max-w-5xl px-4 sm:px-5 py-10 sm:py-14">
       <nav className="text-sm text-muted mb-6">
         <Link href={p("/")} className="hover:text-accent">
-          {t.nav.path}
+          {t.nav.home}
         </Link>
         <span className="mx-2">/</span>
         <span>{chapter.title}</span>
@@ -119,7 +119,7 @@ export default async function ChapterPage({
       <JsonLd
         data={breadcrumbList(
           [
-            { name: locale === "zh" ? "首页" : "Home", href: `/${locale}` },
+            { name: t.nav.home, href: `/${locale}` },
             { name: chapter.title, href: `/${locale}/knowledge/${slug}` },
           ],
           `/${locale}/knowledge/${slug}`,

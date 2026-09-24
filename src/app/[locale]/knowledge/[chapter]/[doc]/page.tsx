@@ -173,7 +173,7 @@ export default async function DocPage({
         <div className="min-w-0 max-w-3xl">
       <nav className="text-sm text-muted mb-6">
         <Link href={p("/")} className="hover:text-accent">
-          {t.nav.path}
+          {t.nav.home}
         </Link>
         <span className="mx-2">/</span>
         <Link href={p(`/knowledge/${chapterSlug}`)} className="hover:text-accent">
@@ -247,7 +247,7 @@ export default async function DocPage({
       {/* R8.10：面包屑导航（搜索引擎可识别层级） */}
       <JsonLd
         data={breadcrumbList([
-          { name: locale === "zh" ? "首页" : "Home", href: `/${locale}` },
+          { name: t.nav.home, href: `/${locale}` },
           ...(chapter
             ? [{ name: chapter.title, href: `/${locale}/knowledge/${chapterSlug}` }]
             : []),
