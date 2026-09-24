@@ -3,8 +3,10 @@
 // 真实离线路径——既不能把拒绝漏给 fire-and-forget 的调用点，也不能把写入丢掉。
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { enqueueWrite, storeLoad } = vi.hoisted(() => ({
+const { enqueueWrite, recordDroppedWrites, storeLoad } = vi.hoisted(() => ({
   enqueueWrite: vi.fn(),
+  /** 队列 store 的「被上限挤掉」计数器（R16.139）：缓冲溢出也要落到同一本账上 */
+  recordDroppedWrites: vi.fn(),
   /** 队列 store chunk 的可用性：离线时 import 直接失败 */
   storeLoad: { available: true, loads: 0 },
 }));
@@ -22,7 +24,7 @@ async function loadFallback() {
   vi.doMock("./sync-queue-store", async () => {
     storeLoad.loads += 1;
     if (!storeLoad.available) throw new TypeError("Failed to fetch dynamically imported module");
-    return { enqueueWrite };
+    return { enqueueWrite, recordDroppedWrites };
   });
   const mod = await import("./sync-layer-queue-fallback");
   return {
@@ -41,6 +43,7 @@ beforeEach(() => {
   vi.resetModules();
   enqueueWrite.mockReset();
   enqueueWrite.mockReturnValue([]);
+  recordDroppedWrites.mockReset();
   storeLoad.available = true;
   storeLoad.loads = 0;
 });
@@ -201,5 +204,37 @@ describe("队列 chunk 加载失败（离线写入的实际路径）", () => {
       expect.any(Number),
       undefined,
     );
+  });
+});
+
+/**
+ * R16.139：内存缓冲与持久化队列同一条 `MAX_QUEUE` 规矩——超上限丢最旧。
+ * 丢的那些同样是「没到云上」的写。缓冲只活在当前会话，chunk 拿不到时没法记账，
+ * 所以这里盯的是「chunk 恢复可用后，欠的账要补记上」。
+ */
+describe("缓冲溢出也要记账", () => {
+  it("chunk 恢复可用时，把挤掉的条数补给持久化的计数器", async () => {
+    const { lazyEnqueueWrite, retryBufferedWrites, pendingWriteCount } = await loadFallback();
+    storeLoad.available = false;
+    for (let i = 0; i < MAX_QUEUE + 3; i++) {
+      await lazyEnqueueWrite("progress", `spot:doc-${i}`, { doc_slug: `doc-${i}` });
+    }
+    expect(pendingWriteCount(), "缓冲同样裁到上限").toBe(MAX_QUEUE);
+    expect(recordDroppedWrites, "chunk 都拿不到，账不该在这时候记").not.toHaveBeenCalled();
+
+    storeLoad.available = true;
+    await retryBufferedWrites();
+    expect(recordDroppedWrites).toHaveBeenCalledTimes(1);
+    expect(recordDroppedWrites).toHaveBeenCalledWith(3);
+    expect(enqueueWrite).toHaveBeenCalledTimes(MAX_QUEUE);
+    expect(pendingWriteCount()).toBe(0);
+  });
+
+  it("没有溢出时一个字都不记", async () => {
+    const { lazyEnqueueWrite, retryBufferedWrites } = await loadFallback();
+    await lazyEnqueueWrite("progress", "spot:a", { doc_slug: "a" });
+    expect(recordDroppedWrites).not.toHaveBeenCalled();
+    await retryBufferedWrites();
+    expect(recordDroppedWrites).not.toHaveBeenCalled();
   });
 });
