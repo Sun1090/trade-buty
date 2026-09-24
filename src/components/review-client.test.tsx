@@ -178,6 +178,28 @@ describe("ReviewClient 展示与到期提示（R5.2/R5.4）", () => {
     expect(screen.getByText(/今天没有到期的复习/)).toBeInTheDocument();
   });
 
+  /**
+   * R16.184：队列空的那一天不许替系统宣布「下一轮已经排好」。
+   * 排期只在 SRS 真的算过下一次时存在，而队列里的到期日可能是按入库日回填的
+   * （R5.6 那段注释自己写着「不是系统真正定过的复习计划」）——这句话一旦说「已排好」，
+   * 就是拿一个从没为这个人定过的计划给用户报平安。
+   */
+  it.each([
+    ["zh", /今天没有到期的复习/],
+    ["en", /Nothing due today/i],
+  ] as const)("%s：空队列只说今天没有，不宣布下一轮已排好", (locale, dueRe) => {
+    wrongState.items = { "spot:0": entry({ srsDue: shiftDate(today(), 2) }) };
+    render(<ReviewClient quizzes={quizzes} dict={dict} locale={locale} />);
+
+    const line = screen.getByText(dueRe);
+    const text = line.textContent ?? "";
+    expect(text, "鼓励文案得真的在屏幕上，门禁不能靠删掉它来通过").toMatch(dueRe);
+    expect(text, "这句在替系统宣布排好了下一轮").not.toMatch(/已排好|下一轮|已安排|排期/);
+    expect(text, "this sentence announces a schedule the code never set").not.toMatch(
+      /scheduled|schedule|next review|is set/i,
+    );
+  });
+
   it("英文 locale 输出英文文案", () => {
     wrongState.items = {
       "spot:0": entry({ srsDue: shiftDate(today(), -2) }),

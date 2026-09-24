@@ -342,8 +342,8 @@ export function ReviewClient({
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 text-center">
           <p className="text-sm text-muted leading-relaxed">
             {locale === "en"
-              ? "🌙 Nothing due today — next review is scheduled. Learn something new or come back later!"
-              : "🌙 今天没有到期的复习——下一轮时间已排好，先去学点新内容吧！"}
+              ? "🌙 Nothing due today — learn something new and come back another day!"
+              : "🌙 今天没有到期的复习——先去学点新内容，改天再回来看看！"}
           </p>
         </div>
       )}
