@@ -126,6 +126,53 @@ describe("structured-data validation", () => {
     expect(result.errors.some((error) => error.includes("canonical page"))).toBe(true);
   });
 
+  it("报英文却印中文的节点当场抓住（inLanguage 必须等于真正印出来的语言）", () => {
+    const result = validateStructuredData({
+      scripts: [
+        script({
+          "@context": "https://schema.org",
+          "@type": "Quiz",
+          inLanguage: "en",
+          name: "入门基础 · 随堂测",
+          hasPart: [{ "@type": "Question", text: "阳线说明什么？" }],
+        }),
+      ],
+      expectedTypes: ["Quiz"],
+      locale: "en",
+      pageUrl,
+    });
+    expect(
+      result.errors.some((error) => error.includes('declares inLanguage "en" but carries Chinese text')),
+      result.errors.join("\n"),
+    ).toBe(true);
+  });
+
+  it("foreignLanguageTypes 允许素材语言自定的节点不跟页面语言", () => {
+    const document = {
+      "@context": "https://schema.org",
+      "@type": "Quiz",
+      inLanguage: "zh-CN",
+      "@id": `${pageUrl}#quiz`,
+      url: pageUrl,
+      name: "行为金融篇 · 随堂测",
+    };
+    const strict = validateStructuredData({
+      scripts: [script(document)],
+      expectedTypes: ["Quiz"],
+      locale: "en",
+      pageUrl,
+    });
+    expect(strict.errors.some((error) => error.includes("inLanguage must be en"))).toBe(true);
+    const lenient = validateStructuredData({
+      scripts: [script(document)],
+      expectedTypes: ["Quiz"],
+      locale: "en",
+      pageUrl,
+      foreignLanguageTypes: ["Quiz"],
+    });
+    expect(lenient.errors).toEqual([]);
+  });
+
   it("rejects relative sameAs values", () => {
     const result = validateStructuredData({
       scripts: [

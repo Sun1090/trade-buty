@@ -67,6 +67,8 @@ function validatePage(route, html, locale) {
     locale,
     pageUrl,
     requirePageIdentity: requiresPageIdentity,
+    // 随堂测只有中文一套题，`/en` 的章节页挂的也是它：它的 inLanguage 报的是题库语言
+    foreignLanguageTypes: ["Quiz"],
   });
   const errors = [...result.errors];
   const segments = route.split("/");

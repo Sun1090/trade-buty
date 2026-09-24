@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { QUIZZES } from "./quizzes";
+import { QUIZ_BANK_LANGUAGE, QUIZZES } from "./quizzes";
 import { CHAPTER_ORDER } from "./kb-order";
 
 describe("quizzes data integrity", () => {
@@ -33,6 +33,15 @@ describe("quizzes data integrity", () => {
         expect(q.explain, `${slug} Q${i} 缺 explain`).toBeTruthy();
       }
     }
+  });
+
+  it("题库只有中文一份：QUIZ_BANK_LANGUAGE 报的就是 zh-CN，不是拿来躲门禁的", () => {
+    const cjk = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
+    const allChinese = Object.values(QUIZZES).every((quiz) =>
+      quiz.questions.every((q) => cjk.test(q.question)),
+    );
+    expect(allChinese, "题目不再全是中文，语言要改成按篇章取").toBe(true);
+    expect(QUIZ_BANK_LANGUAGE).toBe(allChinese ? "zh-CN" : "en");
   });
 
   it("测验数 = 篇章数 27", () => {

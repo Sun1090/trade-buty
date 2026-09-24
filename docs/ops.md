@@ -54,7 +54,7 @@
 | `npm run check:nav-chain` | 章节导航与上一篇/下一篇链路三条不变量（R10.10） | 修正 kb-order/content 导航语义 |
 | `npm run check:relative-links` | 相对链接跨语言解析：目标在当前 locale 真实存在（R10.11） | 修正 md 内相对链接/资产引用 |
 | `npm run check:bundle` | 全部 zh/en 路由的 JS/CSS/HTML/total gzip 预算（R13.15）+ AI chunk 隔离（R7.1，需先 build） | 调整 `scripts/bundle-budgets.json` 或拆分/按需加载超预算 chunk（不得为掩盖回归直接放宽） |
-| `npm run check:structured-data` | 全站 JSON-LD 结构化数据回归：实体类型/`@id` 唯一性、绝对 URL、语言、博客/课程/FAQ 页面身份（R13.16，需先 build） | 修正 `src/lib/jsonld.ts` 或页面注入；不得为通过直接放宽断言 |
+| `npm run check:structured-data` | 全站 JSON-LD 结构化数据回归：实体类型/`@id` 唯一性、绝对 URL、`inLanguage` 与真正印出来的文字一致（报 `en` 却含中文即报错；只有中文一份的随堂测按题库语言报，豁免「跟随页面语言」那条）、博客/课程/FAQ 页面身份（R13.16，需先 build） | 修正 `src/lib/jsonld.ts` 或页面装配；不得为通过直接放宽断言 |
 | 生成内容质量报告（R10.1–R10.6 / R10.17） | 在当前提交上按序重跑 `kb:inventory`、`kb:gap-priority`、`kb:accept`、`kb:translation-status`、`check:title-terminology`、`check:description-quality`、`check:risk-warning` 七份内容报告 | 按脚本报告修复内容或契约；报告式命令不会用人工旧快照替代当前结果。入库的纯重算型报告（R14.5）只在内容真的变化时重写，因此报告头的日期读作「内容最后一次变化」，内容未变时不随机器重跑而刷新；按日追加的历史快照（`kb:translation-status`、`kb:diff`）不受此约束。`check:risk-warning` 另需先 `npm run build`：它要把上游状态逐页对着构建产物里的风险提示兜底块核对，缺产物即失败而不是静默跳过 |
 | 内容质量报告归档（CI artifact，R10.17） | 上述当前提交报告及 docs/*.json 随 CI 归档 7 天 | 下载 artifact 分派人工整改；不得只更新 artifact 而不提交内容源修复 |
 | `npm run check:test-clock-hygiene` | 测试时钟卫生巡检（R14.6）：`expect(...)` 里直接读 `Date.now()`/`performance.now()` 的断言**即失败**（该口径无已知误报）；使用真实 `setTimeout`/`setInterval` 且同文件从不使用受控时钟的测试只列报告 `docs/test-clock-hygiene.md` | 前者改为注入时钟或 `vi.useFakeTimers()` + `setSystemTime()`，不接受重跑；后者逐条人工判断，确需保留的在评审里写明理由。出现偶发 flaky 时先查这张表 |
