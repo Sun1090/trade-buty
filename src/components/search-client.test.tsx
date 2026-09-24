@@ -379,7 +379,9 @@ describe("SearchClient pagination and filtering", () => {
     fireEvent.change(filter, { target: { value: "late" } });
 
     await waitFor(() => expect(screen.getByText("1 条结果")).toBeInTheDocument());
+    // 两句一起断言：只看 testid 的话，把那个属性删掉就能让这条负向检查空转
     expect(screen.queryByTestId("search-filter-zero")).toBeNull();
+    expect(screen.queryByText(dict.filterZeroCta)).toBeNull();
     const rows = document.querySelectorAll("a[data-search-result-index]");
     expect(rows).toHaveLength(1);
     expect(rows[0]).toHaveAttribute("href", "/zh/knowledge/ch22/22");
