@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { READ_ALOUD_CHUNK_CHARS, ReadAloud } from "./read-aloud";
+import fs from "node:fs";
+import path from "node:path";
+import { prepareForRender } from "@/lib/content";
+import { READ_ALOUD_CHUNK_CHARS, ReadAloud, speechText } from "./read-aloud";
 
 class FakeUtterance {
   static instances: FakeUtterance[] = [];
@@ -31,7 +34,10 @@ describe("ReadAloud", () => {
   it("strips frontmatter and markdown before speaking", () => {
     render(
       <ReadAloud
-        text={"---\ntitle: x\n---\n# 标题\n正文 **加粗**"}
+        text={
+          "---\ntitle: x\n---\n# 标题\n正文 **加粗**，门槛、<mark>杠杆</mark>与" +
+          "[骗局识别](../pitfalls/scam-detection.md) 都要念\n\n| 列 | 值 |\n|:---|---:|\n| A | 1 |"
+        }
         label="朗读"
         playingLabel="停止"
         rateLabel="语速"
@@ -45,6 +51,32 @@ describe("ReadAloud", () => {
     expect(utterance.text).not.toContain("*");
     expect(utterance.text).toContain("标题");
     expect(utterance.text).toContain("正文 加粗");
+    // 标记的**内容**也不能留下：旧实现只删尖括号，把 <mark> 念成「mark」
+    expect(utterance.text).not.toMatch(/<\/?[a-zA-Z]/);
+    expect(utterance.text).not.toContain("mark");
+    // 链接只念锚文，不念地址
+    expect(utterance.text).toContain("骗局识别");
+    expect(utterance.text).not.toContain("../pitfalls");
+    expect(utterance.text).not.toContain(".md");
+    // 表格的分隔行不是话
+    expect(utterance.text).not.toContain(":---");
+    expect(utterance.text).toContain("列");
+  });
+
+  it("A < B 这类比较不会被当成标签吞掉后半句", () => {
+    render(
+      <ReadAloud
+        text="当隐波 < 20% 且估值 > 中位数时进场，成交额 300 万元"
+        label="朗读"
+        playingLabel="停止"
+        rateLabel="语速"
+        locale="zh"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "朗读" }));
+    expect(FakeUtterance.instances[0].text).toBe(
+      "当隐波 < 20% 且估值 > 中位数时进场，成交额 300 万元",
+    );
   });
 
   it("uses the locale language and the selected rate", () => {
@@ -153,5 +185,46 @@ describe("ReadAloud", () => {
       FakeUtterance.instances[1].onend?.();
     });
     expect(screen.getByRole("button", { name: "朗读" })).toBeInTheDocument();
+  });
+});
+
+describe("朗读的课文与屏幕上的课文同源", () => {
+  // prepareForRender 之后仍然带标记：内联 <mark>、表格分隔行、链接地址。
+  // 朗读拿的是这一份字符串，所以每一篇都要念得出口——不数「有多少处噪音」，
+  // 而是要求整棵内容树里一处都没有。
+  const KB_ROOT = "content/kline-buty/docs/knowledge";
+  const NOISE: [string, RegExp][] = [
+    // 判据与 speechText 认标签的同一个形状：`K1<K2` 这种比较不是标签，
+    // 「详见 cash-flow-analysis.md」里的 .md 是屏幕上真的写着的内容，念出来不算噪音。
+    ["还剩标签", /<\/?[a-zA-Z][a-zA-Z0-9-]*(?:\s[^<>]*)?\/?>/],
+    ["还剩链接地址", /\]\(/],
+    ["还剩表格分隔行", /:\s?-{3,}|[-|]{4,}\|/],
+    ["还剩未改写的资产路径", /_assets|\.\.\/\.\.\//],
+  ];
+
+  function walk(dir: string, out: string[] = []): string[] {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p, out);
+      else if (e.name.endsWith(".md")) out.push(p);
+    }
+    return out;
+  }
+
+  it("整棵内容树的朗读文本里一处标记噪音都没有", () => {
+    const files = walk(KB_ROOT).filter((f) => /^(zh|en)\//.test(f.slice(KB_ROOT.length + 1)));
+    expect(files.length, "扫描到的课文数量变少 = 这道检查瞎了").toBeGreaterThanOrEqual(400);
+    const hits: string[] = [];
+    for (const f of files) {
+      const rel = f.slice(KB_ROOT.length + 1);
+      const [locale, chapter] = rel.split("/");
+      const raw = fs.readFileSync(f, "utf8").replace(/^---[\s\S]*?---\n/, "");
+      const spoken = speechText(prepareForRender(raw, locale, chapter));
+      for (const [name, re] of NOISE) {
+        const m = spoken.match(re);
+        if (m) hits.push(`${rel} ${name}: ${JSON.stringify(spoken.slice(Math.max(0, (m.index ?? 0) - 12), (m.index ?? 0) + 18))}`);
+      }
+    }
+    expect(hits, `朗读文本里还剩标记：\n${hits.slice(0, 12).join("\n")}`).toEqual([]);
   });
 });
