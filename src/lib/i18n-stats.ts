@@ -53,7 +53,11 @@ const zh = {
     trendNewChapters: "完成篇章",
     trendNoDates: "当前进度缺少完成日期；新阅读会开始记录趋势。",
     quizTrendTitle: "测验成绩趋势",
-    quizTrendDesc: "这里只记录有本地完成时间的测验；旧成绩不会伪造历史日期，但仍会显示当前最高分。",
+    // 这句话必须点名下面四格里每一格的原词（`quiz-trend-claims.test.ts` 钉着）：
+    // 这一节顶上挂着区间选择器，但四格里只有两格跟它变。旧句子承诺「仍会显示当前最高分」，
+    // 而 `latest.bestPct` 在统计页没有任何渲染点。
+    quizTrendDesc:
+      "柱子与「测验次数」「期间最高」按你在上面选的区间统计；「平均得分」「测验完成」读的是你全部测验的当前成绩，不随区间变。只有本地答题账本里带日期的作答才会被画进来——旧成绩不会被编出一个日期。",
     quizTrendEmptyTpl: "近 {n} 天内没有测验记录",
     quizTrendAttempts: "测验次数",
     quizBestInRange: "期间最高",
@@ -186,7 +190,8 @@ const en: StatsDict = {
     trendNewChapters: "Completed chapters",
     trendNoDates: "Current progress has no completion dates; new reads will start the trend.",
     quizTrendTitle: "Quiz score trend",
-    quizTrendDesc: "This trend records dated quiz attempts from the local ledger only; older scores never invent dates, but current best scores still show.",
+    quizTrendDesc:
+      "The bars and the “Attempts” and “Best in range” tiles follow the range you pick above; “Average score” and “Quizzes done” read from all of your quizzes and do not change with it. Only attempts the local ledger has a date for are plotted — older scores never get an invented date.",
     quizTrendEmptyTpl: "No quiz attempts in the last {n} days",
     quizTrendAttempts: "Attempts",
     quizBestInRange: "Best in range",
