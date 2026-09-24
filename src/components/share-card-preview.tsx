@@ -9,6 +9,7 @@ import {
   drawStreakCard,
   gradeFromPercent,
   gradeFromReplayAccuracy,
+  gradeWord,
   type ShareLocale,
 } from "@/lib/share-card";
 import {
@@ -215,7 +216,7 @@ function summarizeText(
     return {
       title: labels.quizTitleTpl
         .replace("{chapter}", p.chapterTitle)
-        .replace("{grade}", gradeFromPercent(p.percent))
+        .replace("{grade}", gradeWord(gradeFromPercent(p.percent), "quiz", locale))
         .replace("{score}", `${p.score}`)
         .replace("{total}", `${p.total}`),
       body: tpl
@@ -233,9 +234,9 @@ function summarizeText(
       title: labels.replayTitleTpl
         .replace("{symbol}", p.symbol)
         .replace("{interval}", p.interval)
-        // 等级只有 `gradeFromReplayAccuracy` 一份实现：同一张卡的正身（canvas）用的就是它，
-        // 文字替身再抄一份阈值，迟早会念出跟图上一个字母
-        .replace("{grade}", gradeFromReplayAccuracy(p.accuracyBps / 10000, p.total))
+        // 等级只有 `gradeFromReplayAccuracy` 一份实现，措辞只有 `gradeWord` 一份表：
+        // 文字替身自己抄阈值或直接用字母，同一轮成绩会在标题与 `<h1>` 之间长出两种说法
+        .replace("{grade}", gradeWord(gradeFromReplayAccuracy(p.accuracyBps / 10_000, p.total), "replay", locale))
         .replace("{correct}", `${p.correct}`)
         .replace("{total}", `${p.total}`),
       body: labels.replayDescTpl
@@ -253,8 +254,6 @@ function summarizeText(
       .replace("{days}", `${p.currentStreak}`)
       .replace("{longest}", `${p.longestStreak}`),
   };
-  // 这里的 locale 参数未直接用——为类型完整
-  void locale;
 }
 
 

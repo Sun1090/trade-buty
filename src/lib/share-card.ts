@@ -81,6 +81,37 @@ export function gradeColor(grade: Grade, colors: CardColors): string {
   }
 }
 
+/**
+ * 等级怎么说出口：测验与回放的措辞不同（同是 A，一个说「优秀」一个说「稳健」），
+ * 所以按类型各一张表。英文侧保留字母——`Grade A` 本来就读得通，中文说「A 评级」
+ * 才要换成词。
+ *
+ * 落地页的 `<title>`/OG 与页面上那个 `<h1>` 说的是同一轮成绩，两处措辞必须同源：
+ * 曾经标题走这张表、`<h1>` 直接填字母，中文页于是同一屏出现「优秀 评级」和「A 评级」。
+ */
+const GRADE_WORDS: Record<"quiz" | "replay", Record<Grade, Record<ShareLocale, string>>> = {
+  quiz: {
+    S: { zh: "满分", en: "S" },
+    A: { zh: "优秀", en: "A" },
+    B: { zh: "及格", en: "B" },
+    C: { zh: "待加强", en: "C" },
+  },
+  replay: {
+    S: { zh: "卓越", en: "S" },
+    A: { zh: "稳健", en: "A" },
+    B: { zh: "及格", en: "B" },
+    C: { zh: "待加强", en: "C" },
+  },
+};
+
+export function gradeWord(
+  grade: Grade,
+  card: "quiz" | "replay",
+  locale: ShareLocale,
+): string {
+  return GRADE_WORDS[card][grade][locale];
+}
+
 /** CJK-aware 截断：CJK 算 1 char；超过 maxChars 时尾部加省略号。用于章节/题库名过长时不被画溢出。 */
 export function truncateForCanvas(text: string, maxChars: number): string {
   if (!text) return "";
