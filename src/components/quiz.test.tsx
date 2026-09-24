@@ -33,7 +33,7 @@ const quiz: ChapterQuiz = {
 
 const dict = {
   questionsUnit: "题", bestTpl: "最佳 {n}/{total}",
-  start: "开始", retry: "重试", progressTpl: "{i}/{n}",
+  start: "开始", retry: "重试", progressTpl: "{i}/{n} 对 {c}",
   correct: "对", wrong: "错", nextQ: "下一题", skip: "跳过", finish: "完成", perfect: "满分",
   shareQuiz: "分享", previewQuiz: "预览", download: "下载", previewAlt: "预览", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败",
 };
@@ -70,6 +70,21 @@ describe("Quiz", () => {
     const btn = container.querySelector("button");
     fireEvent.click(btn!);
     expect(container.textContent).toContain("1+1");
+  });
+
+  it("标题里的题数是真的落进句子，不是只剩量词", () => {
+    render(<Quiz quiz={multiQuestionQuiz} dict={dict} locale="zh" />);
+    expect(screen.getByText("3 题")).toBeInTheDocument();
+  });
+
+  it("答对数跟着作答走，那句「已答对」后面有数字", () => {
+    const { container } = render(<Quiz quiz={quiz} dict={dict} locale="zh" />);
+    fireEvent.click(container.querySelector("button")!);
+    expect(screen.getByText("1/1 对 0")).toBeInTheDocument();
+
+    const opts = container.querySelectorAll("ul li button");
+    fireEvent.click(opts[1]);
+    expect(screen.getByText("1/1 对 1")).toBeInTheDocument();
   });
 
   it("选答案后显示对/错", () => {
@@ -244,7 +259,9 @@ describe("Quiz progress, wrongbook, and share URL", () => {
     render(<Quiz quiz={multiQuestionQuiz} dict={dict} locale="zh" />);
     fireEvent.click(screen.getByRole("button", { name: "开始" }));
     fireEvent.keyDown(window, { key: "z" });
-    expect(screen.queryByText(/对|错/)).toBeNull();
+    // 判定反馈还没出现（进度行里也有「对」这个字，所以按整串匹配而不是子串）
+    expect(screen.queryByText("对")).toBeNull();
+    expect(screen.queryByText("错")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "跳过" }));
     expect(screen.getByText("第 2 题")).toBeInTheDocument();

@@ -168,7 +168,7 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
           <div>
             <p className="font-semibold">{perfect ? "🏆" : "✏️"} {quiz.title}</p>
             <p className="mt-1 text-sm text-muted">
-              {dict.questionsUnit}
+              {quiz.questions.length} {dict.questionsUnit}
               {progress?.done && (
                 <span className="ml-2 text-accent">{tpl(dict.bestTpl, { n: quizScoreCount(progress.best, quiz.questions.length), total: quiz.questions.length })}</span>
               )}
@@ -226,7 +226,7 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
   return (
     <div className="mt-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
       <div className="flex items-center justify-between text-xs text-faint">
-        <p>{tpl(dict.progressTpl, { i: current + 1, n: quiz.questions.length })}</p>
+        <p>{tpl(dict.progressTpl, { i: current + 1, n: quiz.questions.length, c: correct })}</p>
         <div className="flex items-center gap-3">
           <QuizTimer running={picked === null} />
           {picked === null && (
