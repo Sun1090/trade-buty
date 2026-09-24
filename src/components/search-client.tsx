@@ -228,6 +228,9 @@ export function SearchClient({
               const entry = suggestions[suggestIdx];
               if (entry) router.push(entry.url);
             } else if (e.key === "Escape") {
+              // Chromium 对 `<input type="search">` 的默认动作是「Escape 清空整个输入框」。
+              // 这里的意图只是收起联想下拉；不拦下默认动作，关键词会连同整条结果列表一起没了。
+              e.preventDefault();
               setSuggestOpen(false);
               setSuggestIdx(-1);
               setFocusIdx(-1);

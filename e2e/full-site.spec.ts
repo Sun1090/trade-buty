@@ -164,6 +164,8 @@ test.describe("R13.24 搜索与书签闭环", () => {
     expect(expected).toBeTruthy();
 
     // Esc 关闭联想，ArrowDown 才落到结果列表的高亮索引。
+    // 前提是 Esc 不许把输入框一起清空（Chromium 对 type=search 的默认动作就是清空）——
+    // 真被清空的话结果列表连同这个 `<a>` 一起消失，下面就是「element(s) not found」。
     await searchbox.press("Escape");
     await searchbox.press("ArrowDown");
     await expect(firstResult).toHaveClass(/border-accent/);

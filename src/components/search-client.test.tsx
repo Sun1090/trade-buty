@@ -508,9 +508,15 @@ describe("SearchClient 输入联想与零结果诊断", () => {
       expect(document.querySelector('a[data-search-result-index="0"]')).not.toBeNull()
     );
 
-    fireEvent.keyDown(box, { key: "Escape" });
+    const notCancelled = fireEvent.keyDown(box, { key: "Escape" });
+    expect(notCancelled, "Escape 没拦下浏览器的默认动作").toBe(false);
     expect(screen.queryByRole("listbox", { name: "相关课程" })).toBeNull();
     expect(box).not.toHaveAttribute("aria-activedescendant");
+    // Chromium 对 `<input type="search">` 的默认动作是「Escape 清空输入框」。不拦它，关键词
+    // 会连同整个结果列表一起消失，这条用例下一步要按的高亮根本没有落点——
+    // e2e 那条同名的键盘用例就是这么偶发失败的（jsdom 没有这个原生行为，所以只有这里能钉住）。
+    expect(box).toHaveValue("订单");
+    expect(document.querySelector('a[data-search-result-index="0"]')).not.toBeNull();
 
     fireEvent.keyDown(box, { key: "ArrowDown" });
     fireEvent.keyDown(box, { key: "ArrowDown" });
