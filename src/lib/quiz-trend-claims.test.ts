@@ -34,6 +34,12 @@ describe("测验趋势卡的说明与它真的印出来的四格对齐", () => {
     it(`${locale}: 这句话里不留任何未替换的占位符`, () => {
       expect(dict.quizTrendDesc, `组件是原样渲染这句的：${dict.quizTrendDesc}`).not.toMatch(/\{[a-zA-Z]+}/);
     });
+
+    // 被收回的那句原话。趋势节印的是「平均得分」，`latest.bestPct`（当前最高百分比）
+    // 在这一页没有任何渲染点——承诺它，就是承诺一个屏幕上不存在的数。
+    it(`${locale}: 不再承诺「会显示当前最高分」`, () => {
+      expect(dict.quizTrendDesc).not.toMatch(/当前最高分|current best/i);
+    });
   }
 
   /** 「区间两格」与「全量两格」是两种行为，不是同一把尺子的两种说法 */
