@@ -8,15 +8,14 @@ import {
   prepareForRender,
 } from "@/lib/content";
 import { knowledgeHref } from "@/lib/hrefs";
-import { QUIZ_BANK_LANGUAGE, quizHostDocSlug, QUIZZES } from "@/lib/quizzes";
+import { QUIZZES } from "@/lib/quizzes";
 import { suggestFromPath } from "@/lib/url-suggest";
 import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
 import { JsonLd } from "@/components/json-ld";
-import { breadcrumbList, course, quiz } from "@/lib/jsonld";
+import { breadcrumbList, course } from "@/lib/jsonld";
 import { getDict, isLocale, LOCALES, type Locale } from "@/lib/i18n";
 import { buildPageMetadata, buildSoftNotFoundMetadata } from "@/lib/metadata";
 import { Markdown } from "@/components/markdown";
-import { Quiz } from "@/components/quiz";
 import { DocList } from "@/components/doc-list";
 import { ChapterCompleteCelebration } from "@/components/chapter-complete-celebration";
 import { Collapsible } from "@/components/collapsible";
@@ -103,7 +102,7 @@ export default async function ChapterPage({
         <span>{chapter.title}</span>
       </nav>
 
-      {/* R8.10：结构化数据（Course + BreadcrumbList；Quiz 只在测验真的渲染在本页时才发） */}
+      {/* R8.10：结构化数据（Course + BreadcrumbList）。Quiz 在宿主课文那一页发，见 [doc]/page.tsx */}
       <JsonLd
         data={course({
           locale,
@@ -125,19 +124,6 @@ export default async function ChapterPage({
           `/${locale}/knowledge/${slug}`,
         )}
       />
-      {/* 只有测验真的在本页渲染（没挂到某一节课）时才发 Quiz 结构化数据 */}
-      {QUIZZES[slug] && quizHostDocSlug(slug) === null && (
-        <JsonLd
-          data={quiz({
-            language: QUIZ_BANK_LANGUAGE,
-            title: QUIZZES[slug]!.title,
-            pageHref: `/${locale}/knowledge/${slug}`,
-            courseHref: `/${locale}/knowledge/${slug}`,
-            questions: QUIZZES[slug]!.questions.map((q) => ({ text: q.question })),
-          })}
-        />
-      )}
-
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-dim)] via-[var(--surface)] to-[var(--surface)] p-8">
         <div
@@ -189,12 +175,6 @@ export default async function ChapterPage({
           >
             <div />
           </Collapsible>
-        </section>
-      )}
-
-      {QUIZZES[slug] && !QUIZZES[slug].docSlug && (
-        <section className="mt-12">
-          <Quiz quiz={QUIZZES[slug]} dict={t.quiz} locale={locale} chapterTitle={chapter.title} />
         </section>
       )}
 

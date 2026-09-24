@@ -8,7 +8,8 @@
  * 那一节课的末尾（实测 27 套题库全部如此）。搜索引擎按章节页的声明去找「页面上的测验」，
  * 找到的是一句「N 题 →」。
  *
- * 现在两边都按 `quizHostDocSlug()` 判断：宿主课文页发，篇章页和其他课文页都不发。
+ * 现在篇章页连发 Quiz 的代码都没有（`check:quiz-mounts` 早就要求每套题必须挂在一节真实课文上，
+ * 那个「没宿主就内联渲染」的分支永远走不到，一并删了）；宿主课文页按 `quizHostDocSlug()` 发。
  */
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { render } from "@testing-library/react";

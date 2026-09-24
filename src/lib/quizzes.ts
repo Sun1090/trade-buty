@@ -1179,9 +1179,10 @@ QUIZZES["options-strategies"] = {
 };
 
 /**
- * 这套题真正渲染在哪个页面：`docSlug` 指向某一节课的末尾（实测 27 套题库全部如此），
- * 没挂的才由篇章页内联渲染。篇章页上那张卡片只是个入口，一道题都不渲染，
- * 所以 Quiz 结构化数据该由谁发，一律问这个函数——不然就是在对外宣称「本页有一整套题」。
+ * 这套题真正渲染在哪个页面：`docSlug` 指向那一节课的末尾（`check:quiz-mounts` 在 CI 里
+ * 硬性要求每套题都挂在一节真实存在的课文上，所以这里永远返回那一节）。
+ * 篇章页上那张卡片只是入口，一道题都不渲染——Quiz 结构化数据该由谁发，一律问这个函数，
+ * 不然就是对外宣称「本页有一整套题」。
  */
 export function quizHostDocSlug(chapterSlug: string): string | null {
   return QUIZZES[chapterSlug]?.docSlug ?? null;
