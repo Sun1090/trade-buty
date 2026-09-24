@@ -565,6 +565,21 @@ describe("StatsClient review reminder banner + settings (R12.15–R12.17)", () =
     fireEvent.change(screen.getByLabelText("Do-not-disturb start"), { target: { value: "13" } });
     expect(JSON.parse(localStorage.getItem("tb-review-reminder-settings")!).dndStartHour).toBe(13);
   });
+
+  /**
+   * 上面那条查的是英文名字，所以「把 start 拼回模板字面量」这种回归它抓不到——英文页
+   * 上拼出来的字符串一模一样，红的只有中文页面，而中文页面没有这条用例。
+   */
+  it("中文页面上两个时间选择框整句是中文，读屏不会念出裸的 start / end", async () => {
+    render(<StatsClient chapters={chapters} dict={STATS_DICTS.zh} locale="zh" />);
+    await screen.findByRole("button", { name: /近 7 天|Last 7 days/ });
+
+    expect(screen.getByLabelText("免打扰开始时间")).toBeInTheDocument();
+    expect(screen.getByLabelText("免打扰结束时间")).toBeInTheDocument();
+    const names = screen.getAllByRole("combobox").map((el) => el.getAttribute("aria-label") ?? "");
+    expect(names.length).toBeGreaterThan(0);
+    expect(names.join(" |")).not.toMatch(/\b(start|end)\b/);
+  });
 });
 
 describe("成就徽章按语言取值（R16.73）", () => {
