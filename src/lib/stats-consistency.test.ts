@@ -10,8 +10,18 @@ import { localDateStr, shiftDate } from "./date-utils";
 const today = localDateStr();
 const dayAt = (date: string) => new Date(`${date}T12:00:00`).getTime();
 
-/** 同一份本地事实数据喂给五个聚合器——统计页的真实输入路径 */
-function buildAll() {
+/**
+ * 同一份本地事实数据喂给五个聚合器——统计页的真实输入路径。
+ *
+ * `quizzesDone` 按 `p?.done` 现算而不是写死一个数：那正是 `learn-stats.ts` 给概览卡用的尺，
+ * 夹具自己填一个常量的话，「两侧是否同一判据」就退化成「夹具填了什么」。
+ */
+function buildAll(
+  quizProgressInput: Record<string, { best: number; done: boolean }> = {
+    "getting-started": { best: 8, done: true },
+    spot: { best: 0, done: false },
+  },
+) {
   const chapters = [
     { slug: "getting-started", docCount: 2 },
     { slug: "spot", docCount: 3 },
@@ -29,10 +39,7 @@ function buildAll() {
     { slug: "getting-started", questions: 10 },
     { slug: "spot", questions: 10 },
   ];
-  const quizProgress = {
-    "getting-started": { best: 8, done: true },
-    spot: { best: 0, done: false },
-  };
+  const quizProgress = quizProgressInput;
   const quizAttempts = {
     "getting-started:1": {
       chapter: "getting-started",
@@ -84,8 +91,8 @@ function buildAll() {
   const overview = buildLearningOverview({
     chapters,
     progress,
-    quizzesDone: 1,
-    totalQuizzes: 2,
+    quizzesDone: Object.values(quizProgress).filter((p) => p.done).length,
+    totalQuizzes: quizChapters.length,
     avgQuizScore: 80,
     replayRounds: replayHistory.length,
     replayAccuracy: 67,
@@ -142,6 +149,19 @@ describe("auditStatsConsistency", () => {
   it("reports zero issues when all aggregators read the same local facts", () => {
     const issues = auditStatsConsistency(buildAll());
     expect(issues).toEqual([]);
+  });
+
+  // R16.125：全答错的一套题（`best: 0, done: true`）是一次真实完成。趋势卡当年额外要求
+  // `best > 0`，概览卡不要求，于是这个状态正好触发 quiz-done-mismatch——而这条用例当时
+  // 根本不存在，dev 期那句 console.warn 也没人看。
+  it("a zero-score completion is counted the same way on both cards", () => {
+    const issues = auditStatsConsistency(
+      buildAll({
+        "getting-started": { best: 0, done: true },
+        spot: { best: 0, done: true },
+      }),
+    );
+    expect(issues.map((i) => i.code)).not.toContain("quiz-done-mismatch");
   });
 
   it("detects course read-docs drift between overview and course trend", () => {
