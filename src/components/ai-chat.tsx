@@ -113,6 +113,8 @@ interface AiDict {
   followups: string[];
   disclaimer: string;
   guestLimit: string;
+  /** 登录账号撞自己那份小时上限时的说法：对已经登录的人提「登录可获更多额度」是件办不到的事 */
+  accountLimit: string;
   /** 等待时长整句由字典出，单位也在句子里：拼 ` (2min)` 到中文界面就是半句英文残话 */
   retryInTpl: string;
   quotaRemaining: string;
@@ -127,6 +129,9 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 「重试」必须重跑那件失败的事。清空对话的失败与提问的失败动作不同：
+  // 前者要再发一次 DELETE，后者要重发最后那句问题——混用会既删不掉云端、又把警告藏起来。
+  const [retryClear, setRetryClear] = useState(false);
   // R3.7：课程落地上下文（?ctx=章节 slug & ct=章节标题，课末「问 AI」按钮带入）
   const [contextTitle, setContextTitle] = useState<string | null>(null);
   // 游客配额（服务端仅对未登录请求返回 X-Quota-* 头；登录用户为 null 不展示）
@@ -348,10 +353,11 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       if (res.status === 429) {
         const retryAfter = Number.parseInt(res.headers.get("retry-after") ?? "", 10);
         const minutes = Number.isFinite(retryAfter) ? Math.ceil(retryAfter / 60) : 0;
+        // 登录账号有自己的桶（`user.id` 分桶，50 次/小时），撞上限的人看到「游客…登录可获更多额度」
+        // 就是被告知一件他已经做过、也解决不了的事。身份这个组件本来就知道（`auth`）。
+        const limitMsg = auth?.id ? dict.accountLimit : dict.guestLimit;
         throw new Error(
-          minutes > 0
-            ? `${dict.guestLimit} · ${dict.retryInTpl.replace("{n}", String(minutes))}`
-            : dict.guestLimit
+          minutes > 0 ? `${limitMsg} · ${dict.retryInTpl.replace("{n}", String(minutes))}` : limitMsg,
         );
       }
       if (!res.ok) {
@@ -482,11 +488,16 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     setMessages([]);
     setError(null);
     setFeedback({});
+    setRetryClear(false);
     // 游客的对话本来就不落库（隐私页也是这么写的），不发无谓的删除请求
     if (!auth?.id) return;
     const res = await fetch("/api/ai/conversations", { method: "DELETE" }).catch(() => null);
-    // 云端没删掉却说「已清空」，下次进页历史会整段回来——失败必须可见
-    if (!res?.ok) setError(dict.clearFailed);
+    // 云端没删掉却说「已清空」，下次进页历史会整段回来——失败必须可见，
+    // 而且那颗「重试」要真的再去删一次（消息已经被清了，重发提问那条路径是空转）。
+    if (!res?.ok) {
+      setError(dict.clearFailed);
+      setRetryClear(true);
+    }
   }
 
   async function sendFeedback(
@@ -754,6 +765,10 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
             <p className="text-sm text-down">{error}</p>
             <button
               onClick={() => {
+                if (retryClear) {
+                  void clear();
+                  return;
+                }
                 setError(null);
                 send(
                   messages.filter((m) => m.role === "user").pop()?.content ||

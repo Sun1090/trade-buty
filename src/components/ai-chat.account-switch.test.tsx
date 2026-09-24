@@ -53,6 +53,7 @@ const dict = {
   examplesLabel: "试试这样问",
   disclaimer: "⚠️ 仅用于学习",
   guestLimit: "本小时游客提问次数已用完，登录可获更多额度",
+  accountLimit: "本小时提问次数已用完",
   retryInTpl: "约 {n} 分钟后重试",
   quotaRemaining: "游客每小时限 {l} 次，本小时剩余 {n} 次",
   quotaLoginHint: "本小时次数已用完，登录可获更多额度",
@@ -260,5 +261,94 @@ describe("AiChat 清空对话", () => {
 
     // 归档发生在流结束后：没有这道闸，刚清掉的这轮会被 POST 原样写回去
     expect(calls.some((call) => call.method === "POST" && call.url === "/api/ai/conversations")).toBe(false);
+  });
+});
+
+/**
+ * R16.168：`/api/ai/chat` 的配额按身份分桶（游客 10 次/小时按 IP，登录 50 次/小时按 `user.id`，
+ * `route.ts:31-34,67`），可 429 之后界面只有一句「本小时**游客**提问次数已用完，**登录**可获更多额度」。
+ * 对一个已经登录、刚用完自己 50 次的人来说，这句话两半都是假的，而登录是他做不到的动作。
+ * 身份这个组件本来就有（`auth?.id`，清空对话那条路径就在读它），不需要服务端多带一个字段。
+ */
+describe("AiChat 限流提示说对是谁的上限", () => {
+  function stubRateLimited(retryAfter = "90") {
+    return vi.fn(async (url: string) => {
+      if (url === "/api/ai/chat") {
+        return {
+          ok: false,
+          status: 429,
+          headers: { get: (key: string) => (key.toLowerCase() === "retry-after" ? retryAfter : null) },
+          json: async () => ({}),
+        } as unknown as Response;
+      }
+      return { ok: true, status: 200, json: async () => ({ messages: [] }) } as unknown as Response;
+    });
+  }
+
+  async function askOneQuestion(): Promise<void> {
+    const target = [...document.querySelectorAll("button")].filter((button) =>
+      SUGGESTED_QUESTIONS_ZH.includes(button.textContent ?? ""),
+    )[0];
+    fireEvent.click(target);
+  }
+
+  it("登录账号撞自己那份小时上限时，不许他去「登录」", async () => {
+    vi.stubGlobal("fetch", stubRateLimited());
+    render(<AiChatProbe />);
+    await askOneQuestion();
+
+    const line = await screen.findByText(`${dict.accountLimit} · 约 2 分钟后重试`);
+    expect(line.textContent).not.toMatch(/游客|登录/);
+  });
+
+  it("正向对照：游客那一句仍然要点名「登录可获更多额度」", async () => {
+    authValue = null;
+    vi.stubGlobal("fetch", stubRateLimited());
+    render(<AiChatProbe />);
+    await askOneQuestion();
+
+    expect(await screen.findByText(`${dict.guestLimit} · 约 2 分钟后重试`)).toBeDefined();
+  });
+});
+
+/**
+ * R16.169：云端没删掉时报「未能清空」，可那一栏唯一的按钮「重试」重跑的是**上一句提问**——
+ * 而 `clear()` 早把 `messages` 清空了，于是 `send("")` 在 `ai-chat.tsx` 的开头判空直接返回，
+ * 顺带 `setError(null)` 把这条警告藏起来：一次什么都没重试的重试，还把「云端还留着这段对话」
+ * 这个唯一可见的证据抹掉了（下次进页 `/api/ai/conversations` 会把它整段送回来）。
+ * 「重试」必须重跑那件失败的事。
+ */
+describe("AiChat 「清空失败」之后的重试真的再去删一次", () => {
+  beforeEach(() => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("点重试再发一次 DELETE，警告不在没重试的情况下消失", async () => {
+    const calls: FetchCall[] = [];
+    vi.stubGlobal(
+      "fetch",
+      stubChatFetch(calls, gatedStreamBody("流式回答内容"), { deleteStatus: 500, history: false }),
+    );
+    render(<AiChatProbe />);
+    await clickSuggestion();
+
+    fireEvent.click(screen.getByRole("button", { name: "清空对话" }));
+    await screen.findByText("云端对话未能清空，请稍后再试");
+    const deletesBefore = calls.filter((c) => c.method === "DELETE").length;
+    expect(deletesBefore, "第一次清空就该发过一次 DELETE").toBe(1);
+
+    const chatCallsBefore = calls.filter((c) => c.url === "/api/ai/chat").length;
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+
+    await waitFor(() =>
+      expect(calls.filter((c) => c.method === "DELETE").length).toBe(deletesBefore + 1),
+    );
+    expect(await screen.findByText("云端对话未能清空，请稍后再试")).toBeDefined();
+    // 正向对照：这条路径不是在「重发上一句提问」——消息早被清了，那样只会是空转。
+    // （`/api/ai/chat` 上早有 clickSuggestion 留下的那一次，所以比的是点重试之后有没有新增。）
+    expect(calls.filter((c) => c.url === "/api/ai/chat").length).toBe(chatCallsBefore);
   });
 });
