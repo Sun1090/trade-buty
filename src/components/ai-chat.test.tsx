@@ -15,6 +15,7 @@ import {
   fireEvent,
   cleanup,
   waitFor,
+  act,
 } from "@testing-library/react";
 import { AiChat } from "./ai-chat";
 import { renderToString } from "react-dom/server";
@@ -1084,6 +1085,62 @@ describe("AiChat 回答操作与对话管理", () => {
       screen.queryByRole("button", { name: dict.clear }),
     ).not.toBeInTheDocument();
     expect(screen.getByText(dict.title)).toBeInTheDocument();
+  });
+
+  it("流式回答途中清空：掐掉在途请求，迟到的那一块也不许把回答写回空屏幕", async () => {
+    const enc = new TextEncoder();
+    let release: () => void = () => {};
+    const stalled = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let firstOut = false;
+    const body = {
+      getReader: () => ({
+        read: async () => {
+          if (!firstOut) {
+            firstOut = true;
+            return { done: false, value: enc.encode("正在生成的回答") };
+          }
+          await stalled; // 第二块卡在途中：这期间用户点了「清空对话」
+          return { done: true, value: undefined };
+        },
+      }),
+    };
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === "/api/ai/conversations") {
+        return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+      }
+      if (url === "/api/ai/chat") {
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+          body,
+        } as unknown as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(window, "confirm").mockImplementation(() => true);
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    fireEvent.click(suggestedButtons(container)[0]);
+    await screen.findByText("正在生成的回答");
+
+    fireEvent.click(screen.getByRole("button", { name: dict.clear }));
+    const chatInit = fetchMock.mock.calls.find(([u]) => u === "/api/ai/chat")?.[1] as RequestInit;
+    expect(chatInit.signal?.aborted, "清空没有掐掉在途请求").toBe(true);
+    expect(screen.queryByText("正在生成的回答")).toBeNull();
+
+    // 迟到的一块到达：既不能复活半截回答，也不该弹一个「用户自己掐掉」的错误
+    await act(async () => {
+      release();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(screen.queryByText(dict.thinking)).toBeNull());
+    expect(screen.queryByText(/正在生成的回答/)).toBeNull();
+    expect(screen.queryByText(dict.errorTimeout)).toBeNull();
+    expect(screen.queryByText(dict.error)).toBeNull();
   });
 
   it("复制回答后短暂显示已复制，再恢复按钮文案", async () => {

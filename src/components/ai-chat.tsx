@@ -142,6 +142,8 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   const [historySettled, setHistorySettled] = useState(false);
   // 「清空对话」的代际：流式回答结束时要对齐它，否则会把刚清掉的对话写回云端
   const archiveGenerationRef = useRef(0);
+  /** 在途的那次 /api/ai/chat：「清空对话」要能把它掐掉 */
+  const streamControllerRef = useRef<AbortController | null>(null);
   const [feedback, setFeedback] = useState<
     Record<number, "helpful" | "unhelpful">
   >({});
@@ -327,6 +329,8 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     // 连接超时（只约束到响应头到达，正文流式期不计入）
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 30_000);
+    // 「清空对话」要掐得掉这一趟：只清数组的话，下一块会把回答重新写回空屏幕
+    streamControllerRef.current = controller;
 
     try {
       const res = await fetch("/api/ai/chat", {
@@ -388,6 +392,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
           parts.push(decoder.decode(value, { stream: true }));
           const acc = baseText + parts.join("");
           setMessages((prev) => {
+            if (archiveGenerationRef.current !== generation) return prev; // 已清空：这一轮的字不再上屏
             const next = [...prev];
             next[targetIdx] = {
               role: "assistant",
@@ -412,6 +417,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       const fullResponse = stripTruncatedMarker(rawFull);
       // 落盘干净文本 + 截断标记
       setMessages((prev) => {
+        if (archiveGenerationRef.current !== generation) return prev;
         const next = [...prev];
         const cur = next[targetIdx];
         if (cur) {
@@ -441,6 +447,8 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       }
     } catch (e) {
       clearTimeout(timer);
+      // 用户点了「清空对话」把这一轮掐了：那是他自己的动作，不该再弹一个错误框
+      if (archiveGenerationRef.current !== generation) return;
       // R7.6：单次请求失败 = 可恢复错误（用户已见错误框，可重试）
       reportError("recoverable", "ai-chat", e);
       // 错误分级：超时 / 网络或服务不可用 / 服务端业务文案 / 兜底
@@ -461,6 +469,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         return prev;
       });
     } finally {
+      if (streamControllerRef.current === controller) streamControllerRef.current = null;
       setLoading(false);
     }
   }
@@ -468,6 +477,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
   async function clear() {
     // 先作废在途请求的归档权，再清本地，最后删云端：顺序反了会让那一轮又写回来。
     archiveGenerationRef.current += 1;
+    streamControllerRef.current?.abort();
     setMessages([]);
     setError(null);
     setFeedback({});
