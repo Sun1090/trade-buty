@@ -58,6 +58,7 @@ export default async function ReplayPage({
           histBest: dict.replay.histBest,
           histEmpty: dict.replay.histEmpty,
           histRecent: dict.replay.histRecent,
+          histScopeTpl: dict.replay.histScopeTpl,
         }}
       />
       <div className="mt-8">

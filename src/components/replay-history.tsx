@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { readReplayHistory, readReplayBest, type ReplayRecord } from "@/lib/replay-store";
+import { REPLAY_HISTORY_KEEP } from "@/lib/replay-history-limit";
 import { useLocalProgress } from "@/components/use-local-progress";
 
 export interface HistoryDict {
@@ -11,6 +12,8 @@ export interface HistoryDict {
   histBest: string;
   histEmpty: string;
   histRecent: string;
+  /** 三张卡的口径脚注，`{n}` 由 REPLAY_HISTORY_KEEP 代入 */
+  histScopeTpl: string;
 }
 
 function acc(r: ReplayRecord): number {
@@ -69,6 +72,9 @@ export function ReplayHistory({ dict }: { dict: HistoryDict }) {
         <StatCard value={`${overall ?? 0}%`} label={dict.histAccuracy} />
         <StatCard value={String(best)} label={dict.histBest} />
       </div>
+      <p className="mb-4 text-xs text-faint">
+        {dict.histScopeTpl.replace("{n}", String(REPLAY_HISTORY_KEEP))}
+      </p>
       <p className="text-xs text-faint mb-2">{dict.histRecent}</p>
       <ul className="space-y-1.5">
         {[...history].reverse().slice(0, 10).map((r) => (
