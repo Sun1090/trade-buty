@@ -5,6 +5,7 @@ import {
   extractDictionaryKeys,
   findDeadDictionaryKeys,
   findUnreadDictFields,
+  parseDeadCopyBudget,
   renderDeadCopyMarkdown,
   shouldFailDeadCopy,
 } from "./dead-copy-lib.mjs";
@@ -133,6 +134,30 @@ interface ControlDict {
   nested: { deep: string };
 }
 `;
+
+describe("预算与下限的读取 (R16.82)", () => {
+  const GOOD = '{"budget": 0, "dictFieldBudget": 0, "minDictionaryKeys": 400, "minDictInterfaces": 18}';
+
+  it("四项齐全才返回", () => {
+    expect(parseDeadCopyBudget(GOOD)).toEqual({
+      budget: 0,
+      dictFieldBudget: 0,
+      minDictionaryKeys: 400,
+      minDictInterfaces: 18,
+    });
+  });
+
+  it("少一项就抛错，并且点名是哪一项", () => {
+    expect(() => parseDeadCopyBudget('{"budget": 0}')).toThrow(/dictFieldBudget/);
+    expect(() => parseDeadCopyBudget('{"budget": 0}')).toThrow(/minDictInterfaces/);
+  });
+
+  it("写成字符串或负数同样抛错：`0 > undefined` 与负数下限都是永远不报的空转", () => {
+    expect(() => parseDeadCopyBudget(GOOD.replace('"budget": 0', '"budget": "0"'))).toThrow(/budget/);
+    expect(() => parseDeadCopyBudget(GOOD.replace('"budget": 0', '"budget": -1'))).toThrow(/不能为负/);
+    expect(() => parseDeadCopyBudget("not json at all")).toThrow(/合法 JSON/);
+  });
+});
 
 describe("组件字典接口的未读字段 (R16.78)", () => {
   it("认出接口名与全部文案字段（含 string[]）", () => {

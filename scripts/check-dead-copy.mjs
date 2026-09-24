@@ -25,6 +25,7 @@ import {
   extractDictionaryKeys,
   findDeadDictionaryKeys,
   findUnreadDictFields,
+  parseDeadCopyBudget,
   renderDeadCopyMarkdown,
   shouldFailDeadCopy,
 } from "./dead-copy-lib.mjs";
@@ -34,24 +35,26 @@ const root = process.cwd();
 const outputMarkdown = path.join(root, "docs/dead-copy.md");
 /** 与巡检器自己的用例（夹具里含被检查的键名）不参与扫描 */
 const SELF_FILES = new Set(["scripts/dead-copy-lib.test.mjs"]);
-/** 字典块里至少该有这么多键；低于下限说明提取逻辑或字典结构变了，台账会变成空转 */
-const MIN_KEYS = 300;
-/** 同理：组件字典接口少于这个数，说明声明式的行首匹配已经跟不上代码写法了 */
-const MIN_DICT_INTERFACES = 10;
-/** 已知死键预算写在文件里：环境变量能闭嘴的门禁不算门禁。 */
-const budgetFile = JSON.parse(
-  fs.readFileSync(path.join(root, "scripts/dead-copy-budget.json"), "utf8")
-);
-const DEAD_COPY_BUDGET = budgetFile.budget;
-/** R16.78：组件声明了、页面装配了、组件自己从不读的字段 */
-const DICT_FIELD_BUDGET = budgetFile.dictFieldBudget;
-// 键写错或漏写会让比较变成 `n > undefined`，也就是永远通过——缺键必须当场判失败。
-if (typeof DEAD_COPY_BUDGET !== "number" || typeof DICT_FIELD_BUDGET !== "number") {
+/** 四个数都写在预算文件里：环境变量能闭嘴的门禁不算门禁，下限悬在常数里同样不算。 */
+let budgetFile;
+try {
+  budgetFile = parseDeadCopyBudget(
+    fs.readFileSync(path.join(root, "scripts/dead-copy-budget.json"), "utf8")
+  );
+} catch (error) {
   console.error(
-    `⛔ scripts/dead-copy-budget.json 缺少数值预算（budget / dictFieldBudget）：拿到 ${JSON.stringify(budgetFile)}，两路检查现在都是空转的。`
+    `⛔ scripts/dead-copy-budget.json 读不出完整预算：${error.message}。` +
+      " 拿到 `undefined` 的比较恒为 false，四路检查会一起变成空转。"
   );
   process.exit(1);
 }
+const DEAD_COPY_BUDGET = budgetFile.budget;
+/** R16.78：组件声明了、页面装配了、组件自己从不读的字段 */
+const DICT_FIELD_BUDGET = budgetFile.dictFieldBudget;
+/** 字典块里至少该有这么多词条；低于下限说明提取逻辑或字典结构变了，台账会变成空转 */
+const MIN_KEYS = budgetFile.minDictionaryKeys;
+/** 同理：组件字典接口少于这个数，说明声明写法变了，R16.78 这一路在空转 */
+const MIN_DICT_INTERFACES = budgetFile.minDictInterfaces;
 
 function walk(dir, out = []) {
   const absolute = path.join(root, dir);
@@ -119,13 +122,13 @@ console.log(
 
 if (totalKeys < MIN_KEYS) {
   console.error(
-    `⛔ 只提取到 ${totalKeys} 个词条（下限 ${MIN_KEYS}）：字典结构已变或提取逻辑失效，台账现在不会发现任何问题。`
+    `⛔ 只提取到 ${totalKeys} 个词条（下限 ${MIN_KEYS}，写在 scripts/dead-copy-budget.json）：字典结构已变或提取逻辑失效，台账现在不会发现任何问题。`
   );
   process.exit(1);
 }
 if (dictInterfaceCount < MIN_DICT_INTERFACES) {
   console.error(
-    `⛔ 只认出 ${dictInterfaceCount} 个组件字典接口（下限 ${MIN_DICT_INTERFACES}）：声明写法变了，R16.78 这一路现在是空转的。`
+    `⛔ 只认出 ${dictInterfaceCount} 个组件字典接口（下限 ${MIN_DICT_INTERFACES}，写在 scripts/dead-copy-budget.json）：\n    声明写法变了、或扫描器自己被注释之类的行缴械（R16.81 就是这么漏掉一张接口的），这一路现在是空转的。`
   );
   process.exit(1);
 }
