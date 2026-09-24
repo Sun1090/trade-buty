@@ -16,16 +16,19 @@ import { classifyIndexDeltas } from "./search-index-lib.mjs";
  */
 const root = process.cwd();
 const KB = path.join(root, "content/kline-buty/docs/knowledge");
-const appOut = path.join(root, ".next/server/app");
+const manifestFile = path.join(root, ".next/prerender-manifest.json");
 const indexFile = path.join(root, "public/search-index.json");
 
-function walk(dir, out = []) {
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    const p = path.join(dir, e.name);
-    if (e.isDirectory()) walk(p, out);
-    else if (e.name.endsWith(".html") && !e.name.startsWith("_")) out.push(p);
-  }
-  return out;
+/**
+ * 「构建页面」取的是 `prerender-manifest.json` 的 routes，不是 `.next/server/app/**` 的文件树。
+ * 差别不是风格问题：`next start` 在收到一个不存在的课文 URL 时会把那份 404 的渲染结果
+ * 顺手写进 `.next/server/app/…/nonexistent-lesson.html`，e2e 里就有这类断言。于是跑过一次
+ * 本地生产冒烟之后， walk 出来的「构建页面」会多出几个从不存在的路由，门禁在干净的 CI 里
+ * 绿、在开发机上红——它数的从来不是构建产物，而是「这台机器上曾经请求过什么」。
+ */
+function builtKnowledgeUrls() {
+  const manifest = JSON.parse(fs.readFileSync(manifestFile, "utf8"));
+  return Object.keys(manifest.routes ?? {}).filter((url) => url.includes("/knowledge/"));
 }
 
 /** 与 generate-search-index / sitemap 同口径：README 章节 + 章内课程。 */
@@ -50,7 +53,7 @@ function expectedFromKb() {
 }
 
 function main() {
-  if (!fs.existsSync(appOut) || !fs.existsSync(indexFile)) {
+  if (!fs.existsSync(manifestFile) || !fs.existsSync(indexFile)) {
     console.error("[search-index-check] 缺少构建产物或索引文件：请先 npm run build");
     process.exit(1);
   }
@@ -59,13 +62,8 @@ function main() {
     entries.filter((e) => e.url.includes("/knowledge/")).map((e) => e.url)
   );
 
-  // 构建产物中的 knowledge 页面
-  const built = new Set();
-  for (const f of walk(appOut)) {
-    const rel = path.relative(appOut, f).replace(/\.html$/, "");
-    if (!rel.includes("knowledge")) continue;
-    built.add("/" + rel.split(path.sep).join("/"));
-  }
+  // 构建清单里的 knowledge 路由
+  const built = new Set(builtKnowledgeUrls());
 
   // R10.9：KB 期望文档 → 索引覆盖（不依赖页面是否建出）
   const expected = expectedFromKb();
