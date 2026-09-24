@@ -345,6 +345,8 @@ interface CloudWrong { chapter_num: string; question_idx: number; picked: number
 interface CloudQuiz { chapter_num: string; best: number; total: number; done: boolean }
 interface CloudReplay { symbol: string; interval: string; total: number; correct: number; best_streak: number; recorded_at: string }
 interface CloudReplayBest { best_streak: number }
+/** postgrest 的失败形状：单表被 RLS 拒掉时不抛异常，而是回 `{data:null, error:{…}}`。 */
+interface CloudReadError { message: string; code?: string }
 
 function normalizeLocalProgress(value: unknown): ProgressMap {
   if (!isRecord(value)) return {};
@@ -594,12 +596,14 @@ export async function hydrateFromCloud(
   adoptAccountMirror(id);
 
   // R9.4：整体降级——任意一张表失败都不能抛（断网/RLS deny 都不该影响本地体验）
-  let progressRes: { data: CloudProgress[] | null } | undefined;
-  let wrongRes: { data: CloudWrong[] | null } | undefined;
-  let quizRes: { data: CloudQuiz[] | null } | undefined;
-  let replayRes: { data: CloudReplay[] | null } | undefined;
-  let bestRes: { data: CloudReplayBest[] | null } | undefined;
-  let settingsRes: { data: { daily_goal_min: number; weekly_goal_min?: number | null }[] | null } | undefined;
+  // `error` 也必须留着：postgrest 的单表失败**不抛**，回的是 `{data:null, error}`，
+  // 所以下面那一串 `if (x?.data)` 会安静地逐个跳过，而「这次有没有真的并到过云端」只能靠它判断。
+  let progressRes: { data: CloudProgress[] | null; error: CloudReadError | null } | undefined;
+  let wrongRes: { data: CloudWrong[] | null; error: CloudReadError | null } | undefined;
+  let quizRes: { data: CloudQuiz[] | null; error: CloudReadError | null } | undefined;
+  let replayRes: { data: CloudReplay[] | null; error: CloudReadError | null } | undefined;
+  let bestRes: { data: CloudReplayBest[] | null; error: CloudReadError | null } | undefined;
+  let settingsRes: { data: { daily_goal_min: number; weekly_goal_min?: number | null }[] | null; error: CloudReadError | null } | undefined;
   try {
     const results = await Promise.all([
       getSupabaseBrowser().from("progress").select("chapter_num, doc_slug").eq("user_id", id),
@@ -747,8 +751,14 @@ export async function hydrateFromCloud(
     // 冲突提示是 best-effort，不影响合并
   }
 
-  // R12.8：记录最近一次云端合并时间（统计页数据来源标识用）
-  recordCloudSync();
+  // R12.8：记录最近一次云端合并时间（统计页数据来源标识用）。
+  // 条件是「六张表都读到了」而不是「这段代码跑到了末尾」：单表被 RLS 拒掉时 postgrest 不抛，
+  // 上面那一串 `if (x?.data)` 会安静地全部跳过，于是一次云端数据都没并进来的运行
+  // 也会给 `/stats` 那行「上次从云端合并 {t}」盖上新时间——那句话是「换设备不丢」的凭据。
+  const cloudReadsClean = [progressRes, wrongRes, quizRes, replayRes, bestRes, settingsRes].every(
+    (res) => res?.error == null,
+  );
+  if (cloudReadsClean) recordCloudSync();
 
   // 一次性通知所有消费组件刷新
   try {
