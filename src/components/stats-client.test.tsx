@@ -114,7 +114,6 @@ const dict: StatsDict = {
   dataExportDesc: "Generated locally as JSON; nothing is uploaded",
   dataExportBtn: "Export data",
   ctaQuiz: "Try a chapter quiz",
-  weekSummaryTitle: "Weekly learning summary",
   reminderTitle: "Review reminder",
   reminderBodyTpl: "{n} wrong questions are due",
   reminderCta: "Review now",
@@ -125,10 +124,6 @@ const dict: StatsDict = {
   reminderCadenceDaily: "Once a day",
   reminderCadenceWeekly: "Once a week",
   reminderDndLabel: "Do-not-disturb",
-  weekSummaryTpl: "{m} min this week across {d} active days · {docs} read · {quiz} quizzes · {review} reviews · {replay} replay rounds",
-  weekGoalLabel: "Weekly goal",
-  weekGoalAchieved: "Weekly goal achieved 🎉",
-  weekGoalLeftTpl: "{m} min to go for your weekly goal",
   ctaReview: "Take a chapter quiz to start collecting",
   ctaReplay: "Start your first round",
   replayTrendTitle: "Replay practice time",
@@ -248,11 +243,14 @@ describe("StatsClient 测验完成 caliber (R16.125)", () => {
 
   it("全答错的一套题：两张卡印同一个数，趋势那边也不漏这次作答", async () => {
     expect(totalQuizzes).toBeGreaterThan(1);
+    // 打点定在当天正午，不用 `Date.now()`：跨过午夜的那一瞬它落在窗口外，
+    // 「1/27 vs 0/27」会变成一条只在半夜红的用例（同 `todayDateStr()` 的其它用例）
+    const attemptAt = new Date(`${todayDateStr()}T12:00:00`).getTime();
     store.set("tb-quiz-getting-started", JSON.stringify({ best: 0, done: true }));
     store.set(
       "tb-quiz-attempts",
       JSON.stringify({
-        "getting-started:now": { chapter: "getting-started", best: 0, total: 10, at: Date.now() },
+        "getting-started:noon": { chapter: "getting-started", best: 0, total: 10, at: attemptAt },
       }),
     );
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
@@ -581,8 +579,8 @@ describe("StatsClient per-section empty-state CTAs (R12.11)", () => {
 describe("StatsClient weekly summary card (R12.19/R12.20)", () => {
   it("renders the local summary line and shows remaining-to-goal minutes", async () => {
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
-    expect(await screen.findByText("Weekly learning summary")).toBeInTheDocument();
-    expect(screen.getByText(/to go for your weekly goal/)).toBeInTheDocument();
+    expect(await screen.findByText("Learning summary · last 7 days")).toBeInTheDocument();
+    expect(screen.getByText(/min to go for your 7-day goal/)).toBeInTheDocument();
   });
 
   it("edits the weekly goal via tier buttons and persists it", async () => {
@@ -596,7 +594,7 @@ describe("StatsClient weekly summary card (R12.19/R12.20)", () => {
     localStorage.setItem("tb-weekly-goal-min", "45");
     localStorage.setItem("tb-study-time", JSON.stringify({ [todayDateStr()]: { read: 60 * 60 } }));
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
-    expect(await screen.findByText("Weekly goal achieved 🎉")).toBeInTheDocument();
+    expect(await screen.findByText("7-day goal achieved 🎉")).toBeInTheDocument();
   });
 });
 

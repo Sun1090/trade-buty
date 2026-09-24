@@ -4,6 +4,7 @@
  * 修改时同步核对 src/lib/i18n-stats.test.ts 的深层 parity。
  */
 import type { Locale } from "./i18n";
+import { WEEK_WINDOW_DAYS } from "./weekly-summary";
 
 const zh = {
     nav: "统计",
@@ -107,11 +108,14 @@ const zh = {
     reminderDndLabel: "免打扰时段",
     reminderDndStart: "免打扰开始时间",
     reminderDndEnd: "免打扰结束时间",
-    weekSummaryTitle: "本周学习摘要",
-    weekSummaryTpl: "本周共学 {m} 分钟 · {d} 天活跃 · 完成 {docs} 篇 · 测验 {quiz} 次 · 复习 {review} 题 · 回放 {replay} 轮",
-    weekGoalLabel: "每周目标",
-    weekGoalAchieved: "每周目标已达成 🎉",
-    weekGoalLeftTpl: "距每周目标还差 {m} 分钟",
+    // 这一块统计的全是「今天在内向前 7 个自然日」的滚动窗口（`weekly-summary.ts` 的
+    // `weekBounds`），不是日历周；卡片右上角印的起止日期本身就经常跨两个周。天数由常量生成，
+    // 窗口一改文案跟着改，不让「本周 / 每周」这种日历周的说法留在滚动窗口上（R16.129）。
+    weekSummaryTitle: `近 ${WEEK_WINDOW_DAYS} 天学习摘要`,
+    weekSummaryTpl: `近 ${WEEK_WINDOW_DAYS} 天共学 {m} 分钟 · {d} 天活跃 · 完成 {docs} 篇 · 测验 {quiz} 次 · 复习 {review} 题 · 回放 {replay} 轮`,
+    weekGoalLabel: `${WEEK_WINDOW_DAYS} 天目标`,
+    weekGoalAchieved: `${WEEK_WINDOW_DAYS} 天目标已达成 🎉`,
+    weekGoalLeftTpl: `距 ${WEEK_WINDOW_DAYS} 天目标还差 {m} 分钟`,
     milestoneShare: {
       title: "学习里程碑",
       button: "分享里程碑",
@@ -123,8 +127,8 @@ const zh = {
     ctaQuiz: "还不知道自己的水平？去做一章测验",
     ctaReview: "错题本还是空的——先去做一章测验收集错题",
     ctaReplay: "还没做过行情回放练习？现在开始第一轮",
-    weeklyTitle: "近 7 天学习",
-    weeklySummaryTpl: "近 7 天共学 {n} 分钟，日均 {avg} 分钟",
+    weeklyTitle: `近 ${WEEK_WINDOW_DAYS} 天学习`,
+    weeklySummaryTpl: `近 ${WEEK_WINDOW_DAYS} 天共学 {n} 分钟，日均 {avg} 分钟`,
     emptyTitle: "还没有学习记录",
     emptyBody: "从学习路线开始你的第一课：阅读课程、做随堂测、开一轮回放，这里就会长出你的学习画像。",
     emptyCta: "去学习路线",
@@ -232,11 +236,11 @@ const en: StatsDict = {
     reminderDndLabel: "Do-not-disturb",
     reminderDndStart: "Do-not-disturb start",
     reminderDndEnd: "Do-not-disturb end",
-    weekSummaryTitle: "Weekly learning summary",
-    weekSummaryTpl: "{m} min this week across {d} active days · {docs} read · {quiz} quizzes · {review} reviews · {replay} replay rounds",
-    weekGoalLabel: "Weekly goal",
-    weekGoalAchieved: "Weekly goal achieved 🎉",
-    weekGoalLeftTpl: "{m} min to go for your weekly goal",
+    weekSummaryTitle: `Learning summary · last ${WEEK_WINDOW_DAYS} days`,
+    weekSummaryTpl: `{m} min across {d} active days in the last ${WEEK_WINDOW_DAYS} days · {docs} read · {quiz} quizzes · {review} reviews · {replay} replay rounds`,
+    weekGoalLabel: `${WEEK_WINDOW_DAYS}-day goal`,
+    weekGoalAchieved: `${WEEK_WINDOW_DAYS}-day goal achieved 🎉`,
+    weekGoalLeftTpl: `{m} min to go for your ${WEEK_WINDOW_DAYS}-day goal`,
     milestoneShare: {
       title: "Learning milestone",
       button: "Share milestone",
@@ -248,8 +252,8 @@ const en: StatsDict = {
     ctaQuiz: "Not sure of your level yet? Try a chapter quiz",
     ctaReview: "Your mistake log is empty — take a chapter quiz to start collecting",
     ctaReplay: "Never practiced with a market replay? Start your first round",
-    weeklyTitle: "Last 7 days",
-    weeklySummaryTpl: "{n} minutes in 7 days, {avg} min/day on average",
+    weeklyTitle: `Last ${WEEK_WINDOW_DAYS} days`,
+    weeklySummaryTpl: `{n} minutes in ${WEEK_WINDOW_DAYS} days, {avg} min/day on average`,
     emptyTitle: "No study records yet",
     emptyBody: "Start your first lesson from the learning path: read a doc, take the quiz, run a replay — and your study profile will grow here.",
     emptyCta: "Open learning path",
