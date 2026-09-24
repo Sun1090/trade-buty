@@ -639,7 +639,14 @@ export function StatsClient({
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.replayTrendAvg}</dt><dd className="mt-1 font-mono text-xl font-bold">{replayTrend!.summary.avgSecInRange === null ? "-" : formatDuration(replayTrend!.summary.avgSecInRange)}</dd></div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3"><dt className="text-xs text-faint">{dict.replayTrendBestStreak}</dt><dd className="mt-1 font-mono text-xl font-bold">{Math.max(replayBestStreak, replayTrend!.allTime.bestStreak)}</dd></div>
         </dl>
-        {replayTrend!.hasHistory && !replayTrend!.hasDurations && <p className="mt-3 text-xs text-muted">{dict.replayNoDurations}</p>}
+        {/* R16.176：这句提示以前只在「一条计时都没有」时出现，可「平均每轮」的分母
+            从来都只是**有计时**的那些轮（`replay-time-trend.ts:168`）。混着看时，同一屏会
+            一边印「期间回放轮数 3」、一边印只按那 1 轮算出来的平均，而那句解释缺席。 */}
+        {replayTrend!.hasHistory &&
+          (!replayTrend!.hasDurations ||
+            replayTrend!.summary.roundsInRange > replayTrend!.summary.timedRoundsInRange) && (
+            <p className="mt-3 text-xs text-muted">{dict.replayNoDurations}</p>
+          )}
         {/* R12.11：从未做过回放时给出入口 */}
         {replayTrend!.allTime.totalRounds === 0 && (
           <p className="mt-3 text-xs text-muted">
