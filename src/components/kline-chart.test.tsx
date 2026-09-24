@@ -313,8 +313,44 @@ describe("KlineChart 加载失败与重试", () => {
   it("展示最新收盘价", async () => {
     render(<KlineChart dict={dict} />);
     await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
-    const last = klines[klines.length - 1].close;
-    expect(screen.getByText(last.toLocaleString())).toBeInTheDocument();
+    // 比的是屏上那一句字（夹具最后一条 close 是 140），不是拿组件自己的格式化再算一遍——
+    // 后者两边一起错也不会红。
+    expect(screen.getByText("140")).toBeInTheDocument();
+  });
+
+  /**
+   * `toLocaleString()` 不带参数最多给 3 位小数，`SHIBUSDT` 这种低于一分钱的交易对
+   * 于是被印成「0」：一个非零价格显示成零，读的人只能认为它值 0 元。
+   */
+  it("非零价格不许被印成 0", async () => {
+    mocks.fetchKlines.mockResolvedValueOnce([
+      {
+        time: 1_700_000_000,
+        open: 0.0000091,
+        high: 0.0000093,
+        low: 0.000009,
+        close: 0.0000092,
+        volume: 1,
+      },
+    ]);
+    render(<KlineChart dict={dict} />);
+    await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
+    expect(screen.getByText("0.0000092")).toBeInTheDocument();
+    expect(screen.queryByText("0")).toBeNull();
+  });
+
+  it("换交易对时，上一张图的读数立刻消失", async () => {
+    render(<KlineChart dict={dict} />);
+    await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
+    expect(screen.getByText("140")).toBeInTheDocument();
+
+    // 新标的永远停在加载中：这正是以前最坏的一格——图上写着「币安现货没有这个交易对」，
+    // 工具栏还印着上一个标的的价格。
+    mocks.fetchKlines.mockImplementationOnce(() => new Promise(() => {}));
+    const input = screen.getByRole("textbox", { name: dict.customSymbolLabel });
+    fireEvent.change(input, { target: { value: "SHIBUSDT" } });
+    fireEvent.blur(input);
+    await waitFor(() => expect(screen.queryByText("140")).toBeNull());
   });
 });
 
@@ -352,13 +388,19 @@ describe("KlineChart 网络质量分支", () => {
    * （density 只看 viewport），所以桌面慢网仍按完整视图取数。那句提示曾经写死
    * 「已切换为 180 根 K 线精简模式」——在桌面宽度下是一句假话。
    */
-  it("慢网提示不承诺它没做的降根数（桌面宽度仍按完整视图取数）", async () => {
+  it("慢网提示不承诺它没做的降根数，也不把用户的网络断言成慢（桌面宽度仍按完整视图取数）", async () => {
     mocks.networkQuality = "slow";
     const zh = { ...dict, slowNetwork: getDict("zh").chart.slowNetwork };
     const { unmount } = render(<KlineChart dict={zh} />);
     await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
     const note = screen.getByTestId("network-quality-note").textContent ?? "";
-    expect(note).toContain("网络较慢");
+    // 这句以前开口就是「网络较慢」。可 `slow` 有两个来源（`network-quality.ts:22`：
+    // `saveData` 或慢速 `effectiveType`），组件分辨不出是哪一个——开着数据节省的
+    // 快速 Wi-Fi 因此被告知「你的网络慢」。文案现在两个原因都点，且不下诊断。
+    expect(note).toContain("暂停实时推送");
+    expect(note).toContain("流量");
+    expect(note).toMatch(/数据节省|慢速网络/);
+    expect(note).not.toContain("网络较慢");
     expect(note, "根数由视口决定，低带宽不改").not.toMatch(/\d+\s*根/);
     expect(mocks.fetchKlines).toHaveBeenCalledWith(
       "BTCUSDT",
@@ -371,7 +413,9 @@ describe("KlineChart 网络质量分支", () => {
     render(<KlineChart dict={en} />);
     await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
     const enNote = screen.getByTestId("network-quality-note").textContent ?? "";
-    expect(enNote.toLowerCase()).toContain("slow network");
+    expect(enNote.toLowerCase()).toContain("paused");
+    expect(enNote.toLowerCase()).toMatch(/data-saver|slow connection/);
+    expect(enNote.toLowerCase()).not.toMatch(/^slow network/);
     expect(enNote, "en 同样不能声称切到 180 根").not.toMatch(/\d+[- ]candle/);
   });
 

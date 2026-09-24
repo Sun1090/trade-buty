@@ -47,6 +47,16 @@ function getServerViewportSnapshot(): ViewportSnapshot {
   return "server";
 }
 
+/**
+ * 显示用的价格读数。`toLocaleString()` 不带参数时最多给 3 位小数，于是
+ * `SHIBUSDT` 的 0.0000092 会被印成「0」——一个非零价格显示成零，读的人只能认为
+ * 这个交易对值 0 元。小数位跟着量级走，唯一要保证的是非零不印成零。
+ */
+function formatPrice(value: number): string {
+  const digits = value >= 1000 ? 2 : value >= 1 ? 4 : 8;
+  return value.toLocaleString(undefined, { maximumFractionDigits: digits });
+}
+
 interface ChartDict {
   loading: string;
   error: string;
@@ -173,6 +183,9 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
     );
     async function load() {
       setStatus("loading");
+      // 换标的/换周期时上一张图的读数不属于这一张：留着它，工具栏上那个数字就会
+      // 在「这张图不存在 / 正在加载」的提示旁边继续印旧标的的价格。
+      setLastPrice(null);
       try {
         const klines = await fetchKlines(symbol, interval_, {
           limit: dataLimit,
@@ -350,7 +363,7 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
           <div className="flex flex-wrap items-center gap-3">
             {lastPrice !== null && (
               <span className="font-mono text-sm text-accent">
-                {lastPrice.toLocaleString()}
+                {formatPrice(lastPrice)}
               </span>
             )}
             <div className="flex flex-wrap gap-1.5" role="group" aria-label={dict.intervalLabel}>
