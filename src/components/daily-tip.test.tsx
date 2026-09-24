@@ -43,16 +43,30 @@ describe("DailyTip", () => {
     expect(screen.getByText(TIPS_ZH[TIPS_ZH.length - 1])).toBeInTheDocument();
   });
 
-  it("点击「换一条心得」：从当前这条换成池里的另一条", () => {
+  it("点击「换一条心得」：一定换开当前这条", () => {
+    // 0 是一个都不许抽到的值：改回「整池重抽」的写法时，这里会以「抽回同一条」失败
     vi.spyOn(Math, "random").mockReturnValue(0);
     render(<DailyTip locale="zh" nextTipLabel="换一条心得" />);
-    expect(screen.getByText(TIPS_ZH[0])).toBeInTheDocument();
+    const first = screen.getByRole("button", { name: "换一条心得" })
+      .closest("div")
+      ?.querySelector("p")?.textContent;
+    expect(first).toBeTruthy();
 
     // 可访问名称吃传入文案：中文界面里这个按钮就该叫「换一条心得」
     fireEvent.click(screen.getByRole("button", { name: "换一条心得" }));
+    const second = screen.getByRole("button", { name: "换一条心得" })
+      .closest("div")
+      ?.querySelector("p")?.textContent;
+    expect(second).not.toBe(first);
+    expect(TIPS_ZH).toContain(second);
+
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     fireEvent.click(screen.getByRole("button", { name: "换一条心得" }));
-    expect(screen.getByText(TIPS_ZH[Math.floor(0.5 * TIPS_ZH.length)])).toBeInTheDocument();
+    const third = screen.getByRole("button", { name: "换一条心得" })
+      .closest("div")
+      ?.querySelector("p")?.textContent;
+    expect(third).not.toBe(second);
+    expect(TIPS_ZH).toContain(third);
   });
 
   it("英文 locale 只用英文池", () => {

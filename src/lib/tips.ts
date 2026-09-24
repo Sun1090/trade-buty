@@ -40,8 +40,15 @@ export function getSeedTip(locale: string): string {
   return poolOf(locale)[0];
 }
 
-/** 客户端挂载后或「换一条」时的随机取法 */
-export function getRandomTip(locale: string): string {
+/**
+ * 客户端挂载后或「换一条」时的随机取法。
+ *
+ * 给了 `exclude` 就一定换开这一条：那句按钮叫「换一条心得」，而 10 条的池子按老写法
+ * 有 1/10 的概率抽回同一条——点了没反应，按钮就在说谎。两个池子各有 10 条，
+ * 由 `tips.test.ts` 钉住「≥2 条」，所以 `rest` 不可能被抽空。
+ */
+export function getRandomTip(locale: string, exclude?: string): string {
   const pool = poolOf(locale);
-  return pool[Math.floor(Math.random() * pool.length)];
+  const rest = exclude === undefined ? pool : pool.filter((tip) => tip !== exclude);
+  return rest[Math.floor(Math.random() * rest.length)];
 }

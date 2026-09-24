@@ -20,6 +20,21 @@ describe("getRandomTip", () => {
     // 池有 10 条，50 次调用应至少出现 2 条不同
     expect(tips.size).toBeGreaterThanOrEqual(2);
   });
+
+  it("给了 exclude：那条一次都抽不到", () => {
+    for (const [locale, pool] of [["zh", TIPS_ZH], ["en", TIPS_EN]] as const) {
+      for (const excluded of pool) {
+        for (let i = 0; i < 40; i++) {
+          expect(getRandomTip(locale, excluded)).not.toBe(excluded);
+        }
+      }
+    }
+  });
+
+  it("两条池都至少 2 条：只剩一条时「换一条」根本换不动", () => {
+    expect(TIPS_ZH.length).toBeGreaterThanOrEqual(2);
+    expect(TIPS_EN.length).toBeGreaterThanOrEqual(2);
+  });
 });
 
 describe("getSeedTip", () => {
