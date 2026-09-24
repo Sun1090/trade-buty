@@ -377,6 +377,10 @@ describe("KlineChart 加载失败与重试", () => {
       expect(name).toBeInTheDocument();
       // 名字和数字得在同一个容器里：隔开了就等于读屏仍会念到一串没有归属的数字。
       expect(name.parentElement?.textContent).toContain("140");
+      const cjk = /[一-鿿㐀-䶿]/;
+      expect(cjk.test(name.textContent ?? ""), `标签的语言要和界面一致（${locale}）`).toBe(
+        locale === "zh",
+      );
       unmount();
     }
   });
