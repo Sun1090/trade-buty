@@ -5,9 +5,13 @@ import { getStageGroups } from "@/lib/path";
 export function KnowledgeGraph({ locale }: { locale: string }) {
   const groups = getStageGroups(locale);
 
-  // 每阶段数
-  const counts = groups.map((g) => g.chapters.length);
-  const maxCount = Math.max(...counts, 1);
+  // 条长的分母：图上所有篇章里最多的那个课数。
+  // 早期这里除的是「每个阶段有几篇」（9/8/10 → 10），于是 16 课的、13 课的、11 课的全都
+  // 顶格 100%，条长实际量的是「课数 ÷ 某阶段篇章数」，跟图例写的「条长表示课程数」不是一回事。
+  const maxDocCount = Math.max(
+    ...groups.flatMap((g) => g.chapters.map((c) => c.docCount)),
+    1
+  );
 
   return (
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
@@ -42,7 +46,7 @@ export function KnowledgeGraph({ locale }: { locale: string }) {
                   <span className="ml-auto w-10 h-1 rounded-full bg-white/10 overflow-hidden shrink-0">
                     <span
                       className="h-full bg-accent rounded-full"
-                      style={{ width: `${Math.min(100, (c.docCount / maxCount) * 100)}%` }}
+                      style={{ width: `${Math.min(100, (c.docCount / maxDocCount) * 100)}%` }}
                     />
                   </span>
                 </Link>

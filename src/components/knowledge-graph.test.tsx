@@ -71,11 +71,38 @@ describe("KnowledgeGraph", () => {
     expect(screen.getByText(/Foundation · Core path/)).toBeInTheDocument();
   });
 
-  it("scales the lesson bar against the largest chapter", () => {
+  it("条长按「本章课数 ÷ 全图最多课数」量，三列共用一把尺", () => {
+    // fixture 最大值 10：旧实现拿「每阶段几篇」（这里最大 2）当分母，四根条全被夹到 100%，
+    // 于是「10 课」和「2 课」一样长——所以断言写的是比例，不只是顶不顶格。
     render(<KnowledgeGraph locale="zh" />);
-    const link = screen.getByRole("link", { name: /入门基础篇/ });
-    const bar = link.querySelectorAll("span span")[0] as HTMLElement;
-    expect(bar.style.width).toBe("100%");
+    const widths = ["入门基础篇", "现货交易篇", "交易实践篇", "期权策略篇"].map((name) => {
+      const link = screen.getByRole("link", { name: new RegExp(name) });
+      const bar = link.querySelectorAll("span span")[0] as HTMLElement;
+      return bar.style.width;
+    });
+    expect(widths).toEqual(["100%", "50%", "40%", "20%"]);
+  });
+
+  it("课数相同的篇章一样长，课数更多的更长（条长真的在数课）", () => {
+    mocks.getStageGroups.mockReturnValue([
+      {
+        stage: { id: "core" as const, chapterNums: [] },
+        chapters: [
+          chapter("a", "甲篇", 20),
+          chapter("b", "乙篇", 10),
+          chapter("c", "丙篇", 10),
+        ],
+      },
+    ]);
+    render(<KnowledgeGraph locale="zh" />);
+    const widthOf = (name: string) =>
+      (
+        screen
+          .getByRole("link", { name: new RegExp(name) })
+          .querySelectorAll("span span")[0] as HTMLElement
+      ).style.width;
+    expect(widthOf("乙篇")).toBe(widthOf("丙篇"));
+    expect(parseFloat(widthOf("甲篇"))).toBeGreaterThan(parseFloat(widthOf("乙篇")));
   });
 
   it("falls back to the raw stage id for unknown stages", () => {
