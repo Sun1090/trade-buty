@@ -27,15 +27,14 @@ export function KnowledgeGraph({ locale }: { locale: string }) {
               {stage.id === "core" ? "★" : stage.id === "practice" ? "◆" : "◇"} {locale === "en" ? stageText(stage.id, locale) : stageText(stage.id, locale)}
             </p>
             <div className="space-y-1.5">
-              {chapters.map((c, i) => (
+              {chapters.map((c) => (
                 <Link
                   key={c.slug}
                   href={`/${locale}/knowledge/${c.slug}`}
                   className="group min-w-0 flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-hover)] px-3 py-2 hover:border-[var(--accent)]/50 transition"
                 >
-                  <span className="shrink-0 w-5 h-5 rounded-full border border-[var(--accent)]/40 text-[10px] text-accent flex items-center justify-center font-mono">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
+                  {/* 节点画成图例里那颗圆点，不写数字：标题自带的 `NN ·` 才是篇章编号 */}
+                  <span className="shrink-0 w-2 h-2 rounded-full border border-[var(--accent)]/40" />
                   <span className="min-w-0 text-xs font-medium truncate group-hover:text-accent transition-colors">
                     {c.title}
                   </span>

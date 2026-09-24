@@ -12,8 +12,7 @@ const KNOWLEDGE_ROOT = path.join(
 
 export interface Chapter {
   slug: string; // 英文 slug，如 'getting-started'
-  order: number; // 来自 README H1 的 NN 序号
-  title: string; // H1 原文（含序号），如 '01 · 入门基础篇'
+  title: string; // H1 原文（含序号），如 '01 · 入门基础篇'——这个 `NN` 是全站通用的篇章编号
   tagline: string;
   docCount: number;
 }
@@ -120,6 +119,7 @@ function parseFrontmatter(
 }
 
 
+/** 篇章列表，顺序＝站内学习路径（`kb-order.CHAPTER_ORDER`），不是标题里的 `NN ·` 编号 */
 export function getChapters(locale: string): Chapter[] {
   const root = localeRoot(locale);
   return getChapterSlugs(locale).map((slug) => {
@@ -142,7 +142,6 @@ export function getChapters(locale: string): Chapter[] {
     }
     return {
       slug,
-      order: chapterRank(slug),
       title,
       tagline,
       docCount,

@@ -4,7 +4,7 @@ import { renderToString } from "react-dom/server";
 import { StatsClient } from "./stats-client";
 
 const chapters = [
-  { slug: "getting-started", order: 0, title: "01 · 入门", tagline: "t", docCount: 2 },
+  { slug: "getting-started", title: "01 · 入门", tagline: "t", docCount: 2 },
 ];
 
 const dict = {

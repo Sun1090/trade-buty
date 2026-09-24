@@ -15,7 +15,7 @@ vi.mock("@/lib/path", () => ({
 import { KnowledgeGraph } from "./knowledge-graph";
 
 function chapter(slug: string, title: string, docCount: number): Chapter {
-  return { slug, title, docCount, order: 1, tagline: "" };
+  return { slug, title, docCount, tagline: "" };
 }
 
 function groups() {
