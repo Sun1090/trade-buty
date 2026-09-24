@@ -72,4 +72,15 @@ describe("i18n", () => {
     expect(getDict("zh").docTools.estimatedReadingTime(7)).toBe("约 7 分钟阅读");
     expect(getDict("en").docTools.estimatedReadingTime(7)).toBe("~7 min read");
   });
+
+  it("429 的等待时长那句自带本语言单位，不把 min 拼进中文界面", () => {
+    // 这两句是要落到屏幕上的整句：`retryInTpl` 若只剩数字，中文界面就会重新长出
+    // 一个裸的 `min`（R16.79 之前正是 `dict.guestLimit + " (2min)"` 那个形状）
+    expect(getDict("zh").ai.retryInTpl).toContain("分钟");
+    expect(getDict("zh").ai.retryInTpl).not.toMatch(/[A-Za-z]{2,}/);
+    expect(getDict("en").ai.retryInTpl).toContain("min");
+    for (const locale of ["zh", "en"] as const) {
+      expect(getDict(locale).ai.retryInTpl).toContain("{n}");
+    }
+  });
 });

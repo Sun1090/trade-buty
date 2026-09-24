@@ -29,6 +29,7 @@ const dict = {
   error: "生成失败，请重试",
   loginRequired: "登录后可用 AI 出题",
   rateLimited: "请求过于频繁，请稍后再试",
+  retryInTpl: "约 {n} 分钟后重试",
   question: "题目",
   explain: "解析",
   report: "举报题目",
@@ -190,7 +191,9 @@ describe("AiQuiz 入口、错误态与多题流程", () => {
     fireEvent.click(screen.getByText(dict.generate));
     expect(await screen.findByText(dict.loginRequired)).toBeInTheDocument();
     fireEvent.click(screen.getByText(dict.generate));
-    expect(await screen.findByText(`${dict.rateLimited} (2min)`)).toBeInTheDocument();
+    expect(
+      await screen.findByText(`${dict.rateLimited} · 约 2 分钟后重试`)
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByText(dict.generate));
     expect(await screen.findByText(dict.error)).toBeInTheDocument();
     fireEvent.click(screen.getByText(dict.generate));

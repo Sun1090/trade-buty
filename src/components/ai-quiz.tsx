@@ -13,6 +13,8 @@ interface AiQuizProps {
     report: string; reported: string; badge: string; correct: string; wrong: string; next: string; done: string;
     /** 401 与 429 各自的说法：把「重试没用」和「等一会儿再有结果」混成一句就是假话 */
     loginRequired: string; rateLimited: string;
+    /** 等待时长整句由字典出，包括单位：把 `min` 拼到中文界面里就是半句英文残话 */
+    retryInTpl: string;
   };
 }
 
@@ -60,8 +62,12 @@ export function AiQuiz({ wrongItems, dict, aiEnabled = true }: AiQuizProps & { a
       }
       if (res.status === 429) {
         const retryAfter = Number.parseInt(res.headers.get("retry-after") ?? "", 10);
-        const hint = Number.isFinite(retryAfter) ? ` (${Math.ceil(retryAfter / 60)}min)` : "";
-        setError(dict.rateLimited + hint);
+        const minutes = Number.isFinite(retryAfter) ? Math.ceil(retryAfter / 60) : 0;
+        setError(
+          minutes > 0
+            ? `${dict.rateLimited} · ${dict.retryInTpl.replace("{n}", String(minutes))}`
+            : dict.rateLimited
+        );
         return;
       }
       if (!res.ok) {

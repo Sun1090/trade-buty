@@ -461,6 +461,7 @@ export function ReviewClient({
               error: locale === "en" ? "Generation failed, retry" : "生成失败，请重试",
               loginRequired: locale === "en" ? "Log in to use AI quiz" : "登录后可用 AI 出题",
               rateLimited: locale === "en" ? "Too many requests, try again later" : "请求过于频繁，请稍后再试",
+              retryInTpl: locale === "en" ? "Retry in about {n} min" : "约 {n} 分钟后重试",
               question: locale === "en" ? "Question" : "题目",
               explain: locale === "en" ? "Explanation" : "解析",
               report: locale === "en" ? "Report question" : "举报题目",
