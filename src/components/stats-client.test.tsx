@@ -4,6 +4,7 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { StatsClient } from "./stats-client";
 import { QUIZZES } from "@/lib/quizzes";
 import { STATS_DICTS, type StatsDict } from "@/lib/i18n-stats";
+import { enqueueWrite } from "@/lib/sync-queue-store";
 
 const store = new Map<string, string>();
 
@@ -409,6 +410,15 @@ describe("StatsClient data source label (R12.8)", () => {
     render(<StatsClient chapters={chapters} dict={dict} locale="en" />);
     const line = await screen.findByText(/Last merged from cloud/);
     expect(line.textContent).toMatch(/\d/);
+  });
+
+  it("登录了但离线写队列里还压着改动时，那枚标记不宣称「本机 + 云端」已完成", async () => {
+    // 反面是 R16.59 那一类：断网时的写已经算进页面上的数字，却一条都没到云上。
+    authState.user = { id: "u1" };
+    enqueueWrite("progress", "ch1:doc-a", { chapter: "ch1" }, 1000);
+    render(<StatsClient chapters={chapters} dict={dict} locale="en" />);
+    expect(await screen.findByLabelText(/changes awaiting upload/)).toBeInTheDocument();
+    expect(screen.queryByText("Local + cloud")).not.toBeInTheDocument();
   });
 });
 

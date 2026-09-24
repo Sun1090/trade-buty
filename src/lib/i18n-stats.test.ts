@@ -59,14 +59,32 @@ describe("i18n-stats dictionary", () => {
     }
   });
 
-  // 台账按日历只保留最近 90 天（study-time 的 STUDY_LEDGER_KEEP_DAYS），
-  // 标签必须带上这个窗口：写成「总学习时长」是在承诺一个并不存在的全历史口径。
-  it("「学习时长」标签写明保留窗口，不声称是全部历史", () => {
+  // 台账按日历只保留 90 天（study-time 的 STUDY_LEDGER_KEEP_DAYS），但裁剪锚在
+  // 「最后一次学习的那天」而不是今天：三个月没打开的人，台账里就是三个月前那 90 天的账。
+  // 所以标签既不能写成「总学习时长」（不存在的全历史口径），也不能写成「近 90 天」
+  // （读起来是「从今天往回数 90 天」，而求和的是整本台账）。
+  it("「学习时长」标签说的是台账本身，不假装是从今天算起的窗口", () => {
     const zh = getStatsDict("zh").totalStudyTime;
     const en = getStatsDict("en").totalStudyTime;
     expect(zh).toContain(`${STUDY_LEDGER_KEEP_DAYS} 天`);
     expect(en).toContain(`${STUDY_LEDGER_KEEP_DAYS} days`);
+    expect(zh).toContain("台账");
+    expect(en.toLowerCase()).toContain("ledger");
     expect(zh).not.toMatch(/^总/);
     expect(en).not.toMatch(/^Total/i);
+    expect(zh).not.toContain("近 90 天");
+    expect(en.toLowerCase()).not.toMatch(/last \d+ days/);
+  });
+
+  it("免打扰那两个读屏名字整句在字典里，中文界面不再长出裸的 start / end", () => {
+    // 旧写法是 `${dict.reminderDndLabel} start`，读屏软件在中文页面上念「免打扰时段 start」。
+    const zh = getStatsDict("zh");
+    expect(zh.reminderDndStart).toContain("免打扰");
+    expect(zh.reminderDndEnd).toContain("免打扰");
+    expect(zh.reminderDndStart).not.toMatch(/[A-Za-z]{2,}/);
+    expect(zh.reminderDndEnd).not.toMatch(/[A-Za-z]{2,}/);
+    const en = getStatsDict("en");
+    expect(en.reminderDndStart).toMatch(/start$/);
+    expect(en.reminderDndEnd).toMatch(/end$/);
   });
 });
