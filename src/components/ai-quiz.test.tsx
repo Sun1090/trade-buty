@@ -71,15 +71,45 @@ async function generateQuestions() {
 
 describe("AiQuiz 错题本打通与幂等（R2.6/R2.8/R2.11）", () => {
   it("R5.5：答错变体题重置 SRS 阶段并排到明天", async () => {
+    // 变体题只为错题本里已有的条目生成，所以来源条目本来就在账上
+    store.set("tb-wrong", JSON.stringify({
+      "getting-started:2": { chapterNum: "getting-started", questionIdx: 2, picked: 3, at: 1, srsStage: 2, srsDue: "2020-01-01" },
+    }));
     vi.stubGlobal("fetch", setup());
     render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
     await generateQuestions();
     fireEvent.click(screen.getByText("预测走势"));
     const w = readWrong();
     expect(w["getting-started:2"]).toBeDefined();
-    expect(w["getting-started:2"].picked).toBe(1);
     expect(w["getting-started:2"].srsStage).toBe(0);
     expect(w["getting-started:2"].srsDue).toBeDefined();
+  });
+
+  /**
+   * R16.186：变体题的选项序号不许写进来源错题的「你的选择」。
+   *
+   * 变体题的选项是模型当场写的，和来源题那一套选项没有对应关系
+   * （`/api/ai/quiz` 只回 `{question, options, answer, explain}`）。把点在变体上的序号
+   * 存进来源条目，复习页展开来源题时就会打印 `options[那个序号]`——
+   * 「你的选择」指着一条用户从没见过的选项。答对与否照常记账，选择留在来源题自己那次。
+   */
+  it("R16.186：答变体题不改写来源错题「你的选择」", async () => {
+    const sourcePick = 3; // 来源题里用户真的点过的那一项
+    store.set("tb-wrong", JSON.stringify({
+      "getting-started:2": { chapterNum: "getting-started", questionIdx: 2, picked: sourcePick, at: 1, srsStage: 2, srsDue: "2020-01-01" },
+    }));
+    vi.stubGlobal("fetch", setup());
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
+    await generateQuestions();
+    // 「预测走势」是**变体题**的第 1 项，与来源题的选项无关
+    const variantIdx = questions[0].options.indexOf("预测走势");
+    expect(variantIdx).not.toBe(sourcePick);
+    fireEvent.click(screen.getByText("预测走势"));
+
+    const entry = readWrong()["getting-started:2"];
+    expect(entry.picked, "变体题的序号被写进了来源错题").toBe(sourcePick);
+    // 排期照常推进：不保留选择 ≠ 这局没算
+    expect(entry.srsStage).toBe(0);
   });
 
   it("R5.5：答对推进 SRS 阶段；走完间隔表后掌握并移出错题本", async () => {

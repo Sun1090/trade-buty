@@ -96,7 +96,10 @@ export function AiQuiz({ wrongItems, dict, aiEnabled = true }: AiQuizProps & { a
     const src = wrongItems[current % wrongItems.length];
     if (!q || !src) return;
     addStudyTime("quiz", 60);
-    applySrsResult(src.chapterNum, src.questionIdx, i === q.answer, i);
+    // 不传 `i`：那是**变体题**的选项序号，而变体题的选项是模型现写的，和来源题的选项
+    // 不是一套（`ai/prompt.ts` 各写各的）。写进来源错题的 `picked`，复习页的「你的选择」
+    // 就会指到一条用户从没见过的选项上——宁可留着来源题那次真正点过的序号。
+    applySrsResult(src.chapterNum, src.questionIdx, i === q.answer);
   }
 
   /** R2.11：题目质量举报——送出成功才改口，失败要看得见、也要能再点一次 */
