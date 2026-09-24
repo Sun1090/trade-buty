@@ -66,7 +66,12 @@ describe("glossary data（R10.13 双语扩展）", () => {
     }
   });
 
-  it("en 主词均为语料实际用词（非凭空翻译）：抽查常见缩写与合成词", () => {
+  /**
+   * 这条只抽查「主词还在数据里」——「en 主词均为语料实际用词」那半句以前写在这里，
+   * 可这一条压根没碰语料：真正对着课文查中英主词的是 `npm run check:glossary`
+   * （`scripts/check-glossary.mjs`），标题不能再替它作证。
+   */
+  it("抽查 5 个常见缩写/合成词的主词仍在术语数据里", () => {
     const enSet = new Set(GLOSSARY_TERMS.map((t) => t.en));
     for (const expected of ["RSI", "DCA", "Futures/Perpetual", "P/E Ratio", "Bollinger Bands"]) {
       expect(enSet.has(expected)).toBe(true);

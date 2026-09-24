@@ -38,7 +38,13 @@ describe("search-diagnostics (R10.22)", () => {
     expect(similarTerms("止", CANDIDATES)).toEqual([]);
   });
 
-  it("similarTerms：返回有序且不超过 k 条", () => {
+  it("similarTerms：按编辑距离由近到远排，且不超过 k 条", () => {
+    // 「移到平珍」距离 2、「移动平均值」距离 1，却排在候选列表前面：
+    // 只按输入顺序返回就会把它摆第一，这条断言要抓的就是那个。
+    expect(similarTerms("移动平均", ["移到平珍", "移动平均值"], { k: 3 })).toEqual([
+      "移动平均值",
+      "移到平珍",
+    ]);
     const hits = similarTerms("均线", CANDIDATES, { k: 3 });
     expect(hits.length).toBeLessThanOrEqual(3);
   });
