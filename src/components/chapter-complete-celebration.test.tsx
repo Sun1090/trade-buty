@@ -111,14 +111,17 @@ describe("ChapterCompleteCelebration (R12.18)", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  // R16.122：封顶挡不住「旧键顶上新课数」。改课留下的废键 + 只读了两篇真课时，
-  // 同一页课文清单勾着 2/7，礼花却按 7/7 放——清单看得见课表，所以庆祝也必须按课表数。
+  // R16.122：封顶挡不住「旧键顶上新课数」。这一章现在有 7 篇，存储里只有 2 篇是真的、
+  // 另外 5 个是改课留下的废键：封顶 min(7 个键, 7 篇) = 7/7 会放礼花，
+  // 而同一页课文清单只勾着 2/7。清单看得见课表，庆祝就必须按同一张课表数。
   it("存储里有废键顶出的『满读数』时不庆祝", () => {
     store.set(
       "tb-progress",
-      JSON.stringify({ "getting-started": ["a", "b", "旧-1", "旧-2", "旧-3"] }),
+      JSON.stringify({
+        "getting-started": ["a", "b", "旧-1", "旧-2", "旧-3", "旧-4", "旧-5"],
+      }),
     );
-    seedCompletion("getting-started", "旧-3", Date.now());
+    seedCompletion("getting-started", "旧-5", Date.now());
     render(
       <ChapterCompleteCelebration
         chapterSlug="getting-started"
