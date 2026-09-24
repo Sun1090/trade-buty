@@ -127,7 +127,8 @@ export function course(args: {
 
 /** Quiz：用于随堂测挂载的章节。hasPart 列出所有题。 */
 export function quiz(args: {
-  locale: StructuredDataLocale;
+  /** 题库自身的语言，不是页面语言：`/en` 上挂的仍是中文题 */
+  language: string;
   title: string;
   chapterHref: string;
   questions: { text: string }[];
@@ -139,7 +140,7 @@ export function quiz(args: {
     "@type": "Quiz",
     "@id": `${url}#quiz`,
     name: args.title,
-    inLanguage: inLanguage(args.locale),
+    inLanguage: args.language,
     url,
     isPartOf: { "@id": `${url}#course` },
     hasPart: args.questions.map((question) => ({
