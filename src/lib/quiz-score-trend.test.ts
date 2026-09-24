@@ -58,7 +58,8 @@ describe("buildQuizScoreTrend", () => {
       attempts: {
         broken: { best: "bad", total: "bad", at: "bad" },
         unknown: { chapter: "missing", best: 5, total: 10, at: local(9, 3) },
-        invalid: { chapter: "getting-started", best: 0, total: 10, at: local(9, 3) },
+        noTimestamp: { chapter: "getting-started", best: 5, total: 10, at: "bad" },
+        negativeBest: { chapter: "getting-started", best: -1, total: 10, at: local(9, 3) },
       },
       days: 7,
       today: "2026-09-07",
@@ -66,6 +67,48 @@ describe("buildQuizScoreTrend", () => {
 
     expect(trend.summary.attemptsInRange).toBe(0);
     expect(trend.latest.doneQuizzes).toBe(1);
+  });
+
+  // 一套做完但全答错的题是真实发生过的作答：它的分数是 0，不是「没有分数」。
+  // 早先这里两件事捆在一起——`best <= 0` 的记录当垃圾丢掉，日期桶又要求当天至少有一个
+  // 非 0 百分比——于是「测验次数」少算这套题，同一页概览卡的「测验完成」却算它。
+  it("counts a zero-score completion as an attempt and as done", () => {
+    const trend = buildQuizScoreTrend({
+      chapters: [
+        { slug: "getting-started", questions: 10 },
+        { slug: "spot", questions: 8 },
+      ],
+      progress: {
+        "getting-started": { best: 0, done: true },
+        spot: { best: 0, done: false },
+      },
+      attempts: {
+        "getting-started:1": { chapter: "getting-started", best: 0, total: 10, at: local(9, 3) },
+      },
+      days: 7,
+      today: "2026-09-07",
+    });
+
+    expect(trend.summary.attemptsInRange).toBe(1);
+    expect(trend.summary.activeDays).toBe(1);
+    expect(trend.summary.bestInRangeText).toBe("0/10");
+    // 0 分不是「没测过」：分数是 0，不是 null（null 会让卡片印成 "-"，读起来像缺数据）
+    expect(trend.days[2]).toEqual({ date: "2026-09-03", attempts: 1, bestPct: 0, bestScoreText: null });
+    expect(trend.latest).toEqual({ doneQuizzes: 1, totalQuizzes: 2, bestPct: 0, avgPct: 0, perfectQuizzes: 0 });
+  });
+
+  // 「有分数」不等于「做完了」：`done` 才是这一判据，概览卡读的就是它。
+  // 趋势卡若自己补一条 `|| best > 0`，同一屏两张卡在一份脏存档上会印出两个数。
+  it("does not read a score as completion", () => {
+    const trend = buildQuizScoreTrend({
+      chapters: [{ slug: "getting-started", questions: 10 }],
+      progress: { "getting-started": { best: 5, done: false } },
+      days: 7,
+      today: "2026-09-07",
+    });
+
+    expect(trend.latest.doneQuizzes).toBe(0);
+    expect(trend.latest.avgPct).toBeNull();
   });
 });
 

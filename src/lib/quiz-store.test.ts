@@ -55,4 +55,20 @@ describe("quiz-store", () => {
     store.set("tb-quiz-spot", JSON.stringify({ best: 7.6, done: true }));
     expect(readQuizProgress("spot")).toEqual({ best: 8, done: true });
   });
+
+  // 答题账本是「测验次数」的数据源。它曾经只收正分，于是全答错的那一套在趋势里
+  // 凭空消失，而概览卡的「测验完成」照样数着它——同一屏两个数对不上。
+  it("0 分的一套题也写进答题账本", () => {
+    saveQuizProgress("spot", { best: 0, done: true }, 10);
+    const ledger = JSON.parse(store.get("tb-quiz-attempts") ?? "{}");
+    expect(Object.values(ledger)).toEqual([
+      { chapter: "spot", best: 0, total: 10, at: expect.any(Number) },
+    ]);
+  });
+
+  // 没做完的（`done: false`）不是完成事件，不进账本
+  it("未完成的分数不写答题账本", () => {
+    saveQuizProgress("spot", { best: 5, done: false }, 10);
+    expect(store.has("tb-quiz-attempts")).toBe(false);
+  });
 });

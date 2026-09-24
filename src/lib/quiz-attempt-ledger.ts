@@ -24,7 +24,8 @@ export function writeQuizAttempt(storage: Storage = globalThis.localStorage, cha
     const safeBest = Math.max(0, Math.round(best));
     const safeTotal = Math.max(1, Math.round(total));
     const key = `${chapter}:${safeAt}`;
-    if (safeBest > 0 && !ledger[key]) {
+    // 只看「这一条在不在」，不看分数：0 分是一套做完了的测验，不是「没有记录」
+    if (!ledger[key]) {
       ledger[key] = { chapter, best: safeBest, total: safeTotal, at: safeAt };
       storage.setItem(KEY, JSON.stringify(ledger));
     }

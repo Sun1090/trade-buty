@@ -41,8 +41,10 @@ export function saveQuizProgress(
   } catch {
     // 存储不可用时仅内存保留
   }
-  // R12.3：记录测验历史台账；仅新完成记录，不去重更新旧日期
-  if (progress.done && progress.best > 0) {
+  // R12.3：记录测验历史台账；只记完成事件，不回头改旧日期的记录。
+  // 0 分也要记——「今天做了一套题」是事实，漏掉它会让趋势卡的「测验次数」少算，
+  // 而同一页概览卡的「测验完成」照样把它算进去。
+  if (progress.done) {
     writeQuizAttempt(localStorage, chapterNum, progress.best, total);
   }
   // dispatch 让消费方刷新（quiz 原来不参与事件，加入后错题本/进度联动更顺）

@@ -24,18 +24,32 @@ describe("quiz attempt ledger", () => {
     });
   });
 
-  it("sanitizes timestamps and does not store zero-score attempts", () => {
+  it("clamps impossible scores and replaces an unusable timestamp", () => {
     writeQuizAttempt(storage, "getting-started", -2, 0, Number.NaN);
-    expect(readQuizAttemptLedger(storage)).toEqual({});
+    const ledger = readQuizAttemptLedger(storage);
+    // 时间戳坏到不能用时退回「现在」：这一条确实刚刚发生过，丢掉才是假账
+    expect(Object.keys(ledger)).toHaveLength(1);
+    const entry = Object.values(ledger)[0];
+    expect(entry).toEqual({ chapter: "getting-started", best: 0, total: 1, at: expect.any(Number) });
+    expect(entry.at).toBeGreaterThan(0);
   });
 
-  it("ignores duplicate same-timestamp writes and zero-score attempts", () => {
+  it("keeps the first write for a same-timestamp retry", () => {
     writeQuizAttempt(storage, "getting-started", 4, 10, 123);
     writeQuizAttempt(storage, "getting-started", 8, 10, 123);
-    writeQuizAttempt(storage, "getting-started", 0, 10, 456);
 
     expect(readQuizAttemptLedger(storage)).toEqual({
       "getting-started:123": { chapter: "getting-started", best: 4, total: 10, at: 123 },
+    });
+  });
+
+  // 0 分是一套做完了的测验，不是「没有记录」：不写它，统计页的「测验次数」就少一次，
+  // 而同一页概览卡的「测验完成」照样把它算进去。
+  it("records a zero-score completion", () => {
+    writeQuizAttempt(storage, "getting-started", 0, 10, 456);
+
+    expect(readQuizAttemptLedger(storage)).toEqual({
+      "getting-started:456": { chapter: "getting-started", best: 0, total: 10, at: 456 },
     });
   });
 });
