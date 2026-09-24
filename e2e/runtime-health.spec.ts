@@ -154,6 +154,19 @@ for (const route of ROUTES) {
 }
 
 /**
+ * seeding 的自证：`seedStorage` 顶上那句「让只读本地台账的组件真正渲染出内容」必须
+ * 有人验一句。R16.143 之前书签那条种的是读取端整份拒收的形状，而这一屏除了「没炸」
+ * 什么都不断言，于是水合探测一直跑在空台账上，没有人发现。
+ */
+test("种下去的书签真的渲染出来了（夹具形状由这一条守着）", async ({ page }) => {
+  await blockCrossOrigin(page);
+  await seedStorage(page);
+  await page.goto("/zh/bookmarks", { waitUntil: "domcontentloaded" });
+  await expect(page.getByText("第一笔交易")).toBeVisible();
+  await expect(page.getByTestId("bookmarks-empty-cta")).toHaveCount(0);
+});
+
+/**
  * 交互面：把页内按钮逐条点一遍，只断言「没炸」。
  *
  * 导航不报错不代表点着不报错——handler 里的空值解构、越界下标、事件常量写错
