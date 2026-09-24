@@ -18,7 +18,7 @@ import {
   formatPercent,
   measureEnContent,
 } from "./en-content-lib.mjs";
-import { scanFloorViolation } from "./scan-floor-lib.mjs";
+import { scanFloorViolation, recordScanCount } from "./scan-floor-lib.mjs";
 
 const root = process.cwd();
 const KB = path.join(root, "content/kline-buty/docs/knowledge");
@@ -72,6 +72,8 @@ const shrunk = [
   scanFloorViolation({ count: summary.enFiles, floor: MIN_LOCALE_FILES, what: "en 树 md 文件" }),
   scanFloorViolation({ count: summary.zhFiles, floor: MIN_LOCALE_FILES, what: "zh 树 md 文件" }),
 ].filter(Boolean);
+recordScanCount({ key: "kb-en-md-files", count: summary.enFiles, floor: MIN_LOCALE_FILES, what: "en 树 md 文件" });
+recordScanCount({ key: "kb-zh-md-files", count: summary.zhFiles, floor: MIN_LOCALE_FILES, what: "zh 树 md 文件" });
 if (shrunk.length > 0) {
   for (const line of shrunk) console.error(`❌ ${line}`);
   process.exit(1);

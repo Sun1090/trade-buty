@@ -12,7 +12,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { scanFloorViolation } from "./scan-floor-lib.mjs";
+import { scanFloorViolation, recordScanCount } from "./scan-floor-lib.mjs";
 
 const root = process.cwd();
 const KB = path.join(root, "content/kline-buty/docs/knowledge");
@@ -37,6 +37,7 @@ if (!fs.existsSync(KB)) {
 
 const walked = walk(KB);
 const shrunk = scanFloorViolation({ count: walked.length, floor: MIN_KB_FILES, what: "知识库 md 文件" });
+recordScanCount({ key: "kb-md-files", count: walked.length, floor: MIN_KB_FILES, what: "知识库 md 文件" });
 if (shrunk) {
   console.error(`❌ ${shrunk}`);
   process.exit(1);
