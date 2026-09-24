@@ -17,7 +17,7 @@ import { scanFloorViolation } from "./scan-floor-lib.mjs";
 const root = process.cwd();
 const KB = path.join(root, "content/kline-buty/docs/knowledge");
 /** 实测（2026-09-24）zh+en 两棵树共 419 个 md；低于此下限只会是扫描坏了，不会是上游删了两成课文。 */
-const MIN_KB_FILES = 400;
+export const MIN_KB_FILES = 400;
 
 function walk(dir, out = []) {
   if (!fs.existsSync(dir)) return out;

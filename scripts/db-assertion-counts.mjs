@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import { scanFloorViolation } from "./scan-floor-lib.mjs";
 
 /** 现行文档（会被引用的那几篇）；progress.md 是历史记录，不参与对账 */
-const AUDITED_DOCS = ["docs/database-testing.md", "docs/roadmap.md"];
+export const AUDITED_DOCS = ["docs/database-testing.md", "docs/roadmap.md"];
 
 /** 从 pgTAP 文件读出 basename → plan(N) */
 export function readPlanCounts(dir) {

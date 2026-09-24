@@ -14,7 +14,7 @@
 | `npm run check:lockfile-repro` | 用 `devEngines.packageManager` 钉住的 npm（10.9.4，对齐 lockfile 生成工具）重新生成 `package-lock.json`，逐条目比较；有差异即说明提交的 lockfile 不是 CI 的 npm 主版本生成的（npm 10 vs npm 11 漂移） | 用 CI 的 npm 主版本重新生成：`npx --yes npm@10.9.4 install --package-lock-only --registry=https://registry.npmjs.org`；详见 docs/deps.md |
 | `npm run audit:prod` | 生产依赖高危及以上漏洞审计（npm 官方 registry） | 升级/替换受影响依赖；不得通过降低 audit level 掩盖 |
 | `npm run audit:all` | 全量依赖（含开发工具链）高危及以上漏洞审计；当前 0 漏洞 | 升级/替换受影响依赖，优先用经验证的 overrides；不得用 `--omit=dev` 掩盖开发链回归 |
-| `npm run check:secrets` | 扫描受版本控制与未忽略的新文本文件，阻断私钥、平台 token 和疑似硬编码密钥；输出不包含命中值 | 吊销并移除泄露凭据，改用环境变量/密钥管理；测试夹具使用明确占位值 |
+| `npm run check:secrets` | 扫描受版本控制与未忽略的新文本文件，阻断私钥、平台 token 和疑似硬编码密钥；输出不包含命中值。R16.83：`git ls-files` 列出的待扫文件数低于下限 700 即判失败（「已扫描 0 个」不是通过），通过时打印扫到多少个 | 吊销并移除泄露凭据，改用环境变量/密钥管理；测试夹具使用明确占位值；下限被踩到先查清单为什么变少，再改数 |
 | `npm run ops:work-audit` | 工作保全审计（R14.4）：有没有提交既不在 `main` 也不在任何远端分支，以及有没有 PR 被关闭而工作去向从未确认。CI 用 `WORK_AUDIT_REQUIRE_GH=1` 把它当门禁：读不到 GitHub 也判失败，不允许静默变绿 | 需要的工作重放到新 topic 分支并提 PR；确认已无需保留的关闭 PR 在 `docs/work-audit-ack.json` 记下理由（每条必须写原因） |
 | `npm run lint` | 全仓库 ESLint，**0 error / 0 warning** | 修复规则报告；定向例外必须附理由，脚本本身固定 `--max-warnings=0` |
 | `npm run test:coverage` | Vitest 单元、组件、脚本契约与集成测试，并跑 V8 覆盖度地板门禁（语句 84 / 分支 77 / 函数 83 / 行 87） | 修复失败用例；覆盖度跌破地板时补测试，不得跳过/删除断言或下调阈值伪造通过 |
@@ -26,15 +26,15 @@
 | `npm run check:ai-copy` | en 字典无中文残留（R3.12） | 修正 i18n.ts en 值 |
 | `npm run check:growth-event-privacy` | 增长事件只留在本机且不携带 URL/身份信息（R13.20） | 删除遥测外发或敏感字段；审计文档作废时重新评审 |
 | `npm run check:error-report-privacy` | 错误上报载荷只含白名单元数据、服务端有界读取 + 未知字段拒绝、日志无原始内容、隐私页双语披露（R7.6） | 修正 `src/lib/error-report.ts` / 路由或隐私页；不得放宽白名单或日志脱敏 |
-| `npm run check:request-body-bounds` | 站内每个解析 JSON 请求体的端点都经 `src/lib/request-body.ts` 有界读取，且上限是具名常量（R15.4①） | 新端点改用 `readJsonBody(req, MAX_*_BODY_BYTES)`；不得把上限退回行内数字或恢复 `req.json()` |
+| `npm run check:request-body-bounds` | 站内每个解析 JSON 请求体的端点都经 `src/lib/request-body.ts` 有界读取，且上限是具名常量（R15.4①）。R16.83：`src/app/api` 读不到、或扫出的 route.ts 少于下限 11 个都判失败——「0 个端点全部合规」和一次没跑的扫描不再是同一句话；通过的那行会先报「N 个 route.ts 里的 M 个 POST 端点」 | 新端点改用 `readJsonBody(req, MAX_*_BODY_BYTES)`；不得把上限退回行内数字或恢复 `req.json()`；目录搬家要同步这里的扫描根 |
 | `npm run check:env-docs` | `docs/env.md` 与代码对账：`process.env.*` 读到的运行时变量全部登记、文档无幽灵条目、服务端密钥不出现在 `"use client"` 模块 | 补写 `docs/env.md` 或清理死变量；密钥前缀/暴露面错误必须改代码而不是改文档 |
 | `npm run check:dark-pattern-copy` | 增长表面均已登记，且无紧迫/恐吓/默认勾选等暗黑模式（R13.21–R13.22） | 修正 `growth-surfaces.json` 登记或用户文案 |
-| `npm run check:db-assertion-counts` | 现行文档（`docs/database-testing.md`、`docs/roadmap.md`）引用的 pgTAP 断言数等于 `supabase/tests/*.sql` 的 `select plan(N)`，含「40+30+8 断言」这类聚合写法 | 改断言数后同步现行文档；`docs/progress.md` 是追加式历史记录，不参与对账也不得回改 |
+| `npm run check:db-assertion-counts` | 现行文档（`docs/database-testing.md`、`docs/roadmap.md`）引用的 pgTAP 断言数等于 `supabase/tests/*.sql` 的 `select plan(N)`，含「40+30+8 断言」这类聚合写法。R16.83：声明的 2 篇文档少读到任何一篇都判失败（`docs/roadmap.md` 改名不会让引用自动变对），pgTAP 目录整个不见了也报错而不是让 `readdirSync` 抛一句读不懂的话 | 改断言数后同步现行文档；`docs/progress.md` 是追加式历史记录，不参与对账也不得回改 |
 | `npm run check:docs` | README/AGENTS/plan/About 的内容规模、技术栈、关键承诺与 `package.json` 版本号一致 | 修正漂移文档；发布时同步 bump `package.json` version，不得只改门禁快照 |
 | `npm run check:changelog` | `CHANGELOG.md` 与单一来源 `src/data/release-notes.json`（站点 `/changelog` 页同源）一致：版本/日期格式、新旧排序与双语条目 | 跑 `npm run changelog:generate` 重新生成并提交；不得手工编辑 `CHANGELOG.md` |
 | `npm run check:release-tag` | 发布 tag 核对（R14.3）：除最新发布版本外，每条发布记录都必须有同名 `vX.Y.Z` tag；最新发布版本允许暂缺（rebase 合并改写 SHA，tag 只能在合并后打到 `main`），此时打印待办不判失败 | 在合并后的 `main` 上 `git tag -a vX.Y.Z origin/main -m "..." && git push origin vX.Y.Z`；0.4.0–0.7.0 属门禁上线前的遗留豁免（见 `scripts/release-tag-lib.mjs`），有意不回填以免把过期提交推成生产部署 |
 | `npm run check:constitution` | 内容宪法：导流/荐股黑话、收益承诺表述（R6.11） | 默认报告式（教育语境豁免）；内容整改后可在 CI 加 `--strict` 升级阻断 |
-| `npm run check:frontmatter` | 每篇课程 title/description 齐全且 description ≥15 字符（R6.5） | 补齐 frontmatter；章节 README 按契约豁免 |
+| `npm run check:frontmatter` | 每篇课程 title/description 齐全且 description ≥15 字符（R6.5）。R16.83：知识库根目录 `content/kline-buty/docs/knowledge` 不存在时当场报错（子模块没 init 过去是打印一句通过），md 文件数低于下限 400 判失败，通过时先报扫到多少个文件 | 补齐 frontmatter；章节 README 按契约豁免；数量掉得离谱先 `git submodule update --init`，别直接调下限 |
 | `npm run check:image-alt` | 知识库图片 alt 文本（R6.6，R10.12 增强） | 为对应图片补描述 |
 | `npm run check:glossary` | 术语表双语一致性：term/en/def/defEn 齐全、zh/en 主词唯一（R10.13） | 修正 `src/lib/glossary-data.json` |
 | `npm run check:slug-conflicts` | 中英 slug 冲突：slug 小写连字符、跨 locale 不撞身份（R10.14） | 改 slug 或拒绝冲突路径 |
@@ -43,7 +43,7 @@
 | `npm run check:kb-changelog` | `kb-manifest.json` 中每篇 sha256 与当前子模块内容逐文件一致；只读、有新增/修改/删除即失败（R10.7） | 跑 `npm run kb:update` 刷新快照与 changelog，同 commit 提交；不得手改 hash 或让 CI 写快照 |
 | `npm run check:translation-history` | 翻译历史快照为最新：当前 KB 覆盖与 docs/translation-history.json 最近快照一致（R10.19） | `npm run kb:translation-status` 重生成并连同两个产物提交 |
 | `npm run check:kb-parity-budget` | 关键章节英文 parity ≥ 预算（docs/kb-parity-budget.json，默认 1.0，R10.20） | 补齐关键章节 en 译文，或先下调预算并说明理由 |
-| `npm run check:kb-en-content` | 英文树内容实测：en 的每个 markdown 非空、CJK 字占比 ≤ 2%、正文长度 ≥ 同名中文的 30%（R16.13） | 到 kline-buty 补英文正文；本仓不得就地改子模块内容 |
+| `npm run check:kb-en-content` | 英文树内容实测：en 的每个 markdown 非空、CJK 字占比 ≤ 2%、正文长度 ≥ 同名中文的 30%（R16.13）。R16.83：en 与 zh 两棵树各自低于下限 200 个 md 就判失败——`en/` 整棵不见了过去打印的是「0 个文件、0 处越界」的绿 | 到 kline-buty 补英文正文；本仓不得就地改子模块内容 |
 | 新章节 dry-run 冒烟（CI 内联，R10.16 / Q1.7） | `node scripts/dry-run-new-chapter.mjs --draft` 预检契约，并输出索引/sitemap/测验挂载/路径分组四项上线核对 | 按脚本报错补结构；按 checklist 决策固定题和 STAGES 分组 |
 | `npm run check:quiz-mounts` | AST 核验 quizzes.ts 全部挂载的 chapter/docSlug 与最少题数（R6.3） | 修正 chapterNum、docSlug、重复键或题量 |
 | `npm run check:quiz-coverage` | 固定题库覆盖率：27 章 × 每章至少 3 道（R6.4） | 补固定题库或 kb-titles 缺失元数据 |
