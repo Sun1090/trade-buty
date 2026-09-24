@@ -7,13 +7,19 @@ import { localDateStr } from "@/lib/date-utils";
 /** 折线图最少要几轮记录：空态文案里的数字读这个常量 */
 export const REPLAY_TREND_MIN_ROUNDS = 2;
 
+/** 折线只画最近这么几轮：脚注里的数字读这个常量，两处 slice 也是它 */
+export const REPLAY_TREND_POINTS = 20;
+
 /** 回放训练准确率趋势折线图（SVG，无外部依赖） */
 export function ReplayTrend({
   label,
   emptyLabel,
+  scopeLabel,
 }: {
   label: string;
   emptyLabel: string;
+  /** 折线窗口那句脚注，`{n}` 由 REPLAY_TREND_POINTS 代入 */
+  scopeLabel: string;
 }) {
   const [points, setPoints] = useState<{ at: number; acc: number }[]>([]);
 
@@ -23,13 +29,13 @@ export function ReplayTrend({
         at: r.at,
         acc: r.total > 0 ? Math.round((r.correct / r.total) * 100) : 0,
       }))
-      .slice(-20); // 最近 20 轮
+      .slice(-REPLAY_TREND_POINTS);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPoints(h);
     const onChange = () => {
       const h2 = readReplayHistory()
         .map((r) => ({ at: r.at, acc: r.total > 0 ? Math.round((r.correct / r.total) * 100) : 0 }))
-        .slice(-20);
+        .slice(-REPLAY_TREND_POINTS);
       setPoints(h2);
     };
     window.addEventListener("tb-progress", onChange);
@@ -58,6 +64,9 @@ export function ReplayTrend({
   return (
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
       <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-3">{label}</p>
+      <p className="-mt-2 mb-3 text-xs text-faint">
+        {scopeLabel.replace("{n}", String(REPLAY_TREND_POINTS))}
+      </p>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={label}>
         {/* 网格线 */}
         {[25, 50, 75].map((g) => (

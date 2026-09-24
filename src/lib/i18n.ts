@@ -290,9 +290,10 @@ const zh = {
     histRounds: "训练轮次",
     histAccuracy: "平均正确率",
     histBest: "最佳连击",
-    histScopeTpl: "以上三项只统计最近 {n} 轮——更早的记录不留存。",
+    histScopeTpl: "轮数与正确率只统计最近 {n} 轮，更早的记录不留存；「最佳连击」取的是全部历史里的最大值。",
     histEmpty: "完成一轮猜涨跌后，这里会出现你的训练记录。",
     trendEmpty: "准确率折线要累计 {n} 轮记录才画得出来。",
+    trendScopeTpl: "折线画的是最近 {n} 轮，更早的不在这条线上。",
     histRecent: "最近记录",
   },
   search: {
@@ -690,9 +691,10 @@ const en: Dict = {
     histRounds: "Rounds logged",
     histAccuracy: "Average accuracy",
     histBest: "Best streak",
-    histScopeTpl: "These three cover only your most recent {n} rounds — older ones are not kept.",
+    histScopeTpl: "Rounds and accuracy cover only your most recent {n} rounds; older ones are not kept. “Best streak” is the highest it has ever been, across all rounds.",
     histEmpty: "Finish a guess round and your training log will appear here.",
     trendEmpty: "The accuracy line appears once you have {n} rounds recorded.",
+    trendScopeTpl: "The line covers your last {n} rounds; earlier ones are not on it.",
     histRecent: "Recent rounds",
   },
   search: {

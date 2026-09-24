@@ -7,7 +7,7 @@ vi.mock("@/lib/replay-store", () => ({
   readReplayHistory: () => history,
 }));
 
-import { ReplayTrend, REPLAY_TREND_MIN_ROUNDS } from "./replay-trend";
+import { ReplayTrend, REPLAY_TREND_MIN_ROUNDS, REPLAY_TREND_POINTS } from "./replay-trend";
 import { getDict } from "@/lib/i18n";
 
 beforeEach(() => {
@@ -17,7 +17,7 @@ beforeEach(() => {
 describe("ReplayTrend（R12.5）", () => {
   it("少于两轮时显示空状态文案", () => {
     history = [{ at: 1, total: 10, correct: 5 }];
-    render(<ReplayTrend label="趋势" emptyLabel="暂无足够数据" />);
+    render(<ReplayTrend label="趋势" emptyLabel="暂无足够数据" scopeLabel="只画最近 {n} 轮" />);
     expect(screen.getByText("暂无足够数据")).toBeInTheDocument();
     expect(screen.queryByRole("img")).toBeNull();
   });
@@ -27,7 +27,7 @@ describe("ReplayTrend（R12.5）", () => {
       { at: 1, total: 10, correct: 3 },
       { at: 2, total: 10, correct: 8 },
     ];
-    render(<ReplayTrend label="准确率趋势" emptyLabel="空" />);
+    render(<ReplayTrend label="准确率趋势" emptyLabel="空" scopeLabel="只画最近 {n} 轮" />);
     expect(screen.getByRole("img", { name: "准确率趋势" })).toBeInTheDocument();
   });
 
@@ -36,20 +36,25 @@ describe("ReplayTrend（R12.5）", () => {
       { at: 1, total: 0, correct: 0 },
       { at: 2, total: 4, correct: 4 },
     ];
-    render(<ReplayTrend label="趋势" emptyLabel="空" />);
+    render(<ReplayTrend label="趋势" emptyLabel="空" scopeLabel="只画最近 {n} 轮" />);
     const circles = screen.getByRole("img").querySelectorAll("circle");
     expect(circles.length).toBe(2);
   });
 
-  it("只取最近 20 轮", () => {
-    history = Array.from({ length: 25 }, (_, i) => ({
+  it("折线只取最近 REPLAY_TREND_POINTS 轮，脚注说的就是同一个数", () => {
+    history = Array.from({ length: REPLAY_TREND_POINTS + 5 }, (_, i) => ({
       at: i,
       total: 10,
       correct: i % 10,
     }));
-    render(<ReplayTrend label="趋势" emptyLabel="空" />);
+    const { container } = render(
+      <ReplayTrend label="趋势" emptyLabel="空" scopeLabel="只画最近 {n} 轮" />,
+    );
     const circles = screen.getByRole("img").querySelectorAll("circle");
-    expect(circles.length).toBe(20);
+    expect(circles.length).toBe(REPLAY_TREND_POINTS);
+    // 脚注里的数必须由同一个常量代入，不留花括号
+    expect(screen.getByText(`只画最近 ${REPLAY_TREND_POINTS} 轮`)).toBeInTheDocument();
+    expect(container.textContent).not.toContain("{n}");
   });
 
   it("tb-progress 事件更新趋势，并按 0% 处理 total 为 0 的增量记录", () => {
@@ -59,7 +64,7 @@ describe("ReplayTrend（R12.5）", () => {
     ];
     const addEventListenerSpy = vi.spyOn(window, "addEventListener");
     const removeEventListenerSpy = vi.spyOn(window, "removeEventListener");
-    const { unmount } = render(<ReplayTrend label="准确率趋势" emptyLabel="空" />);
+    const { unmount } = render(<ReplayTrend label="准确率趋势" emptyLabel="空" scopeLabel="只画最近 {n} 轮" />);
     expect(addEventListenerSpy).toHaveBeenCalledWith("tb-progress", expect.any(Function));
     history = [
       { at: 3, total: 0, correct: 0 },
@@ -84,7 +89,7 @@ describe("ReplayTrend（R12.5）", () => {
       { at: new Date(2026, 2, 4, 12).getTime(), total: 10, correct: 3 },
       { at: new Date(2026, 2, 5, 12).getTime(), total: 10, correct: 8 },
     ];
-    render(<ReplayTrend label="趋势" emptyLabel="空" />);
+    render(<ReplayTrend label="趋势" emptyLabel="空" scopeLabel="只画最近 {n} 轮" />);
     const circles = screen.getByRole("img").querySelectorAll("circle");
     expect(circles[0].querySelector("title")?.textContent).toBe("2026-03-04 · 30%");
     expect(circles[1].querySelector("title")?.textContent).toBe("2026-03-05 · 80%");
@@ -99,7 +104,11 @@ describe("ReplayTrend（R12.5）", () => {
   it("趋势块的空态是另一句：门槛数字由常量填进来，屏上不留占位符", () => {
     history = [{ at: 1, total: 10, correct: 5 }]; // 只有一轮：训练记录卡已经在列，趋势仍是空态
     const { container } = render(
-      <ReplayTrend label="趋势" emptyLabel={getDict("zh").replay.trendEmpty} />
+      <ReplayTrend
+        label="趋势"
+        emptyLabel={getDict("zh").replay.trendEmpty}
+        scopeLabel={getDict("zh").replay.trendScopeTpl}
+      />
     );
     const shown = container.querySelector("p")?.textContent ?? "";
     expect(shown).toContain(String(REPLAY_TREND_MIN_ROUNDS));
