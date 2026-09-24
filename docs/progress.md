@@ -6683,3 +6683,23 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：生产仍是旧构建直到配额窗口清出来（不改代码、不重复空跑触发）。回滚仍然是 `git revert` 发布提交，或把 Vercel Production 切回上一构建止血。
 - 下一项：#113——把「少扫一批就要失败」搬到其余计数型门禁。高危清单已逐条核实（`check:frontmatter` 在知识库根缺失时返回 0 文件并判绿，且这条与 `AGENTS.md`「缺少 content/kline-buty 必须明确报错而不是发空页」直接冲突；`check:links` 已有「缺 `.next` 就失败」但没有页数下限；`request-body-bounds` 在 `api/` 缺失时报「passed: 0 个 POST 端点」；`check:secrets` 空清单报「已扫描 0」为绿）。核查中另有两条**不成立**、已排除：`check:ai-copy` 的 `};` 恰是 en 块自身收尾（不是截断），`check:localized-labels` 跳过的只有真注释行（不会被块注释整段缴械）。
 - 更新时间：2026-09-24 14:10（Asia/Shanghai）。
+
+## 2026-09-24 — 五道计数型门禁补上扫描下限：没扫到不等于扫过没问题（R16.83，#286）
+
+- 状态：**待合并**。分支 `feat/gate-scan-floors`（`c7b545a` 门禁本体 / `6ead88d` 凭据与范围的顺序 / `5295763` 下限写进 ops.md 并钉回常量），基于 #285 合并后的 `main` = `75327ce`，PR **#286**。
+- 这一批在找什么：R16.82 那条「读控制台那行的数字，而不是读红绿」的推广。计数型门禁有个共同形状——**它只报「发现几个问题」，不报「我看了多少东西」**，于是分母缩到零和全部合规打印的是同一句话。逐条实测后中了五处，每处都先跑出旧行为再改：
+  - `check:frontmatter`：`walk(KB)` 第一行就是 `if (!fs.existsSync(dir)) return out`，知识库没 init 时扫到 0 个文件 → 0 处问题 → 打印「✅ frontmatter 检查通过」，且这行里没有任何数量。这与 `AGENTS.md`「构建前确认 `content/kline-buty/docs/knowledge/` 存在，缺失要报错而不是发空页」直接冲突——门禁替站把「空页」这件事判成了通过。
+  - `check:kb-en-content`：开头查了 KB 根，`filesByLocale` 里却还有一层 `existsSync` 兜空，`en/` 整棵不见了就是「en 文件 0 个 · 越界 0 个 · 空正文 0 个」的绿。
+  - `check:secrets`：清单来自 `git ls-files`，列空了打印「✅ 已扫描 0 个文本文件，未发现疑似凭据」。
+  - `check:request-body-bounds`：`src/app/api` 读不到时报「passed: 0 个 POST 端点里没有一个绕过有界读取」；它那条「仓库现状」用例只断言 `postRoutes >= 8`，也就是扫到 8 个就算看过全站了。
+  - `check:db-assertion-counts`：`AUDITED_DOCS.filter(existsSync)` 少一篇只是少扫一篇，而 `docs/roadmap.md` 改名恰恰是让引用最容易错位的那一篇退出核对。
+- 改法：`scripts/scan-floor-lib.mjs` 一个纯函数 `scanFloorViolation({count, floor, what})`——越界返回一行把两个数都念出来的说明，够数返回 `null`；**下限写成 0 / 负数 / 非整数直接抛**（下限为 0 等于这道检查永远不会响，正是上一批的自伤形状），数量不是非负整数也抛（`walk()` 坏了返回 `undefined` 时不许当 0 放过去）。五道门禁各钉一个贴着实测量的下限：419→400、en/zh 各 209→200、git 清单 764→700、route.ts 12→11、对账文档声明几篇就必须读到几篇。通过那行改成先报分母：`扫到 419 个 md（要求 364 篇课文…）`、`12 个 route.ts 里的 9 个 POST 端点`、`清单 765 个文件，已扫描 755 个文本文件`。**下限只卡少扫、不卡多扫**：加文件永远不用改这里，真要删掉一批得改数并在提交信息里说清楚。
+- 落地时纠正的一处顺序：`check:secrets` 的下限原本在扫描**之前**就 `process.exit(1)`，于是一次清单变短会把同一轮真找到的凭据盖住——改成凭据先报、范围后报、最后一起退 1。它的 CLI 用例跑的是临时 git 仓（1 个文件，天然过不了真实下限），加 `--min-files 1` 放行，CI 与 `npm run check:secrets` 都不带这个参数；`--min-files 0` 会被下限校验抛错（实测退出码 1），所以这不是一条能把门禁调成静默的口子。
+- 文档转述也按 R16.34 钉住：ops.md 那五行写了「低于下限 N 就失败」，`scan-floor-claims.test.mjs` 把每处数字对回脚本常量——为此四个下限常量要 `export`，而核对**取源码文本的正则**、不 import 那些脚本（它们是 CLI，模块顶层就跑完整轮扫描）。第三条件用例专门盯「把 400 改成措辞」这种绕过：改了就判 `NaN` 而不是静默跳过。
+- 核查中另有两条候选**不成立**，记下来免得下次重复怀疑：`check:ai-copy` 读的是钉死的几个文件，文件不见时 `readFileSync` 直接抛；`check:localized-labels` 的 `tsxFiles` 没有 `existsSync` 兜底，`src/` 不见时 `readdirSync` 当场报错。两条都是「扫不到就红」，不需要下限。`.next` 那一系（`check:links` / `check:seo-surface` / `check:structured-data`）本轮**没动**：它们的分母随内容增减而变，`check:links` 也已经有「缺构建产物就失败」，要给页数定下限得先有「一次构建该出多少页」的主人——这条留在 R16.83 的说明里，不是漏掉了。
+- 验证（全部在最后一个提交之后跑）：`npm test` **299 文件 / 2931 条**绿（基线 297 / 2916，本轮 +2 文件 +15 条：`scan-floor-lib` 5、`scan-floor-claims` 3、`db-assertion-counts` +4、`request-body-bounds` +2、`secret-scan` CLI +1）；`test:coverage` 同数绿且四项**只升**：语句 95.61%（原 95.51）· 分支 91.14%（原 91.04）· 函数 95.5%（原 95.31）· 行 97.57%（原 97.49），阈值 84 / 77 / 83 / 87 未动；`lint --max-warnings=0`、`typecheck` 退出码 0；本轮无 `src/` 变更，故未重跑 build / 产物门禁 / e2e（CI 在 PR 上把整条流水线连同构建产物那一批跑完，绿了才合并），但 `check:docs`、`check:report-freshness`（17 份 · 过期 0 · 未提交 0）、`check:dead-copy`、`check:constitution`、`check:kb-en-content`、`check:frontmatter`、`check:secrets`、`check:request-body-bounds`、`check:db-assertion-counts` 逐条复跑为绿。
+- 变异核对八组，每组红在它该红的那一行：KB 路径打错 → 「知识库根目录不存在」退出 1；`MIN_KB_FILES` 400→500 → 「只扫到 419 个，下限 500 个（少 81）」；`MIN_LOCALE_FILES` 200→250 → en/zh 各报一行；`MIN_LISTED_FILES` 700→800 → 「只扫到 764 个」；`MIN_ROUTE_FILES` 11→20 → 退出 1；`AUDITED_DOCS` 里那篇 roadmap 改名 → 「只扫到 1 个，下限 2 个」并点名缺席的那篇；脚本下限 400→405 而不动文档 → 转述核对红在「文档写 400，脚本是 405」；`AUDITED_DOCS` 加第三篇 → 红在「文档写 2，脚本是 3」。
+- 踩到一次工具形状，值得记：`export` 关键字是**提交之后**加的，于是用 `git checkout -- <file>` 还原变异时把 `export` 一起还原了，后面两组探针红在「找不到常量」而不是它们该红的判据——还原的目标是当前提交的形状，探针做完先 `git diff --stat` 看一眼再信结果；这一批改成用反向 `sed` 撤销探针编辑，撤销后立刻复跑一次确认回到绿。
+- 阻塞 / 风险：无迁移、无存储格式变化、无 `src/` 变更。风险是**下限偏紧**带来的维护摩擦：上游 kline-buty 若真删一批课文，`check:frontmatter` 会红并要求有人显式承认——这是设计意图，不是缺陷，但下一次内容收敛时不要把它当成门禁坏了。`scripts/check-*.mjs` 里的 `--min-files` 是 `check:secrets` 独有的放行口子，只影响那个夹具测试。
+- 下一项：#286 等 CI 两项必需检查绿后 rebase 合并；之后有两条可执行的路——①把「相对上一次入库快照不减」的口径搬给 `.next` 那一系（先给「一次构建该出多少页」找个主人，否则只是把常数抄进另一处）；②回到 R16.78 那一路的收尾：`check:dead-copy` 的两个上限（`budget` / `dictFieldBudget` 各 0）现在还是常数，把「扫到的字段总数」也改成相对快照不减。待拍板清单不变：R15.2 / R16.7 / R16.10–R16.12 / R16.16 / R16.41 / R16.47 / R16.52 / R16.58 / R16.60 / R16.64（#101 即 R16.64 的三个窗口口径）。
+- 更新时间：2026-09-24 14:42（Asia/Shanghai）。
