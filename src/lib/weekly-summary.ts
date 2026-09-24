@@ -4,11 +4,16 @@
  * 设计约束：
  * - 摘要完全本地生成：输入是既有台账/账本读数，不联网、不虚构日期；
  * - 周 = 今天在内向前 7 个自然日（与 WeeklyReport 图表、study-time 台账口径一致）；
+ *   这个 7 是 `WEEK_WINDOW_DAYS`，界面上写「近 7 天」的那几句必须由它生成——
+ *   「本周 / this week」是日历周，滚动窗口不配叫这个名字（R16.129）；
  * - 周目标档位制（45/90/150 分钟，默认 90），存储 key 独立于日目标；
  * - 「已达成」只基于真实的最近 7 天分钟数，绝不放松口径凑数。
  */
 
 import { localDateStr } from "./date-utils";
+
+/** 滚动窗口长度（含今天）：摘要、周目标、柱状图共用这一个数 */
+export const WEEK_WINDOW_DAYS = 7;
 
 export const WEEKLY_GOAL_TIERS = [45, 90, 150] as const;
 export const DEFAULT_WEEKLY_GOAL_MIN = 90;
@@ -81,10 +86,10 @@ export function weekMinutes(totalSeconds: number): number {
   return Math.floor((Number.isFinite(totalSeconds) ? totalSeconds : 0) / 60);
 }
 
-/** 本地日期边界（含端点）：近 7 个自然日的 [6 天前, 今天] */
+/** 本地日期边界（含端点）：近 `WEEK_WINDOW_DAYS` 个自然日的 [窗口首日, 今天] */
 function weekBounds(now: Date): { startStr: string; endStr: string } {
   const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
-  const start = new Date(end.getTime() - 6 * DAY_MS);
+  const start = new Date(end.getTime() - (WEEK_WINDOW_DAYS - 1) * DAY_MS);
   return { startStr: localDateStr(start), endStr: localDateStr(end) };
 }
 
@@ -103,7 +108,7 @@ function countInRange(values: { at?: unknown }[], startStr: string, endStr: stri
 export function buildWeeklySummary(input: WeeklySummaryInput): WeeklySummary {
   const now = input.now ?? new Date();
   const { startStr, endStr } = weekBounds(now);
-  const daily = (input.dailySeconds ?? []).map((s) => (Number.isFinite(s) && s > 0 ? s : 0)).slice(-7);
+  const daily = (input.dailySeconds ?? []).map((s) => (Number.isFinite(s) && s > 0 ? s : 0)).slice(-WEEK_WINDOW_DAYS);
   const totalSeconds = daily.reduce((a, b) => a + b, 0);
   const totalMinutes = weekMinutes(totalSeconds);
   const goalMin = (WEEKLY_GOAL_TIERS as readonly number[]).includes(input.weeklyGoalMin)
