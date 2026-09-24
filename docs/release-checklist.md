@@ -55,11 +55,27 @@ npm run check:seo-surface
 npm run check:search-index
 npm run check:structured-data
 npm run check:risk-warning
+# 报告台账：先跑 producers，再核对新鲜度——顺序反了等于没核对（R16.26）
+npm run kb:inventory
+npm run kb:gap-priority
+npm run kb:accept
+npm run check:title-terminology
+npm run check:description-quality
+npm run check:description-dupes
+npm run check:glossary
+npm run check:test-clock-hygiene
+npm run check:dead-copy
+npm run ops:faq-candidates
+npm run check:report-freshness
 npm run check:constitution
 npm run check:docs
 npm run db:test
 npm run e2e               # 放最后
 ```
+
+`kb:translation-status` 与 `kb:diff` **不在**这份序列里：它们是按日追加的历史快照，日期本身就是数据，
+跑一次就多一条当天记录，而 `check:report-freshness` 的口径（`docs/*.md|json` 那 17 份幂等台账）
+不含它们。
 
 判据：无随机红灯、`git status` 干净（报告类产物内容未变时不得产生纯日期 diff）、
 无需要人工判断的顺序耦合。
@@ -122,3 +138,10 @@ npm run ops:smoke-prod   # 默认打 https://trade-buty.vercel.app，逐条打�
 - `docs/progress.md` 为追加式长文件，多分支并行时 rebase 必然冲突；解决时**两侧都保留**，
   新条目放文件末尾。
 - Vercel 构建配额（24h）耗尽时 PR 上的 Vercel 检查会红，但它不是必需检查，不阻塞合并。
+- 新增或删除测试文件会让 `docs/test-clock-hygiene.md` 里那行「扫描测试文件：N 个」过期，而
+  本地把 `check:report-freshness` 当成重算核对时**看不出来**：它比的是工作区与 HEAD，
+  生成步骤没跑过就一直报漂移 0（#286 就是这么在 CI 上红了一次——本地全绿，CI 的巡检步骤先把
+  文件重写才发现 296 → 298）。按 §3 的顺序跑 producers 再核对，才是这条门禁真正判的东西。
+- 跑完 §3 那串之后，`git checkout -- docs/translation-status.md docs/translation-history.json`
+  是必要的善后：只要手滑跑过 `kb:translation-status`，它就会按日追加一条当天快照（日期是它的
+  数据，不属于幂等台账，不该进发布提交）。
