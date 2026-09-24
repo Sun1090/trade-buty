@@ -194,3 +194,36 @@ describe("统计页那一屏的卡片名互不重名", () => {
     expect(zh.replayTrendRounds).not.toBe(zh.replay);
   });
 });
+
+/**
+ * R16.177：`{dueToday}/{pending}` 那一格以前只报一个名字「待复习」。
+ * 分子这个量在仓库里早就有统一叫法——R16.4 把复习页、统计页、断签提醒卡的
+ * 「今日到期」并成同一把尺子（`review-client.tsx:114-115` 的注释就写着「与统计页
+ * 『今日到期』…同一把尺子」），英文侧同一屏说的是 "due now"。统计页却另起一个词，
+ * 而且分母（整本错题）从头到尾没有人点过名：读到「待复习 12/40」的人会以为 40 也是待复习。
+ */
+describe("一个分数的两头都要有名字，且不许给已有的量另起一名", () => {
+  for (const locale of ["zh", "en"] as const) {
+    it(`${locale}：这一格点名分子与分母`, () => {
+      const label = STATS_DICTS[locale].reviewTrendDue;
+      expect(label, `「${label}」只报了一头`).toContain("/");
+      const [numerator, denominator] = label.split("/").map((s) => s.trim());
+      expect(numerator.length).toBeGreaterThan(0);
+      expect(denominator.length).toBeGreaterThan(0);
+      if (locale === "zh") {
+        // 分子必须沿用复习页那个词，不许再发明一个「待复习」
+        expect(numerator).toBe("今日到期");
+        expect(denominator).toContain("错题");
+      } else {
+        expect(numerator.toLowerCase()).toContain("due now");
+        expect(denominator.toLowerCase()).toMatch(/wrong/);
+      }
+    });
+  }
+
+  it("旧写法过不了这条门禁（对照，证明上面不是在比空集）", () => {
+    for (const legacy of ["待复习", "Due now"]) {
+      expect(legacy).not.toContain("/");
+    }
+  });
+});

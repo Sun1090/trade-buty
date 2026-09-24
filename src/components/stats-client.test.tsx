@@ -90,7 +90,7 @@ const dict: StatsDict = {
   reviewTrendReviews: "Reviews",
   reviewTrendAccuracy: "Accuracy in range",
   reviewTrendMastered: "Mastered in range",
-  reviewTrendDue: "Due now",
+  reviewTrendDue: "Due now / wrong answers",
   reviewNoDates: "No review dates",
   recoveryTitle: "Breaks happen",
   recoveryBodyTpl: "Streak restarted (longest: {n})",
