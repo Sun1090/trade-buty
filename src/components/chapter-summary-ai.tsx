@@ -79,8 +79,6 @@ export function ChapterSummaryAi({
     }
   }
 
-  if (failed && !summary) return null;
-
   return (
     <div className="mt-8 rounded-2xl border border-[var(--accent)]/30 bg-gradient-to-br from-[var(--accent-dim)] to-transparent p-6">
       <div className="flex items-center justify-between gap-3 mb-3">
@@ -96,6 +94,16 @@ export function ChapterSummaryAi({
         )}
       </div>
       {summary && <p className="text-sm text-muted leading-relaxed">{summary}</p>}
+      {/*
+        R3.6 原本的做法是失败就把整张卡片卸掉。R16.54 在 AI 出题那边改了口径：
+        「生成失败后按钮也不再消失，可以直接重试」。这里跟上同一条口径——
+        点了按钮转一下就没影，用户分不清是成了、没了、还是坏了。
+      */}
+      {failed && !summary && (
+        <p role="status" className="text-xs text-down">
+          {dict.error}
+        </p>
+      )}
     </div>
   );
 }
