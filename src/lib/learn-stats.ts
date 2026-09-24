@@ -129,22 +129,28 @@ export function aggregateStats(chapters: { slug: string; docCount: number }[]): 
 export interface Badge {
   id: string;
   icon: string;
-  name: string;
-  desc: string;
+  /**
+   * 名称与条件都是界面文字，必须按语言取值：徽章是从 `src/lib` 里的数据数组渲染出来的，
+   * 写死中文不会被「写死单一语言的界面文案」那道门禁（它扫 JSX 属性与文本节点）看到。
+   * 类型收成 `{ zh, en }` 之后，少写一边就是编译错误，不靠巡检。
+   */
+  name: { zh: string; en: string };
+  desc: { zh: string; en: string };
   check: (stats: LearnStats) => boolean;
 }
 
 export const BADGES: Badge[] = [
-  { id: "first-step", icon: "🚀", name: "第一步", desc: "完成第一篇课程", check: (s) => s.readDocs >= 1 },
-  { id: "chapter-done", icon: "📖", name: "章节完成者", desc: "完成第一个篇章", check: (s) => s.doneChapters >= 1 },
-  { id: "quiz-master", icon: "✏️", name: "测验达人", desc: "完成 5 章测验", check: (s) => s.quizzesDone >= 5 },
-  { id: "replay-rookie", icon: "⏮", name: "回放新手", desc: "完成首次回放训练", check: (s) => s.replayRounds >= 1 },
-  { id: "streak-3", icon: "🔥", name: "三日连击", desc: "连续学习 3 天", check: (s) => s.longestStreak >= 3 },
-  { id: "streak-7", icon: "💎", name: "七日坚持", desc: "连续学习 7 天", check: (s) => s.longestStreak >= 7 },
-  { id: "streak-30", icon: "👑", name: "月度王者", desc: "连续学习 30 天", check: (s) => s.longestStreak >= 30 },
-  { id: "halfway", icon: "🎯", name: "过半", desc: "完成 50% 课程", check: (s) => s.overallPct >= 50 },
-  { id: "wrongbook-empty", icon: "🧹", name: "清空错题", desc: "错题本清零", check: (s) => s.readDocs > 0 && s.currentWrong === 0 },
-  { id: "replay-streak-5", icon: "⚡", name: "回放连击王", desc: "回放最佳连击 5+", check: (s) => s.replayBest >= 5 },
+  { id: "first-step", icon: "🚀", name: { zh: "第一步", en: "First step" }, desc: { zh: "完成第一篇课程", en: "Complete your first lesson" }, check: (s) => s.readDocs >= 1 },
+  { id: "chapter-done", icon: "📖", name: { zh: "章节完成者", en: "Chapter finisher" }, desc: { zh: "完成第一个篇章", en: "Complete your first chapter" }, check: (s) => s.doneChapters >= 1 },
+  { id: "quiz-master", icon: "✏️", name: { zh: "测验达人", en: "Quiz regular" }, desc: { zh: "完成 5 章测验", en: "Complete 5 chapter quizzes" }, check: (s) => s.quizzesDone >= 5 },
+  { id: "replay-rookie", icon: "⏮", name: { zh: "回放新手", en: "Replay rookie" }, desc: { zh: "完成首次回放训练", en: "Finish your first replay round" }, check: (s) => s.replayRounds >= 1 },
+  { id: "streak-3", icon: "🔥", name: { zh: "三日连击", en: "3-day streak" }, desc: { zh: "连续学习 3 天", en: "Study 3 days in a row" }, check: (s) => s.longestStreak >= 3 },
+  { id: "streak-7", icon: "💎", name: { zh: "七日坚持", en: "7-day streak" }, desc: { zh: "连续学习 7 天", en: "Study 7 days in a row" }, check: (s) => s.longestStreak >= 7 },
+  { id: "streak-30", icon: "👑", name: { zh: "月度王者", en: "30-day streak" }, desc: { zh: "连续学习 30 天", en: "Study 30 days in a row" }, check: (s) => s.longestStreak >= 30 },
+  { id: "halfway", icon: "🎯", name: { zh: "过半", en: "Halfway there" }, desc: { zh: "完成 50% 课程", en: "Complete 50% of the lessons" }, check: (s) => s.overallPct >= 50 },
+  // 条件里没有任何「曾经有过错题」的历史：读得够多、一道没错同样满足，所以名字只能说「此刻是空的」
+  { id: "wrongbook-empty", icon: "🧹", name: { zh: "没错题", en: "Clean sheet" }, desc: { zh: "读过课文，且错题本此刻是空的", en: "You have read lessons and your wrongbook is empty right now" }, check: (s) => s.readDocs > 0 && s.currentWrong === 0 },
+  { id: "replay-streak-5", icon: "⚡", name: { zh: "回放连击王", en: "Replay streaker" }, desc: { zh: "回放最佳连击 5+", en: "Best replay streak of 5+" }, check: (s) => s.replayBest >= 5 },
 ];
 
 /** 获取已解锁徽章 */
