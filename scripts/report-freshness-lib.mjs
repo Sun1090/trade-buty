@@ -26,9 +26,16 @@ function scanReportPaths(sources) {
   const pairs = [];
   for (const { file, source } of sources ?? []) {
     if (!WRITE_REPORT.test(String(source))) continue;
-    for (const match of String(source).matchAll(DOCS_PATH)) {
-      const tail = match[1] ?? match[2];
-      if (tail) pairs.push({ file, path: `docs/${tail.replace(/^\/+/, "")}` });
+    // 逐行扫，跳过注释行：`DOCS_PATH` 认的是字面形状，而形状这种东西注释里也会出现——
+    // 实测一次「在注释里解释这个形状怎么写」就把 `docs/…` 这样一个不存在的报告登记进了清单
+    // （清单是从源码里推导的，没人手写，所以多出来的那一条只能靠漂移报错才被发现）。
+    for (const line of String(source).split("\n")) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) continue;
+      for (const match of line.matchAll(DOCS_PATH)) {
+        const tail = match[1] ?? match[2];
+        if (tail) pairs.push({ file, path: `docs/${tail.replace(/^\/+/, "")}` });
+      }
     }
   }
   return pairs;

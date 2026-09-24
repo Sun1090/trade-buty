@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "./error-report-privacy.mjs";
-import { scanFloorViolation } from "./scan-floor-lib.mjs";
+import { scanFloorViolation, recordScanCount } from "./scan-floor-lib.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -85,6 +85,7 @@ export function run({
   }
   const files = collectRouteFiles(apiDir);
   const shrunk = scanFloorViolation({ count: files.length, floor: minRouteFiles, what: "route.ts 接口文件" });
+  recordScanCount({ key: "api-route-files", count: files.length, floor: minRouteFiles, what: "route.ts 接口文件" });
   if (shrunk) {
     error(`request body bound audit failed: ${shrunk}`);
     exit(1);

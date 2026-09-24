@@ -9,7 +9,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { scanText } from "./secret-scan-lib.mjs";
-import { scanFloorViolation } from "./scan-floor-lib.mjs";
+import { scanFloorViolation, recordScanCount } from "./scan-floor-lib.mjs";
 
 /** 实测（2026-09-24）git ls-files 列出 764 个文件；低于此只能是被扫的东西不见了，不是仓库瘦了两成。 */
 export const MIN_LISTED_FILES = 700;
@@ -29,6 +29,7 @@ const listed = execFileSync(
 const files = listed.toString("utf8").split("\0").filter(Boolean);
 
 const shrunk = scanFloorViolation({ count: files.length, floor: minListedFiles, what: "git 列出的待扫文件" });
+recordScanCount({ key: "secrets-listed-files", count: files.length, floor: minListedFiles, what: "git 列出的待扫文件" });
 
 const findings = [];
 let scanned = 0;

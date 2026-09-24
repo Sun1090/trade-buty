@@ -15,7 +15,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { scanFloorViolation } from "./scan-floor-lib.mjs";
+import { scanFloorViolation, recordScanCount } from "./scan-floor-lib.mjs";
 
 /** 现行文档（会被引用的那几篇）；progress.md 是历史记录，不参与对账 */
 export const AUDITED_DOCS = ["docs/database-testing.md", "docs/roadmap.md"];
@@ -88,6 +88,12 @@ export function run({ root = process.cwd(), log = console.log, exit = (code) => 
 
   const absent = AUDITED_DOCS.filter((f) => !fs.existsSync(path.join(root, f)));
   const shrunk = scanFloorViolation({
+    count: AUDITED_DOCS.length - absent.length,
+    floor: AUDITED_DOCS.length,
+    what: "对账用的现行文档",
+  });
+  recordScanCount({
+    key: "db-audited-docs",
     count: AUDITED_DOCS.length - absent.length,
     floor: AUDITED_DOCS.length,
     what: "对账用的现行文档",

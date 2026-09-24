@@ -29,6 +29,7 @@
     "check:dead-copy": "node scripts/check-dead-copy.mjs",
     "check:localized-labels": "node scripts/check-localized-labels.mjs",
     "check:report-freshness": "node scripts/check-report-freshness.mjs",
+    "check:scan-counts": "node scripts/check-scan-counts.mjs",
     "check:db-assertion-counts": "node scripts/db-assertion-counts.mjs",
     "check:docs": "node scripts/check-docs-consistency.mjs",
     "check:lockfile-repro": "node scripts/check-lockfile-reproducibility.mjs",

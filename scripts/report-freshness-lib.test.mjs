@@ -35,6 +35,18 @@ describe("collectReportInventory", () => {
     expect(collectReportInventory([{ file: "c.mjs", source: RAW_WRITE }])).toEqual([]);
     expect(collectReportInventory(undefined)).toEqual([]);
   });
+
+  it("注释里出现那个字面形状不算一份报告", () => {
+    // 实测踩过的形状：在注释里解释「落盘路径要写成 path.join(root, "docs/…")」，
+    // 于是清单里多出一个叫 `docs/…` 的幽灵报告——没人写得出来的那种。
+    const commented = `
+// 落盘路径写成 path.join(root, "docs/phantom.md") 的字面形状才会被推导到。
+/** 另一种写法：path.join(root, "docs/phantom2.md") */
+ * 第三种：path.join(root, "docs/phantom3.md")
+writeReport(path.join(root, "docs/real.md"), body);
+`;
+    expect(collectReportInventory([{ file: "d.mjs", source: commented }])).toEqual(["docs/real.md"]);
+  });
 });
 
 describe("collectReportProducers", () => {
