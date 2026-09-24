@@ -48,6 +48,7 @@ import { useAuth } from "@/components/auth-provider";
 import { effectiveSrs, isSrsDue } from "@/lib/srs";
 import { localDateStr } from "@/lib/date-utils";
 import { readReplayHistory, readReplayBest } from "@/lib/replay-store";
+import { REPLAY_HISTORY_KEEP } from "@/lib/replay-history-limit";
 import { readProgressCompletions } from "@/lib/progress";
 import { knowledgeHref } from "@/lib/hrefs";
 import { readQuizAttemptLedger } from "@/lib/quiz-attempt-ledger";
@@ -435,7 +436,10 @@ export function StatsClient({
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
             <dt className="text-xs text-faint">{dict.overviewReplay}</dt>
             <dd className="mt-2 font-mono text-2xl font-bold">{overview.replay.rounds}</dd>
-            <dd className="mt-1 text-xs text-muted">{overview.replay.accuracyPct === null ? "—" : `${overview.replay.accuracyPct}%`}</dd>
+            <dd className="mt-1 text-xs text-muted">
+              {overview.replay.accuracyPct === null ? "—" : `${overview.replay.accuracyPct}%`}
+              {` · ${dict.replayScopeShort.replace("{n}", String(REPLAY_HISTORY_KEEP))}`}
+            </dd>
           </div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
             <dt className="text-xs text-faint">{dict.overviewTime}</dt>
@@ -652,6 +656,10 @@ export function StatsClient({
         <StatCard value={`${stats.quizzesDone}/${stats.totalQuizzes}`} label={dict.quizzes} />
         <StatCard value={stats.replayRounds} label={dict.replay} />
       </div>
+      {/* 这一格与下面的「回放 准确率」都读 `readReplayHistory()`，而那份台账写入时就被
+          `REPLAY_HISTORY_KEEP` 裁到最近 100 轮（回放页早就写着这件事）。不说明，用户做到
+          第 101 轮会看到两个数字一起停在原处，以为它们坏了。 */}
+      <p className="mt-2 text-xs text-faint">{dict.replayScopeTpl.replace("{n}", String(REPLAY_HISTORY_KEEP))}</p>
 
       {/* R12.12：版本化数据导出（本地生成，不上传） */}
       <section aria-labelledby="stats-export-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 flex flex-wrap items-center justify-between gap-3">

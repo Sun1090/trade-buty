@@ -6,9 +6,14 @@
  * 旁边那张「最佳连击」走的是另一把尺子：它读独立的 `tb-replay-best`，只增不减、
  * 从不随窗口裁掉（R16.64）——所以脚注必须把两种窗口分别点名，不然修正前两句
  * 会把这张卡也说成 100 轮之内。
+ *
+ * R16.128 把同一个检查推到 `/stats`：那张仪表盘上的「回放轮数」「回放 准确率」和
+ * 学习概览的「回放训练」读的是**同一个** `readReplayHistory()`，此前整页没有一处
+ * 提到 100 轮的天花板——回放页早就写了，统计页没写。
  */
 import { describe, expect, it } from "vitest";
 import { getDict } from "@/lib/i18n";
+import { STATS_DICTS } from "@/lib/i18n-stats";
 import { REPLAY_HISTORY_KEEP } from "@/lib/replay-history-limit";
 import { REPLAY_TREND_POINTS } from "@/components/replay-trend";
 
@@ -44,6 +49,34 @@ describe("回放训练记录的口径", () => {
       expect(rendered).not.toContain("{n}");
       // 三个窗口必须是三句话，不能合并成一句「以上都只统计最近 N 轮」
       expect(replay.trendScopeTpl).not.toBe(replay.histScopeTpl);
+    });
+  }
+});
+
+/**
+ * R16.128：统计页那三处回放数走的是同一个被裁过的台账。
+ *
+ * 「回放轮数」「回放 准确率」（详细统计栅格）与学习概览的「回放训练」都来自
+ * `aggregateStats()` 里的 `readReplayHistory()`——同一条 100 轮的天花板。旁边那格
+ * 「最佳连击」不在这三处里：它读 `readReplayBest()`（`tb-replay-best` 只增不减）。
+ */
+describe("统计页的回放数也交代自己的窗口", () => {
+  for (const locale of ["zh", "en"] as const) {
+    const dict = STATS_DICTS[locale];
+
+    it(`${locale}: 两句话都把窗口写成常量代入的 {n}`, () => {
+      for (const key of ["replayScopeTpl", "replayScopeShort"] as const) {
+        expect(dict[key], `${key} 没有 {n} 就会和 REPLAY_HISTORY_KEEP 脱钩`).toContain("{n}");
+        const rendered = dict[key].replace("{n}", String(REPLAY_HISTORY_KEEP));
+        expect(rendered).toContain(String(REPLAY_HISTORY_KEEP));
+        expect(rendered).not.toContain("{n}");
+      }
+    });
+
+    it(`${locale}: 这两张卡的标签自己不许宣称全量`, () => {
+      for (const label of [dict.replay, `${dict.replay} ${dict.accuracy}`]) {
+        expect(label.match(ALL_TIME_RE), `「${label}」在承诺全量，而台账只留最近 ${REPLAY_HISTORY_KEEP} 轮`).toBeNull();
+      }
     });
   }
 });

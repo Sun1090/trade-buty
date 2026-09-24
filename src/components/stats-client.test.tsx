@@ -4,6 +4,7 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { StatsClient } from "./stats-client";
 import { QUIZZES } from "@/lib/quizzes";
 import { STATS_DICTS, type StatsDict } from "@/lib/i18n-stats";
+import { REPLAY_HISTORY_KEEP } from "@/lib/replay-history-limit";
 import { enqueueWrite } from "@/lib/sync-queue-store";
 
 const store = new Map<string, string>();
@@ -595,6 +596,34 @@ describe("StatsClient weekly summary card (R12.19/R12.20)", () => {
     localStorage.setItem("tb-study-time", JSON.stringify({ [todayDateStr()]: { read: 60 * 60 } }));
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
     expect(await screen.findByText("7-day goal achieved 🎉")).toBeInTheDocument();
+  });
+});
+
+/**
+ * R16.128：统计页那几格回放数走的是被 `REPLAY_HISTORY_KEEP` 裁过的台账，
+ * 窗口必须印在数旁边。断言读的是字典代入常量后的结果，不是抄一份字符串——
+ * 常量一改，抄的那份就会自己变成假话。
+ */
+describe("StatsClient 把回放数的窗口印在数旁边", () => {
+  it("学习概览那格与详细统计栅格那条脚注都在页面上", async () => {
+    store.set(
+      "tb-replay-history",
+      JSON.stringify([
+        { at: new Date(`${todayDateStr()}T12:00:00`).getTime(), symbol: "BTCUSDT", interval: "1h", total: 10, correct: 7, bestStreak: 3, durationSec: 300 },
+      ]),
+    );
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    await screen.findByText("Learning overview");
+
+    const window = String(REPLAY_HISTORY_KEEP);
+    const scopeShort = dict.replayScopeShort.replace("{n}", window);
+    const scopeTpl = dict.replayScopeTpl.replace("{n}", window);
+    expect(scopeShort, "窗口短语没代入常量，留着 {n} 就是没渲染").not.toContain("{n}");
+    const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // 栅格下面那条整句脚注
+    expect(screen.getByText(scopeTpl)).toBeInTheDocument();
+    // 概览那格：`…% · 最近 100 轮`（整句脚注也含这串字，所以按行尾定位那一格）
+    expect(screen.getByText(new RegExp(`${esc(scopeShort)}$`), { selector: "dd" })).toBeInTheDocument();
   });
 });
 
