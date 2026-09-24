@@ -15,7 +15,12 @@
  *
  * 不在 URL 里塞 7 天日期数组（太大，且 7 天日历是个人数据）——落地页的 streak 卡因此
  * **整块不画**日历：placeholder 会被读成「这一周什么都没学」，那是一句假话。
+ *
+ * 数值字段的口径：`percent` / `accuracyBps` 不进白名单直传，一律由分子分母重算。
+ * 链接是用户自报的输入，三个数各钳各的会互相打脸（`{score:0,total:10,percent:9999}`
+ * 曾经译成「0/10 · 200% · S 评级」），而站方编码时本来就是从两数算出百分比的。
  */
+import { quizScorePct } from "./quiz-score";
 
 export type ShareKind = "quiz" | "replay" | "streak";
 
@@ -23,7 +28,7 @@ export interface QuizPayload {
   chapterTitle: string;
   score: number;
   total: number;
-  /** 0–100，允许小数 */
+  /** 0–100 的整数，由 score/total 算出（解码时不采信链接里自带的那个值） */
   percent: number;
   locale: "zh" | "en";
 }
@@ -114,8 +119,8 @@ function sanitizeText(value: string, maxChars: number): string {
 const clampInt = (value: number, max: number): number =>
   !Number.isFinite(value) || value < 0 ? 0 : Math.min(max, Math.round(value));
 
-const clampPercent = (value: number): number =>
-  !Number.isFinite(value) ? 0 : Math.min(200, Math.max(0, value));
+/** 分子与分母各自钳过之后，再保证分子不超过分母（`0/0` 与负数都已归零） */
+const clampPart = (part: number, whole: number): number => Math.min(part, whole);
 
 const sanitizeLocale = (value: unknown): "zh" | "en" =>
   value === "en" ? "en" : "zh";
@@ -177,11 +182,16 @@ export function encodeStreak(p: StreakPayload): string {
 export function decodeQuiz(segment: string): QuizPayload | null {
   const x = unpack(segment);
   if (!isQuizPayload(x)) return null;
+  const total = clampInt(x.total, 100_000);
+  const score = clampPart(clampInt(x.score, 100_000), total);
   return {
     chapterTitle: sanitizeText(x.chapterTitle, 60),
-    score: clampInt(x.score, 100_000),
-    total: clampInt(x.total, 100_000),
-    percent: clampPercent(x.percent),
+    score,
+    total,
+    // 百分比只认 score/total 这一份算法（`@/lib/quiz-score` 是所有百分比的唯一主人）。
+    // 链接里的 percent 是自报的：写 9999 曾经能让落地页与 OG 图长出「S 评级 · 200%」，
+    // 而卡面的进度条按 200% 画，直接溢出血条。
+    percent: quizScorePct(score, total),
     locale: sanitizeLocale(x.locale),
   };
 }
@@ -189,12 +199,15 @@ export function decodeQuiz(segment: string): QuizPayload | null {
 export function decodeReplay(segment: string): ReplayPayload | null {
   const x = unpack(segment);
   if (!isReplayPayload(x)) return null;
+  const total = clampInt(x.total, 100_000);
+  const correct = clampPart(clampInt(x.correct, 100_000), total);
   return {
     symbol: sanitizeText(x.symbol, 16),
     interval: sanitizeText(x.interval, 8),
-    correct: clampInt(x.correct, 100_000),
-    total: clampInt(x.total, 100_000),
-    accuracyBps: clampInt(x.accuracyBps, 20_000),
+    correct,
+    total,
+    // 同上：万分比由命中的两数算出来，与 replay-trainer 编码时那一式一致
+    accuracyBps: total > 0 ? Math.round((correct / total) * 10_000) : 0,
     bestStreak: clampInt(x.bestStreak, 100_000),
     currentStreak: clampInt(x.currentStreak, 100_000),
     locale: sanitizeLocale(x.locale),

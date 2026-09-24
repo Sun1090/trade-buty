@@ -251,7 +251,30 @@ describe("decode whitelisting and sanitization (R13.3/R13.4)", () => {
     expect(decoded!.chapterTitle.length).toBe(60);
     expect(decoded!.chapterTitle).not.toMatch(/[]/);
     expect(decoded!.score).toBe(0);
-    expect(decoded!.percent).toBe(200); // 钳到上限（封顶上限，避免荒谬百分比把卡面画爆）
+    // percent 不再「钳到 200 了事」：它压根不来自链接，而是从 score/total 算出来的。
+    // 谎报的 9999 配上负数分数只能得到 0%——一个 0/10 的载荷长不出 S 评级。
+    expect(decoded!.percent).toBe(0);
+  });
+
+  it("分子超过分母时按分母封顶，百分比跟着回落", () => {
+    const decoded = decodeQuiz(encodeQuiz({ chapterTitle: "C", score: 30, total: 10, percent: 300, locale: "zh" }));
+    expect(decoded!.score).toBe(10);
+    expect(decoded!.percent).toBe(100);
+  });
+
+  it("回放的命中率同样只认 correct/total，谎报的 bps 一律不用", () => {
+    const decoded = decodeReplay(encodeReplay({
+      symbol: "BTCUSDT",
+      interval: "1h",
+      correct: 50,
+      total: 10,
+      accuracyBps: 20_000,
+      bestStreak: 4,
+      currentStreak: 2,
+      locale: "zh",
+    }));
+    expect(decoded!.correct).toBe(10);
+    expect(decoded!.accuracyBps).toBe(10_000);
   });
 
   it("replays strip foreign keys and clamp symbol/interval text", () => {
