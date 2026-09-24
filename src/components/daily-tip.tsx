@@ -20,7 +20,8 @@ export function DailyTip({
   }, [locale]);
 
   function refresh() {
-    setTip(getRandomTip(locale));
+    // 传当前这条进去：按钮说「换一条」，就不能抽回同一条
+    setTip((current) => getRandomTip(locale, current));
   }
 
   return (
