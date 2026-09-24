@@ -139,6 +139,18 @@ test.describe("R13.24 双语全站核心路由", () => {
 });
 
 test.describe("R13.24 搜索与书签闭环", () => {
+  /**
+   * 每个语言页都在 locale 布局里嵌了 `SearchAction`（`/search?q={search_term_string}`），
+   * 搜索引擎据此送来的就是这种链接。`search-client.test.tsx` 那条只用夹具索引证明了
+   * 组件会读参数；这一条证明上线的那一帧也读——真的 1.8 MB 索引、真的水合。
+   */
+  test("?q= 深链落地就是已经搜好的结果页", async ({ page }) => {
+    await page.goto("/zh/search?q=%E5%B8%82%E4%BB%B7%E5%8D%95");
+    await expect(page.getByRole("searchbox")).toHaveValue("市价单");
+    await expect(page.locator('a[data-search-result-index="0"]')).toBeVisible();
+    await expect(page.getByText("没有匹配的结果")).toBeHidden();
+  });
+
   test("中文搜索命中课程，结果可跳转", async ({ page }) => {
     await page.goto("/zh/search");
     const searchbox = page.getByRole("searchbox");
