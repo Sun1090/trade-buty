@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { auditRequestBodyBounds, collectRouteFiles, run } from "./request-body-bounds.mjs";
+import { auditRequestBodyBounds, collectRouteFiles, MIN_ROUTE_FILES, run } from "./request-body-bounds.mjs";
 
 const POST_WITH_BOUND = `
 export const MAX_BODY_BYTES = 4_096;
@@ -91,12 +91,14 @@ export async function GET(req) {
       const logs = [];
       run({
         rootDir: root,
+        minRouteFiles: 1,
         log: (message) => logs.push(String(message)),
         error: () => undefined,
         exit: (value) => codes.push(value),
       });
       expect(codes).toEqual([]);
       expect(logs[0]).toContain("1 个 POST 端点");
+      expect(logs[0]).toContain("1 个 route.ts");
 
       fs.writeFileSync(
         path.join(routeDir, "route.ts"),
@@ -105,6 +107,7 @@ export async function GET(req) {
       const errors = [];
       run({
         rootDir: root,
+        minRouteFiles: 1,
         log: () => undefined,
         error: (message) => errors.push(String(message)),
         exit: (value) => codes.push(value),
@@ -116,12 +119,51 @@ export async function GET(req) {
     }
   });
 
-  it("api 目录不存在时扫到 0 个端点而不是崩掉", () => {
+  it("接口目录不存在时判失败，而不是「0 个端点全部合规」", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "request-body-bounds-empty-"));
     try {
+      const codes = [];
+      const errors = [];
+      run({
+        rootDir: root,
+        log: () => undefined,
+        error: (message) => errors.push(String(message)),
+        exit: (value) => codes.push(value),
+      });
+      expect(codes).toEqual([1]);
+      expect(errors.join("\n")).toContain("找不到接口目录");
+      // collectRouteFiles 本身仍然返回空数组——坏的是「空集合算通过」这件事，不是遍历
       expect(collectRouteFiles(path.join(root, "src/app/api"))).toEqual([]);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  it("扫到的路由少于下限时判失败，并把两个数都念出来", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "request-body-bounds-shrunk-"));
+    try {
+      const routeDir = path.join(root, "src/app/api/ai/demo");
+      fs.mkdirSync(routeDir, { recursive: true });
+      fs.writeFileSync(path.join(routeDir, "route.ts"), POST_WITH_BOUND);
+      const codes = [];
+      const errors = [];
+      run({
+        rootDir: root,
+        minRouteFiles: 5,
+        log: () => undefined,
+        error: (message) => errors.push(String(message)),
+        exit: (value) => codes.push(value),
+      });
+      expect(codes).toEqual([1]);
+      expect(errors.join("\n")).toContain("只扫到 1 个");
+      expect(errors.join("\n")).toContain("下限 5");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("仓库现状：route.ts 数量过得了 CLI 用的那个下限", () => {
+    const files = collectRouteFiles(path.join(path.resolve(process.cwd()), "src/app/api"));
+    expect(files.length).toBeGreaterThanOrEqual(MIN_ROUTE_FILES);
   });
 });

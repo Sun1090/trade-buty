@@ -2,9 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "./error-report-privacy.mjs";
+import { scanFloorViolation } from "./scan-floor-lib.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
+
+/** 实测（2026-09-24）src/app/api 下 12 个 route.ts。扫不到路由＝这道门禁整段没在跑。 */
+export const MIN_ROUTE_FILES = 11;
 
 /**
  * R15.4①：所有接收 JSON 请求体的端点都必须在**读流阶段**设字节上限。
@@ -13,6 +17,10 @@ const ROOT = path.resolve(HERE, "..");
  * 对象之后才跑的，所以「单条消息 8000 字符」这类上限挡不住一个几百 MB 的请求体。
  * 站内曾只有 `/api/error-reports` 做了有界读取，其余端点靠平台体积上限兜着。
  * 新增一个 `await req.json()` 只需一行，回归这条约定也只需一行，所以把它钉成检查。
+ *
+ * R16.83：`src/app/api` 被改名或整目录没读到时，这里原先打印
+ * 「passed: 0 个 POST 端点里没有一个绕过有界读取」——一次没跑的扫描长得和通过一样。
+ * 现在目录缺失、路由数不过下限都直接失败，通过的那行也把分母写出来。
  */
 
 /** 直接从请求对象上解析 JSON 的写法（绕过了有界读取）。 */
@@ -63,12 +71,25 @@ export function collectRouteFiles(apiDir) {
 
 export function run({
   rootDir = ROOT,
+  minRouteFiles = MIN_ROUTE_FILES,
   log = console.log.bind(console),
   error = console.error.bind(console),
   exit = process.exit,
 } = {}) {
   const apiDir = path.join(rootDir, "src/app/api");
+  if (!fs.existsSync(apiDir)) {
+    error(`request body bound audit failed: 找不到接口目录 ${apiDir}`);
+    error("- 一个路由都没扫到和所有路由都合规，过去打印的是同一句话。现在按失败处理。");
+    exit(1);
+    return;
+  }
   const files = collectRouteFiles(apiDir);
+  const shrunk = scanFloorViolation({ count: files.length, floor: minRouteFiles, what: "route.ts 接口文件" });
+  if (shrunk) {
+    error(`request body bound audit failed: ${shrunk}`);
+    exit(1);
+    return;
+  }
   const sources = Object.fromEntries(
     files.map((full) => [path.relative(rootDir, full), fs.readFileSync(full, "utf8")]),
   );
@@ -85,7 +106,7 @@ export function run({
     ([, src]) => src.includes("export async function POST"),
   ).length;
   log(
-    `request body bound audit passed: ${postRoutes} 个 POST 端点里没有一个绕过有界读取解析请求体`,
+    `request body bound audit passed: ${files.length} 个 route.ts 里的 ${postRoutes} 个 POST 端点没有一个绕过有界读取解析请求体`,
   );
 }
 

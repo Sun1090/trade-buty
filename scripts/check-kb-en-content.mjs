@@ -18,9 +18,12 @@ import {
   formatPercent,
   measureEnContent,
 } from "./en-content-lib.mjs";
+import { scanFloorViolation } from "./scan-floor-lib.mjs";
 
 const root = process.cwd();
 const KB = path.join(root, "content/kline-buty/docs/knowledge");
+/** 实测（2026-09-24）en 与 zh 两棵树各 209 个 md。树空了却仍判绿，等价于把「英文覆盖同一批课文」这句话收回。 */
+const MIN_LOCALE_FILES = 200;
 
 if (!fs.existsSync(KB)) {
   console.error("[en-content] 知识库缺失：请先 git submodule update --init");
@@ -62,6 +65,17 @@ console.log(
   `- 正文长度相对中文：下界 ${formatPercent(EN_VS_ZH_MIN_LENGTH_RATIO)}，实测最低 ${lowest}（${summary.lowestLengthFile ?? "无文件"}），越界 ${byKind("thin").length} 个`,
 );
 console.log(`- 空正文：${summary.emptyEnFiles} 个`);
+
+// R16.83：分母本身要过下限。en 树没拉下来时 filesByLocale 返回空 Map，
+// 「0 个文件、0 处越界」同样会一路走到绿色结论。
+const shrunk = [
+  scanFloorViolation({ count: summary.enFiles, floor: MIN_LOCALE_FILES, what: "en 树 md 文件" }),
+  scanFloorViolation({ count: summary.zhFiles, floor: MIN_LOCALE_FILES, what: "zh 树 md 文件" }),
+].filter(Boolean);
+if (shrunk.length > 0) {
+  for (const line of shrunk) console.error(`❌ ${line}`);
+  process.exit(1);
+}
 
 if (problems.length > 0) {
   console.error(`❌ 英文树内容不达标（${problems.length} 处）：`);

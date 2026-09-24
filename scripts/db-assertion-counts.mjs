@@ -7,10 +7,15 @@
  * `select plan(N)`。新增/删除断言时忘了改文档，这道门禁就红。
  *
  * 用法：npm run check:db-assertion-counts
+ *
+ * R16.83：`AUDITED_DOCS` 里哪篇文档被改名或删掉，原来的写法是 `filter(existsSync)`
+ * 悄悄少扫一篇——引用错位的那篇恰好不在场时照样判绿。现在声明要核对的文档必须都在，
+ * 少一篇就失败。
  */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { scanFloorViolation } from "./scan-floor-lib.mjs";
 
 /** 现行文档（会被引用的那几篇）；progress.md 是历史记录，不参与对账 */
 const AUDITED_DOCS = ["docs/database-testing.md", "docs/roadmap.md"];
@@ -70,13 +75,30 @@ export function auditDocCitations({ plans, docs }) {
 }
 
 export function run({ root = process.cwd(), log = console.log, exit = (code) => process.exit(code) } = {}) {
-  const plans = readPlanCounts(path.join(root, "supabase", "tests"));
+  const testDir = path.join(root, "supabase", "tests");
+  if (!fs.existsSync(testDir)) {
+    log(`db-assertion-counts: 找不到 pgTAP 目录 ${testDir}——扫不到测试时「没有不符」不含任何信息`);
+    return exit(1);
+  }
+  const plans = readPlanCounts(testDir);
   if (plans.size === 0) {
     log("db-assertion-counts: 没读到任何 pgTAP plan，检查 supabase/tests/ 是否存在");
     return exit(1);
   }
 
-  const docs = AUDITED_DOCS.filter((f) => fs.existsSync(path.join(root, f))).map((file) => ({
+  const absent = AUDITED_DOCS.filter((f) => !fs.existsSync(path.join(root, f)));
+  const shrunk = scanFloorViolation({
+    count: AUDITED_DOCS.length - absent.length,
+    floor: AUDITED_DOCS.length,
+    what: "对账用的现行文档",
+  });
+  if (shrunk) {
+    log(`db-assertion-counts: ${shrunk}`);
+    log(`  缺席的是：${absent.join("、")}——把文档改名或删掉不会让引用自动变对，只会让这道检查少看几篇。`);
+    return exit(1);
+  }
+
+  const docs = AUDITED_DOCS.map((file) => ({
     file,
     text: fs.readFileSync(path.join(root, file), "utf8"),
   }));
