@@ -6523,3 +6523,44 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 下一项：#101（R16.64 的三口径窗口，待拍板）与 #107（用实测的英文树 CJK 比例关掉 R16.13）；本批合并后
   删掉已被取代的本地分支 `fix-replay-degradation-claims` 与 `fix-replay-custom-new-round`（远端只留 PR 那一条）。
 - 更新时间：2026-09-24 09:05（Asia/Shanghai）。
+
+## 2026-09-24 — 图表交易对输入的三处失败回应（R16.70 / R16.71 / R16.72）
+
+- 版本 / 状态：**未发版**（生产仍是 0.7.14）。分支 `fix-chart-input-feedback`（从 `origin/main` = `e5abbc6` 切出，
+  #275 已 rebase 落地），三个提交：`1b57634`（R16.70 形状闸门 + R16.71 无效重试）、`671b6e4`（R16.72 CORS 分类）与本条台账。
+- 完成内容：
+  1. **R16.70**：自定义交易对输入框只有一条 `if`，形状不合法时**静默丢弃**——框里留着他打的 `DOGE`，图上还是
+     `BTCUSDT`，屏幕上没有一句话。这等于把 R16.14 修掉的「框与图不符」从另一条路径造回来。现在走
+     `rejectedSymbol` 状态 + `chart.customSymbolRejected`（zh `i18n.ts:122`、en `:511`）+ `<p role="status">`，
+     合法提交与点快捷按钮都会清掉它。
+  2. **R16.71**：`badSymbol` 状态原先与 `error` 共用一段覆盖层，挂着「重试」——它重发的是同一个必定 400 的请求。
+     现在只在 `displayStatus === "error"` 时渲染。
+  3. **R16.72（本批真正的收获）**：上面两条修的是说法，第三条发现**说法在浏览器里根本到不了**。
+     币安只在 2xx 上带 `access-control-allow-origin`（实测 200 有、400 一个都没有），跨源的非 2xx 被网络层挡掉，
+     `fetch` 直接 reject——R16.65 那套「400 + code -1121」的分类在真浏览器里一行都执行不到，用户打的币对不存在时
+     看到的仍然是「币安 API 可能不可达」。改法是换一条读得到的证据：抛错后（且非 abort）打一次币安 ping 端点，
+     它答了而 K 线没答就是「这个标的没有」，ping 也不答才是「不通」。
+- 变更文件：`src/components/kline-chart.tsx`、`src/components/kline-chart.test.tsx`、`src/components/chart-embed.tsx(.test.tsx)`、
+  `src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx`、`src/lib/i18n.ts`、`src/lib/binance.ts`、`src/lib/binance.test.ts`、
+  `src/app/[locale]/privacy/privacy-endpoints.test.ts`（说明里补一句扫描口径）、`docs/roadmap.md`（R16.70–R16.72 + 给 R16.65 追加漂移）、本条。
+- 验证：`binance.test.ts` **14 条**（+3）、`kline-chart.test.tsx` **38 条**（+2，原「非法时不切换」升级为带提示与留字三条断言）；
+  全量 `npm test` **296 文件 / 2880 条**绿（基线 `e5abbc6` 为 2875），`test:coverage`、`lint --max-warnings=0`、`typecheck` 干净；
+  新文案无占位符，`check:dead-copy` / `localized-labels` / `glossary` / `ai-copy` / `docs` / `report-freshness` / `constitution` 全绿；
+  `npm run build` 后按 CI 的顺序跑产物类门禁（mobile 14 页 · bundle 454 路由 · seo-surface · search-index · structured-data · risk-warning）全绿，最后 `npm run e2e` **160 条全绿**。
+  **真实浏览器复验**（Chromium 打本地生产构建，端口先确认无驻留服务、HTML 里的 BUILD_ID 与当场构建一致）：
+  ①输 `DOGE` 失焦 → 屏上是那句形状提示、图上仍是 `BTCUSDT`、320px 横向溢出 0px；②输 `ZZZZUSDT` 回车 →
+  请求序列 `klines(BTCUSDT) → klines(ZZZZUSDT) → ping`，覆盖层是「币安现货没有这个交易对」，「重试」个数 0、形状提示个数 0；
+  ③修复前的同一份构建、同一个输入，覆盖层是「行情加载失败，币安 API 可能不可达」且带一个可用的「重试」——这条对照才是 R16.72 的证据，
+  也是它为什么必须在浏览器里跑：单测桩掉 `fetch` 与 curl 都看得见 400，只有浏览器看不见。
+- 变异核对：R16.70 五组（撤 `<p>` → 三条红；`onBlur` 退回旧三行 → 三条红；合法分支不清提示 → 只红「改对形状之后重新提交」；
+  快捷按钮不清 → 只红「点快捷币对按钮也能撤掉」；文案写死进 JSX → `check:localized-labels` 判红）；
+  R16.71 一组（`displayStatus === "error"` 换成 `true` → 只红 badSymbol 那条）；
+  R16.72 两组（摘掉 ping 分支 → 只红「K 线被拒而 ping 答了」；摘掉 abort 守卫 → 只红「abort 时不多发一次请求」）。
+- 一次被门禁抓到：注释里写 ``` `/api/v3/ping` ``` 被 `privacy-endpoints.test.ts` 当成一条未披露的客户端接口调用（它扫源码文本、
+  不解析 AST）。不是误报——新增调用没上隐私页就该红；改法是注释不写那个形状，并把这条口径写进该文件说明。
+- 阻塞 / 风险：`ping` 只在失败路径上多发一次，成功路径零成本；R16.72 的判定是**推断**（同主机此刻应答了轻端点），
+  所以文案仍说「币安现货没有这个交易对」而不谎称读到了 `-1121`。回滚 = `git revert` 三个提交。
+  待拍板清单不变（R15.2 / R16.7 / R16.10–R16.13 / R16.16 / R16.41 / R16.47 / R16.52 / R16.58 / R16.60 / R16.64）。
+- 下一项：本批落地后进入 RELEASE_FREEZE（v0.7.15：☁ 徽标、跳末、趋势块、坏币对、24h 窗口、回放空窗口与「新一轮」、图表输入三处，本批落地时 `v0.7.14..HEAD` 共 24 个提交）；
+  随后是 #107（用实测的英文树 CJK 比例关掉 R16.13：27 章 / 182 课与中文逐一对齐，英文课时里 CJK 占比最高 0.61%，>2% 与 >10% 都是 0 篇）。
+- 更新时间：2026-09-24 09:55（Asia/Shanghai）。
