@@ -6668,3 +6668,18 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 回滚：`git revert` 本次发布提交即可（它只含发布记录、CHANGELOG、版本号与锁文件四个文件，不含代码）；要撤单项修复则 revert 对应的那个修复提交（R16.79–R16.82 与 R16.73–R16.78 都按表面分开成独立提交）。Vercel 也可把 Production 切回上一构建止血，随后仍用 revert 收敛历史。本次不含数据库迁移、无存储格式变化（`ReviewDict.intro` 是 TypeScript 接口字段，不落盘；`cloud-sync-meta` 的存储键与写法未动），回滚不涉数据回退。
 - 下一项：PR 合并 → 在 `main` 上补打 `v0.7.16` → `check:release-tag` 复绿 → 配额窗口允许时跑 `npm run ops:smoke-prod`（连同 #110 一起结）。随后开工 #113：把「少扫一批就要失败」这条搬到其余计数型门禁上——已核实的高危清单是 `check:frontmatter`（输入根缺失 → 0 文件 → 绿，且根本不打印数量）、`check:links`（0 页也报「无死链」）、`check:request-body-bounds`（`api/` 不存在 → 「passed: 0 个 POST 端点」）、`check:secrets`（`git ls-files` 空 → 「已扫描 0」绿）、`check:kb-en-content`（0 个 en 文件 → 0 问题 → 绿）、`check:db-assertion-counts`（文档存在性过滤后可为 0）。同一次核查里有两个**不成立**的怀疑已排除，别再照单修：`check:ai-copy` 扫的不是「29.4 KB 文件的前 17.6 KB」，那个 `};` 恰好就是 en 块自身的收尾；`check:localized-labels` 跳过的只有真正的注释行，不会像死键巡检那样被一行块注释整段缴械（它的属性匹配是逐行的，注释行本就不含属性）。
 - 更新时间：2026-09-24 13:55（Asia/Shanghai）。
+
+
+## 2026-09-24 — v0.7.16 合并、打 tag 与生产核对（0.7.15 已经上去了，0.7.16 还排在配额后面）
+
+- 状态：**已发布**。#284 以 rebase 合入 `main` = `be1e088`，附注 tag `v0.7.16` 指向同一提交并推送；`npm run check:release-tag` 复绿：20 条发布记录的 tag 全部落地（最新 0.7.16 → `v0.7.16`）。
+- 合并前 CI：`ci` 与 `db-tests` 两项必需检查绿（`gh run view 35962153826` → completed/success）；`Vercel` 检查红在 `Deployment rate limited — retry in 24 hours`，按 R14.9 与 `docs/release-checklist.md`「已知陷阱」它不是必需检查、不阻塞合并。
+- 生产核对（`npm run ops:smoke-prod`，打生产域）：**10 条里 8 绿 2 红**，两条红都不是站内回归——
+  - `/zh/changelog` 缺 0.7.16：最新 main 提交的 `Vercel` 状态就是配额限流，生产构建停在上一版（最近一次 Production 部署是 #282 的合并提交 `960663f`）。逐版实测：生产页里 **0.7.14 有、0.7.15 有、0.7.16 无**。配额不是全无敌——同一时刻 #284 的**预览**构建已经跑完（`Vercel … Deployment has completed`），只是 `main` 的生产构建还没排到；不为它重复空跑。
+  - 访客 AI 出题 502：护栏路径正常，按原处记（部署快照里的 `AI_API_URL` / `AI_MODEL` / `AI_API_KEY` 或出口网络）。
+- **顺带结掉 #110**：那条挂着的判据是「`/zh/changelog` 出现 0.7.15」，上面这次实测已经满足——0.7.15 那次撞配额停住的构建，在窗口清出来后自己跟上去了，不需要为它再触发任何构建。剩下的「0.7.16 还没上生产」是同一条限流规则的新一次命中，不需要新条目跟踪，下次发布冒烟会自然覆盖。
+- 变更文件：本条（`docs/progress.md`），无代码变更、无迁移。
+- 验证：`check:release-tag`、`check:docs` 绿；本轮不改代码，故不重跑构建与产物门禁。
+- 阻塞 / 风险：生产仍是旧构建直到配额窗口清出来（不改代码、不重复空跑触发）。回滚仍然是 `git revert` 发布提交，或把 Vercel Production 切回上一构建止血。
+- 下一项：#113——把「少扫一批就要失败」搬到其余计数型门禁。高危清单已逐条核实（`check:frontmatter` 在知识库根缺失时返回 0 文件并判绿，且这条与 `AGENTS.md`「缺少 content/kline-buty 必须明确报错而不是发空页」直接冲突；`check:links` 已有「缺 `.next` 就失败」但没有页数下限；`request-body-bounds` 在 `api/` 缺失时报「passed: 0 个 POST 端点」；`check:secrets` 空清单报「已扫描 0」为绿）。核查中另有两条**不成立**、已排除：`check:ai-copy` 的 `};` 恰是 en 块自身收尾（不是截断），`check:localized-labels` 跳过的只有真注释行（不会被块注释整段缴械）。
+- 更新时间：2026-09-24 14:10（Asia/Shanghai）。
