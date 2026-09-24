@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { DocMeta } from "@/lib/content";
 import { useLocalProgress } from "@/components/use-local-progress";
+import { readDocsInChapter } from "@/lib/learning-overview";
 
 export function DocList({
   metas,
@@ -25,8 +26,8 @@ export function DocList({
     );
   }
 
-  // 只数「这一章现在真有的课」：旧键（改课留下的）不在 metas 里，既不算已读也不会把进度顶过 100%
-  const readCount = metas.filter((m) => readSet.has(m.slug)).length;
+  // 只数「这一章现在真有的课」：旧键（改课留下的）既不算已读，也不会把进度顶过 100%
+  const readCount = readDocsInChapter(progress?.[chapterSlug], metas.map((m) => m.slug));
   const pct = Math.round((readCount / metas.length) * 100);
   const sorted = unreadFirst
     ? [...metas].sort((a, b) => {

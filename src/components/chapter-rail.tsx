@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useLocalProgress } from "@/components/use-local-progress";
+import { readDocsInChapter } from "@/lib/learning-overview";
 import { knowledgeHref } from "@/lib/hrefs";
 
 interface RailDict {
@@ -45,9 +46,9 @@ export function ChapterRail({
 }) {
   const progress = useLocalProgress();
   const readSet = new Set(progress?.[chapterSlug] ?? []);
-  // 只数本章现在真有的课：知识库改课后 localStorage 会留下旧 slug 的已读键，
-  // 按原始长度算会把进度顶过 100%，也和课文清单上的勾选对不上。
-  const readCount = docs.filter((d) => readSet.has(d.slug)).length;
+  // 只数本章现在真有的课（与课文清单同一个口径）：知识库改课后 localStorage 会留下旧 slug
+  // 的已读键，按原始长度算会把进度顶过 100%，也和清单上的勾选对不上。
+  const readCount = readDocsInChapter(progress?.[chapterSlug], docs.map((d) => d.slug));
   const pct = docCount > 0 ? Math.round((readCount / docCount) * 100) : 0;
   const done = readCount >= docCount && docCount > 0;
   const [showUnread, setShowUnread] = useState(false);
