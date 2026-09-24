@@ -134,6 +134,9 @@ const zh = {
     intervalLabel: "K 线周期",
     customSymbolLabel: "自定义交易对",
     customSymbolPlaceholder: "自定义",
+    chartNameTpl: "{symbol} 蜡烛图",
+    fullscreenEnter: "全屏",
+    fullscreenExit: "退出全屏",
   },
   ai: {
     label: "AI 助学",
@@ -524,6 +527,9 @@ const en: Dict = {
     intervalLabel: "Candle interval",
     customSymbolLabel: "Custom trading pair",
     customSymbolPlaceholder: "Custom",
+    chartNameTpl: "{symbol} candlestick chart",
+    fullscreenEnter: "Fullscreen",
+    fullscreenExit: "Exit fullscreen",
   },
   ai: {
     label: "AI Tutor",

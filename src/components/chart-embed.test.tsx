@@ -51,6 +51,7 @@ const dict: ChartEmbedDict = {
   intervalLabel: "周期",
   customSymbolLabel: "自定义",
   customSymbolPlaceholder: "BTCUSDT",
+  chartNameTpl: "{symbol} 蜡烛图",
   compactNote: "紧凑模式",
   fullNote: "完整模式",
   showFull: "展开",
