@@ -196,7 +196,7 @@ const zh = {
     label: "我的收藏",
     title: "收藏课程",
     subtitle: "你收藏的课程，快速回访。",
-    empty: "还没有收藏课程，去浏览课程时点击 ★ 收藏",
+    empty: "还没有收藏课程，去课程页点「收藏」（☆）就能收进来",
   },
   docTools: {
     toc: "本页目录",
@@ -596,7 +596,7 @@ const en: Dict = {
     label: "My Bookmarks",
     title: "Bookmarked Courses",
     subtitle: "Quick access to your saved courses.",
-    empty: "No bookmarks yet — click ★ on any course to save it",
+    empty: "No bookmarks yet — click “Bookmark” (☆) on any course to save it",
   },
   docTools: {
     toc: "On this page",
