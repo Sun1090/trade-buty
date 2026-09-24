@@ -7065,3 +7065,20 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：**导出 schema 变了**——`replay.bestStreak` 这个键在 v3 里叫 `replay.allTimeBestStreak`，另多出 `replay.historyRoundCap`、`engagement.studyWindowFirstDay`、`engagement.studyWindowLastDay` 三个键，`version` 从 2 到 3。目前没有任何导入端（这文件只出不进），v2 旧文件仍在访客自己手里，将来若有工具读它按 `version` 分支即可；这也是文件头写「改名要连着版本一起动」的目的。界面文字、localStorage 写入、云端同步一律不动；`STATS_EXPORT_VERSION` 的数值归属仍在 `stats-export.test.ts` 那份清单里（guest 用例改为引用常量，不再各抄一份）。回滚：`git revert` 三笔即可，无迁移。
 - 下一项：本条 PR 合并后做刚登记的 **R16.183**（隐私页「学习时长台账仅保留最近 90 天」把锚点说成了墙上时钟——`privacy/page.tsx:56-57` 与 `study-time.ts:17` 一起改口，门禁 `privacy-endpoints.test.ts:294-306` 从钉「数」加一道钉「锚」）。等人的三条仍是 R16.159（根级 404 中英并列）、R16.164（内容仓 tagline，须去 kline-buty 改口）、R16.174（AI 变体题按位置认领来源错题，三条走向都要人拍板）。
 - 更新时间：2026-09-25（Asia/Shanghai）。
+
+---
+
+## 2026-09-25 — 隐私页那句保留窗口说出它的锚点（R16.183，第二十轮第四条）
+
+- 状态：本地全量验证完成（build 474/474 页、exit 0 / **42 条 `check:*` 逐条跑过，42 绿 0 红** / 316 文件 3168 条单测 / 覆盖率四项 statements 95.12%、branches 90.74%、functions 95.22%、lines 97.08%（与 #303 逐位相同——本轮只动文案与断言，没加 src 分支）/ `npm run e2e` 164 条全绿 / lint（`--max-warnings=0`）/ typecheck / `git diff --check` 干净）；三笔提交在 `fix/privacy-retention-anchor`，基线 `origin/main = 33e5075`（即 R16.182 那条 PR #303 合并后的头）。
+- 里程碑 / 版本：R16.182 那条改的是**机器读的文件**，这一条改的是**人读的那一句**——同一个锚点，两处都得说清。不开新版本。
+- 分支 / 提交：`fix/privacy-retention-anchor` → PR **#304**，`f90f35c`（中英文案 + 两处引用旧措辞的注释 + 门禁两头）→ `e8cad19`（台账 R16.183 关掉）→ 本条 `docs(progress)` 提交。
+- 完成内容：**R16.183** 隐私页写着「为控制本机体积，学习时长台账仅保留最近 90 天」。代码里的裁剪是 `cutoff = shiftDate(days[days.length - 1], -(STUDY_LEDGER_KEEP_DAYS - 1))`——终点是**台账里最后有记录的那一天**，不是今天（`addStudyTime` 自己的注释就写着「稀疏用户的 90 条记录可能横跨一年以上」）。所以一个四个月没打开站点的人，本地留着的是 4–7 个月前的记录，而那句话读起来像「本站不会留 90 天以前的数据」。这是一句关于保留量的承诺**往宽松方向偏**——隐私文案不许这样偏：用户据此以为删不掉的东西其实删不掉。改口成「学习时长台账以你最后一次学习的那一天为终点向前保留 90 个日历日（不是「从今天往前 90 天」：几个月没打开，留下的就是几个月前那一段）」，en 同（"the 90 calendar days ending at the day you last studied"）。同一句里回放那一半（「仅保留最近 100 轮」）是真的——那是按条数裁的（`slice(-REPLAY_HISTORY_KEEP)`），与日期无关，所以原样留着，也正是门禁定位式继续命中的那一部分。另外把 `study-time.ts` 里两处引用隐私页**旧措辞**的注释一起改口（`:17` 的常量说明与 `:58` 的裁剪说明），不然就成了注释在引一段页面上已经不存在的话。
+- 新增 / 加强门禁：`privacy-endpoints.test.ts` 的「本机保留窗口的数与代码同源」那条在原有两头数字断言之后加两头锚点断言：这一段必须点出锚点（zh 含「最后一次学习」、en 含 "ending at the day you last studied"），并且不许出现 `最近 90 天` / `most recent 90 days` 这类墙上时钟写法。用例条数不变（3168），加的是同一个 `it` 里的判据——原来那条只钉得住**数**（90 / 100 取自两份常量，写死就红），钉不住**锚**。
+- 变更文件（4 个，`git diff --name-only origin/main..HEAD` 实测）：`src/app/[locale]/privacy/page.tsx`、`src/lib/study-time.ts`、`src/app/[locale]/privacy/privacy-endpoints.test.ts`、`docs/roadmap.md`。
+- 验证（本地，逐条退出码 0）：`npm run build`（474/474）→ 42 条 `check:*` 一条一条跑（`checks_pass=42 checks_fail=0`，日志 `/tmp/verify-183.log`）→ `npm run test:coverage`（316 文件 / 3168 条）→ `npm run e2e`（164 条，CI 第 178 行同一条命令）→ `lint` / `typecheck` / `git diff --check`。另单独跑过 `check:mobile`（14 个关键页面 320px 无溢出——zh 那句变长了）、`check:docs`、`check:dead-copy`、`check:ai-copy`，各退出码 0。
+- 变异核对 4 组探针 + 1 组对照（脚本 `/tmp/probe-r16183.sh`，锁目录拒绝并发、替换前断言锚点 `HITS==1`、每组跑完 `git checkout --` 还原并核对 `git diff --quiet`，无 `NOT byte-identical`；对照组同命令 12 条全绿，日志 `/tmp/r16183-{BASE,P1,P2,P3,P4}.log`）：① zh 退回旧句 → 红在「必须点出锚点（zh）」；② en 退回 "most recent 90 days" → 红在「（en）」那一头；③ 只把锚点半句删掉、留下新的数字写法 → 仍红在「（zh）」；④ **把两种说法并存**（「仅保留最近 90 天与 100 轮」，锚点在、墙上时钟也在）→ 红在第二道断言，证明「不许写成墙上时钟」不是装饰。
+- 途中的一次假信号（记下来免得重演）：en 初稿在 `"..."` 字符串里嵌了一对 ASCII 双引号，`tsc` 当场 TS1005；更麻烦的是该用例的 `localeStringsIn` 按引号切分段落，那对引号把这一段切成三块，于是另外一条「提到本地存储时要一并算上 sessionStorage」的用例也红了——红的是切分，不是文案。改成不含内层引号的写法后 12 条全绿。教训：给这种「按字面形状扫源码」的门禁改文案，先跑那个门禁再看红名。
+- 阻塞 / 风险：用户可见变化只有 `/privacy` 那一句（zh 变长约 30 字，en 同位置改写法），以及 `study-time.ts` 两处注释。数据、裁剪逻辑、localStorage 一律不动——**这一条不改保留行为，只把行为说对**：该留多久的事实仍是 `STUDY_LEDGER_KEEP_DAYS = 90` 一个常量说了算。回滚：`git revert` 三笔即可，无迁移。
+- 下一项：本条 PR 合并后继续换表面扫「说法 vs 事实」；已登记但需要人拍板的仍是三条——R16.159（根级 404 中英并列）、R16.164（内容仓 tagline，须去 kline-buty 改口）、R16.174（AI 变体题按位置认领来源错题并把 SRS 记进错题本）。
+- 更新时间：2026-09-25（Asia/Shanghai）。
