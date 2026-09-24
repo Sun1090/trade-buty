@@ -71,6 +71,7 @@ const quizzes: ChapterQuiz[] = [
 const dict = {
   title: "错题本", label: "错题", showAnswer: "看答案",
   yourPick: "你选", correctPick: "正确", resolved: "已掌握", empty: "空空如也",
+  srsMastered: "掌握了", srsNotYet: "还没掌握，明天再见",
   emptyHint: "去做测验", browseCta: "浏览课程",
 };
 
@@ -273,6 +274,20 @@ describe("ReviewClient 复习应答（R5.5/R5.8）", () => {
     fireEvent.click(screen.getByText("还没掌握，明天再见"));
     expect(wrongMock.applySrsResult).toHaveBeenCalledWith("spot", 0, false, 1);
     expect(addStudyTime).toHaveBeenCalledWith("quiz", 60);
+  });
+
+  it("两个按钮的字来自字典，不是组件里写死的", () => {
+    render(
+      <ReviewClient
+        quizzes={quizzes}
+        dict={{ ...dict, srsMastered: "字典甲", srsNotYet: "字典乙" }}
+        locale="zh"
+      />,
+    );
+    fireEvent.click(screen.getByText("看答案"));
+    expect(screen.getByText("字典甲")).toBeInTheDocument();
+    expect(screen.getByText("字典乙")).toBeInTheDocument();
+    expect(screen.queryByText("掌握了")).toBeNull();
   });
 });
 
