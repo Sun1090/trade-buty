@@ -57,6 +57,7 @@ const zh = {
   path: {
     label: "Learning Path",
     title: "学习路线",
+    mapHeading: "知识点图谱",
     intro: "路径分 {stages} 站：先走完「入门主线」建立完整认知，再按方向选学进阶与深潜专题。建议顺序学习，不要跳读——主线最后一站「{lastCore}」会告诉你为什么。",
     stages: {
       core: { label: "第一站", title: "入门主线", description: "零基础到建立交易系统，按顺序走完这条线" },
@@ -452,6 +453,7 @@ const en: Dict = {
   path: {
     label: "Learning Path",
     title: "Learning Path",
+    mapHeading: "Knowledge map",
     intro: "{stages} stages: finish the core path for a complete foundation, then pick advanced and deep-dive topics by direction. Study in order — the last stop of the core line, {lastCore}, shows you why.",
     stages: {
       core: { label: "Stage 1", title: "Core Path", description: "From zero to a full trading system, in order" },

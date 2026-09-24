@@ -170,7 +170,7 @@ export default async function PathPage({
 
       {/* 知识点图谱 */}
       <section className="mt-16">
-        <h2 className="text-2xl font-bold">{t.path.label} · Map</h2>
+        <h2 className="text-2xl font-bold">{t.path.mapHeading}</h2>
         <p className="mt-2 text-sm text-muted">
           {locale === "en"
             ? `${totalChapterCount()} chapters across ${groups.length} stages`
