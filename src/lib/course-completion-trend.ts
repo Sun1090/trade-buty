@@ -107,7 +107,8 @@ export function buildCourseCompletionTrend(input: {
   let readDocs = 0;
   for (const chapter of chapters) {
     const stored = progress[chapter.slug] ?? [];
-    // 已读数走 learning-overview 的唯一口径（去重 + 按篇章课数封顶），不再在此抄第二份
+    // 这里只有每章课数、拿不到课表，所以走封顶口径（与统计页/路线页总进度同一把尺）；
+    // 拿得到课表的界面（课文清单、侧栏、完成礼花）用 readDocsInChapter，见 R16.122
     const count = readDocsForChapter(stored, safeNonNegative(chapter.docCount));
     currentChapterCounts.set(chapter.slug, count);
     readDocs += count;
