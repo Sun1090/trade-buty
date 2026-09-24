@@ -67,7 +67,7 @@ describe("i18n-stats dictionary", () => {
     const zh = getStatsDict("zh").totalStudyTime;
     const en = getStatsDict("en").totalStudyTime;
     expect(zh).toContain(`${STUDY_LEDGER_KEEP_DAYS} 天`);
-    expect(en).toContain(`${STUDY_LEDGER_KEEP_DAYS} days`);
+    expect(en).toContain(`${STUDY_LEDGER_KEEP_DAYS}-day`);
     expect(zh).toContain("台账");
     expect(en.toLowerCase()).toContain("ledger");
     expect(zh).not.toMatch(/^总/);
