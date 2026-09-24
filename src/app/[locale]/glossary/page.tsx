@@ -30,7 +30,8 @@ export default async function GlossaryPage({ params }: PageProps<"/[locale]/glos
     <div className="mx-auto max-w-5xl px-4 sm:px-5 py-10 sm:py-14">
       <HeroCard label={en ? "Glossary" : "术语表"} title={en ? "Trading Glossary" : "交易术语表"}>
         {en
-          ? "Common terms used across the course, with bilingual definitions."
+          ? // 卡片每语只渲染一条释义（`t.defEn` / `t.def`），成对出现的是词条名，不是解释。
+            "Common terms used across the course, with each headword in Chinese and English."
           : "课程中常见的交易术语，中英对照。"
         }
       </HeroCard>
