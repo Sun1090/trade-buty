@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mergeWrongbook } from "./sync-layer";
+import { getLastCloudSync } from "./cloud-sync-meta";
 import type { WrongEntry } from "./wrongbook";
 
 // 内存 localStorage（jsdom 30 opaque origin）
@@ -466,6 +467,44 @@ describe("hydrateFromCloud", () => {
     await expect(hydrateFromCloud("user-123")).resolves.toBeUndefined();
     // 整体仍 dispatch 一次（Promise.all 抛错但被 try/catch 包裹）
     expect(dispatchSpy).toHaveBeenCalled();
+    expect(getLastCloudSync()).toBeNull();
+  });
+
+  /**
+   * R16.173：`/stats` 那行「上次从云端合并 {t}」是「换设备不丢」的凭据，
+   * 而 postgrest 的单表失败**不抛**——它回 `{data:null, error:{…}}`，于是上面那个
+   * try/catch 挡不住它，六张表各自 `if (x?.data)` 安静跳过，一路走到打点那一行。
+   * 两条用例把范围钉住：都读到才刷新、读到一半被拒不刷新（本地该并的照并）。
+   * 前者故意用「每张表都返回空数组」这一份夹具：新账号本来就没有云端行，
+   * 把空结果算成失败会让统计页永远停在「从没合并过」，而它等的下一次合并根本不会来。
+   */
+  it("六张表都读到时刷新「上次从云端合并」，空结果也算读到", async () => {
+    mockProgressSelect.mockResolvedValueOnce({ data: [], error: null });
+    mockWrongSelect.mockResolvedValueOnce({ data: [], error: null });
+    mockQuizSelect.mockResolvedValueOnce({ data: [], error: null });
+    mockReplaySelect.mockResolvedValueOnce({ data: [], error: null });
+    mockBestSelect.mockResolvedValueOnce({ data: [], error: null });
+    mockSettingsSelect.mockResolvedValueOnce({ data: [], error: null });
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await hydrateFromCloud("user-123");
+    expect(getLastCloudSync()).not.toBeNull();
+  });
+
+  it("错题表被 RLS 拒掉时不刷新合并时间，其余各表照常并进来", async () => {
+    mockWrongSelect.mockResolvedValueOnce({
+      data: null,
+      error: { message: "row-level security", code: "42501" },
+    });
+    mockProgressSelect.mockResolvedValueOnce({
+      data: [{ chapter_num: "1", doc_slug: "cloud-only" }],
+      error: null,
+    });
+    const { hydrateFromCloud } = await import("./sync-layer");
+    await hydrateFromCloud("user-123");
+    // 合并本身照做：读到的那张表写进了本地
+    expect(JSON.parse(memStore.get("tb-progress") ?? "{}")).toMatchObject({ "1": ["cloud-only"] });
+    // 但这一轮不是一次完整的云端合并，不许给统计页盖新时间戳
+    expect(getLastCloudSync()).toBeNull();
   });
 
   it("账号在请求期间切换时丢弃过期响应，不污染当前本地状态", async () => {
@@ -484,7 +523,10 @@ describe("hydrateFromCloud", () => {
 
     expect(JSON.parse(memStore.get("tb-progress")!)).toEqual({ local: ["kept"] });
     expect(mockProgressUpsert).not.toHaveBeenCalled();
-    expect(memStore.get("tb-cloud-sync-at")).toBeUndefined();
+    // 时间戳的键名就写在这里：R16.173 之前它写的是一个从没被人写过的
+    // `tb-cloud-sync-at`（真键是 `tb-last-cloud-sync`，见 `cloud-sync-meta.ts:8`），
+    // 所以这条断言读的是一个永远为空的键，无论代码做没做对都绿。
+    expect(memStore.get("tb-last-cloud-sync")).toBeUndefined();
   });
 
   it("空 id 直接 return，不发起任何 supabase 请求", async () => {
