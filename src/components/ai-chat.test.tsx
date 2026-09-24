@@ -1106,7 +1106,8 @@ describe("AiChat 回答操作与对话管理", () => {
         },
       }),
     };
-    const fetchMock = vi.fn(async (url: string) => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      void init;
       if (url === "/api/ai/conversations") {
         return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
       }
@@ -1127,8 +1128,8 @@ describe("AiChat 回答操作与对话管理", () => {
     await screen.findByText("正在生成的回答");
 
     fireEvent.click(screen.getByRole("button", { name: dict.clear }));
-    const chatInit = fetchMock.mock.calls.find(([u]) => u === "/api/ai/chat")?.[1] as RequestInit;
-    expect(chatInit.signal?.aborted, "清空没有掐掉在途请求").toBe(true);
+    const chatInit = fetchMock.mock.calls.find(([u]) => u === "/api/ai/chat")?.[1];
+    expect(chatInit?.signal?.aborted, "清空没有掐掉在途请求").toBe(true);
     expect(screen.queryByText("正在生成的回答")).toBeNull();
 
     // 迟到的一块到达：既不能复活半截回答，也不该弹一个「用户自己掐掉」的错误

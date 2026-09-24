@@ -219,15 +219,6 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     })();
   }, []);
 
-  // 自动提问：本 effect 与 setHistorySettled 同一次提交后运行，闭包里的 messages 已是恢复好的历史
-  useEffect(() => {
-    if (!historySettled) return;
-    const ask = pendingAskRef.current;
-    if (!ask) return;
-    pendingAskRef.current = null;
-    void send(ask.text, { contextChapter: ask.ctx });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historySettled]);
 
   // 登出或换号：云端历史按身份拉取，上一个账号的对话不能继续留在屏幕上
   // （/api/ai/conversations 只在有会话时返回内容，组件此前从不感知身份变化）。
@@ -473,6 +464,16 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       setLoading(false);
     }
   }
+
+  // 自动提问：本 effect 与 setHistorySettled 同一次提交后运行，闭包里的 messages 已是恢复好的历史
+  useEffect(() => {
+    if (!historySettled) return;
+    const ask = pendingAskRef.current;
+    if (!ask) return;
+    pendingAskRef.current = null;
+    void send(ask.text, { contextChapter: ask.ctx });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historySettled]);
 
   async function clear() {
     // 先作废在途请求的归档权，再清本地，最后删云端：顺序反了会让那一轮又写回来。
