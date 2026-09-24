@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildNextSuggestion } from "./next-suggestion";
+import { STATS_DICTS } from "./i18n-stats";
 
 describe("buildNextSuggestion", () => {
   it("prioritizes due reviews above everything else", () => {
@@ -94,5 +95,47 @@ describe("buildNextSuggestion", () => {
       locale: "en",
     });
     expect(result.kind).toBe("explore");
+  });
+});
+
+/**
+ * R16.171：这张卡是「一句文案 + 一个箭头」，两者必须指同一页。
+ *
+ * 以前全部读完那条写的是「课程全部完成——用回放保持手感」，可 `kind:"explore"` 的 href 是
+ * `/[locale]/path`（`next-suggestion.ts:104-107`），而同一屏另一条说回放的（`nextReplay`）
+ * 才真的通向 `/replay`。两条断言分别被不同用例钉着（这句的字面文案、那个 href），
+ * 谁也没把它们放在一起比——所以矛盾一直活着。
+ */
+describe("建议卡那句话说的是箭头真正去的那一页", () => {
+  const cleared = {
+    dueReviews: 0,
+    nextUnread: null,
+    pendingQuizChapter: null,
+    replayRounds: 99,
+    locale: "zh",
+  };
+
+  it("全部读完这条通向 /path，所以话里只能点学习路线", () => {
+    const zh = STATS_DICTS.zh;
+    const en = STATS_DICTS.en;
+    expect(buildNextSuggestion(cleared)).toMatchObject({ kind: "explore", href: "/zh/path" });
+    expect(zh.nextAllClear).toMatch(/路线/);
+    expect(en.nextAllClear).toMatch(/learning path/i);
+    expect(zh.nextAllClear + en.nextAllClear).not.toMatch(/回放|replay/i);
+    // 对照：旧写法许的就是那个不该许的地方，禁令不是空转
+    for (const legacy of ["课程全部完成——用回放保持手感", "Everything complete — stay sharp with replay practice"]) {
+      expect(legacy).toMatch(/回放|replay/i);
+    }
+  });
+
+  it("正向对照：点名回放的那条，href 真的是 /replay", () => {
+    const zh = STATS_DICTS.zh;
+    const en = STATS_DICTS.en;
+    expect(buildNextSuggestion({ ...cleared, replayRounds: 0 })).toMatchObject({
+      kind: "replay",
+      href: "/zh/replay",
+    });
+    expect(zh.nextReplay).toMatch(/回放/);
+    expect(en.nextReplay).toMatch(/replay/i);
   });
 });
