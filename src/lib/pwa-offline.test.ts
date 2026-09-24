@@ -264,6 +264,33 @@ describe("离线页恢复逻辑（R13.13）", () => {
     expect(h.session.has("tb-offline-auto-reloads")).toBe(false);
     expect(h.statusText()).toContain("正在重试");
   });
+
+  /**
+   * R16.160：这一屏的初始文案以前写「等待网络恢复，恢复后会自动重新加载。」——
+   * 而脚本自己会收手两处：探测满 `MAX_PROBE_ATTEMPTS` 次就停（开局已在线、
+   * 服务器却始终不通的那条路径，`online` 不会再有第二次），以及 30 秒内自动重载
+   * 用完 `MAX_AUTO_RELOADS` 后改为让用户点按钮。两句都在同一份源码里，所以
+   * 断言直接对着一屏文案与那两个常量名去核。
+   */
+  it("初始文案不许无条件承诺自动重新加载，中英两半都要交代上限与手动出口", () => {
+    const status = /<p id="status"[\s\S]*?<\/p>/.exec(OFFLINE_HTML)?.[0] ?? "";
+    expect(status, "找不到那一屏的状态句，下面全是空转").not.toBe("");
+    // 禁令的自证：旧写法无条件承诺，且不含任何上限/出口
+    const legacy =
+      "等待网络恢复，恢复后会自动重新加载。 / Waiting for the network; this page reloads by itself once it is back.";
+    expect(legacy).toMatch(/会自动重新加载/);
+    expect(legacy).not.toMatch(/上限|capped/i);
+
+    expect(status, `${status.slice(0, 60)}… 还在无条件承诺自动重载`).not.toMatch(
+      /会自动重新加载。|reloads\s+by\s+itself\s+once\s+it\s+is\s+back/,
+    );
+    expect(status).toMatch(/上限/);
+    expect(/capped/i.test(status), "英文半边没说出重试有上限").toBe(true);
+    expect(status).toMatch(/重新连接/);
+    expect(/Retry/i.test(status)).toBe(true);
+    // 出口真的在页面上：那个按钮与这一句同屏
+    expect(OFFLINE_HTML).toMatch(/id="retry"[^>]*>重新连接 \/ Retry</);
+  });
 });
 
 describe("离线缓存边界（R13.13 + R10.24）", () => {
