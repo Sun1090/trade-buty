@@ -3,5 +3,5 @@
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://trade-buty.vercel.app";
 
-/** 源码仓库地址：结构化数据、发布复盘链接、更新日志外链共用这一个字面量。 */
+/** 源码仓库地址：结构化数据、发布条目的引用链接、更新日志外链共用这一个字面量。 */
 export const REPOSITORY_URL = "https://github.com/Sun1090/trade-buty";

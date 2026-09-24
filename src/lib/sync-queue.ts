@@ -6,8 +6,10 @@
  * 时由 AuthProvider / 在线事件触发 flushQueue 重放。
  *
  * 设计要点：
- * - 纯函数优先：enqueue/dedupe/expire 都是纯函数；localStorage 持久化与重放
- *   单独抽出副作用函数，便于测试
+ * - 纯函数优先：入队+去重（`enqueueUnique`）、截断（`trimQueue`）、重放（`flushQueue` /
+ *   `flushQueueAsync`）、读取（`readQueue`）都不碰 storage；localStorage 的读写单独抽出
+ * - **没有时间维度的过期**：被 `MAX_QUEUE` 挤掉的写入不会再补传上云，
+ *   那笔账由 `sync-queue-store.ts` 与 `global-read-stat.ts` 记（R16.139）
  * - 队列长度上限：超过 MAX_QUEUE 丢弃最旧条目（防止异常膨胀撑爆 localStorage）
  * - 同 kind+payloadKey 去重：同一条错题反复"答错-移除-再答错"只入队 1 次
  * - FIFO 重放：flushQueue 按入队顺序逐条执行；任意一条失败整体中断并保留已入队的部分
