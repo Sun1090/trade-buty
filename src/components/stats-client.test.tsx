@@ -6,6 +6,10 @@ import { QUIZZES } from "@/lib/quizzes";
 import { STATS_DICTS, type StatsDict } from "@/lib/i18n-stats";
 
 const store = new Map<string, string>();
+
+/** 数据来源那两枚标记分游客/登录两套写法，所以登录态要能在单条用例里开关 */
+const authState = vi.hoisted(() => ({ user: null as { id: string } | null }));
+vi.mock("@/components/auth-provider", () => ({ useAuth: () => authState.user }));
 vi.stubGlobal("localStorage", {
   getItem: (k: string) => store.get(k) ?? null,
   setItem: (k: string, v: string) => store.set(k, v),
@@ -99,7 +103,6 @@ const dict: StatsDict = {
   rangeDaysTpl: "Last {n} days",
   sourceLocal: "This device",
   sourceCloud: "Local + cloud",
-  sourceSyncedTpl: "Last cloud sync {t}",
   conflictTitle: "Multi-device sync note",
   conflictBodyTpl: "{n} item(s) differ from another device and were merged automatically.",
   conflictDismiss: "Got it",
@@ -151,6 +154,7 @@ beforeEach(() => {
   store.clear();
   store.set("tb-progress", JSON.stringify(progress));
   store.set("tb-progress-completions", JSON.stringify(completions));
+  authState.user = null;
 });
 
 afterEach(cleanup);
@@ -394,7 +398,17 @@ describe("StatsClient data source label (R12.8)", () => {
   it("shows the local-device source pill when not signed in", async () => {
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
     expect(await screen.findByLabelText("This device")).toBeInTheDocument();
-    expect(screen.queryByText(/Last cloud sync/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/merged from cloud/)).not.toBeInTheDocument();
+  });
+
+  it("登录且打过云端合并的时刻时，那句说的是「从云端合并」并带上时间", async () => {
+    // 反面是 R16.77 那个形状：字典装配好了、组件从不读，界面上一句都没有。
+    // 夹具字典直接派生自真实 STATS_DICTS.en，所以这里断言的就是上线的那句文案。
+    authState.user = { id: "u1" };
+    store.set("tb-last-cloud-sync", String(new Date(2026, 8, 20, 9, 5).getTime()));
+    render(<StatsClient chapters={chapters} dict={dict} locale="en" />);
+    const line = await screen.findByText(/Last merged from cloud/);
+    expect(line.textContent).toMatch(/\d/);
   });
 });
 
