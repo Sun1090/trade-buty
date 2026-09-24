@@ -19,9 +19,9 @@
 | 指标 | 定义 | 数据源（真实 key / 聚合器） | 当前可见位置 |
 | --- | --- | --- | --- |
 | 活跃学习日 | 当日 `study-time` 台账任选来源（read/quiz/replay）合计 **≥ 60 秒** | `tb-study-time`（90 天滚动） | 周报图（R4.6）、周摘要活跃天数（R12.20） |
-| 7 日活跃天数 | 最近 7 个自然日中活跃学习日个数（0–7） | `tb-study-time` | 周摘要卡（R12.20） |
-| 周学习分钟数 | 最近 7 个自然日 `study-time` 合计秒数 ÷ 60，向下取整 | `tb-study-time` | 周摘要卡（R12.20） |
-| 周目标达成 | 周学习分钟数 ≥ 每周目标（45/90/150 档，默认 90） | `tb-weekly-goal-min` + `tb-study-time` | 周摘要卡（R12.19/R12.20） |
+| 7 日活跃天数 | 最近 7 个自然日中活跃学习日个数（0–7） | `tb-study-time` | 近 7 天摘要卡（R12.20） |
+| 周学习分钟数 | 最近 7 个自然日 `study-time` 合计秒数 ÷ 60，向下取整 | `tb-study-time` | 近 7 天摘要卡（R12.20） |
+| 近 7 天目标达成 | 周学习分钟数 ≥ 目标档位（45/90/150 分钟，默认 90）；界面标签自 R16.129 起写「7 天目标」，不再叫「每周目标」——这个窗口是滚动 7 天，不是日历周 | `tb-weekly-goal-min` + `tb-study-time` | 近 7 天摘要卡（R12.19/R12.20） |
 | 连续学习天数 streak | `tb-streak` 自动记录：同一自然日幂等 +1，间断即 current 归零重新计；**断档如实展示，绝不伪造**（R4.3/R12.6） | `tb-streak`（touchStreak 在 markRead/recordWrong/saveQuizProgress 落笔时维护） | 统计页时间卡 + 恢复提示卡 |
 | 历史最长 streak | `tb-streak.longest` 单调 max 计数器（历史只增不减） | `tb-streak` | 分享卡/恢复提示 |
 | 回访（retention proxy） | 本地存在**两个不同自然日**的活跃学习日 | `tb-study-time` | 无独立 UI（可由导出自算） |
