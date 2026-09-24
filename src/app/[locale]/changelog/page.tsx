@@ -5,7 +5,12 @@ import { buildPageMetadata } from "@/lib/metadata";
 import { HeroCard } from "@/components/hero-card";
 import { REPOSITORY_URL } from "@/lib/site";
 
-/** 发布复盘与 CHANGELOG 外链共用同一前缀，仓库地址本身只在 site.ts 出现一次 */
+/**
+ * 发布复盘与 CHANGELOG 外链的 href 都从 site.ts 那一个常量拼出来。
+ * 它保证的是「拼法只有一处」，不是「这个地址全仓只出现一次」——同一个仓库地址作为
+ * 链接文字写死在本文件 `github.com/Sun1090/trade-buty` 那一行，layout 与 privacy 页
+ * 也各有硬编码的 href。
+ */
 const REPO_BLOB = `${REPOSITORY_URL}/blob/main`;
 import {
   changelogOlderLine,
