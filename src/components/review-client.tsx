@@ -294,7 +294,14 @@ export function ReviewClient({
                 : `${items.length} 道错题，${dueCount} 道今日到期${overdueCount > 0 ? `（${overdueCount} 道已过期）` : ""}`)
               : (locale === "en" ? `${items.length} questions waiting` : `还有 ${items.length} 道题等你掌握`)}
           </p>
-          <p className="mt-1 text-sm text-muted">{locale === "en" ? "Reveal the answer, explain it in your own words, then mark it resolved." : "先看答案，再用自己的话解释，最后标记为已掌握。"}</p>
+          <p className="mt-1 text-sm text-muted">
+            {/* 这句「怎么做」点名的按钮必须是此刻真的渲染出来那两颗：「✓ 已掌握，移出错题本」
+                只在 SRS 关闭时才存在，而默认模式走的是「掌握了 / 还没掌握，明天再见」，
+                且「掌握了」推进的是间隔表、当场不出库。名字从字典取，句子就不会和按钮分家。 */}
+            {locale === "en"
+              ? `Reveal the answer, explain it in your own words, then tap ${srsOn ? `“${dict.srsMastered}” or “${dict.srsNotYet}”.` : `“${dict.resolved}”.`}`
+              : `先看答案，再用自己的话解释，最后${srsOn ? `点「${dict.srsMastered}」或「${dict.srsNotYet}」。` : `点「${dict.resolved}」。`}`}
+          </p>
         </div>
         <button onClick={startRedo} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-left transition hover:border-accent/50 hover:bg-[var(--surface-hover)]">
           <span className="text-2xl" aria-hidden>🎯</span>

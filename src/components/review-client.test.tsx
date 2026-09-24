@@ -441,6 +441,64 @@ describe("ReviewClient AI 变体题入口（#59 契约：错题列表原样下�
   });
 });
 
+/**
+ * R16.127：顶部那句「怎么做」点名的按钮，必须是此刻页面上真的有的那两颗。
+ *
+ * 这句曾经写死成「最后标记为已掌握」/ "then mark it resolved"——它指的是 `dict.resolved`
+ * （「✓ 已掌握，移出错题本」），而那颗按钮只在**关闭**复习计划时才渲染；默认模式给用户点的
+ * 是「掌握了」，它推进的是 srs.ts 的间隔表，走完最后一档才出库。同一个动作在两句话里
+ * 承诺了两种结果。现在句子由当前模式的字典拼出来，名字没法再和按钮分家。
+ */
+describe("ReviewClient「怎么做」那句点名的是真按钮", () => {
+  beforeEach(() => {
+    wrongState.items = { "spot:0": entry({ srsDue: today() }) };
+  });
+
+  /** 句子里被「」/“”圈出来的按钮名 */
+  function quoted(container: HTMLElement, lead: string): string[] {
+    const line = [...container.querySelectorAll("p")].find((p) => p.textContent?.startsWith(lead));
+    expect(line, `找不到以「${lead}」开头的操作说明`).toBeTruthy();
+    return [...line!.textContent!.matchAll(/[「“]([^」”]+)[」”]/g)].map((m) => m[1]);
+  }
+
+  it("默认（复习计划开）：点名的是那两颗 SRS 按钮，不提关闭模式才有的那颗", () => {
+    const { container } = render(<ReviewClient quizzes={quizzes} dict={dict} locale="zh" />);
+    fireEvent.click(screen.getByText(dict.showAnswer));
+
+    const names = quoted(container, "先看答案");
+    // 扫描分母：一个名字都没圈到，这条检查就是空转
+    expect(names.length, "操作说明没点名任何按钮").toBe(2);
+    expect(names.sort(), "操作说明点名的按钮不是默认模式渲染的那两颗").toEqual(
+      [dict.srsMastered, dict.srsNotYet].sort(),
+    );
+    for (const name of names) {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    }
+    expect(names).not.toContain(dict.resolved);
+  });
+
+  it("关掉复习计划：改点那颗真的会出库的按钮", () => {
+    const { container } = render(<ReviewClient quizzes={quizzes} dict={dict} locale="zh" />);
+    fireEvent.click(screen.getByRole("button", { name: /复习计划/ }));
+    fireEvent.click(screen.getByText(dict.showAnswer));
+
+    expect(quoted(container, "先看答案")).toEqual([dict.resolved]);
+    expect(screen.getByRole("button", { name: dict.resolved })).toBeInTheDocument();
+  });
+
+  it("英文界面同一句也只做两件事：说出两个名字，且它们都在页面上", () => {
+    const en = { ...dict, showAnswer: "Reveal", srsMastered: "Got it", srsNotYet: "Not yet — try tomorrow" };
+    const { container } = render(<ReviewClient quizzes={quizzes} dict={en} locale="en" />);
+    fireEvent.click(screen.getByText("Reveal"));
+
+    const names = quoted(container, "Reveal the answer");
+    expect(names.sort()).toEqual([en.srsMastered, en.srsNotYet].sort());
+    for (const name of names) {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    }
+  });
+});
+
 describe("ReviewClient 分组与跳转", () => {
   it("按篇章分组并给出重做本章测验的链接", () => {
     wrongState.items = { "spot:0": entry({ srsDue: today() }) };
