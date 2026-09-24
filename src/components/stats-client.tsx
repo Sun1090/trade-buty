@@ -817,7 +817,13 @@ export function StatsClient({
             labels={dict.milestoneShare}
           />
         </div>
-        <StatCard value={stats.avgQuizScore !== null ? `${stats.avgQuizScore}%` : "—"} label={dict.accuracy} />
+        {/* 这一格不是「答对了多少」：它是各章**最高分**再取平均，重做刷到 100% 也算进去。
+            同一个数在学习概览那块写着「各章最高分的平均」，挂上裸的「准确率」就等于在同一屏
+            给同一个数起了两个名字，其中一个还夸大了它（R16.11 当初把口径写在脸上就是这个原因）。 */}
+        <StatCard
+          value={stats.avgQuizScore !== null ? `${stats.avgQuizScore}%` : "—"}
+          label={`${dict.quizAvgScore} · ${dict.overviewQuizzesAvg}`}
+        />
         <StatCard value={stats.replayAccuracy !== null ? `${stats.replayAccuracy}%` : "—"} label={`${dict.replay} ${dict.accuracy}`} />
         <StatCard value={formatDuration(stats.totalStudySeconds)} label={dict.totalStudyTime} />
       </div>
