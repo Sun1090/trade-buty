@@ -112,6 +112,7 @@ const dict = {
   followups: ["展开讲讲「{t}」", "「{t}」怎么用？", "「{t}」的误区？"],
   helpful: "有用",
   unhelpful: "无用",
+  feedbackFailed: "这条反馈没送出去，请再点一次",
 };
 
 describe("AiChat 空状态与首屏示例问题", () => {
@@ -1070,6 +1071,50 @@ describe("AiChat 回答操作与对话管理", () => {
     ).toHaveLength(1);
   });
 
+  /**
+   * R16.172：以前点一下就先把按钮标成「已反馈」，`void fetch(...).catch(() => {})` 把结果丢掉——
+   * 服务端拒收（答案超长会被 `/api/ai/feedback` 判 4xx）、离线、500，界面都显示成记上了。
+   * 与 `ai-quiz` 那条「已举报只有服务端收下才算」的既定规矩相反。
+   */
+  it("反馈没送出去时不留下「已反馈」的样子，按钮还能再点", async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/ai/conversations" && !init) {
+        return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
+      }
+      if (url === "/api/ai/chat") {
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+          body: makeStreamBody("答完的这一条"),
+        } as unknown as Response;
+      }
+      if (url === "/api/ai/feedback") {
+        return { ok: false, status: 500, json: async () => ({ error: "upstream" }) } as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    fireEvent.click(suggestedButtons(container)[0]);
+    await screen.findByText("答完的这一条");
+
+    const helpful = screen.getByRole("button", { name: dict.helpful });
+    fireEvent.click(helpful);
+
+    await screen.findByText(dict.feedbackFailed);
+    expect(helpful).not.toHaveClass("font-medium");
+    // 这一栏不摆「重试」：它重跑不了评分这件事，点了只会把上一句提问又发一遍
+    expect(
+      screen.queryByRole("button", { name: dict.retry }),
+    ).not.toBeInTheDocument();
+    // 退回去之后还能再点：乐观标记不撤的话，用户就再也没有重试的入口
+    fireEvent.click(helpful);
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.filter(([url]) => url === "/api/ai/feedback")).toHaveLength(2),
+    );
+  });
+
   it("清空对话先确认：取消时保留，确认后回到空状态", async () => {
     const { question } = await ask("待清空回答");
     const clearButton = screen.getByRole("button", { name: dict.clear });
@@ -1688,7 +1733,13 @@ describe("AiChat 初始化历史、自动提问与边界响应", () => {
     });
   });
 
-  it("反馈请求失败时仍记录本地反馈，避免用户反复点击", async () => {
+  /**
+   * R16.172 的第二条路：请求根本没发出去（离线、DNS 挂）走的是 `fetch` 抛异常，
+   * 与上面那条「服务端收了但判失败」是两种返回值，`.catch(() => null)` 把它们并成同一个 `!res?.ok`。
+   * 这里原标题写的是「失败时仍记录本地反馈，避免用户反复点击」——那正是这个改动要拆掉的谎：
+   * 没落库的评分在界面上留着「已反馈」，用户就再也没有机会把它送出去。
+   */
+  it("反馈请求抛异常时也不留下「已反馈」的样子", async () => {
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url === "/api/ai/conversations" && !init) {
         return { ok: true, status: 200, json: async () => ({ messages: [] }) } as Response;
@@ -1711,9 +1762,13 @@ describe("AiChat 初始化历史、自动提问与边界响应", () => {
 
     const unhelpful = screen.getByRole("button", { name: dict.unhelpful });
     fireEvent.click(unhelpful);
-    await waitFor(() => expect(unhelpful).toHaveClass("font-medium"));
+    await screen.findByText(dict.feedbackFailed);
+    expect(unhelpful).not.toHaveClass("font-medium");
+    // 请求真的又发了一次：不留「再点一次」的入口，这条评分就永远送不出去
     fireEvent.click(unhelpful);
-    expect(fetchMock.mock.calls.filter(([url]) => url === "/api/ai/feedback")).toHaveLength(1);
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.filter(([url]) => url === "/api/ai/feedback")).toHaveLength(2),
+    );
   });
 });
 

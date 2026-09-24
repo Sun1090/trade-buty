@@ -53,8 +53,9 @@ export async function POST(req: NextRequest) {
   try {
     user = await getServerAuthUser();
   } catch (e) {
-    // 身份不可确定 ≠ 写入该失败：RLS 允许 user_id is null 的匿名行，而调用方是
-    // fire-and-forget，回 500 就等于把一次真人反馈凭空丢掉。
+    // 身份不可确定 ≠ 写入该失败：RLS 允许 user_id is null 的匿名行。调用方现在会
+    // 等这条请求、失败了把「已反馈」退回去让人再点（R16.172），但一次身份抖动也不该
+    // 逼着人重走一遍——按匿名入库，这一次反馈仍然留在库里。
     console.warn(
       "[ai/feedback] 身份解析失败，按匿名反馈入库：",
       e instanceof Error ? e.message : e,
