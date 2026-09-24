@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { AiQuiz } from "./ai-quiz";
 
 // jsdom 环境无 localStorage，用 Map mock（同 daily-goal.test.ts 惯例）
@@ -34,6 +34,7 @@ const dict = {
   explain: "解析",
   report: "举报题目",
   reported: "已举报",
+  reportFailed: "举报没送出去，点这里重试",
   badge: "AI 变体题",
   correct: "正确",
   wrong: "错误",
@@ -157,11 +158,12 @@ describe("AiQuiz 错题本打通与幂等（R2.6/R2.8/R2.11）", () => {
     fireEvent.click(screen.getByText("限制单笔亏损"));
     const reportBtn = screen.getByText(`⚑ ${dict.report}`);
     fireEvent.click(reportBtn);
-    fireEvent.click(reportBtn); // 重复点击不重复上报
+    fireEvent.click(reportBtn); // 送出途中再点不重复上报
+    // 服务端点头之后才允许说「已举报」
+    await waitFor(() => expect(screen.getByText(dict.reported)).toBeDisabled());
     const calls = fetchMock.mock.calls.filter((c) => c[0] === "/api/ai/feedback") as unknown as [string, RequestInit][];
     expect(calls).toHaveLength(1);
     expect(JSON.parse(calls[0][1].body as string).rating).toBe("unhelpful");
-    expect(screen.getByText(dict.reported)).toBeInTheDocument();
   });
 });
 
@@ -230,7 +232,7 @@ describe("AiQuiz 入口、错误态与多题流程", () => {
     expect(screen.getByText(dict.generate)).toBeInTheDocument();
   });
 
-  it("举报网络失败不影响已举报状态", async () => {
+  it("举报没送出去时不说「已举报」，而且可以再点一次", async () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url === "/api/ai/quiz") return { ok: true, json: async () => ({ questions }) };
       throw new Error("feedback offline");
@@ -240,6 +242,27 @@ describe("AiQuiz 入口、错误态与多题流程", () => {
     await generateQuestions();
     fireEvent.click(screen.getByText("限制单笔亏损"));
     fireEvent.click(screen.getByText(`⚑ ${dict.report}`));
-    expect(await screen.findByText(dict.reported)).toBeDisabled();
+    const retry = await screen.findByText(`⚠ ${dict.reportFailed}`);
+    expect(screen.queryByText(dict.reported)).toBeNull();
+    expect(retry).toBeEnabled();
+    // 失败必须可重试：再点一次真的再发一遍
+    fireEvent.click(retry);
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.filter(([u]) => u === "/api/ai/feedback")).toHaveLength(2),
+    );
+  });
+
+  it("服务端回非 2xx 时同样不算举报成功", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === "/api/ai/quiz") return { ok: true, json: async () => ({ questions }) };
+      return { ok: false, status: 500 };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
+    await generateQuestions();
+    fireEvent.click(screen.getByText("限制单笔亏损"));
+    fireEvent.click(screen.getByText(`⚑ ${dict.report}`));
+    expect(await screen.findByText(`⚠ ${dict.reportFailed}`)).toBeEnabled();
+    expect(screen.queryByText(dict.reported)).toBeNull();
   });
 });

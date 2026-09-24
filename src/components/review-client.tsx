@@ -469,6 +469,7 @@ export function ReviewClient({
               explain: locale === "en" ? "Explanation" : "解析",
               report: locale === "en" ? "Report question" : "举报题目",
               reported: locale === "en" ? "Reported" : "已举报",
+              reportFailed: locale === "en" ? "Report not sent — tap to retry" : "举报没送出去，点这里重试",
               badge: locale === "en" ? "AI variant" : "AI 变体题",
               correct: locale === "en" ? "Correct" : "正确",
               wrong: locale === "en" ? "Wrong" : "错误",

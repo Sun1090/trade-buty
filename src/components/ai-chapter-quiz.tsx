@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { isAiGloballyDisabled } from "@/lib/ai-toggle";
+import { sendAiFeedback, type ReportStatus } from "@/lib/ai-feedback";
 import { trackAiClick } from "@/lib/analytics";
 import { readQuizDifficulty, writeQuizDifficulty, type QuizDifficulty } from "@/lib/quiz-strategy";
 
@@ -28,6 +29,7 @@ interface AiChapterQuizDict {
   advanced: string;
   report: string;
   reported: string;
+  reportFailed: string;
 }
 
 /**
@@ -53,7 +55,7 @@ export function AiChapterQuizCard({
   const [current, setCurrent] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [difficulty, setDifficulty] = useState<QuizDifficulty>(() => readQuizDifficulty(locale));
-  const [reported, setReported] = useState<Record<number, boolean>>({});
+  const [reported, setReported] = useState<Record<number, ReportStatus>>({});
 
   function changeDifficulty(next: QuizDifficulty) {
     setDifficulty(next);
@@ -93,16 +95,17 @@ export function AiChapterQuizCard({
     }
   }
 
-  /** R2.11：题目质量举报（fire-and-forget） */
-  function report(idx: number) {
-    if (reported[idx]) return;
-    setReported((prev) => ({ ...prev, [idx]: true }));
+  /** R2.11：题目质量举报——送出成功才改口，失败要看得见、也要能再点一次 */
+  async function report(idx: number) {
+    if (reported[idx] === "sending" || reported[idx] === "sent") return;
+    setReported((prev) => ({ ...prev, [idx]: "sending" }));
     const q = questions?.[idx];
-    void fetch("/api/ai/feedback", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rating: "unhelpful", question: q?.question ?? "", answer: q?.explain ?? "" }),
-    }).catch(() => {});
+    const sent = await sendAiFeedback({
+      rating: "unhelpful",
+      question: q?.question ?? "",
+      answer: q?.explain ?? "",
+    });
+    setReported((prev) => ({ ...prev, [idx]: sent ? "sent" : "failed" }));
   }
 
   // 入口态
@@ -206,9 +209,13 @@ export function AiChapterQuizCard({
             <button
               onClick={() => report(current)}
               className="text-xs text-faint hover:text-down transition disabled:opacity-50"
-              disabled={reported[current]}
+              disabled={reported[current] === "sending" || reported[current] === "sent"}
             >
-              {reported[current] ? dict.reported : `⚑ ${dict.report}`}
+              {reported[current] === "sent"
+                ? dict.reported
+                : reported[current] === "failed"
+                  ? `⚠ ${dict.reportFailed}`
+                  : `⚑ ${dict.report}`}
             </button>
           </div>
         </div>
