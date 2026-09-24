@@ -46,7 +46,6 @@ export interface ReplayDict {
   difficultyIntermediate: string;
   difficultyChallenge: string;
   skipToEnd: string;
-  modeFree: string;
   modeGuess: string;
   guessPrompt: string;
   up: string;
@@ -493,7 +492,10 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
               : "border-[var(--border)] text-muted hover:text-foreground"
           }`}
         >
-          {guessMode ? dict.modeGuess : dict.modeFree}
+          {/* 名字只报它切的那个模式，开没开由 aria-pressed 和高亮说：
+              原先关了以后钮上写的是「自由观看」，而页面 intro 让用户去开「猜涨跌」，
+              第一次访客在这一排里找不到 intro 点名的那个开关。 */}
+          {dict.modeGuess}
         </button>
         <span className="ml-auto font-mono text-xs text-faint flex items-center gap-3">
           {klines && idx > 0 && klines[idx - 1] && (

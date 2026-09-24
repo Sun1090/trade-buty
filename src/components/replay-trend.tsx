@@ -10,7 +10,7 @@ export const REPLAY_TREND_MIN_ROUNDS = 2;
 /** 折线只画最近这么几轮：脚注里的数字读这个常量，两处 slice 也是它 */
 export const REPLAY_TREND_POINTS = 20;
 
-/** 回放训练准确率趋势折线图（SVG，无外部依赖） */
+/** 回放训练正确率趋势折线图（SVG，无外部依赖） */
 export function ReplayTrend({
   label,
   emptyLabel,

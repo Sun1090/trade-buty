@@ -126,7 +126,6 @@ const dict: ReplayDict = {
   difficultyIntermediate: "进阶",
   difficultyChallenge: "挑战",
   skipToEnd: "跳到结尾",
-  modeFree: "自由",
   modeGuess: "竞猜",
   guessPrompt: "猜涨跌",
   up: "涨",
@@ -135,7 +134,7 @@ const dict: ReplayDict = {
   feedbackDown: "下跌",
   youGot: "你答对了",
   summaryTitle: "本轮总结",
-  streak: "连击",
+  streak: "连胜",
   best: "最佳",
   accuracy: "正确率",
   rounds: "进度",
@@ -349,7 +348,7 @@ describe("ReplayTrainer 数据加载", () => {
   });
 });
 
-describe("ReplayTrainer 自由模式控制", () => {
+describe("ReplayTrainer 未开竞猜时的播放控制", () => {
   it("下一根推进一根 K 线，跳过直接到底", async () => {
     render(<ReplayTrainer dict={dict} locale="zh" />);
     await waitFor(() => expect(screen.getByText(/0\/270/)).toBeInTheDocument());
@@ -441,22 +440,34 @@ describe("ReplayTrainer 竞猜模式与战绩", () => {
     mocks.fetchRandomHistoryWindow.mockImplementation(async () => makeKlines(32));
   });
 
-  it("猜中累计连击，答错清零", async () => {
+  it("那颗开关从头到尾都叫同一个名字，开没开由 aria-pressed 说", async () => {
     render(<ReplayTrainer dict={dict} locale="zh" />);
     await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    // 改之前：关着的时候钮上写的是另一个词（「自由观看」），而 intro 让用户去开「猜涨跌」，
+    // 第一次来的人在按钮排里找不到 intro 点名的那个东西。
+    const toggle = () => screen.getByRole("button", { name: "竞猜" });
+    expect(toggle()).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(toggle());
+    expect(toggle()).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("猜中累计连胜，答错清零", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "竞猜" }));
     fireEvent.click(screen.getByRole("button", { name: "涨" }));
     await waitFor(() => expect(screen.getByText(/上涨 · ✅/)).toBeInTheDocument());
     expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument();
   });
 
-  it("答错时给出下跌反馈并清零连击", async () => {
+  it("答错时给出下跌反馈并清零连胜", async () => {
     mocks.fetchRandomHistoryWindow.mockImplementation(async () => makeKlines(32, { rise: false }));
     render(<ReplayTrainer dict={dict} locale="zh" />);
     await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    fireEvent.click(screen.getByRole("button", { name: "竞猜" }));
     fireEvent.click(screen.getByRole("button", { name: "涨" }));
     await waitFor(() => expect(screen.getByText(/下跌 · ❌/)).toBeInTheDocument());
   });
@@ -469,7 +480,7 @@ describe("ReplayTrainer 竞猜模式与战绩", () => {
     render(<ReplayTrainer dict={dict} locale="zh" />);
     await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    fireEvent.click(screen.getByRole("button", { name: "竞猜" }));
     fireEvent.click(screen.getByRole("button", { name: "涨" }));
     await waitFor(() => expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "涨" }));
@@ -496,19 +507,19 @@ describe("ReplayTrainer 竞猜模式与战绩", () => {
     expect(cardProps.shareUrl).toMatch(/^http:\/\/localhost:\d+\/share\/replay\//);
   });
 
-  it("全错时评价为 C 且最佳连击为 0", async () => {
+  it("全错时评价为 C 且最佳连胜为 0", async () => {
     mocks.fetchRandomHistoryWindow.mockImplementation(async () => makeKlines(32, { rise: false }));
     render(<ReplayTrainer dict={dict} locale="zh" />);
     await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    fireEvent.click(screen.getByRole("button", { name: "竞猜" }));
     fireEvent.click(screen.getByRole("button", { name: "涨" }));
     await waitFor(() => expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "涨" }));
     await waitFor(() => expect(screen.getByText(/进度: 2\/2/)).toBeInTheDocument());
 
     expect(screen.getByText("C")).toBeInTheDocument();
-    // 答错时也会把最新最佳连击（0）写回
+    // 答错时也会把最新最佳连胜（0）写回
     expect(mocks.saveReplayBest).toHaveBeenCalledWith(0);
   });
 
@@ -516,7 +527,7 @@ describe("ReplayTrainer 竞猜模式与战绩", () => {
     render(<ReplayTrainer dict={dict} locale="zh" />);
     await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    fireEvent.click(screen.getByRole("button", { name: "竞猜" }));
     fireEvent.click(screen.getByRole("button", { name: "涨" }));
     await waitFor(() => expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "涨" }));
@@ -536,7 +547,7 @@ describe("ReplayTrainer 竞猜模式与战绩", () => {
   it("竞猜模式下按空格等非预测操作不推进，必须先预测", async () => {
     render(<ReplayTrainer dict={dict} locale="zh" />);
     await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    fireEvent.click(screen.getByRole("button", { name: "竞猜" }));
     // 竞猜模式下没有「下一根」按钮
     expect(screen.queryByRole("button", { name: "下一根" })).toBeNull();
     expect(screen.getByText(/进度: 0\/2/)).toBeInTheDocument();
@@ -545,7 +556,7 @@ describe("ReplayTrainer 竞猜模式与战绩", () => {
   it("新一轮会清空上一轮反馈并重置进度", async () => {
     render(<ReplayTrainer dict={dict} locale="zh" />);
     await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: "自由" }));
+    fireEvent.click(screen.getByRole("button", { name: "竞猜" }));
     fireEvent.click(screen.getByRole("button", { name: "涨" }));
     await waitFor(() => expect(screen.getByText(/上涨 · ✅/)).toBeInTheDocument());
 

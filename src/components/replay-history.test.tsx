@@ -21,7 +21,7 @@ vi.mock("@/components/use-local-progress", () => ({
 const dict = {
   histTitle: "训练记录",
   histRounds: "轮",
-  histAccuracy: "准确率",
+  histAccuracy: "平均正确率",
   histEmpty: "还没有训练记录",
   histRecent: "最近",
   histBest: "最佳",
@@ -55,7 +55,7 @@ describe("ReplayHistory", () => {
     expect(screen.queryByText("训练记录")).toBeNull();
   });
 
-  it("汇总轮数、整体准确率与最佳连击", () => {
+  it("汇总轮数、整体正确率与历史最佳连胜", () => {
     store.history = [
       rec({ at: 1_000, total: 4, correct: 1 }),
       rec({ at: 2_000, total: 10, correct: 7 }),
