@@ -6850,3 +6850,26 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：本轮唯一的行为变化是给篇章页换了眉标、给礼花换了口径——后者只会**少放**礼花（废键多的用户原来会被误庆祝），不会少报进度；统计页/总进度仍按封顶，与清单在极端脏数据下仍可能差几篇，这一条留在 R16.58→R16.122 的注释里说明边界。R16.124 需要拍板。生产仍是 0.7.15（0.7.16 排在 Vercel 24h 构建配额后面）。
 - 下一项：#293 等 `ci` / `db-tests` / CodeQL 绿后 rebase 合并。排队中的下一条：`/stats` 与 `/review` 两组计数还没经过这一轮的眼睛；R16.78 那条线未补完（计数型门禁下限改成「相对上一次入库快照不得下降」）；待拍板清单 R15.2 / R16.7 / R16.10–12 / R16.16 / R16.41 / R16.47 / R16.52 / R16.60 / R16.90 / R16.97 / R16.98 / R16.107 / R16.108 / R16.109 / R16.117 / R16.124（R16.58 已收敛，移出清单）。
 - 更新时间：2026-09-24 21:30（Asia/Shanghai）。
+---
+
+## 2026-09-24 — 统计页的四把尺子、一句不存在的承诺，与一条「偶发失败」其实是 bug（R16.125–R16.131，第十四轮）
+
+- 状态：本地全量验证完成，已推分支待开 PR；本轮不追 Vercel 构建。
+- 里程碑 / 版本：v0.7.16 冻结后的「说法 vs 事实」第十四轮，扫的表面是 `/stats`、`/review` 与 `/[locale]/search`。
+- 分支 / 提交：`fix/stats-caliber-claims-round-14`（13 个提交，`d71ad60` → `d66d0bd`），基于第十三轮合并后的 `origin/main`（834fce0）。
+- 完成内容：
+  - **R16.125 「测验完成」两张卡各算各的**：概览栅格判 `p?.done`（0 分算完成），趋势卡判 `done && best > 0`，答题账本与 ledger 又各自丢掉 0 分那条，日期桶还要求当天至少有一个非 0 百分比，「下一步建议」的 `pendingQuizChapter` 反方向补了 `|| best > 0`——「做完全错的 10 道题」这件真实发生过的事被四段代码各自决定要不要承认。判据收成一句 `done`，作答次数与分数拆开统计。`stats-consistency.ts:89` 早就把这条恒等式写成审计器，但它是 dev-only 的 `console.warn`、不进 CI，而它自己的夹具把 `quizzesDone` 写死成常量、从没同时喂进两侧。
+  - **R16.126 「准确率」其实是各章最高分的平均**：详细栅格那一格印 `stats.avgQuizScore`，标签只有裸的「准确率 / Accuracy」；同一个数在学习概览那块写着「平均得分 · 各章最高分的平均」（R16.11 当初特意把口径写在脸上）。重做刷出来的 100% 不是答对率。改成 `${quizAvgScore} · ${overviewQuizzesAvg}`，「准确率」在这一屏只属于回放。
+  - **R16.127 复习页那句点名了一颗默认不存在的按钮**：「最后标记为已掌握 / then mark it resolved」指的是 `dict.resolved`，那颗只在**关闭**复习计划时才渲染；默认模式的「掌握了」推进的是间隔表、走完最后一档才出库。这句是组件里的内联串，#117 那把守着字典 `review.intro` 的门禁看不见它。现在按当前模式从字典拼，用例渲染真实组件、点开答案，把句子里引号圈出的名字逐个拿去 `getByRole("button")` 找。
+  - **R16.128 统计页三处回放数共享 100 轮天花板却一句没提**：回放页早就为同一件事写了脚注（R16.64），统计页漏了。栅格下补整句脚注、概览那格在数字后追「最近 N 轮」，N 由 `REPLAY_HISTORY_KEEP` 代入；「最佳连击」读的是 `tb-replay-best`，只增不减，所以没被顺手圈进脚注。
+  - **R16.129 滚动 7 天窗口被叫成「本周 / 每周」**：摘要卡右上角自己印着 `2026-09-18 ~ 2026-09-24`（跨两个 ISO 周），标题却写「本周学习摘要」，同一屏三行之上的柱状图老实叫「近 7 天」。新增 `WEEK_WINDOW_DAYS` 作为窗口唯一长度，五句文案从它生成。提醒频率那档「每周一次」不在范围内——它的去重键 `localWeekStr()` 说的真是日历周。
+  - **R16.130 趋势卡承诺「仍会显示当前最高分」**：那个数是 `latest.bestPct`，统计页没有任何渲染点；而区间选择器只管得到柱子、「测验次数」「期间最高」，「平均得分」「测验完成」是全量读数、换区间不动。这句话改成点名四格原词并分开两种行为。
+  - **R16.131 一条「偶发失败的红」查出来是真 bug**：首轮 `npm run e2e` 报 `full-site.spec.ts:156` 的「element(s) not found」，单跑与次轮全量都绿——差一点就被登记成抖动放过。根因是 Chromium 对 `<input type="search">` 的默认动作「Escape 清空整个输入框」：组件的 Escape 分支只想收起联想，没拦默认动作，于是关键词连同整条结果列表一起没了，用例下一步要按的高亮落点压根不存在。jsdom 没有这个原生行为，所以单测怎么都测不到。加 `e.preventDefault()`，并按 `fireEvent.keyDown` 的返回值钉住「Escape 必须被取消」。
+- 新增 / 加强门禁：`src/lib/quiz-completion-caliber.test.ts`（3 条，按 `stats-client.tsx` 的真实取数路径喂同一份存储）、`stats-client.test.tsx` 两条渲染级对账（按标签找出那两张卡，要求数字相同 + 标签出现次数为 2 的扫描分母）、`weekly-window-claims.test.ts`（7 句 × 两语 + 一条真去量窗口长度）、`quiz-trend-claims.test.ts`（四格标签逐字出现 + 标签互不相同 + 不留占位符 + 不许再出现「当前最高分」+ 两种行为实测）、`review-client.test.tsx` 三条、`history-window-claims.test.ts` 扩到统计页、`search-client.test.tsx` 一条。
+- 变更文件：`src/components/{stats-client,review-client,search-client}.tsx`、`src/lib/{quiz-score-trend,quiz-store,quiz-attempt-ledger,weekly-summary,i18n-stats}.ts`、`e2e/full-site.spec.ts`、对应测试与 `docs/{roadmap,progress,test-clock-hygiene}.md`。
+- 验证（本地，逐条退出码 0）：`lint`（`--max-warnings=0`）、`typecheck`、`build`（454 页静态产物）、`test`（311 文件 / 3063 条）、`test:coverage`（语句 95.19%，分支 90.94%，函数 95.16%，行 97.17%；阈值 84）、`e2e`（**162 passed** / 2.1m，修掉 R16.131 后重跑）、31 条 `check:*` 巡检全绿（含 `check:dead-copy` 字典 2 / 词条 422 / 死键 0 / 未读字段 0、`check:structured-data` 454 页 · 5656 实体、`check:links`、`check:sitemap` 418 篇、`check:bundle`、`check:lockfile-repro`、`check:report-freshness` 17 份 · 漂移 0）。
+- 变异核对 21 组：撤回 `done && best > 0`、撤回 `|| best > 0`、日期桶捆分数、账本/store 门 `best > 0`、卡片标签退回「准确率」、标签与数字错位、审计器夹具、概览那格与栅格脚注各自删掉、`{n}` 写死成 100、四格标签各改一格、句子塞回 `{n}`、退回旧承诺、`attemptsInRange` 改成数全量、删掉 `e.preventDefault()`——每组都红在它该红的那条。**两条自己造出来的假信号**：① 第一轮探针脚本 6 组全报 SURVIVED，因为 vitest 输出带 ANSI 色码、`grep "^ +Tests"` 一行都没匹配上就被当成「没失败」，剥掉色码重跑才有真结果；② 探针函数入口无条件 `git checkout -- <file>`，把当时还没提交的 `stats-client.tsx` / `search-client.tsx` 改动抹掉过两次，之后脚本改成「先验锚点、先看有没有未提交改动，任一不满足就什么都不碰」。
+- 未解释的一条：本轮另有一次 `npm test` 报 1 条失败（3049/3050），但那条命令的 stdout 被管道过滤掉、**用例名没留下**，之后 5 次全量（含两次改动后重跑）全绿，无法复现。按「先保住失败日志」的教训记在这里，不写成「已修」也不写成「不存在」。
+- 阻塞 / 风险：本轮唯一的行为变化是搜索框 Escape 不再清空关键词（收起联想的原意不变），以及统计页 11 处可见文案改名；数字层面只有「测验完成 / 测验次数」会**多算**此前被抹掉的 0 分作答——那是把少报的补回来。R16.124 与其余待拍板项未动。生产仍是 0.7.15（0.7.16 排在 Vercel 24h 构建配额后面）。
+- 下一项：本分支开 PR 等 `ci` / `db-tests` / CodeQL 绿后 rebase 合并。排队中的下一条：`/path` 与首页那组还没被这一轮眼睛扫过的计数；R16.78 未补完（计数型门禁下限改成「相对上一次入库快照不得下降」）；待拍板清单 R15.2 / R16.7 / R16.10–12 / R16.16 / R16.41 / R16.47 / R16.52 / R16.60 / R16.90 / R16.97 / R16.98 / R16.107 / R16.108 / R16.109 / R16.117 / R16.124。
+- 更新时间：2026-09-24 23:40（Asia/Shanghai）。
