@@ -194,11 +194,13 @@ describe("朗读的课文与屏幕上的课文同源", () => {
   // 而是要求整棵内容树里一处都没有。
   const KB_ROOT = "content/kline-buty/docs/knowledge";
   const NOISE: [string, RegExp][] = [
-    // 判据与 speechText 认标签的同一个形状：`K1<K2` 这种比较不是标签，
+    // 判据必须与「清得干不干净」无关地成立：`K1<K2` 这种比较不是标签，
     // 「详见 cash-flow-analysis.md」里的 .md 是屏幕上真的写着的内容，念出来不算噪音。
-    ["还剩标签", /<\/?[a-zA-Z][a-zA-Z0-9-]*(?:\s[^<>]*)?\/?>/],
+    // 而按标签名与收尾斜杠认，则连「只删尖括号、留下 mark 这个词」的旧实现也躲不过。
+    ["还剩收尾标签", /<\/[a-zA-Z]/],
+    ["还剩标签名", /<(?:abbr|a|blockquote|br|code|div|details|em|h[1-6]|img|kbd|li|mark|ol|p|span|strong|sub|summary|sup|table|tbody|td|th|thead|ul)\b/],
     ["还剩链接地址", /\]\(/],
-    ["还剩表格分隔行", /:\s?-{3,}|[-|]{4,}\|/],
+    ["还剩表格分隔行或横线", /^\s*:?-{3,}[-:\s|]*$/m],
     ["还剩未改写的资产路径", /_assets|\.\.\/\.\.\//],
   ];
 
