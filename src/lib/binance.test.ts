@@ -75,6 +75,37 @@ describe("fetchKlines", () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 400 })));
     await expect(fetchKlines("BTCUSDT", "1h")).rejects.toThrow(/行情请求失败 \(400\)/);
   });
+
+  /**
+   * 浏览器里那条 400 根本读不到：币安只在 2xx 上带 `Access-Control-Allow-Origin`，
+   * 跨源的 4xx 被网络层挡掉，`fetch` 直接 reject（curl 看得见状态码，浏览器看不见）。
+   * 下面三条盯的就是这条真实路径。
+   */
+  it("K 线请求被网络层拒掉而 ping 答了 → 判成「没有这个交易对」", async () => {
+    vi.stubGlobal("fetch", vi.fn<FetchFn>(async (url) => {
+      if (String(url).includes("/api/v3/ping")) return { ok: true, status: 200, json: async () => ({}) };
+      throw new TypeError("Failed to fetch");
+    }));
+    await expect(fetchKlines("ZZZZUSDT", "1h")).rejects.toBeInstanceOf(InvalidMarketSymbolError);
+  });
+
+  it("ping 也不答 → 不越权下结论，原样把网络失败交回去", async () => {
+    vi.stubGlobal("fetch", vi.fn<FetchFn>(async () => {
+      throw new TypeError("Failed to fetch");
+    }));
+    await expect(fetchKlines("BTCUSDT", "1h")).rejects.toThrow(TypeError);
+  });
+
+  it("请求是被 abort 的，不再拿 ping 去猜，也不多发一次请求", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const fetchMock = vi.fn<FetchFn>(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(fetchKlines("BTCUSDT", "1h", { signal: controller.signal })).rejects.toThrow(TypeError);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("fetchRandomHistoryWindow", () => {

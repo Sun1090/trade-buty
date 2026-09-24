@@ -41,6 +41,15 @@ export class InvalidMarketSymbolError extends Error {
 /** 币安错误码 -1121 = Invalid symbol */
 const BINANCE_INVALID_SYMBOL_CODE = -1121;
 
+/** 币安的 ping 端点返回 200 且带 CORS，是浏览器唯一读得到的那条「币安还活着」证据 */
+async function binancePingOk(signal?: AbortSignal): Promise<boolean> {
+  try {
+    return (await fetch("https://api.binance.com/api/v3/ping", { signal })).ok;
+  } catch {
+    return false;
+  }
+}
+
 /** 上游未必回 JSON（反代给出的 502 页即是），读不出码就当没有码 */
 async function binanceErrorCode(res: Response): Promise<number | undefined> {
   try {
@@ -63,10 +72,23 @@ export async function fetchKlines(
     limit: String(opts?.limit ?? 500),
   });
   if (opts?.endTime) params.set("endTime", String(opts.endTime));
-  const res = await fetch(
-    `https://api.binance.com/api/v3/klines?${params.toString()}`,
-    { signal: opts?.signal },
-  );
+  let res: Response;
+  try {
+    res = await fetch(
+      `https://api.binance.com/api/v3/klines?${params.toString()}`,
+      { signal: opts?.signal },
+    );
+  } catch (err) {
+    // 浏览器里**读不到**币安的 4xx：它只在 2xx 上带 CORS 头，跨源的非 2xx 会被网络层挡掉，
+    // `fetch` 当场 reject——状态码和 body 里的 `code` 都拿不到（同一条请求 curl 看得见，浏览器看不见）。
+    // 所以「API 活着、只是没有这个交易对」换个问法：币安的 ping 端点回 200 且带 CORS，
+    // 它答了而 K 线没答，失败就是这个标的特有的；ping 也不答，才是不通。
+    if (opts?.signal?.aborted) throw err;
+    if (await binancePingOk(opts?.signal)) {
+      throw new InvalidMarketSymbolError(`没有这个交易对：${symbol}`);
+    }
+    throw err;
+  }
   if (!res.ok) {
     if (res.status === 400 && (await binanceErrorCode(res)) === BINANCE_INVALID_SYMBOL_CODE) {
       throw new InvalidMarketSymbolError(`没有这个交易对：${symbol}`);
