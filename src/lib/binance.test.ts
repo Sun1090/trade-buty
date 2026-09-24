@@ -117,9 +117,9 @@ describe("sampleHistoryWindowEndMs", () => {
 
   it("上界在未来时按现在夹住，不抽出一个还没发生的时刻", () => {
     vi.spyOn(Math, "random").mockReturnValueOnce(0.999999);
-    expect(sampleHistoryWindowEndMs(Date.now() + 30 * DAY)).toBeLessThanOrEqual(
-      Date.now() - 7 * DAY,
-    );
+    const sampled = sampleHistoryWindowEndMs(Date.now() + 30 * DAY);
+    const after = Date.now();
+    expect(sampled).toBeLessThanOrEqual(after - 7 * DAY);
   });
 
   it("不给上界就是盲盒口径：往前 7 ~ 180 天，不贴着当前价格", () => {
