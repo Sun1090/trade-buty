@@ -6898,3 +6898,22 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：本轮唯一的行为变化是「换一条心得」不再可能抽回同一条，以及那颗开关在关闭状态下改印「猜涨跌」；其余全是文案与注释改名，没有一处判据变化——「已读 / 正确率 / 连胜」数的是原来同一个数。R16.139 只登记未动。待拍板项（R16.107 / R16.109 / R16.117 / R16.124 等）未动。生产仍是 0.7.15（0.7.16 排在 Vercel 24h 构建配额后面）。
 - 下一项：本分支开 PR，等 `ci` / `db-tests` / CodeQL 绿后 rebase 合并。队列首位是 R16.139（给离线写队列的丢弃记账并抑制 ☁），其后 R16.78 未补完（计数型门禁下限改成「相对上一次入库快照不得下降」）。
 - 更新时间：2026-09-25 00:39（Asia/Shanghai）。
+---
+
+## 2026-09-25 — ☁ 那本被静默撕掉的账（R16.139，第十六轮）
+
+- 状态：本地全量验证完成，推送分支开 PR；本轮不追 Vercel 构建（配额未解除，且它从来不是合并门槛）。
+- 里程碑 / 版本：v0.7.16 冻结后的「说法 vs 事实」第十六轮。表面是**云端同步的那句完成时**，以及离线写队列本身。
+- 分支 / 提交：`fix/sync-queue-drop-accounting`（代码 1 个提交 `b5ccd83` + 文档），基于第十五轮 rebase 合并后的 `origin/main`（e36a00e）。
+- 完成内容（R16.139 登记 → 落地）：
+  - **问题**：`enqueueWrite`（`sync-queue-store.ts:92-110`）每次都过 `trimQueue`，超过 `MAX_QUEUE = 200`（`sync-queue.ts:18`）就 `slice` 掉**最旧的还没上传成功**的条目——没有计数器、没有事件、不落存储。剩下的传完之后 `getQueueLength()` 归 0，首页那枚 ☁「已云端存档，换设备不丢」（`i18n.ts:53`）与统计页的「本机 + 云端」（`stats-client.tsx`）就一起回来，对着一条从来没到过云端的记录说完成时。可达性是量的：键空间 = progress 每条 (篇章:课文) ≤182 + wrongbook 每条 (章节:题号) + quiz 每章 + replay-history ≤100 轮，登录用户断网读几天就超得过 200 条不同的待传写。
+  - **改法**：多一本账 `tb-sync-queue-dropped`，截断发生时按条数累加（`recordDroppedWrites`，沿既有 `tb-sync-queue` 事件通知读侧）；判据上收成 `getUnarchivedWriteCount()` = 队列里等传的 + 被挤掉永远传不出去的，两处界面都改用它，**文案一个字没动**（那种状态下「有待上传的改动」本来就是真的）。
+  - **离线兜底那条路**：chunk 加载失败时的内存缓冲（`sync-layer-queue-fallback.ts`）同一条 `MAX_QUEUE` 规矩、也在静默丢。缓冲只活在当前会话、丢的那一刻没法落盘，所以在 chunk 恢复可用、`flushPendingWrites` 跑起来时把欠的条数补给同一本账——两条路共用一个数，不再是「持久化的那条有账、内存那条没账」。
+  - **账的生命周期**：换账号（`ensureOwner` 清队列）与注销/删号（`clearPersistedQueue`）都把它一起清掉——上一个账号欠的账不该压着新账号的标记。隐私导出不需要加字段：`collectLocalStorage()` 倒的是除会话键以外的全部键，这本新账自动在导出文件里。
+- 新增 / 加强门禁：`src/lib/cloud-archival-claims.test.ts`（4 条：两处界面必须都调 `getUnarchivedWriteCount` 且不许残留 `getQueueLength`；判据函数本体两笔账都算；`removeItem(QUEUE_DROPPED_KEY)` 恰好两处；以及那句被承诺的文案确实存在——防着扫描对着空气立规矩）。用例 +12：`sync-queue-store.test.ts` 溢出记 5 条 / 传完不清账 / 注销与换号清账 / 非法值当没有 / 记 0、负数、NaN 不写也不通知 / 补记累加；`sync-layer-queue-fallback.test.ts` 溢出 3 条要等 chunk 可用时补记、没溢出就一个字不记（并给 mock 补上 `recordDroppedWrites`——少一个真实导出的 mock 会让测试跑在假接口上）；`global-read-stat.test.tsx` 只剩欠账时 ☁ 不出现、清账后靠事件回来；`stats-client.test.tsx` 同一状态印「有待上传的改动」。
+- 变更文件：`src/lib/{sync-queue-store,sync-layer-queue-fallback}.ts`、`src/components/{global-read-stat,stats-client}.tsx` 与对应测试、`docs/{roadmap,progress,test-clock-hygiene}.md`。
+- 验证（本地，逐条退出码 0）：`lint`（`--max-warnings=0`）、`typecheck`、`test`（313 文件 / 3091 条）、`build`、`e2e`（162 passed / 2.2m）、全部 41 条 `check:*`（逐条退出码 0，其中 `check:seo-surface` 454 页 · sitemap 430 条 · KB 418 篇、`check:structured-data` 454 页 · 5656 实体、`check:bundle` 454 条路由、`check:search-index` 418/418 1:1、`check:dead-copy` 字典死键 0 / 未读字段 0、`check:report-freshness` 工作区漂移 0）、`git diff --check`。
+- 变异核对 7 组探针，全部当场点名转红：入队时不记被挤掉的、判据退回只看队列长度（store / 首页 / 统计页各一组，红在各自那条用例 + 门禁）、注销不清账、缓冲溢出后不补记、缓冲根本不数被挤掉的。
+- 阻塞 / 风险：行为变化是「队列截断后 ☁ 与『本机 + 云端』不再出现」——从说谎变成闭嘴，没有新增可见提示。数据本身仍是被丢掉的（上限的存在有它的理由：localStorage 体积与跨设备 base64 体积），这一轮补的是**账**与**不撒谎的判据**；要不要在界面上把「N 条没来得及上传」说给用户看，是下一条（已记在 R16.139 落地段的末尾）。生产仍是 0.7.15。
+- 下一项：本分支开 PR，等 `ci` / `db-tests` / CodeQL 绿后 rebase 合并。队列里排着两条：①**本轮核查门禁自家台账时新抓到的一条**——`scan-floor-lib.mjs:9-11` 那句「要真的删掉一批，必须改这个数并在提交信息里说清楚，否则 CI 变红」把 R16.83 这套地板说满了：`scanFloorViolation` 只在 `count < floor` 时返回那一行，而地板与实测之间留着余量（2026-09-25 实测：`MIN_LISTED_FILES = 700` 对 771 个已扫文本文件、`MIN_KB_FILES = 400` 对 419 个 md、`MIN_ROUTE_FILES = 11` 对 12 个 route.ts——前两道地板下面留着 71 与 19 的余量），删掉一批但没跌破地板的提交照样全绿，「否则变红」只对跌破的那部分成立；要么把这句话改成它真正保证的范围，要么把地板换成「相对上一次入库快照不得下降」（`git show HEAD:` 取基线），第十七轮定夺。②第十七轮的表面按 `/calendar`、`/bookmarks`、`/changelog` 的扫描结果定。
+- 更新时间：2026-09-25 01:10（Asia/Shanghai）。
