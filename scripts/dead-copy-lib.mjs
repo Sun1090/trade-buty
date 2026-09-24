@@ -142,6 +142,35 @@ export function shouldFailDeadCopy({ dead, budget }) {
   return dead.length > budget;
 }
 
+/**
+ * 预算与下限的读取（R16.82）。
+ *
+ * 四个数都必须写在文件里：`budget` / `dictFieldBudget` 是「多一个就失败」的上限，
+ * `minDictionaryKeys` / `minDictInterfaces` 是「少一批就失败」的下限——下限保的是
+ * 巡检器自己还在扫东西。R16.81 的教训正是下限形同虚设：接口数从 18 掉到 17，
+ * 而下限是 10，红绿一点没变。
+ */
+const BUDGET_FIELDS = ["budget", "dictFieldBudget", "minDictionaryKeys", "minDictInterfaces"];
+
+/** 解析并校验预算文件；任何一项缺失或不是非负整数都抛错，绝不返回 `undefined`。 */
+export function parseDeadCopyBudget(raw) {
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("预算文件不是合法 JSON");
+  }
+  const missing = BUDGET_FIELDS.filter((field) => !Number.isInteger(parsed?.[field]));
+  if (missing.length > 0) {
+    throw new Error(`缺少数值项（须为整数）：${missing.join(" / ")}`);
+  }
+  const negative = BUDGET_FIELDS.filter((field) => parsed[field] < 0);
+  if (negative.length > 0) {
+    throw new Error(`预算与下限不能为负：${negative.join(" / ")}`);
+  }
+  return parsed;
+}
+
 export function renderDeadCopyMarkdown({
   dead,
   budget,
