@@ -17,6 +17,11 @@ const zh = {
     wrong: "错题",
     quizzes: "测验完成",
     replay: "回放轮数",
+    // 回放轮数与回放准确率都只覆盖本机台账保留的最近 N 轮（`REPLAY_HISTORY_KEEP`），
+    // 与旁边那几个「全部历史」的计数不是同一把尺子；N 由常量代入，不写死在文案里。
+    replayScopeTpl: "回放轮数与回放准确率只统计本机台账保留的最近 {n} 轮，更早的轮次不在这两个数里。",
+    // 学习概览那张「回放训练」印的是同样两个数，格子放不下整句，就在数字后面补窗口
+    replayScopeShort: "最近 {n} 轮",
     streak: "连续天数",
     accuracy: "准确率",
     badges: "成就徽章",
@@ -147,6 +152,9 @@ const en: StatsDict = {
     wrong: "Wrong answers",
     quizzes: "Quizzes done",
     replay: "Replay rounds",
+    // Same two capped numbers as the Chinese block above: the ledger keeps the last N rounds.
+    replayScopeTpl: "Replay rounds and replay accuracy count only the last {n} rounds kept on this device; earlier rounds are not in these two numbers.",
+    replayScopeShort: "last {n} rounds",
     streak: "Day streak",
     accuracy: "Accuracy",
     badges: "Achievements",
