@@ -113,6 +113,8 @@ interface AiDict {
   followups: string[];
   disclaimer: string;
   guestLimit: string;
+  /** 等待时长整句由字典出，单位也在句子里：拼 ` (2min)` 到中文界面就是半句英文残话 */
+  retryInTpl: string;
   quotaRemaining: string;
   quotaLoginHint: string;
   helpful: string;
@@ -349,11 +351,13 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
       }
 
       if (res.status === 429) {
-        const retryAfter = res.headers.get("retry-after");
-        const hint = retryAfter
-          ? ` (${Math.ceil(parseInt(retryAfter) / 60)}min)`
-          : "";
-        throw new Error(dict.guestLimit + hint);
+        const retryAfter = Number.parseInt(res.headers.get("retry-after") ?? "", 10);
+        const minutes = Number.isFinite(retryAfter) ? Math.ceil(retryAfter / 60) : 0;
+        throw new Error(
+          minutes > 0
+            ? `${dict.guestLimit} · ${dict.retryInTpl.replace("{n}", String(minutes))}`
+            : dict.guestLimit
+        );
       }
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));

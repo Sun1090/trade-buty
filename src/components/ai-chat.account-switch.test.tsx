@@ -53,6 +53,7 @@ const dict = {
   examplesLabel: "试试这样问",
   disclaimer: "⚠️ 仅用于学习",
   guestLimit: "本小时游客提问次数已用完，登录可获更多额度",
+  retryInTpl: "约 {n} 分钟后重试",
   quotaRemaining: "游客每小时限 {l} 次，本小时剩余 {n} 次",
   quotaLoginHint: "本小时次数已用完，登录可获更多额度",
   contextBannerTpl: "正在基于《{title}》篇章回答",

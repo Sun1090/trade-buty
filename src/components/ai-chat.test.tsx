@@ -103,6 +103,7 @@ const dict = {
   examplesLabel: "试试这样问",
   disclaimer: "⚠️ 仅用于学习",
   guestLimit: "本小时游客提问次数已用完，登录可获更多额度",
+  retryInTpl: "约 {n} 分钟后重试",
   quotaRemaining: "游客每小时限 {l} 次，本小时剩余 {n} 次",
   quotaLoginHint: "本小时次数已用完，登录可获更多额度",
   contextBannerTpl: "正在基于《{title}》篇章回答",
@@ -693,7 +694,7 @@ describe("AiChat 配额提示（R1.12）", () => {
     );
     fireEvent.click(rendered[0]);
     expect(
-      await screen.findByText(`${dict.guestLimit} (2min)`),
+      await screen.findByText(`${dict.guestLimit} · 约 2 分钟后重试`)
     ).toBeInTheDocument();
     expect(container).toBeDefined();
   });
@@ -1506,7 +1507,7 @@ describe("AiChat 初始化历史、自动提问与边界响应", () => {
       headers: { get: (k: string) => (k.toLowerCase() === "retry-after" ? "90" : null) },
       json: async () => ({}),
     } as unknown as Response);
-    expect(await screen.findByText(`${dict.guestLimit} (2min)`)).toBeInTheDocument();
+    expect(await screen.findByText(`${dict.guestLimit} · 约 2 分钟后重试`)).toBeInTheDocument();
   });
 
   it("流式响应为空时展示兜底错误，且不会提交 assistant 存档", async () => {
