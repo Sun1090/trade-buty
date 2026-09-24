@@ -108,6 +108,10 @@ describe("指引点名的开关就是屏幕上那颗按钮", () => {
     expect(en).toMatch(/^📖 Read /);
     expect(en).not.toMatch(/completed/i);
     expect(STATS_DICTS.en.readDocs).toMatch(/read/i);
+    // 「全部课程都读完了」那句是写死在页面里的，只扫字典的门禁看不见它
+    const page = read("src/app/[locale]/page.tsx");
+    expect(page).not.toMatch(/读完|已完成/);
+    expect(page).toMatch(/已读过/);
   });
 
   it("页面 <title> 不留一个挂空的逗号", () => {
