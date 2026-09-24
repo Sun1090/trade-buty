@@ -27,6 +27,17 @@ export const CALENDAR_EVENTS: CalendarEvent[] = [
   { date: "2026-09-05", time: "20:30", region: "🇺🇸 US", event: "Unemployment Rate", impact: "high" },
 ];
 
+/**
+ * 元描述里点名给访客看的几类发布。`ref` 必须是 `CALENDAR_EVENTS` 里**逐字存在**的事件名：
+ * 这句文案是「列表里能找到什么」的承诺，写一个数据里没有的名字（上一版写了 CPI），
+ * 访客就会在一屏他等不到的东西面前来回扫。别名只在这一张表里出现一次。
+ */
+export const CALENDAR_HIGHLIGHTS: { zh: string; en: string; ref: string }[] = [
+  { zh: "非农", en: "NFP", ref: "Non-Farm Payrolls" },
+  { zh: "PMI", en: "PMI", ref: "Manufacturing PMI" },
+  { zh: "央行利率决议", en: "rate decisions", ref: "ECB Rate Decision" },
+];
+
 /** 示例数据真实覆盖的日期窗口，如 `2026-08-26 → 2026-09-05` */
 export function calendarSampleWindow(events: CalendarEvent[] = CALENDAR_EVENTS): string {
   const days = events.map((e) => e.date).sort();

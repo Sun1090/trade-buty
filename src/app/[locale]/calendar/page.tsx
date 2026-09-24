@@ -31,10 +31,13 @@ export default async function CalendarPage({ params }: PageProps<"/[locale]/cale
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const en = locale === "en";
+  // 大标题与 <title> 用同一个字符串：这一屏曾经有三个名字（meta「经济日历」、入口「日历」、
+  // h1「重要经济事件」），而 h1 那个形容词页面自己不信——列表里就印着一颗「低」影响。
+  const { calendarTitle } = getDict(locale).pageMeta;
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-5 py-10 sm:py-14">
-      <HeroCard label={en ? "Calendar" : "日历"} title={en ? "Economic Calendar" : "重要经济事件"}>
+      <HeroCard label={en ? "Calendar" : "日历"} title={calendarTitle}>
         {en
           ? `A sample calendar: the releases below span ${calendarSampleWindow()}. It never updates on its own, and it is not investment advice.`
           : `示例日历：下面这几条发布覆盖 ${calendarSampleWindow()}，不会自动更新，也不构成任何投资建议。`}
