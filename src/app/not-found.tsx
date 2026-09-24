@@ -88,6 +88,13 @@ export default function NotFound() {
           </div>
         </div>
       )}
+
+      {/*
+        * 这一页在 `[locale]` 之外，页脚那句风险提示到不了这里（`src/app/layout.tsx` 没有页脚），
+        * 而它替访客列出 6 张篇章卡与课文标题——那就是内容。红线要求「每篇内容带风险提示」，
+        * 由 `src/app/not-found-claims.test.tsx` 钉住这一句真的在场。
+        */}
+      <p className="relative mt-16 text-xs text-faint">{t.footer.disclaimer}</p>
     </div>
   );
 }

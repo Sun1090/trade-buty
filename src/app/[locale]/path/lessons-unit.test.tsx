@@ -11,6 +11,7 @@ import { render } from "@testing-library/react";
 import type { ReactElement } from "react";
 
 import PathPage from "./page";
+import { getDict } from "@/lib/i18n";
 
 function pathProps(locale: "zh" | "en"): PageProps<"/[locale]/path"> {
   return {
@@ -38,5 +39,46 @@ describe("路线页课文行的量词", () => {
 
   it("中文行同样渲染出「NN 篇 →」（单位词来自字典，不是写死在组件里）", async () => {
     expect(await pageText("zh")).toMatch(/\d{2} 篇 →/);
+  });
+});
+
+/**
+ * R16.155：收尾那一栏的句子说「从第一课开始」，而同一栏里唯一的按钮
+ * （`page.tsx` 的 `p("/knowledge/getting-started")`，文字是「进入 01 · 入门基础篇」）
+ * 打开的是**篇章页**。R16.55 那次把行尾的 `chapters` 改成 `lessons`，这一句没跟着改口，
+ * 于是量词又套到了另一个对象上——同一个页面里「课」和「篇章」是两个东西（27 篇章 / 182 课）。
+ */
+describe("路线页收尾那句不再许访客一颗「第一课」", () => {
+  const LEGACY = ["准备好了？从第一课开始。", "Ready? Start from lesson one."];
+
+  /** 禁令的自证：旧写法必须能被下面那条断言抓住 */
+  it("禁令抓得住旧写法", () => {
+    for (const legacy of LEGACY) {
+      expect(legacy, `旧写法本身不含「课 / lesson」，那条断言是空转`).toMatch(/课|lesson/i);
+    }
+  });
+
+  it("两种语言的 readyCta 都不点名「课 / lesson」这个单位", () => {
+    for (const locale of ["zh", "en"] as const) {
+      expect(getDict(locale).path.readyCta, `${locale} 的 readyCta 又在说「课」`)
+        .not.toMatch(/课|lesson/i);
+    }
+  });
+
+  it("渲染出来时，那句旁边的按钮确实指向篇章页（不是某一篇课文）", async () => {
+    const view = render((await PathPage(pathProps("zh"))) as ReactElement) as unknown as {
+      container: HTMLElement;
+      unmount: () => void;
+    };
+    const ready = getDict("zh").path.readyCta;
+    const link = Array.from(view.container.querySelectorAll("a")).find(
+      (a) => a.getAttribute("href") === "/zh/knowledge/getting-started",
+    );
+    expect(link, "那一栏的按钮不见了").toBeTruthy();
+    // 篇章页的链接正好是 /zh/knowledge/<chapter>；课文页会多出一段 slug
+    expect(link!.getAttribute("href")).toMatch(/^\/zh\/knowledge\/[a-z0-9-]+$/);
+    const paragraph = link!.closest("div")?.textContent ?? "";
+    expect(paragraph, "按钮旁边那句不是 readyCta，这条断言就白设了").toContain(ready);
+    view.unmount();
   });
 });

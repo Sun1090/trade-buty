@@ -6,10 +6,10 @@ import { HeroCard } from "@/components/hero-card";
 import { REPOSITORY_URL } from "@/lib/site";
 
 /**
- * 发布复盘与 CHANGELOG 外链的 href 都从 site.ts 那一个常量拼出来。
- * 它保证的是「拼法只有一处」，不是「这个地址全仓只出现一次」——同一个仓库地址作为
- * 链接文字写死在本文件 `github.com/Sun1090/trade-buty` 那一行，layout 与 privacy 页
- * 也各有硬编码的 href。
+ * 发布条目的引用与 CHANGELOG 外链的 href 都从 site.ts 那一个常量拼出来。
+ * 它保证的是「本文件的拼法只有一处」，不是「这个地址全仓只出现一次」——同一个仓库地址
+ * 作为链接文字写死在本文件 `github.com/Sun1090/trade-buty` 那一行，`layout.tsx` 也有
+ * 两处硬编码的 href；privacy 页则把它写在正文里（那一页压根没有 `<a>`，R16.144 的账）。
  */
 const REPO_BLOB = `${REPOSITORY_URL}/blob/main`;
 import {
@@ -70,7 +70,7 @@ const COPY = {
     unreleased: "未发布",
     commits: "最近提交",
     commitsHint: "这里只是技术提交记录，用于核对发布说明与仓库历史。",
-    refs: "发布复盘",
+    refs: "相关文档",
     full: "查看完整历史",
   },
   en: {
@@ -82,7 +82,7 @@ const COPY = {
     commits: "Recent commits",
     commitsHint:
       "Raw commit log, kept for cross-checking release notes against repository history.",
-    refs: "Release review",
+    refs: "Related documents",
     full: "See full history on GitHub",
   },
 } as const;
