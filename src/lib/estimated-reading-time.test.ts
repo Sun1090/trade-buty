@@ -42,4 +42,20 @@ describe("estimateReadingMinutes", () => {
     const content = Array.from({ length: 200 }, (_, i) => `- word${i}`).join("\n");
     expect(estimateReadingMinutes(content)).toBe(1);
   });
+
+  it("< 与 > 之间的中文照算：比较句不被当成标签吞掉", () => {
+    // 旧的 `/<[^>]+>/g` 会从 `<` 一路吃到最近的 `>`，把中间整句真课文抹掉。
+    // 实测 118 个课文文件少算 144,762 个字符，67 篇的「预计阅读 N 分钟」被低估。
+    const prose = "风险".repeat(300); // 600 字 ≈ 2 分钟
+    const compared = `口径 < ${prose} 上行 > 成本`;
+    const plain = `口径 ${prose} 上行 成本`;
+    expect(estimateReadingMinutes(compared)).toBe(estimateReadingMinutes(plain));
+    expect(estimateReadingMinutes(compared)).toBeGreaterThanOrEqual(2);
+  });
+
+  it("真正的内联标签仍然不算进阅读时间", () => {
+    const tagged = `前文 <mark>${"字".repeat(600)}</mark> 后文`;
+    const stripped = `前文 ${"字".repeat(600)} 后文`;
+    expect(estimateReadingMinutes(tagged)).toBe(estimateReadingMinutes(stripped));
+  });
 });
