@@ -7,6 +7,7 @@ import {
   formatPercent,
   gradeColor,
   gradeFromPercent,
+  gradeWord,
   truncateForCanvas,
   wrapText,
 } from "./share-card";
@@ -167,6 +168,29 @@ describe("gradeFromReplayAccuracy", () => {
   });
   it("NaN → C", () => {
     expect(gradeFromReplayAccuracy(Number.NaN, 10)).toBe("C");
+  });
+});
+
+// 落地页的 `<title>`/OG 与页面上的 `<h1>` 都从这里取措辞：两处各写一份时，
+// 同一轮成绩会在搜索结果和页面之间对不上号。
+describe("gradeWord", () => {
+  it("中文把字母换成词，测验与回放的措辞不同", () => {
+    expect(gradeWord("S", "quiz", "zh")).toBe("满分");
+    expect(gradeWord("A", "quiz", "zh")).toBe("优秀");
+    expect(gradeWord("B", "quiz", "zh")).toBe("及格");
+    expect(gradeWord("C", "quiz", "zh")).toBe("待加强");
+    expect(gradeWord("S", "replay", "zh")).toBe("卓越");
+    expect(gradeWord("A", "replay", "zh")).toBe("稳健");
+    expect(gradeWord("B", "replay", "zh")).toBe("及格");
+    expect(gradeWord("C", "replay", "zh")).toBe("待加强");
+  });
+
+  it("英文保留字母（`Grade A` 本来就读得通）", () => {
+    for (const card of ["quiz", "replay"] as const) {
+      for (const grade of ["S", "A", "B", "C"] as const) {
+        expect(gradeWord(grade, card, "en")).toBe(grade);
+      }
+    }
   });
 });
 import { gradeFromStreakDays } from "./share-card";

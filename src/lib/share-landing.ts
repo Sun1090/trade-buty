@@ -22,7 +22,7 @@ import { getDict, DEFAULT_LOCALE, type Locale } from "./i18n";
 import {
   gradeFromPercent,
   gradeFromReplayAccuracy,
-  type Grade,
+  gradeWord,
 } from "./share-card";
 
 /**
@@ -141,28 +141,13 @@ export function kindToLocale(kind: ShareKind, path: string): Locale {
 }
 
 /**
- * 等级字母 → 落地页用词。阈值判定只有 `@/lib/share-card` 那一份实现，这里只管怎么说；
- * 测验与回放的措辞不同（同是 A，一个说「优秀」一个说「稳健」），所以按类型各一张表。
+ * 等级字母 → 落地页用词。措辞表与阈值判定都在 `@/lib/share-card`（`gradeWord`），
+ * 预览页的 `<h1>` 用的也是它——两处各抄一份，同一轮成绩就会长出两种说法。
  */
-const GRADE_WORDS: Record<"quiz" | "replay", Record<Grade, Record<Locale, string>>> = {
-  quiz: {
-    S: { zh: "满分", en: "S" },
-    A: { zh: "优秀", en: "A" },
-    B: { zh: "及格", en: "B" },
-    C: { zh: "待加强", en: "C" },
-  },
-  replay: {
-    S: { zh: "卓越", en: "S" },
-    A: { zh: "稳健", en: "A" },
-    B: { zh: "及格", en: "B" },
-    C: { zh: "待加强", en: "C" },
-  },
-};
-
 function gradeLabel(percent: number, locale: Locale): string {
-  return GRADE_WORDS.quiz[gradeFromPercent(percent)][locale];
+  return gradeWord(gradeFromPercent(percent), "quiz", locale);
 }
 
 function replayGradeLabel(accuracy: number, total: number, locale: Locale): string {
-  return GRADE_WORDS.replay[gradeFromReplayAccuracy(accuracy, total)][locale];
+  return gradeWord(gradeFromReplayAccuracy(accuracy, total), "replay", locale);
 }

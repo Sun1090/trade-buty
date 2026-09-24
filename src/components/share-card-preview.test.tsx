@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ShareCardPreview } from "./share-card-preview";
 import { encodeQuiz, encodeReplay, encodeStreak } from "@/lib/share-decode";
+import { getDict } from "@/lib/i18n";
+import { summarizeForMeta } from "@/lib/share-landing";
 
 vi.mock("@/lib/growth-events", () => ({ trackGrowthEvent: vi.fn() }));
 import { trackGrowthEvent } from "@/lib/growth-events";
@@ -296,4 +298,29 @@ describe("ShareCardPreview grade thresholds", () => {
       );
     },
   );
+
+  // 落地页的 `<title>`/OG 与页面上那个 `<h1>` 说的是同一轮成绩。
+  // 曾经标题按措辞表说「优秀 评级」，`<h1>` 却直接填字母「A 评级」：
+  // 搜索结果里是一套说法，点开页面是另一套。
+  it("中文落地页的 <h1> 与 meta 标题用同一套等级措辞", () => {
+    const path = encodeQuiz({
+      chapterTitle: "风险管理",
+      score: 8,
+      total: 10,
+      percent: 80,
+      locale: "zh",
+    });
+    render(
+      <ShareCardPreview
+        kind="quiz"
+        path={path}
+        locale="zh"
+        labels={{ ...LABELS, quizTitleTpl: getDict("zh").share.quizTitleTpl }}
+      />,
+    );
+    const h1 = screen.getByRole("heading", { level: 1 }).textContent;
+    expect(h1).toBe(summarizeForMeta("quiz", path).title);
+    expect(h1).toContain("优秀 评级");
+    expect(h1).not.toMatch(/\bA\b/);
+  });
 });
