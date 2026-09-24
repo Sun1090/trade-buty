@@ -68,29 +68,48 @@ describe("placeholder handling", () => {
 });
 
 describe("secret scan CLI", () => {
+  /** 在临时 git 仓里跑一次真实 CLI，返回 child_process 的结果（不抛错）。 */
+  function runCli(dir, args) {
+    const cli = fileURLToPath(new URL("./check-secrets.mjs", import.meta.url));
+    try {
+      const stdout = execFileSync(process.execPath, [cli, ...args], {
+        cwd: dir,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      return { status: 0, stdout, stderr: "" };
+    } catch (error) {
+      return { status: error?.status, stdout: `${error?.stdout ?? ""}${error?.stderr ?? ""}` };
+    }
+  }
+
   it("对受控文件返回失败且不回显值", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "trade-buty-secret-scan-"));
     const secret = "z".repeat(32);
-    const cli = fileURLToPath(new URL("./check-secrets.mjs", import.meta.url));
     try {
       execFileSync("git", ["init", "-q"], { cwd: dir });
       fs.writeFileSync(path.join(dir, "leaked.env"), `API_KEY=${secret}\n`);
 
-      let failure;
-      try {
-        execFileSync(process.execPath, [cli], {
-          cwd: dir,
-          encoding: "utf8",
-          stdio: ["ignore", "pipe", "pipe"],
-        });
-      } catch (error) {
-        failure = error;
-      }
+      // 夹具仓只有 1 个文件，过不了真实下限——这里带 --min-files 1，专测命中值那一路。
+      const failure = runCli(dir, ["--min-files", "1"]);
+      expect(failure.status).toBe(1);
+      expect(failure.stdout).toContain("literal-secret-assignment");
+      expect(failure.stdout).not.toContain(secret);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
 
-      expect(failure?.status).toBe(1);
-      const output = `${failure?.stdout ?? ""}${failure?.stderr ?? ""}`;
-      expect(output).toContain("literal-secret-assignment");
-      expect(output).not.toContain(secret);
+  it("清单短到不像话时判失败：「已扫描 0 个文件」不是通过（R16.83）", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "trade-buty-secret-scan-floor-"));
+    try {
+      execFileSync("git", ["init", "-q"], { cwd: dir });
+      fs.writeFileSync(path.join(dir, "clean.txt"), "nothing to see\n");
+
+      const failure = runCli(dir, []);
+      expect(failure.status).toBe(1);
+      // 只匹配「下限 <数>」：这个数的主人在脚本里，抄在这里就是一份会过期的转述。
+      expect(failure.stdout).toMatch(/只扫到 1 个，下限 \d+ 个（少 \d+）/);
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }

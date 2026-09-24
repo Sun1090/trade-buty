@@ -11,8 +11,14 @@ import path from "node:path";
 import { scanText } from "./secret-scan-lib.mjs";
 import { scanFloorViolation } from "./scan-floor-lib.mjs";
 
-/** 实测（2026-09-24）git ls-files 列出 762 个文件；低于此只能是被扫的东西不见了，不是仓库瘦了两成。 */
-const MIN_LISTED_FILES = 700;
+/** 实测（2026-09-24）git ls-files 列出 764 个文件；低于此只能是被扫的东西不见了，不是仓库瘦了两成。 */
+export const MIN_LISTED_FILES = 700;
+/**
+ * 夹具仓库（临时 git 仓里就一两个文件）过不了真实下限，`--min-files 1` 给它放行。
+ * CI 与 `npm run check:secrets` 都不带这个参数，跑的就是真下限；传 0 会被下限校验当场抛错。
+ */
+const flagAt = process.argv.indexOf("--min-files");
+const minListedFiles = flagAt >= 0 ? Number(process.argv[flagAt + 1]) : MIN_LISTED_FILES;
 
 const root = process.cwd();
 const listed = execFileSync(
@@ -22,11 +28,7 @@ const listed = execFileSync(
 );
 const files = listed.toString("utf8").split("\0").filter(Boolean);
 
-const shrunk = scanFloorViolation({ count: files.length, floor: MIN_LISTED_FILES, what: "git 列出的待扫文件" });
-if (shrunk) {
-  console.error(`[secret-scan] ❌ ${shrunk}`);
-  process.exit(1);
-}
+const shrunk = scanFloorViolation({ count: files.length, floor: minListedFiles, what: "git 列出的待扫文件" });
 
 const findings = [];
 let scanned = 0;
@@ -62,7 +64,11 @@ if (findings.length > 0) {
     console.error(`  - ${finding.file}:${finding.line}:${finding.column} ${finding.label} (${finding.rule})`);
   }
   console.error("请移除凭据、吊销泄露值，并改用环境变量或密钥管理系统。");
-  process.exit(1);
 }
+// 先报凭据再报范围：反过来的话一次清单变短会把同一轮真找到的密钥盖掉。
+if (shrunk) console.error(`[secret-scan] ❌ ${shrunk}`);
+if (findings.length > 0 || shrunk) process.exit(1);
 
-console.log(`[secret-scan] ✅ 已扫描 ${scanned} 个文本文件，未发现疑似凭据（跳过 ${skipped} 个非文本项）`);
+console.log(
+  `[secret-scan] ✅ 清单 ${files.length} 个文件，已扫描 ${scanned} 个文本文件，未发现疑似凭据（跳过 ${skipped} 个非文本项）`,
+);
