@@ -299,7 +299,7 @@ const zh = {
     didYouMean: "你是不是想找",
     triedSynTpl: "已按同义说法搜索：{terms}",
     gapHint: "这些说法均无对应课程——该主题可能尚未收录，或换个关键词试试。",
-    filterZeroTpl: "「{chapter}」暂无匹配，站内共有 {n} 条相关结果",
+    filterZeroTpl: "「{chapter}」这篇里没有匹配，中文课文里另有 {n} 条相关结果",
     filterZeroCta: "查看全部结果",
     filterLabel: "按篇章筛选",
     // R13.25 / Q2.6：搜索索引加载失败的降级文案
@@ -689,7 +689,7 @@ const en: Dict = {
     didYouMean: "Did you mean",
     triedSynTpl: "Also searched synonyms: {terms}",
     gapHint: "No course covers these terms — this topic may not be published yet.",
-    filterZeroTpl: "No match in “{chapter}”, but {n} result(s) exist",
+    filterZeroTpl: "Nothing in “{chapter}” matches — {n} related results elsewhere in the English lessons",
     filterZeroCta: "Show all results",
     filterLabel: "Filter by chapter",
     // R13.25 / Q2.6: search index load failure fallback copy

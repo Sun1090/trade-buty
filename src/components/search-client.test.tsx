@@ -3,10 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { SearchClient } from "./search-client";
 
-const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
+const { mockPush, pathnameState } = vi.hoisted(() => ({
+  mockPush: vi.fn(),
+  /** 语言由 URL 第一段决定，所以「同一份双语索引在两种页面上各扫什么」要能在用例里开关。 */
+  pathnameState: { path: "/zh/search" },
+}));
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/zh/search",
+  usePathname: () => pathnameState.path,
   useRouter: () => ({ push: mockPush }),
 }));
 
@@ -564,5 +568,61 @@ describe("SearchClient 输入联想与零结果诊断", () => {
     await screen.findByText(dict.noResults);
     fireEvent.click(screen.getByRole("button", { name: "保证金" }));
     expect(screen.getByRole("searchbox")).toHaveValue("保证金");
+  });
+});
+
+describe("SearchClient 按语言分区（R16.85）", () => {
+  /** 真实索引就是一个文件装下 zh 与 en 各 209 篇，两棵树逐篇互为译文。 */
+  const MIXED = [
+    { url: "/zh/knowledge/spot/order-types", title: "订单类型", chapter: "05 · 现货篇", text: "限价单 市价单" },
+    { url: "/zh/knowledge/futures/margin", title: "保证金", chapter: "06 · 合约篇", text: "限价单 保证金" },
+    { url: "/en/knowledge/spot/order-types", title: "Order types", chapter: "05 · Spot", text: "限价单 order book" },
+    { url: "/en/knowledge/futures/margin", title: "Margin", chapter: "06 · Futures", text: "限价单 margin" },
+  ];
+
+  beforeEach(() => {
+    storage.clear();
+    pathnameState.path = "/zh/search";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => MIXED }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("中文页只搜中文课文，篇章筛选也不长出英文那一半", async () => {
+    render(<SearchClient dict={dict} />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "限价单" } });
+
+    // 等到 debounce 落地再数行：结果区在 200ms 之前显示的是「没有匹配的结果」。
+    const filter = await screen.findByRole("combobox", { name: dict.filterLabel });
+    expect(within(filter).getAllByRole("option").map((o) => o.getAttribute("value"))).toEqual([
+      "",
+      "05 · 现货篇",
+      "06 · 合约篇",
+    ]);
+
+    const rows = document.querySelectorAll("a[data-search-result-index]");
+    expect(rows).toHaveLength(2);
+    for (const row of rows) expect(row.getAttribute("href")).toMatch(/^\/zh\//);
+    expect(screen.queryByText("Order types")).not.toBeInTheDocument();
+  });
+
+  it("英文页反过来：同一份索引里只留 /en/ 那半边", async () => {
+    // 查询词两边都出现，所以这条断言真的在测「扫哪一半」而不是「哪一半含这个词」。
+    pathnameState.path = "/en/search";
+    render(<SearchClient dict={dict} />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "限价单" } });
+
+    const filter = await screen.findByRole("combobox", { name: dict.filterLabel });
+    expect(within(filter).getAllByRole("option").map((o) => o.getAttribute("value"))).toEqual([
+      "",
+      "05 · Spot",
+      "06 · Futures",
+    ]);
+    const rows = document.querySelectorAll("a[data-search-result-index]");
+    expect(rows).toHaveLength(2);
+    for (const row of rows) expect(row.getAttribute("href")).toMatch(/^\/en\//);
+    expect(screen.queryByText("订单类型")).not.toBeInTheDocument();
   });
 });
