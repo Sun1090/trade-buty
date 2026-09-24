@@ -62,6 +62,23 @@ describe("FAQ 的行情范围说明", () => {
     expect(replay).toMatch(/custom/i);
   });
 
+  /**
+   * R16.187：这一句既替「实时」作保，又当场把它会停的条件写在同一口气里。
+   *
+   * 推送是有条件的：`networkQuality !== "online"` 时 socket 根本不开，图表上另有一句
+   * 「已暂停实时推送」（R16.180 钉过的那条披露）。FAQ 若只答「是的」，同一个用户在同一次
+   * 访问里就会读到两句互相打脸的话。两头都要在：不许把「是的」删了躲开，也不许只留「是的」。
+   */
+  it("实时那句一边肯定、一边交代它会停", async () => {
+    const zh = await answerText("zh");
+    const en = await answerText("en");
+    expect(zh).toMatch(/是的/);
+    expect(zh).toContain("实时");
+    expect(zh, "「是的」后面没交代实时会停").toMatch(/暂停/);
+    expect(en).toMatch(/\bYes\b/);
+    expect(en, '"Yes" with no mention of the pause').toMatch(/paus/i);
+  });
+
   it("同一份清单在同一条回答里只念一遍", async () => {
     // 回放与快捷按钮现在是同一批标的；文案照抄两遍清单的话，改一处就会漏另一处
     const label = symbolListLabel(CHART_QUICK_SYMBOLS);
