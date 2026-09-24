@@ -542,3 +542,18 @@ describe("StatsClient review reminder banner + settings (R12.15–R12.17)", () =
     expect(JSON.parse(localStorage.getItem("tb-review-reminder-settings")!).dndStartHour).toBe(13);
   });
 });
+
+describe("成就徽章按语言取值（R16.73）", () => {
+  it("英文界面的成就墙不印中文徽章名", async () => {
+    render(<StatsClient chapters={chapters} dict={dict} locale="en" />);
+    expect(await screen.findByText("First step")).toBeInTheDocument();
+    expect(screen.queryByText("第一步")).toBeNull();
+    expect(screen.queryByText("回放连击王")).toBeNull();
+  });
+
+  it("中文界面仍是中文徽章名，不反过来露出英文", async () => {
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    expect(await screen.findByText("第一步")).toBeInTheDocument();
+    expect(screen.queryByText("First step")).toBeNull();
+  });
+});
