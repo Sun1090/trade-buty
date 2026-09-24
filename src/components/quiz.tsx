@@ -32,6 +32,7 @@ export interface QuizDict {
   copiedLink: string;
   copyFailed: string;
   downloadFailed: string;
+  previewFailed: string;
 }
 
 const tpl = (s: string, vars: Record<string, string | number>) =>
@@ -212,6 +213,7 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
                   copiedLink: dict.copiedLink,
                   copyFailed: dict.copyFailed,
                   downloadFailed: dict.downloadFailed,
+                  previewFailed: dict.previewFailed,
                 }}
                 shareUrl={shareUrl ?? undefined}
               />

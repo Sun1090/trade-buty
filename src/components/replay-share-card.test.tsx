@@ -22,6 +22,7 @@ const LABELS = {
   copiedLink: "已复制",
   copyFailed: "复制失败",
   downloadFailed: "下载失败",
+  previewFailed: "预览失败，请重试",
 };
 
 const LABELS_EN = {
@@ -33,6 +34,7 @@ const LABELS_EN = {
   copiedLink: "Copied",
   copyFailed: "Copy failed",
   downloadFailed: "Download failed",
+  previewFailed: "Preview failed, please try again",
 };
 
 function fakeCtx(): CanvasRenderingContext2D {
@@ -233,7 +235,7 @@ describe("ReplayShareCard", () => {
     }) as unknown as typeof HTMLCanvasElement.prototype.toDataURL;
     const { container } = renderCard();
     fireEvent.click(screen.getByTestId("replay-share-preview-btn"));
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("下载失败"));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("预览失败"));
     expect(container.querySelector("img")).toBeNull();
   });
 

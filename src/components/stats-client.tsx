@@ -797,6 +797,7 @@ export function StatsClient({
                 copiedLink: dict.copiedLink,
                 copyFailed: dict.copyFailed,
                   downloadFailed: dict.downloadFailed,
+                  previewFailed: dict.previewFailed,
               }}
               shareUrl={streakShareUrl ?? undefined}
             />

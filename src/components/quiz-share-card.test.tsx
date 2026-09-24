@@ -114,7 +114,7 @@ describe("QuizShareCard", () => {
         score={4}
         total={5}
         locale="zh"
-        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败", previewFailed: "预览失败" }}
       />,
     );
     expect(screen.getByTestId("quiz-share-btn")).toBeInTheDocument();
@@ -132,7 +132,7 @@ describe("QuizShareCard", () => {
         score={5}
         total={5}
         locale="zh"
-        labels={{ share: "分享我的成绩", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败" }}
+        labels={{ share: "分享我的成绩", preview: "预览卡面", previewAlt: "预览", download: "下载", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败", previewFailed: "预览失败" }}
       />,
     );
     // canvas 存在但隐藏
@@ -163,7 +163,7 @@ describe("QuizShareCard", () => {
         score={3}
         total={5}
         locale="zh"
-        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败", previewFailed: "预览失败" }}
       />,
     );
     fireEvent.click(screen.getByTestId("quiz-share-preview-btn"));
@@ -196,7 +196,7 @@ describe("QuizShareCard", () => {
         total={5}
         locale="zh"
         shareUrl="https://example.com/share/quiz/secret?ref=alice"
-        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败", previewFailed: "预览失败" }}
       />,
     );
     fireEvent.click(screen.getByTestId("quiz-share-link-btn"));
@@ -225,7 +225,7 @@ describe("QuizShareCard download failure feedback (R13.6)", () => {
         score={8}
         total={10}
         locale="zh"
-        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败，请重试" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败，请重试", previewFailed: "预览失败" }}
       />,
     );
     fireEvent.click(screen.getByTestId("quiz-share-btn"));
@@ -252,11 +252,12 @@ describe("QuizShareCard download failure feedback (R13.6)", () => {
         score={8}
         total={10}
         locale="zh"
-        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败，请重试" }}
+        labels={{ share: "分享", preview: "预览卡面", previewAlt: "预览卡", download: "下载", copyLink: "复制链接", copiedLink: "已复制", copyFailed: "复制失败", downloadFailed: "下载失败，请重试", previewFailed: "预览失败" }}
       />,
     );
     fireEvent.click(screen.getByTestId("quiz-share-preview-btn"));
-    expect(await screen.findByRole("alert")).toHaveTextContent("下载失败，请重试");
+    // 点的是「预览卡面」，报错就要说预览——写成下载失败是把用户指回了一条他没走的路
+    expect(await screen.findByRole("alert")).toHaveTextContent("预览失败");
   });
 });
 
@@ -273,7 +274,7 @@ describe("QuizShareCard share URL and preview behavior", () => {
         locale="en"
         siteName="Trade Buty"
         shareUrl={opts.shareUrl}
-        labels={{ share: "Share", preview: "预览卡面", previewAlt: "Preview", download: "Download", copyLink: "Copy link", copiedLink: "Copied", copyFailed: "复制失败", downloadFailed: "Download failed" }}
+        labels={{ share: "Share", preview: "预览卡面", previewAlt: "Preview", download: "Download", copyLink: "Copy link", copiedLink: "Copied", copyFailed: "复制失败", downloadFailed: "Download failed", previewFailed: "Preview failed" }}
       />,
     );
   }
