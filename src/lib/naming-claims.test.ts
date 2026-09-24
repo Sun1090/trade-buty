@@ -130,3 +130,67 @@ describe("指引点名的开关就是屏幕上那颗按钮", () => {
     expect(offenders, `这些成就在替「滚过一半」承诺「完成」：\n${offenders.join("\n")}`).toEqual([]);
   });
 });
+
+/**
+ * R16.170：统计页把两个不同的东西都叫「完成篇章」。
+ *
+ * 总览那张卡是 `stats.doneChapters / stats.totalChapters`——**全部历史**里读完的篇章；
+ * 趋势那一行的 `trendNewChapters` 是 `chaptersCompletedInRange`——**所选时段内**新读完的篇章
+ * （`course-completion-trend.ts:188-189`）。两种语言的字节完全一样，而同一行旁边还摆着
+ * `trendCompletions: "完成篇数"`——它数的是**课程**（`completionsInRange`），与「篇章」只差一个字，
+ * 正好是 R16.163 刚并掉的那对词（篇 / 课）换了个地方长回来。
+ *
+ * 门禁不手写清单：卡片名从组件里扫（`label={dict.X}` 与 `<dt>{dict.X}</dt>` 两种落点），
+ * 所以「把某个名字挪去别处」骗得过；只禁不立也不行，另附替代词与旧写法两条对照。
+ */
+describe("统计页那一屏的卡片名互不重名", () => {
+  const source = readFileSync(
+    path.join(process.cwd(), "src/components/stats-client.tsx"),
+    "utf8",
+  );
+  const labelKeys = [
+    ...new Set(
+      [...source.matchAll(/(?:label=\{dict\.|>\{dict\.)([A-Za-z0-9_]+)/g)].map((m) => m[1]),
+    ),
+  ];
+
+  it("扫描本身有东西可扫（卡片名少于 20 个说明组件或正则变了）", () => {
+    expect(labelKeys.length).toBeGreaterThanOrEqual(20);
+  });
+
+  for (const locale of ["zh", "en"] as const) {
+    it(`${locale}：两个不同的键不共用一个名字`, () => {
+      const dict = STATS_DICTS[locale] as unknown as Record<string, string>;
+      // 组件里那些 `dict.X` 不全是这份字典的键：子组件收的是自己那份 props
+      // （`goalAchieved: dict.weekGoalAchieved` 就是换个名字往下传），解析不出的跳过，
+      // 但用「解析出的数量 + 关键键必须在」两条夹住，免得扫描缩水成空转。
+      const named = labelKeys
+        .map((key) => [key, dict[key]] as const)
+        .filter(([, text]) => typeof text === "string");
+      expect(named.length, "解析出的卡片名太少，这条扫描是空转").toBeGreaterThanOrEqual(20);
+      for (const must of ["overall", "readDocs", "chapters", "trendCompletions", "trendNewChapters"]) {
+        expect(named.map(([key]) => key), `这一屏的卡片名里少了 ${must}`).toContain(must);
+      }
+      const byText = new Map<string, string[]>();
+      for (const [key, text] of named) {
+        byText.set(text, [...(byText.get(text) ?? []), key]);
+      }
+      const dupes = [...byText]
+        .filter(([, keys]) => keys.length > 1)
+        .map(([text, keys]) => `「${text}」同时是 ${keys.join(" / ")}`);
+      expect(dupes, `这一屏上有人一个名字指两个东西：\n${dupes.join("\n")}`).toEqual([]);
+    });
+  }
+
+  it("zh：三张时段卡都按这一行的写法点明「期间」，数课程的不借「篇」这个字", () => {
+    const zh = STATS_DICTS.zh;
+    // 「期间 + 量名」是这一行自己的写法（邻居 `replayTrendTime: "期间时长"` 早就这么写）
+    expect(zh.trendCompletions).toBe("期间完成课程");
+    expect(zh.trendNewChapters).toBe("期间完成篇章");
+    expect(zh.replayTrendRounds).toBe("期间回放轮数");
+    // 旧写法作对照：这两串一旦长回来，上面那条重名扫描也会同时红
+    expect(zh.trendCompletions).not.toMatch(/篇/);
+    expect(zh.trendNewChapters).not.toBe(zh.chapters);
+    expect(zh.replayTrendRounds).not.toBe(zh.replay);
+  });
+});
