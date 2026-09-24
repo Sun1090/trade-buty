@@ -155,6 +155,7 @@ const dict: ReplayDict = {
   copiedLink: "已复制",
   copyFailed: "复制失败，请手动选择复制",
   downloadFailed: "下载失败",
+  previewFailed: "预览失败，请重试",
 };
 
 beforeEach(() => {

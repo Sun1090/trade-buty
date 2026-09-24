@@ -29,6 +29,7 @@ interface Props {
     copiedLink: string;
     copyFailed: string;
     downloadFailed: string;
+  previewFailed: string;
   };
 }
 
@@ -50,8 +51,8 @@ export function ReplayShareCard({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  // R13.6：下载失败可见反馈（canvas 污染/toBlob 失败等）
-  const [downloadFailed, setDownloadFailed] = useState(false);
+  // R13.6：失败必须可见；R16.92：还得说对是哪一步——点「预览」失败不能报「下载失败」
+  const [failure, setFailure] = useState<null | "download" | "preview">(null);
   const filename = `trade-buty-replay-${slugify(symbol)}-${slugify(interval)}.png`;
   // R13.2：预览图 alt 描述卡片内容（准确率/命中/连胜），读屏可复述
   const contentAlt =
@@ -104,7 +105,7 @@ export function ReplayShareCard({
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("share canvas unavailable");
       await downloadCanvasAsPng(canvas, filename);
-      setDownloadFailed(false);
+      setFailure(null);
       trackGrowthEvent({
         name: "share_card_download",
         card: "replay",
@@ -115,7 +116,7 @@ export function ReplayShareCard({
       });
     } catch {
       // R13.6：对「伪装的失败」诚实——拿到错误就反馈，不假装成功
-      setDownloadFailed(true);
+      setFailure("download");
       trackGrowthEvent({
         name: "share_card_download",
         card: "replay",
@@ -137,21 +138,21 @@ export function ReplayShareCard({
       draw,
       getCanvas: () => canvasRef.current,
     });
-    setDownloadFailed(outcome === "failed");
+    setFailure(outcome === "failed" ? "download" : null);
   }
 
   async function handlePreview() {
     try {
       await draw();
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas) throw new Error("preview canvas unavailable");
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       const url = canvas.toDataURL("image/png");
       setPreviewUrl(url);
-      setDownloadFailed(false);
+      setFailure(null);
       trackGrowthEvent({ name: "share_preview_opened", card: "replay", locale });
     } catch {
-      setDownloadFailed(true);
+      setFailure("preview");
     }
   }
 
@@ -205,8 +206,10 @@ export function ReplayShareCard({
           }
         />
       )}
-      {downloadFailed && (
-        <p role="alert" className="basis-full mt-2 text-xs font-medium text-red-500">{labels.downloadFailed}</p>
+      {failure && (
+        <p role="alert" className="basis-full mt-2 text-xs font-medium text-red-500">
+          {failure === "download" ? labels.downloadFailed : labels.previewFailed}
+        </p>
       )}
       {previewUrl && (
         <div className="basis-full mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
