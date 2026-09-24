@@ -64,7 +64,10 @@ const dict: StatsDict = {
   overviewTitle: "Learning overview",
   overviewDesc: "Overview description",
   overviewCourses: "Courses",
-  overviewQuizzes: "Quizzes",
+  // 真实词典里这两格不同名（`quizzes` 是趋势/概览卡的「测验完成」，`overviewQuizzes` 是
+  // 学习概览那块的「测验记录」）。夹具曾经把它们写成同一个 "Quizzes"，任何按标签找卡片
+  // 的断言都会一网打尽、分不清谁是谁。
+  overviewQuizzes: "Quiz record",
   overviewReplay: "Replay",
   overviewTime: "Time",
   trendTitle: "Course completion trend",
@@ -221,6 +224,60 @@ describe("StatsClient quiz score trend", () => {
     expect(await screen.findByText("Quiz score trend")).toBeInTheDocument();
     expect(screen.queryByText("No quiz dates")).not.toBeInTheDocument();
     expect(screen.getByText("1/1")).toBeInTheDocument();
+  });
+});
+
+/**
+ * R16.125：「测验完成」这个标签在同一屏挂着两张卡，两张都得说同一句话。
+ *
+ * 概览栅格那张读 `aggregateStats()`，测验趋势那张读 `buildQuizScoreTrend()`，喂的是同一份
+ * localStorage。判据曾经不同（趋势卡额外要求 `best > 0`，答题账本又丢掉 0 分那条），于是
+ * 「做完全错的一套题」在一张卡上是 1/27、另一张上是 0/27。第三处消费方是「下一步建议」的
+ * `pendingQuizChapter`：它自己写了 `|| best > 0`，把「有分数但没做完」的篇章既不算完成、
+ * 也不再建议去做。
+ */
+describe("StatsClient 测验完成 caliber (R16.125)", () => {
+  /** 页面上所有顶着这个标签的卡片，取它们各自印出来的那个数 */
+  function valuesLabeled(label: string): string[] {
+    return [...document.querySelectorAll("p, dt")]
+      .filter((node) => node.textContent?.trim() === label)
+      .map((node) => node.closest("div")?.querySelector("p, dd")?.textContent?.trim() ?? "");
+  }
+
+  const totalQuizzes = Object.keys(QUIZZES).length;
+
+  it("全答错的一套题：两张卡印同一个数，趋势那边也不漏这次作答", async () => {
+    expect(totalQuizzes).toBeGreaterThan(1);
+    store.set("tb-quiz-getting-started", JSON.stringify({ best: 0, done: true }));
+    store.set(
+      "tb-quiz-attempts",
+      JSON.stringify({
+        "getting-started:now": { chapter: "getting-started", best: 0, total: 10, at: Date.now() },
+      }),
+    );
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    await screen.findByText("Quiz score trend");
+
+    const values = valuesLabeled("Quizzes");
+    // 扫描分母：这个标签在该屏就该出现两次。少一次说明断言没测到东西，多一次说明又长出了第三处口径
+    expect(values.length, `「Quizzes」标签出现了 ${values.length} 次，预期 2 次`).toBe(2);
+    expect(new Set(values).size, `两张卡印出了互不相同的数：${values.join(" vs ")}`).toBe(1);
+    expect(values[0]).toBe(`1/${totalQuizzes}`);
+    // 0 分照样是这个窗口的「最高分」，印成 "-" 会被读成「这段时间没做题」
+    expect(screen.getByRole("img", { name: /Quiz score trend/ })).toHaveAttribute("aria-label", "Quiz score trend: 0/10");
+    expect(screen.getByText("0/10")).toBeInTheDocument();
+  });
+
+  it("有分数但没做完：两张卡都不算完成，「下一步」仍然把这套题递到眼前", async () => {
+    store.set("tb-quiz-getting-started", JSON.stringify({ best: 5, done: false }));
+    render(<StatsClient chapters={chapters} dict={dict} locale="en" />);
+    await screen.findByText("Quiz score trend");
+
+    const values = valuesLabeled("Quizzes");
+    expect(values.length).toBe(2);
+    expect(new Set(values).size, `两张卡印出了互不相同的数：${values.join(" vs ")}`).toBe(1);
+    expect(values[0]).toBe(`0/${totalQuizzes}`);
+    expect(screen.getByText("Check yourself: the getting-started quiz")).toBeInTheDocument();
   });
 });
 

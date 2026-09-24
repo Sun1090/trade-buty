@@ -300,8 +300,10 @@ export function StatsClient({
           const readCount = readDocsForChapter(progress[chapter.slug], chapter.docCount);
           if (readCount < chapter.docCount) continue;
           const quizEntry = quizProgress[chapter.slug];
-          const quizDone = Boolean(quizEntry?.done) || (quizEntry?.best ?? 0) > 0;
-          if (!quizDone) {
+          // 「有没有做过这套题」只认 `done`：与两张「测验完成」卡同一判据（R16.125）。
+          // 补一条 `|| best > 0` 会让「有分数但没做完」的存档既不算完成、又不再被建议，
+          // 那一章从此没有入口。
+          if (!quizEntry?.done) {
             return { chapter: chapter.slug, chapterTitle: chapter.title ?? chapter.slug };
           }
         }
