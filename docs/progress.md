@@ -6603,3 +6603,17 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：本轮无迁移、无存储格式变化，`RADAR_MIN_AXES = 3` 是一个可读性阈值而非产品口径（文案跟着这一个常量走，改数即改文案）。待拍板清单不变：R15.2 / R16.7 / R16.10–R16.12 / R16.16 / R16.41 / R16.47 / R16.52 / R16.58 / R16.60 / R16.64。
 - 下一项：本批走 PR；随后把上面四条候选核实并登记开工。Vercel 构建配额恢复后跑 `npm run ops:smoke-prod`（#110），判据仍是 `/zh/changelog` 出现 0.7.15。
 - 更新时间：2026-09-24 11:54（Asia/Shanghai）。
+
+
+## 2026-09-24 — 测验页那两个没送到的数字，与章节导读那句没人读的失败文案（R16.76 / R16.77）
+
+- 分支 `fix/quiz-numbers-ai-failure`（基线 `b69c361`，即 #280 落地后的 main）。来路仍是上一批那轮只读的「说法 vs 事实」扫描。两个提交按表面分开：`efccc61` 管测验页那两个数（R16.76），`754b461` 管章节 AI 导读的失败态（R16.77）——一开始我把它们写进同一个提交，理由是「顺带」，但那是两个互不相干的界面，撤回时不该互相牵连，所以在推之前拆开重排（两个提交的合树与原提交逐字节相同）。
+- R16.76 测验页两处各半句承诺、渲染点都不兑现：`src/components/quiz.tsx:171` 裸渲染 `{dict.questionsUnit}`，而中文词条本身以量词开头（`src/lib/i18n.ts:94` 「道概念题 · 即时判分」，en `:483` "concept questions · instant grading"），屏幕上就是一句以量词开头的残话——隔壁 `chapter-exam-card.tsx:64` 用同一份字典却带了 `{total}`，说明是漏了而不是设计。答题进度那句「第 {i} / {n} 题 · 已答对」只代入 `i` 与 `n`，英文 "Question {i} / {n} · Correct: " 以冒号收尾、后面空无一物，而那个数一直在组件状态 `correct` 里。改法：标题取 `quiz.questions.length`；`progressTpl` 增加 `{c}` 并由组件传 `correct`，英文改成 "… · {c} correct" 不再以冒号收尾。
+- R16.77 章节 AI 导读失败即整卡卸载：`chapter-summary-ai.tsx` 的 `if (failed && !summary) return null;` 让读者点完「生成摘要」只剩一次旋转，然后连标题带按钮一起消失，再试只能刷新页面；字典里那句 `aiSummaryError`（zh `i18n.ts:83` / en `:472`）由 `knowledge/[chapter]/page.tsx:236` 装配进组件的 `Dict.error`，而**组件从头到尾没读过它**。这不是我新立的口径：R3.6 当年记的决定就是「失败整个卡片隐藏，不展示错误文案」，也真有一条用例钉着；但 R16.54 已经在 AI 出题那边把同一种失败改成「按钮不消失、可以直接重试」。这一张是那次修法漏掉的最后一处，所以跟新的口径走，并把 R3.6 那条用例按新期望改写（错误文案出现、按钮还在、再点真的发第二次请求）——反转本身写进 roadmap，不假装它一直是错的。
+- 为什么门禁没提前抓到 R16.77：`check:dead-copy` 的口径是「字典词条有没有非字典引用点」，而装配点 `error: t.chapter.aiSummaryError` 正是一个这样的引用，于是它算「被使用」。这一类另立 **R16.78**（未开工，已登记 + 建任务 #111）：凡组件声明了全 string 的字典接口，每个字段都得在本文件里被读到，整个透传给下游的组件允许在下游满足，预算取 0。
+- 变更文件：`src/components/quiz.tsx`、`src/lib/i18n.ts`、`src/components/chapter-summary-ai.tsx` 与三者用例、`docs/roadmap.md`、本条。
+- 验证：`npm test` **297 文件 / 2905 条**绿（基线 `b69c361` 为 2903）；`lint --max-warnings=0`、`typecheck` 干净；`rm -rf .next && npm run build` 后按 CI 顺序跑产物门禁——`check:mobile` 14 页无溢出、`check:seo-surface`（sitemap 430 · 页面 454 · KB 418 · 未声明 0）、`check:search-index` 418/418/418、`check:structured-data` 454 页 · 5656 实体、`check:risk-warning` lessons 364/364 · readmes 40/54（上游 14 篇仍待改，R14.11）；最后 `npm run e2e` **160 条全绿**。顺手核了一下这轮改动和 placeholder 门禁的实际关系，结论和直觉相反：标题那个数字确实落在产物里（`zh/knowledge/getting-started.html` 的可见文本是 `3 道概念题 · 即时判分`），但它修的是「少了个数」不是「漏了占位符」，泄漏门禁本来就管不着；而「已答对 {c}」那句只在点开测验、水合之后才存在，`placeholder-leak.spec.ts` 的水合清单（`HYDRATED_ROUTES`）只有 ai/stats/path/replay/glossary，知识库路由被明令排除在外（它同时断言 `isKnowledgePage(route)` 为 false，防止有人把界面页挪进知识库让严格口径静默退化）——所以那个数字由单测钉住，不是 e2e，这条记录不替门禁吹。
+- 变异核对四组：`c: correct` 摘掉 → 答题数那条红；题数前缀摘掉 → 标题那条红；把 `if (failed && !summary) return null;` 塞回去 → 只有改写后的失败用例红；字典夹具若不含 `{c}` 占位符，新用例根本测不到代入——夹具与断言一起改才算数。另外把既有那条 `queryByText(/对|错/)` 收紧成整串匹配：进度行现在合法地含「对」字，用子串会把自己判成反馈。
+- 阻塞 / 风险：无迁移、无存储变化。R16.77 反转的是一条已勾选的决定（R3.6），理由与新旧两条口径都写在 roadmap。若产品侧坚持「失败即隐身」，`git revert 754b461` 撤的就是干净的一半——那个提交只含 `chapter-summary-ai.*` 两个文件，测验页那两个数字在 `efccc61` 里不受牵连；反过来若只否掉 R16.76 的英文改句，`git revert efccc61` 同理。待拍板清单不变：R15.2 / R16.7 / R16.10–R16.12 / R16.16 / R16.41 / R16.47 / R16.52 / R16.58 / R16.60 / R16.64。
+- 下一项：#110（Vercel 构建配额恢复后复跑 `ops:smoke-prod`，判据 `/zh/changelog` 出现 0.7.15）；随后开工 #111（R16.78 的组件字典字段级死键检查）。
+- 更新时间：2026-09-24 12:24（Asia/Shanghai）。
