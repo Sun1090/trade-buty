@@ -55,7 +55,7 @@ const zh = {
     metaDesc: "面向全球中文用户的免费中立交易教育：{chapters} 篇章分级课程 + 真实行情图表与回放训练。不荐股、不导流、不承诺收益。",
   },
   path: {
-    label: "Learning Path",
+    label: "学习路线",
     title: "学习路线",
     mapHeading: "知识点图谱",
     intro: "路径分 {stages} 站：先走完「入门主线」建立完整认知，再按方向选学进阶与深潜专题。建议顺序学习，不要跳读——主线最后一站「{lastCore}」会告诉你为什么。",
@@ -67,7 +67,7 @@ const zh = {
     readyCta: "准备好了？从这里开始。",
     translationNote: "",
     lesson1: "进入 {chapter:getting-started} →",
-    lessonsUnit: "篇",
+    lessonsUnit: "课",
   },
   chapter: {
     expandIntro: "展开章节导语",
@@ -114,7 +114,7 @@ const zh = {
     copyFailed: "复制失败，请手动选择复制",
   },
   chart: {
-    label: "Practice",
+    label: "行情",
     title: "真实行情图表",
     embedHeading: "边学边练 · 真实行情",
     intro: "学完概念，来这里看真盘。对照「{chapter:technical-analysis}」练习识别 K 线形态与指标——先看懂，再谈操作。",
@@ -241,7 +241,7 @@ const zh = {
     srsNotYet: "还没掌握，明天再见",
   },
   replay: {
-    label: "Practice",
+    label: "回放",
     title: "历史回放训练",
     intro: "随机抽取一段过去的历史行情（盲盒），逐根 K 线回放。开「猜涨跌」模式：先预测下一根，再揭晓答案——练的是盘感，不是后视镜。",
     newRound: "新一轮 ↻",
@@ -456,7 +456,7 @@ const en: Dict = {
     metaDesc: "Free neutral trading education for global learners: {chapters} structured chapters + live charts and replay training. No stock picks, no referrals, no profit promises.",
   },
   path: {
-    label: "Learning Path",
+    label: "Learn",
     title: "Learning Path",
     mapHeading: "Knowledge map",
     intro: "{stages} stages: finish the core path for a complete foundation, then pick advanced and deep-dive topics by direction. Study in order — the last stop of the core line, {lastCore}, shows you why.",
@@ -515,7 +515,7 @@ const en: Dict = {
     copyFailed: "Copy failed — select and copy manually",
   },
   chart: {
-    label: "Practice",
+    label: "Markets",
     title: "Live Market Charts",
     embedHeading: "Practice · Live market",
     intro: "Real crypto charts to pair with your lessons — practice spotting candlestick patterns and indicators from {chapter:technical-analysis}.",
@@ -642,7 +642,7 @@ const en: Dict = {
     srsNotYet: "Not yet — try tomorrow",
   },
   replay: {
-    label: "Practice",
+    label: "Replay",
     title: "Historical Replay Trainer",
     intro: "A random past market window (blind box), replayed candle by candle. Switch on “Guess up/down”: predict the next candle before it reveals — train your instincts, not hindsight.",
     newRound: "New round ↻",
