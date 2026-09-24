@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { getStageGroups } from "@/lib/path";
+import { getDict } from "@/lib/i18n";
 
-/** 知识库篇章图谱：按阶段分组可视化（SVG 节点 + 连接线），篇章与阶段数都由传入数据决定 */
+/**
+ * 知识库篇章图谱：按阶段分组可视化（节点 + 课数条），篇章与阶段数都由传入数据决定。
+ * 阶段名直接取本页上方各节用的那份字典：组件里另抄一套时，同一页会拿两个名字指同一个阶段
+ * （这里曾是「基础阶段 · 入门主线」，页面上方是「第一站 · 入门主线」）。
+ */
 export function KnowledgeGraph({ locale }: { locale: string }) {
   const groups = getStageGroups(locale);
+  const stages = getDict(locale).path.stages;
 
   // 条长的分母：图上所有篇章里最多的那个课数。
   // 早期这里除的是「每个阶段有几篇」（9/8/10 → 10），于是 16 课的、13 课的、11 课的全都
@@ -17,7 +23,7 @@ export function KnowledgeGraph({ locale }: { locale: string }) {
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
       <div className="flex items-center justify-between mb-4">
         <p className="text-xs text-faint">
-          {locale === "en" ? "Knowledge map · bars show lesson count" : "知识图谱 · 条长表示课程数"}
+          {locale === "en" ? "Bar length = lesson count" : "条长表示课程数"}
         </p>
         <div className="flex items-center gap-3 text-[10px] text-faint">
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full border border-[var(--accent)]/40 inline-block" />{locale === "en" ? "Chapter" : "篇章"}</span>
@@ -28,7 +34,8 @@ export function KnowledgeGraph({ locale }: { locale: string }) {
         {groups.map(({ stage, chapters }) => (
           <div key={stage.id} className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-accent mb-3">
-              {stage.id === "core" ? "★" : stage.id === "practice" ? "◆" : "◇"} {locale === "en" ? stageText(stage.id, locale) : stageText(stage.id, locale)}
+              <span aria-hidden>{stage.id === "core" ? "★" : stage.id === "practice" ? "◆" : "◇"}</span>{" "}
+              {stages[stage.id].label} · {stages[stage.id].title}
             </p>
             <div className="space-y-1.5">
               {chapters.map((c) => (
@@ -57,13 +64,4 @@ export function KnowledgeGraph({ locale }: { locale: string }) {
       </div>
     </div>
   );
-}
-
-function stageText(id: string, locale: string): string {
-  const map: Record<string, [string, string]> = {
-    core: ["基础阶段 · 入门主线", "Foundation · Core path"],
-    practice: ["进阶阶段 · 实操练习", "Practice · Apply it"],
-    deep: ["深化阶段 · 专题进阶", "Deep dive · Advanced"],
-  };
-  return map[id]?.[locale === "en" ? 1 : 0] ?? id;
 }

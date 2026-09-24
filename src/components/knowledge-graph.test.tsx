@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { Chapter } from "@/lib/content";
 import type { Stage } from "@/lib/path";
+import { getDict } from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
   getStageGroups: vi.fn(() => [] as { stage: Stage; chapters: Chapter[] }[]),
@@ -46,13 +47,26 @@ beforeEach(() => {
 describe("KnowledgeGraph", () => {
   it("renders the three stage groups with their chapters", () => {
     render(<KnowledgeGraph locale="zh" />);
-    expect(screen.getByText(/基础阶段/)).toBeInTheDocument();
-    expect(screen.getByText(/进阶阶段/)).toBeInTheDocument();
-    expect(screen.getByText(/深化阶段/)).toBeInTheDocument();
     expect(screen.getByText("入门基础篇")).toBeInTheDocument();
     expect(screen.getByText("交易实践篇")).toBeInTheDocument();
     expect(screen.getByText("期权策略篇")).toBeInTheDocument();
   });
+
+  /**
+   * 阶段名不许组件里再抄一套：同一页上方各节写的是 `t.path.stages`，
+   * 图谱列头一旦自己起名（旧实现是「基础阶段 · 入门主线」），一页就有两个名字指同一批篇章。
+   */
+  for (const locale of ["zh", "en"] as const) {
+    it(`${locale}：列头就是字典里的「站点 · 阶段名」`, () => {
+      render(<KnowledgeGraph locale={locale} />);
+      const s = getDict(locale).path.stages;
+      for (const key of ["core", "practice", "deep"] as const) {
+        expect(
+          screen.getByText(`${s[key].label} · ${s[key].title}`, { exact: false })
+        ).toBeInTheDocument();
+      }
+    });
+  }
 
   it("links each chapter to its knowledge route", () => {
     render(<KnowledgeGraph locale="zh" />);
@@ -68,7 +82,6 @@ describe("KnowledgeGraph", () => {
       "href",
       "/en/knowledge/getting-started",
     );
-    expect(screen.getByText(/Foundation · Core path/)).toBeInTheDocument();
   });
 
   it("条长按「本章课数 ÷ 全图最多课数」量，三列共用一把尺", () => {
@@ -105,14 +118,4 @@ describe("KnowledgeGraph", () => {
     expect(parseFloat(widthOf("甲篇"))).toBeGreaterThan(parseFloat(widthOf("乙篇")));
   });
 
-  it("falls back to the raw stage id for unknown stages", () => {
-    mocks.getStageGroups.mockReturnValue([
-      {
-        stage: { id: "unknown" as unknown as "core", chapterNums: [] },
-        chapters: [chapter("mystery", "神秘篇章", 1)],
-      },
-    ]);
-    render(<KnowledgeGraph locale="en" />);
-    expect(screen.getByText(/unknown/)).toBeInTheDocument();
-  });
 });
