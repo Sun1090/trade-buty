@@ -8,7 +8,7 @@ import {
   prepareForRender,
 } from "@/lib/content";
 import { knowledgeHref } from "@/lib/hrefs";
-import { QUIZZES } from "@/lib/quizzes";
+import { QUIZ_BANK_LANGUAGE, QUIZZES } from "@/lib/quizzes";
 import { suggestFromPath } from "@/lib/url-suggest";
 import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
 import { JsonLd } from "@/components/json-ld";
@@ -128,7 +128,7 @@ export default async function ChapterPage({
       {QUIZZES[slug] && (
         <JsonLd
           data={quiz({
-            locale,
+            language: QUIZ_BANK_LANGUAGE,
             title: QUIZZES[slug]!.title,
             chapterHref: `/${locale}/knowledge/${slug}`,
             questions: QUIZZES[slug]!.questions.map((q) => ({ text: q.question })),

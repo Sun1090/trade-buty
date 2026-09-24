@@ -107,7 +107,7 @@ function hasNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function expectedLanguage(locale) {
+export function expectedLanguage(locale) {
   return locale === "zh" ? "zh-CN" : "en";
 }
 
@@ -159,12 +159,38 @@ export function hasPageIdentity(scripts, pageUrl) {
   return found;
 }
 
+const CJK_RE = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
+const READABLE_FIELDS = new Set(["name", "text", "headline", "answer"]);
+
+/** 一个节点真正印出来的可读文本：连嵌套的 hasPart / ListItem / question 一起算 */
+function readableText(node) {
+  const out = [];
+  const seen = new Set();
+  function visit(value, key) {
+    if (value === null || typeof value !== "object") {
+      if (typeof value === "string" && READABLE_FIELDS.has(key)) out.push(value);
+      return;
+    }
+    if (seen.has(value)) return;
+    seen.add(value);
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item, key);
+      return;
+    }
+    for (const [childKey, child] of Object.entries(value)) visit(child, childKey);
+  }
+  visit(node, "name");
+  return out;
+}
+
 export function validateStructuredData({
   scripts,
   expectedTypes,
   locale,
   pageUrl,
   requirePageIdentity = true,
+  /** 内容语言由素材自己决定的节点类型（如只有中文一份的随堂测题库） */
+  foreignLanguageTypes = [],
 }) {
   const errors = [];
   const nodes = allNodes(scripts);
@@ -188,10 +214,19 @@ export function validateStructuredData({
   }
 
   const language = expectedLanguage(locale);
+  const foreign = new Set(foreignLanguageTypes);
   for (const node of nodes) {
-    if (node.inLanguage !== undefined && node.inLanguage !== language) {
+    if (node.inLanguage === undefined) continue;
+    const types = nodeTypes(node);
+    const label = types.join("+") || "node";
+    if (node.inLanguage !== language && !types.some((type) => foreign.has(type))) {
+      errors.push(`${label} inLanguage must be ${language}, got ${JSON.stringify(node.inLanguage)}`);
+    }
+    // 报了英文却印着中文：机器读到的语言标签比页面更理直气壮，必须当场抓住
+    const chinese = readableText(node).find((text) => CJK_RE.test(text));
+    if (node.inLanguage === "en" && chinese !== undefined) {
       errors.push(
-        `${nodeTypes(node).join("+") || "node"} inLanguage must be ${language}, got ${JSON.stringify(node.inLanguage)}`,
+        `${label} declares inLanguage "en" but carries Chinese text: ${JSON.stringify(chinese.slice(0, 40))}`,
       );
     }
   }

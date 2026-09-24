@@ -4,6 +4,13 @@ import type { ChapterQuiz } from "@/lib/quiz-types";
  * 章节测验题库（站方自有内容，与知识库 submodule 分离）。
  * 出题纪律：只考概念理解，不出"该不该买"类的操作建议。
  */
+
+/**
+ * 这套题目前只有中文一份，`/en` 的章节页挂的也是它。结构化数据里的
+ * `inLanguage` 必须报这个值，而不是页面语言——写英文却印中文题，就是对外谎报。
+ * 等英文题库落地，这里改成按篇章取语言。
+ */
+export const QUIZ_BANK_LANGUAGE = "zh-CN";
 export const QUIZZES: Record<string, ChapterQuiz> = {
   "getting-started": {
     chapterNum: "getting-started",

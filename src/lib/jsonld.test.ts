@@ -172,7 +172,7 @@ describe("faqPage", () => {
 describe("quiz", () => {
   it("生成 Quiz schema，hasPart 列出所有题", () => {
     const out = quiz({
-      locale: "zh",
+      language: "zh-CN",
       title: "入门基础 · 随堂测",
       chapterHref: "/zh/knowledge/getting-started",
       questions: [
@@ -181,9 +181,21 @@ describe("quiz", () => {
       ],
     });
     expect(out["@type"]).toBe("Quiz");
+    expect(out.inLanguage).toBe("zh-CN");
     const parts = out.hasPart as { text: string; "@type": string }[];
     expect(parts).toHaveLength(2);
     expect(parts[0]!.text).toBe("阳线说明什么？");
     expect(parts[1]!["@type"]).toBe("Question");
+  });
+
+  it("语言取的是题库自己的，不是页面的——/en 章节页挂的仍是这套中文题", () => {
+    const out = quiz({
+      language: "zh-CN",
+      title: "行为金融篇 · 随堂测",
+      chapterHref: "/en/knowledge/behavioral-finance",
+      questions: [{ text: "「损失厌恶」描述的是哪种现象？" }],
+    });
+    expect(out.inLanguage).toBe("zh-CN");
+    expect(JSON.stringify(out)).not.toContain('"inLanguage":"en"');
   });
 });
