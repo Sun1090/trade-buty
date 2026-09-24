@@ -220,7 +220,7 @@ export function drawHeroValue(
   ctx.restore();
 }
 
-/** R13.1：统一次级数值行（成绩/准确率/天数等一行数据）。 */
+/** R13.1：统一次级数值行（成绩/正确率/天数等一行数据）。 */
 export function drawCardMetricLine(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -364,7 +364,7 @@ export function drawQuizCard(args: QuizCardArgs): void {
 
 /**
  * 回放训练有自己的评级标准（盘感更难，阈值更低）：
- *   S ≥ 70% 准确率 + 命中 ≥ 3 次
+ *   S ≥ 70% 正确率 + 命中 ≥ 3 次
  *   A ≥ 60%
  *   B ≥ 50%
  *   C 其余
@@ -438,7 +438,7 @@ export function drawReplayCard(args: ReplayCardArgs): void {
   );
   ctx.restore();
 
-  // 中：大评级字母 + 准确率
+  // 中：大评级字母 + 正确率
   drawHeroValue(ctx, width, height, font, { text: grade, color: gradeCol, size: 360 });
 
   ctx.fillStyle = colors.fg;

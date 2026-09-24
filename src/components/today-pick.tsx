@@ -7,7 +7,7 @@ import { knowledgeHref } from "@/lib/hrefs";
 interface DocMeta { slug: string; title: string; }
 interface Chapter { slug: string; title: string; docs: DocMeta[]; }
 
-/** 今日推荐：从第一章未读课程中挑第一篇 */
+/** 下一步：按篇章顺序找出第一篇还没读过的课文（全部读完时退回第一篇） */
 export function TodayPick({
   chapters,
   locale,

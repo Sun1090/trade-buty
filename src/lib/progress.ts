@@ -1,6 +1,6 @@
 "use client";
 
-/** 学习进度：localStorage 记录已读的 {章节号: [文档号]}，登录后双写云端 */
+/** 学习进度：localStorage 记录已读的 {篇章 slug: [课文 slug][]}，登录后双写云端 */
 
 import { syncProgressWrite } from "./sync-layer";
 import { touchStreak } from "./streak";

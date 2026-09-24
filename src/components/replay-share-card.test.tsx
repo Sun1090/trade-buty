@@ -167,7 +167,7 @@ describe("ReplayShareCard", () => {
         const img = container.querySelector("img");
         expect(img).toBeTruthy();
         expect(img?.getAttribute("alt")).toBe(
-          "预览：回放战绩卡，BTCUSDT · 4h，准确率 50%（命中 5/10），最佳连胜 4",
+          "预览：回放战绩卡，BTCUSDT · 4h，正确率 50%（命中 5/10），最佳连胜 4",
         );
         expect(growthTrack).toHaveBeenCalledWith({
           name: "share_preview_opened",

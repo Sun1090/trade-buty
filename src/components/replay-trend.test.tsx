@@ -27,8 +27,8 @@ describe("ReplayTrend（R12.5）", () => {
       { at: 1, total: 10, correct: 3 },
       { at: 2, total: 10, correct: 8 },
     ];
-    render(<ReplayTrend label="准确率趋势" emptyLabel="空" scopeLabel="只画最近 {n} 轮" />);
-    expect(screen.getByRole("img", { name: "准确率趋势" })).toBeInTheDocument();
+    render(<ReplayTrend label="正确率趋势" emptyLabel="空" scopeLabel="只画最近 {n} 轮" />);
+    expect(screen.getByRole("img", { name: "正确率趋势" })).toBeInTheDocument();
   });
 
   it("total 为 0 的记录按 0% 处理而不产生 NaN", () => {
@@ -64,7 +64,7 @@ describe("ReplayTrend（R12.5）", () => {
     ];
     const addEventListenerSpy = vi.spyOn(window, "addEventListener");
     const removeEventListenerSpy = vi.spyOn(window, "removeEventListener");
-    const { unmount } = render(<ReplayTrend label="准确率趋势" emptyLabel="空" scopeLabel="只画最近 {n} 轮" />);
+    const { unmount } = render(<ReplayTrend label="正确率趋势" emptyLabel="空" scopeLabel="只画最近 {n} 轮" />);
     expect(addEventListenerSpy).toHaveBeenCalledWith("tb-progress", expect.any(Function));
     history = [
       { at: 3, total: 0, correct: 0 },

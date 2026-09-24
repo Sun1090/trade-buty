@@ -54,10 +54,10 @@ export function ReplayShareCard({
   // R13.6：失败必须可见；R16.92：还得说对是哪一步——点「预览」失败不能报「下载失败」
   const [failure, setFailure] = useState<null | "download" | "preview">(null);
   const filename = `trade-buty-replay-${slugify(symbol)}-${slugify(interval)}.png`;
-  // R13.2：预览图 alt 描述卡片内容（准确率/命中/连胜），读屏可复述
+  // R13.2：预览图 alt 描述卡片内容（正确率/命中/连胜），读屏可复述
   const contentAlt =
     locale === "zh"
-      ? `${labels.previewAlt}：回放战绩卡，${symbol} · ${interval}，准确率 ${Math.round(accuracy * 100)}%（命中 ${correct}/${total}），最佳连胜 ${bestStreak}`
+      ? `${labels.previewAlt}：回放战绩卡，${symbol} · ${interval}，正确率 ${Math.round(accuracy * 100)}%（命中 ${correct}/${total}），最佳连胜 ${bestStreak}`
       : `${labels.previewAlt}: replay result card for ${symbol} ${interval}, accuracy ${Math.round(accuracy * 100)}% (${correct}/${total} correct), best streak ${bestStreak}`;
 
   useEffect(() => {

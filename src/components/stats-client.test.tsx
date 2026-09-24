@@ -48,7 +48,7 @@ const dict: StatsDict = {
   quizzes: "Quizzes",
   replay: "Replay",
   streak: "Streak",
-  accuracy: "Accuracy",
+  accuracy: "Replay accuracy",
   badges: "Badges",
   overall: "Overall",
   goalLabel: "Daily goal",
@@ -298,8 +298,8 @@ describe("StatsClient 测验平均分的标签说的是它算的那件事", () =
     expect(label, "卡片没写出它的口径").toBeTruthy();
     // 标签与它旁边那个数是一对：只断言两个字符串都在页面上，换错格子也测不出来
     expect(label!.previousElementSibling?.textContent).toBe("100%");
-    expect(screen.queryByText("Accuracy"), "「准确率」这三个字在这一屏只属于回放").not.toBeInTheDocument();
-    expect(screen.getByText("Replay Accuracy")).toBeInTheDocument();
+    expect(screen.queryByText("Accuracy"), "「正确率」这几个字在这一屏只属于回放那一格").not.toBeInTheDocument();
+    expect(screen.getByText("Replay accuracy")).toBeInTheDocument();
   });
 });
 
