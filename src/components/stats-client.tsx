@@ -30,6 +30,7 @@ import { getStatsRangeDays, setStatsRangeDays, STATS_RANGE_OPTIONS } from "@/lib
 import { getLastCloudSync } from "@/lib/cloud-sync-meta";
 import { auditStatsConsistency } from "@/lib/stats-consistency";
 import { dismissSyncConflicts, parseConflictRecord } from "@/lib/sync-conflicts";
+import { getQueueLength, subscribeQueueLength } from "@/lib/sync-queue-store";
 import { buildStatsExport, downloadStatsExport } from "@/lib/stats-export";
 import {
   getLastShownKey,
@@ -241,6 +242,13 @@ export function StatsClient({
     getLastCloudSync,
     () => null,
   );
+  /**
+   * 离线写队列里还压着几条。断网时的写会先进队列（R9.5），它们已经算进页面上的数字，
+   * 却一条都没到云上——所以「本机 + 云端」这句完成时的话，条件是「登录了且队列空」，
+   * 不是「登录了」。与首页那枚 ☁ 同一个口径（R16.59）。
+   */
+  const queuedWrites = useSyncExternalStore(subscribeQueueLength, getQueueLength, () => 0);
+  const sourceLabel = !user ? dict.sourceLocal : queuedWrites === 0 ? dict.sourceCloud : dict.sourceCloudPending;
   const courseTrend = stats && progress
     ? buildCourseCompletionTrend({ chapters, progress, completions, days: rangeDays })
     : null;
@@ -388,9 +396,9 @@ export function StatsClient({
             <p className="mt-1 text-sm text-muted">{dict.overviewDesc}</p>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg)] px-3 py-1 text-xs text-faint" aria-label={user ? dict.sourceCloud : dict.sourceLocal}>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg)] px-3 py-1 text-xs text-faint" aria-label={sourceLabel}>
               <span aria-hidden>●</span>
-              {user ? dict.sourceCloud : dict.sourceLocal}
+              {sourceLabel}
             </span>
             {user && lastCloudSync !== null && (
               <span className="text-[11px] text-faint">
@@ -714,7 +722,7 @@ export function StatsClient({
               value={reminderSettings.dndStartHour}
               onChange={(e) => saveReminderSettings({ ...reminderSettings, dndStartHour: Number(e.target.value) })}
               className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-xs"
-              aria-label={`${dict.reminderDndLabel} start`}
+              aria-label={dict.reminderDndStart}
             >
               {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{h}:00</option>)}
             </select>
@@ -723,7 +731,7 @@ export function StatsClient({
               value={reminderSettings.dndEndHour}
               onChange={(e) => saveReminderSettings({ ...reminderSettings, dndEndHour: Number(e.target.value) })}
               className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-xs"
-              aria-label={`${dict.reminderDndLabel} end`}
+              aria-label={dict.reminderDndEnd}
             >
               {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{h}:00</option>)}
             </select>

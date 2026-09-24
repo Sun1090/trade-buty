@@ -168,5 +168,11 @@ export function getQueueLength(): number {
   return loadQueueAndNextId().queue.length;
 }
 
+/** `useSyncExternalStore` 的订阅端：入队、清空、另一个标签页写队列时都会通知。 */
+export function subscribeQueueLength(onChange: () => void): () => void {
+  window.addEventListener(QUEUE_EVENT, onChange);
+  return () => window.removeEventListener(QUEUE_EVENT, onChange);
+}
+
 /** 暴露给测试的常量 */
 export const QUEUE_MAX = MAX_QUEUE;
