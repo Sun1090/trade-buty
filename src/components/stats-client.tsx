@@ -58,7 +58,7 @@ import { StreakRecoveryCard } from "@/components/streak-recovery-card";
 import { StudyPlan } from "@/components/study-plan";
 import { useLocalProgress } from "@/components/use-local-progress";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
-import { RadarChart } from "@/components/radar-chart";
+import { RadarChart, RADAR_MIN_AXES } from "@/components/radar-chart";
 import { WeekMiniBar } from "@/components/week-mini-bar";
 import { WeeklyReport } from "@/components/weekly-report";
 import { StreakShareCard } from "@/components/streak-share-card";
@@ -836,7 +836,11 @@ export function StatsClient({
         />
         <RadarChart
           label={locale === "en" ? "Mastery radar" : "掌握度雷达"}
-          emptyLabel={locale === "en" ? "Finish quizzes to see radar" : "完成测验后查看掌握度"}
+          emptyLabel={
+            locale === "en"
+              ? `Complete ${RADAR_MIN_AXES} chapter quizzes to see the radar`
+              : `完成 ${RADAR_MIN_AXES} 章测验后看掌握度雷达`
+          }
         />
       </div>
 
