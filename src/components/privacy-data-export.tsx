@@ -30,8 +30,8 @@ export function PrivacyDataExport({ locale }: { locale: "zh" | "en" }) {
         </h2>
         <p className="mt-2 text-sm text-muted leading-relaxed">
           {locale === "en"
-            ? "Download a JSON copy of your local learning progress, quiz results, replay history, and sync status. Every entry in your browser's local storage is written to the file except your sign-in session (its access and refresh tokens) — so the file also carries the local marker naming which account this data belongs to."
-            : "下载一份 JSON 格式的数据副本，包含本机学习进度、测验结果、回放记录和同步状态。除登录会话（访问与刷新令牌）外，浏览器本机存储的全部条目都会写入文件——文件里因此也带着记录这份数据属于哪个账户的本机标识。"}
+            ? "Download a JSON copy of your local learning progress, quiz results, replay history, and sync status. The file walks your browser's local storage (localStorage) and does not read cookies at all — your sign-in session (access and refresh tokens) lives in cookies, so it was never in scope here; and if some browser ever did keep a copy of it in local storage, keys in the sb- family are skipped on export. The file therefore does carry the local marker naming which account this data belongs to."
+            : "下载一份 JSON 格式的数据副本，包含本机学习进度、测验结果、回放记录和同步状态。这份文件遍历的是浏览器本机存储（localStorage），完全不读 Cookie——登录会话（访问与刷新令牌）存在 Cookie 里，所以它从来不在导出的范围内；即便某台浏览器上曾经把会话写进过 localStorage，sb- 那一族键也会在导出时被跳过。文件里因此也带着记录这份数据属于哪个账户的本机标识。"}
         </p>
       </div>
       <button
