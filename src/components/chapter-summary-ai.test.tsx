@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
   render,
   screen,
@@ -179,5 +181,26 @@ describe("analytics.trackAiClick", () => {
       chapter: "spot",
     });
     spy.mockRestore();
+  });
+});
+
+/**
+ * R16.199：那颗卡片旁边的注释还停在 R3.6 的口径上——「失败降级——隐藏整个入口，不展示
+ * 错误」。这件事在 R16.77 就改过了（行为用例的名字里写着），只有注释没跟着改：读代码的
+ * 人照着它以为失败会把入口卸掉，而 55 行之下正好渲染着一条 `role="status"` 的错误句，
+ * 同文件另一处注释还专门解释了为什么不再卸卡。注释与它下面那行代码打架时，红的是注释。
+ */
+describe("失败降级的注释说的是现在这套（R16.199）", () => {
+  const STALE_HIDE = /隐藏整个入口|不展示错误/;
+
+  it("源码里不许留着「失败就把入口藏掉」的说法", () => {
+    const src = readFileSync(path.join(process.cwd(), "src/components/chapter-summary-ai.tsx"), "utf8");
+    expect(src, "失败不再卸卡是 R16.77 定下的口径，注释留着旧的那句就是在指一条不存在的路").not.toMatch(STALE_HIDE);
+    // 而且它真的把错误说出来：`failed` 渲染成一条 role="status"
+    expect(src).toMatch(/failed && !summary && \([\s\S]{0,200}role="status"/);
+  });
+
+  it("正向对照——旧那行注释必须被同一个判据报出来", () => {
+    expect("  // R3.6：失败降级——隐藏整个入口，不展示错误").toMatch(STALE_HIDE);
   });
 });

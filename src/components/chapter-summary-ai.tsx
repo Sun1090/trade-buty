@@ -44,7 +44,7 @@ export function ChapterSummaryAi({
     }
   });
   const [loading, setLoading] = useState(false);
-  // R3.6：失败降级——隐藏整个入口，不展示错误
+  // R16.54 起的口径：失败不卸掉入口，把错误说出来的同时留下重试的余地（见下面那段注释）
   const [failed, setFailed] = useState(false);
 
   // R3.9/R3.10：AI 关闭时隐藏入口
