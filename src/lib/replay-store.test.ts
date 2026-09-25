@@ -136,6 +136,7 @@ describe("replay-store", () => {
 
       saveReplayBest(0);
       saveReplayBest(5);
+      saveReplayBest(12);
       expect(readReplayBest(), "本轮的 0 把历史最佳抹掉了").toBe(12);
       expect(store.get("tb-replay-best")).toBe("12");
       expect(vi.mocked(syncReplayBestUpsert).mock.calls, "云端也被那些更小的值 upsert 过").toEqual([
