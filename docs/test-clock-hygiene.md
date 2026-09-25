@@ -16,7 +16,7 @@
 
 ## 汇总
 
-- 扫描测试文件：330 个，命中文件：7 个
+- 扫描测试文件：332 个，命中文件：7 个
 - clock-in-assertion：0
 - uncontrolled-timer：7
 
