@@ -318,8 +318,10 @@ const zh = {
     filterZeroTpl: "「{chapter}」这篇里没有匹配，中文课文里另有 {n} 条相关结果",
     filterZeroCta: "查看全部篇章的结果",
     filterLabel: "按篇章筛选",
-    // R13.25 / Q2.6：搜索索引加载失败的降级文案
-    indexError: "搜索索引暂时加载失败，请检查网络后重试。",
+    // R13.25 / Q2.6：索引加载失败的降级文案。三种成因（fetch 抛错、响应非 2xx、
+    // 载荷不是数组）在 `search-client.tsx` 里汇成同一个 `indexError` 状态，`catch` 没有
+    // 留下是哪一种——所以这句不许替用户诊断成因，只说这件事发生了、以及能点什么。
+    indexError: "搜索索引这次没加载出来——可能是网络，也可能是这个文件本身。点「重试」再来一次。",
     retry: "重试",
   },
   newsletter: {
@@ -725,8 +727,10 @@ const en: Dict = {
     filterZeroTpl: "Nothing in “{chapter}” matches — {n} related results elsewhere in the English lessons",
     filterZeroCta: "Show results from all chapters",
     filterLabel: "Filter by chapter",
-    // R13.25 / Q2.6: search index load failure fallback copy
-    indexError: "The search index failed to load. Check your connection and retry.",
+    // R13.25 / Q2.6: search index load failure fallback copy. Three causes (fetch rejecting,
+    // a non-2xx response, a payload that isn't an array) collapse into one `indexError` state
+    // in `search-client.tsx`, and the `catch` keeps none of them — so no diagnosing here.
+    indexError: "The search index didn't load this time — it could be your connection, or the file itself. Choose Retry to try again.",
     retry: "Retry",
   },
   newsletter: {
