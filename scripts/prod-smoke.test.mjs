@@ -118,12 +118,24 @@ function opsSmokeSection() {
   return doc.slice(start, end === -1 ? doc.length : end);
 }
 
-/** 表里第一列（去掉反引号）——就是脚本打印出来的那个断言名 */
-function opsSmokeTableNames() {
+/** 冒烟表的整行：断言名 / 为什么在清单上 / 出处（第三列，见 R16.237） */
+function opsSmokeTableRows() {
   return opsSmokeSection()
     .split("\n")
     .filter((line) => line.startsWith("| `"))
-    .map((line) => line.split("|")[1].trim().replace(/^`(.*)`$/, "$1"));
+    .map((line) => {
+      const cells = line.split("|").slice(1, -1).map((c) => c.trim());
+      return {
+        name: (cells[0] ?? "").replace(/^`(.*)`$/, "$1"),
+        reason: cells[1] ?? "",
+        provenance: cells[2] ?? "",
+      };
+    });
+}
+
+/** 表里第一列（去掉反引号）——就是脚本打印出来的那个断言名 */
+function opsSmokeTableNames() {
+  return opsSmokeTableRows().map((r) => r.name);
 }
 
 describe("prod-smoke 断言清单", () => {
@@ -536,5 +548,84 @@ describe("prod-smoke 本地构建身份", () => {
     expect(code).toBe(0);
     expect(calls[0].url).toBe(`${BASE}/zh`);
     expect(io.err.join("\n")).not.toContain("构建标识");
+  });
+});
+
+/**
+ * R16.237：冒烟表那句「每一条都对应历史上真出过问题的入口」是不实的——`/zh`、`/en`、课文页
+ * 这三个面从来没过事故，而课文页那一行甚至把 API 那一侧的 500 算到了自己头上（仓库在补兜底的
+ * 那次明写「线上暂无暴露」）。所以表的第三列现在必须逐条交代来历：真出过事的给得出落点，
+ * 没出过的直写「无事故记录」。下面三条就是把这一列钉住：落点查不到即红、声称事故却给不出落点
+ * 即红、给不出落点的那一行在叙述里又被说成出过事即红。
+ */
+describe("冒烟表逐条交代自己的来历", () => {
+  const roadmap = fs.readFileSync("docs/roadmap.md", "utf8");
+  const progress = fs.readFileSync("docs/progress.md", "utf8");
+  const NO_RECORD = "无事故记录";
+  /** 行内那些「出过事」口吻的说法——只有第三列给得出落点时才许出现在正文里 */
+  const INCIDENT_TONE = /历史上|曾经|出过问题|出过事故|漏掉过/;
+
+  /** 一处出处文本里的所有落点，逐个回仓库查；返回查不到的那些 */
+  function unresolved(text) {
+    const bad = [];
+    for (const ref of new Set(text.match(/R\d+\.\d+/g) ?? [])) {
+      if (!roadmap.includes(ref)) bad.push(`${ref} 在 docs/roadmap.md 里查不到这一条`);
+    }
+    for (const ref of new Set(text.match(/#\d+/g) ?? [])) {
+      if (!progress.includes(ref)) bad.push(`${ref} 在 docs/progress.md 里查不到这次回归`);
+    }
+    for (const ref of new Set(text.match(/\b\d+\.\d+\.\d+\b/g) ?? [])) {
+      if (!progress.includes(ref)) bad.push(`${ref} 这次发布在 docs/progress.md 里查不到`);
+    }
+    for (const ref of new Set(text.match(/docs\/[\w./-]+\.md/g) ?? [])) {
+      if (!fs.existsSync(ref)) bad.push(`${ref} 这个文件不存在`);
+    }
+    return bad;
+  }
+
+  /** 出处里那一类落点的个数（用来区分「给了落点」和「只写了句好话」） */
+  const citationCount = (text) =>
+    (text.match(/R\d+\.\d+|#\d+|\b\d+\.\d+\.\d+\b|docs\/[\w./-]+\.md/g) ?? []).length;
+
+  const rows = opsSmokeTableRows();
+
+  it("每一行的第三列要么给得出落点，要么直写「无事故记录」", () => {
+    expect(rows.length).toBeGreaterThanOrEqual(10);
+    for (const row of rows) {
+      expect(row.provenance, `「${row.name}」这一行没有第三列——来历不许空着`).not.toBe("");
+      if (row.provenance.startsWith(NO_RECORD)) continue;
+      expect(
+        citationCount(row.provenance),
+        `「${row.name}」的出处既没写「${NO_RECORD}」也给不出任何落点（PR 编号 / R 编号 / 版本号 / 仓库文档路径）`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  it("写出来的落点逐个回仓库查得到（不许凭印象引一次事故）", () => {
+    const complaints = rows.flatMap((row) =>
+      unresolved(row.provenance).map((why) => `「${row.name}」：${why}`),
+    );
+    expect(complaints).toEqual([]);
+  });
+
+  it("标了「无事故记录」的行，正文与两份文档都不许再把它说成出过事", () => {
+    const noRecord = rows.filter((r) => r.provenance.startsWith(NO_RECORD));
+    expect(noRecord.length, "整张表都声称出过事故——那这一列就没有意义了").toBeGreaterThan(0);
+    for (const row of noRecord) {
+      expect(
+        INCIDENT_TONE.test(row.reason),
+        `「${row.name}」第三列写着「${NO_RECORD}」，第二列却用「出过事」的口吻描述它`,
+      ).toBe(false);
+    }
+    // 总起句同理：只要还有一行给不出事故，「每一条都对应真出过问题的入口」就是假话。
+    // 前面带「也不是」的那一句是本轮改成的真话，不算谎报。
+    for (const file of ["docs/ops.md", "docs/release-checklist.md"]) {
+      const doc = fs.readFileSync(file, "utf8");
+      expect(
+        doc,
+        `${file} 又声称每一条都对应真出过问题的入口，可表里有 ${noRecord.length} 行写着「${NO_RECORD}」`,
+      ).not.toMatch(/(?<!也不是)每一条[^。]{0,30}(真出过问题|出过事故)/);
+      expect(doc, `${file} 不再交代「不是每一条都出过事故」这件事了`).toMatch(/不是每一条\s*都出过事故/);
+    }
   });
 });
