@@ -22,7 +22,6 @@ const root = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
 const read = (rel) => readFileSync(path.join(root, rel), "utf8");
 const doc = read("docs/error-reporting.md");
 const route = read("src/app/api/error-reports/route.ts");
-const test = read("src/app/api/error-reports/route.test.ts");
 const client = read("src/lib/error-report.ts");
 
 const section = (from, to) => {
