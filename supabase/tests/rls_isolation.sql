@@ -9,7 +9,7 @@
 
 begin;
 
-select plan(40);
+select plan(44);
 
 -- 固定测试用户（事务回滚，不污染真实 auth.users）
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, confirmed_at, created_at, updated_at)
@@ -42,8 +42,14 @@ insert into ai_citation_clicks (user_id, kind, chapter) values (auth.uid(), 'sou
 select is((select count(*) from progress), 1::bigint, 'A 能读到自己的 progress');
 select is((select count(*) from wrongbook), 1::bigint, 'A 能读到自己的 wrongbook');
 select is((select count(*) from quiz_scores), 1::bigint, 'A 能读到自己的 quiz_scores');
+select is((select count(*) from replay_history), 1::bigint, 'A 能读到自己的 replay_history');
 select is((select count(*) from replay_best), 1::bigint, 'A 能读到自己的 replay_best');
+select is((select count(*) from ai_conversations), 1::bigint, 'A 能读到自己的 ai_conversations');
+select is((select count(*) from ai_feedback), 1::bigint, 'A 能读到自己的 ai_feedback');
 select is((select count(*) from user_settings), 1::bigint, 'A 能读到自己的 user_settings');
+-- 第 9 张写入的表故意读出 0 行：ai_citation_clicks 只有 insert 策略（见 0004），
+-- 这条钉的是「能写 ≠ 能读」，也是下面匿名一节那条「anon 读不到引用点击」的同一形状。
+select is((select count(*) from ai_citation_clicks), 0::bigint, 'A 读不到自己刚写的 ai_citation_clicks（该表只有 insert 策略）');
 select is((select count(*) from kb_embeddings where chapter = 'rls-fixture'), 1::bigint, 'A 能读到公开的 kb_embeddings fixture');
 
 reset role;
