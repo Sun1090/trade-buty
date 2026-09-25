@@ -32,15 +32,11 @@
 
 **拆分自身的代价**：动态 import 会失败（该 chunk 首载就没下成功、或发布后旧 hash 404），而调用点是 fire-and-forget。所以 `sync-layer-queue-fallback.ts` 把这类写入缓冲在模块内存里，等 chunk 可用时按同一去重/截断口径补落盘，并就地吞掉失败（`service worker` 只预缓存 `offline.html`，JS chunk 一律走网络）。
 
-**净结果**：内容页 +12KB gzip（不可消除——Next/React + Supabase 客户端 + sync-layer 共同构成的"登录态基础设施"）。
+**净结果**：内容页 +12KB gzip。当时把这笔成本判成「删不掉」，理由是它由 Next/React + Supabase 客户端 + `sync-layer` 共同构成——**这半句后来被推翻了**：R16.235 在构建产物里量到 `@supabase/supabase-js` 那一颗 chunk 单独就 **59.3KB gzip**，且 454 条 locale 路由的 HTML 全都引用它（入口是 `auth-provider.tsx:4`、`auth-header.tsx:7`、`sync-layer.ts:3` 三处静态 import，全都只在挂载后或点击时才用）。所以「删不掉」不成立，成立的是「消除它需要能端到端验证登录态，而 E2E 跑在没有 Supabase env 的环境（R7.7 降级路径）」。
 
-**预算调整**（`scripts/check-bundle.mjs`）：
-- zh / en：280 → 295 KB
-- market-overview：290 → 305 KB
-- zh/search：280 → 295 KB
-- AI / chart / replay 不变
+**当时的预算调整**（v0.5 时期，`a8b1820`（perf(bundle): lazy-load sync queue modules + bump budgets for login-aware pages (R9.6)））：那一次把 `check-bundle.mjs` 抽查清单里的四条各抬高 15KB——`zh` 与 `en` 从 280 到 295、`zh/search` 从 280 到 295、`zh/knowledge/getting-started/market-overview` 从 290 到 305。**这些数字今天没有任何脚本持有**：R13.15 之后「按页面逐个定价」换成了「按分组定价」，唯一清单是 `scripts/bundle-budgets.json`（见下面那一节；`scripts/perf-notes-claims.test.mjs` 逐条比对文档与清单，`check-bundle.mjs` 只是读清单的巡检脚本）。这一段保留原样当历史，读的人别拿它去核对现在的预算。
 
-**判断**：登录态是 v0.5 的核心功能（同步、合并、离线写），不引入任何重库（无新依赖），不进入非登录场景的关键路径（错误/回放/AI 走未登录模式），12KB 的边际成本可接受。后续如需进一步压缩，唯一可行路径是把整个 `AuthProvider` 拆成「公共 context + 登录后 sub-tree」，重构成本/收益不划算。
+**判断**：登录态是 v0.5 的核心功能（同步、合并、离线写），不引入任何重库（无新依赖），不进入非登录场景的关键路径（错误/回放/AI 走未登录模式），12KB 的边际成本可接受。当时那句「只剩一条路可走：把整个 `AuthProvider` 拆成公共 context + 登录后 sub-tree，重构成本/收益不划算」也不成立——R16.235 登记的那条更省（把三处静态 import 改成挂载后 / 点击时动态引入，并按 `check:bundle` 里 AI chunk 的同一形状加隔离判据），拆 Provider 反而是那一步做完之后才需要重新权衡的成本。
 
 ## R13.15 首屏性能预算按路由细分
 

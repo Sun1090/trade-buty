@@ -114,3 +114,44 @@ describe("perf-notes 引用的预算数值等于清单里的数值", () => {
     expect(docLine("`npm run check:bundle`", "同上")).not.toMatch(/预算[^。]*收紧/);
   });
 });
+
+/**
+ * R16.239：这一节里 v0.5 时代（R9.6）留下的三句话已经不是仓库里的事实了。
+ * - 「**预算调整**（`scripts/check-bundle.mjs`）：zh / en：280 → 295 KB…AI / chart / replay 不变」
+ *   ——按页面逐个定价的清单早在 R13.15 换成了按分组的 `bundle-budgets.json`，那几个数今天
+ *   没有任何脚本持有，而文档用现在时把「预算」这个主人指给了 `check-bundle.mjs`；
+ * - 「+12KB gzip（**不可消除**——Next/React + Supabase 客户端 + sync-layer…）」和
+ *   「**唯一可行路径**是把整个 `AuthProvider` 拆成…」——R16.235 在产物里量到 supabase-js 一颗
+ *   就 59.3KB gzip、454 条路由全引用，登记的改法也不是拆 Provider。两句都把一条开着的债
+ *   说成了天花板。
+ * 判据不比对措辞，只做三件可核对的事：文档点名的路由必须真能落到某个分组、被推翻的那两句
+ * 必须带着推翻标记与台账号、文中引用的 `R**.**` 编号必须在 roadmap 里查得到。
+ */
+describe("perf-notes 的历史段落不许冒充现在", () => {
+  const compiled = budgetLib.compileBudgetManifest(manifest).budgets;
+  const roadmap = read("docs/roadmap.md");
+
+  it("文档里点名的每条路由都真能落到某个预算分组", () => {
+    const tokens = [...new Set((doc.match(/`((?:zh|en)(?:\/[a-z0-9-]+)*)`/g) ?? []).map((s) => s.slice(1, -1)))];
+    expect(tokens.length, "扫不到任何路由名——这一节的写法变了就要同步判据").toBeGreaterThanOrEqual(10);
+    for (const route of tokens) {
+      const { budget, error } = budgetLib.matchRouteBudget(route, compiled);
+      expect(budget, `文档点名的 ${route} 在今天的清单里没有归属：${error}`).toBeTruthy();
+    }
+  });
+
+  it("被推翻的两句各自带着推翻标记与那条债的编号", () => {
+    for (const prefix of ["**净结果**：", "**判断**："]) {
+      const line = docLine(prefix, "R9.6 那两句过头话就住在这里，改掉它们的人也得在这里留下为什么");
+      expect(line, `${prefix} 那一行不再说明自己是被推翻的旧结论了`).toMatch(/推翻|不成立/);
+      expect(line, `${prefix} 那一行没有点名 R16.235——凭什么是被推翻的？`).toContain("R16.235");
+    }
+  });
+
+  it("文中引用的每个 R 编号都在 roadmap 里查得到", () => {
+    const refs = [...new Set(doc.match(/R\d+\.\d+/g) ?? [])];
+    expect(refs.length, "这一节一个台账编号都不引了？").toBeGreaterThanOrEqual(5);
+    const missing = refs.filter((ref) => !roadmap.includes(ref));
+    expect(missing, `docs/perf-notes.md 引用了 roadmap.md 里不存在的编号：${missing.join("、")}`).toEqual([]);
+  });
+});
