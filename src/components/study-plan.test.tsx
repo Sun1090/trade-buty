@@ -104,7 +104,9 @@ describe("StudyPlan", () => {
     );
   });
 
-  it("非 2xx 时说「稍后重试」，并且重试按钮还在（R16.54：旧写法把失败写进 plan，按钮一起没了）", async () => {
+  // 屏幕上那颗按钮写的是「生成学习计划」，没有一颗叫「重试」——R16.54 修的是「失败把按钮
+  // 一起吞掉」，标题原本也就跟着把那颗按钮叫成了重试按钮。
+  it("非 2xx 时说「稍后重试」，并且「生成学习计划」那颗按钮还在（R16.54：旧写法把失败写进 plan，按钮一起没了）", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500 }));
     render(
       <StudyPlan
@@ -119,7 +121,7 @@ describe("StudyPlan", () => {
     expect(screen.getByRole("button", { name: "生成学习计划" })).toBeEnabled();
   });
 
-  it("请求抛异常时同样只报失败，不吞掉重试入口", async () => {
+  it("请求抛异常时同样只报失败，不吞掉「生成学习计划」那颗按钮", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
     render(
       <StudyPlan
