@@ -68,13 +68,27 @@
 
 ## 3. 无登录完全对等（R12.24）
 
-以上全部数据源都是 localStorage，未登录用户与登录用户得到完全相同的指标可见性；
-登录只改变「同步到哪台设备」，不改变任何指标定义（R12.8 来源标识如实呈现）。
+「对等」说的是**算法**：统计页从 `src/lib/` 导入的每一个模块（算指标的聚合器、字典、日期工具，全在内）里，
+没有一处读登录态，也没有一处在自己发请求——`fetch`、`XMLHttpRequest`、`sendBeacon` 三个都数过，零处。
+§1「数据源」列点名的 `tb-study-time`、`tb-weekly-goal-min`、`tb-streak`、`tb-review-reminder-*`
+**4** 个键，在 `src/` 下的读写端全部落在 `localStorage`（`localStorage.getItem/setItem`，或它的
+`readLocalJson` / `writeLocalJson` 包装）。未登录用户看到的每一个数字，与登录用户是同一条代码算出来的；
+走真实渲染验这一条的是 `src/components/stats-client-guest.test.tsx`（它不带 AuthProvider 直接渲染统计页）。
+
+登录后界面上确实多出 **2** 处与账号有关的东西，两处都不报指标（R12.8 来源标识如实呈现）：数据来源标识（「本机数据」/「本机 + 云端」/
+「本机 + 云端 · 有待上传的改动」三选一）和「上次从云端合并 {t}」那张卡。判据钉的就是「整个 `stats-client.tsx`
+只有这两处消费 `useAuth()`」——给任何一个数字加一道 `user &&` 会当场红。
+
+登录也会改**数据**：`src/lib/sync-layer.ts` 的 `hydrateFromCloud()` 把云端并回本机，逐条写回
+`tb-progress`、`tb-wrong`、`tb-quiz-<chapter>`、`tb-replay-history`、`tb-replay-best`、
+`tb-daily-goal-min`、`tb-weekly-goal-min` 这 **7** 个键，其中 `tb-weekly-goal-min` 正是 §1
+「近 7 天目标达成」的那把门槛（本地未设置时才采用云端）。所以登录后某个数字变大是真的，
+变的是台账里的数据，不是任何一条指标的定义。
 
 ## 4. 验收审计清单（了以后复查）
 
-- [x] 全部指标定义落在真实 key / 聚合器上，无虚构口径（本文件 §1 逐一对应代码）
-- [x] 修剪策略与隐私页 R12.14 文案一致（90 天 / 100 轮）
-- [x] 聚合一致性由 R12.23 审计器 + 单测锁定
-- [x] 无登录降级由 R12.24 契约测试锁定
+- [x] 全部指标定义落在真实 key / 聚合器上，无虚构口径（本文件 §1 逐一对应代码，判据在 `scripts/retention-metrics-claims.test.mjs`）
+- [x] 修剪策略与隐私页 R12.14 文案一致（90 天 / 100 轮——两个数与本文件 §2 同源；隐私页那两条文案由 `src/app/[locale]/privacy/privacy-endpoints.test.ts` 钉）
+- [x] 聚合一致性由 R12.23 审计器（`src/lib/stats-consistency.ts`）+ 单测（`src/lib/stats-consistency.test.ts`）锁定
+- [x] 无登录降级由 R12.24 契约测试（`src/components/stats-client-guest.test.tsx`）锁定
 - [ ] 将来若要引入任何服务端留存统计，必须先在此文档登记评审结论（默认拒绝）
