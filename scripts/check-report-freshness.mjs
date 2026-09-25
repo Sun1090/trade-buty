@@ -18,16 +18,17 @@ import {
   collectReportInventory,
   collectReportProducers,
   renderFreshnessFailure,
+  SELF_REPORT_FILES,
   shouldFailFreshness,
 } from "./report-freshness-lib.mjs";
 
 const root = process.cwd();
-/** 巡检器自己的用例与本体不参与推导：夹具里含有被检查的写法。 */
-const SELF_FILES = new Set([
-  "report-freshness-lib.mjs",
-  "report-freshness-lib.test.mjs",
-  "check-report-freshness.mjs",
-]);
+/**
+ * 巡检器自己的用例与本体不参与推导：夹具里含有被检查的写法。
+ * 这份集合住在 `report-freshness-lib.mjs`（`SELF_REPORT_FILES`），与文档门禁共用同一推导——
+ * 两边各写一份排除名单，就是下一处会漂移的说法。
+ */
+const SELF_FILES = SELF_REPORT_FILES;
 /** 推导出的报告数低于下限即判巡检器自己失效，而不是「零份要核对」的假绿。 */
 const MIN_REPORTS = 15;
 

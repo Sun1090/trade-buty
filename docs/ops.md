@@ -6,7 +6,7 @@
 > 下表覆盖 `.github/workflows/ci.yml` 的两个作业（`ci` / `db-tests`）的全部执行步骤，并按实际顺序排列；`db-tests` 作业的步骤以 `db-tests ·` 前缀标注。
 > 覆盖与顺序由 `scripts/ci-workflow.test.mjs` 机检：每个 `npm run` / `node scripts` 门禁必须在表中登记（漏登记即失败），首列命令的相对顺序必须与工作流一致。
 
-## 质量门禁（CI 自动运行，失败阻断合并）
+## 质量门禁（CI 自动运行；除非某一行写明了严重级别是 `warn`，失败即阻断合并）
 
 | CI 步骤 | 检查什么 | 失败处理 |
 |---|---|---|
@@ -21,7 +21,7 @@
 | `npm run typecheck` | Next.js 16 路由类型生成 + `tsc --noEmit` | 修复类型错误；不得用 `any`/忽略指令掩盖真实不匹配 |
 | `npm run build` | prebuild 契约/资产/搜索索引/标题同步 + 生产构建 | 按构建错误修内容契约或代码；宽松渲染应 warn+skip，不能静默发布空站 |
 | `npx playwright install --with-deps chromium` | 安装 E2E 所需的固定 Chromium 运行时 | 检查 CI runner 系统依赖与 Playwright 版本 |
-| `npm run check:mobile` | ≥10 条核心路径 × 全部语言（`CORE_SUFFIXES` × `LOCALES` 生成）在 320px 下无横向溢出；清单里每条路径还必须真返回 200，防死路径冒充覆盖（含 R12.21 / R13.10） | 修正布局/滚动容器；不得只放宽测试阈值 |
+| `npm run check:mobile` | `scripts/check-mobile.mjs` 里那份写死的 14 条路径清单在 320px 下无横向溢出，且每条必须真返回 200——404 的页面同样「不溢出」，不查状态码就是拿死路径冒充覆盖（R16.220 补上这条断言）。双语 × 全核心路径那一份矩阵不在这里，在 `e2e/mobile-overflow.spec.ts`（`CORE_SUFFIXES` × `LOCALES`，R12.21 / R13.10 / R16.31） | 修正布局/滚动容器；清单里的路径必须真的存在，不许删掉路径来让它变绿 |
 | 构建耗时报警（CI 内联，R7.10） | lint→build 段超过 240 秒输出 warning | 检查大 chunk、缓存与依赖体积 |
 | `npm run check:ai-copy` | en 字典无中文残留（R3.12） | 修正 i18n.ts en 值 |
 | `npm run check:growth-event-privacy` | 增长事件只留在本机且不携带 URL/身份信息（R13.20） | 删除遥测外发或敏感字段；审计文档作废时重新评审 |
@@ -63,9 +63,9 @@
 | `npm run check:scan-counts` | 扫描数量基线核对（R16.146）：把 `check:secrets` / `check:db-assertion-counts` / `check:frontmatter` / `check:kb-en-content` / `check:request-body-bounds` 作为子进程各跑一遍，收它们经 `recordScanCount` 登记的 6 个数量，与 `docs/scan-counts.md` 里上一次入库的那一份逐键相比——**任何一键变少就红**。各门禁自己的硬地板只卡跌破地板的少扫，地板以上的缩小归这一条管。有意缩小（真删了一批文档、下线了一个接口）跑 `npm run check:scan-counts -- --update-baseline` 重写基线，并把理由写进提交信息；没有这个开关，缩小不会悄悄过去。必须排在 `check:report-freshness` 之前，它自己就重算那份表格 | 红先查被扫目录是否还在、glob 有没有写错、子模块是否 init；不许直接跑 `--update-baseline` 把它按下去 |
 | `npm run check:report-freshness` | 重算型报告新鲜度核对（R16.26）：报告清单由「谁调用了幂等写入器 `writeReport`」推导（当前 18 份，见 `scripts/report-freshness-lib.mjs`）。**本脚本不重算**，它比对工作区与 HEAD——只有在报告 producers 都跑过之后（CI 里它排在全部巡检步骤之后）这句话才等于「入库版本 == 当场重算结果」；单独跑它只能证明没人碰过这些文件。推导数为 0 判失败而不是「无报告可核对」的假绿。按日追加的历史快照（`kb:translation-status`、`kb:diff`）不走幂等写入器，天然不在范围内 | 排在 CI 所有报告步骤之后；命中就把重算结果一起提交（`npm run check:<对应门禁>` 后 `git add docs/…`）。若某份报告确实该每天变，说明它不该走 `writeReport`，把它挪进历史快照通道 |
 | `npm run e2e` | 全站、320px 移动端、PWA 离线、根级元数据路由、根级静态表面/软 404 契约与分享落地页、扩展核心闭环（R13.24） | 修复可访问性、响应式或交互回归；不得只重跑忽略 flaky |
-| `npm run lhci` | 关键 URL 的性能/可访问性/最佳实践/SEO 断言 | 修复真实退化；阈值调整必须附测量证据 |
+| `npm run lhci` | 关键 URL 的四类断言，严重级别取自 `.lighthouserc.json` 而不是这张表：可访问性是 `error`、最佳实践是 `error`、SEO 是 `error`、性能是 `warn`（跌破只警告，不阻断合并） | 修复真实退化；阈值或严重级别的调整必须附测量证据，「性能这一类红了」不等于 CI 失败 |
 | `db-tests` · `docker pull supabase/postgres:17.6.1.155` | 拉取与线上一致的 Supabase Postgres 17 镜像，供迁移/RLS/同步门禁使用（Q2.8 / Q5.4） | 核对镜像 tag 是否仍在；不要改用本地随意镜像绕过 |
-| `db-tests` · `node scripts/db-test.mjs` | 在真实 Postgres 镜像里应用全部迁移、跑 RLS 越权与双设备同步 pgTAP 测试，并执行 `0008` 回滚 → 重放演练（Q2.8） | 修正迁移/策略/回滚脚本；不得跳过 pgTAP 断言或改用内存库伪造通过 |
+| `db-tests` · `node scripts/db-test.mjs` | 在真实 Postgres 镜像里应用全部迁移、跑 RLS 越权与双设备同步 pgTAP 测试，并把 `supabase/rollback/` 里的每一项（现 `0008`、`0009`）都做回滚 → 重放演练（Q2.8） | 修正迁移/策略/回滚脚本；不得跳过 pgTAP 断言或改用内存库伪造通过 |
 | `db-tests` · `npm run backup:drill` | 备份恢复演练：`pg_dump` 源库 → 全新实例恢复 → 数据/schema/RLS 指纹对比 → 恢复库重跑 pgTAP（Q5.4） | 按 `scripts/backup-drill.mjs` 报错修备份/恢复路径或表覆盖；不得缩小 `DATA_TABLES` 覆盖面 |
 
 > 执行顺序注记：E2E 与 Lighthouse 排在所有产物校验之后（E2E 运行时向 `.next` 写 fallback 页，避免污染其后的 check 产物；顺序由 ci.yml 保证）。
@@ -235,6 +235,7 @@ Vercel 边缘偶发一次 `fetch failed` 会把「部署没跟上」和「网络
 | `0006_wrongbook_srs.sql` | 错题本 SRS 字段（R5.7） |
 | `0007_weekly_goal_min.sql` | 每周目标档位（R12.19） |
 | `0008_goal_tier_constraints.sql` | 归一化并约束日/周目标合法档位 |
+| `0009_atomic_embedding_generations.sql` | 嵌入刷新改成原子换页：`kb_embeddings.generation` + `kb_embedding_generations`，一批新写入先整代 staged、再在一条事务里换 active，失败的半批不会漏进检索（`rollback/0009` 只保留 active 那一代） |
 
 迁移由 `src/lib/supabase/schema.test.ts` 做静态契约核对：Drizzle 镜像与迁移表/列一致，
 每张公开表必须开启 RLS 且具备显式策略。目标档位的回滚 SQL 位于

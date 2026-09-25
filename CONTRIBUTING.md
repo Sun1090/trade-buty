@@ -49,7 +49,7 @@ git submodule update --init --recursive
 | `npm test` | Vitest 单元、组件和脚本测试 |
 | `npm run build` | 生产构建；prebuild 会同步知识库资产、搜索索引和标题数据 |
 | `npm run e2e` | Playwright 关键路径、移动端、离线和静态表面 E2E |
-| `npm run lhci` | Lighthouse CI 性能与可访问性预算 |
+| `npm run lhci` | Lighthouse CI 预算：可访问性 / 最佳实践 / SEO 跌破即阻断，性能跌破**只警告**——严重级别取自 `.lighthouserc.json`，不是这张表 |
 | `npm run db:test` | 在全新 Supabase Postgres 中验证迁移、RLS、同步与回滚 |
 | `npm run backup:drill` | 本地备份、恢复、指纹和 RLS 复验 |
 | `npm run check:docs` | README、贡献指南、架构文档、AGENTS、plan 与 `package.json` 版本号的漂移门禁 |
