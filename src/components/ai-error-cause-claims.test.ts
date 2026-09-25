@@ -65,12 +65,24 @@ describe("AI 失败那两句不说自己没测过的事", () => {
   });
 
   it("分支接线不许改：超时归 errorTimeout，fetch 抛错归 errorServer", () => {
-    // 上面那句关于「这台设备」的说法只有在这个映射成立时才为真
+    // 上面那句关于「这台设备」的说法只有在这个映射成立时才为真。
+    // 判据必须看的是**紧跟在条件后面的那一个** dict 字段：以前那版只查「这两个名字在这段
+    // 代码里都出现过」，把两句对调也照样绿（变异探针实测）。
     const src = readFileSync(path.join(process.cwd(), SRC), "utf8");
-    const chain = src.slice(src.indexOf("e instanceof DOMException && e.name === \"AbortError\""));
-    expect(chain.slice(0, 260)).toContain("dict.errorTimeout");
-    expect(chain.slice(0, 260)).toContain("dict.errorServer");
-    expect(chain.slice(0, 260)).toMatch(/e instanceof TypeError/);
+    const wiring = (text: string) => ({
+      timeout: text.match(/e\.name === "AbortError"\s*\?\s*dict\.([A-Za-z0-9_]+)/)?.[1],
+      network: text.match(/e instanceof TypeError\s*\?\s*dict\.([A-Za-z0-9_]+)/)?.[1],
+    });
+    expect(wiring(src), "组件里那两条分支之一不见了").toEqual({
+      timeout: "errorTimeout",
+      network: "errorServer",
+    });
+    // 正向对照：把两句对调，同一个判据必须报出来
+    const swapped = src
+      .replace('e.name === "AbortError"\n          ? dict.errorTimeout', 'e.name === "AbortError"\n          ? dict.errorServer')
+      .replace("e instanceof TypeError\n            ? dict.errorServer", "e instanceof TypeError\n            ? dict.errorTimeout");
+    expect(swapped, "对照用的改动没落到源码上，这条对照是空的").not.toBe(src);
+    expect(wiring(swapped)).toEqual({ timeout: "errorServer", network: "errorTimeout" });
   });
 
   it("正向对照——旧那四句必须被同一组判据报出来", () => {

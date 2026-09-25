@@ -558,12 +558,13 @@ describe("AiChat 错误态分级（R1.11）", () => {
   });
 
   /**
-   * R16.206：路由在 4xx 上回的是**开发者标识串**（`Invalid payload`、`Payload too large`，
+   * R16.204：路由在 4xx 上回的是**开发者标识串**（`Invalid payload`、`Payload too large`，
    * 见 `src/lib/ai/chat-input.ts` 的 `BODY_ERRORS`），不是给人看的文案。以前这里是
    * `throw new Error(errBody.error || dict.error)`，于是中文界面上会原样印出
    * `Invalid payload` 这样一个英文词组。真能发生的两种成因（轮数超上限、单条回答超上限）
-   * 在发送前就能算出来，已经由 `ai-thread-limit-claims.test.ts` 那两条各自说清了；
-   * 算不出来的这一条只说「出错了」，不再替开发者说话。
+   * 在发送前就能算出来，已由本文件「带不动的长对话在发送前就说清楚」那一组各自说清
+   * （上限本身的行为在 `src/lib/ai/chat-brick.test.ts`）；算不出来的这一条只说「出错了」，
+   * 不再替开发者说话。
    */
   it("4xx 的 JSON error 不印到界面上，只说『出错了』", async () => {
     setupAndAsk();
@@ -2010,13 +2011,42 @@ describe("AiChat 带不动的长对话在发送前就说清楚（R16.203）", ()
     fireEvent.change(input, { target: { value: "那移动止损呢" } });
     fireEvent.submit(view.container.querySelector("form") as HTMLFormElement);
     return fetchMock;
-  }  it("回答超过单条上限：这一问发不出去，屏幕上说的是这条回答太长", async () => {
+  }
+
+  /**
+   * 上面那两条把「屏幕上出现的那句」与「字典里的那句」对齐了，可是两边都来自同一个
+   * `answerTooLongTpl`：把字典里的 `{n}` 换成手抄的 9000，期望值跟着变成 9000，两条照样绿
+   * （变异探针实测）。这一条管住来源——数字与按钮名只能以占位符的形式住在字典里，
+   * 值由 `chat-input.ts` 的常量和 `dict.clear` 代入。
+   */
+  it("两句里的数字与按钮名都只有一个出处：字典里留占位符，值由代码代入", () => {
+    for (const locale of ["zh", "en"] as const) {
+      const ai = getDict(locale).ai;
+      for (const [key, tpl] of [
+        ["threadTooLongTpl", ai.threadTooLongTpl],
+        ["answerTooLongTpl", ai.answerTooLongTpl],
+      ] as const) {
+        expect(tpl, `${key}(${locale}) 里的数字要由 {n} 代入`).toContain("{n}");
+        expect(tpl, `${key}(${locale}) 点名的按钮要由 {clear} 代入`).toContain("{clear}");
+        expect(
+          tpl.replace(/\{n\}|\{clear\}/g, ""),
+          `${key}(${locale}) 自己写死了数字，常量改了文案不会跟着改`,
+        ).not.toMatch(/\d/);
+      }
+    }
+  });
+
+  it("回答超过单条上限：这一问发不出去，屏幕上说的是这条回答太长", async () => {
     const fetchMock = await askAfterRestoring(MAX_CHAT_CONTENT_CHARS + 1);
 
     const expected = real.answerTooLongTpl
       .replace("{n}", String(MAX_CHAT_CONTENT_CHARS))
       .replace("{clear}", dict.clear);
-    expect(await screen.findByText(expected)).toBeInTheDocument();
+    const shown = await screen.findByText(expected);
+    // 屏幕上那个数字必须是常量本身，不是字典里抄来的第二个数
+    expect(shown.textContent ?? "").toContain(String(MAX_CHAT_CONTENT_CHARS));
+    // 句子点名的那颗按钮此刻真的在
+    expect(screen.getByRole("button", { name: dict.clear })).toBeInTheDocument();
     expect(
       fetchMock.mock.calls.filter(([url]) => url === "/api/ai/chat"),
       "明知服务端必拒，就不该再打这一趟",
@@ -2075,7 +2105,9 @@ describe("AiChat 带不动的长对话在发送前就说清楚（R16.203）", ()
     const expected = real.threadTooLongTpl
       .replace("{n}", String(MAX_CHAT_TURNS))
       .replace("{clear}", dict.clear);
-    expect(await screen.findByText(expected)).toBeInTheDocument();
+    const shown = await screen.findByText(expected);
+    expect(shown.textContent ?? "").toContain(String(MAX_CHAT_TURNS));
+    expect(screen.getByRole("button", { name: dict.clear })).toBeInTheDocument();
     expect(
       fetchMock.mock.calls.filter(([url]) => url === "/api/ai/chat"),
       "轮数已经超限，这一趟服务端必拒",
