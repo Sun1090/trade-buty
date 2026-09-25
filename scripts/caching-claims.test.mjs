@@ -60,9 +60,17 @@ const SRC_TEXT = SRC.map((rel) => read(rel)).join("\n");
 function tracked(rel) {
   return execFileSync("git", ["ls-files", "--", rel], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() !== "";
 }
+/**
+ * 「这条路径归 gitignore 管吗」必须问它底下的一个子路径，不能问裸路径。
+ * `.gitignore` 里那条是 `public/knowledge-assets/`——带尾斜杠的只匹配目录，而 git 判裸路径时
+ * 要先 stat 才知道它是不是目录；干净检出里这份产物**根本不存在**，于是裸路径那一次回答「没忽略」，
+ * 判据就在 CI 上红、在跑过 build 的本机绿。子路径按前缀匹配，不需要 stat，两种检出形状同一个答案。
+ * （第三十二轮的全量链第一次跑就是这么撞上的：上一轮立的规矩——问 git 而不是问文件系统——
+ * 落到了 `tracked()` 上，却没落到这一行。）
+ */
 function ignored(rel) {
   try {
-    execFileSync("git", ["check-ignore", "-q", rel], { cwd: root, stdio: ["ignore", "ignore", "ignore"] });
+    execFileSync("git", ["check-ignore", "-q", `${rel}/.gate-probe`], { cwd: root, stdio: ["ignore", "ignore", "ignore"] });
     return true;
   } catch {
     return false; // check-ignore 以 1 表示「没被忽略」，不是错误
