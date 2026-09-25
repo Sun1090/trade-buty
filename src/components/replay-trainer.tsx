@@ -60,6 +60,8 @@ export interface ReplayDict {
   rounds: string;
   contextNote: string;
   shortHistory: string;
+  shortHistoryCustom: string;
+  shortHistoryBlind: string;
   disclaimer: string;
   modeBlind: string;
   modeCustom: string;
@@ -525,6 +527,11 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
             {dict.shortHistory
               .replace("{n}", String(klines.length))
               .replace("{m}", String(context + 1))}
+            {/* R16.193：建议只能指着屏幕上真的有的控件。截止输入框只在「自定义」下渲染
+                （`customMode && …`），盲盒的结束时间是抽出来的，用户没有任何东西可调。 */}
+            {customMode
+              ? dict.shortHistoryCustom.replace("{end}", dict.endDateLabel)
+              : dict.shortHistoryBlind.replace("{mode}", dict.modeCustom)}
           </div>
         )}
       </div>
