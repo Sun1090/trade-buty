@@ -7185,7 +7185,7 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
   - `npx vitest run src/lib/replay-time-trend.test.ts src/lib/i18n-stats.test.ts src/components/stats-client.test.tsx src/components/replay-trainer.test.tsx`：通过（4 文件 / 103 用例）。
   - `node .gate-logs/probe-r16200-202.mjs`：11 组变异探针，**11 抓到 / 0 漏掉**（含 R16.202 那条把 `elapsed > 0` 改成 `elapsed >= 0` 的支路探针，冻时钟用例随之变红）。日志 `.gate-logs/probe-r16200-202.out`。
   - `npm run typecheck`、`npm run lint`：通过。
-  - 全量门禁链：见本条之后的补记。
+  - 全量门禁链 `.gate-logs/chain-r16200-202.sh`：**build exit=0**；**42 条 `check:*` 全绿（scanned=42 pass=42 fail=0）**；`npm run test:coverage` **323 文件 / 3237 用例全过**（statements 95.16%、branches 90.84%、functions 95.26%、lines 97.08%）；`npm run e2e` **164 passed**；lint、typecheck、`git diff --check` 全部 exit=0，链尾 `git status --porcelain` 为空。
 - 阻塞 / 风险：三条都是把话收回到代码真做过的事，不改任何行为、口径、数据或接口。`RESPONSE_HEADER_TIMEOUT_MS` 是新增导出（原来那个 30_000 只在本文件用过一次），无外部消费者。回滚：`git revert` 这五笔即可，无迁移。
 - 同一轮里另外三条**已亲自复核但没修**的，登记进台账：（1）四个 AI 路由的鉴权 catch 复用的 `{ error: "AI 服务暂时不可用，请稍后再试。" }` 是服务端响应体，`ai-chat.tsx:377` 对 ≥500 一律换成 `dict.errorServer`，所以它在界面上没有渲染点——值低，只登记；（2）`parseChatBody` 拒绝任何一条超过 8000 字的消息，而「继续生成」会把整段已有回答原样放进 `messages`，一段越写越长的对话会让这一条之后的每次请求都拿 400，聊天气泡里印的是英文 `Invalid payload`；（3）同一条链路上 4xx 的 `errBody.error` 是直接 `throw new Error(errBody.error || dict.error)` 上屏的，没有任何语种映射。
 - 下一步：把（2）（3）这条链路当作下一轮的头号目标——先写一个真的能把对话顶过 8000 字的复现用例，再决定是「客户端不发服务端必拒的东西」还是别的方案。
