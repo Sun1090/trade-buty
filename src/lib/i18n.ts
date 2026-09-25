@@ -1,3 +1,5 @@
+import { PATH_SURFACE_NAME } from "./path-name";
+
 export type Locale = "zh" | "en";
 export const LOCALES: Locale[] = ["zh", "en"];
 export const DEFAULT_LOCALE: Locale = "en";
@@ -60,7 +62,7 @@ const zh = {
   },
   path: {
     label: "学习路线",
-    title: "学习路线",
+    title: PATH_SURFACE_NAME.zh,
     mapHeading: "知识点图谱",
     intro: "路径分 {stages} 站：先走完「入门主线」建立完整认知，再按方向选学进阶与深潜专题。建议顺序学习，不要跳读——主线最后一站「{lastCore}」会告诉你为什么。",
     stages: {
@@ -474,7 +476,7 @@ const en: Dict = {
   },
   path: {
     label: "Learn",
-    title: "Learning Path",
+    title: PATH_SURFACE_NAME.en,
     mapHeading: "Knowledge map",
     intro: "{stages} stages: finish the core path for a complete foundation, then pick advanced and deep-dive topics by direction. Study in order — the last stop of the core line, {lastCore}, shows you why.",
     stages: {

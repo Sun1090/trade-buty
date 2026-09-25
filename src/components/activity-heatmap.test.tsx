@@ -4,6 +4,7 @@ import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import { getDict } from "@/lib/i18n";
+import { PATH_SURFACE_NAME } from "@/lib/path-name";
 
 const mocks = vi.hoisted(() => ({
   readActivityDates: vi.fn<() => string[]>(() => []),
@@ -58,16 +59,22 @@ describe("ActivityHeatmap", () => {
 
   /**
    * R16.225：空态那颗按钮原来写「去学第一课 → / Start a lesson →」，可它 `href` 指的是
-   * `/[locale]/path` —— 一张路线总览，点下去没有任何一课。文案改由 `path.title` 推导后，
-   * 这条门禁同时钉两件事：按钮不许再承诺「一课」，且这个名字是抄来的、不是又手打一份。
+   * `/[locale]/path` —— 一张路线总览，点下去没有任何一课。名字改成由那一页的标题常量
+   * （`path-name.ts` 的 `PATH_SURFACE_NAME`，`i18n.ts` 的 `path.title` 也取它）推导后，
+   * 这条门禁钉三件事：不许再承诺「一课」、它叫的就是那一页自己的名字、这名字来自共用的
+   * 常量而不是又手打一份。
    */
-  it("CTA 不再承诺「一课」，且名字确实由那一页的标题推导", () => {
+  it("CTA 不再承诺「一课」，叫的就是那一页的名字", () => {
     const legacy = ["去学第一课 →", "Start a lesson →"];
     const LESSON_PROMISE = /第一课|一节|\blesson\b/i;
     for (const sample of legacy) {
       expect(LESSON_PROMISE.test(sample), `禁令抓不住旧文案：${sample}`).toBe(true);
     }
     for (const locale of ["zh", "en"] as const) {
+      expect(
+        getDict(locale).path.title,
+        `${locale} 的路线页不再用那个共用常量，按钮与页面各叫一个名字`,
+      ).toBe(PATH_SURFACE_NAME[locale]);
       const { unmount } = render(
         <ActivityHeatmap label="L" emptyLabel="空" locale={locale} />,
       );
@@ -75,8 +82,8 @@ describe("ActivityHeatmap", () => {
       expect(cta.getAttribute("href")).toBe(`/${locale}/path`);
       const text = cta.textContent ?? "";
       expect(text, `${locale} 的按钮又在替「一课」作保`).not.toMatch(LESSON_PROMISE);
-      expect(text, `${locale} 的按钮没带上目标页自己的标题`).toContain(
-        getDict(locale).path.title,
+      expect(text, `${locale} 的按钮没带上目标页自己的名字`).toContain(
+        PATH_SURFACE_NAME[locale],
       );
       unmount();
     }
@@ -86,8 +93,22 @@ describe("ActivityHeatmap", () => {
     );
     expect(
       source,
-      "CTA 名字改回手打字符串了：它必须从 getDict(locale).path.title 推导",
-    ).toMatch(/getDict\(locale\)\.path\.title/);
+      "CTA 名字改回手打字符串了：它必须从 PATH_SURFACE_NAME[locale] 推导",
+    ).toMatch(/PATH_SURFACE_NAME\[locale\]/);
+    // 名字的主人只有一个：路线页的标题也必须从这个常量取，否则「同一个面两个名字」
+    // 又会以「按钮叫 A、页面叫 B」的形式回来
+    const dictSource = readFileSync(
+      path.join(process.cwd(), "src/lib/i18n.ts"),
+      "utf8",
+    );
+    expect(
+      dictSource,
+      "i18n 的 path.title 又变成手打的字符串了",
+    ).toMatch(/title: PATH_SURFACE_NAME\.zh,/);
+    expect(
+      dictSource,
+      "英文侧的 path.title 又变成手打的字符串了",
+    ).toMatch(/title: PATH_SURFACE_NAME\.en,/);
   });
 
   it("renders a 26-week grid with the active day highlighted", () => {
