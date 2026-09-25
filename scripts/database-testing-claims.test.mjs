@@ -236,7 +236,7 @@ describe("运行方式与镜像：文档说的就是脚本做的", () => {
     const inSql = /rolname in \(([^)]+)\)/.exec(dbTest);
     expect(inSql, "db-test.mjs 里那句角色存在性校验的写法变了").not.toBeNull();
     const roles = [...inSql[1].matchAll(/'([^']+)'/g)].map((m) => m[1]).sort();
-    const cited = /先校验 (\d+) 个\n?Supabase 角色存在（([^）]+)）/.exec(doc.replace(/\n/g, "\n"));
+    const cited = /先校验 (\d+) 个\n?Supabase 角色存在（([^）]+)）/.exec(doc);
     expect(cited, "文档那句「校验几个角色、是哪几个」的写法变了").not.toBeNull();
     expect(Number(cited[1]), "文档说的个数 ≠ 脚本 IN 列表里的角色数").toBe(roles.length);
     expect(
