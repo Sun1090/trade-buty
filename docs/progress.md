@@ -7159,3 +7159,34 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：用户可见变化八处（配额四句 ×2 语言里挑得出的三处、断档三句、关于页一句），全部是把话收回到代码真做过的事，不改任何行为、口径、数据或接口；`DEFAULT_WINDOW_MS` 是新增导出（原 `HOUR_MS` 只在本文件用过一次），无外部消费者。R16.198/199 纯注释。回滚：`git revert` 这八笔即可，无迁移。
 - 下一项：本轮同一批巡检里还有四条**已亲自复核成立**、尚未修的「说法大于事实」，按优先级排队——（1）`search-client.tsx:206-218` 把三种成因（fetch 抛错 / `!res.ok` / 载荷不是数组）汇成一个 `setIndexError(true)`，界面那句却只怪网络且说「暂时」（`i18n.ts:322`，en `:729`）；（2）`api/ai/{chat,plan,quiz,summary}/route.ts` 的鉴权 catch 复用同一句「AI 服务暂时不可用，请稍后再试」——那一趟根本没碰过 AI 服务商，且在缺 Supabase env 时是永久状态而非「暂时」；（3）`replay-trainer.tsx:208` 的 `...(elapsed > 0 ? { durationSec: elapsed } : {})` 让**新**一轮也可能不带耗时，于是统计页那句「旧回放记录缺少耗时数据；完成一轮新的回放后开始记录时长」把成因说成记录年龄、开的药方正是刚失败的那件事；（4）`ai-chat.tsx:329` 那个 30 秒计时只约束到响应头到达，en 侧却对用户说 "check your network"。需要人拍板的仍是三条：R16.159、R16.164、R16.174。
 - 更新时间：2026-09-25 10:05（Asia/Shanghai）。
+---
+
+## 2026-09-25 — 三句替代码挑了成因的失败提示（R16.200–R16.202，第二十轮第九条）
+
+- 状态：本地开发、提交前验证完成；等待推送。
+- 里程碑 / 版本：v0.7.16 之后的质量加固批次，不发版。
+- 分支 / 提交：`fix/failure-cause-claims`（基线 `origin/main = 32d3b81`，即 PR #308 合并后的头）→ `fac1e3f`（R16.200 索引失败那句 + gate）→ `a76ad44`（R16.201 AI 那两句 + 常量提出 + gate）→ `f7af07b`（清掉一处重复注册的 mock）→ `05047ee`（R16.202 回放时长那句 + 真事实用例 + gate）→ `8b5d0e0`（台账三行）→ 本条 `docs(progress)`。
+- 完成内容：
+  - **R16.200**：`search-client.tsx:206-218` 把三种失败（`fetch` 抛错、`!res.ok`、`res.json()` 出来的不是数组）汇成同一个 `setIndexError(true)`，`catch` 里一种成因都没留下；界面那句却是「搜索索引暂时加载失败，请检查网络后重试」——索引 404（部署漏发 `search-index.json`）时这句话每次必到、且永远不会「暂时」过去。改成不挑成因、两种可能并列、并点名屏幕上真的有的那颗「重试」。gate 在 `search-client.test.tsx` 里用真字典跑完两种语种 × 三种失败模式，除文案外还断言那一屏没有把「没有匹配结果」当成失败原因印出来。
+  - **R16.201**：`ai-chat.tsx` 那个 30 秒计时只约束到**响应头到达**（同文件注释自己写着「正文流式期不计入」），而 `/api/ai/chat` 是 `await streamChat()` 拿到上游流之后才 `new Response(...)` 送头（`route.ts:205`→`:261`）——上游一个字一个字磨时，浏览器等的正是这段时间，旧文案却写「请求超时，请检查网络后重试」。另一句 `errorServer` 同时挂在 `e instanceof TypeError`（这台设备）与 `res.status >= 500` 两条支上，后者包括缺 Supabase env 时 `getServerAuthUser()` 每次必抛的鉴权 catch（`route.ts:53-60`），那是配置状态，旧句「服务暂时不可用，请稍后再试」两头都不对。等待秒数改为从组件里新提取的 `RESPONSE_HEADER_TIMEOUT_MS` 换算；gate（5）另把 AbortError→errorTimeout、TypeError→errorServer 这条接线按源码钉住，因为「这台设备」那半句只在这个映射成立时才为真。
+  - **R16.202**：`/stats` 回放时长那块写「旧回放记录缺少耗时数据；完成一轮新的回放后开始记录时长」。存档写的是 `...(elapsed > 0 ? { durationSec: elapsed } : {})`，而 `elapsed = Math.round(毫秒差 / 1000)`：一轮不到半秒就四舍五入成 0，走的正是「干脆不写这个字段」那一支（同一支还跳过 `addStudyTime`）。R16.176 之后这块在「有轮次、但只有一部分有时长」时也会亮出这句话，于是它当着刚做完一轮却仍然没数的人许诺「做完一轮就有」。新句子两头都点名，并按 R16.163 用同一块面板自己的标签名「平均每轮」说明它的分母。真事实是一对时钟用例：每读一次 `Date.now()` 走 1 秒 → 记录带 `durationSec`；时钟冻住 → 同一轮**存了**却没有 `durationSec`、`addStudyTime` 也没被调。
+  - **顺手清掉一处自己留下的重复**：`replay-trainer.test.tsx` 里 `vi.mock("@/lib/study-time", …)` 有两份一模一样的（77、79 行），是 `2e0b53b` 那次编辑把同一段贴了两遍留下的。第二份只是把同一个工厂再注册一遍，**任何断言都抓不到它**——这类「整条语句出现两次」的错误不在门禁的视野里，只有读文件时才会看见。
+- 变更文件：
+  - `src/lib/i18n.ts`（`search.indexError` ×2 语种、`ai.errorServer`/`errorTimeout` ×2 语种 + 两条注释）
+  - `src/components/search-client.test.tsx`（R16.200 那组 6 条）
+  - `src/components/ai-chat.tsx`（提出 `RESPONSE_HEADER_TIMEOUT_MS`）
+  - `src/components/ai-error-cause-claims.test.ts`（新增，5 条）
+  - `src/lib/i18n-stats.ts`（`replayTrendDesc`、`replayNoDurations` ×2 语种）
+  - `src/lib/replay-duration-claims.test.ts`（新增，4 条）
+  - `src/components/replay-trainer.test.tsx`（R16.202 那对时钟用例 + 删掉重复 mock）
+  - `docs/roadmap.md`、`docs/progress.md`、`docs/scan-counts.md`、`docs/test-clock-hygiene.md`
+- 验证命令与结果：
+  - `npx vitest run src/components/ai-error-cause-claims.test.ts src/components/search-client.test.tsx`：通过（2 文件 / 39 用例）。
+  - `npx vitest run src/lib/replay-time-trend.test.ts src/lib/i18n-stats.test.ts src/components/stats-client.test.tsx src/components/replay-trainer.test.tsx`：通过（4 文件 / 103 用例）。
+  - `node .gate-logs/probe-r16200-202.mjs`：11 组变异探针，**11 抓到 / 0 漏掉**（含 R16.202 那条把 `elapsed > 0` 改成 `elapsed >= 0` 的支路探针，冻时钟用例随之变红）。日志 `.gate-logs/probe-r16200-202.out`。
+  - `npm run typecheck`、`npm run lint`：通过。
+  - 全量门禁链：见本条之后的补记。
+- 阻塞 / 风险：三条都是把话收回到代码真做过的事，不改任何行为、口径、数据或接口。`RESPONSE_HEADER_TIMEOUT_MS` 是新增导出（原来那个 30_000 只在本文件用过一次），无外部消费者。回滚：`git revert` 这五笔即可，无迁移。
+- 同一轮里另外三条**已亲自复核但没修**的，登记进台账：（1）四个 AI 路由的鉴权 catch 复用的 `{ error: "AI 服务暂时不可用，请稍后再试。" }` 是服务端响应体，`ai-chat.tsx:377` 对 ≥500 一律换成 `dict.errorServer`，所以它在界面上没有渲染点——值低，只登记；（2）`parseChatBody` 拒绝任何一条超过 8000 字的消息，而「继续生成」会把整段已有回答原样放进 `messages`，一段越写越长的对话会让这一条之后的每次请求都拿 400，聊天气泡里印的是英文 `Invalid payload`；（3）同一条链路上 4xx 的 `errBody.error` 是直接 `throw new Error(errBody.error || dict.error)` 上屏的，没有任何语种映射。
+- 下一步：把（2）（3）这条链路当作下一轮的头号目标——先写一个真的能把对话顶过 8000 字的复现用例，再决定是「客户端不发服务端必拒的东西」还是别的方案。
+- 更新于：2026-09-25
