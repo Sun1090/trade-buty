@@ -22,7 +22,7 @@
     },
     {
       "id": "knowledge-lesson",
-      "description": "Rendered lesson content; HTML budget covers long-form lesson output. 预算从 400 收到 404（2026-09-25）：CI 实测本组最大 399.9KB（main@478effc），同一份代码本地构建是 397.7KB —— 2.2KB 的构建机差异还没查明（R16.234），而 0.1KB 的容差小过一次构建噪声，任何往字典里加一句话的 PR 都会把 CI 红。404 = CI 当前最大 + 约两倍于那个差异。还债的那一条是 R16.235：把 59.3KB 的 supabase-js 从 454 条路由的首屏里拿掉，之后本组预算要往下收到 350 以下。",
+      "description": "Rendered lesson content; HTML budget covers long-form lesson output. 预算从 400 让到 404（是放宽，不是收紧）（2026-09-25）：CI 实测本组最大 399.9KB（main@478effc），同一份代码本地构建是 397.7KB —— 2.2KB 的构建机差异还没查明（R16.234），而 0.1KB 的容差小过一次构建噪声，任何往字典里加一句话的 PR 都会把 CI 红。404 = CI 当前最大 + 约两倍于那个差异。还债的那一条是 R16.235：把 59.3KB 的 supabase-js 从 454 条路由的首屏里拿掉，之后本组预算要往下收到 350 以下。",
       "match": "^(?:zh|en)/knowledge/[^/]+/[^/]+$",
       "maxGzipKB": { "js": 310, "css": 20, "html": 95, "total": 404 }
     },
