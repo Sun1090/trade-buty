@@ -73,3 +73,27 @@
 | auth | 4 | 304.5 KB | 340 KB | `zh/auth` |
 
 `npm run check:bundle` 当前覆盖 454 条 locale 路由；整体 JS 预算仍按分组收紧（例如 lessons 310KB、AI 315KB、chart 350KB、replay 355KB），HTML 预算单独防止长正文整页膨胀。
+
+### 复测（2026-09-25，本地干净构建 `npm run build` 后跑 `npm run check:bundle`）
+
+上面那张表是 2026-09-12 的首次全量测量，保留原样当历史。今天的读数（最大 total / 预算）：
+
+| 分组 | 今天最大 total | 预算 | 最大路由 |
+|---|---:|---:|---|
+| home | 349.2 KB | 360 KB | `zh` |
+| path | 349.9 KB | 365 KB | `zh/path` |
+| knowledge-chapter | 334.1 KB | 370 KB | `zh/knowledge/markets-instruments` |
+| knowledge-lesson | 397.8 KB | 400 → **404** KB | `zh/knowledge/technical-analysis/drawing-tools` |
+| search | 317.1 KB | 335 KB | `zh/search` |
+| review | 338.0 KB | 350 KB | `zh/review` |
+| bookmarks | 312.2 KB | 335 KB | `zh/bookmarks` |
+| stats | 364.5 KB | 370 KB | `zh/stats` |
+| ai | 319.7 KB | 350 KB | `zh/ai` |
+| chart | 369.7 KB | 390 KB | `zh/chart` |
+| replay | 379.0 KB | 400 KB | `zh/replay` |
+| privacy | 321.8 KB | 340 KB | `zh/privacy` |
+| glossary | 318.4 KB | 340 KB | `zh/glossary` |
+| static-info | 331.6 KB | 340 KB | `zh/changelog` |
+| auth | 312.5 KB | 340 KB | `zh/auth` |
+
+**为什么给 lesson 组让出 4KB（以及这笔债）**：这一组从 386.8KB（9-12）涨到本地 397.8KB，而 **CI 上是 399.9KB**（`main@478effc` 那次 `ci` 的 `check:bundle` 读数），同一份代码两台机器差 **2.2KB**——这 2.2KB 出在哪一段还没查明（CI 只报了 `total` 超，没报 `js`，所以差异至少不完全在 JS 上）。预算容差比构建机之间的噪声还小，结果就是「任何往字典里加一句话的 PR 都会让 CI 红」（PR #317 加了一句邮件订阅说明，CI 读到 400.0/400 就是这个形状）。404 = CI 当前最大 + 约两倍于那个差异，仍然抓得住真正的回归（第二十三轮那次误加整本字典是 +13.7KB）。还债的一条登记在 `docs/roadmap.md` **R16.235**：课文首屏里躺着 **59.3KB gzip 的 `@supabase/supabase-js` chunk**（`2ul2-0o5b9aur.js`，指纹 `GoTrueClient`/`RealtimeClient`），454 条路由的 HTML 全都引用它——入口是 `auth-provider.tsx:4`、`auth-header.tsx:7` 与 `sync-layer.ts:3` 三处静态 import，而这三处全都在挂载后或点击时才用它。把它挪出首屏后这一组的预算要往下收到 350 以下。没在本轮动手的原因也登记在同一条：E2E 跑在没有 Supabase env 的环境（R7.7 降级路径），改完的登录态恢复我**没有办法端到端验证**，不能凭推断改登录链路。
