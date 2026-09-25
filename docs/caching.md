@@ -82,7 +82,7 @@ SRS 字段云端空值不覆盖本地计划（R5.7）；目标档位**本地意�
 
 ## 5. PWA 离线兜底（R13.13）
 
-Service Worker 采用**最小缓存边界**：安装期只预缓存 `public/offline.html` 一个静态应用壳，不缓存页面 HTML、RSC payload、API、`search-index.json` 或 `knowledge-assets`。因此**文档级导航**（首次进入、地址栏输入、刷新、从站外链接点进来）断网时会显示明确的离线引导页，而不是可能过期的课程内容；应用内点链接走的是 RSC 请求，`sw.js` 只对 `request.mode === "navigate"` 兜底，所以那条路径由 `src/app/error.tsx` 承接，不是离线引导页。联网时所有内容请求仍直接走网络，与 §4 的即时更新契约一致。
+Service Worker 采用**最小缓存边界**：安装期只预缓存 `public/offline.html` 一个静态应用壳，不缓存页面 HTML、RSC payload、API、`search-index.json` 或 `knowledge-assets`。但这层兜底有个前提：**这个 worker 得先装上**——注册发生在页面 `load` 之后，而且只在生产构建里注册（`src/components/service-worker-registrar.tsx`），所以覆盖到的是**在这个浏览器上至少联网打开过一次本站之后**的文档级导航（地址栏输入、刷新、从站外链接点进来）；连仓库自己的 e2e 都要先做一次在线导航才测得到兜底（`e2e/pwa-offline.spec.ts:83-85` 就写着「首次导航仍绕过刚启动的 worker」）。一个从没访问过本站的浏览器断网进来时，那一刻没有任何 worker 能拦截，看到的是浏览器自己的错误页，不是我们的离线壳（2026-09-26 实测：全新上下文开局离线，`page.goto` 直接 `net::ERR_INTERNET_DISCONNECTED`；同一份构建里先在线访问过一次，再断网导航才看到那颗「你现在处于离线状态」标题）。应用内点链接走的是 RSC 请求，`sw.js` 只对 `request.mode === "navigate"` 兜底，所以那条路径由 `src/app/error.tsx` 承接，不是离线引导页。联网时 worker **不改变任何响应的取法**：非导航请求它根本不拦截，导航请求就是原样 `fetch(request)`，两者各自仍按浏览器的 HTTP 缓存语义走——与 §4 的即时更新契约一致。
 
 | 资源 | 缓存策略 | 说明 |
 |---|---|---|

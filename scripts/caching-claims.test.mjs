@@ -302,3 +302,58 @@ describe("docs/env.md 的必需列与烘进 HTML 的页面", () => {
     expect(section(envDoc, "| `ADMIN_TOKEN`", "\n"), "env.md 那句 401 被改掉了").toContain("一律 401");
   });
 });
+
+/**
+ * R16.264：§5 那句「文档级导航（首次进入、…）断网时会显示离线引导页」把前提漏掉了。
+ * 2026-09-26 拿同一份构建量了三条（`.gate-logs/probe-r33-offline.mjs`）：
+ * A 在线首次访问 `/zh` → 200；B 先在线访问过、worker 接管后断网导航 → 看到离线壳；
+ * C **全新上下文、开局就离线** → `page.goto` 直接 `net::ERR_INTERNET_DISCONNECTED`，没有我们的壳。
+ * C 之所以必然如此，是因为注册发生在页面 `load` 之后、且只在生产构建里注册
+ * （`src/components/service-worker-registrar.tsx`）——那一刻浏览器里根本没有 worker 可以拦截。
+ * 这条判据不许把「首次进入」再塞回来，也不许再写「所有内容请求仍直接走网络」：
+ * `public/sw.js` 对非导航请求压根不 `respondWith`，联网时它只是原样 `fetch(request)`。
+ */
+describe("§5 离线兜底的前提与边界", () => {
+  const s5 = section(cache, "## 5.", null);
+  const sw = read("public/sw.js");
+  const registrar = read("src/components/service-worker-registrar.tsx");
+
+  it("代码侧那三件事实还在：只在 load 之后注册、只在生产注册、只拦导航", () => {
+    expect(registrar, "注册不再是「load 之后」做的，§5 的前提要重看").toMatch(/document\.readyState === "complete"/);
+    expect(registrar).toContain('window.addEventListener("load", run, { once: true })');
+    expect(registrar, "注册不再分生产/开发，§5 那句「只在生产构建里注册」要重看").toContain(
+      'process.env.NODE_ENV === "production"',
+    );
+    expect(sw, "worker 不再只兜导航请求，§5 与 §4 的边界要重看").toMatch(
+      /request\.method !== "GET" \|\| request\.mode !== "navigate"\) return;/,
+    );
+    const precaches = sw.match(/cache\.add\(/g) ?? [];
+    expect(precaches.length, `安装期预缓存不再是 1 条（读到 ${precaches.length}）`).toBe(1);
+  });
+
+  it("文档交代了「得先联网访问过一次」这个前提，也没有再承诺冷启动", () => {
+    const t = flat(s5);
+    expect(t, "§5 不再写离线壳的前提（联网打开过一次本站）").toContain("至少联网打开过一次本站");
+    expect(t, "§5 没交代从没访问过的浏览器断网会看到什么").toContain("浏览器自己的错误页");
+    expect(t, "§5 又把「首次进入」当成有兜底的场景（实测冷启动离线拿不到我们的壳）").not.toMatch(/（首次进入/);
+    expect(t, "§5 又说联网时所有请求「直接走网络」——非导航请求它根本不拦，谈不上走不走").not.toMatch(
+      /所有内容请求仍直接走网络/,
+    );
+    expect(t, "§5 少了那条边界：非导航请求不由 worker 处理").toContain("不拦截");
+  });
+
+  it("引用的那句 e2e 注释还在它被引的那几行里", () => {
+    const cited = /`(e2e\/pwa-offline\.spec\.ts):(\d+)-(\d+)`[^「]*「([^」]+)」/.exec(s5);
+    expect(cited, "§5 不再引用 e2e 里那句注释（或写法变了），判据要跟着改").toBeTruthy();
+    const [, file, from, to, quote] = cited;
+    const lines = read(file).split("\n").slice(Number(from) - 1, Number(to));
+    expect(lines.length, `${file}:${from}-${to} 越界了`).toBeGreaterThan(0);
+    // 注释会折行（那句就折在「绕过刚 / 启动的 worker」中间），比的是**散文**不是换行位置：
+    // 两边都去掉注释符号与空白再比。
+    const tidy = (s) => s.replace(/\/\/|\/\*|\*\s?/g, "").replace(/\s+/g, "");
+    expect(
+      tidy(lines.join("")),
+      `${file}:${from}-${to} 里已经没有「${quote}」——行号被移动过，重新定位后再改文档`,
+    ).toContain(tidy(quote));
+  });
+});
