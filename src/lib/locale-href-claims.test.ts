@@ -1,11 +1,16 @@
 /**
  * R16.188：客户端组件里写死的站内绝对链接必须带语种前缀。
  *
- * 这一站所有页面都在 `/{locale}` 下（`src/app/[locale]/`），根级没有对应路由，也没有
- * middleware / redirects 兜底。所以 `href="/replay"` 不是「少一段路径」，而是落进
- * `src/app/[locale]/page.tsx` 里 `isLocale("replay")` 那一支 → `notFound()`：一个看起来能点、
- * 点了必 404 的主按钮。`check:links` 扫的是构建产物里的静态 HTML，抓不到这种要等交互之后
- * 才挂载的节点（toast 没弹出时组件直接 `return null`），所以这一半得由源码层守。
+ * 这一站所有页面都住在 `/{locale}` 下（`src/app/[locale]/`），根级没有对应路由。
+ * 未加前缀的地址不会 404——`src/proxy.ts` 会把它 307 到 `/{语种}/…`，而那个语种取自
+ * `tb-lang` cookie、缺省 `en`（实测：无 cookie 时 `/replay` → `/en/replay`，
+ * `tb-lang=zh` 时才 → `/zh/replay`）。于是 `href="/replay"` 的真实后果是
+ * **在用户毫无提示的情况下换掉界面语种**：中文页面上那颗「继续学习」把只认 URL 的访客
+ * 送去英文回放页，而屏幕上其余每一句（包括这条提示自己的文案）都按 URL 的语种渲染。
+ * 组件自己就从路径里读 locale（与 `sync-summary-toast` 同一套写法），加上前缀即可。
+ *
+ * `check:links` 抓不到这一类：它读构建产物里的静态 HTML，而 toast 没弹出时组件直接
+ * `return null`，服务端 HTML 里根本没有这个节点。所以这一半得由源码层守。
  *
  * 口径写清楚，别夸成「所有链接都查过」：
  * - 认的是**字面量绝对路径**：`href="/x"`、`href={"/x"}`、``href={`/x`} ``。
@@ -69,7 +74,7 @@ describe("站内链接带着它的语种", () => {
     expect(findUnprefixedHrefs('<Link href="/api/ai/chat" />')).toEqual([]);
   });
 
-  it("组件里不存在没带语种前缀的字面量链接（缺前缀会落进 notFound）", () => {
+  it("组件里不存在没带语种前缀的字面量链接（缺前缀会被代理换成 cookie 里的语种）", () => {
     const offenders: string[] = [];
     for (const file of files) {
       for (const href of findUnprefixedHrefs(readFileSync(file, "utf8"))) {
