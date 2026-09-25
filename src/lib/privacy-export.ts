@@ -88,12 +88,19 @@ function safeStorage(): Storage | null {
 }
 
 /**
- * 导出必须剔除的键：登录会话材料。
- * supabase-js 把 `{access_token, refresh_token, expires_at, …}` 写在 localStorage 的
- * `sb-<project-ref>-auth-token`（默认 storageKey，见 supabase-js 的 defaultStorageKey）。
- * 那不是「我的学习数据」，而是一张能直接接管账户的凭证——导出文件天生就是要被人下载、
- * 转发、贴进 issue 的，所以按 `sb-` 前缀整族剔除：这一族的键全部属于 Auth，
- * 站内自己的键一律 `tb-` 开头，不会误伤学习数据。
+ * 导出必须剔除的键：登录会话材料（`{access_token, refresh_token, expires_at, …}`）。
+ *
+ * 但要说清这台客户端把它们放在哪儿：`src/lib/supabase/client.ts` 用的是
+ * `@supabase/ssr` 的 `createBrowserClient`，它自己写死「always manages the session via
+ * cookies, so the `auth.storage` option you passed is ignored」（见
+ * `node_modules/@supabase/ssr/dist/main/createBrowserClient.js`）。也就是说会话在
+ * **cookie** 里，而这个导出只遍历 `localStorage`——今天这份文件里根本不会有令牌，
+ * 不是「剔除掉了」，是「压根没写进去」。
+ *
+ * 那这条 `sb-` 过滤还留着做什么：防的是这台浏览器上曾经存在过的键。supabase-js 的默认
+ * storage 就是 `sb-<project-ref>-auth-token` 一族键名，早于 @supabase/ssr 的构建、
+ * 或任何直接走 `createClient` 的代码都会把它们落进 localStorage；导出文件天生要被人下载、
+ * 转发、贴进 issue，所以宁可继续按整族跳过。站内自己的键一律 `tb-` 开头，不会误伤学习数据。
  */
 const SESSION_STORAGE_KEY = /^sb-/;
 

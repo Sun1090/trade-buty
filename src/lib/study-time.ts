@@ -46,7 +46,11 @@ function readLedger(): Ledger {
   return out;
 }
 
-/** 累加某来源当日学习秒数（单次 ≤4h、单日单源 ≤8h 防呆） */
+/**
+ * 累加某来源当日学习秒数。防呆只有一道闸，而且是按天算的：当日单源封顶 8 小时
+ * （`8 * 3600`），于累加处夹一次、`readLedger` 读旧台账时再夹一次。
+ * 单次调用没有上限——旧注释里的「单次 ≤4h」在代码里不存在，回放一次可以上报到 8 小时。
+ */
 export function addStudyTime(source: StudySource, seconds: number, day: string = localDateStr()): void {
   if (!Number.isFinite(seconds) || seconds <= 0) return;
   try {

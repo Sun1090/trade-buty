@@ -328,7 +328,13 @@ function enqueueGoalUpsert(payload: { daily_goal_min?: number; weekly_goal_min?:
   }
 }
 
-/** R4.7：每日目标档位云端同步（登录后多设备一致） */
+/**
+ * R4.7：每日目标档位随写推送到云端。
+ * 但「推上去」不等于「各设备读到的一样」：登录拉取那一步是本机意图优先
+ * （见本文件下方的 `if (cloudGoal && !localGoal)`——只有本机没设过才采用云端），
+ * 所以两台都设过档位时它们会各自保持自己的值，直到用户在其中一台改一次。
+ * 这件事由同步差异横幅说给用户（`sync-conflicts.ts`），注释不许替它许诺一致。
+ */
 export function syncGoalUpsert(goalMin: number) {
   enqueueGoalUpsert({ daily_goal_min: goalMin }, "daily-goal", "goal upsert");
 }

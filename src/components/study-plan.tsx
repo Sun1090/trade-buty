@@ -66,7 +66,8 @@ export function StudyPlan({
           </button>
         )}
       </div>
-      {/* 失败时只写 failed：一次失败不能把「重试」按钮一起吞掉 */}
+      {/* 失败只写那句失败：那颗「生成学习计划」按钮（`!plan` 时在场）不能跟着一起消失，
+          否则用户除了刷新页面没有第二次入口。屏幕上没有一颗叫「重试」的按钮，注释也不许造。 */}
       {failed && <p className="text-sm text-down leading-relaxed">{failed}</p>}
       {plan && <p className="text-sm text-muted leading-relaxed">{plan}</p>}
     </div>
