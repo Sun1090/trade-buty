@@ -13,4 +13,4 @@
 | kb-en-md-files | 209 | 200 | en 树 md 文件 |
 | kb-md-files | 419 | 400 | 知识库 md 文件 |
 | kb-zh-md-files | 209 | 200 | zh 树 md 文件 |
-| secrets-listed-files | 798 | 700 | git 列出的待扫文件 |
+| secrets-listed-files | 799 | 700 | git 列出的待扫文件 |
