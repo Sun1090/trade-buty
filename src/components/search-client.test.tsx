@@ -724,3 +724,51 @@ describe("SearchClient 索引未到位的一帧，与 ?q= 深链", () => {
     expect(screen.queryByText(dict.noResults)).toBeNull();
   });
 });
+
+/**
+ * R16.200：索引没加载出来那一句，不许替用户诊断成因。
+ *
+ * `loadIndex()` 有三条失败路径汇成同一个状态：`fetch` 抛错（网络）、`if (!res.ok) throw`
+ * （404 / 500 —— 那是部署产物没到位，跟这个人的链路没关系）、`if (!Array.isArray(data)) throw`
+ * （文件在但内容不对）。`catch {}` 把是哪一种丢掉了，所以屏幕上那句话没有任何依据说
+ * 「请检查网络」，也没有依据说「暂时」。旧文案两头都写了。
+ *
+ * 这一组把三种失败各演一遍，要求同一句话在场（因为它必须对三种都成立）、不许出现只怪网络
+ * 或只怪临时的说法，并且句子里点名的「重试」这颗按钮真的在同一个告警块里（R16.193 同族）。
+ * 顺带把「失败伪装成无结果」在另外两条路径上也钉住——原来那条用例只演了 fetch 抛错一种。
+ */
+describe("索引加载失败那句不说成因（真字典，R16.200）", () => {
+  const modes = [
+    { name: "fetch 抛错（网络）", fetch: () => vi.fn().mockRejectedValue(new Error("offline")) },
+    { name: "响应不是 2xx（产物没到位）", fetch: () => vi.fn().mockResolvedValue({ ok: false, status: 404 }) },
+    {
+      name: "载荷不是数组（文件坏了）",
+      fetch: () => vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ nope: true }) }),
+    },
+  ] as const;
+  const DIAGNOSIS = /检查网络|请检查你的网络|check your connection|check your network/i;
+  const TRANSIENT = /暂时|稍后再试|temporarily|try again later/i;
+
+  for (const locale of ["zh", "en"] as const) {
+    for (const mode of modes) {
+      it(`${locale} · ${mode.name}：说的是同一句中性话，且「重试」就在旁边`, async () => {
+        const real = getDict(locale).search;
+        pathnameState.path = locale === "en" ? "/en/search" : "/zh/search";
+        vi.stubGlobal("fetch", mode.fetch());
+        render(<SearchClient dict={real} />);
+
+        fireEvent.change(screen.getByRole("searchbox"), { target: { value: locale === "en" ? "margin" : "保证金" } });
+
+        const alert = await screen.findByTestId("search-index-error");
+        const text = alert.textContent ?? "";
+        expect(text).toContain(real.indexError);
+        expect(text, "这句在三种成因共用，没有依据诊断是哪一种").not.toMatch(DIAGNOSIS);
+        expect(text, "代码没测过这次是不是临时的").not.toMatch(TRANSIENT);
+        // 句子里点名的那颗按钮必须在同一个告警块里真的存在
+        expect(within(alert).getByRole("button", { name: real.retry })).toBeInTheDocument();
+        // 失败不许伪装成「没有结果」
+        expect(screen.queryByText(real.noResults)).toBeNull();
+      });
+    }
+  }
+});
