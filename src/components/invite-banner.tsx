@@ -11,7 +11,8 @@ interface Labels {
 }
 
 /**
- * R8.5 邀请 banner：URL 上有 ?ref=xxx 时显示一次，写入 localStorage。
+ * R8.5 邀请 banner：只要本地有一条未过期的邀请记录就显示（本次 URL 上的 ?ref=，
+ * 或这台浏览器 30 天内记下的那一条 —— 两种来源都算，埋点里的 source 就是 url/storage）。
  * - 仅 client 渲染（避免 SSR 触碰 localStorage）
  * - 用户手动关闭后不再展示（localStorage dismissed=true 标记）
  * - 多 tab 通过 storage 事件同步（如果其他标签页清掉邀请，banner 也消失）
