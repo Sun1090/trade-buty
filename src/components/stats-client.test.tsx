@@ -108,8 +108,8 @@ const dict: StatsDict = {
   rangeDaysTpl: "Last {n} days",
   sourceLocal: "This device",
   sourceCloud: "Local + cloud",
-  conflictTitle: "Multi-device sync note",
-  conflictBodyTpl: "{n} item(s) differ from another device and were merged automatically.",
+  conflictTitle: "Sync differences",
+  conflictBodyTpl: "{n} item(s) on the cloud differ from this device and were merged.",
   conflictDismiss: "Got it",
   dataExportTitle: "Export learning data",
   dataExportDesc: "Generated locally as JSON; nothing is uploaded",
@@ -545,9 +545,9 @@ describe("StatsClient sync conflict notice (R12.9)", () => {
       JSON.stringify({ at: 1234, items: [{ kind: "goal", key: "daily-goal-min", local: "15", cloud: "30", resolution: "kept-local" }] }),
     );
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
-    expect(await screen.findByLabelText("Multi-device sync note")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Sync differences")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Got it" }));
-    expect(screen.queryByLabelText("Multi-device sync note")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Sync differences")).not.toBeInTheDocument();
     expect(localStorage.getItem("tb-sync-conflicts-dismissed")).toBe("1234");
   });
 
@@ -559,7 +559,7 @@ describe("StatsClient sync conflict notice (R12.9)", () => {
     localStorage.setItem("tb-sync-conflicts-dismissed", "42");
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
     await screen.findByRole("button", { name: "Last 7 days" });
-    expect(screen.queryByLabelText("Multi-device sync note")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Sync differences")).not.toBeInTheDocument();
   });
 
   it("念的是检测到的分歧处数，不是存下来的明细条数", async () => {
@@ -576,7 +576,7 @@ describe("StatsClient sync conflict notice (R12.9)", () => {
       }),
     );
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
-    expect(await screen.findByText(/23 item\(s\) differ/)).toBeInTheDocument();
+    expect(await screen.findByText(/23 item\(s\) on the cloud differ/)).toBeInTheDocument();
   });
 });
 
