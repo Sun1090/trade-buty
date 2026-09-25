@@ -112,8 +112,11 @@ describe("period keys + dedup (R12.17)", () => {
 
   it("weekly cadence dedups within the same ISO week only", () => {
     const settings = { cadence: "weekly" as const, dndStartHour: 22, dndEndHour: 8 };
-    // 2026-09-11 是周五；同周日 2026-09-13 仍属同 ISO 周（周五定周 → 周二 09-08 起）
+    // 2026-09-11 是周五。ISO-8601 的周从周一开始、以该周的**周四**定年周号（`localWeekStr` 的 +3），
+    // 所以这一周是 09-07（周一）到 09-13（周日），锚点周四为 09-10。
     const weekKey = localWeekStr(at(12));
+    expect(reminderPeriodKey(settings, at(12, { d: 7 }))).toBe(weekKey); // 周一：同一周
+    expect(reminderPeriodKey(settings, at(12, { d: 13 }))).toBe(weekKey); // 周日：仍是同一周
     expect(shouldShowReminder({ settings, dueCount: 2, lastShownKey: weekKey, now: at(12, { d: 13 }) })).toBe(false);
     // 下周三 → 新周期
     expect(shouldShowReminder({ settings, dueCount: 2, lastShownKey: weekKey, now: at(12, { d: 16 }) })).toBe(true);

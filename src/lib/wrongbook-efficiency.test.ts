@@ -67,7 +67,11 @@ describe("buildWrongbookEfficiency", () => {
     expect(result.days.every((bucket) => bucket.reviews === 0 && bucket.accuracyPct === null)).toBe(true);
   });
 
-  it("counts due and overdue entries from current SRS fields only", () => {
+  /**
+   * 两条尺子分开钉：`dueToday` 认回填的到期日（旧数据也参与），
+   * `overdue` 只认真正排过的 `srsDue`——回填值是推断的，拿它宣布逾期等于替旧数据编一个没人定过的计划。
+   */
+  it("counts due from the backfilled date but overdue only from a real srs_due", () => {
     const due = shiftDate(today, -2);
     const future = shiftDate(today, 3);
     const result = buildWrongbookEfficiency({

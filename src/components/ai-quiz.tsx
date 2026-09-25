@@ -86,7 +86,8 @@ export function AiQuiz({ wrongItems, dict, aiEnabled = true }: AiQuizProps & { a
 
   /**
    * R2.6/R2.8/R5.5：变体题与错题本打通，走 SRS 状态机。
-   * 变体题 i 对应来源错题 wrongItems[i % n]；答对推进间隔、答错重置（幂等）。
+   * 挂对关系按**当前这道变体**算：`questions[current]` 记进 `wrongItems[current % 长度]`；
+   * `pick(i)` 的 `i` 是选项序号，答对推进间隔、答错重置（幂等）。
    * R5.8：每次复习应答计入每日目标（1 题记 1 分钟）。
    */
   function pick(i: number) {
