@@ -196,6 +196,55 @@ describe("统计页那一屏的卡片名互不重名", () => {
 });
 
 /**
+ * R16.217：课文只有一个量词「篇」，可三处点名它的 CTA 各写各的。
+ *
+ * 课文页的主按钮写「下一篇」、篇章页自己的课程栏叫「本篇课程」，但篇章页顶部那颗 TodayPick
+ * 的眉标写的是「下一节课程」，路线页同一个组件收的又是「下一篇课程」。同一屏上出现两种量词，
+ * 读的人只能猜「一节」和「一篇」是不是两种东西——而这一页下面真的还有「下一篇章」。
+ *
+ * 基准不写死在测试里：从篇章页自己认的那句（`chapter.coursesHeading`，「本篇课程」）抠出量词，
+ * 三处 CTA 必须跟着它走。旧写法「下一节课程」既不含基准字又含「节」，两条断言都会红。
+ */
+describe("课文这个对象只有一个量词", () => {
+  const heading = getDict("zh").chapter.coursesHeading;
+  const measureWord = heading.match(/(.)课程/)?.[1] ?? "";
+
+  /** 两处 `hint=` 是写死在页面里的 props，只扫字典的门禁看不见 */
+  const hintTexts = [
+    "src/app/[locale]/knowledge/[chapter]/page.tsx",
+    "src/app/[locale]/path/page.tsx",
+  ].flatMap((rel) => {
+    const src = read(rel);
+    return [...src.matchAll(/hint=\{[^}]*:\s*"([^"]*)"\}/g)].map((m) => ({ at: `${rel} 的 hint`, text: m[1] }));
+  });
+
+  const surfaces = [
+    { at: "doc.next", text: getDict("zh").doc.next },
+    { at: "doc.prev", text: getDict("zh").doc.prev },
+    ...hintTexts,
+  ];
+
+  it("基准抠得出来、四处落点都扫到了（少了就是门禁瞎了）", () => {
+    expect(measureWord, `从「${heading}」里抠不出量词`).toMatch(/^[\u4e00-\u9fff]$/);
+    expect(surfaces.length, "课文 CTA 的落点少于 4 处，扫描缩水了").toBeGreaterThanOrEqual(4);
+    expect(surfaces.map((s) => s.text).filter(Boolean).length, "有落点解析出空串").toBe(surfaces.length);
+  });
+
+  it("每一处都用基准那个字，没有一处用「节」", () => {
+    const offenders = surfaces
+      .filter((s) => !s.text.includes(measureWord) || /节/.test(s.text))
+      .map((s) => `${s.at}="${s.text}"`);
+    expect(offenders, `课文又长出第二个量词：\n${offenders.join("\n")}`).toEqual([]);
+  });
+
+  it("旧写法「下一节课程」过不了这条门禁（对照）", () => {
+    const legacy = "下一节课程";
+    expect(legacy.includes(measureWord), "对照串本身含基准字，上面那条抓不住它").toBe(false);
+    expect(/节/.test(legacy)).toBe(true);
+  });
+});
+
+/**
  * R16.177：`{dueToday}/{pending}` 那一格以前只报一个名字「待复习」。
  * 分子这个量在仓库里早就有统一叫法——R16.4 把复习页、统计页、断签提醒卡的
  * 「今日到期」并成同一把尺子（`review-client.tsx:114-115` 的注释就写着「与统计页
