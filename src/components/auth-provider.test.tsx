@@ -125,7 +125,12 @@ describe("AuthProvider", () => {
       ),
     );
     expect(h.setAuthState).toHaveBeenCalledWith(true, "u1");
-    expect(h.hydrateFromCloud).toHaveBeenCalledWith("u1", expect.any(Function));
+    // `hydrateFromCloud` 不在这次 commit 里：它排在 `void import("@/lib/sync-layer")` 之后，
+    // 而上面那个 waitFor 证的是 `setUser` 已经提交。全量跑（330 worker）里同一形状红过
+    // 一次（`replay-trainer`，PR #318 / R16.238），所以等效应本身而不是等屏幕。
+    await waitFor(() =>
+      expect(h.hydrateFromCloud).toHaveBeenCalledWith("u1", expect.any(Function)),
+    );
   });
 
   it("keeps the email null when the session omits it", async () => {
@@ -146,7 +151,9 @@ describe("AuthProvider", () => {
     await waitFor(() =>
       expect(screen.getByTestId("user")).toHaveTextContent("u3|c@d.e"),
     );
-    expect(h.hydrateFromCloud).toHaveBeenCalledWith("u3", expect.any(Function));
+    await waitFor(() =>
+      expect(h.hydrateFromCloud).toHaveBeenCalledWith("u3", expect.any(Function)),
+    );
   });
 
   it("does not flush an old account queue when hydration finishes after sign-out", async () => {

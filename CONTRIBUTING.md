@@ -70,6 +70,8 @@ npm run check:docs
 
 涉及数据库、路由、E2E 或安全头时，还必须运行对应的 `db:test`、`e2e`、`lhci` 或安全审计命令。
 
+组件用例里等一次**由 effect 发出的写入**（`save*` / `add*` / `hydrate*`，或动态 `import()` 之后才被调到的东西）时，要 `waitFor` 那次写入本身或它的载荷，不要只等屏幕上的文字：React 的 passive effect 晚于文本提交，机器空闲时看不出来，全量跑（330 worker）里红过一次——见 R16.238（PR #318）与 R16.240。反过来，断言「没有多写一条」的**缺席**判据要留在同步位置：套上 `waitFor` 只会把要防的那个东西等没。
+
 ## Branch And Commit Convention
 
 - 从最新 `origin/main` 创建聚焦分支，默认使用 `codex/<topic>` 前缀。
