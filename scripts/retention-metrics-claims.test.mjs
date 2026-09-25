@@ -433,3 +433,189 @@ describe("§1 指标定义逐条对上算它的代码", () => {
     expect(row.visible, "那一行的可见位置没写它是告警而不是界面").toContain("console");
   });
 });
+
+/**
+ * R16.271：§3「无登录完全对等」与 §4 那份清单。
+ *
+ * §3 原先只有两句话，其中一句是假的。「未登录用户与登录用户得到完全相同的指标可见性」——登录后统计页
+ * 明明多出两处东西（数据来源标识、「上次从云端合并」卡），而 `hydrateFromCloud()` 还会把云端数据并回
+ * 七个本地键，其中一个正是 §1 那把目标档位；「登录只改变『同步到哪台设备』」把这件事整个漏了。两句
+ * 也都没说在哪个层面成立，读者无从查证。现在这一节讲的是能被代码否证的东西：算指标的那批模块零处读
+ * 登录态、零处自己发请求；整页消费 `useAuth()` 的落点数就是文中那个数，且每一处都落在同步状态那几个
+ * 字典字段上；登录写回的键逐个点名，与 `hydrateFromCloud` 的写入端一一对上。文中四个数（键数、处数、
+ * 写回键数、清单里那两个窗口数）全部现读，写死一个就红一个。
+ */
+
+/** 一段代码里作为存储键用到的字符串：字面量、模板串（`${}` 归一成 `<chapter>`）、同作用域的 const。 */
+function tbKeys(text, call, strict) {
+  const consts = new Map();
+  for (const m of text.matchAll(/(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*(["'`])([^"'`]*)\2/g)) {
+    if (m[3].startsWith("tb-")) consts.set(m[1], m[3]);
+  }
+  const out = new Set();
+  const re = new RegExp(`(?:${call})\\(\\s*("[^"]*"|'[^']*'|` + "`" + `[^` + "`" + `]*` + "`" + `|[A-Za-z_$][\\w$]*)`, "g");
+  for (const m of text.matchAll(re)) {
+    let arg = m[1].replace(/^["'`]|["'`]$/g, "");
+    if (!arg.startsWith("tb-")) arg = consts.get(m[1]) ?? "";
+    if (strict) {
+      expect(arg.startsWith("tb-"), `有一个本地写入的目标键推不出来（${m[1]}）：§3 那段点名的清单要加它，判据也要能认它`).toBe(true);
+    }
+    if (!arg.startsWith("tb-")) continue;
+    out.add(arg.replace(/\$\{[^}]*\}/g, "<chapter>"));
+  }
+  return out;
+}
+
+/** §1「数据源」列点名的存储键（`tb-review-reminder-*` 这类通配按前缀算）。 */
+function s1Keys() {
+  return [...new Set(
+    METRICS.flatMap((r) => [...r.source.matchAll(/`(tb-[a-z0-9-]+)/g)].map((m) => m[1].replace(/-$/, ""))),
+  )];
+}
+
+/** `hydrateFromCloud()` 往哪些本地键里写。 */
+function mergeWriteKeys() {
+  const body = fnBody("src/lib/sync-layer.ts", "hydrateFromCloud");
+  expect(body, "src/lib/sync-layer.ts 里再也找不到 hydrateFromCloud 了，§3 那段与判据都要同步").toBeTruthy();
+  return tbKeys(body, "writeLocalJson|localStorage\\.setItem", true);
+}
+
+/** src 下所有非测试源码（.ts/.tsx/.mjs），仓库相对路径。 */
+function srcFiles() {
+  return [...readdirSync(path.join(root, "src"), { recursive: true, withFileTypes: true })]
+    .filter((e) => e.isFile() && /\.[cm]?tsx?$/.test(e.name) && !/\.(test|spec)\.[cm]?tsx?$/.test(e.name))
+    .map((e) => path.relative(root, path.posix.join(e.parentPath ?? e.path, e.name)).split(path.sep).join("/"));
+}
+
+const S3 = () => doc.slice(doc.indexOf("## 3."), doc.indexOf("\n## 4."));
+/** §3 里以某个锚句定位那一段（结构变了当场红，不让它悄悄扫空）。 */
+function paraOf(anchor) {
+  const p = S3().split(/\n\n+/).find((x) => x.includes(anchor));
+  expect(p, `§3 里找不到含「${anchor}」的那一段，这一节的结构变了要同步这里`).toBeTruthy();
+  return p;
+}
+
+const CLIENT_SRC = read(CLIENT);
+const LIB_MODULES = [...new Set([...CLIENT_SRC.matchAll(/from "@\/lib\/([\w.-]+)"/g)].map((m) => `src/lib/${m[1]}.ts`))];
+/** 登录态与网络的信号：聚合器碰到任何一条，§3 那句「同一条代码算出来的」就垮了。 */
+const AUTH_OR_NET = /useAuth|auth-provider|getSupabaseBrowser|createClient\(|\bfetch\s*\(|XMLHttpRequest|sendBeacon/;
+/** 数据来源标识与同步时间卡用的那四个字典字段，以及那张卡读的那个值。 */
+const SYNC_STATE_KEYS = ["sourceLocal", "sourceCloud", "sourceCloudPending", "sourceSyncedTpl"];
+const zhDict = () => {
+  const src = read(I18N);
+  return src.slice(src.indexOf("const zh = {"), src.indexOf("const en: StatsDict"));
+};
+
+describe("§3 无登录对等：说出口的数都现读", () => {
+  it("算指标的那批模块不认识登录，也不自己发请求", () => {
+    expect(LIB_MODULES.length, "从 stats-client.tsx 推出来的 `src/lib` 模块少到不正常").toBeGreaterThanOrEqual(25);
+    for (const rel of LIB_MODULES) {
+      expect(existsSync(path.join(root, rel)), `统计页 import 了 ${rel}，文件却不在`).toBe(true);
+      expect(
+        AUTH_OR_NET.test(stripComments(read(rel))),
+        `${rel} 碰到了登录态或网络，§3 那句「没有一处读登录态，也没有一处在自己发请求」不成立`,
+      ).toBe(false);
+    }
+    // 正向对照：同一个信号必须认得出真正的消费点，否则上面那串零是空转出来的
+    expect(AUTH_OR_NET.test(stripComments(CLIENT_SRC)), "这个信号连统计页自己的 useAuth() 都认不出来，判据废了").toBe(true);
+  });
+
+  it("§1 数据源点名的键，读写端真的都落在 localStorage 上", () => {
+    const keys = s1Keys();
+    expect(keys.length, "§1 的数据源列推不出几个键，扫描八成没跑起来").toBeGreaterThanOrEqual(4);
+    const para = paraOf("数据源");
+    for (const k of keys) expect(para, `§3 那一段没有点 ${k}，读者对不上 §1`).toContain(k);
+    const named = new Set([...para.matchAll(/`(tb-[a-z0-9<>*-]+)`/g)].map((m) => m[1].replace(/-\*$/, "")));
+    expect([...named].sort().join(" "), "§3 那段点名的键与 §1 数据源列不是一批").toBe([...keys].sort().join(" "));
+    const stored = new Set(srcFiles().flatMap((rel) => [...tbKeys(stripComments(read(rel)), "localStorage\\.(?:get|set|remove)Item|readLocalJson|writeLocalJson|readStorageJson", false)]));
+    expect(stored.size, "src 下推不出几个存储键，这道扫描八成没跑起来").toBeGreaterThanOrEqual(20);
+    for (const k of keys) {
+      // 通配键（`tb-review-reminder-*`）按前缀算：真键是 `-settings` 与 `-shown` 两个
+      const hit = stored.has(k) || [...stored].some((s) => s.startsWith(`${k}-`));
+      expect(hit, `${k} 在 src 下没有任何一处经由 localStorage 读写，§1 把它当数据源是错的`).toBe(true);
+    }
+  });
+
+  it("整页只有文中那个数的登录态消费点，且每一处都落在同步状态上", () => {
+    const lines = CLIENT_SRC.split("\n");
+    const decl = lines.findIndex((l) => /const user = useAuth\(\)/.test(l));
+    expect(decl, `${CLIENT} 里不再以「const user = useAuth()」取登录态，判据要跟着改`).toBeGreaterThan(-1);
+    const users = lines.filter((l, i) => i !== decl && /\buser\b/.test(l));
+    expect(users.length, "消费登录态的地方少到不正常（扫描八成没跑起来）").toBeGreaterThanOrEqual(1);
+    for (const l of users) {
+      expect(
+        SYNC_STATE_KEYS.some((k) => l.includes(`dict.${k}`)) || l.includes("lastCloudSync"),
+        `统计页多了一处按登录态分支的东西，它不在同步状态那几句里：${l.trim()}——§3 那句「两处都不报指标」与本判据都要同步`,
+      ).toBe(true);
+    }
+    const scoped = new Set();
+    for (const [i, l] of lines.entries()) {
+      if (i === decl || !/\buser\b/.test(l)) continue;
+      for (const k of SYNC_STATE_KEYS) if (lines.slice(i, i + 6).some((x) => x.includes(`dict.${k}`))) scoped.add(k);
+    }
+    for (const k of SYNC_STATE_KEYS) {
+      const seen = lines.filter((l) => l.includes(`dict.${k}`));
+      expect(seen.length, `dict.${k} 在统计页出现的次数不是 1，那句「只有这两处」要重看`).toBe(1);
+      expect(scoped.has(k), `dict.${k} 现在挂在了一处不消费登录态的地方，§3 那段与判据都要同步`).toBe(true);
+    }
+    const para = paraOf("与账号有关的东西");
+    expect(para, `§3 那句处数不是 ${users.length}`).toContain(`**${users.length}** 处`);
+    for (const k of SYNC_STATE_KEYS) {
+      const value = new RegExp(`${k}: "([^"]+)"`).exec(zhDict())?.[1];
+      expect(value, `${I18N} 的 zh 字典里读不到 ${k}`).toBeTruthy();
+      expect([...para.matchAll(/「([^」]+)」/g)].map((m) => m[1]), `§3 引的那几句标签与字典对不上（${k} = ${value}）`).toContain(value);
+    }
+  });
+
+  it("登录写回的那串键，与 hydrateFromCloud 的写入端逐个对上", () => {
+    const keys = mergeWriteKeys();
+    expect(keys.size, "从 hydrateFromCloud 推不出几个写入键，判据空转").toBeGreaterThanOrEqual(5);
+    const para = paraOf("hydrateFromCloud");
+    for (const k of keys) expect(para, `§3 那段漏了 ${k}（云端合并会写它）`).toContain(k);
+    const named = new Set([...para.matchAll(/`(tb-[a-z0-9<>*-]+)`/g)].map((m) => m[1].replace(/-\*$/, "")));
+    expect(named.size, `§3 那段点名的键数与推导值（${keys.size}）不一致：${[...named].join("、")}`).toBe(keys.size);
+    for (const k of named) expect(keys.has(k), `§3 那段点了 ${k}，可 hydrateFromCloud 并不写它`).toBe(true);
+    expect(para, `§3 那句个数不是 ${keys.size}`).toContain(`**${keys.size}** 个键`);
+    // 云端与本地口径的接头处：至少一个写回键同时是 §1 的数据源，文中那句「其中…」说的就是它
+    const overlap = s1Keys().filter((k) => keys.has(k));
+    expect(overlap.length, "云端合并再也不碰 §1 任何一个数据源了，那段的推论要重看").toBeGreaterThanOrEqual(1);
+    for (const k of overlap) expect(para, `§3 没交代 ${k} 既是云端写回键又是 §1 数据源`).toContain(k);
+  });
+});
+
+/** §4 那份「了以后复查」清单：每一行都要指着一件仓库里查得到的东西。 */
+describe("§4 清单每行都点名了它的锁", () => {
+  const checklist = () => doc.slice(doc.indexOf("## 4.")).split("\n").filter((l) => /^- \[[ x]\]/.test(l));
+
+  it("勾掉的每一行都点了一个真实文件", () => {
+    const rows = checklist().filter((l) => l.startsWith("- [x]"));
+    expect(rows.length, "§4 勾掉的行少到不正常").toBeGreaterThanOrEqual(4);
+    for (const l of rows) {
+      const files = [...l.matchAll(/`((?:src|scripts|docs)\/[^`\s]+)`/g)].map((m) => m[1]);
+      expect(files.length, `这一行没有点名任何文件，「由…锁定」就只是一句承诺：${l}`).toBeGreaterThanOrEqual(1);
+      for (const f of files) expect(existsSync(path.join(root, f)), `§4 指着 ${f}，仓库里没有`).toBe(true);
+    }
+  });
+
+  it("「90 天 / 100 轮」那两个数就是 §2 表里的同两个数", () => {
+    const row = checklist().find((l) => /修剪策略与隐私页/.test(l));
+    expect(row, "§4 不再有「修剪策略与隐私页」那一行").toBeTruthy();
+    const m = /（(\d+) 天 \/ (\d+) 轮/.exec(row);
+    expect(m, `那一行不再用「（N 天 / M 轮」这个形状写窗口`).toBeTruthy();
+    const days = table.find((r) => r.key === "tb-study-time");
+    const rounds = table.find((r) => r.key === "tb-replay-history");
+    expect(days && rounds, "§2 表里读不到学习台账与回放两行，这个对账无从做起").toBeTruthy();
+    expect(m[1], `§4 写的天数与 §2 那一行（${days.numbers.join("、")}）不是一回事`).toBe(days.numbers[0]);
+    expect(m[2], `§4 写的轮数与 §2 那一行（${rounds.numbers.join("、")}）不是一回事`).toBe(rounds.numbers[0]);
+  });
+
+  it("§4 指着的那份游客契约测试，真的在没有 AuthProvider 的情况下渲染统计页", () => {
+    const row = checklist().find((l) => /无登录降级/.test(l));
+    expect(row, "§4 不再有「无登录降级」那一行").toBeTruthy();
+    const file = /`((?:src|scripts)\/[^`\s]+\.test\.tsx?)`/.exec(row)?.[1];
+    expect(file, `那一行没有点名测试文件：${row}`).toBeTruthy();
+    const src = read(file);
+    expect(src.includes("render(<StatsClient"), `${file} 不再直接渲染统计页，它锁不住「无登录降级」`).toBe(true);
+    expect(/<AuthProvider/.test(src), `${file} 现在套了 AuthProvider，它验的已经不是无登录路径`).toBe(false);
+  });
+});
