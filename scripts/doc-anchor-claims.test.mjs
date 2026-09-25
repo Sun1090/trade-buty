@@ -80,3 +80,76 @@ describe("docs 里的「基线：」锚点必须解析得出来", () => {
     expect(/^\s*（|^\s*\(/.test(legacy.slice(naked + "`a7c62d1`".length))).toBe(false);
   });
 });
+
+/**
+ * R16.248：文档不许拿一个手抄日期当新鲜度凭据。
+ *
+ * `docs/growth-events.md` 写着「最后更新：2026-09-12」，而它自己最后一次被改是 2026-09-22 的
+ * `74a3fd4`——正是那次给事件目录添了 `share_card_shared` 这一行。也就是说这句话把自己描述的
+ * 那次改动排除在外了。`docs/retention-metrics.md`（写 09-11，实改 09-24，而表里那一行现在还引着
+ * R16.129）、`docs/architecture.md`（「当前基线：2026-09-13」，实改 09-24）同罪。
+ * 这类句子没有任何东西对着：CI 是浅检出，判据拿不到文件历史，所以它既不会被验证、也不会变红，
+ * 只会安静地撒谎。改法是删掉日期、点名真正会红的那一层（判据 + 实现文件），并禁止这种写法回来。
+ */
+const FRESHNESS_CLAIM = /(?:最后|最近)?更新\s*[：:]\s*\d{4}-\d{2}-\d{2}|(?:当前)?基线\s*[：:]\s*\d{4}-\d{2}-\d{2}/;
+
+/** 取「第一个二级标题之前」的文档头（追加式日志里那些条目级时间戳在标题之后，天然不算）。 */
+function headerOf(file) {
+  const text = fs.readFileSync(file, "utf8");
+  const at = text.indexOf("\n## ");
+  return at === -1 ? text : text.slice(0, at);
+}
+
+function markdownFiles() {
+  return [
+    ...fs.readdirSync("docs").filter((n) => n.endsWith(".md")).map((n) => path.join("docs", n)),
+    ...["README.md", "CONTRIBUTING.md", "AGENTS.md"].filter((n) => fs.existsSync(n)),
+  ];
+}
+
+describe("文档不拿手抄日期当新鲜度凭据", () => {
+  const files = markdownFiles();
+
+  it("扫描本身覆盖全仓库的 md", () => {
+    expect(files.length, "能扫到的文档少到不正常").toBeGreaterThanOrEqual(30);
+  });
+
+  for (const file of files) {
+    it(`${file} 的文档头里没有「最后更新 / 当前基线：某个日期」`, () => {
+      const hit = FRESHNESS_CLAIM.exec(headerOf(file));
+      expect(hit, `${file} 又用回了一个手抄日期当新鲜度凭据：「${hit?.[0]}」——没有任何东西对它，它只会安静地变旧。要留新鲜度就点名判据与实现文件`).toBeFalsy();
+    });
+  }
+
+  it("正向对照：本轮收回的那几种写法必须都被同一个正则抓住", () => {
+    for (const legacy of [
+      "最后更新：2026-09-12",
+      "最后更新： 2026-09-11",
+      "> 当前基线：2026-09-13。",
+      "基线：2026-09-13",
+    ]) {
+      expect(FRESHNESS_CLAIM.test(legacy), `这种写法漏网了：${legacy}`).toBe(true);
+    }
+    // 发布评审里的「基线 `0.7.0`（2026-09-20，发布提交 …）」是历史事实，不是新鲜度凭据：不许误伤
+    expect(FRESHNESS_CLAIM.test("基线 `0.7.0`（2026-09-20，发布提交 `364515b`）")).toBe(false);
+  });
+
+  it("收回日期的那四份文档，点名的路径都还在仓库里", () => {
+    let checked = 0;
+    for (const file of [
+      "docs/architecture.md",
+      "docs/growth-events.md",
+      "docs/growth-event-privacy-audit.md",
+      "docs/retention-metrics.md",
+    ]) {
+      const paths = [...new Set([...fs.readFileSync(file, "utf8").matchAll(/`((?:src|scripts|docs|\.github)\/[^`\s]*)`/g)].map((m) => m[1]))]
+        .filter((p) => !p.includes("*") && !p.includes("...") && !p.includes("**"));
+      expect(paths.length, `${file} 一个路径都没点到，这条判据对它空转`).toBeGreaterThanOrEqual(4);
+      for (const p of paths) {
+        expect(fs.existsSync(p), `${file} 指着 ${p}，仓库里没有这个文件`).toBe(true);
+        checked += 1;
+      }
+    }
+    expect(checked).toBeGreaterThanOrEqual(30);
+  });
+});
