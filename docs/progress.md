@@ -7211,3 +7211,24 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：用户可见变化两处（AI 那两句超限提示新增、4xx 不再印英文），都是把话收回到代码真做过的事；无迁移、无接口变更、无新依赖。`BODY_ERRORS` 与预检查是新增导出/新代码路径，覆盖率四项齐涨说明它们被用例执行到了。回滚：`git revert` 这五笔即可。**本轮真正的风险不是代码，是证据**：上一轮写进台账的探针结论是 0 次执行得到的，凡是引用过那句的地方（R16.200/R16.201 两行与上一轮 progress 那条）都已就地标注更正，不删原文。
 - 下一项：R16.207 先做运行时复现（把 `toHaveBeenCalledTimes(2)` 换成逐条断言 `mock.calls[i][0].total`），红了再决定「新一轮」是清 total 还是让入库门槛认出「这份战绩属于哪一轮」。需要人拍板的仍是三条：R16.159（根级 404 中英并列）、R16.164（内容仓 tagline，须去 kline-buty 改口）、R16.174（AI 变体题的 SRS 归属）。
 - 更新时间：2026-09-25 11:52（Asia/Shanghai）。
+
+---
+
+## 2026-09-25 — 「新一轮」把上一轮记了两次、把这一轮记了零次（R16.207，第二十轮第十一条）
+
+- 状态：本地全量验证在最终代码头上跑绿（见「验证」，`.gate-logs/chain-r16207.final.out`）；分支已推、PR 已开。
+- 里程碑 / 版本：第二十轮第十一条。这一条不是文案，是**核心功能的数据缺陷**——它来自上一轮 R16.202 那句「被四舍五入成 0 秒」往下追的一条线，登记在 PR #310 的 R16.207 行里，本轮直接把它修掉。
+- 分支 / 提交：`fix/replay-new-round-record`（基线 `origin/main = df10182`）→ `763ef75`（`beginRound` 清这一轮 + `saveReplayBest` 单调）→ `96a18e3`（守卫的相等那一支）→ `58d67fe`（换标的那条用例 + 改掉被探针证伪的注释）→ 本条 `docs(progress)`。
+- 完成内容：
+  - **缺陷一（回声）**：入库效应的门槛是 `guessMode && klines && idx >= klines.length && guess.total > 0 && savedRoundRef.current !== round`，而 `round` 自己在依赖里。点「新一轮」只 `setRound((r) => r + 1)`，`klines` 还在异步取数的路上、`idx` 停在上一轮末尾、`guess.total` 从没清零——门槛在同一次 commit 上重新成立，刚结束那轮被原样再记一条。修复前用运行时观察脚本实测（不是推理）：`saveReplayRecord` 立刻多出第二条 `{symbol:"BTCUSDT",interval:"1h",total:2,correct:2,bestStreak:2}`，**不带** `durationSec`。
+  - **缺陷二（吞）**：那一条回声顺手把 `savedRoundRef.current` 抬到新轮号，于是用户真打完新一轮之后门槛里 `savedRoundRef.current !== round` 为假——**那一轮一条都不记**。实测：两轮都打完，`saveReplayRecord` 总数还是 2，两条说的都是第一轮。
+  - **缺陷三（分母混着上一段）**：`guess` 的四个计数只加不清（旧代码里唯一那处重置写的是 `setGuess((g) => ({ ...g, pending: null, lastFeedback: null }))`），所以「本轮总结」念的是这次挂载以来的累计。实测第二轮结束时同一块面板上「进度: 2/2」与「4/4 · 正确率」并存；换标的/换周期/换难度走的是同一条取数效应，同样把上一个交易对的几根留在分母里。
+  - **修法**：两颗起新轮的按钮（`新一轮`、自定义的 `开始`）都走同一个 `beginRound()`，在**同一次事件**里 `setGuess(EMPTY_ROUND)` + `setRound(r => r+1)`；取数回来时也从 `EMPTY_ROUND` 起步。`guess.best` 由此变成**本轮**最佳连胜——这就撞上第四件事：
+  - **缺陷四（顺手拆掉的一颗地雷）**：`saveReplayBest` 是无条件 `setItem`，而它上面那句「仅当超过当前记录时调用」只是注释、约束落在并不守它的调用方身上。`best` 每轮从 0 起之后，每轮第一次答错都会带着 0 来调它，那一句就能把历史最佳连根抹掉（云端 `replay_best` 也会被同一个 0 upsert 覆盖）。单调性收进 store（`next <= readReplayBest()` 直接 return，连云端那一趟和那颗进度事件一起省掉）。
+- 新增 / 加强门禁：单测 +3（本分支上 322 文件不变，`replay-trainer.test.tsx` 43 → 44、`replay-store.test.ts` +1）。① 「『新一轮』这一步不产生记录，第二轮记的是第二轮自己的战绩」——**逐条断言 `saveReplayRecord` 的载荷**而不是数次数：原有那条「连胜两轮各入一条记录，不多不少」判的是 `toHaveBeenCalledTimes(2)`，而「1 条真实 + 1 条回声」加起来同样是 2，计数与它名字声称的那件事不是一回事（R16.113 同族）；新用例点完「新一轮」先要求 `calls` 仍为 1，再要求第二轮那条是 `{total:2,correct:2}`，并要求同一屏上「本轮总结」不再出现 4/4。② 「换标的会丢掉上一个交易对的战绩」——BTCUSDT 猜 1 根 → 切 ETHUSDT → 再猜 2 根，要求那条是 `{symbol:"ETHUSDT", total:2}` 而非 3。③ store 那条：12 存进去之后 0/5/12 都不得改写，且云端只被 upsert 过 `[[12]]`（相等那一支也钉住），13 才动。
+- 变更文件（5 个）：`src/components/replay-trainer.tsx`、`src/components/replay-trainer.test.tsx`、`src/lib/replay-store.ts`、`src/lib/replay-store.test.ts`、`docs/{roadmap,progress}.md`。
+- 验证（本地逐条退出码 0）：`npm run build` **exit 0**、474/474 静态页 → **42 条 `check:*` 全绿（scanned=42 pass=42 fail=0）** → `npm run test:coverage` 全绿 → `npm run e2e` 全绿 → `npm run lint`（`--max-warnings=0`）/ `next typegen && npm run typecheck` / `git diff --check` exit 0。改动落地前先跑过定向：`replay-trainer` + `replay-store` + `replay-history` 3 文件 31 条、以及 `src/lib`+`src/components`+`src/app` 286 文件 2770 条全绿。
+- 变异核对：6 组探针（`.gate-logs/probe-r16207.mjs`，输出 `.gate-logs/probe-r16207.out`），三条硬要求与上一批相同（未变异基线先绿、判定看 `Tests N failed`、H0 自检喂一处必定无害的注释改动必须报 SURVIVED）。**该抓的 5 组全部抓到**：拆掉 `beginRound` 的清空、取数回来时退回「只清 pending」、把「本轮总结」那格改回累计、`saveReplayBest` 退回无条件写、守卫差一个等号（相等时多一趟云端 upsert）。**第 6 组是语义等价变异、预期就该漏**：把 `setGuess` 与 `setRound` 两句对调，用例全绿——因为 React 把同一个事件里的两个 setState 批量成一次 commit，门槛是 commit 之后才被检查的，顺序根本不承载语义。这一组顺带证伪了我自己第一版注释里那句「清空要发生在 `setRound` 之前，否则同一次 commit 里门槛仍然成立」：那是一件代码里不存在的事，注释已改成说「同一次事件」这件真事（「不要发明机制」这条长期记忆第二次起作用）。
+- 阻塞 / 风险：用户可见变化四处，都在训练器与它的记录里——每轮各一条记录（以前是「上一轮两条 + 这一轮零条」）、「本轮总结」真的只算这一轮、换标的不再串分母、历史最佳不再被本轮的 0 抹掉。数据格式没有变化（`ReplayRecord` 字段一个都没动，`durationSec` 仍是可选），因此不需要迁移；旧的本机台账里那些重复记录不会被本次修复清理，但它们只是 100 条滚动的窗口内多算几轮，且 `replay_history` 云端合并本来就按 `at` 去重。回滚：`git revert` 这三笔即可。**台账待办**：PR #310 里那条 R16.207 是「登记未修」的版本，两边合流时（rebase 追加型冲突的常规处理）保留本分支这条已修完的。
+- 下一项：本条 PR 合并后回到候选清单。需要人拍板的仍是三条：R16.159（根级 404 中英并列）、R16.164（内容仓 tagline，须去 kline-buty 改口）、R16.174（AI 变体题的 SRS 归属）。
+- 更新时间：2026-09-25 12:26（Asia/Shanghai）。
