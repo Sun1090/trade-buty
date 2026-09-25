@@ -49,16 +49,23 @@ export function classifyOtpError(err: unknown): OtpErrorKind {
   ) {
     return "invalid_email";
   }
-  // 3) 网络：fetch 抛错一般是 TypeError，无 status / 无 code
+  // 3) 网络只认两种证据：
+  //    - 浏览器自己拒绝 fetch（TypeError / AbortError / NetworkError）
+  //    - supabase auth-js 包出来的 AuthRetryableFetchError 且 status 为 0——离线时它给 0；
+  //      上游 5xx 时同一个类带的是那个状态码，那不是用户的连接，不能让他去检查网络。
+  const name = (err as { name?: unknown }).name;
   if (
-    typeof (err as { name?: string }).name === "string" &&
-    ((err as { name?: string }).name === "TypeError" ||
-      (err as { name?: string }).name === "AbortError" ||
-      (err as { name?: string }).name === "NetworkError")
+    typeof name === "string" &&
+    (name === "TypeError" ||
+      name === "AbortError" ||
+      name === "NetworkError")
   ) {
     return "network";
   }
-  if (!e.status && !e.code) return "network";
+  if (name === "AuthRetryableFetchError" && e.status === 0) return "network";
+  // 剩下的都没有网络证据（AuthUnknownError、库里裸 throw、`getSupabaseBrowser()`
+  // 的 env 缺失守卫……）。旧写法在这里补了一句 `!status && !code → network`，
+  // 等于替一件没测量的事宣布成因；现在交给不宣布成因的 unknown。
   return "unknown";
 }
 
