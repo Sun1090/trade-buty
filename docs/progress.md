@@ -7423,3 +7423,21 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：无新增阻塞。R16.235（首屏 59.3KB 的 Supabase SDK）仍是要能端到端验证登录态才动的债；R16.98（同一个对象在首页三种量词）仍是需拍板的产品口径——本轮把进度例句钉成 `你已读 {r} / {t} 篇`，若那一条定了换量词，这道门禁会红着提醒改文档。
 - 下一项：本分支开 PR，等 `ci` + `db-tests` + CodeQL 绿了 `gh pr merge --rebase --admin`，本地 `main` 快进；然后第二十八轮。候选（本轮读到、还没现读复核）：`docs/growth-events.md` 与 `docs/growth-event-privacy-audit.md` 里的计数（这两份也是「谁登记了什么」的台账，同一族风险）、`src/app/[locale]/about/page.tsx` 其余句子、`docs/social-features-review.md` 剩下的句子（本轮只动了第 4 节那一条）。仍等用户拍板：R16.159 / R16.164 / R16.174 / R16.205 / R16.214 / R16.215 / R16.98，外加 #178（AGENTS.md 产品边界）与生产 AI 502 需要 Vercel 控制台权限。
 - 更新时间：2026-09-25
+
+---
+
+## 2026-09-25 · 第二十八轮（R16.246–R16.249）：三份「回答数据留多久 / 事件长什么样」的文档对上代码
+
+- 里程碑 / 版本：「说法 vs 事实」第二十八轮，无发布（当前仍是 v0.7.17）。**第二十七轮收尾**：PR #320 已 rebase 合并，`origin/main = c6d6b1f`，`ci` 在 head 上 **9m12s 绿**（`db-tests` + CodeQL + 两个 Analyze 同绿，Vercel 是构建配额限制、按约定不作合并阻塞），本地 `main` 已快进、`fix-growth-policy-claims` 已删（删前 `git diff 9e671e4 main` 为空）。本轮照的是三份文档 + 一个测试夹具：`docs/retention-metrics.md`、`docs/growth-events.md`、`docs/growth-event-privacy-audit.md`、`docs/architecture.md`，以及把错键名喂给文档的那份 `stats-client-guest.test.tsx`。
+- 完成内容：
+  - **R16.246** 修剪策略表五行四处不实：两个存储键名仓库里根本不存在（`tb-quiz-attempt-ledger` / `tb-review-attempt-ledger`，真名 `tb-quiz-attempts` / `tb-review-attempts`）；复习应答写「无上限」其实 `MAX_ENTRIES = 300` 按时间丢最旧；活动日历写「无上限、完整历史可得」其实每次 `slice(-365)`；分钟数那一行写「最近 90 天」而代码锚的是台账最后一天。每行补上实现文件，错误在结论列里留名（「原文曾写无上限，那是假的」）。
+  - **R16.247** 事件目录此前只有「事件名出现过没有」这一层被核对，表格形状、每条事件的字段、每个字段的取值没有任何东西对着，而文档当时还写着「门禁会逐个回字典比对」——那句是空的。目录内容逐条读下来是诚实的（9 事件 / 8 分支 / 8 字段 / `shared` 与 `downloaded` 互斥 / 面板取消不记），所以本轮只动结构与判据：两条取值限制从枚举小节搬回各自的行，枚举声明为取值的唯一一份，「三张分享卡」写成数字，「拒绝四类出口」写成门禁真有的 **6 类**。
+  - **R16.248** 游客统计用例把复习账本种在读取端不收的键上，于是名为「全部从 localStorage 渲染」的用例其实一路演空账，连「当前错题缺少复习日期」都被印出来而无人断言；那两个错键名就是文档照抄这份夹具来的。换真键名 + 钉三处读数（复习次数 1、正确率 100%、空态那句不许出现），并把键名改回去复现了红色（`expected '0' to be '1'`）。
+  - **R16.249** 四份文档拿手抄日期当新鲜度凭据，其中两份的日期早于它自己描述的那次改动（事件文档写 09-12，而给它添 `share_card_shared` 的那一次是 09-22 的 `74a3fd4`）。浅检出里这类句子既验不了也永远不会红，于是全部删掉、改成点名判据与实现文件，并在 `doc-anchor-claims` 里禁止这种写法回来（只扫第一个二级标题之前的文档头，追加式日志的条目时间戳与发布评审里的历史基线都不误伤）。
+- 门禁：新增 `scripts/retention-metrics-claims.test.mjs`（9 条）与 `scripts/growth-events-claims.test.mjs`（23 条），`scripts/doc-anchor-claims.test.mjs` 从 5 条扩到 51 条。台账 `docs/scan-counts.md`（secrets 805→807）与 `docs/test-clock-hygiene.md`（330→332 文件）随两份新用例重写。
+- 变更文件：`docs/retention-metrics.md`、`docs/growth-events.md`、`docs/growth-event-privacy-audit.md`、`docs/architecture.md`、`src/components/stats-client-guest.test.tsx`、`scripts/{retention-metrics-claims,growth-events-claims}.test.mjs`（新）、`scripts/doc-anchor-claims.test.mjs`、`docs/scan-counts.md`、`docs/test-clock-hygiene.md`、`docs/roadmap.md`、`docs/progress.md`。
+- 验证：三条判据单独跑分别 9 / 23 / 51 全绿；`npx vitest run src/components/stats-client-guest.test.tsx` 3/3；`npx eslint --max-warnings=0` 四份改动文件干净；探针 `.gate-logs/probe-r28.mjs` **28 条全按预期**（25 条红：文档侧 20（把数字抄错、把键名换回不存在的、抹掉一条取值限制、把日期写回来）+ 代码/门禁侧 5（加一个事件名、改一个取值、删一条禁区、给无上限的台账塞一个 `MAX_ENTRIES`、把回放上限从 100 改成 120）；另有 3 条对照必须活下来——只改判据注释、只在第一个二级标题之后加闲话、把发布评审那种「基线 `0.7.0`（2026-09-20…）」写回文档头）。全量链读数见本条末尾补记。
+- 我自己的错（本轮六处，全部由判据或 runner 暴露，不是我想通的）：①新判据第一版有一行写成 `const declared = (/,` 的残句，runner 报解析失败——**「0 test / Parse failure」不是 failed**，不看 BASE 绿就会把它读成判据没生效；②`quoted()` 匹配的是直引号，而文档表格用反引号，12 条一起红，我按 diff 读（Expected `[]` vs Received 五个字段）才定位到扫描器自己没读到形状，而不是文档错了；③表格按 `|` 切列时把单元格里的转义 `\|` 也切了，`succeeded` 因此冒充成一个字段——改成 `/(?<!\\)\|/`；④我自己给六条禁区各造夹具时，拿 `x.localStorage` 去测 `fetch` 那条正则，红在「连自己的例子都不匹配」，是夹具没造出被检的形状（同一课第二次记）；⑤探针 C2 的锚点凭记忆写成「必须解析得出来」，实际是「必须查得到」，报 BAD 而不是假绿——锚点要先把字节打出来再写；⑥我最初把 `docs/progress.md` 也算成日期不实的一份，来源是 `grep -m1 最后更新` 命中的是一条**条目级**时间戳；改成只扫文档头之后它自然出局。
+- 阻塞 / 风险：无新增阻塞。R16.235（首屏 59.3KB Supabase SDK）仍等能端到端验证登录态；R16.98（同一对象三种量词）仍等产品拍板。
+- 下一项：本分支开 PR，等 `ci` + `db-tests` + CodeQL 绿了 `gh pr merge --rebase --admin`，本地 `main` 快进；然后第二十九轮。候选（本轮读到、还没现读复核）：`docs/architecture.md` 正文各条与代码的逐条对照（本轮只处理了它的文档头与路径存在性，六节内容没有逐条核）、`docs/retention-metrics.md` §1 指标定义那一张表（本轮只核了 §2）、`docs/growth-event-privacy-audit.md` §0 那句「不构成远端数据收集」的当下性。仍等用户拍板：R16.159 / R16.164 / R16.174 / R16.205 / R16.214 / R16.215 / R16.98，外加 #178（AGENTS.md 产品边界）与生产 AI 502 需要 Vercel 控制台权限。
+- 更新时间：2026-09-25
