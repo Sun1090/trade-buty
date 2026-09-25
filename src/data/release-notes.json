@@ -1,6 +1,35 @@
 {
   "releases": [
     {
+      "version": "0.7.18",
+      "date": "2026-09-26",
+      "name": {
+        "zh": "换账号不再丢难度设置，文档每句话回代码量一遍",
+        "en": "Account switches keep your quiz level; every doc sentence re-measured"
+      },
+      "highlights": {
+        "zh": [
+          "换账号不再丢掉答题难度：分语言的两颗偏好（`tb-quiz-difficulty:zh` / `tb-quiz-difficulty:en`）以前会被当成「上一个账号的分章成绩」一起清掉，换个账号回来难度静默回到默认。归属判断现在认前缀，派生键不再算成绩——这条用户可感的数据丢失就是本轮判级为 patch 的理由",
+          "关于页的邮件订阅那块不再写「功能开发中」——站内既没有邮件服务，也没有它的排期；那段说明也不再指挥用户去点此刻屏幕上并不存在的两颗按钮",
+          "三处界面承诺收回到它真做得到的范围：安装提示的拒绝按钮改说它真正做的事（永久关闭），不再写「暂不」；活动热力图空态那颗按钮不再替一节它并不指向的课作保；`/calendar` 页脚不再替一条没有排期的路线图作保",
+          "生产冒烟不再把「这一轮没测成」报成通过：游客 AI 撞上 429 时改印 ⏭ 并说明那一轮连内容红线都没走过；上游慢也不再被那条通用超时报成「请求异常」",
+          "12 份文档与审计报告里对用户或维护者可见的句子逐条回代码量过：留存指标表、增长文案政策与事件目录、架构文档（里面有一个从来没有过的存储键）、缓存那份与环境变量那份；`docs/architecture.md` 里那句伪造的宪法引文已撤下。这一轮共加 8 份现读判据把这些句子钉住",
+          "两处只在满负载跑全量时才红的用例修好了（回放与登录水合那两条现在等的是真正会发生的那一次调用，而不是等屏幕上出现某个元素）；`check:bundle` 的容差按构建机之间的实测噪声重定，任何往字典加一句话的 PR 不再随机把 CI 弄红"
+        ],
+        "en": [
+          "Switching accounts no longer wipes your quiz difficulty: the two per-language preferences (`tb-quiz-difficulty:zh` / `tb-quiz-difficulty:en`) used to be swept away as if they were the previous account's per-chapter scores, so the level silently reverted to its default after a switch. Ownership now matches on prefix and derived keys no longer count as scores — that user-visible data loss is why this release is a patch",
+          "The newsletter block on the about page no longer says the feature is in development — there is no mail service in the product and no schedule for one — and it no longer tells you to press two buttons that are not on the screen",
+          "Three interface promises were pulled back to what the code actually does: the install prompt's dismiss button now names what it really does (close it permanently) instead of not now; the activity calendar's empty state no longer vouches for a lesson it does not link to; the /calendar footer no longer vouches for a roadmap item that was never scheduled",
+          "The production smoke no longer reports a round it never got to test as a pass: a guest AI request that hits 429 now prints a skip marker with a note that the content red lines were never exercised that round, and a slow upstream is no longer reported as a request error by a generic timeout",
+          "Every user- or maintainer-facing sentence in 12 docs and audit files was re-measured against the code: the retention-metrics table, the growth copy policy and event catalog, the architecture doc (which named a storage key that never existed), the caching doc and the environment-variable doc; the fabricated constitution quotation in docs/architecture.md has been withdrawn. 8 new gates read the code live and pin those sentences",
+          "Two cases that only went red under a fully loaded run were fixed (the replay and login hydration tests now wait for the call that actually happens, not for an element to appear on screen); the check:bundle tolerance was re-derived from measured build-to-build noise, so a PR that adds a single dictionary sentence no longer randomly reddens CI"
+        ]
+      },
+      "docs": [
+        "docs/roadmap.md"
+      ]
+    },
+    {
       "version": "0.7.17",
       "date": "2026-09-25",
       "name": {
