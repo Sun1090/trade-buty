@@ -8,7 +8,11 @@ const zh = {
     login: "登录",
     logout: "退出",
     title: "登录",
-    subtitle: "输入邮箱，我们发送登录链接。登录后进度自动云端存档，换设备不丢。",
+    // 「换设备不丢」在这台浏览器上有两种落空的方式：离线写队列最多 200 条、第 201 条会挤掉
+    // 最旧的一条（挤掉的那条从此只在本地），以及同设备换账号时上一个账户未同步出去的队列被清空。
+    // 站里已经在 ☁ 那枚徽标上做过这个条件（R16.139：队列 + 已丢弃计数归零才说「已云端存档」），
+    // 登录这一句拿不到那个状态，就干脆不再无条件承诺「不丢」——它说的只到「存档」这件事本身。
+    subtitle: "输入邮箱，我们发送登录链接。登录后进度自动云端存档。",
     emailPlaceholder: "邮箱地址",
     sendLink: "发送登录链接",
     sending: "发送中…",
@@ -422,7 +426,7 @@ const en: Dict = {
     login: "Log in",
     logout: "Log out",
     title: "Log in",
-    subtitle: "Enter your email and we'll send a login link. Your progress syncs to the cloud after login — never lose it across devices.",
+    subtitle: "Enter your email and we'll send a login link. Your progress is archived to the cloud after login.",
     emailPlaceholder: "Email address",
     sendLink: "Send login link",
     sending: "Sending…",
