@@ -7,7 +7,6 @@ import {
   beforeAll,
   afterEach,
   beforeEach,
-  afterAll,
 } from "vitest";
 import {
   render,
@@ -25,6 +24,7 @@ import {
   SUGGESTED_QUESTIONS_EN,
 } from "@/lib/ai/prompt";
 import { TRUNCATED_MARKER } from "@/lib/ai/streaming";
+import { MAX_CHAT_CONTENT_CHARS, MAX_CHAT_TURNS } from "@/lib/ai/chat-input";
 
 // Keep the streaming-state test deterministic: lazy chunk loading is covered in the
 // production build and E2E, while this unit test should only observe AiChat state.
@@ -41,11 +41,12 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
 });
 
-afterAll(() => {
-  const viewport = window.visualViewport as unknown as {
-    visualViewport?: unknown;
-  };
-  delete viewport.visualViewport;
+afterEach(() => {
+  // 这个 delete 挂在 `window.visualViewport` 上：这一套里是 `Object.defineProperty`
+  // 定义在 window 自己那层，别绕到 `window.visualViewport.visualViewport` 去——
+  // 那一层在 jsdom 里是 undefined，整个文件单独跑时 `delete undefined.x` 直接把
+  // 这个钩子抛出来（测试全过了、套件照样红），只有在别的文件先跑过时才侥幸不响。
+  delete (window as unknown as { visualViewport?: unknown }).visualViewport;
 });
 
 afterEach(cleanup);
@@ -120,6 +121,8 @@ const dict = {
   quotaLoginHint: "本小时次数已用完，登录可获更多额度",
   // 横幅的句式子从字典取：这几条断言比的就是渲染出来的那句真话，手抄一份就会漂（R16.66 那一族）。
   contextBannerTpl: getDict("zh").ai.contextBannerTpl,
+  threadTooLongTpl: getDict("zh").ai.threadTooLongTpl,
+  answerTooLongTpl: getDict("zh").ai.answerTooLongTpl,
   followups: ["展开讲讲「{t}」", "「{t}」怎么用？", "「{t}」的误区？"],
   helpful: "有用",
   unhelpful: "无用",
@@ -554,15 +557,24 @@ describe("AiChat 错误态分级（R1.11）", () => {
     });
   });
 
-  it("服务端业务错误返回的 JSON error 会原样展示", async () => {
+  /**
+   * R16.206：路由在 4xx 上回的是**开发者标识串**（`Invalid payload`、`Payload too large`，
+   * 见 `src/lib/ai/chat-input.ts` 的 `BODY_ERRORS`），不是给人看的文案。以前这里是
+   * `throw new Error(errBody.error || dict.error)`，于是中文界面上会原样印出
+   * `Invalid payload` 这样一个英文词组。真能发生的两种成因（轮数超上限、单条回答超上限）
+   * 在发送前就能算出来，已经由 `ai-thread-limit-claims.test.ts` 那两条各自说清了；
+   * 算不出来的这一条只说「出错了」，不再替开发者说话。
+   */
+  it("4xx 的 JSON error 不印到界面上，只说『出错了』", async () => {
     setupAndAsk();
     resolveChat({
       ok: false,
       status: 400,
       headers: { get: () => null },
-      json: async () => ({ error: "业务错误" }),
+      json: async () => ({ error: "Invalid payload" }),
     } as unknown as Response);
-    expect(await screen.findByText("业务错误")).toBeInTheDocument();
+    expect(await screen.findByText(dict.error)).toBeInTheDocument();
+    expect(screen.queryByText("Invalid payload")).not.toBeInTheDocument();
   });
 });
 
@@ -1942,5 +1954,131 @@ describe("AiChat 续写与云端归档", () => {
     await screen.findByText("第二次的回答");
     expect(screen.getByText("第一次的回答")).toBeDefined();
     expect(screen.getAllByText("同一个问题")).toHaveLength(2);
+  });
+});
+
+/**
+ * R16.203：`继续生成` 是往同一条 assistant 消息上追加的，一条被续写几轮的回答
+ * 迟早会超过 `MAX_CHAT_CONTENT_CHARS`；而 `send` 把整个 `messages` 原文带上，
+ * `parseChatBody` 对**每一条**都套这个上限，所以从那条回答之后，这个人的每一问
+ * 都会被判成畸形载荷（400）。以前屏幕上留下的是路由那句英文 `Invalid payload`。
+ *
+ * 现在改成发送前就拦住，并且说清是哪一头超限、以及能点的那颗按钮叫什么。
+ */
+describe("AiChat 带不动的长对话在发送前就说清楚（R16.203）", () => {
+  const real = getDict("zh").ai;
+
+  /** 恢复一段「一问一答」的云端历史；返回节点供「有没有发出去」的断言用 */
+  function restoreLongAnswerHistory(answerChars: number) {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/ai/conversations" && !init) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            messages: [
+              { role: "user", content: "讲讲盈亏比" },
+              { role: "assistant", content: "盈".repeat(answerChars), sources: null },
+            ],
+          }),
+        } as Response;
+      }
+      if (url === "/api/ai/conversations") {
+        return { ok: true, status: 200, json: async () => ({ ok: true }) } as Response;
+      }
+      if (url === "/api/ai/chat") {
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+          body: makeStreamBody("新的回答"),
+        } as unknown as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return { fetchMock, view: render(<AiChat locale="zh" dict={dict} />) };
+  }
+
+  async function askAfterRestoring(answerChars: number) {
+    const { fetchMock, view } = restoreLongAnswerHistory(answerChars);
+    // 恢复云端历史是异步的：等那条回答真的挂上屏幕
+    await waitFor(() =>
+      expect(view.container.textContent).toContain("盈亏比"),
+    );
+    const input = screen.getByPlaceholderText(dict.placeholder);
+    fireEvent.change(input, { target: { value: "那移动止损呢" } });
+    fireEvent.submit(view.container.querySelector("form") as HTMLFormElement);
+    return fetchMock;
+  }  it("回答超过单条上限：这一问发不出去，屏幕上说的是这条回答太长", async () => {
+    const fetchMock = await askAfterRestoring(MAX_CHAT_CONTENT_CHARS + 1);
+
+    const expected = real.answerTooLongTpl
+      .replace("{n}", String(MAX_CHAT_CONTENT_CHARS))
+      .replace("{clear}", dict.clear);
+    expect(await screen.findByText(expected)).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(([url]) => url === "/api/ai/chat"),
+      "明知服务端必拒，就不该再打这一趟",
+    ).toHaveLength(0);
+  });
+
+  it("没超过上限时不拦：同样的一段历史照样问得出去", async () => {
+    await askAfterRestoring(MAX_CHAT_CONTENT_CHARS - 200);
+
+    expect(await screen.findByText("新的回答")).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        real.answerTooLongTpl
+          .replace("{n}", String(MAX_CHAT_CONTENT_CHARS))
+          .replace("{clear}", dict.clear),
+      ),
+    ).toBeNull();
+  });
+
+  /**
+   * 另一条上限是轮数：`MAX_CHAT_TURNS` 由 `collapseToTurns` 之前套在整包上，
+   * 41 条消息（未超单条字数）也一定被服务端判死。这里造 41 条正常的问答，
+   * 看屏幕上出现的是「轮数太多」那句，而不是又打一趟拿回 400。
+   */
+  it("轮数超过上限：说的是这段对话太长，这一问同样发不出去", async () => {
+    const turns = Array.from({ length: MAX_CHAT_TURNS + 1 }, (_, i) => ({
+      role: i % 2 === 0 ? "user" : "assistant",
+      content: `第 ${i} 条`,
+      sources: null,
+    }));
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/ai/conversations" && !init) {
+        return { ok: true, status: 200, json: async () => ({ messages: turns }) } as Response;
+      }
+      if (url === "/api/ai/conversations") {
+        return { ok: true, status: 200, json: async () => ({ ok: true }) } as Response;
+      }
+      if (url === "/api/ai/chat") {
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+          body: makeStreamBody("新的回答"),
+        } as unknown as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<AiChat locale="zh" dict={dict} />);
+    await waitFor(() => expect(container.textContent).toContain("第 0 条"));
+    fireEvent.change(screen.getByPlaceholderText(dict.placeholder), {
+      target: { value: "再问一句" },
+    });
+    fireEvent.submit(container.querySelector("form") as HTMLFormElement);
+
+    const expected = real.threadTooLongTpl
+      .replace("{n}", String(MAX_CHAT_TURNS))
+      .replace("{clear}", dict.clear);
+    expect(await screen.findByText(expected)).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(([url]) => url === "/api/ai/chat"),
+      "轮数已经超限，这一趟服务端必拒",
+    ).toHaveLength(0);
   });
 });

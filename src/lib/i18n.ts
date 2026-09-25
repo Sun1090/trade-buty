@@ -151,6 +151,10 @@ const zh = {
     error: "出错了，请重试",
     errorServer: "这一条没走通：浏览器没把请求送到本站，或本站的 AI 通路没给出结果",
     errorTimeout: "等了 30 秒还没收到回答的第一个字——可能是这条连接慢，也可能是本站上游的模型服务商慢。再问一次试试",
+    // 服务端的两条硬上限（轮数、单条字数）越过去只会得到一句英文标识串 `Invalid payload`，
+    // 界面上不能印那个；这一长一多到底是哪头，由发送前的预检查说清楚（数字取自常量本身）。
+    threadTooLongTpl: "这段对话的轮数已经超过了本站 AI 通路一次能带的 {n} 轮。点「{clear}」另起一段就能继续。",
+    answerTooLongTpl: "这段对话里有一条回答超过 {n} 字，本站的 AI 通路一次带不动它。点「{clear}」另起一段就能继续。",
     retry: "重试",
     clear: "清空对话",
     clearFailed: "云端对话未能清空，请稍后再试",
@@ -560,6 +564,8 @@ const en: Dict = {
     error: "Something went wrong, please retry",
     errorServer: "This one didn't get through: either the browser couldn't reach this site, or this site's AI path returned nothing",
     errorTimeout: "No first character after 30 seconds — it may be this connection, or the model provider behind this site. Ask it again",
+    threadTooLongTpl: "This conversation has more than the {n} turns this site's AI path can carry in one request. Choose “{clear}” to start a new one.",
+    answerTooLongTpl: "One answer here is longer than {n} characters, which this site's AI path can't carry in one request. Choose “{clear}” to start a new one.",
     retry: "Retry",
     clear: "Clear chat",
     clearFailed: "Couldn't clear your saved conversations — please try again",

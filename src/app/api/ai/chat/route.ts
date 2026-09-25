@@ -17,6 +17,7 @@ import {
 } from "@/lib/ai/sources";
 import { getServerAuthUser } from "@/lib/supabase/server";
 import {
+  BODY_ERRORS,
   MAX_CHAT_CONTENT_CHARS,
   MAX_CHAT_TURNS,
   MAX_CONTINUE_FROM_CHARS,
@@ -84,18 +85,18 @@ export async function POST(req: NextRequest) {
   const read = await readJsonBody(req, MAX_CHAT_BODY_BYTES);
   if (!read.ok) {
     if (read.reason === "too-large") {
-      return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+      return NextResponse.json({ error: BODY_ERRORS.tooLarge }, { status: 413 });
     }
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: BODY_ERRORS.invalidJson }, { status: 400 });
   }
   const body = parseChatBody(read.value);
   if (!body) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: BODY_ERRORS.invalidPayload }, { status: 400 });
   }
   const { messages: history, locale } = body;
   const lastUserMsg = [...history].reverse().find((m) => m.role === "user");
   if (!lastUserMsg) {
-    return NextResponse.json({ error: "No user message" }, { status: 400 });
+    return NextResponse.json({ error: BODY_ERRORS.noUserMessage }, { status: 400 });
   }
 
   // 输入侧护栏（R1.8）：荐股/收益承诺直接拒绝，不调模型。
