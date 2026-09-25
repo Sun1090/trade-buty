@@ -96,8 +96,18 @@ describe("关于页不许把图表练习算成每一章各自有的东西", () =
  * - 事实半边自己也要在：这一层没有后端，也没有邮件端点。
  */
 const NEWSLETTER_LIB_SRC = "src/lib/newsletter.ts";
+const NEWSLETTER_CARD_SRC = "src/components/newsletter-signup.tsx";
 const PLACEHOLDER_BUT_PROMISED =
   /开发中|即将|不日|敬请期待|即将上线|under construction|coming soon|in the works|work in progress/i;
+/**
+ * 「此刻就在下面」这一类位置词。那两颗出口按钮只在**已保存**视图里渲染
+ * （`newsletter-signup.tsx:96` 的 `{saved ? … : <form>}`），没存过邮箱的访客读到
+ * 「下面那两颗按钮」会低头找一颗屏幕上不存在的按钮 —— 这一版文案我自己就先写错了，
+ * 真浏览器复核（`.gate-logs/verify-r24.mjs`）在 `zh/empty` 与 `en/empty` 两个状态下都报
+ * 「此刻不在屏幕上的：["复制 JSON","清除"]」。说明要么点明前提，要么别指位置。
+ */
+const POINTS_AT_WHAT_IS_THERE = /下面|下方|这一行下|\bbelow\b|right under/i;
+const ONLY_AFTER_SAVING = /保存之后|保存后|存好之后|一旦保存|\bonce\b|after saving|once (it is )?saved/i;
 
 describe("邮件订阅占位不许替一个没排期的功能作保", () => {
   for (const locale of ["zh", "en"] as const) {
@@ -120,7 +130,31 @@ describe("邮件订阅占位不许替一个没排期的功能作保", () => {
       expect(labels.desc, "说明里没提「清除」，可用户看到的那颗按钮叫这个").toContain(labels.clear);
       expect(labels.desc, "说明里没提那颗导出按钮的真名").toContain(labels.copy);
     });
+
+    it(`${locale}: 说明不许指着此刻不在屏幕上的按钮`, () => {
+      expect(labels.desc, `说明：${labels.desc}`).not.toMatch(POINTS_AT_WHAT_IS_THERE);
+      expect(labels.desc, "那两颗按钮只在「已保存」视图里渲染，说明要先交代这个前提").toMatch(ONLY_AFTER_SAVING);
+    });
+
+    it(`${locale}: 正向对照——「下面那两颗按钮」这种写法必须被同一个判据报出来`, () => {
+      const legacy = locale === "zh"
+        ? "想拿回去或清掉，用的是下面「复制 JSON」和「清除」这两颗按钮。"
+        : "The two buttons below, “Copy JSON” and “Clear”, are its only ways out.";
+      expect(legacy).toMatch(POINTS_AT_WHAT_IS_THERE);
+      expect(legacy).not.toMatch(ONLY_AFTER_SAVING);
+    });
   }
+
+  it("事实半边：那两颗出口按钮确实只在「已保存」分支里渲染", () => {
+    const src = read(NEWSLETTER_CARD_SRC);
+    const branch = src.match(/\{saved \? \(([\s\S]*?)\n\s*\) : \(/);
+    expect(branch, "卡片不再是 `saved ? 已保存视图 : 表单` 的形状——这条判据要按新结构重写").toBeTruthy();
+    expect(branch![1]).toContain("labels.copy}");
+    expect(branch![1]).toContain("labels.clear}");
+    // 未保存那一支里一颗都不许有：那正是说明不能直接指着它们的原因
+    expect(src.slice(branch.index! + branch[0].length)).not.toContain("labels.copy}");
+    expect(src.slice(branch.index! + branch[0].length)).toContain("labels.submit}");
+  });
 
   it("事实半边：这一层确实只有本机存储，没有邮件服务", () => {
     const lib = read(NEWSLETTER_LIB_SRC);
