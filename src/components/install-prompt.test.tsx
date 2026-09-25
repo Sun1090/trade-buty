@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { InstallPrompt } from "./install-prompt";
+import { getDict } from "@/lib/i18n";
 import {
   INSTALL_PROMPT_DISMISSED_KEY,
 } from "@/lib/install-prompt";
@@ -28,12 +31,7 @@ Object.defineProperty(globalThis, "localStorage", {
   writable: true,
 });
 
-const labels = {
-  title: "Install Trade Buty",
-  body: "Add it to this device when your browser allows it.",
-  install: "Install",
-  dismiss: "Not now",
-};
+const labels = getDict("en").install;
 
 function dispatchInstallPrompt(
   outcome: "accepted" | "dismissed" = "accepted"
@@ -138,5 +136,39 @@ describe("InstallPrompt (R13.14)", () => {
     );
     expect(removeSpy).toHaveBeenCalledWith("appinstalled", expect.any(Function));
     removeSpy.mockRestore();
+  });
+});
+
+/**
+ * R16.226：这颗拒绝按钮原来写「暂不 / Not now」，做的却是永久的事——`handleDismiss`
+ * 往 `tb-install-prompt-dismissed` 写 `1`，站内没有任何把它改回来的入口（`install-prompt.ts`
+ * 只有 read 与 mark 两个方向）。`docs/growth-copy-policy.md` 第 1 条一直写的是「不再重复询问」，
+ * 所以对不上的是按钮，不是政策。
+ */
+describe("安装提示的拒绝按钮说的是永久", () => {
+  const PERMANENCE = /不再|don'?t show again|never (show|ask) again/i;
+  const DEFERRAL = /暂不|稍后|之后|not now|later/i;
+
+  it("中英两侧都写明永久，不许再写成「一会儿再说」", () => {
+    for (const locale of ["zh", "en"] as const) {
+      const dismiss = getDict(locale).install.dismiss;
+      expect(dismiss, `${locale} 的按钮又在拖延：它其实永久关闭`).not.toMatch(DEFERRAL);
+      expect(dismiss, `${locale} 的按钮没说出「不再」这半句`).toMatch(PERMANENCE);
+    }
+  });
+
+  it("旧文案被抓得住（对照）", () => {
+    for (const sample of ["暂不", "Not now"]) {
+      expect(DEFERRAL.test(sample), `禁令抓不住旧按钮：${sample}`).toBe(true);
+      expect(PERMANENCE.test(sample), `旧文案其实说的是永久？对照失效`).toBe(false);
+    }
+  });
+
+  it("政策文档点的就是这个字符串，不是另一个名字", () => {
+    const policy = readFileSync(
+      path.join(process.cwd(), "docs/growth-copy-policy.md"),
+      "utf8",
+    );
+    expect(policy).toContain(`「${getDict("zh").install.dismiss}」`);
   });
 });

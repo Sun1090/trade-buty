@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
+import { getDict } from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
   readActivityDates: vi.fn<() => string[]>(() => []),
@@ -18,6 +21,12 @@ beforeEach(() => {
 });
 
 describe("ActivityHeatmap", () => {
+  /** 那颗按钮去的是 /path 那一页，名字就得从那一页自己的标题取 */
+  const expectedCta = (locale: "zh" | "en") =>
+    locale === "en"
+      ? `Open the ${getDict(locale).path.title} →`
+      : `打开${getDict(locale).path.title} →`;
+
   it("shows the empty state with a path CTA when nothing is recorded", () => {
     render(
       <ActivityHeatmap label="学习活动" emptyLabel="还没有学习记录" locale="zh" />,
@@ -29,7 +38,7 @@ describe("ActivityHeatmap", () => {
       "/zh/path",
     );
     expect(screen.getByTestId("activity-heatmap-cta")).toHaveTextContent(
-      "去学第一课 →",
+      expectedCta("zh"),
     );
     expect(screen.queryByRole("img")).toBeNull();
   });
@@ -43,8 +52,42 @@ describe("ActivityHeatmap", () => {
       "/en/path",
     );
     expect(screen.getByTestId("activity-heatmap-cta")).toHaveTextContent(
-      "Start a lesson →",
+      expectedCta("en"),
     );
+  });
+
+  /**
+   * R16.225：空态那颗按钮原来写「去学第一课 → / Start a lesson →」，可它 `href` 指的是
+   * `/[locale]/path` —— 一张路线总览，点下去没有任何一课。文案改由 `path.title` 推导后，
+   * 这条门禁同时钉两件事：按钮不许再承诺「一课」，且这个名字是抄来的、不是又手打一份。
+   */
+  it("CTA 不再承诺「一课」，且名字确实由那一页的标题推导", () => {
+    const legacy = ["去学第一课 →", "Start a lesson →"];
+    const LESSON_PROMISE = /第一课|一节|\blesson\b/i;
+    for (const sample of legacy) {
+      expect(LESSON_PROMISE.test(sample), `禁令抓不住旧文案：${sample}`).toBe(true);
+    }
+    for (const locale of ["zh", "en"] as const) {
+      const { unmount } = render(
+        <ActivityHeatmap label="L" emptyLabel="空" locale={locale} />,
+      );
+      const cta = screen.getByTestId("activity-heatmap-cta");
+      expect(cta.getAttribute("href")).toBe(`/${locale}/path`);
+      const text = cta.textContent ?? "";
+      expect(text, `${locale} 的按钮又在替「一课」作保`).not.toMatch(LESSON_PROMISE);
+      expect(text, `${locale} 的按钮没带上目标页自己的标题`).toContain(
+        getDict(locale).path.title,
+      );
+      unmount();
+    }
+    const source = readFileSync(
+      path.join(process.cwd(), "src/components/activity-heatmap.tsx"),
+      "utf8",
+    );
+    expect(
+      source,
+      "CTA 名字改回手打字符串了：它必须从 getDict(locale).path.title 推导",
+    ).toMatch(/getDict\(locale\)\.path\.title/);
   });
 
   it("renders a 26-week grid with the active day highlighted", () => {

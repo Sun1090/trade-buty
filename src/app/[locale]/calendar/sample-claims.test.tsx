@@ -4,6 +4,8 @@
  * 只会一天天旧。它可以诚实地说「这几条覆盖 X → Y」，但不能说「本周重要财经事件」——
  * 那句话在 2026-09-23 已经过期两周半，而且是 SSG 出来的，永远不会自己变对。
  */
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
@@ -104,6 +106,34 @@ describe("日历页只声称示例数据做得到的一件事", () => {
       expect(text).not.toMatch(IMPORTANCE_CLAIM);
       expect(getDict(locale).pageMeta.calendarDesc).not.toMatch(IMPORTANCE_CLAIM);
     }
+  });
+
+  /**
+   * R16.227：页脚原来写「静态示例数据，API 接入待定 / Static sample data. API integration
+   * planned.」——「待定 / planned」是在替一件没有排期的事作保：接不接数据源、还是把这一页
+   * 下线，至今仍是 roadmap 上没拍板的 R16.16（`docs/roadmap.md` 里那条前面还是 `- [ ]`）。
+   * 诚实的写法只说眼前：这一页不读任何源，站内也没有这样一个源。
+   */
+  it("页脚不再替「以后会接 API」作保，只说这一页现在不读任何源", async () => {
+    const legacy = [
+      "静态示例数据，API 接入待定。",
+      "Static sample data. API integration planned.",
+    ];
+    const ROADMAP_PROMISE = /接入待定|计划接入|\bplanned\b|coming soon|will (be|come)/i;
+    for (const sample of legacy) {
+      expect(ROADMAP_PROMISE.test(sample), `禁令抓不住旧页脚：${sample}`).toBe(true);
+    }
+    for (const locale of ["zh", "en"] as const) {
+      const text = await renderPage(locale);
+      expect(text, `${locale} 页脚还在替路线图作保`).not.toMatch(ROADMAP_PROMISE);
+      expect(text).toMatch(/不读取任何经济日历数据源|reads no economic-calendar feed/);
+    }
+    // R16.16 还没拍板，这条禁令才有意义；它一旦被关掉，说明产品已经答了这个问题
+    const roadmap = readFileSync(path.join(process.cwd(), "docs/roadmap.md"), "utf8");
+    expect(
+      roadmap,
+      "R16.16 已经不再是待决项：这一页的措辞按产品结论重定，别留这条过期判据",
+    ).toMatch(/^- \[ \] R16\.16 /m);
   });
 
   it("示例数组本身非空，否则上面两条都是空转", () => {

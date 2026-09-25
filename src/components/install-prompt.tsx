@@ -21,7 +21,8 @@ export interface InstallPromptLabels {
  *
  * - `beforeinstallprompt` 到达时才出现，且必须先 `preventDefault` 才能稍后由
  *   用户手势调用 prompt()；
- * - 用户选择「暂不」或浏览器安装选择结束后写入本地关闭标记；
+ * - 用户选择「不再提示」或浏览器安装选择结束后写入本地关闭标记：这台浏览器此后
+ *   不再出现这一提示，站内也没有把它打开的开关（`INSTALL_PROMPT_DISMISSED_KEY`）；
  * - standalone / 已关闭 / 不支持的环境不渲染任何内容。
  */
 export function InstallPrompt({

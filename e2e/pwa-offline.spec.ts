@@ -189,14 +189,17 @@ test.describe("PWA 安装提示（R13.14）", () => {
       .toBe("1");
   });
 
-  test("选择暂不后写入本地状态，刷新并再次收到事件也不再展示", async ({
+  test("选择「不再提示」后写入本地状态，刷新并再次收到事件也不再展示", async ({
     page,
   }) => {
     await page.goto("/zh");
     await expect(page.locator("header")).toBeVisible();
     await emitInstallPrompt(page);
 
-    await page.getByTestId("install-prompt").getByRole("button", { name: "暂不" }).click();
+    await page
+      .getByTestId("install-prompt")
+      .getByRole("button", { name: "不再提示" })
+      .click();
     await expect(page.getByTestId("install-prompt")).toBeHidden();
 
     await page.reload();

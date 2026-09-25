@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { readActivityDates } from "@/lib/activity-calendar";
+import { getDict } from "@/lib/i18n";
 import { localDateStr } from "@/lib/date-utils";
 
 const WEEKS = 26; // 最近半年
@@ -51,7 +52,10 @@ export function ActivityHeatmap({ label, emptyLabel, locale }: HeatmapProps) {
       ? `（另有 ${earlier} 天早于这张图）`
       : ` (${earlier} earlier than this chart)`;
   const pathHref = `/${locale}/path`;
-  const ctaText = locale === "en" ? "Start a lesson →" : "去学第一课 →";
+  // 这颗按钮去的是路线总览，不是某一课，所以它的名字取自那一页自己的标题（`path.title`）：
+  // 那一页改名时这里跟着改，不会留下「去学第一课」把用户带进一张他刚看完的目录。
+  const pathTitle = getDict(locale).path.title;
+  const ctaText = locale === "en" ? `Open the ${pathTitle} →` : `打开${pathTitle} →`;
 
   return (
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
