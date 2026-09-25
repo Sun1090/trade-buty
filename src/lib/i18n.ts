@@ -349,8 +349,9 @@ const zh = {
     restart: "再看一次",
   },
   invite: {
-    titleTpl: "来自朋友邀请 🎉 · ref {ref}",
-    bodyTpl: "你通过邀请链接进入 Trade Buty。一起学起来吧。",
+    titleTpl: "这台浏览器存着一个邀请参数 · {ref}",
+    bodyTpl:
+      "它来自你打开过的链接上的 ?ref=，只存在这台浏览器的本地存储里，不会发送给我们；30 天后自动失效，点「清除」可立刻删掉。",
     dismiss: "知道了",
   },
   install: {
@@ -755,8 +756,9 @@ const en: Dict = {
     restart: "Show again",
   },
   invite: {
-    titleTpl: "Invited by a friend 🎉 · ref {ref}",
-    bodyTpl: "You arrived via a referral link. Welcome!",
+    titleTpl: "This browser is storing an invite parameter · {ref}",
+    bodyTpl:
+      "It came from the ?ref= on a link you opened. It lives only in this browser's local storage and is never sent to us; it expires after 30 days, or choose Clear to drop it now.",
     dismiss: "Got it",
   },
   install: {
