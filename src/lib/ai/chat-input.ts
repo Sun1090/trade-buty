@@ -26,9 +26,10 @@ export interface ChatRequestBody {
   contextChapter?: string;
 }
 
-/** 最多 40 轮（20 组问答），足够覆盖摘要路径且避免超长上下文费用 */
+/** 一次请求最多带 40 条消息（一问一答算两条），足够覆盖摘要路径且避免超长上下文费用。
+ *  注意量的是 `messages.length`，不是问答组数，也不是回放那个「轮」。 */
 export const MAX_CHAT_TURNS = 40;
-/** 单轮正文上限：正常提问远小于此，超过视为滥用 */
+/** 单条消息正文上限：正常提问远小于此，超过视为滥用 */
 export const MAX_CHAT_CONTENT_CHARS = 8_000;
 /**
  * 续写原文上限（约等于两轮正文）。
