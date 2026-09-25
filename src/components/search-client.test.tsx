@@ -771,4 +771,28 @@ describe("索引加载失败那句不说成因（真字典，R16.200）", () => 
       });
     }
   }
+
+  /**
+   * 上面那一组只证明了「告警块里真的有一颗按钮」；这句话里到底有没有点到它，
+   * 以前没人查——把「点『重试』再来一次」从字典里删掉，那 6 条照样全绿（变异探针实测）。
+   * 这一条补上反方向的判据：句子里必须出现按钮自己的名字，名字仍从字典取。
+   */
+  it("这句话点名的按钮就是屏幕上那颗，名字只有一个出处", () => {
+    for (const locale of ["zh", "en"] as const) {
+      const s = getDict(locale).search;
+      expect(s.indexError, `${locale}：这句让用户去点一颗按钮，却没写出那颗按钮叫什么`).toContain(s.retry);
+    }
+  });
+
+  it("正向对照：点名一句屏幕上没有的按钮，同一个判据要报出来", () => {
+    const rendered = new Set([getDict("zh").search.retry]);
+    const unbacked = (text: string) =>
+      [...text.matchAll(/「([^」]+)」/g)].map((m) => m[1]).filter((n) => !rendered.has(n));
+
+    expect(unbacked(getDict("zh").search.indexError), "现句子不该出现没根据的按钮名").toEqual([]);
+    expect(
+      unbacked("搜索索引这次没加载出来。点「刷新」再来一次。"),
+      "「刷新」这颗按钮在本页从没渲染过，判据却放过了它",
+    ).toEqual(["刷新"]);
+  });
 });

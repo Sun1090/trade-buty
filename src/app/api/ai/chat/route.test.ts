@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { NextRequest } from "next/server";
 import { MAX_CHAT_BODY_BYTES, POST } from "./route";
+import { BODY_ERRORS } from "@/lib/ai/chat-input";
 import { retrieve } from "@/lib/ai/rag";
 import { TRUNCATED_MARKER } from "@/lib/ai/streaming";
 import type { RagResult } from "@/lib/ai/rag";
@@ -499,5 +502,55 @@ describe("POST /api/ai/chat 流式与缓存（R1.4）", () => {
       "upstream 500 https://api.openai.com/v1/chat/completions",
     );
     errorSpy.mockRestore();
+  });
+});
+
+/**
+ * R16.204（服务端这一头）：路由回给客户端的 4xx 标识串必须有 `BODY_ERRORS` 这一个出处。
+ *
+ * 这些串是给开发者看的，界面上不该出现（前端那一头由 `ai-chat.test.tsx` 钉住）。
+ * 一旦有人在本文件之外另抄一份，两边就会漂开：改一处、另一处还印着旧词。
+ * 判据是双向的——既不许有手写的字面量，用到的键也必须正好是 `BODY_ERRORS` 的全部键，
+ * 所以「少用一处」（把某处换回手抄）与「多加一处手写」都会红。
+ */
+describe("4xx 标识串只有一个出处（R16.204）", () => {
+  const ROUTE = "src/app/api/ai/chat/route.ts";
+  const CLIENT = "src/components/ai-chat.tsx";
+
+  /** 返回 { 手写字面量处数, 用到的 BODY_ERRORS 键 } */
+  function audit(text: string): { literals: number; refs: string[] } {
+    return {
+      literals: [...text.matchAll(/NextResponse\.json\(\{ error: ["'`]/g)].length,
+      refs: [...text.matchAll(/NextResponse\.json\(\{ error: BODY_ERRORS\.([A-Za-z0-9_]+) \}/g)].map((m) => m[1]),
+    };
+  }
+  const read = (rel: string) => readFileSync(path.join(process.cwd(), rel), "utf8");
+
+  it("路由里每条 error 响应都取自 BODY_ERRORS，且四个键都用上了", () => {
+    const { literals, refs } = audit(read(ROUTE));
+    expect(literals, "路由里又出现了手写的英文标识串").toBe(0);
+    expect([...new Set(refs)].sort()).toEqual(Object.keys(BODY_ERRORS).sort());
+  });
+
+  it("前端不再手抄这些串（它们本来就不该上屏）", () => {
+    // 注释里提一句「路由回的是 `Invalid payload`」是在解释代码，不是把它印出来；
+    // 这里扫的是会执行的那几行。
+    const code = read(CLIENT)
+      .split("\n")
+      .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))
+      .join("\n");
+    for (const value of Object.values(BODY_ERRORS)) {
+      expect(code, `ai-chat.tsx 的代码里出现了手抄的「${value}」`).not.toContain(value);
+    }
+  });
+
+  it("正向对照：把一处换回手抄，同一个判据要报出来", () => {
+    const mutated = read(ROUTE).replace(
+      "NextResponse.json({ error: BODY_ERRORS.invalidPayload }, { status: 400 })",
+      'NextResponse.json({ error: "Invalid payload" }, { status: 400 })',
+    );
+    const { literals, refs } = audit(mutated);
+    expect(literals, "手抄的那一处没被抓到").toBe(1);
+    expect(refs, "被换掉的那个键不再被引用，判据却没响").not.toContain("invalidPayload");
   });
 });
