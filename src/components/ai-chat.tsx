@@ -28,6 +28,12 @@ import { copyText } from "@/lib/clipboard";
 /** 空状态首屏示例条数：水合首帧与挂载后洗牌必须取同一个数 */
 const EXAMPLE_COUNT = 5;
 
+/**
+ * 从发出请求到**响应头到达**的等待上限（正文开始流式之后就不再看这个表）。
+ * 界面里那句超时提示说的秒数以它为准，见 `src/lib/ai-error-cause-claims.test.ts`。
+ */
+export const RESPONSE_HEADER_TIMEOUT_MS = 30_000;
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -326,7 +332,7 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
 
     // 连接超时（只约束到响应头到达，正文流式期不计入）
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30_000);
+    const timer = setTimeout(() => controller.abort(), RESPONSE_HEADER_TIMEOUT_MS);
     // 「清空对话」要掐得掉这一趟：只清数组的话，下一块会把回答重新写回空屏幕
     streamControllerRef.current = controller;
 
