@@ -7550,3 +7550,19 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：AI 502 要看部署快照的环境变量与出口网络，需要 Vercel 控制台权限——既有等待项，不是本轮新增。
 - 下一项：#184 闭合。第三十四轮的 R16.262 与本条同分支走 PR。
 - 更新时间：2026-09-26
+
+---
+
+## 2026-09-26 · 第三十四轮（R16.262 收口、R16.267 登记）：e2e 不再把裁决权交给行情端点，然后发现「元素在」根本不等于「按键被接管」
+
+- 里程碑 / 版本：「说法 vs 事实」第三十四轮，无发布（当前 v0.7.18）。分支 `fix-e2e-networkidle-r34`（自 `origin/main` `c534c51`）→ 本记录走 PR 合并：`0eaf572`（去掉 5 处 `networkidle` + `actUntilTaken` + 新判据）、`65648c1`（v0.7.18 冒烟复跑记录 + 删掉一条改口后没同步的旧状态）、`34c8d33`（两份计数台账重算）、本轮台账与 roadmap（下面列的是分支上的原 sha，rebase 合并之后在 `main` 上会换一批新的）。
+- 完成内容 **R16.262**：`e2e/full-site.spec.ts` 里 5 处 `page.goto(..., { waitUntil: "networkidle" })` 全删（删之前 `git show HEAD~1` 数过 5 处、`e2e/` 其余文件 0 处）。删完露出第二层：整套顺序里连着两次红在灯箱那条，单跑这一族 21 次全绿——SSR HTML 里按钮已经带 `aria-haspopup`、也能 `focus()`，所以「元素在」这个信号在 React 挂上处理器之前就亮了，丢掉的 keydown 再轮断言也轮不回来。改成 `actUntilTaken(label, act, expectEffect)`：把「动作 + 这个动作的效果」塞进 `expect(callable).toPass()` 重试。机制是量出来的（`.gate-logs/probe-r34-race.cjs`）：拦 chunk + 只等 `domcontentloaded` 时按一次 Enter → 灯箱 0，反复按 → 1283ms 开；不拦脚本、只等 `load`、按一次之后**干等 5s 仍是 0**，按用例真实步骤多走一次往返**仍然 0**——所以旧形状不是偶尔慢，是等不到。
+- 完成内容 **R16.267**（本轮登记、故意没做）：同一把尺子铺到 `e2e/` 全量是 **29 处**语句层动作（`full-site.spec.ts` 18、`mobile-overflow.spec.ts` 5、`smoke.spec.ts` 5、`pwa-offline.spec.ts` 1），本轮只包了被测到红的那一族；下一步先造失败条件再扩门禁，不要反过来。
+- 完成内容（台账自检一处）：第三十三轮那条「阻塞 / 风险」在本轮核对时发现还写着「§5 那句应用内点链接本轮没有实测、R16.266 登记为待量」，而同一条记录的「完成内容」已经写着它量完且结论反了——同一件事在一处改了、另一处还活着，本轮删掉旧状态并把这件事记进记录。
+- 门禁：新增 `scripts/e2e-wait-hygiene.test.mjs`（**6** 条，随 `npm run test` 跑，不另挂 CI 步）——仓库级零 `networkidle`（11 份文件的扫描地板 + 探测器正向夹具）、`actUntilTaken` 函数体必须「先 `act()` 再 `expectEffect()`」且真的 `.toPass(`、Q2.4 一族语句层没有裸按键且包起来的动作 ≥3。计数台账重算：测试文件 **335→336**、待扫文件 **810→811**。
+- 变更文件：`e2e/full-site.spec.ts`、`scripts/e2e-wait-hygiene.test.mjs`（新）、`docs/progress.md`、`docs/roadmap.md`、`docs/scan-counts.md`、`docs/test-clock-hygiene.md`。
+- 我自己的错（本轮三处）：**①抄惯用法之前没量它依赖的信号还在不在**——第一版屏障用「引导浮层挂上没」当接管证据（抄 `mobile-overflow.spec.ts`），可本文件的 `test.beforeEach` 给每条用例种了 `tb-onboarded=1`，引导在这里根本不挂，两条用例各卡 `waitFor` 15s。**②先宣布再验证**——`actUntilTaken` 最初写成 `expect((async () => {...})(), label)`，把 Promise 交给了只吃 callable 的 `expect`，`tsc` 直接 `Property 'toPass' does not exist`；在那之前我已经把它叫作「改好了」。**③仪器的读数差点变成结论**——race 探针第一版数 `[role="dialog"]`，而新手引导也渲染 `role="dialog"`（`src/components/onboarding-tour.tsx`），于是「干等 5s 之后有 1 个 dialog」看着像「等待其实救得回来」；改按名字只认灯箱那个 dialog、并跟用例一样种 `tb-onboarded=1` 之后才是 0。这次是**改口之前**抓到的，没进任何文档。
+- 验证：`npx vitest run scripts/e2e-wait-hygiene.test.mjs` **6 条全绿**；变异批 `.gate-logs/probe-r34-hygiene.mjs` 首跑即 **9 条 BAD=0**（H1 注释涂白退回原样 → 红；H2 探测器缩回只认 `page.keyboard.press` → 红在正向对照；H3 地板 ≥3 改成 ≥99 → 红；S1/S2/S3 把 Enter / Escape / 两次「开始测验」各自退回语句层 → 三条分别红，不是 any-of；S4 `actUntilTaken` 不再跑动作 → 红；S5 加回一处 `networkidle` → 红；R1 只改块注释一句话 → 绿），跑完 `git status` 干净。全量 e2e **两遍各 169 passed**（`.gate-logs/r34-e2e-run1.log` / `-run2.log`，末行 `E2E_EXIT=0` 是脚本自己写的，不是后台通知）。`lint --max-warnings=0` 与 `typecheck` exit 0。生产冒烟复跑 **9/10**（唯一红是上游 AI 502，见上一条记录）。
+- 阻塞 / 风险：无新增阻塞。本轮只动测试与台账，没有用户可感变化，不判发布。`e2e/` 里那 29 处语句层动作是既有的同类风险（R16.267），本轮没有一般化。
+- 下一项：本分支开 PR，等 `ci` + `db-tests` + CodeQL 绿了 rebase 合并，随后第三十五轮。候选：R16.267（先给 29 处里最可能中的几处造失败条件）、`docs/database-testing.md`、`docs/retention-metrics.md` §3 之后各节。
+- 更新时间：2026-09-26
