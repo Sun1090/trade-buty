@@ -26,7 +26,7 @@ const zh = {
     returnToNoticeTpl: "📍 {path}",
     // R9.2：OTP 错误分类与本地冷却
     errorRateLimited: "请求过于频繁，请稍后再试",
-    errorRateLimitedHint: "邮箱服务有冷却时间，我们已经发了链接，请到邮箱查收（垃圾邮件夹也看看）",
+    errorRateLimitedHint: "这一趟没有发出邮件——本站对连续两次发送有冷却时间（这是本站的节流，不是邮件服务商的）。等倒计时走完再点一次；之前那封如果没到，也顺手看看垃圾邮件夹。",
     errorInvalidEmail: "邮箱格式不正确，请检查后重试",
     errorNetwork: "网络异常，请检查连接后重试",
     errorUnknown: "发送失败，请稍后重试",
@@ -430,7 +430,7 @@ const en: Dict = {
     returnToNoticeTpl: "📍 {path}",
     // R9.2: OTP error classification + client-side cooldown
     errorRateLimited: "Too many requests — please try again later",
-    errorRateLimitedHint: "Email providers have a cooldown. We've already sent a link — check your inbox (and spam folder).",
+    errorRateLimitedHint: "This click sent no email — the site cools down back-to-back sends (that throttle is ours, not your mail provider's). Try again once the countdown is over; if the earlier link never arrived, check your spam folder too.",
     errorInvalidEmail: "That email address doesn't look right — double-check and retry",
     errorNetwork: "Network problem — check your connection and retry",
     errorUnknown: "Couldn't send — please try again later",

@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act, cleanup } from "@testing-library/react";
 import { LoginClient } from "./login-client";
+import { getDict } from "@/lib/i18n";
 
 // next/navigation: useSearchParams 返回可控 Map
 let searchMap = new Map<string, string>();
@@ -232,4 +233,40 @@ describe("LoginClient", () => {
     expect(first).not.toBe(second);
     expect(second).toMatch(/s 后重发/);
   });
+});
+
+/**
+ * R16.191：限流那一句不许替一次没有发生的发送作保，也不许把冷却算到邮件服务商头上。
+ *
+ * 走到 `rate_limited` 有三条路：客户端冷却（`login-client.tsx` 在 `signInWithOtp` **之前**
+ * 就 return，这一趟压根没发请求）、服务端 429（这次被拒了，没寄出东西），
+ * 以及「任何错误都标记 lastSent」之后再点一次。三条路共同的真相是：这一次没有邮件发出。
+ * 而冷却时长是 `OTP_COOLDOWN_MS`（本站的），跟邮件服务商无关。
+ *
+ * 上面那些用例用的是文件里手抄的夹具文案，守不住线上那句话——这里读真字典渲染。
+ */
+describe("限流提示说的是本站的节流（真字典，R16.191）", () => {
+  for (const locale of ["zh", "en"] as const) {
+    it(`${locale}：说清这一趟没发出邮件，冷却是本站的`, async () => {
+      const real = getDict(locale).auth;
+      signInSpy.mockResolvedValue({ error: { status: 429, message: "rate limit" } });
+      render(<LoginClient dict={real} locale={locale} />);
+      fireEvent.change(screen.getByPlaceholderText(real.emailPlaceholder), {
+        target: { value: "a@b.com" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: real.sendLink }));
+      await act(async () => {
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      const banner = screen.getByText(real.errorRateLimited).closest("div");
+      const text = banner?.textContent ?? "";
+      expect(text, "这句提示得真的挂在限流那块里").toContain(real.errorRateLimitedHint);
+      expect(text, "不许宣布一封没寄出去的邮件").not.toMatch(
+        /已经发了|已为你发送|我们已经发|already sent|we.?ve sent/i,
+      );
+      expect(text, "要说清这一次没有发出邮件").toMatch(/没有发出|no email/i);
+      expect(text, "冷却是本站的节流，不是邮件服务商的").toMatch(/本站|this site|\bours?\b/i);
+    });
+  }
 });
