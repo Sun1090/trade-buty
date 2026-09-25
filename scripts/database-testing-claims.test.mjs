@@ -14,10 +14,13 @@
  * （`npm run check:db-assertion-counts`，它把文档引用的数字对回 `select plan(N)`），本文件不重复比数值；
  * 本文件比的是那份门禁**射程之外**的东西——数字挂在哪儿它才读得到（见「断言数怎么挂」一节），
  * 以及表数、档位集合、角色名单、旗子、指纹项这些它根本不看的事实。
+ * 而「哪一片文本算现行」也只有一份口径：本文件 import 那边的 `AUDITED_DOCS` / `CURRENT_SECTIONS`
+ * / `pickSections`，扫的就是它看得到的那片——两遍各立一份，早晚会一份说台账不算数、一份把它当错。
  */
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { AUDITED_DOCS, CURRENT_SECTIONS, pickSections } from "./db-assertion-counts.mjs";
 
 const root = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
 const read = (rel) => fs.readFileSync(path.join(root, rel), "utf8");
@@ -409,9 +412,21 @@ describe("断言数怎么挂：数字不在文件名后面、也不在聚合链�
     return out;
   }
 
+  /**
+   * 只扫**对账门禁自己看得到的那片文本**：范围由 `db-assertion-counts.mjs` 的
+   * `AUDITED_DOCS` / `CURRENT_SECTIONS` 决定，这里 import 同一份，不另立一份口径。
+   * 第三十五轮 R16.268 那行台账就是撞在这一点上——它把被改掉的旧数字原文引回来作证据，
+   * 无论哪道门禁按整篇扫都会把一句真话报成错。
+   */
+  const auditedText = (file) => {
+    const raw = read(file);
+    const re = CURRENT_SECTIONS[file];
+    return re ? pickSections(raw, re) : raw;
+  };
+
   /** 现行文档里「报了 pgTAP 断言数」的那些块。 */
   function countBlocks(rel) {
-    return units(read(rel)).filter(
+    return units(auditedText(rel)).filter(
       (u) => /pgTAP|db:test|backup:drill|supabase\/tests/.test(u) && /\d{1,3}\s*条?断言/.test(u),
     );
   }
@@ -423,10 +438,13 @@ describe("断言数怎么挂：数字不在文件名后面、也不在聚合链�
         true,
       );
     }
-    const scanned = ["docs/database-testing.md", "docs/roadmap.md"].map((f) => [f, countBlocks(f)]);
+    const scanned = AUDITED_DOCS.map((f) => [f, countBlocks(f)]);
     const total = scanned.reduce((a, [, ls]) => a + ls.length, 0);
     expect(total, "两处「报了断言数」的块加起来不到 3 块，这条判据已经无物可查").toBeGreaterThanOrEqual(3);
     for (const [file, blocks] of scanned) {
+      expect(blocks.length, `${file} 在节选之后一块「报了断言数」的都没有——这一半等于没扫，不是没有不符`).toBeGreaterThanOrEqual(
+        1,
+      );
       for (const block of blocks) {
         for (const c of citationsIn(block)) {
           if (c.kind === "chain") {
