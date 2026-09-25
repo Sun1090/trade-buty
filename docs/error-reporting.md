@@ -26,7 +26,16 @@ URL 里写的任何自由文本都不会离开浏览器。
 
 ## 服务端校验（`src/app/api/error-reports/route.ts`）
 
-- **方法 / 媒体类型**：仅 `POST` + `Content-Type: application/json`，否则 `415`。
+- **方法**：本端点只导出 `POST`（`src/app/api/error-reports/route.ts:68`），其余方法由 Next
+  的路由层挡下，不到这段代码。2026-09-26 对本地生产构建（`BUILD_ID PTbPuR9QgU_6gmtvSYefd`，
+  `next start -p 3155`）实测：`GET`、`PUT`（带 json）、`DELETE` 都返回 **405**，响应体为空，
+  且响应头里**没有** `Allow`。「方法不对」不是这份代码判的（`route.ts` 里没有任何 405 分支），
+  所以这一半没有自动化断言——单测直接调导出的 `POST()`，走不到路由层那一格。
+- **媒体类型**：`Content-Type` 不含 `application/json`（含完全不带该头）时返回 **415**
+  （`route.ts:77-78`，用例 `src/app/api/error-reports/route.test.ts:132`）。它判在限流之后
+  （限流在 `route.ts:69`），所以配额耗尽时即使 Content-Type 不合法也先拿到 `429`。
+  实测与代码一致：`POST` + `text/plain` → **415**，`POST` 无 Content-Type → **415**，
+  `POST` + json → **202 `{"ok":true}`** + `Cache-Control: no-store`。
 - **body 上限**：`MAX_ERROR_REPORT_BYTES = 2048`。有界读取，超限立即断流返回 `413`。
 - **未知字段整包拒绝**：只要出现白名单外的 key（如 `message`、`url`）就返回 `400`，
   不记录、不透传。
