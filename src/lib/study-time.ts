@@ -49,7 +49,8 @@ function readLedger(): Ledger {
 /**
  * 累加某来源当日学习秒数。防呆只有一道闸，而且是按天算的：当日单源封顶 8 小时
  * （`8 * 3600`），于累加处夹一次、`readLedger` 读旧台账时再夹一次。
- * 单次调用没有上限——旧注释里的「单次 ≤4h」在代码里不存在，回放一次可以上报到 8 小时。
+ * 单次调用没有上限——旧注释里的「单次 ≤4h」在代码里不存在：一次报多少就加多少，
+ * 直到当日那一源被上面那道闸压到 8 小时（回放的 elapsed 就是一整轮的墙钟时间）。
  */
 export function addStudyTime(source: StudySource, seconds: number, day: string = localDateStr()): void {
   if (!Number.isFinite(seconds) || seconds <= 0) return;
