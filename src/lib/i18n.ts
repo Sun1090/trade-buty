@@ -337,7 +337,7 @@ const zh = {
   },
   newsletter: {
     title: "邮件订阅（占位）",
-    desc: "这是一个占位功能：站内没有邮件服务，填在这里的邮箱只保存在这台浏览器，不会上传；保存之后这一条会出现「复制 JSON」和「清除」两颗按钮，那是它仅有的两个出口。",
+    desc: "占位功能：站内没有邮件服务。邮箱只存在这台浏览器，不上传；保存后这一条会出现「复制 JSON」和「清除」两颗按钮。",
     placeholder: "your@example.com",
     emailLabel: "订阅邮箱",
     submit: "保存邮箱（本地）",
@@ -748,7 +748,7 @@ const en: Dict = {
   },
   newsletter: {
     title: "Newsletter (placeholder)",
-    desc: "This is a placeholder: the site has no email service. The address you type here lives only in this browser and is never uploaded — once it is saved, this entry shows two buttons, “Copy JSON” and “Clear”, and those are its only ways out.",
+    desc: "A placeholder: the site has no email service. Your address stays in this browser and is never uploaded. Once saved, this entry shows “Copy JSON” and “Clear”.",
     placeholder: "your@example.com",
     emailLabel: "Newsletter email",
     submit: "Save email (local)",
