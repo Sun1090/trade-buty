@@ -130,8 +130,10 @@ describe("ReturnNudgeToast (R9.8)", () => {
   });
 
   /**
-   * R16.188：这一站所有页面都在 `/{locale}` 下，`href="/replay"` 会落进
-   * `[locale]="replay"` 直接 404——主按钮点了哪也不去。
+   * R16.188：这一站所有页面都住在 `/{locale}` 下，未加前缀的地址由 `src/proxy.ts`
+   * 补上 **cookie 里的**语种（实测无 `tb-lang` 时 `/replay` → `/en/replay`）——
+   * 于是中文页上这颗「继续学习」会把从没点过语言切换的访客换到英文界面，
+   * 而这条提示自己的每一句文案都是按 URL 的语种渲染的。
    */
   it("「继续学习」跳到带语种前缀的回放页", () => {
     const seen: string[] = [];

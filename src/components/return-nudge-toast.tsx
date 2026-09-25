@@ -17,8 +17,9 @@ import {
  * - 监听 `tb-return-nudge` CustomEvent（由 auth-provider 在 mount 时检测 + 派发）
  * - sessionStorage 去重（同会话只弹一次；切 tab 重进会再弹——属于温和提示，可接受）
  * - 停留 {@link RETURN_NUDGE_TOAST_MS}（12 秒）后自动消失 / 点 "继续学习" 跳转
- *   `/${locale}/replay`（R16.188：这一站全部住在 `/{locale}` 下，不带前缀的地址会落进
- *   `[locale]="replay"` 直接 404）/ "稍后再说" 关闭
+ *   `/${locale}/replay`（R16.188：不带前缀也能到——`src/proxy.ts` 会 307 到
+ *   `/{cookie‖en}/replay`，而这条提示自己的文案是按 **URL 的语种**渲染的：没设过
+ *   `tb-lang` cookie 的访客在 `/zh/...` 页上点它，会被换到英文回放页）/ "稍后再说" 关闭
  * - 文案中性、不诱导（不卖焦虑、不强推 push 通知、不发邮件）
  */
 export const RETURN_NUDGE_TOAST_MS = 12_000;
