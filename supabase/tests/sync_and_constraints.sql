@@ -9,7 +9,7 @@
 
 begin;
 
-select plan(30);
+select plan(34);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, confirmed_at, created_at, updated_at)
 values
@@ -134,10 +134,28 @@ select is(
 insert into user_settings (user_id, daily_goal_min, weekly_goal_min)
 values ('aaaaaaaa-0000-0000-0000-000000000001', 15, 90);
 
+-- 合法档位要逐个过：0008 的 CHECK 允许的集合就是 daily {5,15,30} / weekly {45,90,150}，
+-- 夹具那行插的是 15/90，所以 15 与 90 也得由一次 update 真的走过检查，不能只当种子值。
+select lives_ok(
+  $$ update user_settings set daily_goal_min = 5
+     where user_id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '每日目标合法档位 5 通过');
+select lives_ok(
+  $$ update user_settings set daily_goal_min = 15
+     where user_id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '每日目标合法档位 15 通过');
 select lives_ok(
   $$ update user_settings set daily_goal_min = 30
      where user_id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
   '每日目标合法档位 30 通过');
+select lives_ok(
+  $$ update user_settings set weekly_goal_min = 45
+     where user_id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '每周目标合法档位 45 通过');
+select lives_ok(
+  $$ update user_settings set weekly_goal_min = 90
+     where user_id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '每周目标合法档位 90 通过');
 select lives_ok(
   $$ update user_settings set weekly_goal_min = 150
      where user_id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
