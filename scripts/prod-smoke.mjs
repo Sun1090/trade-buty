@@ -20,6 +20,13 @@ import { fileURLToPath } from "node:url";
 export const DEFAULT_BASE_URL = "https://trade-buty.vercel.app";
 export const RISK_WARNING_MARK = "⚠️";
 const REQUEST_TIMEOUT_MS = 20_000;
+/**
+ * 模型路径单独的长超时。生产实测上游不通时这一跳是「挂到近一分钟才回 502」
+ * （2026-09-25：`POST /api/ai/chat` 68.0s → 502），沿用 20s 的话冒烟只能报
+ * 「请求异常：operation aborted due to time out」——把「我们没等够」写成结论，
+ * 而它本来能给出的答案是「护栏路径 0.8s 就 200，坏的是上游」。
+ */
+export const AI_MODEL_TIMEOUT_MS = 90_000;
 /** 本地目标才做构建身份核对；打生产域名时没有 `.next` 可比。 */
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
@@ -81,12 +88,14 @@ export function servedBuildIsStale({ html, buildId }) {
   return !html.includes(buildId);
 }
 
-async function defaultFetch(url, init) {
-  return fetch(url, { redirect: "follow", ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+async function defaultFetch(url, init, timeoutMs = REQUEST_TIMEOUT_MS) {
+  return fetch(url, { redirect: "follow", ...init, signal: AbortSignal.timeout(timeoutMs) });
 }
 
 /**
- * 断言清单。每个 check 返回 `null` 表示通过，返回字符串表示失败原因（会原样打印）。
+ * 断言清单。每个 check 返回 `null` 表示通过，返回字符串表示失败原因（会原样打印），
+ * 返回 `{ skipped: "原因" }` 表示**这一条本轮没测成**（例如游客配额已被占走）：
+ * 它既不算通过也不算失败，汇总里单独计数——把「没测」写成 ✅ 是这套东西要防的事。
  * `expectedVersion` 为 null 时跳过 changelog 版本断言并明确报出原因，避免「无版本可比」被当成通过。
  */
 export function buildChecks({ expectedVersion, aiQuestion = AI_PROBE_QUESTION }) {
@@ -170,28 +179,53 @@ export function buildChecks({ expectedVersion, aiQuestion = AI_PROBE_QUESTION })
   });
 
   checks.push({
-    name: "POST /api/ai/chat 游客：护栏路径 200 且模型路径不 5xx",
+    name: "POST /api/ai/chat 游客：护栏路径 200+X-Refused，模型路径要么答要么明确没测",
     async run(ctx) {
-      const post = (content) =>
-        ctx.fetch(`${ctx.baseUrl}/api/ai/chat`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ messages: [{ role: "user", content }] }),
-        });
+      const post = (content, timeoutMs) =>
+        ctx.fetch(
+          `${ctx.baseUrl}/api/ai/chat`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ messages: [{ role: "user", content }] }),
+          },
+          timeoutMs,
+        );
 
-      // ① 护栏在调用上游之前返回：它 200 且带 X-Refused 才证明函数活着、部署没落后、红线还在
+      // ① 护栏在调用上游之前返回：它 200 且带 X-Refused 才证明函数活着、部署没落后、红线还在。
+      //    但限流排在解析与护栏之前（`src/app/api/ai/chat/route.ts` 的 `chatLimiter`），
+      //    所以 429 时连红线都没被验证过——那是「没测」，不是「通过」。
       const refusal = await post(AI_GUARDRAIL_PROBE_QUESTION);
       const refused = refusal.headers?.get("x-refused") ?? null;
       await refusal.text().catch(() => "");
-      // 429 只说明游客配额已被别的流量用完，端点依旧是活的，此时不作护栏证据
-      if (refusal.status !== 429 && (refusal.status !== 200 || !refused)) {
+      if (refusal.status === 429) {
+        return {
+          skipped: `护栏路径 429（Retry-After ${refusal.headers?.get("retry-after") ?? "?"}s）：限流排在护栏之前，本轮既没验证红线也没打到模型`,
+        };
+      }
+      if (refusal.status !== 200 || !refused) {
         return `护栏路径 ${refusal.status}${refused ? ` X-Refused=${refused}` : "（无 X-Refused 头）"}：函数没起来、部署落后或内容红线失效`;
       }
 
-      // ② 模型路径：这一段 5xx 而 ① 正常，就只可能是上游（部署快照里的 AI_* 配置或出口网络）
-      const res = await post(aiQuestion);
+      // ② 模型路径自己等满 `AI_MODEL_TIMEOUT_MS`：上游不通时生产实测要挂约一分钟才回 502，
+      //    用全站那 20s 就只能报「请求异常」，把「我们没等够」写成结论。
+      //    超时按断言失败返回（不重跑）：一条挂住的上游被连打三次既慢又白占访客配额。
+      let res;
+      try {
+        res = await post(aiQuestion, AI_MODEL_TIMEOUT_MS);
+      } catch (error) {
+        const name = error instanceof Error ? error.name : "";
+        if (name === "AbortError" || name === "TimeoutError") {
+          return `模型路径在 ${AI_MODEL_TIMEOUT_MS / 1000}s 内没返回，而护栏路径 200 正常 → 卡的是上游那一跳（查部署快照里的 AI_API_URL/AI_MODEL/AI_API_KEY 或出口网络）`;
+        }
+        throw error;
+      }
       await res.text().catch(() => "");
-      if (res.status === 429) return null; // 限流生效说明端点活着，且这次冒烟不是唯一流量来源
+      if (res.status === 429) {
+        return {
+          skipped: "模型路径 429：护栏那条已经验证（200+X-Refused），但这一轮没真的打到模型，「不 5xx」不算成立",
+        };
+      }
       if (res.status >= 500) {
         return `状态 ${res.status}，而护栏路径正常 → 站内代码没问题，查上游：部署快照里的 AI_API_URL/AI_MODEL/AI_API_KEY 或出口网络`;
       }
@@ -246,13 +280,20 @@ export async function runChecks({ baseUrl, checks, fetchImpl = defaultFetch, ret
       results.push({
         name: check.name,
         ok: false,
+        skipped: false,
         detail: `请求异常：${message}${priorFailures > 0 ? `（重试 ${priorFailures} 次后仍失败）` : ""}`,
       });
     } else {
+      const skip =
+        failure && typeof failure === "object" ? String(failure.skipped ?? "") : "";
       results.push({
         name: check.name,
-        ok: !failure,
-        detail: failure || (priorFailures > 0 ? `第 ${priorFailures + 1} 次尝试才连上（前 ${priorFailures} 次传输失败）` : ""),
+        ok: skip ? true : !failure,
+        skipped: Boolean(skip),
+        detail:
+          skip ||
+          failure ||
+          (priorFailures > 0 ? `第 ${priorFailures + 1} 次尝试才连上（前 ${priorFailures} 次传输失败）` : ""),
       });
     }
   }
@@ -312,7 +353,8 @@ export async function run({
   stdout(`🚦 生产冒烟：${baseUrl}（期望已发布版本 ${expectedVersion ?? "读不到"}），${checks.length} 条断言`);
   const results = await runChecks({ baseUrl, checks, fetchImpl });
   for (const result of results) {
-    stdout(`  ${result.ok ? "✅" : "❌"} ${result.name}${result.detail ? ` — ${result.detail}` : ""}`);
+    const mark = result.skipped ? "⏭️" : result.ok ? "✅" : "❌";
+    stdout(`  ${mark} ${result.name}${result.detail ? ` — ${result.detail}` : ""}`);
   }
 
   const failed = results.filter((r) => !r.ok);
@@ -320,6 +362,14 @@ export async function run({
     stderr(`❌ 生产冒烟失败 ${failed.length}/${results.length} 条：${failed.map((f) => f.name).join("；")}`);
     stderr("   先确认部署是否真的跟上 main（配额限流会让生产停在旧构建），再看是不是站内回归。");
     return 1;
+  }
+  const skipped = results.filter((r) => r.skipped);
+  if (skipped.length > 0) {
+    // 「没测成」单独说一句：只报「N 条全部符合预期」会把 ⏭️ 那几条混进绿里
+    stdout(
+      `⚠️ 生产冒烟：${results.length - skipped.length} 条符合预期 · ${skipped.length} 条本轮没测成（${skipped.map((s) => s.name).join("；")}）`,
+    );
+    return 0;
   }
   stdout(`✅ 生产冒烟通过（${results.length} 条全部符合预期）`);
   return 0;
