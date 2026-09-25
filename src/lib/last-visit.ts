@@ -2,9 +2,11 @@
  * R9.8：7 天未访温和提示的状态持久化。
  *
  * 设计目标：
- * - 每次用户进入任意内容页（mount 内容组件时）调用 `touchLastVisit(now)` 写入 `tb-last-visit`
- * - layout 端 `shouldShowReturnNudge(now)` 判断距上次访问 ≥ 7d 且距上次提示 ≥ 7d 才提示
- * - 提示触发后调用 `markNudgeShown(now)` 写入 `tb-last-visit-nudge`
+ * - 每**一次文档加载**记一次访问时间：`AuthProvider`（挂在 layout 上，客户端切换路由不会重挂）
+ *   在它那个 mount 效应里调用 `touchLastVisit(now)` 写入 `tb-last-visit`
+ * - 同一次效应里先拿旧值判断该不该提示，再写入本次时间——顺序反过来，每次量到的间隔都是 0 天
+ * - 判断用 `shouldShowReturnNudge(now, lastVisitAt)`：距上次访问 ≥ 7d 且距上次提示 ≥ 7d
+ * - 提示真的展示之后，由 toast 调用 `markNudgeShown(now)` 写入 `tb-last-visit-nudge`
  * - 全部 SSR 安全（无 localStorage → 返回 null / false）
  * - 字段防御：storage 里的脏 JSON / 非数字 / 负数都按"无记录"处理
  *
@@ -77,7 +79,9 @@ export function getLastNudgeShownAt(): number | null {
  * 1. 必须有 lastVisit 记录（首次访问用户不弹）
  * 2. 距 lastVisit ≥ 7d
  * 3. 距 lastNudgeShown ≥ 7d（如果从未弹过也满足）
- * 4. 现在距 lastVisit 不能超过 90d（超过视为"太久没来"，归零 lastVisit 并返回 false）
+ * 4. 现在距 lastVisit 不能超过 90d（超过就当"太久没来"，这一次不弹）。
+ *    这个函数**不写 storage**：让那条旧记录翻篇的是调用方紧接着执行的那次
+ *    `touchLastVisit(now)`（`src/components/auth-provider.tsx`），不是这里。
  *
  * @param now 当前时刻（ms），便于测试时注入
  */
