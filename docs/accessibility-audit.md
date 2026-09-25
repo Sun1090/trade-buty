@@ -2,7 +2,8 @@
 
 日期：2026-09-12  
 范围：课程阅读、随堂测、行情图、回放训练、搜索筛选、邮件订阅占位  
-基线：`codex/zero-eslint-warnings`，`origin/main@53f7e01`，最近验证 `a7c62d1` + 亮色对比度修复
+基线：`origin/main@53f7e01`（test(pwa): avoid retry reload race in offline e2e），最近验证 `0d1dabf`（fix(ci): make mobile overflow gate deterministic，经 **PR #16** 合入）+ 亮色对比度修复  
+这一行原先写的是分支 `codex/zero-eslint-warnings` 与它上面的提交 `a7c62d1`。远端临时分支按仓库规矩在合并后删除，rebase 合并又改写了 SHA，于是两个指针今天在仓库里都查不到——「最近验证」是一个活的状态锚点，指向查无此处的东西等于没有指向，所以这里换成合并后仍在历史里的那个同内容提交。下面「历史记录」小节的 SHA 是当天的证据快照，不动。
 
 ## 结论
 
