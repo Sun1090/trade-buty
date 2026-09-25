@@ -565,6 +565,27 @@ describe("冒烟表逐条交代自己的来历", () => {
   /** 行内那些「出过事」口吻的说法——只有第三列给得出落点时才许出现在正文里 */
   const INCIDENT_TONE = /历史上|曾经|出过问题|出过事故|漏掉过/;
 
+  /** `docs/release-checklist.md` 冒烟那节里紧跟总起句的那段 bullet（含各自的续行） */
+  function checklistBullets() {
+    const lines = fs.readFileSync("docs/release-checklist.md", "utf8").split("\n");
+    const start = lines.findIndex((l) => /不是每一条\s*都出过事故/.test(l));
+    expect(start, "release-checklist 的冒烟总起句找不到了——那一节换了写法就要同步这条判据").toBeGreaterThan(-1);
+    // 总起句自己占好几行，所以要从它之后的第一条 bullet 起步，而不是从下一行起步。
+    const from = lines.findIndex((l, i) => i > start && l.startsWith("- "));
+    expect(from, "总起句后面那段 bullet 不见了").toBeGreaterThan(-1);
+    const out = [];
+    for (const line of lines.slice(from)) {
+      if (line.startsWith("- ") || (out.length > 0 && line.startsWith("  "))) out.push(line);
+      else if (out.length > 0 && line.trim() === "") break;
+    }
+    // 数 bullet 条数而不是行数：这里每条 bullet 长短不一（有的带续行），按行数出来的
+    // 「有没有扫到东西」不作数。地板是 4 而不是当前的 5——这一段本来就是「摘几条」，
+    // 少一条不是假话，整段没了才是。
+    const bullets = out.filter((l) => l.startsWith("- ")).length;
+    expect(bullets, "那段 bullet 扫不出东西来").toBeGreaterThanOrEqual(4);
+    return out.join("\n");
+  }
+
   /** 一处出处文本里的所有落点，逐个回仓库查；返回查不到的那些 */
   function unresolved(text) {
     const bad = [];
@@ -627,5 +648,17 @@ describe("冒烟表逐条交代自己的来历", () => {
       ).not.toMatch(/(?<!也不是)每一条[^。]{0,30}(真出过问题|出过事故)/);
       expect(doc, `${file} 不再交代「不是每一条都出过事故」这件事了`).toMatch(/不是每一条\s*都出过事故/);
     }
+  });
+
+  it("release-checklist 摘的那几条，落点也逐个查得到", () => {
+    // 那张表有判据了，清单里那几条 bullet 还是手抄的——而手抄的地方正是本轮之前发明故的
+    // 那一处（第二十四轮我在 ops.md 凭印象写过一次「内容空过一次」）。这里不比对措辞，
+    // 只要求 bullet 里出现的每一个落点都真在仓库里。
+    const block = checklistBullets();
+    const found = block.match(/R\d+\.\d+|PR #\d+|\b\d+\.\d+\.\d+\b|docs\/[\w./-]+\.md/g) ?? [];
+    expect(found.length, "release-checklist 冒烟那节摘的 bullet 里一个落点都没有了——引用不许只写成叙述").toBeGreaterThanOrEqual(
+      2,
+    );
+    expect(unresolved(block)).toEqual([]);
   });
 });
