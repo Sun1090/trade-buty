@@ -7,7 +7,7 @@ import { readJsonBody } from "@/lib/request-body";
  * 一轮问答 = 两行写入（各可达 8KB / 20KB）。这条路由此前是 AI 系列里唯一没有配额的
  * 用户级写入端点：任何免费注册账号都能循环把 `ai_conversations` 撑大，而 RLS 只保证
  * 别人读不到，不限制你自己写多少。
- * authedLimit 与 `/api/ai/chat` 的登录配额（50/小时）同量级并留一次重试余量；
+ * authedLimit 与 `/api/ai/chat` 的登录配额（一个窗口 50 次）同量级并留一次重试余量；
  * guestLimit 0 是语义标注——游客没有可归属的会话，进路由前就已经 401。
  */
 const conversationsLimiter = createRateLimiter({ guestLimit: 0, authedLimit: 60 });

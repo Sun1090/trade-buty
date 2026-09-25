@@ -29,8 +29,8 @@ import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
 // 简易内存 rate limit（Node.js 实例间相互独立，够用于防基础滥用）。
 // 共用 R7.12 的限流器：底层 BoundedMap 防止伪造 X-Forwarded-For 撑爆内存。
 const chatLimiter = createRateLimiter({
-  guestLimit: 10, // 游客每小时 10 次
-  authedLimit: 50, // 登录每小时 50 次
+  guestLimit: 10, // 游客每个窗口 10 次（窗口默认 1 小时，锚在窗口里的第一次请求，不是整点）
+  authedLimit: 50, // 登录账号同一条窗口 50 次
 });
 
 // 相同问题缓存（10 分钟 TTL，降低 AI API 消耗）；同样有容量上限，
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
   // rate limit（配额随响应头返回：游客前端展示剩余次数，429 附 Retry-After）
   // 登录账号按 user id 分桶（与 /api/ai/plan、/api/ai/quiz 一致）：按 IP 分桶会让
-  // 同一运营商 NAT 后的所有用户共享 50 次/小时，一个人脚本化就能把整片网络锁在门外。
+  // 同一运营商 NAT 后的所有用户共享那一份 50 次配额，一个人脚本化就能把整片网络锁在门外。
   const decision = chatLimiter.check(user?.id ?? ip, !!user);
   if (!decision.allowed) {
     return NextResponse.json(

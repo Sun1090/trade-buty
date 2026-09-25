@@ -15,11 +15,18 @@ import type { NextRequest } from "next/server";
 import { BoundedMap, sweepExpired } from "@/lib/bounded-map";
 
 export interface RateLimitOptions {
-  /** 未登录用户每小时配额 */
+  /** 未登录用户在一个配额窗口内的次数（窗口长度见 `windowMs`） */
   guestLimit: number;
-  /** 已登录用户每小时配额 */
+  /** 已登录用户在一个配额窗口内的次数 */
   authedLimit: number;
-  /** 配额窗口（ms），默认 1 小时 */
+  /**
+   * 配额窗口（ms），默认 `DEFAULT_WINDOW_MS`（1 小时）。
+   *
+   * 窗口是**从这个人这一串请求里的第一次**算起、往后推 `windowMs`（见 `check()` 里
+   * `reset: now + windowMs` 那一行），不是墙上钟点的那一格。10:50 问的第一次，窗口到
+   * 11:50 结束——所以界面文案不许说「本小时 / this hour」，那是把一次滚动计数说成按
+   * 整点刷新。由 `src/lib/quota-window-claims.test.ts` 守着这条口径。
+   */
   windowMs?: number;
   /** 内存里最多保留多少个 key，默认 10_000 */
   maxKeys?: number;
@@ -35,7 +42,8 @@ export interface RateLimitDecision {
   retryAfterSec: number;
 }
 
-const HOUR_MS = 3_600_000;
+/** 默认配额窗口长度（ms）。界面里那些「一小时」的说法以它为准。 */
+export const DEFAULT_WINDOW_MS = 3_600_000;
 
 /** 从请求头取客户端 IP（取 X-Forwarded-For 第一段） */
 export function clientIp(req: NextRequest): string {
@@ -48,7 +56,7 @@ export interface RateLimiter {
 
 /** 创建一个独立配额窗口的限流器（每个路由各持一个） */
 export function createRateLimiter(opts: RateLimitOptions): RateLimiter {
-  const windowMs = opts.windowMs ?? HOUR_MS;
+  const windowMs = opts.windowMs ?? DEFAULT_WINDOW_MS;
   const maxKeys = opts.maxKeys ?? 10_000;
   const sweepThreshold = opts.sweepThreshold ?? 5_000;
   const hits = new BoundedMap<string, { count: number; reset: number }>(maxKeys);
