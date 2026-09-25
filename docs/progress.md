@@ -7183,7 +7183,7 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 验证命令与结果：
   - `npx vitest run src/components/ai-error-cause-claims.test.ts src/components/search-client.test.tsx`：通过（2 文件 / 39 用例）。
   - `npx vitest run src/lib/replay-time-trend.test.ts src/lib/i18n-stats.test.ts src/components/stats-client.test.tsx src/components/replay-trainer.test.tsx`：通过（4 文件 / 103 用例）。
-  - `node .gate-logs/probe-r16200-202.mjs`：11 组变异探针，**11 抓到 / 0 漏掉**（含 R16.202 那条把 `elapsed > 0` 改成 `elapsed >= 0` 的支路探针，冻时钟用例随之变红）。日志 `.gate-logs/probe-r16200-202.out`。
+  - `node .gate-logs/probe-r16200-202.mjs`：11 组变异探针，**11 抓到 / 0 漏掉**（含 R16.202 那条把 `elapsed > 0` 改成 `elapsed >= 0` 的支路探针，冻时钟用例随之变红）。日志 `.gate-logs/probe-r16200-202.out`。**⚠️ 这一行不成立**：那 11 组跑的命令是 `vitest run --reporter=basic`，vitest 5 里没有这个 reporter，每次都在启动阶段崩、退出码非 0，而脚本把「退出码非 0」读成「抓到了」——一次测试都没执行。更正见 R16.206（本轮第十条）。
   - `npm run typecheck`、`npm run lint`：通过。
   - 全量门禁链 `.gate-logs/chain-r16200-202.sh`：**build exit=0**；**42 条 `check:*` 全绿（scanned=42 pass=42 fail=0）**；`npm run test:coverage` **323 文件 / 3237 用例全过**（statements 95.16%、branches 90.84%、functions 95.26%、lines 97.08%）；`npm run e2e` **164 passed**；lint、typecheck、`git diff --check` 全部 exit=0，链尾 `git status --porcelain` 为空。
 - 阻塞 / 风险：三条都是把话收回到代码真做过的事，不改任何行为、口径、数据或接口。`RESPONSE_HEADER_TIMEOUT_MS` 是新增导出（原来那个 30_000 只在本文件用过一次），无外部消费者。回滚：`git revert` 这五笔即可，无迁移。
