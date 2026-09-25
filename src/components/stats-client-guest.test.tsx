@@ -43,7 +43,7 @@ function seedRichLocal(): void {
   store.set("tb-wrong", JSON.stringify({
     "spot:0": { chapterNum: "spot", questionIdx: 0, picked: 1, at: at(today), srsStage: 1, srsDue: today },
   }));
-  store.set("tb-review-attempt-ledger", JSON.stringify({
+  store.set("tb-review-attempts", JSON.stringify({
     "spot:0:1": { chapter: "spot", questionIdx: 0, correct: true, mastered: false, stage: 1, at: at(today) },
   }));
   store.set("tb-replay-history", JSON.stringify([
@@ -69,6 +69,14 @@ describe("R12.24 guest-mode stats degradation", () => {
     expect(screen.getByText(zh.trendTitle)).toBeInTheDocument();
     expect(screen.getByText(zh.quizTrendTitle)).toBeInTheDocument();
     expect(screen.getByText(zh.reviewTrendTitle)).toBeInTheDocument();
+    // R16.249：这颗卡的账以前种在 `tb-review-attempt-ledger` 下，而读取端要的是
+    // `tb-review-attempts`——夹具写了、读取端不收，于是「游客模式全部从 localStorage 渲染」
+    // 这个用例其实一路演的是空账，连「当前错题缺少复习日期」那句都印了出来。两头必须握手。
+    const reviewsCard = screen.getByText(zh.reviewTrendReviews).parentElement;
+    const accuracyCard = screen.getByText(zh.reviewTrendAccuracy).parentElement;
+    expect(reviewsCard?.querySelector("dd")?.textContent).toBe("1");
+    expect(accuracyCard?.querySelector("dd")?.textContent).toBe("100%");
+    expect(screen.queryByText(zh.reviewNoDates)).not.toBeInTheDocument();
     expect(screen.getByText(zh.replayTrendTitle)).toBeInTheDocument();
     // 周摘要 + 周报
     expect(screen.getByText(zh.weekSummaryTitle)).toBeInTheDocument();
