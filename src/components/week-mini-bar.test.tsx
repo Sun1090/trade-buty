@@ -49,7 +49,7 @@ describe("WeekMiniBar", () => {
     expect(bars[0].getAttribute("data-active")).toBe("false");
     expect(container.querySelector("[role='img']")).toHaveAttribute(
       "aria-label",
-      "近 7 天学习记录（从 6 天前到今天）：无、无、无、无、无、无、有",
+      "近 7 天里哪几天记过一次学习活动（标过已读、答过题或打完一轮回放；从 6 天前到今天）：无、无、无、无、无、无、有",
     );
   });
 
@@ -59,12 +59,12 @@ describe("WeekMiniBar", () => {
     const { container } = render(<WeekMiniBar locale="zh" />);
     expect(container.querySelector("[role='img']")).toHaveAttribute(
       "aria-label",
-      "近 7 天学习记录（从 6 天前到今天）：无、无、无、无、无、无、无",
+      "近 7 天里哪几天记过一次学习活动（标过已读、答过题或打完一轮回放；从 6 天前到今天）：无、无、无、无、无、无、无",
     );
     const { container: en } = render(<WeekMiniBar locale="en" />);
     expect(en.querySelector("[role='img']")).toHaveAttribute(
       "aria-label",
-      "Study activity over the last 7 days (oldest to newest): no, no, no, no, no, no, no",
+      "Which of the last 7 days recorded a learning activity (a lesson marked read, a question answered, or a replay round finished; oldest to newest): no, no, no, no, no, no, no",
     );
   });
 

@@ -15,6 +15,15 @@ import { localDateStr } from "./date-utils";
 /** 滚动窗口长度（含今天）：摘要、周目标、柱状图共用这一个数 */
 export const WEEK_WINDOW_DAYS = 7;
 
+/**
+ * 「N 天活跃」那一个 N 的尺子：当日去重后 ≥60 秒才算一天。
+ * 台账的阅读计时是 5 秒一个 tick（`study-time.ts` 的 R4.9 约定），不设这道槛的话
+ * 划过一页就算一天。它是同一屏那根迷你条的反面——那根看的是「有没有记过一次学习
+ * 活动」（`activity-calendar`），一秒钟都不到也算有。两个数因此可以互相超出，
+ * 两句文案必须各自说出自己的尺子（`i18n-stats.ts` 的 `weekSummaryTpl` / `WeekMiniBar`）。
+ */
+export const ACTIVE_DAY_MIN_SECONDS = 60;
+
 export const WEEKLY_GOAL_TIERS = [45, 90, 150] as const;
 export const DEFAULT_WEEKLY_GOAL_MIN = 90;
 
@@ -119,7 +128,7 @@ export function buildWeeklySummary(input: WeeklySummaryInput): WeeklySummary {
     weekStart: startStr,
     weekEnd: endStr,
     totalMinutes,
-    activeDays: daily.filter((s) => s >= 60).length, // ≥1 分钟算活跃（台账 tick 5s，避免 5 秒误触凑活跃）
+    activeDays: daily.filter((s) => s >= ACTIVE_DAY_MIN_SECONDS).length,
     completions: countInRange(Object.values(input.completions ?? {}), startStr, endStr),
     quizAttempts: countInRange(Object.values(input.quizAttempts ?? {}), startStr, endStr),
     reviews: countInRange(Object.values(input.reviewAttempts ?? {}), startStr, endStr),
