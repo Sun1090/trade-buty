@@ -21,6 +21,10 @@ import {
   pickRandomQuestions,
 } from "@/lib/ai/prompt";
 import { hasTruncatedMarker, stripTruncatedMarker } from "@/lib/ai/streaming";
+import {
+  MAX_CHAT_CONTENT_CHARS,
+  MAX_CHAT_TURNS,
+} from "@/lib/ai/chat-input";
 import { useAuth } from "@/components/auth-provider";
 import { reportError } from "@/lib/error-report";
 import { copyText } from "@/lib/clipboard";
@@ -105,6 +109,8 @@ interface AiDict {
   error: string;
   errorServer: string;
   errorTimeout: string;
+  threadTooLongTpl: string;
+  answerTooLongTpl: string;
   retry: string;
   clear: string;
   clearFailed: string;
@@ -337,6 +343,24 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     streamControllerRef.current = controller;
 
     try {
+      // 服务端对每次请求有两条硬上限：轮数（`MAX_CHAT_TURNS`）与单条字数
+      // （`MAX_CHAT_CONTENT_CHARS`），越过后路由只会回一句英文标识串 `Invalid payload`。
+      // 那句话不是给人看的文案，而这两件事在发送前就能算出来——所以在这儿说清楚，
+      // 别把开发串印到界面上，也别让人对着一句「出错了」反复点重试。
+      if (history.length > MAX_CHAT_TURNS) {
+        throw new Error(
+          dict.threadTooLongTpl
+            .replace("{n}", String(MAX_CHAT_TURNS))
+            .replace("{clear}", dict.clear),
+        );
+      }
+      if (history.some((m) => m.content.length > MAX_CHAT_CONTENT_CHARS)) {
+        throw new Error(
+          dict.answerTooLongTpl
+            .replace("{n}", String(MAX_CHAT_CONTENT_CHARS))
+            .replace("{clear}", dict.clear),
+        );
+      }
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -373,9 +397,12 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
         );
       }
       if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
+        await res.json().catch(() => ({}));
         if (res.status >= 500) throw new Error(dict.errorServer);
-        throw new Error(errBody.error || dict.error);
+        // 路由回的那几个 `error` 值是给开发者看的标识串（`Invalid payload`、
+        // `Payload too large`……），不是文案；上面已经能算出来的成因都算过了，
+        // 剩下的这条就只说「没走通」，不把英文印到中文界面上。
+        throw new Error(dict.error);
       }
 
       const sources = res.headers.get("X-Sources");

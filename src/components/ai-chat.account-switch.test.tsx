@@ -59,6 +59,8 @@ const dict = {
   quotaRemaining: "游客每小时限 {l} 次，本小时剩余 {n} 次",
   quotaLoginHint: "本小时次数已用完，登录可获更多额度",
   contextBannerTpl: getDict("zh").ai.contextBannerTpl,
+  threadTooLongTpl: getDict("zh").ai.threadTooLongTpl,
+  answerTooLongTpl: getDict("zh").ai.answerTooLongTpl,
   followups: ["展开讲讲「{t}」", "「{t}」怎么用？", "「{t}」的误区？"],
   helpful: "有用",
   unhelpful: "无用",

@@ -30,10 +30,32 @@ export interface ChatRequestBody {
 export const MAX_CHAT_TURNS = 40;
 /** 单轮正文上限：正常提问远小于此，超过视为滥用 */
 export const MAX_CHAT_CONTENT_CHARS = 8_000;
-/** 续写原文上限（约等于两轮正文） */
+/**
+ * 续写原文上限（约等于两轮正文）。
+ *
+ * 注意这个许可**对本站自己的客户端是够不到的**：`continueFrom` 传的就是
+ * `messages` 里最后那条 assistant 消息的原文（`ai-chat.tsx` 的 `continueGeneration`），
+ * 而上面那个单轮上限会先把同一段内容判死——超过 8000 字的续写请求在
+ * `content.length > MAX_CHAT_CONTENT_CHARS` 那一行就被拒了，永远走不到这里。
+ * 真正用得上 16000 的只有直接打这个端点、`messages` 里不带那段长回答的请求。
+ */
 export const MAX_CONTINUE_FROM_CHARS = 16_000;
 /** 章节 slug 形状（与知识库目录名一致） */
 const CHAPTER_SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+/**
+ * 请求体没过闸时路由回给客户端的标识串。
+ *
+ * 两头都从这里取：`chat/route.ts` 用它写响应体，前端用它查本地化文案
+ * （`ai-chat.tsx`）。之前前端是 `throw new Error(errBody.error || dict.error)`，
+ * 等于把这四个英文开发串原样印到中文界面上。
+ */
+export const BODY_ERRORS = {
+  tooLarge: "Payload too large",
+  invalidJson: "Invalid JSON",
+  invalidPayload: "Invalid payload",
+  noUserMessage: "No user message",
+} as const;
 
 /** 校验并规范化 AI 问答请求体；非法返回 null（调用方回 400）。 */
 export function parseChatBody(value: unknown): ChatRequestBody | null {
