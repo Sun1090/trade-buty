@@ -226,14 +226,6 @@ export function StatsClient({
     () => null,
   );
   const reminderSettings = useMemo(() => parseReminderSettings(reminderSettingsRaw), [reminderSettingsRaw]);
-  const reminderLastShown = useSyncExternalStore(
-    (cb) => {
-      window.addEventListener("tb-reminder", cb);
-      return () => window.removeEventListener("tb-reminder", cb);
-    },
-    () => getLastShownKey(),
-    () => null,
-  );
   // R12.8：数据来源标识（本机 vs 本机+云端、上次云端合并时间）
   const user = useAuth();
   const lastCloudSync = useSyncExternalStore(
@@ -279,6 +271,28 @@ export function StatsClient({
     : Object.values(wrongEntries).filter((entry) =>
         isSrsDue(effectiveSrs(entry).due, localDateStr()),
       ).length;
+  /**
+   * R12.17：本周期是否已经提醒过——只在挂载时读一次快照。
+   *
+   * 横幅一出现就把周期键写进 localStorage（下面的 effect），而 `markReminderShown` 会派发
+   * `tb-reminder`；若这里实时订阅那个键，那次写入会立刻把刚渲染出来的横幅收回去，用户根本
+   * 看不到提醒。冻结在挂载点，「本周期不再打扰」和「这一次看得见」才同时成立。
+   */
+  const [reminderShownAtVisit] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : getLastShownKey(),
+  );
+  const [reminderDismissed, setReminderDismissed] = useState(false);
+  const reminderPeriod = reminderPeriodKey(reminderSettings);
+  const reminderVisible =
+    !reminderDismissed &&
+    shouldShowReminder({
+      settings: reminderSettings,
+      dueCount: dueReviewCount,
+      lastShownKey: reminderShownAtVisit,
+    });
+  useEffect(() => {
+    if (reminderVisible && reminderPeriod) markReminderShown(reminderPeriod);
+  }, [reminderVisible, reminderPeriod]);
   const nextUnread = progress
     ? (() => {
         for (const chapter of chapters) {
@@ -482,8 +496,8 @@ export function StatsClient({
         }}
       />
 
-      {/* R12.15–12.17：复习提醒横幅（本周期去重，可关闭） */}
-      {shouldShowReminder({ settings: reminderSettings, dueCount: dueReviewCount, lastShownKey: reminderLastShown }) && (
+      {/* R12.15–12.17：复习提醒横幅（出现即占用本周期，「知道了」只收起眼前这一条） */}
+      {reminderVisible && (
         <section aria-label={dict.reminderTitle} className="rounded-2xl border border-[var(--accent)]/40 bg-[var(--accent-dim)]/60 p-4 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-sm font-semibold">⏰ {dict.reminderTitle}</p>
@@ -495,13 +509,10 @@ export function StatsClient({
             </a>
             <button
               type="button"
-              onClick={() => {
-                const key = reminderPeriodKey(reminderSettings);
-                if (key) markReminderShown(key);
-              }}
+              onClick={() => setReminderDismissed(true)}
               className="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs text-muted hover:border-accent/50 transition"
             >
-              {dict.reminderLater}
+              {dict.reminderDismiss}
             </button>
           </div>
         </section>

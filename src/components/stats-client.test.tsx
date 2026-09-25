@@ -118,7 +118,7 @@ const dict: StatsDict = {
   reminderTitle: "Review reminder",
   reminderBodyTpl: "{n} wrong questions are due",
   reminderCta: "Review now",
-  reminderLater: "Later",
+  reminderDismiss: "Got it",
   reminderSettingsTitle: "Review reminder settings",
   reminderCadenceLabel: "Frequency",
   reminderCadenceOff: "Off",
@@ -671,34 +671,77 @@ describe("StatsClient review reminder banner + settings (R12.15–R12.17)", () =
       JSON.stringify({ "spot:0": { chapterNum: "spot", questionIdx: 0, picked: 1, at: Date.now() - 86_400_000, srsStage: 0, srsDue: "2026-01-01" } }),
     );
 
-  it("shows the banner when wrong questions are due and dedups once dismissed", async () => {
-    overdueWrong();
-    // 显式关闭免打扰窗（start==end），时钟无视当前系统时间（R12.17 纯逻辑层已做窗口用例）
+  /** start==end 在 `inDndWindow` 里视为「窗口长度 0 = 不启用」，用例因此无视真实时钟 */
+  const dailyNoDnd = () =>
     localStorage.setItem("tb-review-reminder-settings", JSON.stringify({ cadence: "daily", dndStartHour: 26, dndEndHour: 26 }));
+
+  /**
+   * R16.216：旧写法只有点「稍后」才写周期键，于是「每天一次」的档位实际是「每次打开都提醒」——
+   * 现在展示这一步就占用本周期，而这次写入不能把刚渲染出来的横幅收回去。
+   */
+  it("横幅一出现就占用当天，并且不被那次写入收回去", async () => {
+    overdueWrong();
+    dailyNoDnd();
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
-    expect(await screen.findByLabelText("Review reminder")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Later" }));
-    expect(screen.queryByLabelText("Review reminder")).not.toBeInTheDocument();
-    expect(localStorage.getItem("tb-review-reminder-shown")).toBeTruthy();
+    const banner = await screen.findByLabelText("Review reminder");
+    await waitFor(() => expect(localStorage.getItem("tb-review-reminder-shown")).toBe(todayDateStr()));
+    expect(banner, "写入周期键派发的 tb-reminder 把刚出现的横幅立刻收回来了").toBeInTheDocument();
   });
 
-  it("never shows the banner with cadence off, no due reviews, or inside the DND window", async () => {
+  it("同一天第二次打开不再打扰，隔一天才重新出现（这才叫「每天一次」）", async () => {
     overdueWrong();
-    localStorage.setItem("tb-review-reminder-settings", JSON.stringify({ cadence: "off", dndStartHour: 22, dndEndHour: 8 }));
+    dailyNoDnd();
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
-    await screen.findByRole("button", { name: "Last 7 days" });
-    expect(screen.queryByLabelText("Review reminder")).not.toBeInTheDocument();
+    await screen.findByLabelText("Review reminder");
     cleanup();
 
-    // 无到期错题（到期日远在未来）
-    localStorage.setItem("tb-review-reminder-settings", JSON.stringify({ cadence: "daily", dndStartHour: 26, dndEndHour: 26 }));
-    localStorage.setItem(
-      "tb-wrong",
-      JSON.stringify({ "spot:0": { chapterNum: "spot", questionIdx: 0, picked: 1, at: Date.now(), srsStage: 0, srsDue: "2099-01-01" } }),
-    );
     render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
     await screen.findByRole("button", { name: "Last 7 days" });
+    expect(screen.queryByLabelText("Review reminder"), "本周期已经提醒过，第二次打开又弹了一条").not.toBeInTheDocument();
+    cleanup();
+
+    // 昨天提醒过 → 今天这一周期重新开始
+    localStorage.setItem("tb-review-reminder-shown", localDateStr(new Date(Date.now() - 86_400_000)));
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    expect(await screen.findByLabelText("Review reminder")).toBeInTheDocument();
+  });
+
+  it("「知道了」收起眼前这一条，周期键仍是展示时写入的那一次", async () => {
+    overdueWrong();
+    dailyNoDnd();
+    render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+    await screen.findByLabelText("Review reminder");
+    await waitFor(() => expect(localStorage.getItem("tb-review-reminder-shown")).toBe(todayDateStr()));
+    fireEvent.click(screen.getByRole("button", { name: "Got it" }));
     expect(screen.queryByLabelText("Review reminder")).not.toBeInTheDocument();
+    expect(localStorage.getItem("tb-review-reminder-shown")).toBe(todayDateStr());
+  });
+
+  /**
+   * 没弹出来的提醒不许占用周期：否则一次免打扰时段内的空渲染就把当天划掉了，
+   * 用户走出免打扰时段后什么也收不到。
+   */
+  it("横幅没有出现时不写周期键（关闭、无到期、免打扰时段内）", async () => {
+    const h = new Date().getHours();
+    const cases: [string, Record<string, unknown>, () => void][] = [
+      ["cadence off", { cadence: "off", dndStartHour: 22, dndEndHour: 8 }, overdueWrong],
+      ["免打扰时段内", { cadence: "daily", dndStartHour: h, dndEndHour: (h + 1) % 24 }, overdueWrong],
+      ["无到期错题", { cadence: "daily", dndStartHour: 26, dndEndHour: 26 }, () =>
+        localStorage.setItem(
+          "tb-wrong",
+          JSON.stringify({ "spot:0": { chapterNum: "spot", questionIdx: 0, picked: 1, at: Date.now(), srsStage: 0, srsDue: "2099-01-01" } }),
+        )],
+    ];
+    for (const [name, settings, seed] of cases) {
+      store.delete("tb-review-reminder-shown");
+      seed();
+      localStorage.setItem("tb-review-reminder-settings", JSON.stringify(settings));
+      render(<StatsClient chapters={chapters} dict={dict} locale="zh" />);
+      await screen.findByRole("button", { name: "Last 7 days" });
+      expect(screen.queryByLabelText("Review reminder"), `${name}：横幅不该出现`).not.toBeInTheDocument();
+      expect(localStorage.getItem("tb-review-reminder-shown"), `${name}：没弹提醒却把本周期划掉了`).toBeNull();
+      cleanup();
+    }
   });
 
   it("persists cadence and DND edits from the settings panel", async () => {

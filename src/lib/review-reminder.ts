@@ -6,7 +6,9 @@
  *   只在用户主动打开页面时展示；
  * - R12.15 频率档位：off / daily / weekly（本地持久化，登录用户随设置同步策略留待后续，当前仅本机）；
  * - R12.16 免打扰窗口：本地小时段 [start,end)，跨午夜（如 22→8）同样成立；
- * - R12.17 去重：每个触发周期（当日 or 当周）最多展示一次，关闭/点击即视为已读；
+ * - R12.17 去重：每个触发周期（当日 or 当周）最多展示一次——横幅一出现就调用
+ *   `markReminderShown(reminderPeriodKey(...))` 把本周期占用掉（见 `stats-client.tsx` 的展示 effect），
+ *   访客什么都不点也不会有第二次；「知道了」只收起眼前这一条横幅；
  *   时钟全部可注入（now 参数），测试不依赖真实时间。
  */
 
@@ -102,6 +104,11 @@ export function getLastShownKey(storage: Storage = globalThis.localStorage): str
   }
 }
 
+/**
+ * 占用本周期。派发 `tb-reminder` 是为了让**其他**订阅者重读——
+ * 展示方自己的可见性不能绑在这个键的实时值上，否则这一写就把刚出现的横幅收了回去
+ * （`stats-client.tsx` 因此读的是挂载时的快照）。
+ */
 export function markReminderShown(key: string): void {
   try {
     localStorage.setItem(SHOWN_KEY, String(key));
