@@ -14,7 +14,13 @@
  * `package.json` 的实际顺序、§7 点名的响应头与 `next.config.ts`、§8 的作业数与工作流名单
  * （两个数都从 `ci.yml` 和 `.github/workflows/` 现读，而且要求数字写在作业清单旁边——整节里
  * 搜一个说法会被文档自己那句带引号的旧措辞满足）。
+ *
+ * 一条 CI 教出来的规矩：`npm run test:coverage` 排在 `npm run build` 之前，所以判据在干净检出里
+ * 看不见任何 prebuild 产物——`public/search-index.json` 与 `public/knowledge-assets/` 都是 gitignore
+ * 掉的生成物，本机跑过构建就一直在，本地全绿而 CI 直接红两条。`public/` 下的表面因此按
+ * 「在检出里」或「有脚本往那个路径写」两条证据任一算数，见 `publicSurface()`。
  */
+import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -41,6 +47,32 @@ function sourceFiles(dir = "src") {
 }
 const FILES = sourceFiles();
 const FILE_SET = new Set(FILES);
+
+/** scripts/ 下的可执行脚本源码，用来证明一个 `public/…` 产物有生产者 */
+const SCRIPT_TEXT = readdirSync(path.join(root, "scripts"))
+  .filter((n) => /\.(mjs|cjs|js|sh)$/.test(n))
+  .map((n) => ({ name: n, text: read(`scripts/${n}`) }));
+
+/** 这条路径有没有被版本库管着——读的是索引不是历史，浅检出里同样成立 */
+function tracked(rel) {
+  return execFileSync("git", ["ls-files", "--", rel], {
+    cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
+  }).trim() !== "";
+}
+
+/**
+ * `public/` 下被点名的表面分两种，判据必须两种都认：签进版本库的（`sw.js`、`offline.html`）在
+ * 任何检出里都在；构建产物（`search-index.json`、`knowledge-assets/`）在干净检出里**根本不存在**，
+ * 只有跑过 prebuild 的工作区里有。CI 的 `npm run test:coverage` 排在 `npm run build` 之前，所以
+ * 只凭「文件在不在」写断言会在 CI 上红，而且红得像判据坏了——本轮就是这么第一次撞上这条的。
+ * 所以先用版本库管没管这条路径来分流：管着的看检出，没管的必须有脚本往那个路径写（本地产物骗不过去）。
+ */
+function publicSurface(rel) {
+  const p = `public/${rel}`;
+  if (tracked(p)) return { ok: existsSync(path.join(root, p)), mode: "tracked", producers: [] };
+  const producers = SCRIPT_TEXT.filter((s) => s.text.includes(`"${p}`)).map((s) => s.name);
+  return { ok: producers.length > 0, mode: "generated", producers };
+}
 
 function specToFile(spec, fromFile) {
   if (!spec.startsWith(".") && !spec.startsWith("@/")) return null;
@@ -77,11 +109,23 @@ function importersOf(target) {
 }
 
 describe("文档点名的路径与链接都还在", () => {
-  it("反引号里的仓库路径逐个存在", () => {
+  it("反引号里的仓库路径逐个存在（构建产物要有产出它的那个脚本）", () => {
     const paths = [...new Set([...doc.matchAll(/`((?:src|scripts|public|supabase|docs|\.github)\/[^`\s]*)`/g)].map((m) => m[1]))]
       .filter((p) => !/[*.]{2}|\{|\.\.\./.test(p));
     expect(paths.length, "架构文档一个路径都没点到，扫描八成没跑起来").toBeGreaterThanOrEqual(25);
-    for (const p of paths) expect(existsSync(path.join(root, p)), `文档指着 ${p}，仓库里没有这个文件`).toBe(true);
+    const publicNamed = paths.filter((p) => p.startsWith("public/"));
+    expect(publicNamed.length, "文档不再点名任何 public/ 表面，产物那条支路就成了死码").toBeGreaterThanOrEqual(3);
+    for (const p of paths) {
+      if (p.startsWith("public/")) {
+        const s = publicSurface(p.slice("public/".length));
+        expect(s.ok, `文档指着 ${p}：${s.mode === "tracked" ? "版本库管着它，检出里却没有" : "干净检出里没有，也没有任何 scripts/ 脚本往那个路径写"}`).toBe(true);
+        continue;
+      }
+      expect(existsSync(path.join(root, p)), `文档指着 ${p}，仓库里没有这个文件`).toBe(true);
+    }
+    // 分流自己也要对着：签进版本库的那两条不许走「产物」支路，产物也不许被当成签入文件放过
+    expect(tracked("public/sw.js"), "public/sw.js 现在不归版本库管了，这条分流要重看").toBe(true);
+    expect(tracked("public/search-index.json"), "search-index.json 被签进版本库了，「产物要有生产者」那一条要重看").toBe(false);
   });
 
   it("相对链接（含 §10 那一份）从 docs/ 出发解析得到", () => {
@@ -175,7 +219,7 @@ describe("文档描述的运行形状就是仓库里那份", () => {
       // "/knowledge-assets/:path*" → public/knowledge-assets；"/sw.js" → public/sw.js
       const rel = srcPath.replace(/^\/+/, "").replace(/\/?:path.*$/, "").replace(/\*.*$/, "").replace(/\/$/, "");
       expect(rel, `缓存策略那条 source「${srcPath}」解析不出文件路径，判据读不动`).toBeTruthy();
-      expect(existsSync(path.join(root, "public", rel)), `§7 的缓存策略指着 public/${rel}，仓库里没有`).toBe(true);
+      expect(publicSurface(rel).ok, `§7 的缓存策略指着 public/${rel}：检出里没有，也没有脚本产出它`).toBe(true);
       expect(s7, `§7 没有点到 ${rel}`).toContain(path.basename(rel));
     }
     expect(revalidated.length, "每次重验证的表面少到不正常").toBeGreaterThanOrEqual(3);
