@@ -122,7 +122,10 @@ docs/knowledge/
 
 - `src/lib/supabase/client.ts`：浏览器 anon client，懒初始化并遵守 RLS。
 - `src/lib/supabase/server.ts`：Server Component / Route Handler 的 cookie client。
-- `src/lib/supabase/admin.ts`：service role client，只允许被 `src/app/api/**` 导入。
+- `src/lib/supabase/admin.ts`：service role client。**它的边界是"只被服务端模块拿到"，不是"只在某个目录里"**——
+  今天的直接导入方是 `src/app/api/ai/` 下的路由与 `src/lib/ai/rag.ts`（RAG 要用它读 pgvector）。这条边界可查：
+  `scripts/architecture-claims.test.mjs` 顺着导入闭包走一遍，任何一个能拿到 admin client 的模块带
+  `"use client"` 就当场红。
 
 ### 5.2 本地优先同步
 
@@ -131,7 +134,11 @@ docs/knowledge/
 
 - 进度、错题和回放记录取并集。
 - 测验成绩取最高分。
-- 冲突元数据记录在 `tb-cloud-sync-meta`，供 UI 说明同步状态。
+- 冲突元数据记录在 `tb-sync-conflicts`（`src/lib/sync-conflicts.ts`；明细最多留
+  `MAX_STORED_CONFLICT_ITEMS = 20` 条，整表存进 localStorage 不划算），「最近一次云端合并成功」的时刻
+  另记在 `tb-last-cloud-sync`（`src/lib/cloud-sync-meta.ts`），供 UI 说明同步状态。本节原先把这两件事
+  合成一句「冲突元数据记录在 tb-cloud-sync-meta」——那个键在代码里根本不存在，是把模块名
+  `cloud-sync-meta.ts` 抄成了键名（同一族错误 R16.104 已经从一份测试夹具里修掉一次）。
 - 云端不可用时仍保留本机行为；游客模式不加载账号 chunk。
 
 持久写队列本身在一个独立的异步 chunk 里（R9.6 体积守门），而这个 chunk 偶尔会拿不到：
@@ -210,7 +217,9 @@ stack、URL、用户身份和自由文本不会离开浏览器，端点也不把
 - 内容审计：frontmatter、风险提示、slug、链接、sitemap、搜索索引、结构化数据、术语和
   翻译 parity。
 
-GitHub Actions 包含两个并行作业：
+`.github/workflows/` 下有两个工作流：`ci.yml`（下面这两个并行作业）与 `link-patrol.yml`（`patrol` 作业，
+知识库外链月度巡检，`schedule` 加手动触发，不阻断合并）。整句写成「GitHub Actions 包含两个并行作业」
+会把第二个工作流漏掉。`ci.yml` 的两个作业是：
 
 - `ci`：依赖/漏洞审计、secrets、lint、测试、typecheck、build、移动端、内容门禁、E2E 和
   Lighthouse。
