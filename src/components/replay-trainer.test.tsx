@@ -724,3 +724,51 @@ describe("ReplayTrainer 历史不够一轮时", () => {
     expect(block, "已经在自定义了，不必再叫用户切换模式").not.toContain(zh.modeCustom);
   });
 });
+
+/**
+ * R16.202：`replay-trainer.tsx:208` 的 `...(elapsed > 0 ? { durationSec: elapsed } : {})`
+ * 让**新**记录也可能不带耗时——`elapsed` 是 `Math.round(毫秒差 / 1000)`，一轮量不到
+ * 半秒就是 0，而 0 走的是「不写这个字段」那一支。同一支还跳过 `addStudyTime`。
+ * 以前 `/stats` 那句「旧回放记录缺少耗时数据；完成一轮新的回放后开始记录时长」把
+ * 缺时长的原因全推给老记录，并向用户承诺「做完一轮就有时长」——这两件事代码都没保证。
+ * 下面一对用例就是这条承诺的反例与对照：时钟每调用一次走 1 秒时记录带时长，
+ * 时钟冻住（一轮量到 0 秒）时同一轮**存了**却没有时长。
+ */
+describe("ReplayTrainer 一轮量不到 1 秒时不记时长（R16.202）", () => {
+  async function playOneRound() {
+    // 32 根 − 进阶的 30 根上下文 = 这一轮正好两根可猜，两轮答完即触发存档
+    mocks.fetchRandomHistoryWindow.mockImplementation(async () => makeKlines(32));
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "竞猜" }));
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 2\/2/)).toBeInTheDocument());
+    await waitFor(() => expect(mocks.saveReplayRecord).toHaveBeenCalledTimes(1));
+  }
+
+  /** 时钟每被读一次走 1 秒：本轮量得到时长 */
+  it("量到秒数的轮次把 durationSec 写进记录", async () => {
+    let tick = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => 1_700_000_000_000 + tick++ * 1000);
+    await playOneRound();
+
+    const [rec] = mocks.saveReplayRecord.mock.calls[0] as [Record<string, unknown>];
+    expect(rec.total).toBe(2);
+    expect(typeof rec.durationSec).toBe("number");
+    expect(rec.durationSec).toBeGreaterThan(0);
+    expect(mocks.addStudyTime).toHaveBeenCalledWith("replay", rec.durationSec);
+  });
+
+  /** 同一轮、同一个断言点，只是时间没往前走：记录照样落库，但不带 durationSec */
+  it("量不到 1 秒的新轮次落库时不带 durationSec，也不计学习时长", async () => {
+    vi.spyOn(Date, "now").mockImplementation(() => 1_700_000_000_000);
+    await playOneRound();
+
+    const [rec] = mocks.saveReplayRecord.mock.calls[0] as [Record<string, unknown>];
+    expect(rec.total, "这一轮确实做完了、也存下来了").toBe(2);
+    expect(rec).not.toHaveProperty("durationSec");
+    expect(mocks.addStudyTime).not.toHaveBeenCalled();
+  });
+});
