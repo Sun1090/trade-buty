@@ -357,3 +357,55 @@ describe("§5 离线兜底的前提与边界", () => {
     ).toContain(tidy(quote));
   });
 });
+
+/**
+ * R16.266：§5 中间那句「应用内点链接……由 `src/app/error.tsx` 承接，不是离线引导页」被实测推翻。
+ * 2026-09-26 四个探针（`.gate-logs/probe-r34-*.mjs`，`next start -p 3162` + chromium）的读数：
+ * ① 联网点站内链接新增请求 0 条（payload 已被预取，点击不上网）；② 只掐 `?_rsc=` → 渲染真页面，
+ * 但同一次里多出一条 `document` 请求，即 RSC 取数失败后 Next **回退成整页导航**；③ 掐 RSC + 断网
+ * → 那条整页导航正是 worker 唯一会接的 `mode === "navigate"`，屏幕上是我们自己的离线壳，
+ * `src/app/error.tsx` 一次都没出现，也没有 `/api/error-reports` 上报；④ 只断网、payload 已预取
+ * → 照常渲染真页面。所以断网点应用内链接的尽头**也是离线壳**，原句把兜底层说反了。
+ */
+describe("§5 应用内点击断网时谁接（实测：回退成整页导航 → 离线壳）", () => {
+  const s5 = section(cache, "## 5.", null);
+  const sw = read("public/sw.js");
+
+  /** 递归列出 `src/app` 下所有 error boundary 文件 */
+  const boundaries = (dir = "src/app", acc = []) => {
+    for (const entry of readdirSync(path.join(root, dir), { withFileTypes: true })) {
+      const rel = path.join(dir, entry.name);
+      if (entry.isDirectory()) boundaries(rel, acc);
+      else if (/^(global-)?error\.tsx$/.test(entry.name)) acc.push(rel);
+    }
+    return acc;
+  };
+
+  it("全仓 `src/app` 下 error boundary 只有一个，且它渲染的是探针找的那句文案", () => {
+    const found = boundaries();
+    expect(found, `error boundary 不再只有一个（读到 ${JSON.stringify(found)}），§5 的归因要重看`).toEqual([
+      path.join("src/app", "error.tsx"),
+    ]);
+    expect(read("src/app/error.tsx"), "边界文案换了，探针找的词与 §5 的说法都要重看").toContain("Something went wrong");
+  });
+
+  it("文档写明回退成整页导航、尽头是离线壳，且不再把这条路径判给 error.tsx", () => {
+    const t = flat(s5);
+    expect(t, "§5 不再说 RSC 取数失败会回退成整页导航（实测多出一条 document 请求）").toContain("整页导航");
+    expect(t, "§5 不再把断网应用内点击的尽头说成离线壳").toMatch(/尽头[^。]*离线壳|也是离线壳/);
+    expect(t, "§5 少了预取这一档（实测点击根本不上网）").toContain("预取");
+    expect(t, "§5 又把这条路径判回 `src/app/error.tsx` 承接（实测三个断网场景里它一次没出现）").not.toContain(
+      "src/app/error.tsx` 承接",
+    );
+  });
+
+  it("引用的 `public/sw.js` 行号里确实是那句只放导航过的守卫", () => {
+    const cited = /`public\/sw\.js:(\d+)(?:-(\d+))?`/.exec(s5);
+    expect(cited, "§5 不再引用 public/sw.js 的守卫行号，判据要跟着改").toBeTruthy();
+    const [, from, to] = cited;
+    const lines = sw.split("\n").slice(Number(from) - 1, to ? Number(to) : Number(from));
+    expect(lines.join("\n"), `public/sw.js:${from}${to ? `-${to}` : ""} 已经不是那句守卫了`).toMatch(
+      /request\.mode !== "navigate"\) return;/,
+    );
+  });
+});
