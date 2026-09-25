@@ -561,7 +561,7 @@ describe("AiChat 错误态分级（R1.11）", () => {
    * R16.204：路由在 4xx 上回的是**开发者标识串**（`Invalid payload`、`Payload too large`，
    * 见 `src/lib/ai/chat-input.ts` 的 `BODY_ERRORS`），不是给人看的文案。以前这里是
    * `throw new Error(errBody.error || dict.error)`，于是中文界面上会原样印出
-   * `Invalid payload` 这样一个英文词组。真能发生的两种成因（轮数超上限、单条回答超上限）
+   * `Invalid payload` 这样一个英文词组。真能发生的两种成因（消息条数超上限、单条回答超字数）
    * 在发送前就能算出来，已由本文件「带不动的长对话在发送前就说清楚」那一组各自说清
    * （上限本身的行为在 `src/lib/ai/chat-brick.test.ts`）；算不出来的这一条只说「出错了」，
    * 不再替开发者说话。
@@ -2067,11 +2067,11 @@ describe("AiChat 带不动的长对话在发送前就说清楚（R16.203）", ()
   });
 
   /**
-   * 另一条上限是轮数：`MAX_CHAT_TURNS` 由 `collapseToTurns` 之前套在整包上，
-   * 41 条消息（未超单条字数）也一定被服务端判死。这里造 41 条正常的问答，
-   * 看屏幕上出现的是「轮数太多」那句，而不是又打一趟拿回 400。
+   * 另一条上限是消息条数：`MAX_CHAT_TURNS` 量的是 `messages.length`（一问一答算两条），
+   * 且在服务端 `collapseToTurns` 之前套在整包上，所以 41 条没超单条字数的消息也一定被判死。
+   * 这里造 41 条正常消息，看屏幕上出现的是「消息太多」那句，而不是又打一趟拿回 400。
    */
-  it("轮数超过上限：说的是这段对话太长，这一问同样发不出去", async () => {
+  it("消息条数超过上限：说的是这段对话太长，这一问同样发不出去", async () => {
     const turns = Array.from({ length: MAX_CHAT_TURNS + 1 }, (_, i) => ({
       role: i % 2 === 0 ? "user" : "assistant",
       content: `第 ${i} 条`,
@@ -2110,7 +2110,7 @@ describe("AiChat 带不动的长对话在发送前就说清楚（R16.203）", ()
     expect(screen.getByRole("button", { name: dict.clear })).toBeInTheDocument();
     expect(
       fetchMock.mock.calls.filter(([url]) => url === "/api/ai/chat"),
-      "轮数已经超限，这一趟服务端必拒",
+      "消息条数已经超限，这一趟服务端必拒",
     ).toHaveLength(0);
   });
 });

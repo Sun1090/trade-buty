@@ -343,8 +343,9 @@ export function AiChat({ locale, dict }: { locale: string; dict: AiDict }) {
     streamControllerRef.current = controller;
 
     try {
-      // 服务端对每次请求有两条硬上限：轮数（`MAX_CHAT_TURNS`）与单条字数
-      // （`MAX_CHAT_CONTENT_CHARS`），越过后路由只会回一句英文标识串 `Invalid payload`。
+      // 服务端对每次请求有两条硬上限：消息条数（`MAX_CHAT_TURNS`，量的就是下面这个
+      // `history.length`，一问一答算两条）与单条字数（`MAX_CHAT_CONTENT_CHARS`），
+      // 越过后路由只会回一句英文标识串 `Invalid payload`。
       // 那句话不是给人看的文案，而这两件事在发送前就能算出来——所以在这儿说清楚，
       // 别把开发串印到界面上，也别让人对着一句「出错了」反复点重试。
       if (history.length > MAX_CHAT_TURNS) {
