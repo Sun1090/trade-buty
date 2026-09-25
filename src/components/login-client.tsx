@@ -112,7 +112,10 @@ export function LoginClient({
       setStatus("sent");
       setCooldownSec(otpCooldownRemaining(lastSentRef.current));
     } catch (err) {
-      // fetch 抛错：TypeError / AbortError 等
+      // 这里的 throw 不一定来自 fetch：`getSupabaseBrowser()` 在没有 Supabase env 的
+      // 部署上（预览环境、CI E2E）同步抛一个裸 Error，也走这个 catch。
+      // 谁是不是网络成因由 classifyOtpError 判，不在这里猜——猜成网络就会让配置缺失的
+      // 部署去检查自己的连接，而重试永远不可能有用。
       lastSentRef.current = Date.now();
       const kind = classifyOtpError(err);
       setStatus(kind === "unknown" ? "error" : kind);
