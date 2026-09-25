@@ -255,3 +255,181 @@ describe("本文点名的路径与 roadmap 编号都还在", () => {
     for (const id of ids) expect(roadmap, `${id} 在 roadmap 里查无此项`).toContain(id);
   });
 });
+
+/**
+ * R16.251：§1 那张「指标定义」表逐条对上算它的那段代码。
+ *
+ * §2（修剪策略）在 R16.246 已经逐行钉回实现文件，§1 却一直是这套指标的“散文版”，没人对着查过。
+ * 本轮读下来四处不实：①活跃学习日写「任选来源（read/quiz/replay）合计 ≥ 60 秒」——代码取的是
+ * `Math.max(read, quiz + replay)`（阅读计时与做题可能同时在进行，R4.2 的去重约定），「读 40 秒 +
+ * 测验 30 秒」按文档算一天，按代码不算；②同一行还留着「90 天滚动」，而 R16.246 刚把 §2 那一行
+ * 改成「锚在台账里最新有记录的那一天」，两节自相矛盾；③streak 行把 `saveQuizProgress` 列成
+ * `touchStreak` 的落笔方，而它从头到尾没碰过 streak（真落笔处是 progress/wrongbook/progress-helpers
+ * 三个文件）；④「间断即 current 归零」漏了 `GRACE_MS` 那 36 小时宽限窗（R4.8），跨时区回来那天
+ * 其实还连着。判据按代码现读：数字、那份去重表达式、宽限小时数、落笔文件集合，全部回 `.ts` 取。
+ */
+const WK = "src/lib/weekly-summary.ts";
+const ST = "src/lib/study-time.ts";
+const SK = "src/lib/streak.ts";
+const I18N = "src/lib/i18n-stats.ts";
+const CLIENT = "src/components/stats-client.tsx";
+
+/** §1 那张表：{ name, def, source, visible }（表头与分隔行剔掉） */
+function metricRows() {
+  const body = doc.slice(doc.indexOf("## 1."), doc.indexOf("\n## 2."));
+  return body
+    .split("\n")
+    .filter((l) => /^\|/.test(l) && !/^\|\s*-{3,}/.test(l))
+    .map((l) => {
+      const c = l.split(/(?<!\\)\|/).map((s) => s.trim());
+      return { name: c[1], def: c[2], source: c[3], visible: c[4], raw: l };
+    })
+    .filter((r) => r.name && r.name !== "指标");
+}
+
+const METRICS = metricRows();
+const metricOf = (label) => {
+  const row = METRICS.find((r) => r.name.includes(label));
+  expect(row, `§1 那张表里再也没有「${label}」这一行了——措辞变了要同步这里`).toBeTruthy();
+  return row;
+};
+
+/** 顶层函数体：从 `function name(` 那行到下一个顶格 function（或文件末） */
+function fnBody(file, name) {
+  const lines = read(file).split("\n");
+  const start = lines.findIndex((l) => new RegExp(`^(?:export )?(?:async )?function ${name}\\(`).test(l));
+  if (start === -1) return null;
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) if (/^(?:export )?(?:async )?function /.test(lines[i])) { end = i; break; }
+  return lines.slice(start, end).join("\n");
+}
+
+/** 该函数是否（同文件内 ≤3 跳）落到 `touchStreak()` */
+function reachesStreak(file, name, seen = new Set()) {
+  if (seen.has(name)) return false;
+  seen.add(name);
+  const body = fnBody(file, name);
+  if (body === null) return false;
+  if (/touchStreak\s*\(/.test(body)) return true;
+  const locals = [...read(file).matchAll(/^(?:export )?(?:async )?function ([A-Za-z0-9_]+)\(/gm)].map((m) => m[1]);
+  return locals.some((n) => n !== name && new RegExp(`\\b${n}\\s*\\(`).test(body) && reachesStreak(file, n, seen));
+}
+
+describe("§1 指标定义逐条对上算它的代码", () => {
+  it("表还在，四列都填了", () => {
+    expect(METRICS.length, "§1 那张表少到不正常").toBeGreaterThanOrEqual(9);
+    for (const r of METRICS) {
+      for (const [col, v] of Object.entries({ def: r.def, source: r.source, visible: r.visible })) {
+        expect(v, `「${r.name}」那一行的 ${col} 列是空的`).toBeTruthy();
+      }
+    }
+  });
+
+  it("活跃学习日：门槛是那个常量，尺子是去重后的 max，不是三源相加", () => {
+    const row = metricOf("活跃学习日");
+    const cap = /export const ACTIVE_DAY_MIN_SECONDS = (\d+)/.exec(read(WK));
+    expect(cap, `${WK} 里读不到 ACTIVE_DAY_MIN_SECONDS`).toBeTruthy();
+    expect(row.def, `那一行写的门槛不是 ${cap[1]} 秒`).toContain(`ACTIVE_DAY_MIN_SECONDS = ${cap[1]}`);
+    // 代码里当日总秒数是怎么算出来的，就要求文档怎么写
+    const total = /total:\s*Math\.max\(([^)]+)\)/.exec(read(ST));
+    expect(total, `${ST} 里的当日 total 不再是 Math.max(...) 这把尺了，文档与判据都要同步`).toBeTruthy();
+    expect(row.def, `文档没有点名去重式 max(${total[1]})，读者会以为三源相加`).toContain(`max(${total[1]})`);
+    // 禁的是「定义那一句」（第一个句号之前）回到加法说法；后面交代错误来源的句子不受限
+    const defHead = row.def.split("。")[0];
+    expect(/任选来源|合计/.test(defHead), "那一行的定义本身又写成相加了：代码取的是 max，不是相加").toBe(false);
+    // 摘要卡那句 UI 文案与这一行必须同尺（{d} 天各学满 {min} 分钟）
+    const tpl = /weekSummaryTpl: `([^`]*)`/.exec(read(I18N));
+    expect(tpl, `${I18N} 里读不到周摘要模板`).toBeTruthy();
+    const fragment = (tpl[1].match(/\{d\}[^·]*\{min\}[^·]*/)?.[0] ?? "").trim();
+    expect(fragment, "UI 那句里没有「{d} … {min}」这把槛，文档引它做什么").toBeTruthy();
+    expect(row.visible, `那一行的「可见位置」没有照抄 UI 的尺子「${fragment}」`).toContain(fragment);
+    expect(
+      /replace\("\{min\}", String\(ACTIVE_DAY_MIN_SECONDS \/ 60\)\)/.test(read(CLIENT)),
+      `${CLIENT} 不再把 {min} 由 ACTIVE_DAY_MIN_SECONDS 代入，那句「各学满 N 分钟」已经没人管了`,
+    ).toBe(true);
+  });
+
+  it("活跃学习日：窗口锚在台账最后一天，不是今天往前 N 天（与 §2 同一份说法）", () => {
+    const row = metricOf("活跃学习日");
+    const keep = /export const STUDY_LEDGER_KEEP_DAYS = (\d+)/.exec(read(ST));
+    expect(keep, `${ST} 里读不到保留天数`).toBeTruthy();
+    expect(row.source, `那一行的窗口说法里没有「${keep[1]}」这个数，也无从核对`).toContain(keep[1]);
+    expect(row.source.includes("90 天滚动") || /滚动/.test(row.source), "那一行又写成「滚动」了：裁剪锚的是台账里最新有记录的那一天（见 §2），不是今天往前").toBe(false);
+    expect(row.source, "那一行没说清锚是哪一天，与 §2 的口径接不上").toContain("最新有记录");
+  });
+
+  it("streak：宽限窗的小时数、幂等、以及真正落笔的那几个文件", () => {
+    const row = metricOf("连续学习天数");
+    const grace = /const GRACE_MS = (\d+) \* 3600_000/.exec(read(SK));
+    expect(grace, `${SK} 里读不到 GRACE_MS`).toBeTruthy();
+    expect(Number(grace[1])).toBeGreaterThanOrEqual(1);
+    expect(row.def, `那一行没提 ${grace[1]} 小时的宽限窗，会把跨时区回来那天说成断签`).toContain(`GRACE_MS = ${grace[1]}`);
+    expect(/if \(data\.lastDate === today\) return;/.test(read(SK)), "同一天再记不增天数这件事，代码已经不这么写了").toBe(true);
+
+    const files = [];
+    (function walk(dir) {
+      for (const e of readdirSync(path.join(root, dir), { withFileTypes: true })) {
+        const rel = `${dir}/${e.name}`;
+        if (e.isDirectory()) walk(rel);
+        else if (/\.(ts|tsx)$/.test(e.name) && !/\.(test|spec)\./.test(e.name)) files.push(rel);
+      }
+    })("src");
+    const writers = files.filter((rel) => rel !== SK && /touchStreak\s*\(/.test(stripComments(read(rel))));
+    expect(writers.length, "一个 touchStreak 的调用方都没扫到，判据空转").toBeGreaterThanOrEqual(2);
+    for (const rel of writers) {
+      expect(row.source, `${rel} 会落笔写 streak，文档那一行没点它`).toContain(path.basename(rel));
+    }
+    // 文档点名的每个函数要么真的（经 ≤3 跳）落到 touchStreak，要么被明说「不碰它」
+    for (const [, fn] of row.source.matchAll(/`([a-z][A-Za-z0-9_]+)`/g)) {
+      if (fn.endsWith(".ts") || fn.includes(".")) continue;
+      const owner = files.find((rel) => fnBody(rel, fn) !== null);
+      if (!owner) continue;
+      const denied = new RegExp("不碰它").test(row.source) && row.source.includes(`\`${fn}\``) && row.source.split(`\`${fn}\``)[1].startsWith(" 不碰");
+      expect(
+        denied || reachesStreak(owner, fn),
+        `那一行说 ${fn} 落笔写 streak，可 ${owner} 里的 ${fn} 三跳之内碰不到 touchStreak`,
+      ).toBe(true);
+    }
+    // 本轮改掉的那个假落笔方：它自己与它调的东西都不碰 streak
+    expect(reachesStreak("src/lib/quiz-store.ts", "saveQuizProgress"), "saveQuizProgress 现在真的会写 streak 了，文档那句「不碰它」要改").toBe(false);
+    expect(row.source, "那一行不再点 saveQuizProgress，读的人无从知道它不算").toContain("saveQuizProgress");
+  });
+
+  it("回访这一行说清是哪一份导出算得出来", () => {
+    const row = metricOf("回访");
+    expect(read("src/lib/privacy-export.ts"), "隐私导出不再整份 dump localStorage，那句「可自算」要重看").toContain("collectLocalStorage(");
+    const stats = read("src/lib/stats-export.ts");
+    expect(/getStudySeries|studyDays|byDay/.test(stats), "统计导出如今带逐日秒数了，那一行说它算不出是错的").toBe(false);
+    expect(stats, "统计导出不再有 studySeconds，那一行引它做什么").toContain("studySeconds");
+    expect(row.visible, "那一行没点名是哪一份导出可自算").toContain("隐私导出");
+    expect(row.visible, "那一行没说明统计导出算不出「哪几天」").toContain("算不出");
+  });
+
+  it("目标档位、默认值与那个界面标签都由代码说了算", () => {
+    const row = metricOf("近 7 天目标达成");
+    const tiers = /export const WEEKLY_GOAL_TIERS = \[([\d, ]+)\]/.exec(read(WK));
+    expect(tiers, `${WK} 里读不到档位表`).toBeTruthy();
+    const list = tiers[1].split(",").map((s) => s.trim()).filter(Boolean);
+    expect(row.def, `那一行写的档位不是 ${list.join("/")}`).toContain(list.join("/"));
+    const dflt = /export const DEFAULT_WEEKLY_GOAL_MIN = (\d+)/.exec(read(WK));
+    expect(row.def, `那一行写的默认目标不是 ${dflt[1]}`).toContain(`默认 ${dflt[1]}`);
+    const days = /export const WEEK_WINDOW_DAYS = (\d+)/.exec(read(WK));
+    expect(row.def, `界面标签不是「${days[1]} 天目标」`).toContain(`${days[1]} 天目标`);
+    expect(new RegExp(`weekGoalLabel: \`\\$\\{WEEK_WINDOW_DAYS\\} 天目标\``).test(read(I18N)), "标签不再是 WEEK_WINDOW_DAYS 生成的「N 天目标」").toBe(true);
+    expect(read(I18N), "中英字典里又出现了「每周目标」这种日历周说法").not.toMatch(/每周目标/);
+  });
+
+  it("出口一致性：那个审计器在、只在开发/测试期告警、而且有单测", () => {
+    const row = metricOf("出口一致性");
+    expect(/export function auditStatsConsistency\(/.test(read("src/lib/stats-consistency.ts")), "auditStatsConsistency 不再是那个名字了").toBe(true);
+    expect(row.source, "那一行没点名 auditStatsConsistency").toContain("auditStatsConsistency");
+    const client = read(CLIENT);
+    expect(client.includes("auditStatsConsistency("), "统计页已经不跑这个对账了").toBe(true);
+    expect(
+      /process\.env\.NODE_ENV === "production"[^\n]*return;/.test(client),
+      "对账不再由 production 提前返回挡着了，那句「开发期 console 告警」不成立",
+    ).toBe(true);
+    expect(existsSync(path.join(root, "src/lib/stats-consistency.test.ts")), "那句「+ 单测」没有对应的文件").toBe(true);
+    expect(row.visible, "那一行的可见位置没写它是告警而不是界面").toContain("console");
+  });
+});
