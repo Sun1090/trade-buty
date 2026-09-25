@@ -155,9 +155,11 @@ describe("§2 学习数据：键、窗口与事件总线", () => {
     expect(days, "读不到 study-time 的保留天数常量").toBeTruthy();
     expect(Number(days[2]), "保留天数不是 90 了，文档那行要改").toBe(90);
     const row = section(s2, "| `tb-study-time`", "\n");
-    expect(flat(row)).toContain(days[2]);
     expect(flat(row), "这行又回到「滚动保留」那种说法（R16.246 已经在留存文档里改过口）").not.toContain("滚动");
     expect(flat(row), "这行没写窗口锚在哪一天").toContain("最新有记录");
+    const kept = /保留\s*(\d+)\s*天/.exec(flat(row));
+    expect(kept, "这行没有「保留 N 天」那个数可以比对").toBeTruthy();
+    expect(Number(kept[1]), `这行写的保留天数不是常量里的 ${days[2]}`).toBe(Number(days[2]));
   });
   it("回放历史有上限，测验的两个例外只在本机", () => {
     const keep = Number(/export const REPLAY_HISTORY_KEEP = (\d+)/.exec(read("src/lib/replay-history-limit.ts"))[1]);
@@ -200,7 +202,13 @@ describe("§2 学习数据：键、窗口与事件总线", () => {
     const n2 = /`useSyncExternalStore`（(\d+) 个组件文件/.exec(para);
     expect(n2, "没写 useSyncExternalStore 的文件数").toBeTruthy();
     expect(Number(n2[1]), `文件数不是现读的 ${syncFiles}`).toBe(syncFiles);
-    expect(para, "那一段没写两种订阅写法都有").toContain("addEventListener");
+    // 「两种订阅写法都有」这句话要在**它自己那一句里**成立：整段搜 addEventListener 会被上一句
+    // （「被 `addEventListener` 读到」）白满足，探针 D8 第一次就是这么活下来的。
+    const listenClause = /监听侧[^。]*。/.exec(para)?.[0] ?? "";
+    expect(listenClause, "§2 没有一句在讲监听侧的两种写法").toBeTruthy();
+    expect(listenClause, "那一句没写 useSyncExternalStore").toContain("useSyncExternalStore");
+    expect(listenClause, "那一句没写直接 addEventListener 这种同样在用的写法").toContain("addEventListener");
+    expect(listenClause, "那一句又把它说成单一写法了").toContain("两种");
   });
 });
 
