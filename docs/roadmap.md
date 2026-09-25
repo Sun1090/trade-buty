@@ -27,7 +27,7 @@
 - [x] Q2.5 320px 回归（`npm run check:mobile`，14 关键页，CI 在生产构建后执行并阻断；修掉 path/knowledge-graph 两处 grid truncate 溢出）
 - [x] Q2.6 错误边界覆盖率：图表/搜索/AI 三个外部依赖入口都有降级 UI（搜索索引加载失败/重试单测补齐）
 - [ ] Q2.7 [手动] Sentry（或同类）错误监控接入 + 告警通道 — `BLOCKED_EXTERNAL`：需 Sentry 账号、生产 DSN 与告警通道（邮件/Slack）凭据，无凭据无法接入或验证告警送达。
-- [ ] Q2.8 [手动] RLS/越权/双设备同步线上联调（需 Supabase keys）— 本地半边已完成：`npm run db:test` 在真实 `supabase/postgres:17.6.1.155` 镜像上应用 10 个迁移，跑通 RLS 越权 40 断言 + 双设备同步/约束 30 断言 + `0008_*` 回滚 → 重放演练（见 docs/database-testing.md）；`BLOCKED_EXTERNAL`：Supabase 云项目 keys、线上数据与真实两台设备联调无法在本地完成。
+- [ ] Q2.8 [手动] RLS/越权/双设备同步线上联调（需 Supabase keys）— 本地半边已完成：`npm run db:test` 在真实 `supabase/postgres:17.6.1.155` 镜像上应用 10 个迁移，跑通 `rls_isolation.sql`（跨用户隔离与越权写入，44 条断言）、`sync_and_constraints.sql`（双设备同步幂等与目标档位约束，34 条断言）、`embedding_generations.sql`（generation 指针与 RPC ACL，8 条断言），外加 `0008_*` 与 `0009_*` 两支回滚 → 重放演练（见 docs/database-testing.md）；`BLOCKED_EXTERNAL`：Supabase 云项目 keys、线上数据与真实两台设备联调无法在本地完成。
 
 ## Q3 增长收尾（Q3.1–Q3.6）
 
@@ -54,7 +54,7 @@
 - [x] Q5.1 docs 与实现一致性走查（plan/research/p2-research 已区分历史选型与当前实现；新增 `check:docs` 校验课程数、当前技术栈与中立承诺）
 - [x] Q5.2 AGENTS.md 契约段复核（删除旧 `NN-*`/数字文件名描述，统一为 `{zh,en}/English-slug`；`check:docs` 防回归）
 - [x] Q5.3 依赖月度审计（2026-09-13：`audit:prod` / `audit:all` 均 `found 0 vulnerabilities`；`npm outdated` 只剩 `@types/node`、`eslint`、`js-yaml`、`typescript`、`vitest` 五个 major 待评估，逐条暂缓理由见 `docs/deps.md` §月度审计日志。历史：2026-09-12 曾记录 React/Supabase/Playwright/Testing Library 等补丁或 minor）
-- [ ] Q5.4 [手动] 备份演练：Supabase 数据导出 + 仓库镜像确认 — 本地半边已完成：`npm run backup:drill` 全自动跑「迁移 → 全业务表（11 张）灌数据 → `pg_dump -Fc`(45,104 bytes，随语料增长) → 销毁源库 → 全新实例 `pg_restore` → 数据/schema/RLS/约束指纹比对 → 重跑 pgTAP(40+30+8 断言)」，脚本与边界见 docs/database-testing.md 第 4 节；`BLOCKED_EXTERNAL`：Supabase 云导出（auth/Storage/项目配置）、定时备份与仓库镜像确认需云控制台权限。
+- [ ] Q5.4 [手动] 备份演练：Supabase 数据导出 + 仓库镜像确认 — 本地半边已完成：`npm run backup:drill` 全自动跑「迁移 → 全业务表（11 张）灌数据 → `pg_dump -Fc`(45,104 bytes，随语料增长) → 销毁源库 → 全新实例 `pg_restore` → 数据/schema/RLS/约束指纹比对 → 重跑 pgTAP(44+34+8 断言)」，脚本与边界见 docs/database-testing.md 第 4 节；`BLOCKED_EXTERNAL`：Supabase 云导出（auth/Storage/项目配置）、定时备份与仓库镜像确认需云控制台权限。
 
 ## 版本关账标准
 
