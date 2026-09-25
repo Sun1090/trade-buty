@@ -39,6 +39,32 @@ const EN_CORE_PATHS = [
 
 const LESSON_PATH = "/zh/knowledge/getting-started/first-trade";
 
+/**
+ * R16.262：键盘交互之前，先用「动作真的生效」当证据，而不是等网络安静。
+ *
+ * 为什么不用 `waitUntil: "networkidle"`：那是等「网络安静 500 毫秒」，而这些页面会一直往第三方
+ * 端点发请求（行情、RAG 检索）。实测同一份页面代码在两遍全量链里一遍绿一遍红，红的那次 60s 测试
+ * 预算被一个 goto 吃满，服务端日志里是 `[rag] 检索失败: TypeError: fetch failed`。
+ *
+ * 为什么光有 `load` 也不够：SSR 的 HTML 里按钮就带 `aria-haspopup`、也能 `focus()`，但按 Enter
+ * 要等 React 挂上事件处理器才有效果。去掉 networkidle 之后，整套 e2e 的顺序里连着两次红在同一条
+ * 断言上（灯箱没开，`element(s) not found`），而单独跑这一族 21 次全绿；插桩读数：第一次 Enter
+ * 之后 3s 内没开（用时 3183ms），隔几秒再按同样的键就开了——差的是接管，不是网络。
+ *
+ * 为什么这里不能用引导当接管证据（`mobile-overflow.spec.ts` 那么用）：本文件开头的
+ * `test.beforeEach` 给每条用例都种了 `tb-onboarded=1`，引导在本文件里根本不挂——第一版这么写
+ * 时两条用例各卡在 `waitFor` 15s 超时上。
+ */
+async function actUntilTaken(label: string, act: () => Promise<void>, expectEffect: () => Promise<void>) {
+  await expect(
+    async () => {
+      await act();
+      await expectEffect();
+    },
+    label,
+  ).toPass({ timeout: 15_000 });
+}
+
 async function expectVisibleFocusRing(page: Page, locator: Locator) {
   await locator.focus();
   await page.keyboard.press("Tab");
@@ -427,19 +453,36 @@ test.describe("R13.24 图表与回放确定性交互", () => {
   });
 });
 
+// 这一族的 `page.goto` 一律不等 `networkidle`（R16.262）：等「网络安静 500 毫秒」把用例的裁决权
+// 交给第三方行情端点——同一份页面代码两遍链里能一遍绿一遍红，红时 60s 测试预算被一个 goto 吃满。
+// 每条要等什么，由它自己那一半的证据去等：元素在不在，交给第一条断言 / `focus()`（Playwright 会
+// 自己轮）；按键到没被接管，交给 `actUntilTaken`（它的注释里记着两遍链的实测读数）。
 test.describe("Q2.4 核心交互无障碍", () => {
   test("课程图片可用键盘打开灯箱并在关闭后归还焦点", async ({ page }) => {
-    await page.goto("/zh/knowledge/spot/portfolio-rebalancing", { waitUntil: "networkidle" });
+    await page.goto("/zh/knowledge/spot/portfolio-rebalancing");
     const image = page.getByRole("button", { name: /不同风险偏好的加密组合饼图/ });
     await expect(image).toHaveAttribute("aria-haspopup", "dialog");
-    await image.focus();
-    await page.keyboard.press("Enter");
-
     const dialog = page.getByRole("dialog", { name: "关闭大图", exact: true });
-    await expect(dialog).toBeVisible();
+    await image.focus();
+    await actUntilTaken(
+      "Enter 真的被接管：灯箱开了",
+      async () => {
+        await page.keyboard.press("Enter");
+      },
+      async () => {
+        await expect(dialog).toBeVisible();
+      },
+    );
     await expect(dialog.getByRole("button", { name: "关闭大图", exact: true })).toBeFocused();
-    await page.keyboard.press("Escape");
-    await expect(dialog).toBeHidden();
+    await actUntilTaken(
+      "Escape 真的被接管：灯箱关了",
+      async () => {
+        await page.keyboard.press("Escape");
+      },
+      async () => {
+        await expect(dialog).toBeHidden();
+      },
+    );
     await expect(image).toBeFocused();
   });
 
@@ -452,27 +495,34 @@ test.describe("Q2.4 核心交互无障碍", () => {
   });
 
   test("键盘焦点在核心控件上可见", async ({ page }) => {
-    await page.goto(LESSON_PATH, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "开始测验", exact: true }).click();
-    await page.getByRole("button", { name: "开始测验", exact: true }).click();
-    await expectVisibleFocusRing(
-      page,
-      page.getByRole("button", { name: /^A\./ }).first(),
+    await page.goto(LESSON_PATH);
+    const start = page.getByRole("button", { name: "开始测验", exact: true });
+    const options = page.getByRole("button", { name: /^A\./ }).first();
+    // 两层「开始测验」（卡片展开 → 题目开始），每按掉一层按钮就少一个，所以按到选项出现为止。
+    await actUntilTaken(
+      "两次「开始测验」真的被接管：选项 A 出现了",
+      async () => {
+        if ((await start.count()) > 0) await start.click();
+      },
+      async () => {
+        await expect(options).toBeVisible();
+      },
     );
+    await expectVisibleFocusRing(page, options);
 
-    await page.goto("/zh/replay", { waitUntil: "networkidle" });
+    await page.goto("/zh/replay");
     await expectVisibleFocusRing(
       page,
       page.getByRole("combobox", { name: "K 线周期", exact: true }),
     );
 
-    await page.goto("/zh/chart", { waitUntil: "networkidle" });
+    await page.goto("/zh/chart");
     await expectVisibleFocusRing(
       page,
       page.getByRole("textbox", { name: "自定义交易对", exact: true }),
     );
 
-    await page.goto("/zh/about", { waitUntil: "networkidle" });
+    await page.goto("/zh/about");
     await expectVisibleFocusRing(
       page,
       page.getByRole("textbox", { name: "订阅邮箱", exact: true }),
