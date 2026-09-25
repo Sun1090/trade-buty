@@ -52,4 +52,28 @@ describe("「已云端存档」的判据只有一个 owner", () => {
     expect(STATS_DICTS.zh.sourceCloud).toBe("本机 + 云端");
     expect(STATS_DICTS.en.sourceCloudPending).toMatch(/awaiting upload/i);
   });
+
+  // R16.210：「换设备不丢」这句话站里已经判过要有条件（上面两条），而登录页那句是无条件的：
+  // 站在那里的人还没登录，拿不到 `getUnarchivedWriteCount()`，偏偏游客态离线攒写入的人最容易
+  // 撞上「队列满 200 条挤掉最旧那条」。它许诺的那件东西，这一屏根本没有判据可言。
+  it("「换设备不丢」只在拿得到未上传计数的界面上说", () => {
+    // 正面：☁ 那枚徽标确实还在说这句话（它有判据），禁令不是对着空气立规矩
+    expect(getDict("zh").home.syncedLabel).toMatch(/换设备不丢/);
+    expect(getDict("en").home.syncedLabel).toMatch(/cloud/i);
+
+    for (const locale of ["zh", "en"] as const) {
+      expect(
+        getDict(locale).auth.subtitle,
+        `${locale}：登录页在拿不到判据的地方许诺「不丢」`,
+      ).not.toMatch(/不丢|never lose/i);
+    }
+
+    // 正向对照：退役的那两句喂给同一个禁令，必须条条报红
+    const legacy = [
+      "输入邮箱，我们发送登录链接。登录后进度自动云端存档，换设备不丢。",
+      "Enter your email and we'll send a login link. Your progress syncs to the cloud after login — never lose it across devices.",
+    ];
+    const missed = legacy.filter((s) => !/不丢|never lose/i.test(s));
+    expect(missed, `这些旧写法没被抓到：${missed.join(" / ")}`).toEqual([]);
+  });
 });
