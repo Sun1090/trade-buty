@@ -11,8 +11,9 @@
  * 是「没有任何客户端模块能拿到它」，这条现在由判据顺着导入闭包走一遍来保证。
  *
  * 其余几条是把文档里能机械核对的说法钉住：点名的路径与相对链接、§4.2 的 prebuild 四步与
- * `package.json` 的实际顺序、§7 点名的响应头与 `next.config.ts`、§8 的「两个并行作业」与
- * `.github/workflows/ci.yml` 的 job 名单。
+ * `package.json` 的实际顺序、§7 点名的响应头与 `next.config.ts`、§8 的作业数与工作流名单
+ * （两个数都从 `ci.yml` 和 `.github/workflows/` 现读，而且要求数字写在作业清单旁边——整节里
+ * 搜一个说法会被文档自己那句带引号的旧措辞满足）。
  */
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -93,17 +94,32 @@ describe("文档点名的路径与链接都还在", () => {
     }
   });
 
-  it("文档点名的每一个 localStorage 键都真在代码里", () => {
+  it("文档点名的每一个 `tb-*` 标识都真被当作持久化名字用着", () => {
     // 约定：反引号 = 「这是代码里有的东西」。被改掉/被证伪的拼写要用普通文字引用，
     // 否则这条判据会把纠错的那句话一起当成"当前存在的键"（同一族错误见 §5.1 那条目录说法）。
     const keys = [...new Set([...doc.matchAll(/`(tb-[a-z0-9-]+)`/g)].map((m) => m[1]))];
     expect(keys.length, "文档不再点名任何存储键").toBeGreaterThanOrEqual(2);
-    const code = FILES.map((rel) => read(rel)).join("\n");
-    for (const k of keys) {
-      expect(code.includes(`"${k}"`), `文档说有个存储键 ${k}，src 下没有任何一处用它`).toBe(true);
+    const all = FILES.map((rel) => read(rel)).join("\n");
+    // 「这个字符串在代码里出现过」不是这里要的形状：`tb-sync-conflict` 是一个 DOM 事件名
+    // （`sync-conflicts.ts` 里 `dispatchEvent(new Event(...))`），探针把文档上的
+    // `tb-sync-conflicts` 抄掉一个字母就正好撞上它而绿。只有真拿来读写持久化状态的位置才算：
+    // 存储读写、cookie 读写、或赋给一个常量的键名。
+    const persisted = new Set();
+    for (const re of [
+      /(?:localStorage|sessionStorage)\s*[.\[]\s*(?:getItem|setItem|removeItem)\s*\(\s*"(tb-[a-z0-9-]+)"/g,
+      /cookies\s*[.\[]\s*(?:get|set)\s*\(\s*"(tb-[a-z0-9-]+)"/g,
+      /(?:const|let|var)\s+[A-Za-z_0-9]+\s*=\s*"(tb-[a-z0-9-]+)"/g,
+    ]) {
+      for (const m of all.matchAll(re)) persisted.add(m[1]);
     }
-    // 正向对照：本轮删掉的那个假键（把模块名 cloud-sync-meta.ts 抄成键名）必须被同一条判据抓住
-    expect(code.includes('"tb-cloud-sync-meta"'), "代码里现在真有这个键了，那条假键的说法要重看").toBe(false);
+    expect(persisted.size, "一个持久化名字都没扫出来，这条判据在空转").toBeGreaterThanOrEqual(3);
+    for (const k of keys) {
+      expect(persisted.has(k), `文档把 ${k} 当成存储键/cookie 名点名了，src 里没有一处这样用它`).toBe(true);
+    }
+    // 正向对照 ①：本轮删掉的那个假键（把模块名 cloud-sync-meta.ts 抄成键名）必须被抓住
+    expect(all.includes('"tb-cloud-sync-meta"'), "代码里现在真有这个键了，那条假键的说法要重看").toBe(false);
+    // 正向对照 ②：那个同名的 DOM 事件不算持久化名字，否则抄错一个字母的键名会蒙过去
+    expect(persisted.has("tb-sync-conflict"), "`tb-sync-conflict` 现在真是存储键了，这条对照要重看").toBe(false);
   });
 });
 
@@ -173,10 +189,22 @@ describe("文档描述的运行形状就是仓库里那份", () => {
     expect(jobs.length, "ci.yml 的 job 少到不正常").toBeGreaterThanOrEqual(2);
     const s8 = section("## 8.", "## 9.");
     for (const j of jobs) expect(s8, `ci.yml 有作业 ${j}，§8 没提它`).toContain(`\`${j}\``);
-    expect(s8, `§8 不再用「${jobs.length} 个并行作业」这个说法`).toContain("两个并行作业");
+    // 作业数要说对，而且要**在清单旁边**说对：整节里搜一个「两个并行作业」会被那句被引号
+    // 框起来的旧说法（「GitHub Actions 包含两个并行作业」）白 satisfy，探针就是这么活下来的。
+    const CN = ["零", "一", "两", "三", "四", "五", "六", "七", "八", "九", "十"];
+    const lines = s8.split("\n");
+    const firstBullet = lines.findIndex((l) => new RegExp(`^- \\\`(${jobs.join("|")})\\\``).test(l));
+    expect(firstBullet, "§8 不再用 `- \\`ci\\`` 那种列表逐项列作业").toBeGreaterThan(0);
+    const intro = [...lines.slice(0, firstBullet)].reverse().find((l) => l.trim() !== "");
+    expect(intro, `§8 引入作业清单的那句得写「${CN[jobs.length]}个作业」，实际是：${JSON.stringify(intro)}`)
+      .toContain(`${CN[jobs.length]}个作业`);
+    // 被证伪的那句整句说法只能以引文形式出现，不许回到正文里
+    const live = s8.replace(/「[^」]*」/g, "");
+    expect(live, "「GitHub Actions 包含 N 个并行作业」那句又当成正文写回来了").not.toMatch(/GitHub Actions\s*包含/);
     // 工作流不止 ci.yml：漏掉另一个就是「GitHub Actions 只有两个作业」那种错
     const others = readdirSync(path.join(root, ".github/workflows"))
       .filter((n) => n !== "ci.yml" && /\.(yml|yaml)$/.test(n));
     for (const w of others) expect(s8, `仓库里还有工作流 ${w}，§8 一个字没提`).toContain(w);
+    expect(live, `§8 正文没写清工作流总数是 ${CN[others.length + 1]} 个`).toContain(`${CN[others.length + 1]}个工作流`);
   });
 });
