@@ -9,8 +9,9 @@ RLS 依赖 Supabase 自己提供的东西：`auth.uid()`、`anon` / `authenticat
 `service_role` 角色、以及 `public` schema 的默认授权。用普通 `postgres` 容器跑会得到
 **假阳性**——例如角色不存在时 `auth.uid()` 恒为 `NULL`，越权测试会“通过”得毫无意义。
 
-因此 `scripts/db-test.mjs` 固定使用 `supabase/postgres:<tag>`，并在启动后先校验四个
-Supabase 角色存在、`authenticated` 对 `public.progress` 有权限，否则直接判失败。
+因此 `scripts/db-test.mjs` 固定使用 `supabase/postgres:<tag>`，并在启动后先校验 4 个
+Supabase 角色存在（`anon` / `authenticated` / `service_role` / `authenticator`）、
+`authenticated` 对 `public.progress` 有权限，否则直接判失败。
 
 ## 运行
 
@@ -31,16 +32,18 @@ BACKUP_DRILL_IMAGE=supabase/postgres:17.6.1.155 npm run backup:drill
 
 每次运行都在干净的容器里重新应用 `supabase/migrations/*.sql`（按字典序），然后执行：
 
-### 1. `supabase/tests/rls_isolation.sql`（pgTAP，40 条断言）
+### 1. `supabase/tests/rls_isolation.sql`（pgTAP，44 条断言）
 
 跨用户隔离与越权写入：
 
 - `auth.uid()` 由 `request.jwt.claim.sub` 解析；
-- 用户 A 能读写自己的行（9 张用户表）；
+- 用户 A 以自己的身份向 **9** 张用户表各写一行，其中 **8** 张当场读回 1 行；第 **9** 张
+  `ai_citation_clicks` 读回 **0** 行——它只有 `for insert` 策略，这条钉的就是「能写 ≠ 能读」；
 - 用户 B 看不到 A 的 `progress` / `wrongbook` / `quiz_scores` / `replay_history` /
   `replay_best` / `ai_conversations` / `ai_feedback` / `user_settings`；
-- B 冒用 A 的 `user_id` 写入一律以 SQLSTATE `42501` 被拒；
-- B 更新/删除 A 的行影响行数为 0（RLS `USING` 过滤，而不是报错）；
+- B 冒用 A 的 `user_id` 写入一律以 SQLSTATE `42501` 被拒（9 张表逐个试）；
+- B 改/删 A 的行影响行数为 0（RLS `USING` 过滤，而不是报错）——这一半实测过 3 处：
+  `update progress` / `delete wrongbook` / `update user_settings`；
 - 匿名请求读不到任何用户数据，也不能写入；其中 `ai_feedback` 读不到这条是
   `/api/ai/feedback/export` 必须走 service_role 的直接依据（那条路线上只带 `ADMIN_TOKEN`、
   没有 Supabase 会话，`auth.uid()` 恒为 `NULL`，用匿名客户端查是「成功但零行」）；
@@ -48,7 +51,7 @@ BACKUP_DRILL_IMAGE=supabase/postgres:17.6.1.155 npm run backup:drill
 - `kb_embeddings` 对 `authenticated` 可读不可写（只读公开表）；
 - `ai_citation_clicks` 允许匿名上报（`user_id is null`），但没有 `select` 权限。
 
-### 2. `supabase/tests/sync_and_constraints.sql`（pgTAP，30 条断言）
+### 2. `supabase/tests/sync_and_constraints.sql`（pgTAP，34 条断言）
 
 双设备同步所依赖的数据库契约：
 
@@ -58,7 +61,8 @@ BACKUP_DRILL_IMAGE=supabase/postgres:17.6.1.155 npm run backup:drill
 - 后写入的设备覆盖 `picked` / `srs_stage` / `srs_due`，且不产生重复行；
 - 显式传入 `answered_at` 时会被刷新（客户端「取较新」合并依赖它）；
 - `touch_updated_at` 触发器在 `quiz_scores` 更新后刷新 `updated_at`；
-- `user_settings` 目标档位约束（0008）：`5/15/30` 与 `45/90/150` 合法，其他值以 `23514` 被拒；
+- `user_settings` 目标档位约束（0008）：合法集合 `5/15/30`（每日）与 `45/90/150`（每周）**逐个**由
+  `lives_ok` 走一遍 CHECK，非法值 `daily=7` 与 `weekly=100` 以 `23514` 被拒，且被拒之后原值不变；
 - 删除 `auth.users` 行会级联清掉其业务数据（账号注销路径）；
 - 目录级不变量（隐私页「删除账户即清空云端数据」的长期保障，按 `pg_constraint` 扫，新表自动纳入）：
   所有指向 `auth.users` 的外键必须显式写 `ON DELETE CASCADE` 或 `SET NULL`（PG 12 起没有 `ondel` 列，
@@ -66,10 +70,12 @@ BACKUP_DRILL_IMAGE=supabase/postgres:17.6.1.155 npm run backup:drill
   带 `user_id` 列的表必须挂上 `auth.users` 外键，否则注销后会留下归属行；
   另有一条 `>= 9` 的外键数量下限，防止前面两条在一个都不匹配的情况下「空集通过」。
 
-### 3. 回滚演练（使用真实 rollback 脚本）
+### 3. 回滚演练（使用真实 rollback 脚本，两支都做）
 
-`scripts/db-test.mjs` 直接执行 `supabase/rollback/0008_goal_tier_constraints.sql`，
-而不是复制一份 SQL：
+`supabase/rollback/` 下有 2 个回滚脚本，`scripts/db-test.mjs` 两支都跑，而且是直接执行
+仓库里的文件本身、不复制一份 SQL：
+
+**0008 目标档位约束**
 
 1. 确认两项约束存在；
 2. 执行 rollback 脚本 → 确认约束消失；
@@ -77,20 +83,39 @@ BACKUP_DRILL_IMAGE=supabase/postgres:17.6.1.155 npm run backup:drill
 4. 重新应用 `0008_goal_tier_constraints.sql` → 确认约束恢复；
 5. 确认历史脏值被归一化为 `15/90`，且再次写入非法值会被拒绝。
 
-这一步同时验证了**回滚脚本本身可用**和**正向迁移对脏数据的归一化路径可用**。
+**0009 embedding generation 原子激活**
+
+1. 造一份夹具：`locale='rollback-test'` 下两行 `kb_embeddings`（一行属于 active generation、
+   一行属于 staged generation）＋ 一行 `kb_embedding_generations` 指针；
+2. 执行 `rollback/0009_atomic_embedding_generations.sql` → 确认 `kb_embedding_generations` 表
+   已不存在、`kb_embeddings.generation` 列已移除，且**只有 active generation 的那一行留下**
+   （读数 `t|t|1|1`）；
+3. 重新应用 `0009_atomic_embedding_generations.sql` → 确认 active generation 回填到唯一那行上、
+   指针表恢复，并且 RPC ACL 恢复：`authenticated` 对 `activate_kb_embedding_generation(text, uuid)`
+   **没有** execute 权限（读数 `1|1|t`）。
+
+这两段一起验证了**回滚脚本本身可用**和**正向迁移对既有数据的恢复路径可用**（0008 是脏值归一化，
+0009 是 active generation 回填 + ACL 收回）。
 
 ### 4. 备份/恢复演练（Q5.4 本地可复现部分）
 
 `npm run backup:drill` 不依赖线上 Supabase 项目，实际执行的是：
 
-1. 在干净 Supabase Postgres 上应用全部迁移，写入覆盖 11 张业务表的样例数据；
-2. 用 `pg_dump -Fc --schema=public --no-owner --no-acl` 生成 custom-format 备份；
+1. 在干净 Supabase Postgres 上应用全部迁移（10 个），写入覆盖 11 张业务表的样例数据——
+   这 11 张就是迁移建出来的全部 `public` 业务表（`DATA_TABLES` 与迁移里 `create table`
+   的集合相等，两边有判据互查）；
+2. 用 `pg_dump -U postgres -d postgres -Fc --schema=public --no-owner` 生成 custom-format 备份。
+   **注意没有 `--no-acl`**：ACL 是要一起验的东西，恢复端还专门依赖它；
 3. **销毁源容器**，模拟实例丢失；
-4. 启动另一个全新 Supabase Postgres，预置恢复 public schema 外键所需的最小
-   `auth.users` 行，再执行 `pg_restore --single-transaction --exit-on-error`；
-5. 逐表对比恢复前后的数据指纹，并对比表/列/RLS 策略/约束/索引/触发器/函数/扩展指纹；
-6. 确认 `authenticated` 权限仍在；在恢复库上重跑全部三个 pgTAP 文件
-   （`rls_isolation` 40 + `sync_and_constraints` 30 + `embedding_generations` 8 条断言）。
+4. 启动另一个全新 Supabase Postgres，预置恢复 public schema 外键所需的最小 `auth.users` 行；
+   先用 `pg_restore --list` 读清单、**滤掉镜像级的 ` DEFAULT ACL ` 与 ` SCHEMA - public ` 两行**
+   （它们属于 `supabase_admin`，`postgres` 重放不了），再用
+   `pg_restore -U postgres -d postgres --no-owner --single-transaction --exit-on-error --use-list=/tmp/trade-buty.list` 恢复；恢复后另有一步重新断言应用自己的 RPC ACL；
+5. 逐表对比恢复前后的数据指纹，并对比 `schemaFingerprint` 的 9 项：
+   `tables` / `rls` / `policies` / `constraints` / `indexes` / `triggers` / `columns` /
+   `functions` / `extensions`；
+6. 确认 `authenticated` 权限仍在；在恢复库上重跑全部 3 个 pgTAP 文件
+   （`rls_isolation` 44 + `sync_and_constraints` 34 + `embedding_generations` 8 条断言）。
 
 本演练只覆盖 Supabase 托管的 `public` schema 与应用数据。托管项目的 `auth`、Storage、
 项目配置、定时备份策略及仓库镜像确认仍必须在 Supabase 控制台和外部存储中完成，不能

@@ -9,8 +9,11 @@
  *   1. 起一个干净的 supabase/postgres 容器并等它 healthy
  *   2. 按字典序应用 supabase/migrations/*.sql
  *   3. 安装 pgTAP，逐个执行 supabase/tests/*.sql
- *   4. 回滚演练：验证 0008 约束存在 → 执行真实 rollback 脚本 → 验证约束消失且脏数据可写入
- *      → 重新应用 0008 → 验证历史脏值被归一化、约束恢复、非法值再次被拒绝
+ *   4. 回滚演练（两支脚本，都直接执行仓库里的文件）：
+ *      0008：验证约束存在 → rollback → 约束消失且脏数据可写入 → 重新应用 → 脏值归一化、
+ *            约束恢复、非法值再次被拒绝
+ *      0009：造 active/staged 两代夹具 → rollback → 指针表与 generation 列都没了、只剩
+ *            active 那一行 → 重新应用 → active generation 回填、RPC 对 authenticated 不可 execute
  *   5. 销毁容器（除非 --keep）
  *
  * 用法：
