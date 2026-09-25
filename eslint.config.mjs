@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "coverage/**",
     // 知识库 submodule：内容只读，不参与 lint
     "content/**",
+    // 本地门禁/探针的一次性脚本与日志（见 .gitignore），不是仓库代码
+    ".gate-logs/**",
   ]),
 ]);
 
