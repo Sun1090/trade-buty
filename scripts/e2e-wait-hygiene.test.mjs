@@ -52,6 +52,8 @@ function findViolations(source) {
  * 「语句层的裸按键 / 裸点击」：写在测试体那一层（4 空格缩进）、后面不跟接管证据的动作。
  * 只在指定的那一段里找。整行匹配到 `.press(` / `.click(` 为止，所以
  * `await page.getByRole("x").click();` 这种带引号和括号的链式写法也在射程内。
+ * 已知边界：这条尺子量的是「测试体那一层（4 空格）」，再往里缩进的动作（`for` 循环里的按键、
+ * 或者干脆被人多敲一层空格的）逃得出去——所以它的判据是「语句层没有裸按键」，不是「所有动作都查过」。
  */
 function bareActions(source) {
   const out = [];
@@ -112,7 +114,7 @@ describe("e2e 等待卫生：不许把「网络安静」当成页面就绪", () 
     ).toEqual([]);
   });
 
-  it("Q2.4 一族：按键都被包进接管判据，且说明还留着", () => {
+  it("Q2.4 一族：没有写在语句层的裸按键，且包起来的动作确实存在", () => {
     const src = readFileSync(path.join(root, "e2e", "full-site.spec.ts"), "utf8");
     expect(src, "R16.262 的说明被删了——把理由写回注释或删掉这条判据，别留成无解释的形状").toContain(
       "一律不等 `networkidle`",
