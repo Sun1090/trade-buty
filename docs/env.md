@@ -27,16 +27,18 @@
 | `AI_API_URL` | AI 功能要 | 对话端点（OpenAI / OpenRouter / DeepSeek 均可） |
 | `AI_API_KEY` | AI 功能要 | 对话 key |
 | `AI_MODEL` | 否 | 首选模型（默认走内置 fallback 链） |
-| `AI_EMBEDDING_URL` | RAG 要 | embedding 端点（可与对话端点不同） |
-| `AI_EMBEDDING_MODEL` | RAG 要 | embedding 模型 |
-| `AI_EMBEDDING_KEY` | RAG 要 | embedding key（可与对话 key 不同） |
+| `AI_EMBEDDING_URL` | RAG 可留空 | embedding 端点（可与对话端点不同）；**不设则回退 `AI_API_URL`** |
+| `AI_EMBEDDING_MODEL` | RAG 可留空 | embedding 模型；不设走内置默认模型名（`text-embedding-3-small`） |
+| `AI_EMBEDDING_KEY` | RAG 可留空 | embedding key（可与对话 key 不同）；**不设则回退 `AI_API_KEY`** |
 | `AI_RETRIEVAL_JSON` | 否 | 检索配置覆盖，如 `{"chat":{"threshold":0.25}}`；`threshold` 必须是 `0..1`，`topK` 取整且 `0` 回退默认，`relaxedTopK` 允许 `0` 表示关闭兜底（见 R1.4） |
 | `NEXT_PUBLIC_AI_ENABLED` | 否 | 紧急总开关：设为字符串 `false` 时隐藏全部 AI 入口（R3.10），其它值或未设均视为开启；构建期内联到客户端 |
 
 无 AI key 时：AI 页显示未配置态，不阻断其他功能。
 
 **但 `AI_API_KEY` 的判定发生在构建期**：`aiEnabledForPage()`（`src/lib/ai-toggle.ts`）读的是服务端环境变量，
-而 AI 页、课程页、章节页都是 SSG——入口显示与否被**烘进静态 HTML**。
+而调用它的 4 个页面（AI 页 `src/app/[locale]/ai/page.tsx`、篇章页 `knowledge/[chapter]`、课文页
+`knowledge/[chapter]/[doc]`、复习页 `review`）都在服务端渲染期把它烘进 HTML——名单由
+`scripts/caching-claims.test.mjs` 顺着 `aiEnabledForPage()` 的调用方现读，加一个页面却不改这段就说明文档落后了。
 所以只在 Vercel 上补 key 不重新部署，API 会活过来而页面仍然显示「AI 功能暂未开启」（反向同理：撤掉 key 后
 旧 HTML 还会把入口留着，点下去就是 502）。改完 `AI_*` 之后必须触发一次部署才与运行期一致。
 两条信号分别怎么判：运行期看 `npm run ops:smoke-prod` 的游客 `POST /api/ai/chat` 探针（它先打一次必被红线拦下的
