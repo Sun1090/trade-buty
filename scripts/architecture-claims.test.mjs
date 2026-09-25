@@ -48,9 +48,15 @@ function sourceFiles(dir = "src") {
 const FILES = sourceFiles();
 const FILE_SET = new Set(FILES);
 
-/** scripts/ 下的可执行脚本源码，用来证明一个 `public/…` 产物有生产者 */
+/** 构建期真会跑的脚本（`prebuild` 那一串），只有它们写过的路径才算「有生产者」 */
+const BUILD_SCRIPTS = new Set(
+  JSON.parse(read("package.json")).scripts.prebuild
+    .split("&&").map((s) => s.trim().replace(/^node\s+/, ""))
+    .filter((s) => s.startsWith("scripts/")).map((s) => path.basename(s)),
+);
+/** scripts/ 下的脚本源码（判据自己不算：它引用一个路径不等于产出那个路径） */
 const SCRIPT_TEXT = readdirSync(path.join(root, "scripts"))
-  .filter((n) => /\.(mjs|cjs|js|sh)$/.test(n))
+  .filter((n) => /\.(mjs|cjs|js|sh)$/.test(n) && !/\.(test|spec)\./.test(n) && BUILD_SCRIPTS.has(n))
   .map((n) => ({ name: n, text: read(`scripts/${n}`) }));
 
 /** 这条路径有没有被版本库管着——读的是索引不是历史，浅检出里同样成立 */
@@ -65,7 +71,8 @@ function tracked(rel) {
  * 任何检出里都在；构建产物（`search-index.json`、`knowledge-assets/`）在干净检出里**根本不存在**，
  * 只有跑过 prebuild 的工作区里有。CI 的 `npm run test:coverage` 排在 `npm run build` 之前，所以
  * 只凭「文件在不在」写断言会在 CI 上红，而且红得像判据坏了——本轮就是这么第一次撞上这条的。
- * 所以先用版本库管没管这条路径来分流：管着的看检出，没管的必须有脚本往那个路径写（本地产物骗不过去）。
+ * 所以先用版本库管没管这条路径来分流：管着的看检出，没管的必须有 **prebuild 脚本**往那个路径写
+ * （本地产物骗不过去，光引用它的那个巡检脚本也不算生产者）。
  */
 function publicSurface(rel) {
   const p = `public/${rel}`;
@@ -113,12 +120,13 @@ describe("文档点名的路径与链接都还在", () => {
     const paths = [...new Set([...doc.matchAll(/`((?:src|scripts|public|supabase|docs|\.github)\/[^`\s]*)`/g)].map((m) => m[1]))]
       .filter((p) => !/[*.]{2}|\{|\.\.\./.test(p));
     expect(paths.length, "架构文档一个路径都没点到，扫描八成没跑起来").toBeGreaterThanOrEqual(25);
+    expect(BUILD_SCRIPTS.size, "读不出 prebuild 的脚本名单，产物那条支路就没有尺子").toBeGreaterThanOrEqual(4);
     const publicNamed = paths.filter((p) => p.startsWith("public/"));
     expect(publicNamed.length, "文档不再点名任何 public/ 表面，产物那条支路就成了死码").toBeGreaterThanOrEqual(3);
     for (const p of paths) {
       if (p.startsWith("public/")) {
         const s = publicSurface(p.slice("public/".length));
-        expect(s.ok, `文档指着 ${p}：${s.mode === "tracked" ? "版本库管着它，检出里却没有" : "干净检出里没有，也没有任何 scripts/ 脚本往那个路径写"}`).toBe(true);
+        expect(s.ok, `文档指着 ${p}：${s.mode === "tracked" ? "版本库管着它，检出里却没有" : "干净检出里没有，也没有任何 prebuild 脚本往那个路径写"}`).toBe(true);
         continue;
       }
       expect(existsSync(path.join(root, p)), `文档指着 ${p}，仓库里没有这个文件`).toBe(true);
