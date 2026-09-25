@@ -149,6 +149,21 @@ describe("ReturnNudgeToast (R9.8)", () => {
     expect(seen).toEqual(["/zh/replay", "/en/replay"]);
   });
 
+  /** R16.190：先让那个时长在界面上真实发生，注释与它同源才有意义。 */
+  it("停留满 `RETURN_NUDGE_TOAST_MS` 才自己收起", () => {
+    render(<ReturnNudgeToast />);
+    emitNudge(9);
+    expect(screen.getByTestId("return-nudge-toast")).toBeTruthy();
+    act(() => {
+      vi.advanceTimersByTime(RETURN_NUDGE_TOAST_MS - 1);
+    });
+    expect(screen.getByTestId("return-nudge-toast"), "还没到时长就自己消失了").toBeTruthy();
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(screen.queryByTestId("return-nudge-toast")).toBeNull();
+  });
+
   /** R16.190：文件头那句「停留多久」必须跟着常量走——改常量的那个人不会想起去改注释。 */
   it("文件头注释里的秒数与停留时长同源", () => {
     const src = readFileSync("src/components/return-nudge-toast.tsx", "utf8");
