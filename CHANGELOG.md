@@ -5,6 +5,30 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.17] - 2026-09-25
+
+**把「每天一次」变成真的那一天 / Making "once a day" actually mean one day**
+
+### 中文
+
+- 复习提醒真的每天最多一次了：以前档位选「每天一次」，可只要不去点那颗按钮，当天每打开一次统计页就再弹一条——名字承诺的是上限，机制给的是「每次访问」。现在横幅一出现就把这一天记为已读，那颗按钮也从「稍后」改叫「知道了」，因为它许诺的「待会儿再来」这套机制本来就不存在
+- 失败提示不再替没测量过的成因下诊断：发送登录链接失败不再一律说「网络异常，请检查连接」（只有拿到网络证据的那两种情况才这么说）、AI 与搜索索引加载失败那几句不再宣布成因、限流那句说清是谁的上限、英文报错标识串不再上屏到中文界面
+- 同一个数字在同一屏只有一个名字，而且名字说得出它的尺子：滚动 7 天的摘要与目标不再叫「本周 / 每周」、两把都叫「近 7 天」的卡各自点名量的是分钟还是活动记录、「今日到期 / 错题本」那一格两头都有名字、三张时段卡不再与全部历史同名、测验平均分不再顶着裸的「准确率」
+- 界面上的句子只指屏幕上真的有的东西：404 排不出推荐就整栏收起（不再拿语料前三条冒充「按地址猜的」）、书签空态不再让你去点一颗此刻看不见的 ★、复习页「怎么做」点名的就是此刻渲染出来的那两颗按钮、课文只剩一个量词、回放时长那块不再承诺「做完一轮就有」
+- 两处会静默丢数据的缺陷：点「新一轮」不再把刚结束那轮记两次、把真正打完那轮记零次，历史最佳也不会被更小的值覆盖掉；变体题答题不再把变体的选项序号写进来源错题的「你的选择」，AI 评分没被服务器收下就不留「已反馈」
+- 云端与隐私那一面改由一张表决定，不再手数：服务器上有几类你的数据、学习时长台账保留窗口的锚点、导出文件自己说清两个统计窗口（v2→v3），被离线队列上限挤掉的写入也记进「还没上云」——☁ 不再对它说「已云端存档」；离线页也不再无条件承诺「恢复后会自动重新加载」
+
+### English
+
+- The review reminder really is once a day now: choosing "Once a day" used to still put the banner back on every visit to the stats page unless you dismissed it — the label promised a ceiling while the mechanism delivered "each visit". The banner now consumes its own period the moment it appears, and that button says "Got it" instead of "Later", because the "ask me again in a bit" it promised was never implemented
+- Failure messages stopped diagnosing causes they never measured: a login-link send failure no longer always reads "network problem, check your connection" (that wording now requires actual network evidence), the AI and search-index failures no longer announce a cause, the rate-limit line says whose limit it is, and raw English error identifiers stay off Chinese pages
+- One number, one name per screen, and the name states its ruler: the rolling 7-day summary and goal are no longer called "this week / weekly", the two "last 7 days" cards each say what they measure (minutes vs recorded activity), the "Due now / wrong answers" cell names both halves, three in-range cards no longer share a name with all-time, and a quiz average is no longer labelled accuracy
+- On-screen sentences only point at things actually on screen: the 404 page collapses the whole suggestion block when the URL yields nothing (instead of passing the first three corpus entries off as "guessed from your URL"), the bookmarks empty state no longer tells you to click a ★ that isn't visible yet, the review page's "how to" names the two buttons rendered right now, lessons have a single measure word, and the replay time card stops promising what a finished round does not produce
+- Two defects that silently lost data: pressing "new round" no longer records the round you just finished twice and the round you actually complete zero times, and a smaller streak can no longer overwrite your all-time best; answering a variant question no longer writes the variant's option index into the source wrong answer's "your pick", and AI feedback stays unmarked as "sent" until the server accepts it
+- The cloud and privacy surface is derived from one table instead of hand-counted: how many kinds of your data live on the server, the anchor of the study-time ledger's retention window, and the two statistical windows the export file states for itself (v2 to v3). Writes dropped by the offline queue cap are now counted as not-yet-archived, so the cloud badge stops saying "archived" about them, and the offline page no longer unconditionally promises it will reload itself
+
+参考：[docs/roadmap.md](docs/roadmap.md)
+
 ## [0.7.16] - 2026-09-24
 
 **把没送到屏幕上的那几句补上（第八批） / Shipping the lines that never reached the screen (round eight)**
