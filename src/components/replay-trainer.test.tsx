@@ -140,6 +140,8 @@ const dict: ReplayDict = {
   rounds: "进度",
   contextNote: "历史上下文",
   shortHistory: "只有 {n} 根，需要 {m} 根",
+  shortHistoryCustom: "往晚调 {end}",
+  shortHistoryBlind: "切到 {mode} 自己选",
   fetchError: "行情暂时不可用，请稍后重试",
   disclaimer: "仅为训练用途",
   modeBlind: "盲测",
@@ -652,7 +654,12 @@ describe("ReplayTrainer 截止日界取本地日历", () => {
 });
 
 describe("ReplayTrainer 历史不够一轮时", () => {
-  const realZh = { ...dict, shortHistory: getDict("zh").replay.shortHistory };
+  const realZh = {
+    ...dict,
+    shortHistory: getDict("zh").replay.shortHistory,
+    shortHistoryCustom: getDict("zh").replay.shortHistoryCustom,
+    shortHistoryBlind: getDict("zh").replay.shortHistoryBlind,
+  };
 
   it("两种语言的文案都留着 {n} 与 {m}，否则下面的断言会退化成匹配静态数字", () => {
     for (const locale of ["zh", "en"] as const) {
@@ -684,5 +691,38 @@ describe("ReplayTrainer 历史不够一轮时", () => {
     render(<ReplayTrainer dict={realZh} locale="zh" />);
     await waitFor(() => expect(screen.getByText(/进度: 0\/270/)).toBeInTheDocument());
     expect(screen.queryByText(/不够一轮/)).toBeNull();
+  });
+
+  /**
+   * R16.193：建议只能指着屏幕上真的有的控件。
+   * 这块覆盖层在两种模式下都会出现（`availableRounds === 0`），而截止输入框只在
+   * 「自定义」下渲染；盲盒的结束时间是抽出来的，用户手上没有任何可调的东西。
+   */
+  it("盲盒模式不许叫用户去调一个没渲染的控件", async () => {
+    const zh = getDict("zh").replay;
+    mocks.fetchRandomHistoryWindow.mockImplementation(async () => makeKlines(6));
+    mocks.fetchKlines.mockImplementation(async () => makeKlines(6));
+    render(<ReplayTrainer dict={realZh} locale="zh" />);
+    const note = await screen.findByText(/只有 6 根/);
+    const block = note.closest("div")?.textContent ?? "";
+    expect(screen.queryByLabelText(realZh.endDateLabel), "截止输入框此时并不在屏幕上").toBeNull();
+    expect(block, "盲盒下这句在支使一个不在屏幕上的控件").not.toContain(
+      zh.shortHistoryCustom.replace("{end}", realZh.endDateLabel),
+    );
+    expect(block, "该指向真的存在的那个切换按钮").toContain(zh.modeCustom);
+    expect(screen.getByRole("button", { name: zh.modeCustom }), "按钮本身也得真的在").toBeInTheDocument();
+  });
+
+  it("自定义模式下这句建议点名的控件就在下方", async () => {
+    const zh = getDict("zh").replay;
+    mocks.fetchRandomHistoryWindow.mockImplementation(async () => makeKlines(6));
+    mocks.fetchKlines.mockImplementation(async () => makeKlines(6));
+    render(<ReplayTrainer dict={realZh} locale="zh" />);
+    fireEvent.click(screen.getByRole("button", { name: zh.modeCustom }));
+    const note = await screen.findByText(/只有 6 根/);
+    const block = note.closest("div")?.textContent ?? "";
+    expect(screen.getByLabelText(realZh.endDateLabel), "控件得真的渲染出来").toBeInTheDocument();
+    expect(block, "建议要点名那个控件").toContain(realZh.endDateLabel);
+    expect(block, "已经在自定义了，不必再叫用户切换模式").not.toContain(zh.modeCustom);
   });
 });
