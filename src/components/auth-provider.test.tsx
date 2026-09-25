@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
+import { RETURN_NUDGE_DAYS_KEY, RETURN_NUDGE_PENDING_KEY } from "@/lib/return-nudge-keys";
 
 type EventListener = (event: string, session: unknown) => void;
 
@@ -49,7 +50,11 @@ vi.mock("@/lib/sync-layer", () => ({
   setAuthState: (...args: unknown[]) => h.setAuthState(...args),
   hydrateFromCloud: (...args: unknown[]) => h.hydrateFromCloud(...args),
 }));
-vi.mock("@/lib/last-visit", () => ({
+// 读 storage 的三个入口按用例逐个 stub；`daysSinceLastVisit` 是纯算式（间隔由调用方
+// 传进来），这里用真实实现——R16.189 之后事件里那个天数只能由它算出，mock 一份就等于
+// 把「测出多少天」这件事从被测代码里挪到了夹具里。
+vi.mock("@/lib/last-visit", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/last-visit")>()),
   touchLastVisit: (...args: unknown[]) => h.touchLastVisit(...args),
   getLastVisitAt: () => h.getLastVisitAt(),
   shouldShowReturnNudge: (...args: unknown[]) => h.shouldShowReturnNudge(...args),
@@ -209,7 +214,9 @@ describe("AuthProvider", () => {
       await waitFor(() => expect(events.length).toBe(1));
       expect(events[0].detail).toEqual({ days: 30 });
       expect(h.touchLastVisit).toHaveBeenCalledTimes(1);
-      expect(window.sessionStorage.getItem("tb-return-nudge-pending")).toBe("1");
+      expect(window.sessionStorage.getItem(RETURN_NUDGE_PENDING_KEY)).toBe("1");
+      // R16.189：事件错过了也要能报出同一个数，所以这份测量值必须同时留在 sessionStorage 里
+      expect(window.sessionStorage.getItem(RETURN_NUDGE_DAYS_KEY)).toBe("30");
     } finally {
       window.removeEventListener("tb-return-nudge", listener);
       window.sessionStorage.clear();

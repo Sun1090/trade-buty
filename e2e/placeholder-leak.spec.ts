@@ -390,16 +390,18 @@ test.describe("占位符不泄漏到界面", () => {
 
   test("回访提醒 toast 的 {days} 代入正确", async ({ page }) => {
     // 这条同时是水合断言不空转的自证：toast 只在客户端挂载，服务端 HTML 里没有它，
-    // 且 `if (!open) return null`——拿不到 `data-testid` 就直接失败，不会静默跳过。
+    // 且没测到天数就 `return null`——拿不到 `data-testid` 就直接失败，不会静默跳过。
+    // R16.189：事件错过之后，屏幕上那个天数只能来自派发方存下的测量值，
+    // 所以这里两个键都要种，并且要断言**就是种子那个数**（只断「有个数字」会把常数也放过）。
     await page.addInitScript(() => {
       sessionStorage.setItem("tb-return-nudge-pending", "1");
+      sessionStorage.setItem("tb-return-nudge-days", "12");
     });
     await page.goto("/zh/stats", { waitUntil: "load" });
     const toast = page.getByTestId("return-nudge-toast");
     await expect(toast).toBeVisible({ timeout: 10_000 });
     const text = await toast.innerText();
     expect(leaksIn(text, tokens, { anyBrace: true }), text).toEqual([]);
-    // 天数为正整数才说明代入真的发生过（`setDays` 兜底 7）
-    expect(text).toMatch(/\d/);
+    expect(text, "天数没有取自 sessionStorage 里那份测量值").toContain("已 12 天没来");
   });
 });
