@@ -20,6 +20,26 @@ import { scanFloorViolation, recordScanCount } from "./scan-floor-lib.mjs";
 /** 现行文档（会被引用的那几篇）；progress.md 是历史记录，不参与对账 */
 export const AUDITED_DOCS = ["docs/database-testing.md", "docs/roadmap.md"];
 
+/**
+ * R16.268：`docs/roadmap.md` 一篇里住着两种东西——`## Q…` 那几节说的是**现在**的门禁
+ * （Q2.8、Q5.4 就在里面），`## R…` 之后是逐轮结案台账。台账行会把「原文写的是 40+30+8」
+ * 这类被改掉的旧数字**当证据引用**，整篇扫就会把一句真话报成不符（第三十五轮那行恰好同时
+ * 撞上两种取数写法）。所以 roadmap 只取 Q 节，其余与 progress.md 同样按历史记录豁免。
+ * 抽完为空不当「没有不符」放过去——那是 R16.83 那一族。
+ */
+export const CURRENT_SECTIONS = { "docs/roadmap.md": /^## Q/ };
+
+/** 只留下标题匹配 `re` 的 `## ` 小节。 */
+export function pickSections(text, re) {
+  const out = [];
+  let keep = false;
+  for (const line of text.split("\n")) {
+    if (line.startsWith("## ")) keep = re.test(line);
+    if (keep) out.push(line);
+  }
+  return out.join("\n");
+}
+
 /** 从 pgTAP 文件读出 basename → plan(N) */
 export function readPlanCounts(dir) {
   const plans = new Map();
@@ -104,10 +124,24 @@ export function run({ root = process.cwd(), log = console.log, exit = (code) => 
     return exit(1);
   }
 
-  const docs = AUDITED_DOCS.map((file) => ({
-    file,
-    text: fs.readFileSync(path.join(root, file), "utf8"),
-  }));
+  const docs = [];
+  const blind = [];
+  for (const file of AUDITED_DOCS) {
+    const raw = fs.readFileSync(path.join(root, file), "utf8");
+    const re = CURRENT_SECTIONS[file];
+    const text = re ? pickSections(raw, re) : raw;
+    // 只剩几行标题等于什么都没扫到——「没有不符」在这种时候不含信息
+    if (re && text.split("\n").filter((l) => !l.startsWith("## ")).join("\n").trim() === "") {
+      blind.push(`${file}（没有一节匹配 ${String(re)} 里有正文）`);
+    }
+    docs.push({ file, text });
+  }
+  if (blind.length > 0) {
+    log(
+      `db-assertion-counts: 有文档节选后只剩标题，对账扫不到任何引用：${blind.join("、")}`,
+    );
+    return exit(1);
+  }
 
   const issues = auditDocCitations({ plans, docs });
   if (issues.length > 0) {
