@@ -574,7 +574,10 @@ describe("ReplayTrainer 竞猜模式与战绩", () => {
     await waitFor(() => expect(screen.getByText(/进度: 2\/2/)).toBeInTheDocument());
 
     const calls = mocks.saveReplayRecord.mock.calls;
-    expect(calls, "第二轮没有入库（或多了回声）").toHaveLength(2);
+    // 「进度 2/2」与那次入库出自同一次 commit，但入库跑在 passive effect 里：断言文本
+    // 不等于断言效应。全量 coverage 跑（330 worker）下这里先红过一次——只等文本的写法
+    // 在机器不忙时看不出来。
+    await waitFor(() => expect(calls, "第二轮没有入库（或多了回声）").toHaveLength(2));
     expect(calls[1][0], "第二轮那条记的是两轮累加的战绩，不是这一轮的").toMatchObject({
       total: 2,
       correct: 2,
@@ -611,6 +614,15 @@ describe("ReplayTrainer 竞猜模式与战绩", () => {
     await waitFor(() => expect(screen.getByText(/进度: 2\/2/)).toBeInTheDocument());
 
     const calls = mocks.saveReplayRecord.mock.calls;
+    // 先等**这一轮那条**真的入库（效应晚于屏幕文本），再数总数：换标的那一步多出来的回声
+    // 只会让总数变成 2，等到位之后照样抓得住；反过来先数总数就会在效应还没落地的机器上
+    // 偶发报红（全量 coverage 跑下同类断言红过一次）。
+    await waitFor(() =>
+      expect(
+        calls.some(([record]) => record.symbol === "ETHUSDT" && record.total === 2),
+        "换标之后这一轮的入库没落地（分母被上一个交易对的战绩污染时也不会出现这条）",
+      ).toBe(true),
+    );
     expect(calls, "换标的那一步多写了一条记录").toHaveLength(1);
     expect(calls[0][0], "这条把上一个交易对猜过的那几根也算进了分母").toMatchObject({
       symbol: "ETHUSDT",
