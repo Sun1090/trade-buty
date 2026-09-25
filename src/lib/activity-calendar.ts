@@ -1,7 +1,11 @@
 /**
- * 学习活动日历：记录每天的学习日期（用于热力图）
- * 数据来源：progress 的 at 时间? progress 没记时间。用阅读时长记录补充。
- * 这里用一个简单的活动记录——每次 touchStreak 记录当天日期。
+ * 学习活动日历：记录「哪一天有过学习动作」，给热力图和小条图用。
+ *
+ * 只有一个写入者：`recordActivity()`，由 `touchStreak()` 在连续天数真的前进时调用
+ * （`streak.ts` 里 `recordActivity()` 那一行）。`touchStreak()` 自己的调用方是
+ * 标记已读（`progress.ts`）、错题入库（`wrongbook.ts`）与 `progress-helpers.ts`。
+ * 存的就是 `tb-activity` 这一个日期字符串数组：不读 `tb-progress-completions` 里的
+ * `at` 完成时间戳，也不读阅读时长（`tb-reading-time` 只被 `reading-time.ts` 读写）。
  */
 import { isLocalDateStr, localDateStr } from "./date-utils";
 import { readStorageJson } from "./storage-json";

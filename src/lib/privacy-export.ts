@@ -12,7 +12,12 @@
  * - 纯函数 `buildPrivacyExport()` 返回可序列化对象（不直接下载，便于测试）
  * - `downloadPrivacyExport()` 浏览器侧触发下载（用 Blob + a.download）
  * - SSR 安全：所有 storage 访问走 try/catch
- * - 不包含 Supabase 服务端数据、用户邮箱或登录会话（`sb-*` 令牌）；前端只导出本机存储的学习数据
+ * - 只有一个剔除者：`sb-*` 那一族会话键（见下面的 `SESSION_STORAGE_KEY`）。Supabase 服务端
+ *   数据不在这份文件里，因为它压根只读 `localStorage`；登录会话按 `@supabase/ssr` 的写法在
+ *   Cookie 里，遍历不到。
+ * - 反过来要说清「导出了什么」：用户在站内填过的订阅邮箱（`tb-newsletter-email`，
+ *   见 `newsletter.ts`）**会原样出现在这份 JSON 里**——它本来就是这台浏览器存的本机数据，
+ *   「导出本机全部存储」把它删掉才是替用户做主。隐私页那段说明写的就是「遍历本机存储」。
  */
 
 import { readProgress } from "./progress";

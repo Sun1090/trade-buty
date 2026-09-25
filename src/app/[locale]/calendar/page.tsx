@@ -61,7 +61,9 @@ export default async function CalendarPage({ params }: PageProps<"/[locale]/cale
         ))}
       </ul>
       <p className="mt-8 text-xs text-faint">
-        {en ? "Static sample data. API integration planned." : "静态示例数据，API 接入待定。"}
+        {en
+          ? "Static sample data — this page reads no economic-calendar feed, and none is connected."
+          : "静态示例数据：这一页不读取任何经济日历数据源，站内也没有接上这样一个源。"}
       </p>
     </div>
   );

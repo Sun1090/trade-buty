@@ -168,6 +168,23 @@ describe("buildPrivacyExport (R9.9)", () => {
     }
   });
 
+  /**
+   * R16.229：模块头曾经写「不包含 Supabase 服务端数据、用户邮箱或登录会话」。前半句是真话
+   * （只读 `localStorage`），后半句是假话：唯一的剔除者是 `/^sb-/` 那一族，用户在站内填的
+   * 订阅邮箱存在 `tb-newsletter-email`，按「本机全部存储」原样出去——`docs/growth-copy-policy.md`
+   * 第 4 条写的本来就是「可导出」。这一条把行为钉住，注释再想替「不含邮箱」作保就会与它打架。
+   */
+  it("订阅邮箱作为本机数据一起导出（只有 sb-* 那一族被跳过）", () => {
+    localStorage.setItem(
+      "tb-newsletter-email",
+      JSON.stringify({ email: "me@example.test", recordedAt: 1_700_000_000_000 }),
+    );
+    const exp = buildPrivacyExport(1_700_000_000_000);
+    const raw = exp.localStorage["tb-newsletter-email"];
+    expect(raw, "订阅邮箱没进导出：那句「不含邮箱」的注释就又是真话了").toBeTruthy();
+    expect(JSON.parse(raw).email).toBe("me@example.test");
+  });
+
   it("progress 汇总忽略损坏章节和重复文档", () => {
     localStorage.setItem(
       "tb-progress",

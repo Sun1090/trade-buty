@@ -369,7 +369,7 @@ const zh = {
     title: "安装 Trade Buty",
     body: "浏览器允许时可添加到设备，以独立窗口打开。不会自动安装，也不会发送通知。",
     install: "安装",
-    dismiss: "暂不",
+    dismiss: "不再提示",
   },
   share: {
     quizTitleTpl: "{chapter} · {grade} 评级 · {score}/{total}",
@@ -780,7 +780,7 @@ const en: Dict = {
     title: "Install Trade Buty",
     body: "Add it to this device for a standalone window when your browser allows it. Nothing installs or sends notifications automatically.",
     install: "Install",
-    dismiss: "Not now",
+    dismiss: "Don't show again",
   },
   share: {
     quizTitleTpl: "{chapter} · Grade {grade} · {score}/{total}",
