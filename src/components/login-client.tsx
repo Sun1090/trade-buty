@@ -16,7 +16,6 @@ type AuthDict = {
   sending: string;
   sent: string;
   sentHint: string;
-  error: string;
   errorRateLimited: string;
   errorRateLimitedHint: string;
   errorInvalidEmail: string;

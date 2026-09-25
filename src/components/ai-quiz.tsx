@@ -10,7 +10,7 @@ interface AiQuizProps {
   /** 用户错题列表（篇章+题号） */
   wrongItems: { chapterNum: string; questionIdx: number }[];
   dict: {
-    generate: string; generating: string; error: string; question: string; explain: string;
+    generate: string; generating: string; error: string;
     report: string; reported: string; reportFailed: string; badge: string; correct: string; wrong: string; next: string; done: string;
     /** 401 与 429 各自的说法：把「重试没用」和「等一会儿再有结果」混成一句就是假话 */
     loginRequired: string; rateLimited: string;
