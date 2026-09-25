@@ -520,7 +520,7 @@ describe("§3 无登录对等：说出口的数都现读", () => {
     expect(AUTH_OR_NET.test(stripComments(CLIENT_SRC)), "这个信号连统计页自己的 useAuth() 都认不出来，判据废了").toBe(true);
   });
 
-  it("§1 数据源点名的键，读写端真的都落在 localStorage 上", () => {
+  it("§1 数据源点名的每个键都有经由 localStorage 的读写端", () => {
     const keys = s1Keys();
     expect(keys.length, "§1 的数据源列推不出几个键，扫描八成没跑起来").toBeGreaterThanOrEqual(4);
     const para = paraOf("数据源");

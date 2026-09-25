@@ -71,8 +71,8 @@
 「对等」说的是**算法**：统计页从 `src/lib/` 导入的每一个模块（算指标的聚合器、字典、日期工具，全在内）里，
 没有一处读登录态，也没有一处在自己发请求——`fetch`、`XMLHttpRequest`、`sendBeacon` 三个都数过，零处。
 §1「数据源」列点名的 `tb-study-time`、`tb-weekly-goal-min`、`tb-streak`、`tb-review-reminder-*`
-**4** 个键，在 `src/` 下的读写端全部落在 `localStorage`（`localStorage.getItem/setItem`，或它的
-`readLocalJson` / `writeLocalJson` 包装）。未登录用户看到的每一个数字，与登录用户是同一条代码算出来的；
+**4** 个键，每一个在 `src/` 下都有经由 `localStorage` 的读写端（`localStorage.getItem/setItem` 本体，
+或它的 `readStorageJson`、`readLocalJson` / `writeLocalJson` 包装）。未登录用户看到的每一个数字，与登录用户是同一条代码算出来的；
 走真实渲染验这一条的是 `src/components/stats-client-guest.test.tsx`（它不带 AuthProvider 直接渲染统计页）。
 
 登录后界面上确实多出 **2** 处与账号有关的东西，两处都不报指标（R12.8 来源标识如实呈现）：数据来源标识（「本机数据」/「本机 + 云端」/
