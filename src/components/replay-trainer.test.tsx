@@ -76,8 +76,6 @@ vi.mock("@/lib/replay-store", () => ({
 
 vi.mock("@/lib/study-time", () => ({ addStudyTime: mocks.addStudyTime }));
 
-vi.mock("@/lib/study-time", () => ({ addStudyTime: mocks.addStudyTime }));
-
 /** 日界只允许取自本地日历 helper：哨兵值与任何 UTC 换算结果都不相等，写回 UTC 口径当场红 */
 const LOCAL_DAY_END_SENTINEL = 1_700_000_000_123;
 const mockLocalDateStr = vi.fn((date?: Date): string => (date ? "1970-01-01" : "1970-01-02"));
