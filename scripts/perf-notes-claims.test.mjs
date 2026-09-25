@@ -58,16 +58,26 @@ describe("perf-notes 转述的预算清单就是清单本身", () => {
 
   it("点名到函数的四个能力确实导出，也确实进了 Vitest", () => {
     // 「提供校验、匹配、资产提取和测量纯函数」这类抽象说法无法核对，写成 `函数名` 之后
-    // 才有权威：导出表 + 那份用例的导入清单。
+    // 才有权威：导出表 + 那份用例的具名导入清单。第二样必须是**导入清单**而不是「文件里
+    // 提过这个名字」——探针 P8 证明差别：只查文本出现时，从 import 里删掉 `measureRoute,`
+    // 而函数体里照旧用着它，门禁绿灯，而文档那句「逐个导入」已经不实。
     const line = docLine("- 预算与实现规则分离：", "这句话是「预算与实现分离」这条规矩的唯一落点");
     const named = [...line.matchAll(/`([a-z][A-Za-z]{3,})`/g)].map((m) => m[1]);
     expect(named.length, "那一行没点到任何函数名——又退回抽象说法了？").toBeGreaterThanOrEqual(6);
+    const imported = (() => {
+      // `[^}]*` 而不是 `[\s\S]*?`：后者会从上面那条 `import { describe, expect, it } from "vitest"`
+      // 一路吃到这里，把 vitest 的三个名字也算成「导入过」。BASE 不绿时才暴露出来。
+      const block =
+        /import\s*\{([^}]*)\}\s*from\s*"\.\/bundle-budget\.mjs"/.exec(read("scripts/bundle-budget.test.mjs"));
+      expect(
+        block,
+        "bundle-budget.test.mjs 不再从 bundle-budget.mjs 具名导入——文档那句「纳入 Vitest」没有落点了",
+      ).toBeTruthy();
+      return new Set(block[1].split(",").map((s) => s.trim()).filter(Boolean));
+    })();
     for (const name of named) {
       expect(budgetLib[name], `文档点名的 ${name}() 并不是 bundle-budget.mjs 的导出`).toBeTypeOf("function");
-      expect(
-        read("scripts/bundle-budget.test.mjs"),
-        `文档说「纳入 Vitest」，可 bundle-budget.test.mjs 里没有 ${name}`,
-      ).toContain(name);
+      expect(imported.has(name), `文档说「纳入 Vitest」，可 bundle-budget.test.mjs 没有导入 ${name}`).toBe(true);
     }
   });
 });
