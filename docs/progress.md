@@ -7403,3 +7403,23 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：用户可见变化为零（文档叙述、测试形状与一份贡献指南），数据结构与存储键零变化，无迁移；回滚 = `git revert` 这几笔。要留意的一处语义：`docs/perf-notes.md` 的 R9.6 段现在是「历史 + 已被推翻」的读法，别再有代码/文档把它当现状引用；`CONTRIBUTING.md` 新增的那条是写用例时的硬规矩，缺席判据不许套 `waitFor`。外部阻塞照旧：生产 `POST /api/ai/chat` 上游那一跳需要 Vercel 控制台权限，Vercel 24h 构建配额，以及 **R16.235**（把 59.3KB 的 supabase-js 从 454 条路由首屏拿掉）需要能端到端验证登录态才能动手。
 - 下一项：本分支开 PR，等 `ci` + `db-tests` + CodeQL 绿了 `gh pr merge --rebase --admin`，本地 `main` 快进；然后第二十七轮。下一轮候选：`docs/perf-notes.md` 上半部其余没有日期的读数（本轮只动了 R9.6 那段）、`docs/growth-copy-policy.md` 与界面的逐条对照、`src/app/[locale]/about/page.tsx` 其余句子；R16.238 那条类还留着一个可做的门禁——把「presence 断言必须在 `act()`/`waitFor` 边界内」变成一条扫描判据，而不是靠人读（本轮扫到的 120 条里只有 2 条落在类内，说明先不做门禁、按用例逐个改是划算的，但下一次 flake 之前这条判据值得写）。仍等用户拍板：R16.159 / R16.164 / R16.174 / R16.205 / R16.214 / R16.215，外加 #178（AGENTS.md 产品边界）。
 - 更新时间：2026-09-25 18:52（Asia/Shanghai，落笔时现读）。
+
+---
+
+## 2026-09-25 · 第二十七轮（R16.241–R16.245）：政策文档夸了自己
+
+- 里程碑 / 版本：「说法 vs 事实」第二十七轮，无发布（当前仍是 v0.7.17）。**第二十六轮收尾**：PR #319 已 rebase 合并，`origin/main = ecd96c2`，`ci` 在 head 上 **9m49s 绿**（`db-tests` + CodeQL 同绿），本地 `main` 已快进、`fix-effect-driven-test-waits` 已删。本轮照的对象是 `docs/growth-copy-policy.md`——那份「不许用暗黑模式」的政策，以及它隔壁 `docs/social-features-review.md` 替它吹的那一句。
+- 完成内容：
+  - **R16.241** 「验收证据」两个数字全是手抄的旧值：登记表面写 6（JSON 里 7 条，门禁每次都打印 7）、门禁用例写 14（`npx vitest run` 读到 26）。
+  - **R16.242** 「表面登记表」那节用冒号列了 5 个字段、读起来像穷举，JSON 每条表面实有 11 个键；漏掉的 `i18nSource` 恰好是门禁用来决定去哪个文件抠中英字典的那个。
+  - **R16.243** 「允许的表达」四条例句里三句界面从来没印过：`只学知识`（字典是「只讲知识」）、`邮箱只保存在本机，不会上传`（字典是「邮箱只存在这台浏览器，不上传」）、`你已完成 12 / 182 篇`——**最后一条把 R16.132 才改口的标签又请了回来**，政策文档推荐它等于下发了退化许可证。四句全部换成字典原文，占位符按 `{r} / {t}` 原样写，不再代进会过期的 182。
+  - **R16.244** 召回提示那句「7 天未访才出现一次」只有一个没出处的数，还漏了同一串判断里的 90 天上限与「两次提示至少间隔 7 天」；改口并钉到 `src/lib/last-visit.ts` 的常量。
+  - **R16.245** `docs/social-features-review.md` 把 `optIn`（用户主动触发）记成门禁已经查过的东西——全仓库没有一行代码读它。那句改成实话说「可关闭」，并直写 `optIn` 只是登记事实；政策文档同条也加上「**门禁不读这一项**」。
+- 门禁：新增 `scripts/growth-policy-claims.test.mjs`（11 条，纯 Node，跑在 `npm run test:coverage` 里）。表面数 / 豁免数 / 用例数 / 键清单 / 四个计数 / 两个天数 / 每一个「…」引号 / 规则表点名的实现符号 / 文档里的路径与 `R**.**` 编号，全部现读产物，各带地板防扫描空转。台账 `docs/scan-counts.md`（secrets 804→805）与 `docs/test-clock-hygiene.md`（329→330 文件）随新文件重写。
+- 变更文件：`docs/growth-copy-policy.md`、`docs/social-features-review.md`、`scripts/growth-policy-claims.test.mjs`（新）、`docs/scan-counts.md`、`docs/test-clock-hygiene.md`、`docs/roadmap.md`、`docs/progress.md`。
+- 验证：`npx vitest run scripts/growth-policy-claims.test.mjs` 11/11；`npm run check:dark-pattern-copy` exit 0（打印 7 个登记表面）；`npx eslint --max-warnings=0` 新文件干净；探针 `.gate-logs/probe-r27.mjs` **26 条全按预期**（G1–G19 + A1–A5 二十四条红，H0/H0b 两条只改注释的活下来），跑完 `git status` 干净。全量链 `.gate-logs/chain-r27.sh` 见本条末尾补记。
+- 变异核对：红条各抓一处，且两侧都试了——文档侧（把数字抄错、把键删一条、把例句改回凭印象的那句）与产物侧（往 JSON 塞一个没人登记的键、把门槛常量改成 14 天、把订阅标题的「（占位）」改掉、在门禁里插一句 `void surface.optIn;`、把一条用例改成 `xit(`）。A5 那条尤其值得留着：用例被跳过而源码一行没少，只有把 `it(` 数当尺子才抓得住「文档还报 26」。
+- 我自己的错（本轮三次，都是新写的判据或正文自己暴露的）：①第一版把 `it("…", () {` 少了箭头，整个文件加载失败——**报的是「0 test / Parse failure」而不是 failed**，跑探针前必须先看 BASE 绿，否则这种红会被读成「判据没生效」；②`R 编号 ≥5` 这个地板是我凭印象写的，文档里其实只有 4 个不同编号，第一次跑就红，改成实测的 4（地板本身也是一条说法，得现读）；③登记 `optIn` 那 13 处命中时我先写成「11 处」，来源是我早先那次被截断的 Grep 输出——**引用自己贴过来的数字之前要重新量一遍**，`git show main:` 逐文件数完才对上。另外正文一句「门禁会逐个回中英文典比对」当时也只做了中文，发出去前改成「回 `src/lib/i18n.ts`」。
+- 阻塞 / 风险：无新增阻塞。R16.235（首屏 59.3KB 的 Supabase SDK）仍是要能端到端验证登录态才动的债；R16.98（同一个对象在首页三种量词）仍是需拍板的产品口径——本轮把进度例句钉成 `你已读 {r} / {t} 篇`，若那一条定了换量词，这道门禁会红着提醒改文档。
+- 下一项：本分支开 PR，等 `ci` + `db-tests` + CodeQL 绿了 `gh pr merge --rebase --admin`，本地 `main` 快进；然后第二十八轮。候选（本轮读到、还没现读复核）：`docs/growth-events.md` 与 `docs/growth-event-privacy-audit.md` 里的计数（这两份也是「谁登记了什么」的台账，同一族风险）、`src/app/[locale]/about/page.tsx` 其余句子、`docs/social-features-review.md` 剩下的句子（本轮只动了第 4 节那一条）。仍等用户拍板：R16.159 / R16.164 / R16.174 / R16.205 / R16.214 / R16.215 / R16.98，外加 #178（AGENTS.md 产品边界）与生产 AI 502 需要 Vercel 控制台权限。
+- 更新时间：2026-09-25
