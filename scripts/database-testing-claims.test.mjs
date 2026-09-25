@@ -505,14 +505,18 @@ describe("备份字节数是运行时读数，不是仓库的属性", () => {
     expect(cited, "文档写的字节下限 ≠ backup-drill.mjs 真正判的那个数").toBe(dumpFloor());
   });
 
-  it("两处读数都留着，各自标明是谁读到的", () => {
+  it("三个读数都留着，各自标明是哪一次运行读到的", () => {
     const row = pickSections(read("docs/roadmap.md"), CURRENT_SECTIONS["docs/roadmap.md"])
       .split("\n")
       .find((l) => l.includes("backup:drill"));
-    const nums = [...new Set([...row.matchAll(/\b(\d{2,3},\d{3})\b/g)].map((m) => m[1]))];
-    expect(nums, "文档里的备份字节读数不再是两个不同的值——那正是「它随机器而变」的证据").toEqual(["45,104", "45,105"]);
-    expect(/本地读到 45,104/.test(row), "第一个读数没标明是谁读到的").toBe(true);
-    expect(/CI 读到 45,105/.test(row), "第二个读数没标明是谁读到的").toBe(true);
+    const nums = [...new Set([...row.matchAll(/\b(\d{2,3},\d{3})\b/g)].map((m) => m[1]))].sort();
+    expect(
+      nums,
+      "文档里的备份字节读数不再是那三个不同的值——多一次运行就多一个数，这正是它不属于任何工件的证据",
+    ).toEqual(["45,103", "45,104", "45,105"]);
+    for (const cite of ["本地 45,104", "CI 45,105", "CI 45,103"]) {
+      expect(row.includes(cite), `读数 ${cite} 没挨着自己的归属（是哪一次运行读到的）`).toBe(true);
+    }
   });
 });
 
