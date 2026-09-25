@@ -1,6 +1,6 @@
 # 分享与邀请转化事件（R13.19）
 
-最后更新：2026-09-12
+本文的事件名、每条事件的允许字段、以及下面那些枚举取值，全部由 `scripts/growth-events-claims.test.mjs` 逐个回 `src/lib/growth-events.ts` 现读比对——代码改了文档没跟上，红的是文档。所以这里不写「最后更新」的日期。
 
 ## 0. 当前边界
 
@@ -19,25 +19,30 @@
 | 事件 | 触发点 | 允许字段 | 用途 |
 | --- | --- | --- | --- |
 | `share_card_download` | 分享卡 / 落地页下载 | `card`, `locale`, `surface`, `trigger`, `outcome` | 识别分享素材生成漏斗与失败率 |
-| `share_card_shared` | 卡面图片交给系统分享面板成功 | `card`, `locale`, `surface`, `outcome`（只有 `succeeded`） | 与 `share_card_download/trigger=share` 分开：面板成功时不再谎报一次下载；两者相除即平台支持率 |
+| `share_card_shared` | 卡面图片交给系统分享面板成功 | `card`, `locale`, `surface`, `outcome`（只允许 `succeeded`） | 与 `share_card_download/trigger=share` 分开：面板成功时不再谎报一次下载；两者相除即平台支持率 |
 | `share_preview_opened` | 站内分享卡成功生成预览 | `card`, `locale` | 比较预览与直接下载的使用偏好 |
-| `share_link_copy` | 复制分享链接成功或失败 | `card`, `locale`, `outcome` | 观察复制链路成功率 |
+| `share_link_copy` | 复制分享链接成功或失败 | `card`, `locale`, `outcome`（只允许 `succeeded` \| `failed`） | 观察复制链路成功率 |
 | `share_landing_cta_clicked` | 分享落地页 CTA 点击 | `card`, `locale`, `destination` | 判断访客进入学习路线还是回放训练 |
 | `invite_banner_viewed` | 邀请 banner 首次展示 | `locale`, `source` | 区分 URL 新邀请与本地既有邀请 |
 | `invite_banner_dismissed` | 用户点击“知道了” | `locale` | 衡量邀请提示打扰程度 |
 | `invite_banner_cleared` | 用户主动清除邀请 | `locale` | 区分关闭提示与删除邀请记录 |
-| `milestone_share` | 用户点击分享学习里程碑 | `locale`, `channel`, `outcome` | 观察轻量社交分享的成功率与渠道 |
+| `milestone_share` | 用户点击分享学习里程碑 | `locale`, `channel`, `outcome`（只允许 `succeeded` \| `failed`） | 观察轻量社交分享的成功率与渠道 |
 
 ### 枚举
 
-- `card`: `quiz` | `replay` | `streak`
-- `locale`: `zh` | `en`
-- `surface`: `owner`（站内生成者） | `landing`（分享落地访客）
-- `trigger`: `share`（分享按钮） | `preview`（预览后的下载）
-- `outcome`: `started` | `succeeded` | `failed`；复制链接只允许后两者
-- `destination`: `path` | `replay`
-- `source`: `url` | `storage`
-- `channel`: `web-share`（系统分享面板） | `clipboard`（复制文案）；里程碑分享只允许 `succeeded` | `failed`
+上面 9 行事件一共用到 8 个字段，每个字段的取值就是下面这一行写的这些——这一节由
+`scripts/growth-events-claims.test.mjs` 逐个回 `src/lib/growth-events.ts` 比对（类型别名、
+`new Set` 白名单、以及变体里内联的字面量联合都会算进来），改名或加值不在这儿同步就会红。
+某一件事只允许其中一部分取值的，写在那一行的「允许字段」列里，不重复到这一节。
+
+- `card`：`quiz` | `replay` | `streak`
+- `locale`：`zh` | `en`
+- `surface`：`owner`（站内生成者） | `landing`（分享落地访客）
+- `trigger`：`share`（分享按钮） | `preview`（预览后的下载）
+- `outcome`：`started` | `succeeded` | `failed`
+- `destination`：`path` | `replay`
+- `source`：`url` | `storage`
+- `channel`：`web-share`（系统分享面板） | `clipboard`（复制文案）
 
 ## 2. 明确禁止的字段
 
@@ -83,8 +88,9 @@
 
 - 纯事件层：`src/lib/growth-events.ts`
 - 单元测试：`src/lib/growth-events.test.ts` 覆盖白名单、运行时枚举、额外字段剥离、日志抛错降级
-- 组件测试覆盖三张分享卡、落地页下载、复制链接、CTA、邀请 banner 的真实触发路径
+- 组件测试覆盖 3 张分享卡、落地页下载、复制链接、CTA、邀请 banner 的真实触发路径
 
 任何新增事件都必须先扩展判别联合与本文档，再补“只记录白名单字段”的测试。
 
-隐私门禁：`npm run check:growth-event-privacy` 会拒绝网络、持久化、cookie、剪贴板出口，并要求事件目录与隐私页同步。
+隐私门禁：`npm run check:growth-event-privacy` 的禁区是 **6 类出口**——网络（`fetch`、
+`sendBeacon`、`XMLHttpRequest` 各算一类）、持久化存储、cookie、剪贴板；并要求事件目录与隐私页同步。
