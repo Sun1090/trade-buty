@@ -86,7 +86,8 @@ R13.22 的自动化覆盖：
 - `src/lib/growth-events.test.ts`：新增事件的运行时不变量和非法枚举拒绝。
 - `scripts/growth-event-privacy.mjs`：事件目录、console-only 出口、禁止网络与持久化 API。
 - `src/components/stats-client.test.tsx`：stats 页有进度时接入分享入口，零进度时不出现入口。
-- `scripts/check-dark-pattern-copy.mjs`：登记表面、中英双语、非阻断、用户主动触发。
+- `scripts/check-dark-pattern-copy.mjs`：登记表面、中英双语、非阻断、可关闭。登记表里的
+  `optIn`（用户主动触发）只是登记事实，这个门禁不读它——别把它当成已经查过的东西。
 - `e2e/smoke.spec.ts`：真实浏览器验证有进度可见、零进度静默。
 - `npm run typecheck`、`npm run lint`、生产构建和 Lighthouse CI。
 
