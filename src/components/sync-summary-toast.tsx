@@ -49,7 +49,7 @@ export function SyncSummaryToast() {
   const lines: string[] = [];
   if (summary.newProgress > 0) lines.push(t.syncSummaryProgressTpl.replace("{n}", String(summary.newProgress)));
   if (summary.newWrong > 0) lines.push(t.syncSummaryWrongTpl.replace("{n}", String(summary.newWrong)));
-  if (summary.quizImprovements > 0) lines.push(t.syncSummaryQuizTpl.replace("{n}", String(summary.quizImprovements)));
+  if (summary.quizFromCloud > 0) lines.push(t.syncSummaryQuizTpl.replace("{n}", String(summary.quizFromCloud)));
   if (summary.newReplays > 0) lines.push(t.syncSummaryReplayTpl.replace("{n}", String(summary.newReplays)));
 
   return (

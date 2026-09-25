@@ -26,7 +26,7 @@ describe("diffMergeSummary", () => {
     );
     expect(summary.newProgress).toBe(0);
     expect(summary.newWrong).toBe(0);
-    expect(summary.quizImprovements).toBe(0);
+    expect(summary.quizFromCloud).toBe(0);
     // 这一轮就是本机自己上传云端的（指纹相同、时间只差打点），合并不会带它进来
     expect(summary.newReplays).toBe(0);
     expect(summary.hasAny).toBe(false);
@@ -82,7 +82,7 @@ describe("diffMergeSummary", () => {
     expect(summary.newWrong).toBe(2);
   });
 
-  it("云端测验成绩更高 → quizImprovements 计数", () => {
+  it("云端测验成绩更高 → quizFromCloud 计数", () => {
     const local = { ch1: { best: 5, done: true } };
     const cloud = [
       { chapter_num: "ch1", best: 8, total: 10, done: true },
@@ -91,24 +91,24 @@ describe("diffMergeSummary", () => {
     const summary = diffMergeSummary(
       {}, [], {}, [], local, cloud, [], [],
     );
-    expect(summary.quizImprovements).toBe(2);
+    expect(summary.quizFromCloud).toBe(2);
   });
 
-  it("云端测验成绩相等时不计为 improvement", () => {
+  it("云端测验成绩相等时不计入（覆盖必须是真更高）", () => {
     const local = { ch1: { best: 8, done: true } };
     const cloud = [{ chapter_num: "ch1", best: 8, total: 10, done: true }];
     const summary = diffMergeSummary(
       {}, [], {}, [], local, cloud, [], [],
     );
-    expect(summary.quizImprovements).toBe(0);
+    expect(summary.quizFromCloud).toBe(0);
   });
 
-  it("本地无此 chapter 但云端有也算 improvement", () => {
+  it("本地没有这一章、云端带来一个分数，也算「从云端来」（它不是一次提升）", () => {
     const cloud = [{ chapter_num: "ch1", best: 5, total: 10, done: true }];
     const summary = diffMergeSummary(
       {}, [], {}, [], {}, cloud, [], [],
     );
-    expect(summary.quizImprovements).toBe(1);
+    expect(summary.quizFromCloud).toBe(1);
   });
 
   it("多种合并：summary 同时有多个非零字段", () => {
@@ -132,7 +132,7 @@ describe("diffMergeSummary", () => {
     expect(summary).toEqual({
       newProgress: 2,
       newWrong: 1,
-      quizImprovements: 1,
+      quizFromCloud: 1,
       newReplays: 0,
       hasAny: true,
     });

@@ -775,8 +775,12 @@ export interface MergeSummary {
   newProgress: number;
   /** 云端新增的错题条目数 */
   newWrong: number;
-  /** 被云端覆盖的测验成绩（云端更高） */
-  quizImprovements: number;
+  /**
+   * 这一屏合并会从云端带入的测验成绩条数，两种情形各算一次：
+   * 云端比本地高（覆盖），或本地根本没有这一章而云端有分数（补齐）。
+   * 所以名字里没有「improve」——一次首次到达不是一次提升。
+   */
+  quizFromCloud: number;
   /** 合并真正会从云端带入的回放轮次数（与 mergeReplayHistory 同一判据，本机上传的那些不算） */
   newReplays: number;
   /** 是否有任何新内容 */
@@ -803,13 +807,13 @@ export function diffMergeSummary(
   const newWrong = cloudWrong.filter(
     (row) => !localWrong[`${row.chapter_num}:${row.question_idx}`],
   ).length;
-  const quizImprovements = cloudQuiz.filter((row) => {
+  const quizFromCloud = cloudQuiz.filter((row) => {
     const l = localQuiz[row.chapter_num];
     return l ? row.best > l.best : row.best > 0;
   }).length;
   const newReplays = countNewReplayRounds(localReplay, cloudReplay);
-  const hasAny = newProgress + newWrong + quizImprovements + newReplays > 0;
-  return { newProgress, newWrong, quizImprovements, newReplays, hasAny };
+  const hasAny = newProgress + newWrong + quizFromCloud + newReplays > 0;
+  return { newProgress, newWrong, quizFromCloud, newReplays, hasAny };
 }
 
 /**

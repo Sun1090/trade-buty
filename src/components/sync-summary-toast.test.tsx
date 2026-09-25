@@ -42,7 +42,7 @@ describe("SyncSummaryToast", () => {
     emit({
       newProgress: 0,
       newWrong: 0,
-      quizImprovements: 0,
+      quizFromCloud: 0,
       newReplays: 0,
       hasAny: false,
     });
@@ -54,7 +54,7 @@ describe("SyncSummaryToast", () => {
     emit({
       newProgress: 3,
       newWrong: 2,
-      quizImprovements: 1,
+      quizFromCloud: 1,
       newReplays: 0,
       hasAny: true,
     });
@@ -63,7 +63,22 @@ describe("SyncSummaryToast", () => {
     expect(status.textContent).toContain("已为你同步云端进度");
     expect(status.textContent).toContain("新增 3 篇已读");
     expect(status.textContent).toContain("新增 2 条错题");
-    expect(status.textContent).toContain("1 个章节测验分数提升");
+    expect(status.textContent).toContain("1 个章节的测验成绩由云端补齐或刷新");
+    // R16.192：这一行的动词要同时罩得住两种来法——云端更高（覆盖）与本地没有这一章（补齐）。
+    // 只写「提升」就把一次首次说成了一次进步。
+    expect(status.textContent).toMatch(/补齐或刷新/);
+  });
+
+  // R16.192：en 侧那一行也得同时罩得住「覆盖」与「本地没有这一章」两种来法。
+  it("en：这一行说的是 filled in or refreshed，不是 improved", () => {
+    Object.defineProperty(window, "location", {
+      value: { pathname: "/en/" },
+      writable: true,
+    });
+    render(<SyncSummaryToast />);
+    emit({ newProgress: 0, newWrong: 0, quizFromCloud: 3, newReplays: 0, hasAny: true });
+    const text = screen.getByRole("status").textContent ?? "";
+    expect(text).toContain("3 chapter quiz scores filled in or refreshed from the cloud");
   });
 
   it("英文路径用英文字典", () => {
@@ -75,7 +90,7 @@ describe("SyncSummaryToast", () => {
     emit({
       newProgress: 5,
       newWrong: 0,
-      quizImprovements: 0,
+      quizFromCloud: 0,
       newReplays: 2,
       hasAny: true,
     });
@@ -86,7 +101,7 @@ describe("SyncSummaryToast", () => {
 
   it("点关闭按钮立即消失", () => {
     render(<SyncSummaryToast />);
-    emit({ newProgress: 1, newWrong: 0, quizImprovements: 0, newReplays: 0, hasAny: true });
+    emit({ newProgress: 1, newWrong: 0, quizFromCloud: 0, newReplays: 0, hasAny: true });
     expect(screen.getByRole("status")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "关闭" }));
     expect(screen.queryByRole("status")).toBeNull();
@@ -94,7 +109,7 @@ describe("SyncSummaryToast", () => {
 
   it("点底部确认按钮也关闭", () => {
     render(<SyncSummaryToast />);
-    emit({ newProgress: 1, newWrong: 0, quizImprovements: 0, newReplays: 0, hasAny: true });
+    emit({ newProgress: 1, newWrong: 0, quizFromCloud: 0, newReplays: 0, hasAny: true });
     expect(screen.getByRole("status")).toBeInTheDocument();
     // 找含 "好的" 或 "Got it" 的按钮
     const btns = screen.getAllByRole("button");
@@ -107,13 +122,13 @@ describe("SyncSummaryToast", () => {
   it("sessionStorage 已标记时同一会话不重复弹", () => {
     memStore.set("tb-merge-summary-shown", "1");
     render(<SyncSummaryToast />);
-    emit({ newProgress: 1, newWrong: 0, quizImprovements: 0, newReplays: 0, hasAny: true });
+    emit({ newProgress: 1, newWrong: 0, quizFromCloud: 0, newReplays: 0, hasAny: true });
     expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("只渲染有数据的行（newReplays=0 时不显示）", () => {
     render(<SyncSummaryToast />);
-    emit({ newProgress: 1, newWrong: 0, quizImprovements: 0, newReplays: 0, hasAny: true });
+    emit({ newProgress: 1, newWrong: 0, quizFromCloud: 0, newReplays: 0, hasAny: true });
     const text = screen.getByRole("status").textContent ?? "";
     expect(text).toContain("新增 1 篇已读");
     expect(text).not.toContain("回放战绩");
@@ -123,7 +138,7 @@ describe("SyncSummaryToast", () => {
     vi.useFakeTimers();
     try {
       render(<SyncSummaryToast />);
-      emit({ newProgress: 1, newWrong: 0, quizImprovements: 0, newReplays: 0, hasAny: true });
+      emit({ newProgress: 1, newWrong: 0, quizFromCloud: 0, newReplays: 0, hasAny: true });
       expect(screen.getByRole("status")).toBeInTheDocument();
       act(() => {
         vi.advanceTimersByTime(SYNC_TOAST_AUTO_DISMISS_MS - 1);
