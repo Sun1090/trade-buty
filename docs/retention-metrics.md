@@ -1,6 +1,6 @@
 # 留存指标定义与审计（R12.25）
 
-最后更新：2026-09-11
+本文的新鲜度不靠日期：每一行都点名它的实现文件与常量，`scripts/retention-metrics-claims.test.mjs` 逐个回代码现读比对——给某本台账加一道裁剪而忘了改这一行，红的是这一行。
 
 ## 0. 前提：为什么不做服务端留存队列分析
 
@@ -36,16 +36,21 @@
 
 ## 2. 数据真实性与修剪策略（审计点）
 
-| 存储 | 上限策略 | 审计结论 |
+| 存储（实现文件） | 上限策略 | 审计结论 |
 | --- | --- | --- |
-| `tb-study-time` 台账 | 只保留最近 90 天（写入时裁剪） | 留存指标的 90 天外回溯不可行——文档与隐私页（R12.14）如实说明 |
-| `tb-replay-history` | 最近 100 轮 | 轮次统计的「allTime」实为最近 100 轮口径（R12.5 summary 已在文案边界内） |
-| `tb-progress-completions` | 无上限（体积上限由浏览器配额兜底） | 课程完成日期的完整历史可得 |
-| `tb-quiz-attempt-ledger` / `tb-review-attempt-ledger` | 无上限 | 测验/复习尝试完整历史可得 |
-| `tb-activity` | 无上限 | 活动日历完整历史可得（streak 数值本体在 `tb-streak`） |
+| `tb-study-time` 台账（`src/lib/study-time.ts`） | 以台账里**最新有记录的那一天**为终点保留 `STUDY_LEDGER_KEEP_DAYS = 90` 个日历日，写入时裁剪（锚不是今天：稀疏用户的 90 条可能横跨一年以上） | 留存指标的 90 天外回溯不可行——文档与隐私页（R12.14）如实说明 |
+| `tb-replay-history`（`src/lib/replay-store.ts`） | 最近 `REPLAY_HISTORY_KEEP = 100` 轮 | 轮次统计的「allTime」实为最近 100 轮口径（R12.5 summary 已在文案边界内） |
+| `tb-progress-completions`（`src/lib/progress.ts`） | 无上限（体积上限由浏览器配额兜底） | 课程完成日期的完整历史可得 |
+| `tb-quiz-attempts`（`src/lib/quiz-attempt-ledger.ts`） | 无上限 | 测验尝试完整历史可得；每章「当前最佳」另存 `tb-quiz-<chapter>`（`src/lib/quiz-store.ts`），那份才是权威 |
+| `tb-review-attempts`（`src/lib/review-attempt-ledger.ts`） | 最近 `MAX_ENTRIES = 300` 条应答，按 `at` 丢最旧的 | **原文曾写「无上限 / 完整历史可得」，那是假的**：第 301 条之前的应答已经被删掉。丢的只是统计元数据——错题本状态 `tb-wrong` 才是权威（同一句注释在写入函数里） |
+| `tb-activity`（`src/lib/activity-calendar.ts`） | 最近 365 个活跃日（`slice(-365)`，写满就把最旧的那一天丢掉） | **原文也写过「无上限」，同样假的**：活动日历只能回溯到台账里剩下的那 365 个活跃日，不是完整历史（streak 数值本体在 `tb-streak`） |
 
-**因此**：90 天以上的分钟数、100 轮以上回放次数会被裁剪——任何报表（含将来的导出分析工具）必须在窗口内计算，
-禁止把裁剪后的值标注为「历史累计」。当前产品内文案遵守此规则（「近 7 天」「最近 100 轮」）。
+**因此**：这张表里有 **4 本台账是有窗口的**——学习分钟数 90 个日历日、回放 100 轮、复习应答 300 条、
+活跃日历 365 个活跃日；剩下 2 本（`tb-progress-completions`、`tb-quiz-attempts`）没有裁剪。任何报表
+（含将来的导出分析工具）必须在窗口内计算，禁止把裁剪后的值标注为「历史累计」或「完整历史」。当前
+产品内文案遵守此规则（「近 7 天」「最近 100 轮」）。四个窗口与两本无上限，全部由
+`scripts/retention-metrics-claims.test.mjs` 回实现文件现读比对：给某本台账加一道裁剪而忘了改这一行，
+红的是这一行。
 
 ## 3. 无登录完全对等（R12.24）
 
