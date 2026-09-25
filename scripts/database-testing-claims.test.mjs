@@ -484,6 +484,38 @@ describe("断言数怎么挂：数字不在文件名后面、也不在聚合链�
   });
 });
 
+describe("备份字节数是运行时读数，不是仓库的属性", () => {
+  /** `backup-drill.mjs` 对 dump 体积唯一的那道判据。 */
+  const dumpFloor = () => Number(/dump\.stdout\.length < (\d+)/.exec(drill)?.[1] ?? NaN);
+
+  it("Q5.4 不许把某一次运行的字节数写成 `pg_dump` 的说明", () => {
+    const row = pickSections(read("docs/roadmap.md"), CURRENT_SECTIONS["docs/roadmap.md"])
+      .split("\n")
+      .find((l) => l.includes("backup:drill"));
+    expect(row, "roadmap 的 Q5.4 行不在现行节里了，这条判据无从可查").toBeTruthy();
+    // 旧写法是 `pg_dump -Fc`(45,104 bytes，随语料增长)——把一次运行的读数当成工件属性。
+    expect(
+      /pg_dump[^）)]{0,12}[(（]\s*[\d,]{3,}\s*bytes/.test(row),
+      "文档又写死了一个精确字节数：同一份代码在本地读到 45,104、CI 读到 45,105，这个数不属于仓库",
+    ).toBe(false);
+    expect(row.includes("字节数每次由脚本自己打印"), "文档没再说明这个数是运行时打印的").toBe(true);
+    const cited = Number(/(\d+) 字节下限/.exec(row)?.[1] ?? NaN);
+    expect(Number.isFinite(cited), "Q5.4 没写出脚本对备份体积的那道判据").toBe(true);
+    expect(dumpFloor(), "探测器在 backup-drill.mjs 里读不到 dump 体积下限").toBeGreaterThan(0);
+    expect(cited, "文档写的字节下限 ≠ backup-drill.mjs 真正判的那个数").toBe(dumpFloor());
+  });
+
+  it("两处读数都留着，各自标明是谁读到的", () => {
+    const row = pickSections(read("docs/roadmap.md"), CURRENT_SECTIONS["docs/roadmap.md"])
+      .split("\n")
+      .find((l) => l.includes("backup:drill"));
+    const nums = [...new Set([...row.matchAll(/\b(\d{2,3},\d{3})\b/g)].map((m) => m[1]))];
+    expect(nums, "文档里的备份字节读数不再是两个不同的值——那正是「它随机器而变」的证据").toEqual(["45,104", "45,105"]);
+    expect(/本地读到 45,104/.test(row), "第一个读数没标明是谁读到的").toBe(true);
+    expect(/CI 读到 45,105/.test(row), "第二个读数没标明是谁读到的").toBe(true);
+  });
+});
+
 describe("pgTAP 写法约定与探测器自检", () => {
   it("每条 throws_ok 都是显式 4 参数（SQLSTATE + NULL + 描述）", () => {
     for (const [name, sql] of [["rls_isolation", rls], ["sync_and_constraints", sync], ["embedding_generations", emb]]) {
