@@ -13,8 +13,10 @@
  * - 必须点名图表练习真的所在的那两个入口，而那两个名字**取自导航字典**（漂移就红）；
  * - 事实半边自己也要在：课文页那个条件渲染必须还在，且只有一处。
  * 外加一条正向对照：旧那两句喂给同一个判据，必须报出来。
+ *
+ * 这个文件管的是**关于页上那些替整站作保的句子**：第二段（R16.232）是那块邮件订阅占位的说明。
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { getDict } from "@/lib/i18n";
@@ -76,5 +78,58 @@ describe("关于页不许把图表练习算成每一章各自有的东西", () =
     const ctaLinks = lesson.match(/href=\{p\("\/chart"\)\}/g);
     expect(ctaLinks, "课文页那条「去看真盘」的链接形状变了，这里的判据要跟着改").toHaveLength(1);
     expect(lesson).toContain("t.doc.practiceCta");
+  });
+});
+
+/**
+ * R16.232：邮件订阅那块写「功能开发中」，而它不是「开发中」——是占位。
+ *
+ * 原文（zh `i18n.ts:340` / en `:751`）「邮件订阅功能开发中。当前邮箱仅保存在本机浏览器，不会上传。」
+ * 后半句是准确的，前半句断言了一件没人排期做的事：全仓库没有邮件服务（`src/app/api/` 下没有
+ * 任何 newsletter/subscribe 路由，`src/lib/newsletter.ts` 一次网络请求都不发），`docs/roadmap.md`
+ * 里也没有「接邮件订阅」这一项。一个等三年的访客读到「开发中」得到的是错的预期；诚实的说法只说现在：
+ * 这是一块占位，数据只在本机，出口就是那两颗按钮。
+ *
+ * 判据两头夹（只禁字的话把整句删掉就满足了）：
+ * - 禁「开发中/即将/coming soon/under construction」这类对将来的断言，旧写法作正向对照；
+ * - 必须点名两颗出口按钮，而按钮名字**取自字典本身**（改按钮文案而忘了改说明即红）；
+ * - 事实半边自己也要在：这一层没有后端，也没有邮件端点。
+ */
+const NEWSLETTER_LIB_SRC = "src/lib/newsletter.ts";
+const PLACEHOLDER_BUT_PROMISED =
+  /开发中|即将|不日|敬请期待|即将上线|under construction|coming soon|in the works|work in progress/i;
+
+describe("邮件订阅占位不许替一个没排期的功能作保", () => {
+  for (const locale of ["zh", "en"] as const) {
+    const labels = getDict(locale).newsletter;
+
+    it(`${locale}: 说明只说现在，不断言将来`, () => {
+      expect(labels.desc, `说明：${labels.desc}`).not.toMatch(PLACEHOLDER_BUT_PROMISED);
+      // 这一句同时把「这块叫占位」钉住：标题里就有「占位 / placeholder」，说明也不许把它说成在建工程
+      expect(labels.title.toLowerCase()).toMatch(/占位|placeholder/);
+    });
+
+    it(`${locale}: 正向对照——旧写法必须被同一个判据报出来`, () => {
+      const legacy = locale === "zh"
+        ? "邮件订阅功能开发中。当前邮箱仅保存在本机浏览器，不会上传。"
+        : "Email subscription is under construction. For now, your email stays in this browser only.";
+      expect(legacy).toMatch(PLACEHOLDER_BUT_PROMISED);
+    });
+
+    it(`${locale}: 点名的那两颗按钮就是字典里的那两个名字`, () => {
+      expect(labels.desc, "说明里没提「清除」，可用户看到的那颗按钮叫这个").toContain(labels.clear);
+      expect(labels.desc, "说明里没提那颗导出按钮的真名").toContain(labels.copy);
+    });
+  }
+
+  it("事实半边：这一层确实只有本机存储，没有邮件服务", () => {
+    const lib = read(NEWSLETTER_LIB_SRC);
+    // 一次网络请求都不发：有了任何一支，「不会上传」这句就先该改
+    expect(lib).not.toMatch(/\bfetch\(|XMLHttpRequest|\/api\//);
+    expect(lib.match(/localStorage/g), "本机存储的引用形状变了，这里的判据要跟着改").not.toBeNull();
+    const routes = readdirSync(path.join(process.cwd(), "src/app/api"), { recursive: true })
+      .map(String)
+      .filter((f) => /newsletter|subscribe|subscription/i.test(f));
+    expect(routes, `站内出现了邮件订阅端点（${routes.join("、")}），那句「站内没有邮件服务」就该重写`).toEqual([]);
   });
 });

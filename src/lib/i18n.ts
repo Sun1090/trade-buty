@@ -337,7 +337,7 @@ const zh = {
   },
   newsletter: {
     title: "邮件订阅（占位）",
-    desc: "邮件订阅功能开发中。当前邮箱仅保存在本机浏览器，不会上传。",
+    desc: "这是一个占位功能：站内没有邮件服务，填在这里的邮箱只保存在这台浏览器，不会上传；想拿回去或清掉，用的是下面「复制 JSON」和「清除」这两颗按钮。",
     placeholder: "your@example.com",
     emailLabel: "订阅邮箱",
     submit: "保存邮箱（本地）",
@@ -748,7 +748,7 @@ const en: Dict = {
   },
   newsletter: {
     title: "Newsletter (placeholder)",
-    desc: "Email subscription is under construction. For now, your email stays in this browser only — nothing is uploaded.",
+    desc: "This is a placeholder: the site has no email service. The address you type here lives only in this browser and is never uploaded — the two buttons below, “Copy JSON” and “Clear”, are its only ways out.",
     placeholder: "your@example.com",
     emailLabel: "Newsletter email",
     submit: "Save email (local)",
