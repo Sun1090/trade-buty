@@ -6,6 +6,9 @@ import { setAuthState } from "@/lib/sync-layer";
 // 离线期间没能落盘的写入（队列 chunk 当时加载不了）缓冲在 sync-layer 的入队模块里，
 // 它已随 sync-layer 进入 layout chunk，这里静态引入不再额外拉体积。
 import { retryBufferedWrites } from "@/lib/sync-layer-queue-fallback";
+// 回访提示的两个 sessionStorage 键：派发方与消费方必须写读同一份字面量，所以键名住在
+// 一个只有常量的模块里（把 `@/lib/last-visit` 静态拉进来才是真的破坏懒加载）。
+import { RETURN_NUDGE_DAYS_KEY, RETURN_NUDGE_PENDING_KEY } from "@/lib/return-nudge-keys";
 // hydrateFromCloud 单独动态引入——避免把 sync-queue-store 通过 sync-layer 拉进 layout chunk
 // （R9.6 体积守门：登录/同步逻辑仅登录后才需要）
 import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
@@ -31,16 +34,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // R9.8：记录当前访问 + 检测 7 天未访是否需要温和提示
     // 同步逻辑纯函数 + sessionStorage 去重（toast 内已处理），不会每次都弹
-    void import("@/lib/last-visit").then(({ touchLastVisit, getLastVisitAt, shouldShowReturnNudge }) => {
+    void import("@/lib/last-visit").then(({ touchLastVisit, getLastVisitAt, shouldShowReturnNudge, daysSinceLastVisit }) => {
       const now = Date.now();
       const previousVisit = getLastVisitAt();
       // 先用旧访问时间判断，再写入本次访问；否则每次都会把间隔清零。
       const shouldNudge = previousVisit !== null && shouldShowReturnNudge(now, previousVisit);
+      // 间隔在天数被写掉之前量好（`daysSinceLastVisit` 认的就是这次要报的那个数），
+      // 然后才 touch——顺序反了就只能量出 0。
+      const days = shouldNudge ? daysSinceLastVisit(now, previousVisit) : null;
       touchLastVisit(now);
-      if (shouldNudge) {
+      if (shouldNudge && days != null && days > 0) {
         // lazy toast 可能尚未完成加载，用 pending 标记避免事件被错过。
-        try { window.sessionStorage.setItem("tb-return-nudge-pending", "1"); } catch { /* ignore */ }
-        const days = Math.max(1, Math.floor((now - previousVisit) / (24 * 60 * 60 * 1000)));
+        // R16.189：间隔也要留一份在 storage 里。`touchLastVisit` 已经把本次访问时间写进去了，
+        // 所以下面这两条通道是唯一能带着真实测量值的地方；toast 挂载晚于事件时若只看到
+        // pending 标记，它没有任何办法再量出这个间隔（再读就是 0）。
+        try {
+          window.sessionStorage.setItem(RETURN_NUDGE_PENDING_KEY, "1");
+          window.sessionStorage.setItem(RETURN_NUDGE_DAYS_KEY, String(days));
+        } catch { /* ignore */ }
         window.dispatchEvent(new CustomEvent("tb-return-nudge", { detail: { days } }));
       }
     }).catch(() => {});
