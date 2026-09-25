@@ -7501,3 +7501,24 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：无新增阻塞。R16.235（首屏 59.3KB Supabase SDK）仍等能端到端验证登录态；R16.98（同一对象三种量词）仍等产品拍板；PR #178（产品边界）仍等你拍板。另记一条本轮读到但**没有动**的：`docs/caching.md` §2 那张表只列用户能感知的几条，我加了「共 45 个键、下表是节选」这句话把范围说死，没有把表补全——补全会与 `docs/retention-metrics.md` 的修剪表重复维护。
 - 下一项：本分支 `fix-caching-env-claims` 已开 **PR #326**，等 `ci` + `db-tests` + CodeQL 绿了 rebase 合并、本地 `main` 快进、删本地分支；随后发 **v0.7.18**（本轮含一个用户可感的数据丢失修复，仍按 patch 判级）。然后第三十三轮。候选：`docs/caching.md` §5 与 `public/sw.js` / `public/offline.html` 的逐条对照、`docs/error-reporting.md`、`docs/database-testing.md`、`docs/retention-metrics.md` §3 之后各节。仍等用户拍板：R16.159 / R16.164 / R16.174 / R16.205 / R16.214 / R16.215 / R16.98，外加 #178 与生产 AI 502（需 Vercel 控制台权限）。
 - 更新时间：2026-09-25
+
+---
+
+## 2026-09-26 · v0.7.18 发布（patch）：换账号不再丢答题难度，以及这条发布记录自己返工了一次
+
+- 里程碑 / 版本：**v0.7.18**。「说法 vs 事实」第三十二轮随版落地；发布分支 `chore/release-v0.7.18` → PR **#327**（rebase 合并进 `main` 为 `aecd224` + `8b265b1`）。
+- 判级理由（§0）：`v0.7.17..HEAD` 共 **70** 个提交，全是缺陷修复、门禁/工具链加固与文档纠正，没有新增产品能力。其中一条是用户可感的数据丢失（换账号清掉分语言的答题难度偏好），这是本轮出 patch 而不是攒着的实际理由。
+- tag：附注 **`v0.7.18`**（tag 对象 `3f642e4`，解引用到提交 `8b265b1`）已推送；`npm run check:release-tag` ✅「22 条发布记录的 tag 均已落地（最新 0.7.18 → v0.7.18）」，不再打印待办。
+- 冻结前检查（§1）：本地 `main` 快进到 `07a18d1` 与远端一致；`git log --oneline origin/main..HEAD` 只剩本发布的提交。`ops:work-audit` 沿用第三十一轮收尾那次读数，本轮没有新增「关闭而未合并」的 PR——`fix-caching-env-claims` 与 `chore/release-v0.7.18` 都是**真合并**（GitHub 自动删远端分支，本地分支在 `git diff origin/main <branch>` 为空且 `git cherry` 全部前缀 `-` 之后才删）。
+- 版本与记录（§2）：`src/data/release-notes.json` 新增条目（zh / en highlights 各 **6** 条、按日期降序、22 条版本号唯一）；`CHANGELOG.md` 由 `npm run changelog:generate` 重算（+24 行，0 删除），`check:changelog` ✅；`package.json` 0.7.17 → 0.7.18，锁文件用钉住的 npm 10.9.4 重算后**只有 2 行**变化（两处自身版本号），`check:lockfile-repro` ✅「985 个包条目，无差异」。
+- 全量验证（§3）：链 `.gate-logs/chain-r32c.sh` 的步骤清单**从 `.github/workflows/ci.yml` 派生**（R16.260 之后不再手写），顺序照 CI 并在开头删掉两份 gitignore 的 prebuild 产物——**50 步 0 红**。`test:coverage` 在没有产物的工作区里 335 文件 / 3478 条全绿，`build` 出 474 页并把产物写回（`regenerated: 2`），`e2e` 164 passed (2.1m)，`npm run db:test` ✅（迁移、RLS 越权、双设备同步约束、5 段回滚演练），跑完 `git diff --check` exit 0、`git status` 干净。§3 里的 `npm run test` 没单独再跑：它就是同一套用例去掉覆盖率报告，本轮读数是那 3478 条。
+- CI（§4）：新 head `11ab594` 上 `ci` 9m21s、`db-tests` 40s、CodeQL 与两个 Analyze 作业全绿；`Vercel` 检查 red，原因第一手是 `Deployment rate limited — retry in 24 hours`——按惯例不判阻塞。
+- 部署核对（§5，合并后立刻打生产域）：**8/10 绿，2 红，且两条都是已知形状，没有任何一条是站内回归。**
+  - ❌ `GET /zh/changelog → 含最新发布版本`：**这条就是「部署有没有跟上 main」的探针**，页面里没有 `0.7.18`。对照第一手事实：合并之前先打同一个生产域，页面里最新一档是 **0.7.17**（同一页同时数到 0.7.17…0.7.10），也就是这条红读的是**构建配额挡住了生产重建**，不是页面坏了。窗口清掉之后需要重跑；若那时没有新的 `main` 推送，Vercel 不会自己补一次构建，要手动触发一次生产部署。
+  - ❌ `POST /api/ai/chat 游客`：护栏路径正常、模型路径 502 → 部署快照里的 `AI_API_URL` / `AI_MODEL` / `AI_API_KEY` 或出口网络，与站内代码无关（长期外部阻塞，原处已登记）。
+  - 其余 8 条全绿：两语言首页、篇章页、课文页、sitemap、robots、分享落地页都 200 且带 ⚠️ 风险提示，匿名 `GET /api/auth/session` 仍是 `200 {"user":null}`（#107 那条游客判定回归没有复发）。
+- 我自己的错（本轮一处）：**发布条目自己就是本轮在打的东西**。链绿之后回查才发现 0.7.18 条目最后一条把**四条断言**写成「两处用例」（`c721456` 是回放里两处 presence 断言、`c93356f` 是登录水合里两条 hydrate 断言，跨两个文件），同一句还把 R16.234 明记「成因未查明」的那 2.2KB 机间差说成「按构建机之间的实测噪声重定」。已按那个口径改写 zh / en 并重算 CHANGELOG（提交 `11ab594`，合并为 `8b265b1`），登记为 **R16.263**。教训是：判级、链、tag 我都逐条回了读数，唯独「写给人看的那句总结」是凭前两手的印象写的——条目里的每个数量词也要回提交本身查。
+- 阻塞 / 风险：生产构建受 Vercel 24h 配额阻塞（外部，非代码）；`0.7.18` 在生产上线前，站内新功能对用户仍是 `0.7.17` 的形态。R16.235（首屏 59.3KB 登录 SDK）仍等能端到端验证登录态；产品拍板项 R16.159 / R16.164 / R16.174 / R16.205 / R16.214 / R16.215 / R16.98 与 PR #178（`docs/product-boundaries`）不动。
+- 回滚（§7）：`git revert` `8b265b1` 与 `aecd224` 即把版本号与两条记录退回 0.7.17 形态；本次发布**不含数据库迁移**，无需 down 演练。Vercel 侧可先把 Production Deployment 切回上一构建止血，随后仍以 revert 收敛历史。
+- 下一项：本记录走 PR 合并；随后第三十三轮。候选：`docs/caching.md` §5 那句「首次进入…断网时会显示离线引导页」——它要 worker 已经装上并接管，仓库自己的 e2e 就得先跑一次在线导航才测得到兜底（R16.262 那条 `networkidle` 依赖也在这份里）；`docs/error-reporting.md` 那句「仅 POST + 媒体类型，否则 415」把方法（框架答 405）与媒体类型（代码答 415）混成一格，而两条分支都没有用例覆盖；再往后是 `docs/database-testing.md` 与 `docs/retention-metrics.md` §3 之后。配额窗口清掉后重跑一次 `npm run ops:smoke-prod`。
+- 更新时间：2026-09-26
