@@ -163,7 +163,7 @@ export default async function ChapterPage({
         chapters={[{ slug, title: chapter.title, docs: docs.map((d) => ({ slug: d.slug, title: d.title })) }]}
         locale={locale}
         label={locale === "en" ? "Continue this course" : "继续本章学习"}
-        hint={locale === "en" ? "Next lesson" : "下一节课程"}
+        hint={locale === "en" ? "Next lesson" : "下一篇课程"}
         done={locale === "en" ? "Course complete" : "本章已完成"}
       />
 

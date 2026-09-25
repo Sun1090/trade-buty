@@ -315,7 +315,11 @@ export function ReviewClient({
           <button
             onClick={toggleSrs}
             className={`text-xs rounded-full px-3 py-1.5 border transition ${srsOn ? "border-accent/60 bg-[var(--accent-dim)] text-accent font-medium" : "border-[var(--border)] text-faint hover:text-accent"}`}
-            title={locale === "en" ? "Toggle spaced-repetition ordering" : "切换间隔重复排序"}
+            title={
+              locale === "en"
+                ? "Toggle spaced repetition: changes the ordering and which button grades the answer"
+                : "切换间隔重复：换的不只是排序，判库那颗按钮也跟着换"
+            }
           >
             🔁 {locale === "en" ? (srsOn ? "SRS on" : "SRS off") : srsOn ? "复习计划开" : "复习计划关"}
           </button>
