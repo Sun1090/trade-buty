@@ -47,8 +47,8 @@
 **现状（2026-09-12 干净构建）**：`scripts/check-bundle.mjs` 不再只抽查 8 条路由，而是遍历 `.next/server/app` 下全部 `/zh`、`/en` HTML。每条路由必须恰好命中 `scripts/bundle-budgets.json` 中一个分组；未命中和多分组匹配都会阻断 CI。
 
 - 指标口径：外链 JS gzip + 外链 CSS gzip + HTML gzip = `total`，单位为 KB（1024 bytes）。HTML 内联脚本计入 HTML，不重复计入 JS。
-- 分组：home、path、knowledge-chapter、knowledge-lesson、search、review、bookmarks、stats、ai、chart、replay、privacy、glossary、static-info、auth。
-- 预算与实现规则分离：`bundle-budgets.json` 是唯一预算清单；`bundle-budget.mjs` 提供校验、匹配、资产提取和测量纯函数，并纳入 Vitest。
+- 分组：home、path、knowledge-chapter、knowledge-lesson、search、review、bookmarks、stats、ai、chart、replay、privacy、glossary、static-info、auth（这一串 `id` 连同顺序由 `scripts/perf-notes-claims.test.mjs` 与清单逐字比对：加一个分组而不写进来、或删了分组而文档还列着，都红在这里）。
+- 预算与实现规则分离：`bundle-budgets.json` 是唯一预算清单；`bundle-budget.mjs` 提供 `validateBudgetManifest`（校验）、`compileBudgetManifest` 与 `matchRouteBudget`（匹配）、`collectStaticAssetUrls` 与 `staticAssetRepoPath`（资产提取）、`measureRoute` 与 `metricFailures`（测量）四组纯函数，并纳入 Vitest（`bundle-budget.test.mjs` 逐个导入）。
 - 失败输出按路由列出超限的 JS/CSS/HTML/total，再按体积倒序列出该路由前 10 个外链 chunk，便于直接定位回归。
 - AI chunk 隔离扩展到全部非 AI 路由：以 `X-Quota-Limit` 为指纹找到专属 chunk，452 条非 AI 路由均不得引用。
 
@@ -72,7 +72,7 @@
 | static-info | 10 | 306.4 KB | 340 KB | `zh/about` |
 | auth | 4 | 304.5 KB | 340 KB | `zh/auth` |
 
-`npm run check:bundle` 当前覆盖 454 条 locale 路由；整体 JS 预算仍按分组收紧（例如 lessons 310KB、AI 315KB、chart 350KB、replay 355KB），HTML 预算单独防止长正文整页膨胀。
+`npm run check:bundle` 遍历构建产物里全部 `/zh`、`/en` HTML（2026-09-25 那次读到 454 条路由）；预算按分组各设 `js` / `css` / `html` / `total` 四条上限，例如 knowledge-lesson js 310KB、ai js 315KB、chart js 350KB、replay js 355KB——这几个数是**清单里的那个值**，`scripts/perf-notes-claims.test.mjs` 逐字比对，改预算而不改这里即红。`html` 那条单独防止长正文整页膨胀。
 
 ### 复测（2026-09-25，本地干净构建 `npm run build` 后跑 `npm run check:bundle`）
 
