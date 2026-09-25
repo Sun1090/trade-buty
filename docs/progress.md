@@ -7277,3 +7277,35 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：用户可见变化四处——提醒从「每次打开都弹」变成每周期最多一条（不点按钮也算已读，所以「稍后」这颗按钮失去意义，改叫「知道了」）、篇章页眉标的量词、复习页那颗开关的 tooltip、以及免打扰时段/无到期时不再划掉本周期。数据结构与存储键零变化（`tb-review-reminder-shown` 的写只是提前到展示那一步），无需迁移；回滚 = `git revert` 这四笔。最需要考虑的一条是老用户当天不再看到第二次提醒——那正是档位名的意思，而它此前从未成立。
 - 下一项：绿了按 `gh pr merge <n> --rebase --admin` 合并并读回状态；然后做积压的 v0.7.17 补丁发布（`docs/release-checklist.md`，main 已在 v0.7.16 之后 200+ 笔）。需要人拍板的仍五条：R16.159（根级 404 中英并列）、R16.164（内容仓 tagline）、R16.174（AI 变体题的 SRS 归属）、R16.214（AI 学习计划那个永远为空的「当前篇章」）、R16.215（没配 Supabase env 的部署要不要明说「这个部署没开云端登录」）；R16.205 仍开着。
 - 更新时间：2026-09-25 14:00（Asia/Shanghai）。
+
+## 2026-09-25 — v0.7.17 发布：209 笔的判级、26 步全绿，和生产那两条红（发布条目）
+
+- 状态：已发布。PR #314 rebase 合并进 `main`（`fb32603`），tag `v0.7.17` 已打在合并后的 `origin/main` 并推送。
+- 判级：**patch**。`v0.7.16..origin/main` 共 **209 笔**（docs 90 / fix 87 / test 24 / feat 3 / chore 3 / refactor 2）。三笔 `feat` 都不新增产品能力：`feat(gates)` 两笔是巡检工具链（扫描地板相对上一次入库快照、补第三类形状），`feat(chart)` 一笔是给「最新价」那一格补名字。按 `docs/release-checklist.md` §0，只有缺陷修复、门禁加固、文案与文档 → patch。
+- 发布内容：第二十轮与第二十一轮的「说法 vs 事实」批次（R16.191–R16.219）、回放「新一轮」的记账缺陷（R16.207）、OTP 误诊（R16.208）、同步差异归属（R16.209）等。`src/data/release-notes.json` 新增一条（zh/en 各 6 条 highlights，条数相等），`CHANGELOG.md` 由 `npm run changelog:generate` 生成、未手改。
+- §3 全量验证（最终头上，**26 步全绿**，逐步日志 `.gate-logs/r17-seq/`，汇总 `SEQ scanned=26 failed=0`）：`test` → `test:coverage` → `lint` → `typecheck` → `build` → `check:mobile` → 四道产物门禁 → `kb:inventory/gap-priority/accept` → 六道文案/术语巡检 → `check:test-clock-hygiene` → `check:dead-copy` → `ops:faq-candidates` → **`check:scan-counts`（清单 §3 漏写的那一条，本轮补进序列，见 R16.224）** → `check:report-freshness`（打印「幂等通道推导出 18 份报告 · 工作区漂移 0 · 未提交 0」）→ `check:constitution` → `check:docs`（`package 0.7.17`、27 章 / 182 篇）→ `db:test` → `e2e`（`E2E_PORT=3131`，164 条）。锁文件用钉住的 `npm@10.9.4 install --package-lock-only` 重算，`check:lockfile-repro` ✅ 985 个包条目无差异。
+- 合并后：`git tag -a v0.7.17 origin/main` → push → `npm run check:release-tag` 从「最新发布版本待合并后补打」变成 ✅「21 条发布记录的 tag 均已落地（最新 0.7.17 → v0.7.17）」。
+- 生产冒烟 `npm run ops:smoke-prod`：**10 条里 8 绿 2 红**（`.gate-logs/r17-smoke.log`）。两条红都不是本轮代码的回归，逐条给出实测依据：
+  - `/zh/changelog` 没有 0.7.17 —— 生产构建停在上一版：这次发布 PR 的 `Vercel` 检查就是 `Deployment rate limited — retry in 24 hours`。这正是清单 §5 那条「合并 ≠ 上线」的判据，不重复空跑触发构建。
+  - `POST /api/ai/chat` 游客 502 —— 实测响应体是我们自己的句子「AI 服务暂时不可用，请稍后再试。」（单次请求 5994ms，见探针输出），说明路由跑到了、上游那一跳没成；**同一条红在 v0.7.16 那次的冒烟里已经记过**（当时是访客 AI 出题 502），所以这是生产环境侧的持续状态，不是新退化。要分清是部署快照里的 `AI_API_URL` / `AI_MODEL` / `AI_API_KEY` 还是出口网络，需要 Vercel 控制台——那是我没有的权限，登记为等人处理。
+- 分支收尾：`release/v0.7.17` 与 `fix-reminder-cadence-once-per-period` 的远端 ref 随合并消失（`git ls-remote --heads` 复核）；本地 `fix/claim-vs-fact-round-20` 用 `git cherry main` 确认 10 笔全部已上游后删除；`/private/tmp/boundary-trade-rb` 那个目录早就不存在的 worktree 记录用 `git worktree prune` 清掉（它占着的 `docs/product-boundaries` 是 **PR #178 的头**，分支本体保留，并按 `gh pr update-branch 178 --rebase` 把它 rebase 到新 main）。
+- 阻塞 / 风险：v0.7.17 上线要等 Vercel 配额窗口清出来（下一次窗口内的 `main` 构建会自动带上；届时复跑 `ops:smoke-prod` 并核对 `/zh/changelog` 出现 0.7.17）。数据零迁移，回滚 = `git revert` 发布提交或把 Production 切回上一构建。
+- 下一项：第二十二轮（R16.220–R16.224，同一天的下一条）。
+- 更新时间：2026-09-25 14:40（Asia/Shanghai）。
+
+## 2026-09-25 — 门禁表说工具的什么，工具就得真做什么（R16.220–R16.224，第二十二轮第一条）
+
+- 状态：分支已推、PR 待绿；`ops:work-audit` clean，两份重算型报告随本轮的测试文件一起重算入库。
+- 里程碑 / 版本：第二十二轮第一条。一份「文档 vs 仓库」的外部审计交回 5 条指控，**5 条全部核实成立**——每条我都自己读到矛盾的另一头（不是引用审计的结论）：`grep -n 0009 docs/ops.md` 是空的、`.lighthouserc.json` 里 `categories:performance` 确实是 `warn`、`scripts/check-mobile.mjs` 里根本没有 `CORE_SUFFIXES`、`check:report-freshness` 当场印 18 而清单写 17、§3 那一串确实没有 `check:scan-counts`。
+- 分支 / 提交：`docs/ops-claims-vs-repo`（基线 `origin/main = fb32603`）→ `62d27f6`（五处改口 + 脚本补断言 + 新门禁）。
+- 完成内容：
+  - **R16.220 张冠李戴的门禁机制**：`docs/ops.md` 那行说 `check:mobile` 用 `CORE_SUFFIXES × LOCALES` 生成并「每条必须返回 200」，可脚本拿的是写死的 14 条 `ROUTES`，`page.goto` 的响应直接丢——404 也「不溢出」，`[mobile] ✓` 照样打印，死路径能冒充覆盖。脚本补上按状态码计入 failures（**改完实跑 14 条全部 200**，没有假红），那一行改口说它自己做的事，双语矩阵归给 `e2e/mobile-overflow.spec.ts`。
+  - **R16.221/R16.222/R16.223/R16.224**：迁移表补 `0009`（目录里有、`db-test` 连它的回滚都演练过）；Lighthouse 的严重级别按配置逐类点明（性能是 `warn`，从不阻断），节标题与 `CONTRIBUTING.md` 一起改口；清单不再手抄台账份数（改指向推导处，份数只允许出现在 ops.md 那一句并由门禁核对）；§3 补 `check:scan-counts` 并写明它为什么必须排在 `check:report-freshness` 之前。
+- 门禁 `scripts/ops-doc-claims.test.mjs`（18 条）的写法：**一个数字都不抄**。份数由 `collectReportInventory(scripts/*.mjs 排除 SELF_REPORT_FILES)` 推导（排除名单从脚本搬进 `report-freshness-lib.mjs`，两处共用一次推导）、路径条数从 `check-mobile.mjs` 的 `ROUTES` 数出来、迁移与回滚清单读 `supabase/` 目录、严重级别读 `.lighthouserc.json`；状态码那条不看「有没有 `!== 200`」这个字串，看的是「不达标就 `failures.push`」那一整个分支。每条禁令都配旧写法作正向对照，扫描缩水（少于 10 条路径、少于 9 个迁移、少于 15 份台账）单独红。
+- 变更文件：`scripts/check-mobile.mjs`、`scripts/check-report-freshness.mjs`、`scripts/report-freshness-lib.mjs`、`scripts/ops-doc-claims.test.mjs`（新增）、`docs/ops.md`、`docs/release-checklist.md`、`CONTRIBUTING.md`、`docs/scan-counts.md`、`docs/test-clock-hygiene.md`、`docs/roadmap.md`。
+- 验证（判定看输出不看退出码）：`npm test` **327 文件 / 3302 条全绿** → `npm run lint`（`--max-warnings=0`）exit 0 → `next typegen && tsc --noEmit` exit 0 → `npm run check:mobile` ✅「14 个关键页面都返回 200，且 320px 无横向溢出」→ `npm run check:report-freshness` ✅「18 份报告 · 工作区漂移 0」→ `scripts/ci-workflow.test.mjs`（21 条）与 `report-freshness-lib.test.mjs`（11 条）在重构后仍绿。全量 42 条 `check:*` 在最终头上复跑，见「验证补记」。
+- 变异核对：`.gate-logs/probe-r22.mjs`，**10 支 = H0（只改注释）按要求活下来 + 9 支全部抓到**，每支跑前确认 BASE 绿、`git checkout --` 在 `finally` 恢复、判定读 runner 的 `Tests N failed`。抓到的是：200 断言还在但不再计入失败（`false &&`）、行里的清单长度写错、双语矩阵又被归给这个脚本、迁移表漏 0009、**把配置里的性能升成 `error` 而文档没跟上**（这一支证明权威确实是配置：改配置能红文档，改文档不能红配置）、ops.md 份数退回 17、清单重新手抄份数、贡献指南退回那句并排、节标题退回无条件版本。
+- 我自己这一轮做错的：写发布条目时又把更新时间写成 14:41（`date` 当时是 14:40），提交前 `date` 复核改回——**这是连续第二轮犯同一条**，规则照旧：时间戳必须在落笔那一刻现读，不能凭印象。本轮另两次是靠回读文件才没把坏代码发出去：一处正则里被我塞进了真换行（`[^\n]` 写成跨行），一处写出 `…/.source === "" ? /x/ : /…/ ` 这种语无伦次的表达式；两者都由 `npx vitest run` 的解析错误/失败暴露，而不是被我读出来。
+- 阻塞 / 风险：无用户可见变化（改的是脚本、门禁表与两份文档）。唯一的运行时行为变化是 `check:mobile` 现在会让一条 404 或 5xx 把 CI 判红——这是它早该有而一直只写在文档上的能力；本轮实测 14 条全 200，因此不会立刻带来红。回滚 = `git revert` 这一笔。
+- 下一项：本轮 42 条门禁复跑 + 开 PR；随后第二十三轮做那份「UI 面」审计里我已逐条核实的五处（活动日历空态那颗「去学第一课」、安装提示的「暂不」、`activity-calendar.ts` 的数据来源注释、`/calendar` 英文页脚那句 "API integration planned"、`privacy-export.ts` 声称不含邮箱而导出里真有邮箱）。仍等用户拍板：R16.159 / R16.164 / R16.174 / R16.205 / R16.214 / R16.215，外加生产 AI 502 需要 Vercel 控制台权限。
+- 更新时间：2026-09-25 14:41（Asia/Shanghai）。
