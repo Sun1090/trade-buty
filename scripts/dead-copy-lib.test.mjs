@@ -4,6 +4,7 @@ import {
   extractDictInterfaces,
   extractDictionaryKeys,
   findDeadDictionaryKeys,
+  findUnjudgeableDictInterfaces,
   findUnreadDictFields,
   parseDeadCopyBudget,
   renderDeadCopyMarkdown,
@@ -94,11 +95,12 @@ describe("dead-copy lib (R16.21)", () => {
       budget: 0,
       unread: [],
       dictFieldBudget: 0,
+      unjudgeable: [],
       scannedFiles: 2,
       generatedOn: "2026-09-23",
     });
-    // 两张表各有一个「（无）」，少一张就说明台账偷偷不报了
-    expect(empty.match(/（无）/g)).toHaveLength(2);
+    // 三张表各有一个「（无）」，少一张就说明台账偷偷不报了
+    expect(empty.match(/（无）/g)).toHaveLength(3);
   });
 });
 
@@ -215,5 +217,124 @@ describe("组件字典接口的未读字段 (R16.78)", () => {
     expect(unread).toEqual([
       { file: "src/components/banner.tsx", name: "BannerDict", field: "neverRead" },
     ]);
+  });
+});
+
+/**
+ * R16.272：收紧后的两处口径——形状要认内联写法，读过要挂在字典那个变量上。
+ *
+ * 夹具照 `ai-quiz.tsx` 的真实形状来：一个 props 接口里内联 `dict: { … }`，
+ * 字段一行写好几个，而 `question` 这个词在文件里到处是（`q.question` 读的是
+ * AI 返回的数据对象）。旧口径两样都看不见：接口名不含 `Dict` 就整张跳过，
+ * 「名字出现过就算读过」又把 `question` 判成活的。
+ */
+const INLINE_FIXTURE = `
+interface QuizProps {
+  items: string[];
+  dict: {
+    generate: string; question: string;
+    /** 夹一行说明不算字段，不该把整张表判废 */
+    done: string;
+  };
+}
+
+export function Quiz({ items, dict }: QuizProps) {
+  return (
+    <div>
+      <button>{dict.generate}</button>
+      {items.map((q) => <p key={q.id}>{q.question}</p>)}
+      <span>{dict.done}</span>
+    </div>
+  );
+}
+`;
+
+const ALIAS_FIXTURE = `
+interface TickerDict {
+  heading: string;
+  error: string;
+  neverShown: string;
+}
+
+const COPY: Record<"zh" | "en", TickerDict> = {
+  zh: { heading: "标题", error: "坏了", neverShown: "没人读的一句话" },
+  en: { heading: "Heading", error: "Broken", neverShown: "unused line" },
+};
+
+export function Ticker({ locale }: { locale: "zh" | "en" }) {
+  const dict = COPY[locale];
+  return (
+    <div>
+      <h2>{dict.heading}</h2>
+      <p>{dict.error}</p>
+    </div>
+  );
+}
+`;
+
+describe("内联形状与「挂在字典变量上」(R16.272)", () => {
+  it("认出 props 里内联的 `dict: {`，且一行好几个字段都收进来", () => {
+    const dicts = extractDictInterfaces(INLINE_FIXTURE);
+    expect(dicts).toHaveLength(1);
+    expect(dicts[0].inline).toBe(true);
+    expect(dicts[0].name).toBe("dict");
+    expect(dicts[0].fields).toEqual(["generate", "question", "done"]);
+  });
+
+  it("字段名在别处出现不算读过：只认挂在字典变量上的那几种形态", () => {
+    const unread = findUnreadDictFields({
+      files: [{ file: "src/components/quiz.tsx", source: INLINE_FIXTURE }],
+    });
+    expect(unread.map((entry) => entry.field)).toEqual(["question"]);
+    // 正向对照：把 `q.question` 换成 `dict.question`，这一处就该判成读过
+    const fixed = INLINE_FIXTURE.replace("{q.question}", "{dict.question}");
+    expect(
+      findUnreadDictFields({ files: [{ file: "src/components/quiz.tsx", source: fixed }] })
+    ).toEqual([]);
+  });
+
+  it("接收者从声明处推，对象字面量不当接口收；别名那一跳要跟上", () => {
+    const dicts = extractDictInterfaces(ALIAS_FIXTURE);
+    // 只有 `interface TickerDict`：`zh: { heading: "标题" … }` 写的是值不是类型标注
+    expect(dicts).toHaveLength(1);
+    expect(dicts[0].name).toBe("TickerDict");
+    const unread = findUnreadDictFields({
+      files: [{ file: "src/components/ticker.tsx", source: ALIAS_FIXTURE }],
+    });
+    // `const dict = COPY[locale]` 之后 `dict.heading` 要算读过，剩下那句是真没人读
+    expect(unread.map((entry) => entry.field)).toEqual(["neverShown"]);
+  });
+
+  it("推不出字典变量的接口进「判不动」那张表，而不是静悄悄算全绿", () => {
+    const foreign = `
+interface FarDict {
+  heading: string;
+}
+
+export function Banner({ dict }: { dict: import("./types").FarDict }) {
+  return <p>{dict.heading}</p>;
+}
+`;
+    const files = [{ file: "src/components/banner.tsx", source: foreign }];
+    expect(extractDictInterfaces(foreign)).toHaveLength(1);
+    expect(findUnreadDictFields({ files })).toEqual([]);
+    expect(findUnjudgeableDictInterfaces({ files })).toEqual([
+      { file: "src/components/banner.tsx", name: "FarDict", fieldCount: 1 },
+    ]);
+  });
+
+  it("报告第三张表跟着计数走，判不动的名单非空时要看得见", () => {
+    const md = renderDeadCopyMarkdown({
+      dead: [],
+      budget: 0,
+      unread: [],
+      dictFieldBudget: 0,
+      unjudgeable: [{ file: "src/components/banner.tsx", name: "FarDict", fieldCount: 1 }],
+      scannedFiles: 2,
+      generatedOn: "2026-09-26",
+    });
+    expect(md).toContain("- 判不动的字典接口：1 个（须为 0）");
+    expect(md).toContain("FarDict");
+    expect(md).toContain("## 三、");
   });
 });
