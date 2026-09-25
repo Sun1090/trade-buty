@@ -96,4 +96,20 @@ describe("根级 404 的两处说法", () => {
     // 禁令的自证：旧写法承诺的方向与 DOM 实测相反，所以上面那条抓得住它
     expect(/上面|above/i.test("如果不是你要的，用下面搜索：")).not.toBe(linkIsAbove);
   });
+
+  // R16.209：这一栏现在只在地址真排得出东西时才渲染（排不出就整栏收起），
+  // 上面那句「渲染出来的正文里找不到 suggestHint 那句」因此顺带证明了列表来自地址——
+  // 旧写法里它可以是 `pickFallback(corpus, 3)`，即语料前三条，跟地址没有关系。
+  // 这里补一条禁令：既然小标题只承诺「按你访问的地址猜的」，两句文案里都不许再长出
+  // 一个代码没有的排序依据（语料 `SuggestibleItem` 只有 slug/title/href，没有 popularity）。
+  it("两句文案都不承诺「热门」这种没测过的排序", () => {
+    const POPULARITY = /热门|最受欢迎|排行|popular|trending|best[- ]?rated/i;
+    for (const locale of ["zh", "en"] as const) {
+      const { suggestTitle, suggestHint } = getDict(locale).notFound;
+      expect(suggestTitle, `${locale} 标题：${suggestTitle}`).not.toMatch(POPULARITY);
+      expect(suggestHint, `${locale} 小标题：${suggestHint}`).not.toMatch(POPULARITY);
+    }
+    // 对照：旧注释与旧用例把那个兜底叫作「热门课程」，同一个禁令要抓得住
+    expect(POPULARITY.test("无可用推荐时回退到热门课程")).toBe(true);
+  });
 });

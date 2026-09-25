@@ -3,7 +3,6 @@ import {
   levenshtein,
   normalizeForDistance,
   parseKnowledgePath,
-  pickFallback,
   suggestFromPath,
   type SuggestibleItem,
 } from "./url-suggest";
@@ -141,18 +140,29 @@ describe("suggestFromPath", () => {
   });
 });
 
-describe("pickFallback", () => {
-  it("按语料顺序取前 k 个", () => {
-    const out = pickFallback(corpus, 3);
-    expect(out.map((it) => it.slug)).toEqual(["getting-started", "first-trade", "risk-basics"]);
+// 推荐栏的小标题写的是「按你访问的地址猜的」，所以「地址里认不出章节」必须给空数组——
+// 那是调用方（`not-found-suggestions.tsx`）收起整栏的信号。旧写法在这里回退
+// `pickFallback(corpus, 3)`，即语料数组的前三条，注释管它叫「热门兜底」，而语料里
+// 没有任何 popularity 字段可依；那个函数已连同它唯一的调用点一起删掉。
+describe("suggestFromPath 的空返回是调用方的收起信号", () => {
+  it("章节段解码后只剩空白（`/zh/knowledge/%20/anything`）→ 空数组", () => {
+    expect(parseKnowledgePath("/zh/knowledge/%20/anything")).toEqual({
+      locale: "zh",
+      chapter: " ",
+      doc: "anything",
+    });
+    expect(suggestFromPath("/zh/knowledge/%20/anything", corpus, 3)).toEqual([]);
   });
 
-  it("k > 语料长度时全部返回", () => {
-    const out = pickFallback(corpus, 100);
-    expect(out.length).toBe(corpus.length);
+  it("空语料 → 空数组", () => {
+    expect(suggestFromPath("/zh/knowledge/getting-started/first-trade", [], 3)).toEqual([]);
   });
 
-  it("空语料返回空数组", () => {
-    expect(pickFallback([], 6)).toEqual([]);
+  it("正常地址 → 至少一条，且每条都来自地址能到达的那一章", () => {
+    const out = suggestFromPath("/zh/knowledge/getting-started/nope", corpus, 3);
+    expect(out.length).toBeGreaterThan(0);
+    for (const it of out) {
+      expect(it.href).toContain("/zh/knowledge/getting-started");
+    }
   });
 });
