@@ -32,13 +32,13 @@
 
 | 指标 | 定义 | 数据源（真实 key / 聚合器） | 当前可见位置 |
 | --- | --- | --- | --- |
-| 活跃学习日 | 当日 `study-time` 台账任选来源（read/quiz/replay）合计 **≥ 60 秒** | `tb-study-time`（90 天滚动） | 周报图（R4.6）、周摘要活跃天数（R12.20） |
+| 活跃学习日 | 当日**去重后**的总秒数 ≥ `ACTIVE_DAY_MIN_SECONDS = 60` 秒。去重那一刀住在 `src/lib/study-time.ts`：`total = Math.max(read, quiz + replay)`——阅读计时与做题/回放可能同时在进行，所以「读 40 秒 + 测验 30 秒」**不算**一天（三源相加是 70，代码取的是 `max(40, 30)` 即 40）。原文写的是「任选来源合计 ≥ 60 秒」，那是把加法当口径，与代码不符 | `tb-study-time`（保留窗口的锚是台账里最新有记录的那一天，不是今天往前 90 天——见 §2 那一行） | 近 7 天摘要卡那句「{d} 天各学满 {min} 分钟」（R12.20）。周报柱状图（R4.6）画的是逐日秒数，不套这把槛 |
 | 7 日活跃天数 | 最近 7 个自然日中活跃学习日个数（0–7） | `tb-study-time` | 近 7 天摘要卡（R12.20） |
 | 周学习分钟数 | 最近 7 个自然日 `study-time` 合计秒数 ÷ 60，向下取整 | `tb-study-time` | 近 7 天摘要卡（R12.20） |
 | 近 7 天目标达成 | 周学习分钟数 ≥ 目标档位（45/90/150 分钟，默认 90）；界面标签自 R16.129 起写「7 天目标」，不再叫「每周目标」——这个窗口是滚动 7 天，不是日历周 | `tb-weekly-goal-min` + `tb-study-time` | 近 7 天摘要卡（R12.19/R12.20） |
-| 连续学习天数 streak | `tb-streak` 自动记录：同一自然日幂等 +1，间断即 current 归零重新计；**断档如实展示，绝不伪造**（R4.3/R12.6） | `tb-streak`（touchStreak 在 markRead/recordWrong/saveQuizProgress 落笔时维护） | 统计页时间卡 + 恢复提示卡 |
+| 连续学习天数 streak | `src/lib/streak.ts` 的 `touchStreak()`：同一自然日再记不增天数（`lastDate === today` 直接返回）；昨天记过 → +1；**跨天但距上次活动不足 `GRACE_MS = 36` 小时也算连着**（R4.8 的时区/夏令时宽限窗，原文只写「间断即 current 归零」是漏了这道窗），越过它才 `current = 1` 重新计；**断档如实展示，绝不伪造**（R4.3/R12.6） | `tb-streak`。落笔处是 `progress.ts` 的 `markRead`、`wrongbook.ts` 的 `applySrsResult` / `recordWrong` / `resolveWrong` 与 `progress-helpers.ts`；**`saveQuizProgress` 不碰它**（随堂测经 `resolveWrong` / `recordWrong` 记，原文把它列进来是错的） | 统计页时间卡 + 恢复提示卡 |
 | 历史最长 streak | `tb-streak.longest` 单调 max 计数器（历史只增不减） | `tb-streak` | 分享卡/恢复提示 |
-| 回访（retention proxy） | 本地存在**两个不同自然日**的活跃学习日 | `tb-study-time` | 无独立 UI（可由导出自算） |
+| 回访（retention proxy） | 本地存在**两个不同自然日**的活跃学习日（同一把 60 秒的尺） | `tb-study-time` | 无独立 UI。用户能自算的只有 R9.9 隐私导出——它整份 dump `localStorage`，逐日条目在里面；R12.12 统计导出只有聚合的 `studySeconds`，算不出「哪几天」 |
 | 复习暴露率（due 可见性） | 有到期 SRS 错题时是否被产品提示到（周/日提醒+英 review-wide due chip） | wrongbook SRS + `tb-review-reminder-*` | 复习提醒横幅（R12.15–R12.17） |
 | 出口一致性 | 同一侧窗内所有统计区对同一事实的读数一致 | R12.23 `auditStatsConsistency` | 开发期 console 告警 + 单测 |
 
