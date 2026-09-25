@@ -66,6 +66,9 @@ npm run check:glossary
 npm run check:test-clock-hygiene
 npm run check:dead-copy
 npm run ops:faq-candidates
+# scan-counts 必须在 freshness 之前：它是 `docs/scan-counts.md` 的生产者，
+# 而 freshness 只做「工作区 vs HEAD」的比对——顺序反了等于比对一份没人重算过的文件（R16.224）
+npm run check:scan-counts
 npm run check:report-freshness
 npm run check:constitution
 npm run check:docs
@@ -74,8 +77,8 @@ npm run e2e               # 放最后
 ```
 
 `kb:translation-status` 与 `kb:diff` **不在**这份序列里：它们是按日追加的历史快照，日期本身就是数据，
-跑一次就多一条当天记录，而 `check:report-freshness` 的口径（`docs/*.md|json` 那 17 份幂等台账）
-不含它们。
+跑一次就多一条当天记录，而 `check:report-freshness` 的口径（那批幂等台账，份数由
+`scripts/report-freshness-lib.mjs` 从「谁调用了 `writeReport`」推导、门禁当场印出）不含它们。
 
 判据：无随机红灯、`git status` 干净（报告类产物内容未变时不得产生纯日期 diff）、
 无需要人工判断的顺序耦合。

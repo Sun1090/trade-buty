@@ -15,6 +15,16 @@
  */
 
 const WRITE_REPORT = /writeReport\(/;
+/**
+ * 巡检器自己的本体与用例不参与推导：夹具里含有被检查的写法。
+ * 这份名单住在库里而不是脚本里，是因为文档门禁也要按同一个口径数「有几份台账」——
+ * 两边各写一份排除名单，下一处漂移就说不出是谁的错。
+ */
+export const SELF_REPORT_FILES = new Set([
+  "report-freshness-lib.mjs",
+  "report-freshness-lib.test.mjs",
+  "check-report-freshness.mjs",
+]);
 /** 报告落盘路径的两种写法：`path.join(root, "docs/x.md")` 与 `path.join(root, "docs", "x.md")`。 */
 const DOCS_PATH = /path\.join\(\s*root\s*,\s*"docs(?:\/([^"]+))?"\s*(?:,\s*"([^"]+)")?\s*\)/g;
 

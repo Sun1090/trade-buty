@@ -5,7 +5,7 @@ import { chromium } from "@playwright/test";
 /**
  * 320px 移动端溢出回归：起生产服务，逐页检查横向滚动条。
  * 用法: npm run build && npm run check:mobile
- * 任一页面 scrollWidth > 320 即失败（CI 阻断）。
+ * 任一页面 scrollWidth > 320 即失败（CI 阻断）；清单里任何一条不返回 200 也算失败。
  */
 const PORT = 3210;
 const BASE = `http://localhost:${PORT}`;
@@ -79,12 +79,20 @@ async function main() {
     browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 320, height: 700 } });
     for (const route of ROUTES) {
+      let response;
       try {
-        await page.goto(BASE + route, { waitUntil: "domcontentloaded", timeout: 30000 });
+        response = await page.goto(BASE + route, { waitUntil: "domcontentloaded", timeout: 30000 });
         // networkidle 在 CI 的长期连接下可能永远不触发；等待 load 有上限并继续检查最终布局。
         await page.waitForLoadState("load", { timeout: 10000 }).catch(() => {});
       } catch {
         failures.push(`${route}（加载超时）`);
+        continue;
+      }
+      // 404/500 的页面同样「不溢出」：不查状态码，一条死路径就能冒充一份覆盖（R16.220）。
+      const status = response?.status();
+      if (status !== 200) {
+        failures.push(`${route}（HTTP ${status ?? "无响应"}，清单里混了不存在或会报错的路径）`);
+        console.log(`[mobile] ✗ ${route} HTTP ${status ?? "无响应"}`);
         continue;
       }
       await page.waitForTimeout(600);
@@ -104,10 +112,10 @@ async function main() {
     proc.kill("SIGTERM");
   }
   if (failures.length > 0) {
-    console.error(`[mobile] ${failures.length} 个页面横向溢出，构建阻断`);
+    console.error(`[mobile] ${failures.length} 个页面不合格（横向溢出或没返回 200），构建阻断`);
     process.exit(1);
   }
-  console.log(`[mobile] ✓ ${ROUTES.length} 个关键页面 320px 无溢出`);
+  console.log(`[mobile] ✓ ${ROUTES.length} 个关键页面都返回 200，且 320px 无横向溢出`);
 }
 
 main().catch((e) => {
