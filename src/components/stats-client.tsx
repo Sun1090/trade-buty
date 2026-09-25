@@ -42,7 +42,7 @@ import {
   type ReminderCadence,
 } from "@/lib/review-reminder";
 import { getDailyGoalMin } from "@/lib/daily-goal";
-import { buildWeeklySummary, getWeeklyGoalMin, setWeeklyGoalMin, WEEKLY_GOAL_TIERS, type WeeklySummaryInput } from "@/lib/weekly-summary";
+import { ACTIVE_DAY_MIN_SECONDS, buildWeeklySummary, getWeeklyGoalMin, setWeeklyGoalMin, WEEKLY_GOAL_TIERS, type WeeklySummaryInput } from "@/lib/weekly-summary";
 import { getStudySeries } from "@/lib/study-time";
 import { useAuth } from "@/components/auth-provider";
 import { effectiveSrs, isSrsDue } from "@/lib/srs";
@@ -99,6 +99,7 @@ function WeeklySummaryCard({ dict, input }: {
   const line = dict.summaryTpl
     .replace("{m}", String(summary.totalMinutes))
     .replace("{d}", String(summary.activeDays))
+    .replace("{min}", String(ACTIVE_DAY_MIN_SECONDS / 60))
     .replace("{docs}", String(summary.completions))
     .replace("{quiz}", String(summary.quizAttempts))
     .replace("{review}", String(summary.reviews))

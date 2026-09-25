@@ -126,7 +126,7 @@ const zh = {
     // `weekBounds`），不是日历周；卡片右上角印的起止日期本身就经常跨两个周。天数由常量生成，
     // 窗口一改文案跟着改，不让「本周 / 每周」这种日历周的说法留在滚动窗口上（R16.129）。
     weekSummaryTitle: `近 ${WEEK_WINDOW_DAYS} 天学习摘要`,
-    weekSummaryTpl: `近 ${WEEK_WINDOW_DAYS} 天共学 {m} 分钟 · {d} 天活跃 · 完成 {docs} 篇 · 测验 {quiz} 次 · 复习 {review} 题 · 回放 {replay} 轮`,
+    weekSummaryTpl: `近 ${WEEK_WINDOW_DAYS} 天共学 {m} 分钟 · {d} 天各学满 {min} 分钟 · 完成 {docs} 篇 · 测验 {quiz} 次 · 复习 {review} 题 · 回放 {replay} 轮`,
     weekGoalLabel: `${WEEK_WINDOW_DAYS} 天目标`,
     weekGoalAchieved: `${WEEK_WINDOW_DAYS} 天目标已达成 🎉`,
     weekGoalLeftTpl: `距 ${WEEK_WINDOW_DAYS} 天目标还差 {m} 分钟`,
@@ -259,7 +259,7 @@ const en: StatsDict = {
     reminderDndStart: "Do-not-disturb start",
     reminderDndEnd: "Do-not-disturb end",
     weekSummaryTitle: `Learning summary · last ${WEEK_WINDOW_DAYS} days`,
-    weekSummaryTpl: `{m} min across {d} active days in the last ${WEEK_WINDOW_DAYS} days · {docs} read · {quiz} quizzes · {review} reviews · {replay} replay rounds`,
+    weekSummaryTpl: `{m} min across {d} days of at least {min} min each in the last ${WEEK_WINDOW_DAYS} days · {docs} read · {quiz} quizzes · {review} reviews · {replay} replay rounds`,
     weekGoalLabel: `${WEEK_WINDOW_DAYS}-day goal`,
     weekGoalAchieved: `${WEEK_WINDOW_DAYS}-day goal achieved 🎉`,
     weekGoalLeftTpl: `{m} min to go for your ${WEEK_WINDOW_DAYS}-day goal`,

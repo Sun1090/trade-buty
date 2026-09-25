@@ -41,11 +41,15 @@ export function WeekMiniBar({ locale }: { locale: string }) {
   // 亮/不亮原本只有颜色这一个通道，读屏用户什么也拿不到（WCAG 1.4.1 用色传信）。
   // role="img" 会让容器内的文字对 AT 变成装饰，所以名称必须自带整条模式——
   // 按时间顺序报 7 格，而不是只报「哪几天有」，否则听的人不知道窗口从哪天开始。
+  // 更要紧的是这把尺子得说出口：这一格看的是「那天有没有记过一次学习活动」
+  // （`activity-calendar`，由 `touchStreak` 写入），跟同一屏摘要卡那个「{d} 天各学满 1 分钟」
+  // 不是同一把尺（那把见 `weekly-summary.ts` 的 `ACTIVE_DAY_MIN_SECONDS`），
+  // 两个数可以互相超出，谁都不许冒充对方。
   const pattern = locale === "en"
-    ? `Study activity over the last 7 days (oldest to newest): ${days
+    ? `Which of the last 7 days recorded a learning activity (a lesson marked read, a question answered, or a replay round finished; oldest to newest): ${days
         .map((day) => (day.onThisDay ? "yes" : "no"))
         .join(", ")}`
-    : `近 7 天学习记录（从 6 天前到今天）：${days
+    : `近 7 天里哪几天记过一次学习活动（标过已读、答过题或打完一轮回放；从 6 天前到今天）：${days
         .map((day) => (day.onThisDay ? "有" : "无"))
         .join("、")}`;
 

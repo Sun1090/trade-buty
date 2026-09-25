@@ -14,8 +14,10 @@
  * 运行：`npx vitest run src/lib/weekly-window-claims.test.ts`（跟随 `npm test`）
  */
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { STATS_DICTS } from "./i18n-stats";
-import { WEEK_WINDOW_DAYS, buildWeeklySummary } from "./weekly-summary";
+import { ACTIVE_DAY_MIN_SECONDS, WEEK_WINDOW_DAYS, buildWeeklySummary } from "./weekly-summary";
 import { localDateStr } from "./date-utils";
 
 /** 统计页里那些「其实是一段滚动窗口」的文案 */
@@ -72,10 +74,60 @@ describe("滚动 7 天窗口的文案说出它真的是 7 天", () => {
     });
     const days =
       (new Date(`${summary.weekEnd}T12:00:00`).getTime() - new Date(`${summary.weekStart}T12:00:00`).getTime()) /
-      86_400_000 +
+        86_400_000 +
       1;
     expect(days).toBe(WEEK_WINDOW_DAYS);
     expect(summary.weekStart).toBe("2026-09-18");
     expect(summary.weekEnd).toBe(localDateStr(new Date(2026, 8, 24, 12)));
+  });
+
+  // 同一屏上「近 7 天」出现了两次，量的却是两件事：
+  // - 摘要卡：`buildWeeklySummary` 数的是当日**去重秒数 ≥ `ACTIVE_DAY_MIN_SECONDS`** 的那些天；
+  // - 迷你条：`activity-calendar` 的日期集合，那天只要 `touchStreak` 过一次就亮，一秒都不算。
+  // 于是两个数可以互相超出——只在页面停留 30 秒的人，摘要里那一天不活跃、条上却有；
+  // 只标了一课已读的人，条上有、摘要里也不算。旧写法一句叫「{d} 天活跃」、一句叫
+  // 「近 7 天学习记录」，两个名字都听不出尺子不同，读的人只会当成同一个数的两种说法。
+  it("两把尺子各自点名自己量的是什么", () => {
+    const zh = STATS_DICTS.zh.weekSummaryTpl;
+    const en = STATS_DICTS.en.weekSummaryTpl;
+    const bar = readFileSync(path.join(process.cwd(), "src/components/week-mini-bar.tsx"), "utf8");
+    const wiring = readFileSync(path.join(process.cwd(), "src/components/stats-client.tsx"), "utf8");
+
+    expect(
+      Number.isInteger(ACTIVE_DAY_MIN_SECONDS / 60),
+      `${ACTIVE_DAY_MIN_SECONDS} 秒不是整分钟，文案里那个数就没法读`,
+    ).toBe(true);
+    expect(wiring, "{min} 必须由 ACTIVE_DAY_MIN_SECONDS 代入，不许手抄").toContain(
+      '.replace("{min}", String(ACTIVE_DAY_MIN_SECONDS / 60))',
+    );
+    const rendered = Object.entries({
+      "{m}": String(Math.round(ACTIVE_DAY_MIN_SECONDS / 60) * 2),
+      "{d}": "3",
+      "{min}": String(ACTIVE_DAY_MIN_SECONDS / 60),
+      "{docs}": "1",
+      "{quiz}": "2",
+      "{review}": "4",
+      "{replay}": "5",
+    }).reduce((acc, [token, value]) => acc.split(token).join(value), zh);
+    expect(rendered, "代入常量之后那句要真的读出「1 分钟」").toContain("1 分钟");
+
+    const VAGUE = /活跃|active days/i;
+    expect(zh, `摘要卡那句还在用一把没说明的尺：${zh}`).not.toMatch(VAGUE);
+    expect(en, `摘要卡那句还在用一把没说明的尺：${en}`).not.toMatch(VAGUE);
+
+    const barPhrase = bar.match(/近 7 天里哪几天[\s\S]{0,90}/)?.[0] ?? "";
+    expect(barPhrase, "迷你条的读屏名字要点名它记的是哪三种事").toMatch(/标过已读|答过题|回放/);
+    expect(barPhrase, "那一格按时长算就错了，句子里不许有分钟").not.toMatch(/分钟/);
+
+    // 正向对照：退役的三句喂给同一组禁令，必须条条报红
+    const legacyVague = [
+      "近 7 天共学 {m} 分钟 · {d} 天活跃 · 完成 {docs} 篇",
+      "{m} min across {d} active days in the last 7 days",
+    ];
+    expect(legacyVague.filter((s) => !VAGUE.test(s)), "旧写法逃过了「活跃」禁令").toEqual([]);
+    expect(
+      /标过已读|答过题|回放/.test("近 7 天学习记录（从 6 天前到今天）："),
+      "旧的读屏名字什么都没点名",
+    ).toBe(false);
   });
 });
