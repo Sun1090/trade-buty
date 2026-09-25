@@ -9,6 +9,11 @@
  * 判据的规矩沿用同族：每条都把文档里的一**段原文**绑到一个**派生量**上（读 SQL / 读脚本 /
  * 读目录），而不是「某个词在文件里出现过」。派生量与文档必须来自不同的两边：文档里的数字改一个
  * 字面量不会让判据跟着改（那是我自己重写期望值的老毛病）。
+ *
+ * 分工（第三十五轮自己踩出来的一条）：断言数的**数值**对不对，归 `scripts/db-assertion-counts.mjs`
+ * （`npm run check:db-assertion-counts`，它把文档引用的数字对回 `select plan(N)`），本文件不重复比数值；
+ * 本文件比的是那份门禁**射程之外**的东西——数字挂在哪儿它才读得到（见「断言数怎么挂」一节），
+ * 以及表数、档位集合、角色名单、旗子、指纹项这些它根本不看的事实。
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -109,24 +114,7 @@ function legalTiers() {
   return out;
 }
 
-describe("§1 rls_isolation：文档里的表数与断言数由 SQL 自己说", () => {
-  it("三个 pgTAP 文件的 plan(N) 等于文档引用的那三个数", () => {
-    const heading = (n, file) =>
-      Number(new RegExp(`### ${n}\\. \`supabase/tests/${file}\`（pgTAP，(\\d+) 条断言）`).exec(doc)?.[1] ?? NaN);
-    const sums = /`rls_isolation` (\d+) \+ `sync_and_constraints` (\d+) \+ `embedding_generations` (\d+) 条断言/.exec(doc);
-    expect(sums, "§4 里那条「三个 pgTAP 文件各几条」的形状变了，判据要跟着改").not.toBeNull();
-    for (const [sql, n, cited, label] of [
-      [rls, 1, heading(1, "rls_isolation.sql"), "§1 标题"],
-      [sync, 2, heading(2, "sync_and_constraints.sql"), "§2 标题"],
-    ]) {
-      expect(cited, `${label}里没有 pgTAP 条数`).toBeGreaterThan(0);
-      expect(cited, `${label}写的条数 ≠ 该文件自己的 select plan()`).toBe(planOf(sql));
-    }
-    expect(Number(sums[1]), "§4 的 rls_isolation 条数 ≠ 该文件的 plan()").toBe(planOf(rls));
-    expect(Number(sums[2]), "§4 的 sync_and_constraints 条数 ≠ 该文件的 plan()").toBe(planOf(sync));
-    expect(Number(sums[3]), "§4 的 embedding_generations 条数 ≠ 该文件的 plan()").toBe(planOf(emb));
-  });
-
+describe("§1 rls_isolation：文档里的表数由 SQL 自己说", () => {
   it("A 写 9 张、读回 8 张 1 行、第 9 张读回 0 行，全与文档一致", () => {
     const ro = aSectionReadout();
     expect(ro, "rls_isolation.sql 里那节分区注释没了，A 的形状无从派生").not.toBeNull();
@@ -360,6 +348,124 @@ describe("§3 / §4：回滚演练做几支、备份恢复用什么旗子", () =
   });
 });
 
+describe("断言数怎么挂：数字不在文件名后面、也不在聚合链里，对账门禁就看不见它", () => {
+  /** supabase/tests 里真实存在的 pgTAP 文件（去后缀）。 */
+  const names = fs
+    .readdirSync(path.join(root, "supabase/tests"))
+    .filter((f) => f.endsWith(".sql"))
+    .map((f) => f.replace(/\.sql$/, ""))
+    .sort();
+
+  /**
+   * 一行文档里的每一处「N 条断言」挂在哪：
+   *  - `named`：同一行里，它前面最近的一处就是某个 pgTAP 文件名，中间没有别的数字——
+   *    `check:db-assertion-counts` 取的正是「文件名后的第一个数字」，所以这一处它在场；
+   *  - `chain`：它是 `44+34+8 断言` 这条聚合链的末项——那是那条门禁的第二种写法；
+   *  - `bare`：两处都不是。第三十五轮之前的 roadmap Q2.8 行「RLS 越权 40 断言 + 双设备同步/约束
+   *    30 断言」就是这种：数字与文件名中间隔着中文别名，那条门禁的两种写法都读不到它，
+   *    于是它错到 44/34 也没人喊——这条判据钉的是「形态」，数值对错仍归那条门禁。
+   */
+  function citationsIn(line) {
+    const out = [];
+    for (const m of line.matchAll(/(\d{1,3})\s*条?断言/g) ?? []) {
+      const before = line.slice(0, m.index);
+      const chain = /((?:\d{1,3}\s*\+\s*)+)$/.exec(before);
+      if (chain) {
+        out.push({ n: Number(m[1]), kind: "chain", terms: (chain[1].match(/\d{1,3}/g) ?? []).length + 1 });
+        continue;
+      }
+      const owners = names.map((nm) => before.lastIndexOf(nm));
+      const i = Math.max(...owners);
+      if (i < 0) {
+        out.push({ n: Number(m[1]), kind: "bare", why: "这一行没有任何 pgTAP 文件名" });
+        continue;
+      }
+      const owner = names[owners.indexOf(i)];
+      const gap = before.slice(i + owner.length);
+      out.push(
+        /\d/.test(gap)
+          ? { n: Number(m[1]), kind: "bare", why: `${owner} 与这个数字之间还夹着别的数字` }
+          : { n: Number(m[1]), kind: "named", owner },
+      );
+    }
+    return out;
+  }
+
+  /**
+   * 按「一条列表项 / 一个标题 / 一段正文」切块：换行折下来的续行属于同一块（§4 第 6 步的
+   * 断言数就折在它下一行），而 roadmap 那种挨着排的 `- [x]` 历史行各自是一块——按整段空白
+   * 切会把 Lighthouse 的「6/6 断言」也卷进 pgTAP 的射程。
+   */
+  function units(text) {
+    const out = [];
+    let cur = null;
+    for (const line of text.split("\n")) {
+      if (line.trim() === "" || /^(?:- |\d+\. |#{2,} |> )/.test(line)) {
+        if (cur) out.push(cur.join("\n"));
+        cur = line.trim() === "" ? null : [line];
+      } else if (cur) cur.push(line);
+    }
+    if (cur) out.push(cur.join("\n"));
+    return out;
+  }
+
+  /** 现行文档里「报了 pgTAP 断言数」的那些块。 */
+  function countBlocks(rel) {
+    return units(read(rel)).filter(
+      (u) => /pgTAP|db:test|backup:drill|supabase\/tests/.test(u) && /\d{1,3}\s*条?断言/.test(u),
+    );
+  }
+
+  it("两篇现行文档里每一处断言数都挂在文件名或聚合链上", () => {
+    expect(names.length, "supabase/tests 里的 pgTAP 文件不到 3 个，这条判据的分母先塌了").toBeGreaterThanOrEqual(3);
+    for (const n of names) {
+      expect(Number.isFinite(planOf(read(`supabase/tests/${n}.sql`))), `${n}.sql 没有可读的 select plan(N)，对账门禁拿它没办法`).toBe(
+        true,
+      );
+    }
+    const scanned = ["docs/database-testing.md", "docs/roadmap.md"].map((f) => [f, countBlocks(f)]);
+    const total = scanned.reduce((a, [, ls]) => a + ls.length, 0);
+    expect(total, "两处「报了断言数」的块加起来不到 3 块，这条判据已经无物可查").toBeGreaterThanOrEqual(3);
+    for (const [file, blocks] of scanned) {
+      for (const block of blocks) {
+        for (const c of citationsIn(block)) {
+          if (c.kind === "chain") {
+            expect(
+              c.terms,
+              `${file} 的聚合断言链只列了 ${c.terms} 项，而 supabase/tests 有 ${names.length} 个文件——少列的那个没人对账`,
+            ).toBe(names.length);
+          } else if (c.kind === "bare") {
+            expect(`${file}: ${c.why}`, `「${c.n} 断言」写成了对账门禁读不到的形态：${c.why}`).toBe("");
+          }
+        }
+      }
+    }
+  });
+
+  it("探测器自己：旧的写法判红，改坏数字不判红（那是另一道门禁的活）", () => {
+    expect(
+      citationsIn("跑通 RLS 越权 40 断言 + 双设备同步/约束 30 断言 + 回滚演练").map((c) => c.kind),
+      "对账门禁读不到的那种写法，这条判据必须认出来",
+    ).toEqual(["bare", "bare"]);
+    const chain = citationsIn("重跑 pgTAP(44+34+8 断言)");
+    expect(chain.map((c) => c.kind), "合法的聚合写法被判红了").toEqual(["chain"]);
+    expect(chain[0].terms, "聚合链的项数读错了").toBe(3);
+    expect(
+      citationsIn("少列一项的聚合写法 pgTAP(44+34 断言)").map((c) => `${c.kind}:${c.terms}`),
+      "少列一个文件的聚合链必须读成 2 项",
+    ).toEqual(["chain:2"]);
+    // 数值被改坏：形态仍然合法，这条判据不许伸手（对账由 check:db-assertion-counts 负责）
+    expect(
+      citationsIn("`rls_isolation.sql`（41 条断言）与 `embedding_generations.sql`（99 条断言）").map((c) => c.kind),
+      "改坏数字就让这条判据红，两道门禁就重叠了",
+    ).toEqual(["named", "named"]);
+    expect(
+      citationsIn("`sync_and_constraints.sql`（跨用户隔离，中间夹了 1 个别的数字，34 条断言）").map((c) => c.kind),
+      "文件名与断言数之间夹了别的数字，对账门禁取到的就是那个错数",
+    ).toEqual(["bare"]);
+  });
+});
+
 describe("pgTAP 写法约定与探测器自检", () => {
   it("每条 throws_ok 都是显式 4 参数（SQLSTATE + NULL + 描述）", () => {
     for (const [name, sql] of [["rls_isolation", rls], ["sync_and_constraints", sync], ["embedding_generations", emb]]) {
@@ -379,11 +485,6 @@ describe("pgTAP 写法约定与探测器自检", () => {
     expect(planOf("-- 没有 plan"), "planOf 在缺 plan 的文件上应当报 NaN 而不是 0").toBeNaN();
     expect(section(rls, "不存在的标记", "另一个"), "section 找不到起点时必须给 null").toBeNull();
     expect(section(rls, "用户 A：以自己的身份写入各表自有行", "不存在的结束标记"), "section 找不到结束点时必须给 null").toBeNull();
-    // 文档与 SQL 各改一半就会被抓住：把条数改成别的数字再比一次
-    const tampered = doc.replace("### 1. `supabase/tests/rls_isolation.sql`（pgTAP，44 条断言）", "### 1. `supabase/tests/rls_isolation.sql`（pgTAP，41 条断言）");
-    const cited = Number(/### 1\. `supabase\/tests\/rls_isolation\.sql`（pgTAP，(\d+) 条断言）/.exec(tampered)?.[1]);
-    expect(cited, "被改坏的文档没能被读出来，说明这条正则根本不绑数字").toBe(41);
-    expect(cited === planOf(rls), "把文档的条数改坏之后判据仍然不报错，那就是空转").toBe(false);
     expect(tablesFromMigrations().has("progress"), "迁移解析器连最核心的一张表都没读到").toBe(true);
     expect(fingerprintKeys().length, "指纹解析器一条都没读到").toBeGreaterThan(0);
   });
