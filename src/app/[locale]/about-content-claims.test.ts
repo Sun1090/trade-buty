@@ -148,12 +148,14 @@ describe("邮件订阅占位不许替一个没排期的功能作保", () => {
   it("事实半边：那两颗出口按钮确实只在「已保存」分支里渲染", () => {
     const src = read(NEWSLETTER_CARD_SRC);
     const branch = src.match(/\{saved \? \(([\s\S]*?)\n\s*\) : \(/);
-    expect(branch, "卡片不再是 `saved ? 已保存视图 : 表单` 的形状——这条判据要按新结构重写").toBeTruthy();
-    expect(branch![1]).toContain("labels.copy}");
-    expect(branch![1]).toContain("labels.clear}");
+    const savedView = branch?.[1] ?? "";
+    const rest = branch ? src.slice((branch.index ?? 0) + branch[0].length) : "";
+    expect(savedView, "卡片不再是 `saved ? 已保存视图 : 表单` 的形状——这条判据要按新结构重写").not.toBe("");
+    expect(savedView).toContain("labels.copy}");
+    expect(savedView).toContain("labels.clear}");
     // 未保存那一支里一颗都不许有：那正是说明不能直接指着它们的原因
-    expect(src.slice(branch.index! + branch[0].length)).not.toContain("labels.copy}");
-    expect(src.slice(branch.index! + branch[0].length)).toContain("labels.submit}");
+    expect(rest).not.toContain("labels.copy}");
+    expect(rest).toContain("labels.submit}");
   });
 
   it("事实半边：这一层确实只有本机存储，没有邮件服务", () => {
