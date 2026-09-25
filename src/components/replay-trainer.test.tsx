@@ -544,6 +544,50 @@ describe("ReplayTrainer 竞猜模式与战绩", () => {
     await waitFor(() => expect(mocks.saveReplayRecord).toHaveBeenCalledTimes(2));
   });
 
+  /**
+   * 上面那条数的是**调用次数**，而「1 条真实 + 1 条回声」加起来同样是 2，所以它测不出
+   * 「每一轮各一条」。这一条按载荷逐条看：点「新一轮」这一步本身不该产生任何记录
+   * （入库效应的依赖里有 `round`，round 一变门槛会重新成立），第二轮那一条记的必须是
+   * 第二轮自己的 2 根，而不是两轮累加的 4 根。
+   */
+  it("「新一轮」这一步不产生记录，第二轮记的是第二轮自己的战绩", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "竞猜" }));
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(mocks.saveReplayRecord).toHaveBeenCalledTimes(1));
+    expect(mocks.saveReplayRecord.mock.calls[0][0]).toMatchObject({ total: 2, correct: 2 });
+
+    fireEvent.click(screen.getAllByRole("button", { name: "新一轮" })[0]);
+    await waitFor(() => expect(screen.getByText(/进度: 0\/2/)).toBeInTheDocument());
+    expect(
+      mocks.saveReplayRecord.mock.calls,
+      "点「新一轮」这一步多写了记录：刚结束那轮被原样记了第二次",
+    ).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 2\/2/)).toBeInTheDocument());
+
+    const calls = mocks.saveReplayRecord.mock.calls;
+    expect(calls, "第二轮没有入库（或多了回声）").toHaveLength(2);
+    expect(calls[1][0], "第二轮那条记的是两轮累加的战绩，不是这一轮的").toMatchObject({
+      total: 2,
+      correct: 2,
+    });
+    // 同一块面板上那两个数必须说的是同一件事：进度 2/2，总结也不能是 4/4
+    expect(screen.getByText(/进度: 2\/2/)).toBeInTheDocument();
+    expect(screen.getByText("本轮总结")).toBeInTheDocument();
+    expect(
+      screen.queryByText(/4\/4/),
+      "「本轮总结」把上一轮的战绩也累加进来了，可同一屏的「进度」只数了这一轮",
+    ).toBeNull();
+  });
+
   it("竞猜模式下按空格等非预测操作不推进，必须先预测", async () => {
     render(<ReplayTrainer dict={dict} locale="zh" />);
     await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
