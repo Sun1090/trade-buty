@@ -588,6 +588,36 @@ describe("ReplayTrainer 竞猜模式与战绩", () => {
     ).toBeNull();
   });
 
+  /**
+   * 换标的走的是同一条取数效应，但不 bump `round`——所以它不会触发上面那条回声，
+   * 却会把**上一个交易对**的那几根留在分母里（BTCUSDT 猜了 1 根 + ETHUSDT 猜了 2 根
+   * = 3，而屏幕上这一轮只有 2 根）。探针实测：把这里退回旧的「只清 pending」，
+   * 其余用例全绿，所以这一条是这条路唯一的守门人。
+   */
+  it("换标的会丢掉上一个交易对的战绩，记录里的分母只算这一轮", async () => {
+    render(<ReplayTrainer dict={dict} locale="zh" />);
+    await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "竞猜" }));
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText("交易对"), { target: { value: "ETHUSDT" } });
+    await waitFor(() => expect(screen.getByText(/进度: 0\/2/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 1\/2/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "涨" }));
+    await waitFor(() => expect(screen.getByText(/进度: 2\/2/)).toBeInTheDocument());
+
+    const calls = mocks.saveReplayRecord.mock.calls;
+    expect(calls, "换标的那一步多写了一条记录").toHaveLength(1);
+    expect(calls[0][0], "这条把上一个交易对猜过的那几根也算进了分母").toMatchObject({
+      symbol: "ETHUSDT",
+      total: 2,
+    });
+  });
+
   it("竞猜模式下按空格等非预测操作不推进，必须先预测", async () => {
     render(<ReplayTrainer dict={dict} locale="zh" />);
     await waitFor(() => expect(screen.getByText(/0\/2/)).toBeInTheDocument());

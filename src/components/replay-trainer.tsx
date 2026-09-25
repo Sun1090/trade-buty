@@ -249,7 +249,9 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
    * `savedRoundRef.current !== round` 重新成立，刚结束那轮会被原样再记一条
    * （那条的 `elapsed` 是刚重置的计时，四舍五入成 0 所以不带 `durationSec`），
    * 并且 `savedRoundRef` 被抬到新轮号，用户真打完的那一轮反而一条都不记。
-   * 顺序也不能反：清空要发生在 `setRound` 之前，否则同一次 commit 里门槛仍然成立。
+   * 要求的是「同一次事件」而不是「同一行之前」：两个 setState 会被批量成同一次
+   * commit，门槛在 commit 之后才检查，所以两句谁先写都一样（变异探针实测过对调，
+   * 用例照样绿）；真正不行的是把它推到取数回来之后——那条效应排在入库效应后面。
    */
   const beginRound = () => {
     setGuess(EMPTY_ROUND);
