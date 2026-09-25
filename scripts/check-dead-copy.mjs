@@ -24,6 +24,7 @@ import {
   extractDictInterfaces,
   extractDictionaryKeys,
   findDeadDictionaryKeys,
+  findUnjudgeableDictInterfaces,
   findUnreadDictFields,
   parseDeadCopyBudget,
   renderDeadCopyMarkdown,
@@ -105,19 +106,22 @@ const dictInterfaceCount = componentFiles.reduce(
   0
 );
 const unread = findUnreadDictFields({ files: componentFiles });
+/** 认得出是字典接口、却推不出它绑在谁身上的：这一路对它们是空转，不能读成「没问题」 */
+const unjudgeable = findUnjudgeableDictInterfaces({ files: componentFiles });
 
 const markdown = renderDeadCopyMarkdown({
   dead,
   budget: DEAD_COPY_BUDGET,
   unread,
   dictFieldBudget: DICT_FIELD_BUDGET,
+  unjudgeable,
   scannedFiles: dictionaryFiles.length,
   generatedOn: new Date().toISOString().slice(0, 10),
 });
 writeReport(outputMarkdown, markdown);
 
 console.log(
-  `[dead-copy] 字典 ${dictionaryFiles.length} 个 / 词条 ${totalKeys} 个 · 死键 ${dead.length}（预算 ${DEAD_COPY_BUDGET}）· 组件字典接口 ${dictInterfaceCount} 个 / 未读字段 ${unread.length}（预算 ${DICT_FIELD_BUDGET}）→ docs/dead-copy.md`
+  `[dead-copy] 字典 ${dictionaryFiles.length} 个 / 词条 ${totalKeys} 个 · 死键 ${dead.length}（预算 ${DEAD_COPY_BUDGET}）· 组件字典接口 ${dictInterfaceCount} 个 / 未读字段 ${unread.length}（预算 ${DICT_FIELD_BUDGET}）· 判不动 ${unjudgeable.length} 个 → docs/dead-copy.md`
 );
 
 if (totalKeys < MIN_KEYS) {
@@ -147,6 +151,13 @@ if (shouldFailDeadCopy({ dead: unread, budget: DICT_FIELD_BUDGET })) {
     `⛔ 组件字典接口里 ${unread.length} 个字段本文件从不读取 > 预算 ${DICT_FIELD_BUDGET}：页面把文案装配进来了，组件却没渲染过它（R16.77 的 dict.error 就是这个形状）。要么读掉，要么把字段从接口和装配点一起删。`
   );
   for (const entry of unread) console.error(`   - ${entry.file} · ${entry.name}.${entry.field}`);
+  process.exit(1);
+}
+if (unjudgeable.length > 0) {
+  console.error(
+    `⛔ ${unjudgeable.length} 张组件字典接口认得出来、却推不出它在本文件绑在哪个变量上：第二目对它们一句都不判。判不动不等于没问题（R16.272）——把新的装配形状补进 dead-copy-lib.mjs 的 dictReceivers()，或改掉装配写法。`
+  );
+  for (const entry of unjudgeable) console.error(`   - ${entry.file} · ${entry.name}（${entry.fieldCount} 个字段）`);
   process.exit(1);
 }
 console.log("✅ 字典死键与组件字典接口未读字段都在预算内");

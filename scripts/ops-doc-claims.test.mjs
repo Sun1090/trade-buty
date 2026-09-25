@@ -23,6 +23,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { collectReportInventory, SELF_REPORT_FILES } from "./report-freshness-lib.mjs";
+import { renderDeadCopyMarkdown } from "./dead-copy-lib.mjs";
 
 const root = process.cwd();
 const read = (rel) => readFileSync(path.join(root, rel), "utf8");
@@ -210,5 +211,81 @@ describe("Lighthouse 的严重级别取自配置，不是取自这张表", () =>
 
   it("「失败阻断合并」那节的标题给 warn 留了出口", () => {
     expect(ops.split("\n")[8], "标题又变回无条件的「失败阻断合并」").toMatch(/warn|除非/);
+  });
+});
+
+/**
+ * R16.272：`check:dead-copy` 那一行对第二目的描述，与巡检器现行的口径同源。
+ *
+ * 这一行的旧写法把第二目说成「只看名字带 `Dict` 的接口」+「字段名以任意形态出现在
+ * 声明块之外都算读过」，两条都不是现行事实：`AiQuiz` 的字典是 props 里内联的
+ * `dict: { … }`，而「出现过就算读过」正是让 `question`/`explain` 溜过去的那一步。
+ * 所以这里的判据不抄新句子，而是拿生成函数跑一次空表，把报告 §2 与文档那一行放在一起比。
+ */
+describe("check:dead-copy 那一行的第二目由巡检器签字", () => {
+  const runner = read("scripts/check-dead-copy.mjs");
+  const row = gateRow(ops, "npm run check:dead-copy");
+  const budgetFile = JSON.parse(read("scripts/dead-copy-budget.json"));
+  const report = renderDeadCopyMarkdown({
+    dead: [],
+    budget: budgetFile.budget,
+    unread: [],
+    dictFieldBudget: budgetFile.dictFieldBudget,
+    unjudgeable: [],
+    scannedFiles: 2,
+    generatedOn: "2026-09-26",
+  });
+  const s2 = report.slice(report.indexOf("## 二、"), report.indexOf("## 汇总"));
+
+  /** 第二目现行的六个机制名字：报告讲了而文档没讲（或反之）就是两边漂了 */
+  const MECHANISMS = ["内联", "变量", "解构", "动态取法", "逐文件", "别名"];
+
+  it("六个机制名在报告 §2 与文档那一行要么都在、要么都不在", () => {
+    for (const token of MECHANISMS) {
+      expect(
+        s2.includes(token) === row.includes(token),
+        `「${token}」：报告 §2 ${s2.includes(token) ? "讲了" : "没讲"}，文档那一行 ${row.includes(token) ? "讲了" : "没讲"}`,
+      ).toBe(true);
+    }
+    // 地板：报告必须真在讲这些机制，否则上面六条是六个「两边都不含」的空转
+    const hits = s2.match(new RegExp(MECHANISMS.join("|"), "g")) ?? [];
+    expect(hits.length, "报告 §2 不再描述这些机制，上面那条比的是两份空文本").toBeGreaterThanOrEqual(
+      MECHANISMS.length,
+    );
+  });
+
+  it("旧口径只能以「已被否掉」的样子出现在那一行里", () => {
+    const at = row.indexOf("以任意形态出现");
+    if (at >= 0) {
+      const from = row.lastIndexOf("。", at) + 1;
+      const to = row.indexOf("。", at) < 0 ? row.length : row.indexOf("。", at) + 1;
+      const sentence = row.slice(Math.max(from, 0), to);
+      expect(sentence, "那一行把「名字出现过就算读过」又当现行规则讲了").toMatch(/已否掉|不再|不是现行/);
+    }
+    // 报告只讲现行口径，旧句子回来就是改坏了判据说明
+    expect(report, "报告 §2 里又出现了旧口径的句子").not.toContain("以任意形态出现");
+  });
+
+  it("文档说「判不动就失败」，脚本里就得真有那条退出分支", () => {
+    expect(row).toMatch(/判不动[^。]{0,40}失败/);
+    expect(
+      /if \(unjudgeable\.length > 0\) \{[\s\S]{0,400}?process\.exit\(1\);/.test(runner),
+      "R16.272 那条「判不动不等于没问题」的退出分支不见了",
+    ).toBe(true);
+  });
+
+  it("那一行说的两项上限与接口下限都来自预算文件，不是手抄", () => {
+    const claimedBudget = Number(/\*\*(\d+)\*\*/.exec(/两项上限（[^）]*）/.exec(row)?.[0] ?? "")?.[1]);
+    expect(Number.isFinite(claimedBudget), "那一行不再报上限数值，谁去数？").toBe(true);
+    expect(claimedBudget).toBe(budgetFile.budget);
+    // 「均为」这个量词本身也是断言：两项一旦不等，这句话就假了
+    expect(
+      budgetFile.dictFieldBudget,
+      "预算文件里两项上限已不相等，那句「当前均为 …」得改成逐个报数"
+    ).toBe(budgetFile.budget);
+    const floor = /minDictInterfaces`?[^0-9]{0,8}(\d+)/.exec(row);
+    if (floor) {
+      expect(Number(floor[1]), "那一行抄的接口下限与预算文件不符").toBe(budgetFile.minDictInterfaces);
+    }
   });
 });
