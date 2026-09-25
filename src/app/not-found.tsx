@@ -58,7 +58,8 @@ export default function NotFound() {
         </Link>
       </div>
 
-      {/* R8.11：URL 推荐位（客户端组件：URL 命中知识库路径 → 显示 3 条最近；未命中 → 隐藏，由下方「从这几篇开始」兜底） */}
+      {/* R8.11：URL 推荐位（客户端组件：按地址排得出推荐才显示；排不出就整栏不渲染，
+          由下方「从这几篇开始」兜底——那一栏才是与地址无关的固定列表） */}
       <NotFoundSuggestions
         corpus={corpus}
         heading={t.notFound.suggestTitle}

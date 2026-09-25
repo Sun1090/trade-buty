@@ -83,7 +83,7 @@ export interface ParsedKnowledgePath {
 }
 
 /** 解析 pathname，提取 `/<locale>/knowledge/<chapter>[/<doc>]` 段。
- * 不匹配（如 `/search`）返回 null，调用方回退到默认推荐。 */
+ * 不匹配（如 `/search`）返回 null，调用方据此隐藏推荐栏。 */
 export function parseKnowledgePath(pathname: string): ParsedKnowledgePath | null {
   const segs = splitPath(pathname);
   if (segs.length < 2) return null;
@@ -102,7 +102,10 @@ export function parseKnowledgePath(pathname: string): ParsedKnowledgePath | null
  * - 策略：
  *   - pathname 匹配知识库路径：限定候选到「同章 doc + 章节自身」→ 按 doc/chapter 段距离排
  *   - 章节段在语料中完全缺失：跨章节猜（用户可能是打错章节名）
- *   - 不匹配：返回空（调用方回退到热门列表）
+ *   - 不匹配、或章节段解码后只剩空白（`/zh/knowledge/%20/x`）：返回空数组。
+ *     调用方（`not-found-suggestions.tsx`）据此把整栏收起——这里没有「热门列表」可回退，
+ *     语料里也没有任何 popularity 字段，旧的 `pickFallback` 就是拿语料前三条冒充热门，
+ *     已连同它的唯一调用点一起删掉。
  *
  * 注意：本函数是纯函数——不读 fs、不读全局状态，可在客户端组件安全调用。
  */
@@ -123,9 +126,4 @@ export function suggestFromPath(
     return pickClosest(parsed.doc ?? chapterKey, inChapter, k);
   }
   return pickClosest(chapterKey, corpus, k);
-}
-
-/** 取语料中前 k 个作为热门兜底（由调用方决定是章节还是 docs）。 */
-export function pickFallback(corpus: SuggestibleItem[], k = 6): SuggestibleItem[] {
-  return corpus.slice(0, k);
 }

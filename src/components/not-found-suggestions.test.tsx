@@ -5,7 +5,6 @@ import { render, screen } from "@testing-library/react";
 let pathname = "/zh/knowledge/chapter-a/missing";
 let parsed: { chapter?: string; doc?: string } | null = { chapter: "chapter-a" };
 let suggestions: Array<{ slug: string; title: string; href: string }> = [];
-let fallback: Array<{ slug: string; title: string; href: string }> = [];
 
 vi.mock("next/navigation", () => ({
   usePathname: () => pathname,
@@ -13,7 +12,6 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/url-suggest", () => ({
   parseKnowledgePath: () => parsed,
   suggestFromPath: () => suggestions,
-  pickFallback: () => fallback,
 }));
 
 import { NotFoundSuggestions } from "./not-found-suggestions";
@@ -28,7 +26,6 @@ beforeEach(() => {
   suggestions = [
     { slug: "a1", title: "A1", href: "/zh/knowledge/chapter-a/a1" },
   ];
-  fallback = [{ slug: "chapter-b", title: "章节 B", href: "/zh/knowledge/chapter-b" }];
 });
 
 describe("NotFoundSuggestions（R8.11）", () => {
@@ -49,13 +46,16 @@ describe("NotFoundSuggestions（R8.11）", () => {
     );
   });
 
-  it("无可用推荐时回退到热门课程", () => {
+  // 小标题写的是「按你访问的地址猜的」。排不出与地址有关的东西时，这一栏只能收起——
+  // 旧写法在这里回退到语料前三条（`pickFallback`）并把它叫作「热门课程」，
+  // 于是屏幕上出现一个与地址无关、又号称按地址猜来的列表。
+  it("地址里排不出推荐 → 整栏收起，不留下与地址无关的列表", () => {
     suggestions = [];
-    render(<NotFoundSuggestions corpus={corpus} heading="猜你想学" subheading="副标题" />);
-    expect(screen.getByRole("link", { name: /章节 B/ })).toHaveAttribute(
-      "href",
-      "/zh/knowledge/chapter-b",
+    const { container } = render(
+      <NotFoundSuggestions corpus={corpus} heading="猜你想学" subheading="副标题" />,
     );
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByText("猜你想学")).not.toBeInTheDocument();
   });
 
   it("渲染标题与副标题", () => {
