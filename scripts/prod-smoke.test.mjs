@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   AI_GUARDRAIL_PROBE_QUESTION,
+  AI_MODEL_TIMEOUT_MS,
   AI_PROBE_QUESTION,
   buildChecks,
   isTransportError,
@@ -20,17 +21,30 @@ import {
 const BASE = "https://prod.example";
 const VERSION = "9.9.9";
 
+/**
+ * 那条 AI 断言印在报告与 `docs/ops.md` 表里的名字。这里写死字面量而不是从脚本导入：
+ * 名字本身就是给读者看的说法（它承诺了「测的是哪一跳」），改它就该惊动测试和文档。
+ */
+const AI_CHECK = "POST /api/ai/chat 游客：护栏路径 200+X-Refused，模型路径要么答要么明确没测";
+
 /** 假站点：路由 → 响应；未列出的路由返回 404，好让「少一条断言」不会被当成通过 */
 function fakeFetch(routes) {
   const calls = [];
-  const impl = async (url, init) => {
+  const impl = async (url, init, timeoutMs) => {
     const { pathname } = new URL(url);
     const key = init?.method === "POST" ? `POST ${pathname}` : pathname;
-    calls.push({ key, url, init });
+    calls.push({ key, url, init, timeoutMs });
     const raw = routes[key] ?? { status: 404, body: "not found" };
     // 路由可以是静态响应，也可以是 (init) => 响应——同一端点用不同载荷走不同分支时要用后者
     const route = typeof raw === "function" ? raw(init) : raw;
     if (route.throw) throw new Error(route.throw);
+    // `AbortSignal.timeout()` 在 Node 里抛的是 name 为 `TimeoutError` 的 DOMException；
+    // 冒烟要区分「我们没等够」和「上游回了 5xx」，所以夹具得能复刻这一种。
+    if (route.timeout) {
+      throw Object.assign(new Error("The operation was aborted due to timeout"), {
+        name: "TimeoutError",
+      });
+    }
     return {
       status: route.status,
       headers: { get: (name) => route.headers?.[String(name).toLowerCase()] ?? null },
@@ -71,8 +85,8 @@ function healthyRoutes() {
   return routes;
 }
 
-async function failures(routes, options = {}) {
-  const { impl } = fakeFetch(routes);
+async function runAll(routes, options = {}) {
+  const { impl, calls } = fakeFetch(routes);
   const results = await runChecks({
     baseUrl: BASE,
     checks: buildChecks({
@@ -81,7 +95,35 @@ async function failures(routes, options = {}) {
     fetchImpl: impl,
     retryDelayMs: 0,
   });
+  return { results, calls };
+}
+
+async function failures(routes, options = {}) {
+  const { results } = await runAll(routes, options);
   return results.filter((r) => !r.ok).map((r) => `${r.name} — ${r.detail}`);
+}
+
+/** 本轮没测成的那几条（⏭️），连同它们印出来的原因 */
+async function skipped(routes, options = {}) {
+  const { results } = await runAll(routes, options);
+  return results.filter((r) => r.skipped).map((r) => `${r.name} — ${r.detail}`);
+}
+
+/** `docs/ops.md` 冒烟那一节的正文（含表格） */
+function opsSmokeSection() {
+  const doc = fs.readFileSync("docs/ops.md", "utf8");
+  const start = doc.indexOf("\n## 生产冒烟");
+  expect(start, "docs/ops.md 里找不到「## 生产冒烟」这一节——它换了地方就要同步这条用例，别让表没人看").toBeGreaterThan(-1);
+  const end = doc.indexOf("\n## ", start + 1);
+  return doc.slice(start, end === -1 ? doc.length : end);
+}
+
+/** 表里第一列（去掉反引号）——就是脚本打印出来的那个断言名 */
+function opsSmokeTableNames() {
+  return opsSmokeSection()
+    .split("\n")
+    .filter((line) => line.startsWith("| `"))
+    .map((line) => line.split("|")[1].trim().replace(/^`(.*)`$/, "$1"));
 }
 
 describe("prod-smoke 断言清单", () => {
@@ -119,6 +161,22 @@ describe("prod-smoke 断言清单", () => {
     }
   });
 
+  it("docs/ops.md 那张表逐字印着每条断言的名字与顺序", () => {
+    // 上一版表里写的是「`POST /api/ai/chat` 游客：护栏路径 200 且模型路径不 5xx | …；429 视为通过」，
+    // 而脚本那一天的行为已经改成 429 → ⏭️ 没测成：名字与语义两处一起过期，读文档的人据此行事。
+    // 表第一列现在就是 `check.name`，所以两边能一一对上——改名、加一条、删一条都会立刻红在这里。
+    const names = buildChecks({ expectedVersion: VERSION }).map((c) => c.name);
+    const rows = opsSmokeTableNames();
+    expect(rows.length, `表只有 ${rows.length} 行，扫不到 10 行就是那一节被改坏了`).toBeGreaterThanOrEqual(names.length);
+    expect(rows).toEqual(names);
+  });
+
+  it("docs/ops.md 讲了 ⏭️ 这个第三种结论", () => {
+    // `runChecks` 现在会产出「既没通过也没失败」的结果；文档只写 ✅/❌ 两种的话，
+    // 读者会把汇总里那句「本轮没测成」当成脚本坏了。
+    expect(opsSmokeSection()).toContain("本轮没测成");
+  });
+
   it("课文页丢风险提示 → 点名该页", async () => {
     const routes = healthyRoutes();
     routes["/zh/knowledge/getting-started/candlestick-basics"] = { status: 200, body: "<p>无风险块</p>" };
@@ -143,27 +201,68 @@ describe("prod-smoke 断言清单", () => {
   it("只有模型路径 502（护栏正常）→ 报上游而不是「AI 不可用」", async () => {
     const upstreamDown = { ...healthyRoutes(), "POST /api/ai/chat": aiChatRoute({ model: { status: 502, body: "AI 服务暂时不可用" } }) };
     expect(await failures(upstreamDown)).toEqual([
-      "POST /api/ai/chat 游客：护栏路径 200 且模型路径不 5xx — 状态 502，而护栏路径正常 → 站内代码没问题，查上游：部署快照里的 AI_API_URL/AI_MODEL/AI_API_KEY 或出口网络",
+      `${AI_CHECK} — 状态 502，而护栏路径正常 → 站内代码没问题，查上游：部署快照里的 AI_API_URL/AI_MODEL/AI_API_KEY 或出口网络`,
     ]);
   });
 
   it("两条路径都 500 → 报「函数没起来」，先于上游结论", async () => {
     const dead = { ...healthyRoutes(), "POST /api/ai/chat": { status: 500, body: "~~~" } };
     expect(await failures(dead)).toEqual([
-      "POST /api/ai/chat 游客：护栏路径 200 且模型路径不 5xx — 护栏路径 500（无 X-Refused 头）：函数没起来、部署落后或内容红线失效",
+      `${AI_CHECK} — 护栏路径 500（无 X-Refused 头）：函数没起来、部署落后或内容红线失效`,
     ]);
   });
 
   it("护栏不再回 X-Refused（红线失效）→ 单独报出", async () => {
     const noTag = { ...healthyRoutes(), "POST /api/ai/chat": aiChatRoute({ refused: false }) };
     expect(await failures(noTag)).toEqual([
-      "POST /api/ai/chat 游客：护栏路径 200 且模型路径不 5xx — 护栏路径 200（无 X-Refused 头）：函数没起来、部署落后或内容红线失效",
+      `${AI_CHECK} — 护栏路径 200（无 X-Refused 头）：函数没起来、部署落后或内容红线失效`,
     ]);
   });
 
-  it("AI 两条路径都限流 429 → 通过（端点活着）", async () => {
-    const throttled = { ...healthyRoutes(), "POST /api/ai/chat": { status: 429, body: "too many" } };
-    expect(await failures(throttled)).toEqual([]);
+  it("模型路径挂到超时 → 说「卡的是上游那一跳」，而不是「请求异常」", async () => {
+    // 生产实测：上游不通时这一跳挂 68s 才回 502。旧写法只给全站那 20s，
+    // 冒烟印出来的是 `请求异常：The operation was aborted due to timeout（重试 2 次后仍失败）`
+    // ——把「我们没等够」当成结论，而这条路由其实是活的。
+    const routes = {
+      ...healthyRoutes(),
+      "POST /api/ai/chat": aiChatRoute({ model: { timeout: true } }),
+    };
+    const { results, calls } = await runAll(routes);
+    expect(results.filter((r) => !r.ok).map((r) => r.detail)).toEqual([
+      `模型路径在 ${AI_MODEL_TIMEOUT_MS / 1000}s 内没返回，而护栏路径 200 正常 → 卡的是上游那一跳（查部署快照里的 AI_API_URL/AI_MODEL/AI_API_KEY 或出口网络）`,
+    ]);
+    // 超时是**断言结论**不是传输层抖动：一次定性。挂住的上游被连打三次既慢又白占访客配额。
+    expect(calls.filter((c) => c.key === "POST /api/ai/chat")).toHaveLength(2);
+  });
+
+  it("模型路径单独等满长超时，护栏路径仍用全站超时", async () => {
+    const { calls } = await runAll(healthyRoutes());
+    const ai = calls.filter((c) => c.key === "POST /api/ai/chat");
+    // calls 的顺序就是两次请求的顺序：①护栏 ②模型
+    expect(ai.map((c) => c.timeoutMs)).toEqual([undefined, AI_MODEL_TIMEOUT_MS]);
+  });
+
+  it("护栏路径 429 → ⏭️ 没测成，不是通过", async () => {
+    // 限流排在解析与护栏之前（`src/app/api/ai/chat/route.ts`），429 时红线根本没被走过。
+    const routes = {
+      ...healthyRoutes(),
+      "POST /api/ai/chat": { status: 429, body: "too many", headers: { "retry-after": "1800" } },
+    };
+    expect(await failures(routes)).toEqual([]);
+    expect(await skipped(routes)).toEqual([
+      `${AI_CHECK} — 护栏路径 429（Retry-After 1800s）：限流排在护栏之前，本轮既没验证红线也没打到模型`,
+    ]);
+  });
+
+  it("模型路径单独 429 → 护栏那条算验证过，模型那条仍是 ⏭️", async () => {
+    const routes = {
+      ...healthyRoutes(),
+      "POST /api/ai/chat": aiChatRoute({ model: { status: 429, body: "too many" } }),
+    };
+    expect(await failures(routes)).toEqual([]);
+    expect(await skipped(routes)).toEqual([
+      `${AI_CHECK} — 模型路径 429：护栏那条已经验证（200+X-Refused），但这一轮没真的打到模型，「不 5xx」不算成立`,
+    ]);
   });
 
   it("探针问题与真分类器对齐：护栏问题必被拦、问答问题不误伤", async () => {
@@ -220,7 +319,9 @@ describe("prod-smoke 传输层重试", () => {
   it("抖一下就重试到成功，并把「第几次才连上」写进结论", async () => {
     const check = flakyCheck(2);
     const results = await runChecks({ baseUrl: BASE, checks: [check], retryDelayMs: 0 });
-    expect(results).toEqual([{ name: "GET /flaky", ok: true, detail: "第 3 次尝试才连上（前 2 次传输失败）" }]);
+    expect(results).toEqual([
+      { name: "GET /flaky", ok: true, skipped: false, detail: "第 3 次尝试才连上（前 2 次传输失败）" },
+    ]);
     expect(check.getCalls()).toBe(3);
   });
 
@@ -288,8 +389,7 @@ describe("prod-smoke CLI", () => {
     expect(calls.filter((c) => c.key === "POST /api/ai/chat")).toHaveLength(2);
   });
 
-  it("有失败时退出 1 并点名条目", async () => {
-    const io = collector();
+  it("有失败时退出 1 并点名条目", async () => {    const io = collector();
     const routes = { ...healthyRoutes(), "/zh": { status: 500, body: "" } };
     const { impl } = fakeFetch(routes);
     const root = writeReleaseRoot(VERSION);
@@ -297,6 +397,28 @@ describe("prod-smoke CLI", () => {
     expect(code).toBe(1);
     expect(io.out.some((l) => l.startsWith("  ❌"))).toBe(true);
     expect(io.err.join("\n")).toContain("生产冒烟失败 1/");
+  });
+
+  it("有 ⏭️ 时退出 0，但汇总不许只说「全部符合预期」", async () => {
+    const io = collector();
+    const routes = {
+      ...healthyRoutes(),
+      "POST /api/ai/chat": { status: 429, body: "too many", headers: { "retry-after": "60" } },
+    };
+    const { impl } = fakeFetch(routes);
+    const code = await run({
+      root: writeReleaseRoot(VERSION),
+      env: { SMOKE_BASE_URL: BASE },
+      stdout: io.stdout,
+      stderr: io.stderr,
+      fetchImpl: impl,
+    });
+    const report = io.out.join("\n");
+    expect(code).toBe(0);
+    expect(report).toContain("  ⏭️ POST /api/ai/chat");
+    // 这一条就是这次改动要防的：只报「10 条全部符合预期」等于把没测成的混进绿里
+    expect(report).not.toContain("生产冒烟通过");
+    expect(report).toContain("9 条符合预期 · 1 条本轮没测成");
   });
 
   it("SMOKE_BASE_URL 非法时直接退出 1，不发请求", async () => {
