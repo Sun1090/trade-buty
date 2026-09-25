@@ -54,7 +54,7 @@ function seedMirror() {
   memStore.set("tb-last-cloud-sync", "123");
   // 不该被动到的两类：设备偏好 + 云端没有对应表的本地记录
   memStore.set("tb-theme", "dark");
-  memStore.set("tb-quiz-difficulty", "2");
+  memStore.set("tb-quiz-difficulty:zh", "2");
   memStore.set("tb-quiz-attempts", QUIZ_ATTEMPTS_LEDGER);
   memStore.set("tb-bookmarks", "[]");
   memStore.set("tb-streak", JSON.stringify({ days: 3 }));
@@ -113,17 +113,17 @@ describe("adoptAccountMirror", () => {
       expect(memStore.has(key), `${key} 属于上一个账号，必须清掉`).toBe(false);
     }
     expect(memStore.get("tb-theme")).toBe("dark");
-    expect(memStore.get("tb-quiz-difficulty")).toBe("2");
+    expect(memStore.get("tb-quiz-difficulty:zh")).toBe("2");
     expect(memStore.get("tb-quiz-attempts")).toBe(QUIZ_ATTEMPTS_LEDGER);
     expect(memStore.get("tb-bookmarks")).toBe("[]");
     expect(memStore.get("tb-streak")).toBe(JSON.stringify({ days: 3 }));
   });
 
-  it("同前缀的设备偏好 tb-quiz-difficulty 不会被当成每章成绩清掉", () => {
-    memStore.set("tb-quiz-difficulty", "1");
+  it("同前缀的设备偏好 tb-quiz-difficulty:<locale> 不会被当成每章成绩清掉", () => {
+    memStore.set("tb-quiz-difficulty:zh", "1");
     memStore.set(MIRROR_OWNER_KEY, "user-a");
     adoptAccountMirror("user-b");
-    expect(memStore.get("tb-quiz-difficulty")).toBe("1");
+    expect(memStore.get("tb-quiz-difficulty:zh")).toBe("1");
   });
 
   it("空 userId 不做任何事（未登录 / 未知身份）", () => {
