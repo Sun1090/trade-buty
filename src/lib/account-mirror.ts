@@ -40,14 +40,23 @@ const ACCOUNT_MIRROR_KEYS = [
 /**
  * 每章测验成绩 `tb-quiz-<chapterSlug>` 属于账号镜像，换账号必须清；
  * 但同前缀不等于同归属，这两个是本地独有记录，清掉就是真丢数据（文件头列过）：
- * - `tb-quiz-difficulty`：设备偏好；
+ * - `tb-quiz-difficulty:<locale>`：设备偏好（`quiz-strategy.ts` 按语言各存一份）；
  * - `tb-quiz-attempts`：答题账本（`quiz-attempt-ledger.ts`），测验分数趋势读的就是它，
  *   云端没有对应表，换账号后无从恢复。
  */
 export const PER_CHAPTER_QUIZ_EXCLUSIONS = ["tb-quiz-difficulty", "tb-quiz-attempts"];
 
+/**
+ * 排除项有两种形状：完整键名（`tb-quiz-attempts`）与带 `:<后缀>` 的模板前缀
+ * （`tb-quiz-difficulty:zh`）。只按全等比，真键 `tb-quiz-difficulty:zh` 就漏在排除清单外，
+ * 换账号时那台设备选的难度会被当成上一账号的成绩一起清掉——而本文件开头明写「不清设备偏好」。
+ */
+function isExcludedQuizKey(key: string): boolean {
+  return PER_CHAPTER_QUIZ_EXCLUSIONS.some((k) => key === k || key.startsWith(`${k}:`));
+}
+
 function isPerChapterQuizKey(key: string): boolean {
-  return key.startsWith("tb-quiz-") && !PER_CHAPTER_QUIZ_EXCLUSIONS.includes(key);
+  return key.startsWith("tb-quiz-") && !isExcludedQuizKey(key);
 }
 
 /** 当前镜像归属的账号；从未盖过戳时返回 null。 */
