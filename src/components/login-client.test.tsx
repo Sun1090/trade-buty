@@ -26,7 +26,6 @@ const dict = {
   sending: "发送中…",
   sent: "已发送",
   sentHint: "请查收",
-  error: "失败",
   errorRateLimited: "请求过于频繁",
   errorRateLimitedHint: "邮箱服务有冷却",
   errorInvalidEmail: "邮箱格式不对",

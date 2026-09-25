@@ -30,8 +30,6 @@ const dict = {
   loginRequired: "登录后可用 AI 出题",
   rateLimited: "请求过于频繁，请稍后再试",
   retryInTpl: "约 {n} 分钟后重试",
-  question: "题目",
-  explain: "解析",
   report: "举报题目",
   reported: "已举报",
   reportFailed: "举报没送出去，点这里重试",
