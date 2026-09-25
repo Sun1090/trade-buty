@@ -223,10 +223,11 @@ describe("组件字典接口的未读字段 (R16.78)", () => {
 /**
  * R16.272：收紧后的两处口径——形状要认内联写法，读过要挂在字典那个变量上。
  *
- * 夹具照 `ai-quiz.tsx` 的真实形状来：一个 props 接口里内联 `dict: { … }`，
- * 字段一行写好几个，而 `question` 这个词在文件里到处是（`q.question` 读的是
- * AI 返回的数据对象）。旧口径两样都看不见：接口名不含 `Dict` 就整张跳过，
- * 「名字出现过就算读过」又把 `question` 判成活的。
+ * 夹具照真实文件来：`INLINE_FIXTURE` 抄 `ai-quiz.tsx`（一个 props 接口里内联 `dict: { … }`，
+ * 字段一行写好几个，而 `question` 这个词在文件里到处是——`q.question` 读的是 AI 返回的数据
+ * 对象）；`ALIAS_FIXTURE` 抄 `market-ticker.tsx`（对象字面量按多行写，`zh: {` 自己占一行，
+ * 这正是「只有类型标注才算接口」那条信号真正在挡的东西）。旧口径两样都看不见：接口名不含
+ * `Dict` 就整张跳过，「名字出现过就算读过」又把 `question` 判成活的。
  */
 const INLINE_FIXTURE = `
 interface QuizProps {
@@ -257,8 +258,16 @@ interface TickerDict {
 }
 
 const COPY: Record<"zh" | "en", TickerDict> = {
-  zh: { heading: "标题", error: "坏了", neverShown: "没人读的一句话" },
-  en: { heading: "Heading", error: "Broken", neverShown: "unused line" },
+  zh: {
+    heading: "标题",
+    error: "坏了",
+    neverShown: "没人读的一句话",
+  },
+  en: {
+    heading: "Heading",
+    error: "Broken",
+    neverShown: "unused line",
+  },
 };
 
 export function Ticker({ locale }: { locale: "zh" | "en" }) {
@@ -334,6 +343,7 @@ export function Banner({ dict }: { dict: import("./types").FarDict }) {
       generatedOn: "2026-09-26",
     });
     expect(md).toContain("- 判不动的字典接口：1 个（须为 0）");
+    expect(md).toContain("| 文件 | 接口 | 字段数 |");
     expect(md).toContain("FarDict");
     expect(md).toContain("## 三、");
   });
