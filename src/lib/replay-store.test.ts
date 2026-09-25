@@ -21,6 +21,7 @@ vi.stubGlobal("window", { dispatchEvent: vi.fn() });
 
 const { readReplayHistory, saveReplayRecord, readReplayBest, saveReplayBest } =
   await import("./replay-store");
+const { syncReplayBestUpsert } = await import("./sync-layer");
 
 describe("replay-store", () => {
   beforeEach(() => store.clear());
@@ -119,6 +120,31 @@ describe("replay-store", () => {
       expect(readReplayBest()).toBe(0);
       store.set("tb-replay-best", "4.6");
       expect(readReplayBest()).toBe(5);
+    });
+
+    /**
+     * `replay-trainer` 的 `best` 是**本轮**的最佳连胜，每轮从 0 起，所以每一轮第一次
+     * 答错都会带着 0 来调这个函数。以前它是无条件 `setItem`，那一句话就能把这个人
+     * 攒了几个月的历史最佳抹掉（云端 `replay_best` 也跟着被 0 upsert 覆盖）；
+     * 那句「仅当超过当前记录时调用」原本只是写在注释里，约束落在并不守它的调用方。
+     */
+    it("更小的值不许覆盖已有记录（本轮归零后第一次答错带着 0 来调）", () => {
+      store.clear();
+      vi.mocked(syncReplayBestUpsert).mockClear();
+      saveReplayBest(12);
+      expect(readReplayBest()).toBe(12);
+
+      saveReplayBest(0);
+      saveReplayBest(5);
+      expect(readReplayBest(), "本轮的 0 把历史最佳抹掉了").toBe(12);
+      expect(store.get("tb-replay-best")).toBe("12");
+      expect(vi.mocked(syncReplayBestUpsert).mock.calls, "云端也被那些更小的值 upsert 过").toEqual([
+        [12],
+      ]);
+
+      saveReplayBest(13);
+      expect(readReplayBest()).toBe(13);
+      expect(vi.mocked(syncReplayBestUpsert)).toHaveBeenLastCalledWith(13);
     });
   });
 });

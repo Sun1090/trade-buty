@@ -86,13 +86,23 @@ export function readReplayBest(): number {
   }
 }
 
-/** 保存历史最佳连击（仅当超过当前记录时调用） */
+/**
+ * 记下历史最佳连胜：**只在超过已有记录时**才写。
+ *
+ * 原来那句「仅当超过当前记录时调用」写在这行注释上，约束却落在调用方——而调用方
+ * 确实会拿一个更小的值来调它：`replay-trainer` 的 `best` 现在是**本轮**的最佳连胜，
+ * 每一轮从 0 起，新一轮第一次答错就会带着 0 过来，无条件 `setItem` 会把这个人
+ * 攒了几个月的历史最佳连根抹掉（云端那条 `replay_best` 也会被同一个 0 upsert 覆盖）。
+ * 单调性收在这里，调用方就不必自己记得守。
+ */
 export function saveReplayBest(best: number) {
+  const next = Number.isFinite(best) && best > 0 ? Math.round(best) : 0;
+  if (next <= readReplayBest()) return;
   try {
-    localStorage.setItem(BEST_KEY, String(best));
+    localStorage.setItem(BEST_KEY, String(next));
   } catch {
     // ignore
   }
-  syncReplayBestUpsert(best);
+  syncReplayBestUpsert(next);
   tryDispatchProgressEvent();
 }

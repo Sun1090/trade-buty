@@ -90,6 +90,19 @@ interface GuessState {
 }
 
 /**
+ * 一轮的起点。`best` 是**这一轮**的最佳连胜——屏幕上那块「本轮总结」念的就是它，
+ * 历史最佳另有存放处（`tb-replay-best`，由 `saveReplayBest` 单调维护）。
+ */
+const EMPTY_ROUND: GuessState = {
+  streak: 0,
+  best: 0,
+  correct: 0,
+  total: 0,
+  pending: null,
+  lastFeedback: null,
+};
+
+/**
  * 读取记忆的难度下标。
  * 该值来自 localStorage，可能被用户手改、被旧版本写入（档数不同）或被截断——
  * 任何非法值都回退到默认「进阶」，不让坏数据把整个训练器打崩。
@@ -171,14 +184,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<number>(1);
   const [guessMode, setGuessMode] = useState(false);
-  const [guess, setGuess] = useState<GuessState>({
-    streak: 0,
-    best: 0,
-    correct: 0,
-    total: 0,
-    pending: null,
-    lastFeedback: null,
-  });
+  const [guess, setGuess] = useState<GuessState>(EMPTY_ROUND);
   const [error, setError] = useState(false);
   // 哨兵必须是 round 永远取不到的值：round 从 0 起，用 0 会让「第 0 轮」永远
   // 命中 savedRoundRef.current !== round 为假，导致首轮战绩被静默丢弃。
@@ -226,7 +232,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
         if (cancelled) return;
         setKlines(data);
         setIdx(context);
-        setGuess((g) => ({ ...g, pending: null, lastFeedback: null }));
+        setGuess(EMPTY_ROUND);
       })
       .catch(() => {
         if (!cancelled) setError(true);
@@ -235,6 +241,20 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
       cancelled = true;
     };
   }, [symbol, interval_, round, customMode, customEnd, context]);
+
+  /**
+   * 起一轮新的回放。**必须**与 `setRound` 在同一个动作里把上一轮的战绩清掉：
+   * 入库那道效应（上面那条 `useEffect`）的依赖里有 `round`，而 `klines` 要等这个
+   * 效应触发的取数回来才换、`idx` 还停在上一轮末尾——只 bump `round` 的话，
+   * `savedRoundRef.current !== round` 重新成立，刚结束那轮会被原样再记一条
+   * （那条的 `elapsed` 是刚重置的计时，四舍五入成 0 所以不带 `durationSec`），
+   * 并且 `savedRoundRef` 被抬到新轮号，用户真打完的那一轮反而一条都不记。
+   * 顺序也不能反：清空要发生在 `setRound` 之前，否则同一次 commit 里门槛仍然成立。
+   */
+  const beginRound = () => {
+    setGuess(EMPTY_ROUND);
+    setRound((r) => r + 1);
+  };
 
   // 「新一轮」：只 bump round 在自定义模式里等于**重发同一个请求**——取数用的是同一个
   // customEnd，回来的还是刚才那 300 根，用户重放的是同一段行情，而这一轮照样会被记进训练记录。
@@ -246,7 +266,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
       setCustomEnd(nextEnd);
       setEndDateInput(localDateStr(new Date(nextEnd)));
     }
-    setRound((r) => r + 1);
+    beginRound();
   };
 
   // 图表初始化
@@ -470,7 +490,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
                 const ms = localDayEndMs(endDateInput);
                 if (!Number.isNaN(ms)) {
                   setCustomEnd(ms);
-                  setRound((r) => r + 1);
+                  beginRound();
                 }
               }}
               className="px-3 py-1.5 rounded-lg text-xs border border-accent/40 bg-accent-dim text-accent hover:bg-accent hover:text-white dark:hover:text-[#06281c] transition"
