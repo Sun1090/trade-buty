@@ -472,7 +472,7 @@ export function StatsClient({
         </section>
       )}
 
-      {/* R12.9：多设备同步冲突提示（自动合并后可关闭） */}
+      {/* R12.9：同步差异提示——比对的是同一账号云端那一行（自动合并后可关闭） */}
       <SyncConflictNotice
         labels={{
           title: dict.conflictTitle,

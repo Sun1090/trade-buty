@@ -101,8 +101,11 @@ const zh = {
      * 且要六张表**都**读成功才算一次合并；随写随推的双写从不更新它——
      * 所以说「上次同步」会把三天前那次合并说成刚才。 */
     sourceSyncedTpl: "上次从云端合并 {t}",
-    conflictTitle: "多设备同步提示",
-    conflictBodyTpl: "另一台设备有 {n} 处数据与本机不同，已自动合并：目标档位保留本机，错题复习计划取较新一条。",
+    conflictTitle: "同步差异提示",
+    // 「另一台设备」是替一件没测量的事宣布成因：比对的是同一账号在云端的那一行
+    // （`sync-layer` 里按 user_id 取回），云端与本机不一致并不代表存在第二台设备——
+    // 离线写队列被 `MAX_QUEUE` 挤掉、或本机推送后本地又改过，都会造出同样的分歧。
+    conflictBodyTpl: "云端有 {n} 处数据与本机不同，已自动合并：目标档位保留本机，错题复习计划取较新一条。",
     conflictDismiss: "知道了",
     dataExportTitle: "导出学习数据",
     dataExportDesc: "本地生成 JSON（含格式与版本号，便于将来迁移），不上传任何服务器",
@@ -234,8 +237,11 @@ const en: StatsDict = {
     sourceCloud: "Local + cloud",
     sourceCloudPending: "Local + cloud · changes awaiting upload",
     sourceSyncedTpl: "Last merged from cloud {t}",
-    conflictTitle: "Multi-device sync note",
-    conflictBodyTpl: "{n} item(s) differ from another device and were merged automatically: your daily goal stays as set here, and the newer review plan wins.",
+    conflictTitle: "Sync differences",
+    // Same reason as the zh row: the comparison is against this account's cloud row,
+    // so "another device" names a cause nothing measured. "goal" (not "daily goal")
+    // because the detector emits both `goal` and `weekly-goal` kinds.
+    conflictBodyTpl: "{n} item(s) on the cloud differ from this device and were merged: the goal set here stays, and the newer review plan wins.",
     conflictDismiss: "Got it",
     dataExportTitle: "Export learning data",
     dataExportDesc: "Generated locally as JSON (with format + version tags for future migrations); nothing is uploaded",
