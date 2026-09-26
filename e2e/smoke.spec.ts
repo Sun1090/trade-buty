@@ -28,13 +28,21 @@ test.describe("核心路径冒烟", () => {
     await expect(page.locator("article")).toBeVisible();
     await expect(page.getByTestId("estimated-reading-time")).toContainText(/约 \d+ 分钟阅读/);
 
-    // 展开随堂测（锚定测验卡片，避免误点页头 CTA）并作答
-    const card = page.locator("section").filter({ hasText: "随堂测" });
-    await card.getByRole("button").click();
-    // 展开后取第一个「可见」选项（页面 TOC 里也有隐藏 ul li）
-    await page.locator("li").locator("visible=true").first().click();
-    // 出现解析区（✅/❌ 任一）
-    await expect(page.getByText(/✅|❌/).first()).toBeVisible();
+    // 展开随堂测并作答。第三十八轮之前这一族是「两处点击 + 一条 `page.getByText(/✅|❌/)`」，
+    // 把任一处点击删掉用例仍然绿：那条断言一进场就命中课文正文里那份「01 · 金融市场全景 ✅（已读）」
+    // 的清单（命中的原文量在 .gate-logs/r38-p1-matched.txt），而「第一个可见的 `<li>`」是页头目录里的
+    // 条目、不是选项 —— 「作答闭环」这句话没有被断言过。现在四个动作各挂一条只属于它的效果。
+    // 两层「开始测验」：卡片（`<section>`）展开成题目视图，再开始首题（第三十四轮在 full-site 里量过）。
+    const start = page.getByRole("button", { name: "开始测验", exact: true });
+    const quiz = page.getByTestId("chapter-quiz");
+    const optionA = quiz.getByRole("button", { name: /^A\./ });
+    await expect(optionA).toHaveCount(0);
+    await start.click();
+    await start.click();
+    await expect(optionA).toBeVisible();
+    await optionA.click();
+    await expect(optionA).toBeDisabled();
+    await expect(quiz.getByText(/^✅ 答对了$|^❌ 不对，看解析$/)).toBeVisible();
   });
 
   test("复习页渲染（无错题时显示空态）", async ({ page }) => {
