@@ -39,7 +39,7 @@
 | 连续学习天数 streak | `src/lib/streak.ts` 的 `touchStreak()`：同一自然日再记不增天数（`lastDate === today` 直接返回）；昨天记过 → +1；**跨天但距上次活动不足 `GRACE_MS = 36` 小时也算连着**（R4.8 的时区/夏令时宽限窗，原文只写「间断即 current 归零」是漏了这道窗），越过它才 `current = 1` 重新计；**断档如实展示，绝不伪造**（R4.3/R12.6） | `tb-streak`。落笔处是 `progress.ts` 的 `markRead`、`wrongbook.ts` 的 `applySrsResult` / `recordWrong` / `resolveWrong` 与 `progress-helpers.ts`；**`saveQuizProgress` 不碰它**（随堂测经 `resolveWrong` / `recordWrong` 记，原文把它列进来是错的） | 统计页时间卡 + 恢复提示卡 |
 | 历史最长 streak | `tb-streak.longest` 单调 max 计数器（历史只增不减） | `tb-streak` | 分享卡/恢复提示 |
 | 回访（retention proxy） | 本地存在**两个不同自然日**的活跃学习日（同一把 60 秒的尺） | `tb-study-time` | 无独立 UI。用户能自算的只有 R9.9 隐私导出——它整份 dump `localStorage`，逐日条目在里面；R12.12 统计导出只有聚合的 `studySeconds`，算不出「哪几天」 |
-| 复习暴露率（due 可见性） | 有到期 SRS 错题时是否被产品提示到（周/日提醒+英 review-wide due chip） | wrongbook SRS + `tb-review-reminder-*` | 复习提醒横幅（R12.15–R12.17） |
+| 复习暴露率（due 可见性） | 有到期 SRS 错题时是否被产品提示到（周/日提醒横幅 + 复习页顶部那行的到期数；原文只点英文名了那一个表面，中文侧那一行同样报数） | `tb-wrong`（错题本，读端是 `wrongbook.ts` 的 `readWrong()`，统计页按它筛出「到期」那一个数）+ `tb-review-reminder-*` | 复习提醒横幅（R12.15–R12.17）、复习页顶部那一行（那一行开着「复习计划」才报数，默认是开的） |
 | 出口一致性 | 同一侧窗内所有统计区对同一事实的读数一致 | R12.23 `auditStatsConsistency` | 开发期 console 告警 + 单测 |
 
 ### 明确不算留存指标的值
@@ -70,8 +70,8 @@
 
 「对等」说的是**算法**：统计页从 `src/lib/` 导入的每一个模块（算指标的聚合器、字典、日期工具，全在内）里，
 没有一处读登录态，也没有一处在自己发请求——`fetch`、`XMLHttpRequest`、`sendBeacon` 三个都数过，零处。
-§1「数据源」列点名的 `tb-study-time`、`tb-weekly-goal-min`、`tb-streak`、`tb-review-reminder-*`
-**4** 个键，每一个在 `src/` 下都有经由 `localStorage` 的读写端（`localStorage.getItem/setItem` 本体，
+§1「数据源」列点名的 `tb-study-time`、`tb-weekly-goal-min`、`tb-streak`、`tb-wrong`、`tb-review-reminder-*`
+**5** 个键，每一个在 `src/` 下都有经由 `localStorage` 的读写端（`localStorage.getItem/setItem` 本体，
 或它的 `readStorageJson`、`readLocalJson` / `writeLocalJson` 包装）。未登录用户看到的每一个数字，与登录用户是同一条代码算出来的；
 走真实渲染验这一条的是 `src/components/stats-client-guest.test.tsx`（它不带 AuthProvider 直接渲染统计页）。
 
