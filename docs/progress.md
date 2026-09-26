@@ -7654,3 +7654,17 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：无；固定正则只抽取 `function|const|let|class` 后的合法 JavaScript 标识符，与原判据认可的声明形状相同。回滚只需撤回本返工提交。
 - 下一项：推送 PR #335，确认 CodeQL 汇总转绿后 rebase 合并；随后进入第四十轮，先把「回访导出只能拿到聚合 studySeconds」从禁词表升级为 payload 结构判据。
 - 更新时间：2026-09-26（Asia/Shanghai）。
+
+---
+
+## 2026-09-26 · 第四十轮（R16.274）：回访导出说法改由真实 payload 形状托底
+
+- 里程碑 / 版本：「说法 vs 事实」第四十轮，无发布（v0.7.18）。
+- 分支：`round40-retention-stats-shape`。
+- 完成内容：`docs/retention-metrics.md` 的回访行写「R12.12 统计导出只有聚合的 `studySeconds`，算不出哪几天」，旧判据却只靠 `getStudySeries|studyDays|byDay` 三个禁词；逐日字段若改名为 `studyByDate` 就能漏过。判据现在直接调用 `buildStatsExport()`，对 `data.engagement` 的实际输出键集合做等值断言，并单独确认 `studySeconds` 仍在；字段叫什么不再决定门禁能否看见它。
+- 变更文件：`scripts/retention-metrics-claims.test.mjs`、`docs/roadmap.md`、`docs/progress.md`。产品代码与界面零变化。
+- 探针：临时在 `buildStatsExport()` 的 `engagement` 返回值加入 `studyByDate: {}`，目标用例「回访这一行说清是哪一份导出算得出来」单红，报错正是 payload 形状变化；还原后 30 条全绿。
+- 验证：`npx vitest run scripts/retention-metrics-claims.test.mjs --coverage=false --reporter=verbose`（1 文件 / 30 条）；`npm run lint`；`npm run typecheck`；探针还原后的同文件基线复跑；`git diff --check`，全部通过。
+- 阻塞 / 风险：无。精确键集合是有意的：统计导出字段本来就是版本化契约；未来新增任何 engagement 字段都应同时重审这句可推导能力，而不是静默放行。回滚只需撤回本轮提交。
+- 下一项：提交并开 PR；随后审计 roadmap 中 `file:line` 引用是否真的指向所述事实，而不只验证行号未越界。
+- 更新时间：2026-09-26（Asia/Shanghai）。

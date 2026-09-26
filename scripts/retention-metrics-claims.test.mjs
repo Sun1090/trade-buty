@@ -11,6 +11,7 @@ import { readFileSync, existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { stripComments } from "./growth-event-privacy.mjs";
+import { buildStatsExport } from "../src/lib/stats-export";
 
 const root = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
 const read = (rel) => readFileSync(path.join(root, rel), "utf8");
@@ -399,9 +400,33 @@ describe("§1 指标定义逐条对上算它的代码", () => {
   it("回访这一行说清是哪一份导出算得出来", () => {
     const row = metricOf("回访");
     expect(read("src/lib/privacy-export.ts"), "隐私导出不再整份 dump localStorage，那句「可自算」要重看").toContain("collectLocalStorage(");
-    const stats = read("src/lib/stats-export.ts");
-    expect(/getStudySeries|studyDays|byDay/.test(stats), "统计导出如今带逐日秒数了，那一行说它算不出是错的").toBe(false);
-    expect(stats, "统计导出不再有 studySeconds，那一行引它做什么").toContain("studySeconds");
+    const stats = buildStatsExport({
+      locale: "zh",
+      courses: { readDocs: 0, totalDocs: 0, doneChapters: 0, totalChapters: 0, completionPct: 0 },
+      quizzes: { done: 0, total: 0, avgBestPct: null },
+      replay: { rounds: 0, accuracyPct: null, allTimeBestStreak: 0 },
+      review: { pending: 0, dueToday: 0, overdue: 0 },
+      engagement: {
+        studySeconds: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+        studyWindowFirstDay: null,
+        studyWindowLastDay: null,
+      },
+      goals: { dailyGoalMinutes: 0 },
+    });
+    expect(
+      Object.keys(stats.data.engagement).sort(),
+      "统计导出的 engagement 形状变了：只要多出逐日集合，那一行说它算不出「哪几天」就得重看",
+    ).toEqual([
+      "currentStreak",
+      "longestStreak",
+      "studySeconds",
+      "studyWindowDays",
+      "studyWindowFirstDay",
+      "studyWindowLastDay",
+    ]);
+    expect(stats.data.engagement.studySeconds, "统计导出不再有 studySeconds，那一行引它做什么").toBe(0);
     expect(row.visible, "那一行没点名是哪一份导出可自算").toContain("隐私导出");
     expect(row.visible, "那一行没说明统计导出算不出「哪几天」").toContain("算不出");
   });
