@@ -550,8 +550,8 @@ function resolveRef(token, files, srcText) {
   }
   const sym = token.replace(/\(\)$/, "");
   if (!/^[A-Za-z_$][\w$]*$/.test(sym)) return "既不是文件名也不是符号名，判据认不出它指什么";
-  const re = new RegExp(`(?:function|const|let|class)\\s+${sym.replace(/\$/g, "\\$")}\\b`);
-  return re.test(srcText) ? null : `src 下找不到 ${sym} 的声明`;
+  const declarations = srcText.matchAll(/(?:function|const|let|class)\s+([A-Za-z_$][\w$]*)\b/g);
+  return [...declarations].some((m) => m[1] === sym) ? null : `src 下找不到 ${sym} 的声明`;
 }
 
 /** 复习页顶部那一行是不是「一个 locale 三元、两个分支各自把到期数插进文案」。
