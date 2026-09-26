@@ -7668,3 +7668,15 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：无。精确键集合是有意的：统计导出字段本来就是版本化契约；未来新增任何 engagement 字段都应同时重审这句可推导能力，而不是静默放行。回滚只需撤回本轮提交。
 - 下一项：提交并开 PR；随后审计 roadmap 中 `file:line` 引用是否真的指向所述事实，而不只验证行号未越界。
 - 更新时间：2026-09-26（Asia/Shanghai）。
+
+## 第四十一轮：未决 roadmap 引用稳定化（2026-09-26）
+
+- **Milestone / 版本**：R16 质量与事实门禁；完成 R16.275，未改产品版本。
+- **状态**：实现、变异探针与本地验证完成；分支 `round41-roadmap-open-reference-anchors`，待提交/PR。
+- **完成内容**：审计所有未决 `- [ ]` roadmap 行，把 31 处会随源码增删漂移的文件行号改成稳定的文件、函数、字段或判定主人；修正 `normalizeLocalQuiz()` / `mergeQuizScore()`、`renderBrandFallback()`、`read >= docCount` 等原本已落到闭括号或无意义语法位置的活引用。新增门禁，未决项不得再以完整路径、短文件名或 ```:行号``` 作为依据；点名的具体仓库路径必须存在。路径 glob 不冒充具体文件；R16.41 两个明确记载为「试过但未采用」的路由是封闭豁免，门禁要求它们仍被点名且仍不存在。已完成项的历史行号不受影响。
+- **变更文件**：`docs/roadmap.md`、`scripts/roadmap-open-reference-claims.test.mjs`、`docs/progress.md`。
+- **验证**：`npx vitest run scripts/roadmap-open-reference-claims.test.mjs --coverage=false --reporter=verbose`（3/3）、`npm run check:docs`、`npm run lint`、`npm run typecheck`、`git diff --check` 全绿。变异探针：给未决路径补回 `:440` → 行号门禁红；把真实路径换成 `src/lib/missing-sync-layer.ts` → 存在性门禁红；只给已完成项追加历史行号 → 3/3 仍绿，证明扫描边界没有误伤已完成记录。
+- **阻塞**：无。
+- **风险 / 回滚**：只改变维护文档与测试，不改变运行时行为。路径提取器只认 `src|scripts|docs|e2e|supabase` 下的常见文本/源码扩展名；glob 有意不做存在性验证。若回滚，删除新测试并恢复 roadmap 引用即可，不涉及数据或迁移。
+- **下一项**：提交并经 PR/CI 落地主分支后，重新扫描未决项中仍只有文件名、缺少符号主人的证据，选择下一条可执行的事实门禁或核心缺陷。
+- **更新时间**：2026-09-26（Asia/Shanghai）。
