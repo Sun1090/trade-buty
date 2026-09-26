@@ -7641,3 +7641,16 @@ Next: complete full verification, open PR, monitor CI, rebase-merge, and delete 
 - 阻塞 / 风险：无新增阻塞；改动只在文档与判据里，用户侧零变化，因此不判发布。**登记三处已知边界（不顺手补）**：裸名探测器只认拉丁字母串——一格若既有真键、又混一个**纯中文**别名（「错题本台账」），这一格仍然逃检；符号解析只要求「某个非测试文件里出现过这个名字」，同名不同模块也算站得住（本轮那三个 `.ts` 在 `src/` 下都唯一，所以这条没被试到）；「两个表面」认的是行形状，把那条文案重排成两块会让它红，即便两种语言其实都还报数（方向安全：红 = 去看）。
 - 下一项：本分支开 PR，等 `ci` + `db-tests` + CodeQL 绿了 rebase 合并。第四十轮候选，按优先级：①§1「回访」那一行说「统计导出只有聚合的 `studySeconds`，算不出哪几天」，撑它的是 `expect(!/getStudySeries|studyDays|byDay/.test(stats))` 一台**禁词表**——换个名字的逐日字段（`studyByDate`）走得过去，该由 `src/lib/stats-export.ts` 的 payload 形状说了算（本轮读过那张 `StatsExportInput`：`engagement` 那几个字段全是标量，派生得出来）；②台账 `file:line` 引用的人口与主人（上一轮量出 595 条、**47** 条同名指不到唯一去处，而「行号没越界」根本不等价于「指向句子说的那件事」）；③`runtime-health` 那一族覆盖面窄要不要有个说法。
 - 更新时间：2026-09-26
+
+---
+
+## 2026-09-26 · 第三十九轮 PR 返工：CodeQL 指出的不完整转义
+
+- 里程碑 / 版本：「说法 vs 事实」第三十九轮的 PR 门禁返工，无发布（v0.7.18）。
+- 分支 / PR：`round39-retention-datasource-keys`，PR #335。
+- 问题与修复：PR 的两个 CodeQL 分析作业本身通过，但汇总检查在 `scripts/retention-metrics-claims.test.mjs:553` 报 `js/incomplete-sanitization`（high）：`resolveRef()` 为已校验的符号名只转义 `$` 后拼动态正则。这里不需要动态正则；改为用固定声明正则枚举源码中的声明名，再以字符串相等比较目标符号。这样保留原判据语义，同时移除不完整转义与正则注入面。
+- 变更文件：`scripts/retention-metrics-claims.test.mjs`、`docs/progress.md`。
+- 验证：`npx vitest run scripts/retention-metrics-claims.test.mjs --coverage=false --reporter=verbose`（1 文件 / 30 条全绿）；`npm run lint`；`npm run typecheck`；`git diff --check`，全部通过。
+- 阻塞 / 风险：无；固定正则只抽取 `function|const|let|class` 后的合法 JavaScript 标识符，与原判据认可的声明形状相同。回滚只需撤回本返工提交。
+- 下一项：推送 PR #335，确认 CodeQL 汇总转绿后 rebase 合并；随后进入第四十轮，先把「回访导出只能拿到聚合 studySeconds」从禁词表升级为 payload 结构判据。
+- 更新时间：2026-09-26（Asia/Shanghai）。
