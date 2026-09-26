@@ -226,7 +226,7 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
 
   const q = quiz.questions[current];
   return (
-    <div className="mt-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+    <div data-testid="chapter-quiz" className="mt-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
       <div className="flex items-center justify-between text-xs text-faint">
         <p>{tpl(dict.progressTpl, { i: current + 1, n: quiz.questions.length, c: correct })}</p>
         <div className="flex items-center gap-3">
