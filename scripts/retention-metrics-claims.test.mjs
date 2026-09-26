@@ -273,6 +273,7 @@ const ST = "src/lib/study-time.ts";
 const SK = "src/lib/streak.ts";
 const I18N = "src/lib/i18n-stats.ts";
 const CLIENT = "src/components/stats-client.tsx";
+const REVIEW = "src/components/review-client.tsx";
 
 /** §1 那张表：{ name, def, source, visible }（表头与分隔行剔掉） */
 function metricRows() {
@@ -432,6 +433,37 @@ describe("§1 指标定义逐条对上算它的代码", () => {
     expect(existsSync(path.join(root, "src/lib/stats-consistency.test.ts")), "那句「+ 单测」没有对应的文件").toBe(true);
     expect(row.visible, "那一行的可见位置没写它是告警而不是界面").toContain("console");
   });
+
+  it("§1「复习暴露率」点名的两个表面都在，复习页那一个中英各插一次到期数", () => {
+    const row = metricOf("复习暴露率");
+    // 表面一：统计页那条横幅——文案里插的就是到期数，不插它这条「暴露」无从谈起
+    expect(
+      stripComments(read(CLIENT)),
+      "统计页那条提醒横幅不再把到期数插进文案，§1 那句「周/日提醒横幅」没了主人",
+    ).toMatch(/reminderBodyTpl\.replace\("\{n\}", String\(dueReviewCount\)\)/);
+    // 表面二：复习页顶部那一行。原文只点了英文那个表面（「英 review-wide due chip」），
+    // 而中文分支同样把数报了出来——只点名一边，读的人就会以为中文侧到期了看不见。
+    expect(row.visible, "那一格不再点名复习页那个表面，读者不知道到期了会在哪看见").toContain("复习页顶部");
+    expect(row.visible, "那一格不再交代那一行的前提（报不报数由「复习计划」那个开关决定）").toContain("复习计划");
+    const review = stripComments(read(REVIEW));
+    expect(
+      review,
+      "复习页的「复习计划」不再是默认开着，那句「默认是开的」得改",
+    ).toMatch(/\[srsOn, setSrsOn\] = useState\(true\)/);
+    expect(
+      dueBothLocales(review),
+      "复习页顶部那一行不再是「一个 locale 三元、两个分支各插一次 ${dueCount}」，§1 那句「中文侧那一行同样报数」要重看",
+    ).toBe(true);
+    // 正向对照：探测器必须认得「只有一支报数」那个形状——那一支正是本轮改掉的说法
+    expect(
+      dueBothLocales('  const s = locale === "en"\n    ? `${dueCount} due now`\n    : `${items.length} 道错题`;'),
+      "探测器把「只有英文报数」也认成双语，上面那个 true 就是空转",
+    ).toBe(false);
+    expect(
+      dueBothLocales('  const s = locale === "en"\n    ? `${dueCount} due now`\n    : `${dueCount} 道今日到期`;'),
+      "探测器连真双语那一支都认不出",
+    ).toBe(true);
+  });
 });
 
 /**
@@ -487,6 +519,53 @@ function srcFiles() {
     .map((e) => path.relative(root, path.posix.join(e.parentPath ?? e.path, e.name)).split(path.sep).join("/"));
 }
 
+/** §1「数据源」那一格里点名、但**不是**存储键的东西：文件名与符号名。存储键由上一道门管。 */
+function s1Refs() {
+  const out = [];
+  for (const r of METRICS) {
+    const spans = [...r.source.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+    out.push({ row: r.name, spans, refs: spans.filter((t) => !/^tb-/.test(t)) });
+  }
+  return out;
+}
+
+/** 一格里**裸写**（不在反引号里）的拉丁字母名。它既进不了 `s1Keys` 的 `` `tb-… `` 形状，
+ *  也进不了符号名解析——上一轮的探针把「数据源列改指一个代码里没有的键」量成了红，量的却是
+ *  「写成反引号的假键」那一半；「wrongbook SRS」这种不带键形的名字，整道门从来就看不见它。 */
+function bareNames(cell) {
+  const stripped = cell.replace(/`[^`]*`/g, " ").replace(/R\d+(?:\.\d+)?/g, " ");
+  return [...stripped.matchAll(/[A-Za-z][A-Za-z0-9._ -]{2,}/g)].map((m) => m[0].trim());
+}
+
+/** 一个点名对不对得上代码：返回 null 算站得住，返回字符串是站不住的原因。
+ *  `srcText` 得是全部非测试源码**去掉注释**之后拼起来的那一份——留着注释，一个代码里根本
+ *  没有的名会被某句解释它的注释洗成「站得住」。 */
+function resolveRef(token, files, srcText) {
+  if (/\.[cm]?tsx?$/.test(token)) {
+    const hits = files.filter((rel) => rel.split("/").pop() === token);
+    if (hits.length === 1) return null;
+    return hits.length
+      ? `src 下有 ${hits.length} 个同名文件（${hits.join(" / ")}），光写文件名指不到唯一去处`
+      : "src 下没有这个文件";
+  }
+  const sym = token.replace(/\(\)$/, "");
+  if (!/^[A-Za-z_$][\w$]*$/.test(sym)) return "既不是文件名也不是符号名，判据认不出它指什么";
+  const re = new RegExp(`(?:function|const|let|class)\\s+${sym.replace(/\$/g, "\\$")}\\b`);
+  return re.test(srcText) ? null : `src 下找不到 ${sym} 的声明`;
+}
+
+/** 复习页顶部那一行是不是「一个 locale 三元、两个分支各自把到期数插进文案」。
+ *  只认这个形状：两个分支必须相邻（`?` 紧跟 `:`），且都插 `${dueCount}`——
+ *  少插一支就等于只有一种语言报数，那正是 §1 那一格原先的说法。 */
+function dueBothLocales(text) {
+  const lines = text.split("\n");
+  return lines.some(
+    (l, i) =>
+      /^\s*\?\s*`[^`]*\$\{dueCount\}/.test(l) &&
+      /^\s*:\s*`[^`]*\$\{dueCount\}/.test(lines[i + 1] ?? ""),
+  );
+}
+
 const S3 = () => doc.slice(doc.indexOf("## 3."), doc.indexOf("\n## 4."));
 /** §3 里以某个锚句定位那一段（结构变了当场红，不让它悄悄扫空）。 */
 function paraOf(anchor) {
@@ -534,6 +613,44 @@ describe("§3 无登录对等：说出口的数都现读", () => {
       const hit = stored.has(k) || [...stored].some((s) => s.startsWith(`${k}-`));
       expect(hit, `${k} 在 src 下没有任何一处经由 localStorage 读写，§1 把它当数据源是错的`).toBe(true);
     }
+  });
+
+  it("§1 数据源格点名的每一样东西都在代码里，不留上一道门扫不到的名字", () => {
+    const rowsOf = s1Refs();
+    const files = srcFiles();
+    const srcText = files.map((rel) => stripComments(read(rel))).join("\n");
+    const refs = rowsOf.flatMap((r) => r.refs);
+    expect(refs.length, "§1 的数据源格推不出几个非键点名，扫描八成没跑起来").toBeGreaterThanOrEqual(8);
+    for (const r of rowsOf) {
+      // 每一格至少得有一个反引号点名的东西：数据源整格写成散文，上一道门（只认 `` `tb-… ``）
+      // 与这一道（只认反引号里的名）就都无从对账，「有读写端」那句话于是变成一句感觉。
+      expect(r.spans.length, `「${r.row}」那一格没有一个反引号点名的东西，数据源说不出主人`).toBeGreaterThanOrEqual(1);
+      for (const t of r.refs) {
+        const why = resolveRef(t, files, srcText);
+        expect(why, `「${r.row}」那一格点名的 \`${t}\` 站不住：${why}`).toBeNull();
+      }
+    }
+    const bare = METRICS.flatMap((r) => bareNames(r.source).map((t) => `「${r.name}」格里的裸写名字「${t}」`));
+    expect(bare, "§1 的数据源格里有裸写的名字：它不成存储键形、又不在反引号里，两道门都看不见它").toEqual([]);
+    // 正向对照：两个探测器都必须认得坏形状，否则上面那串零是空转出来的
+    expect(
+      bareNames("wrongbook SRS + `tb-review-reminder-*`"),
+      "裸名字探测器匹配不到「wrongbook SRS」这种写法，上面那个「[]」就是空转",
+    ).toEqual(["wrongbook SRS"]);
+    expect(resolveRef("noSuchOwnerAnywhere", files, srcText), "符号探测器连一个不存在的名都放行").toBeTruthy();
+    expect(resolveRef("no-such-file-named-this.tsx", files, srcText), "文件探测器连一个不存在的文件都放行").toBeTruthy();
+    // 反向对照：本轮改对的那一格，两个探测器都必须是干净的；真声明必须认得出
+    expect(bareNames(metricOf("复习暴露率").source), "改好的那一格仍被当成有裸名字").toEqual([]);
+    expect(resolveRef("readWrong", files, srcText), "符号探测器认不出 wrongbook.ts 里真有的 readWrong").toBeNull();
+  });
+
+  it("§3 那句「几个键」等于 §1 现读出来的键数", () => {
+    const n = s1Keys().length;
+    expect(n, "§1 推不出几个键，这条比对没有意义").toBeGreaterThanOrEqual(4);
+    expect(
+      new RegExp(`\\*\\*${n}\\*\\*\\s*个键`).test(paraOf("数据源")),
+      `§3 那一句写的个数不是现读出来的 ${n}：§1 加一个键、或改一格，这句话就得跟着数`,
+    ).toBe(true);
   });
 
   it("整页只有文中那个数的登录态消费点，且每一处都落在同步状态上", () => {
