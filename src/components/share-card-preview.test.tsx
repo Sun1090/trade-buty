@@ -59,12 +59,10 @@ function installCanvasStub(toBlobResult: Blob | null = new Blob(["png"], { type:
     if (tag.toLowerCase() === "a") (el as HTMLAnchorElement).click = () => {};
     return el;
   }) as typeof document.createElement;
-  if (!("createObjectURL" in URL)) {
-    Object.defineProperty(URL, "createObjectURL", { value: () => "blob:fake", configurable: true });
-  }
-  if (!("revokeObjectURL" in URL)) {
-    Object.defineProperty(URL, "revokeObjectURL", { value: () => {}, configurable: true });
-  }
+  // jsdom 30.1 起自带 createObjectURL / revokeObjectURL，但其 Blob 实现会抛错；
+  // 无论如何都用可控桩覆盖，别依赖 jsdom 版本差
+  Object.defineProperty(URL, "createObjectURL", { value: () => "blob:fake", configurable: true });
+  Object.defineProperty(URL, "revokeObjectURL", { value: () => {}, configurable: true });
 }
 
 describe("ShareCardPreview growth events", () => {
