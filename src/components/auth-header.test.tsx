@@ -129,11 +129,12 @@ describe("AuthHeader (已登录：账户菜单)", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
-  it("退出登录只结束当前会话", () => {
+  it("退出登录只结束当前会话", async () => {
     mockUseAuth.mockReturnValue(account);
     openMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: "退出登录" }));
-    expect(mockSignOut).toHaveBeenCalledWith({ scope: "local" });
+    // R16.235 后 signOut 在动态 import 客户端模块之后才发生，断言改异步等
+    await waitFor(() => expect(mockSignOut).toHaveBeenCalledWith({ scope: "local" }));
     expect(screen.queryByRole("menu")).toBeNull();
   });
 });

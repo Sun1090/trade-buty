@@ -1,6 +1,5 @@
 "use client";
 
-import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { adoptAccountMirror } from "./account-mirror";
 // R9.6：sync-layer 仅在登录后才需要 enqueueWrite；改为通过独立模块动态 import
 // 避免 sync-queue-store 被打进 layout 的共享 chunk（每个内容页 -12KB gzip）。
@@ -14,15 +13,21 @@ import type { ReplayRecord } from "./replay-store";
 import { isLocalDateStr } from "./date-utils";
 import { REPLAY_HISTORY_KEEP } from "./replay-history-limit";
 import { isRecord, readStorageJson } from "./storage-json";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-function safeSupabaseBrowser() {
-  try {
-    return { client: getSupabaseBrowser(), error: null as Error | null };
-  } catch (err) {
-    if (process.env.NODE_ENV !== "production") console.warn("[sync] Supabase unavailable; write will be queued", err);
-    return { client: null, error: err as Error };
+// R16.235：客户端改为惰性动态解析。本模块因 setAuthState 被 auth-provider 静态引入、
+// 住进 layout 共享 chunk，静态 import supabase client 曾把 ~59KB gzip 的登录 SDK
+// 压进全部 454 条路由的首屏。调用点一律通过 resolveSupabaseBrowser() 拿客户端；
+// 解析失败（env 缺失）时与旧 safeSupabaseBrowser 同语义：走入队/降级分支。
+let clientPromise: Promise<SupabaseClient> | null = null;
+
+function resolveSupabaseBrowser(): Promise<SupabaseClient> {
+  if (!clientPromise) {
+    clientPromise = import("@/lib/supabase/client").then((m) => m.getSupabaseBrowser());
   }
+  return clientPromise;
 }
+
 
 /**
  * 双写同步层：已登录时，lib 写函数在写 localStorage 后调这些函数，
@@ -52,6 +57,21 @@ interface QueueTarget {
   payload: Record<string, unknown>;
   ownerId: string;
   label: string;
+}
+
+/**
+ * 标准云端写：拿到客户端后执行 run，结果交给 settleCloudWrite；
+ * 客户端解析失败（env 缺失 / chunk 拉不下来）时与旧同步版同语义——入队重放。
+ */
+function cloudWriteOrQueue(target: QueueTarget, run: (client: SupabaseClient) => PromiseLike<unknown>): void {
+  void resolveSupabaseBrowser().then(
+    (client) =>
+      void run(client).then(
+        (result) => settleCloudWrite(target, result as { error?: unknown } | null | undefined),
+        (err) => settleCloudWrite(target, { error: err }),
+      ),
+    (clientError) => queueFailedWrite(target, clientError, "queued without Supabase"),
+  );
 }
 
 function queueFailedWrite(target: QueueTarget, reason: unknown, note: string): void {
@@ -90,18 +110,9 @@ export function syncProgressWrite(chapterNum: string, docSlug: string) {
     ownerId,
     label: "progress write",
   };
-  const { client, error: clientError } = safeSupabaseBrowser();
-  if (client) {
-    void client
-      .from("progress")
-      .insert({ user_id: ownerId, ...target.payload })
-      .then(
-        (result) => settleCloudWrite(target, result),
-        (err) => settleCloudWrite(target, { error: err }),
-      );
-  } else {
-    queueFailedWrite(target, clientError, "queued without Supabase");
-  }
+  cloudWriteOrQueue(target, (client) =>
+    client.from("progress").insert({ user_id: ownerId, ...target.payload }),
+  );
 }
 
 // ---- 错题本 ----
@@ -127,21 +138,12 @@ export function syncWrongbookWrite(
     ownerId,
     label: "wrongbook upsert",
   };
-  const { client, error: clientError } = safeSupabaseBrowser();
-  if (client) {
-    void client
-      .from("wrongbook")
-      .upsert(
-        { user_id: ownerId, ...target.payload },
-        { onConflict: "user_id,chapter_num,question_idx" },
-      )
-      .then(
-        (result) => settleCloudWrite(target, result),
-        (err) => settleCloudWrite(target, { error: err }),
-      );
-  } else {
-    queueFailedWrite(target, clientError, "queued without Supabase");
-  }
+  cloudWriteOrQueue(target, (client) =>
+    client.from("wrongbook").upsert(
+      { user_id: ownerId, ...target.payload },
+      { onConflict: "user_id,chapter_num,question_idx" },
+    ),
+  );
 }
 
 export function syncWrongbookDelete(chapterNum: string, questionIdx: number) {
@@ -154,21 +156,14 @@ export function syncWrongbookDelete(chapterNum: string, questionIdx: number) {
     ownerId,
     label: "wrongbook delete",
   };
-  const { client, error: clientError } = safeSupabaseBrowser();
-  if (client) {
-    void client
+  cloudWriteOrQueue(target, (client) =>
+    client
       .from("wrongbook")
       .delete()
       .eq("user_id", ownerId)
       .eq("chapter_num", chapterNum)
-      .eq("question_idx", questionIdx)
-      .then(
-        (result) => settleCloudWrite(target, result),
-        (err) => settleCloudWrite(target, { error: err }),
-      );
-  } else {
-    queueFailedWrite(target, clientError, "queued without Supabase");
-  }
+      .eq("question_idx", questionIdx),
+  );
 }
 
 /**
@@ -189,21 +184,20 @@ export function syncWrongbookClearAll(
     }
     for (const entry of entries) syncWrongbookDelete(entry.chapterNum, entry.questionIdx);
   };
-  const { client, error: clientError } = safeSupabaseBrowser();
-  if (!client) {
-    fallBackToOneByOne(clientError, "queued without Supabase");
-    return;
-  }
-  void client
-    .from("wrongbook")
-    .delete()
-    .eq("user_id", ownerId)
-    .then(
-      (result) => {
-        if (result && result.error) fallBackToOneByOne(result.error, "failed → per-row queue");
-      },
-      (err) => fallBackToOneByOne(err, "failed → per-row queue"),
-    );
+  void resolveSupabaseBrowser().then(
+    (client) =>
+      void client
+        .from("wrongbook")
+        .delete()
+        .eq("user_id", ownerId)
+        .then(
+          (result) => {
+            if (result && result.error) fallBackToOneByOne(result.error, "failed → per-row queue");
+          },
+          (err) => fallBackToOneByOne(err, "failed → per-row queue"),
+        ),
+    (clientError) => fallBackToOneByOne(clientError, "queued without Supabase"),
+  );
 }
 
 // ---- 测验成绩 ----
@@ -217,21 +211,12 @@ export function syncQuizUpsert(chapterNum: string, best: number, total: number) 
     ownerId,
     label: "quiz upsert",
   };
-  const { client, error: clientError } = safeSupabaseBrowser();
-  if (client) {
-    void client
-      .from("quiz_scores")
-      .upsert(
-        { user_id: ownerId, ...target.payload, done: true },
-        { onConflict: "user_id,chapter_num" },
-      )
-      .then(
-        (result) => settleCloudWrite(target, result),
-        (err) => settleCloudWrite(target, { error: err }),
-      );
-  } else {
-    queueFailedWrite(target, clientError, "queued without Supabase");
-  }
+  cloudWriteOrQueue(target, (client) =>
+    client.from("quiz_scores").upsert(
+      { user_id: ownerId, ...target.payload, done: true },
+      { onConflict: "user_id,chapter_num" },
+    ),
+  );
 }
 
 // ---- 回放记录 ----
@@ -265,18 +250,9 @@ export function syncReplayHistoryWrite(rec: {
     ownerId,
     label: "replay history",
   };
-  const { client, error: clientError } = safeSupabaseBrowser();
-  if (client) {
-    void client
-      .from("replay_history")
-      .insert({ user_id: ownerId, ...payload })
-      .then(
-        (result) => settleCloudWrite(target, result),
-        (err) => settleCloudWrite(target, { error: err }),
-      );
-  } else {
-    queueFailedWrite(target, clientError, "queued without Supabase");
-  }
+  cloudWriteOrQueue(target, (client) =>
+    client.from("replay_history").insert({ user_id: ownerId, ...payload }),
+  );
 }
 
 // ---- 回放最佳 ----
@@ -290,18 +266,9 @@ export function syncReplayBestUpsert(best: number) {
     ownerId,
     label: "replay best",
   };
-  const { client, error: clientError } = safeSupabaseBrowser();
-  if (client) {
-    void client
-      .from("replay_best")
-      .upsert({ user_id: ownerId, ...target.payload }, { onConflict: "user_id" })
-      .then(
-        (result) => settleCloudWrite(target, result),
-        (err) => settleCloudWrite(target, { error: err }),
-      );
-  } else {
-    queueFailedWrite(target, clientError, "queued without Supabase");
-  }
+  cloudWriteOrQueue(target, (client) =>
+    client.from("replay_best").upsert({ user_id: ownerId, ...target.payload }, { onConflict: "user_id" }),
+  );
 }
 
 function enqueueGoalUpsert(payload: { daily_goal_min?: number; weekly_goal_min?: number }, key: "daily-goal" | "weekly-goal", warnLabel: string) {
@@ -314,18 +281,9 @@ function enqueueGoalUpsert(payload: { daily_goal_min?: number; weekly_goal_min?:
     ownerId,
     label: warnLabel,
   };
-  const { client, error: clientError } = safeSupabaseBrowser();
-  if (client) {
-    void client
-      .from("user_settings")
-      .upsert({ user_id: ownerId, ...payload }, { onConflict: "user_id" })
-      .then(
-        (result) => settleCloudWrite(target, result),
-        (err) => settleCloudWrite(target, { error: err }),
-      );
-  } else {
-    queueFailedWrite(target, clientError, "queued without Supabase");
-  }
+  cloudWriteOrQueue(target, (client) =>
+    client.from("user_settings").upsert({ user_id: ownerId, ...payload }, { onConflict: "user_id" }),
+  );
 }
 
 /**
@@ -611,13 +569,14 @@ export async function hydrateFromCloud(
   let bestRes: { data: CloudReplayBest[] | null; error: CloudReadError | null } | undefined;
   let settingsRes: { data: { daily_goal_min: number; weekly_goal_min?: number | null }[] | null; error: CloudReadError | null } | undefined;
   try {
+    const client = await resolveSupabaseBrowser();
     const results = await Promise.all([
-      getSupabaseBrowser().from("progress").select("chapter_num, doc_slug").eq("user_id", id),
-      getSupabaseBrowser().from("wrongbook").select("chapter_num, question_idx, picked, answered_at, srs_stage, srs_due").eq("user_id", id),
-      getSupabaseBrowser().from("quiz_scores").select("chapter_num, best, total, done").eq("user_id", id),
-      getSupabaseBrowser().from("replay_history").select("symbol, interval, total, correct, best_streak, recorded_at").eq("user_id", id).order("recorded_at", { ascending: false }).limit(REPLAY_HISTORY_KEEP),
-      getSupabaseBrowser().from("replay_best").select("best_streak").eq("user_id", id),
-      getSupabaseBrowser().from("user_settings").select("daily_goal_min, weekly_goal_min").eq("user_id", id),
+      client.from("progress").select("chapter_num, doc_slug").eq("user_id", id),
+      client.from("wrongbook").select("chapter_num, question_idx, picked, answered_at, srs_stage, srs_due").eq("user_id", id),
+      client.from("quiz_scores").select("chapter_num, best, total, done").eq("user_id", id),
+      client.from("replay_history").select("symbol, interval, total, correct, best_streak, recorded_at").eq("user_id", id).order("recorded_at", { ascending: false }).limit(REPLAY_HISTORY_KEEP),
+      client.from("replay_best").select("best_streak").eq("user_id", id),
+      client.from("user_settings").select("daily_goal_min, weekly_goal_min").eq("user_id", id),
     ]);
     [progressRes, wrongRes, quizRes, replayRes, bestRes, settingsRes] = results as [typeof progressRes, typeof wrongRes, typeof quizRes, typeof replayRes, typeof bestRes, typeof settingsRes];
   } catch {
@@ -657,7 +616,8 @@ export async function hydrateFromCloud(
       })),
     );
     if (localRows.length > 0) {
-      await getSupabaseBrowser().from("progress").upsert(localRows, {
+      const upsertClient = await resolveSupabaseBrowser();
+      await upsertClient.from("progress").upsert(localRows, {
         onConflict: "user_id,chapter_num,doc_slug",
         ignoreDuplicates: true,
       });
