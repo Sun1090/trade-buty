@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-09-29 — R16.235 落地：登录 SDK 撤出 454 条路由的首屏
+
+- 状态：已提交，分支 `feat/supabase-lazy-chunk`，PR 待开。
+- 里程碑 / 版本：v0.7.18 质量加固，暂不发布。
+- 分支 / 提交：`feat/supabase-lazy-chunk`（基于 main，含已合并的 PR #338）。
+- 完成内容：
+  - R16.235 还账：`hasSupabaseEnv()` 拆进不依赖 supabase-js 的 `src/lib/supabase/env.ts`（client 模块 re-export）；`auth-provider.tsx` 改为挂载后动态 `import("@/lib/supabase/client")`（env 缺失仍降级本地模式；订阅句柄挪进 effect 作用域，cleanup 安全），`auth-header.tsx` 的 signOut 在点击时动态拉取，`sync-layer.ts` 的 15 处 `getSupabaseBrowser()` 调用点改走惰性 `resolveSupabaseBrowser()`（单例 Promise，解析失败沿用原「入队重放 / 逐条降级」语义，新增 `cloudWriteOrQueue` 统一形状）。
+  - `check:bundle` 按 AI chunk 同一形状新增 supabase chunk 隔离判据（`GoTrueClient` 指纹；非 auth 预算的全部路由不得引用）；`knowledge-lesson.total` 404 → **348**（落地后本组最大 338.8KB）。首屏收益：非 auth 各组 total 掉 46–66KB。
+  - **roadmap 记录的「无法端到端验证登录链路」前提被推翻**：本机 Docker + Supabase CLI 齐备，`supabase start`（新增 `supabase/config.toml`，端口 54341–54344 避开默认段、避开另一项目在跑的栈）拉起 GoTrue + Mailpit + 迁移（11 张表）；新增 `e2e/auth-flow.spec.ts`（登记进 `npm run e2e`，无 env 时 describe 级跳过）真跑 OTP 登录 → 邮件取链接（`&amp;` 解码）→ 会话恢复 → 退出登录，5 次全绿。
+  - 复盘一个自造故障：在 3100 服务器运行期间做了无 env 重建，老进程给新 chunk 供数，造成「请求过于频繁」假象（客户端无 env 走异常分支）；杀进程 → 带 env 重建 → 重启后 5 连绿。教训：本地验证前先确认服务进程与 `.next` 同源。
+  - 同步更新：`docs/perf-notes.md`（「净结果」行加还账标记 + 新增「复测（2026-09-29）」小节）、`docs/roadmap.md` R16.235 置 [x] 与落地记录、`docs/scan-counts.md`（secrets-listed-files 814 → 817）。
+- 变更文件：`src/lib/supabase/env.ts`（新）、`src/lib/supabase/client.ts`、`src/components/auth-provider.tsx`、`src/components/auth-header.tsx`、`src/lib/sync-layer.ts`、`src/components/auth-provider.test.tsx`、`src/components/auth-header.test.tsx`、`scripts/check-bundle.mjs`、`scripts/bundle-budgets.json`、`e2e/auth-flow.spec.ts`（新）、`package.json`、`supabase/config.toml`（新）、`.gitignore`、`docs/perf-notes.md`、`docs/roadmap.md`、`docs/scan-counts.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npm run lint`、`npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（340 文件 / 3561 用例；statements 95.21%，branches 90.91%，functions 95.20%，lines 97.14%）。
+  - `npm run check:bundle`：通过（454 条路由 + AI chunk 隔离 + supabase chunk 隔离）。
+  - 全部 `check:*` / `kb:*` 契约门禁：通过（report-freshness 在提交 scan-counts 后绿）。
+  - `npm run e2e`（无 env，CI 条件）：164 通过 / 1 跳过（auth-flow）。
+  - `e2e/auth-flow.spec.ts`（本地 Supabase 栈）：5/5 通过。
+- 阻塞：无。
+- 风险 / 回滚：改动集中在客户端模块加载时机与测试桩；同步层失败路径语义保持不变（解析失败仍入队重放）。回滚即 revert 本分支提交。
+- 下一项：PR 合并后重新检查仓库；剩余开放项多为 BLOCKED_EXTERNAL 或需产品拍板（R16.41/R16.58/R16.90 等）。
+- 更新时间：2026-09-29 23:10（Asia/Shanghai）。
+
 ## 2026-09-29 — 修复 PR #338：jsdom 30.1 的 createObjectURL 桩失效
 
 - 状态：已提交并推送，PR #338 等待 CI 复跑。
