@@ -1,0 +1,21 @@
+# 本地验证用（R16.235 登录链路 E2E）：supabase start 拉起全栈，验证完不提交
+project_id = "trade-buty-local"
+
+[api]
+port = 54341
+
+[db]
+port = 54342
+
+[studio]
+port = 54343
+
+[inbucket]
+port = 54344
+
+[auth]
+site_url = "http://localhost:3100"
+additional_redirect_urls = ["http://localhost:3100/**"]
+
+[auth.email]
+enable_confirmations = false
