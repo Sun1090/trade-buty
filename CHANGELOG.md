@@ -5,6 +5,26 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.19] - 2026-09-29
+
+**登录 SDK 撤出首屏：每条内容路由轻了 59KB / Login SDK off the critical path: every content route sheds 59 KB**
+
+### 中文
+
+- 性能：56KB 的登录 SDK（supabase-js）从每条页面的首屏里拿掉了——它此前因为三处静态 import 被 454 条路由背着，现在只在真的用到登录的时候（挂载鉴权、点退出）才按需加载。非登录页面的首屏 JS 总量整体下降 46–66KB gzip，课文页预算随之从 404KB 收回到 348KB
+- 「没有 Supabase 配置的部署上登录链路无法端到端验证」这个前提被推翻：本地 Supabase 栈（GoTrue + Mailpit）+ 新增的 auth-flow 端到端用例，把 OTP 登录 → 会话恢复 → 退出登录整条链路真跑通了五遍。CI 没有配置时该用例显式跳过，游客降级路径无回归
+- 新增两道体积门禁：AI chunk 与 supabase chunk 都有各自的隔离判据（按指纹找到专属 chunk，非授权分组路由一律不得引用），防止登录 SDK 再被静态 import 拖回首屏
+- 依赖批次更新（supabase-js、drizzle-orm、Next.js 16.3.6、jsdom 30.1 等 6 项），并修复了 jsdom 30.1 引入的测试桩失效：它新自带的 URL.createObjectURL 对 Blob 会抛错，三个分享卡测试的「缺失才补桩」写法改为无条件覆盖
+
+### English
+
+- Performance: the 56 KB login SDK (supabase-js) is off every page's first load — three static imports previously carried it on all 454 routes, and it now loads only when auth is actually used (session check on mount, sign-out on click). First-load JS drops 46–66 KB gzip across non-auth routes, and the lesson-page budget tightens from 404 KB back to 348 KB
+- The blocker that kept the login flow unverifiable — E2E runs without Supabase env — is gone: a local Supabase stack (GoTrue + Mailpit) and a new auth-flow E2E test exercise OTP sign-in → session restore → sign-out end to end, five runs green. Without configuration CI skips it explicitly, and the guest fallback path shows no regression
+- Two new bundle gates: both the AI chunk and the supabase chunk now have isolation checks (each found by its own fingerprint and forbidden from any route outside its budget group), so the login SDK cannot sneak back onto the critical path via a static import
+- Dependency batch updated (supabase-js, drizzle-orm, Next.js 16.3.6, jsdom 30.1 and two more), with a fix for what jsdom 30.1 broke in tests: its newly built-in URL.createObjectURL throws on Blobs, so three share-card tests now override it unconditionally instead of stubbing only when missing
+
+参考：[docs/roadmap.md](docs/roadmap.md) · [docs/perf-notes.md](docs/perf-notes.md) · [docs/release-checklist.md](docs/release-checklist.md)
+
 ## [0.7.18] - 2026-09-26
 
 **换账号不再丢难度设置，文档每句话回代码量一遍 / Account switches keep your quiz level; every doc sentence re-measured**
