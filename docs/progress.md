@@ -2,6 +2,22 @@
 
 ---
 
+## 2026-09-29 — v0.7.19 发布：登录 SDK 撤出首屏（patch）
+
+- 状态：已发布。tag `v0.7.19` 已打在 main（release commit）；生产部署由 Vercel 确认成功；生产冒烟因本机网络无法直连 vercel.app 未能执行（见下）。
+- 里程碑 / 版本：v0.7.19（patch）。判级理由：性能优化（登录 SDK 改为按需动态加载）、依赖批次更新与 jsdom 30.1 兼容修复、测试与门禁加固（登录链路 E2E、supabase chunk 隔离判据）、文档——无新增产品能力、无数据/鉴权/内容契约变更。
+- 分支 / 提交：`release/v0.7.19`（PR #340，rebase 合并）；tag 打在 `f96276a`。
+- 发布内容（zh/en 双语 highlights 见 `src/data/release-notes.json`，`CHANGELOG.md` 由其生成）：
+  - R16.235：supabase-js（59.3KB gzip）从 454 条路由首屏撤出，非 auth 路由首屏 JS 降 46–66KB；`knowledge-lesson.total` 404 → 348。
+  - 新增 supabase chunk 隔离门禁（GoTrueClient 指纹）与登录链路端到端用例（本地 Supabase 栈，无 env 显式跳过）。
+  - 依赖批次（supabase-js / drizzle-orm / Next 16.3.6 / jsdom 30.1 等 6 项）+ jsdom 30.1 的 `URL.createObjectURL` 测试桩修复（PR #338）。
+- 验证：发布分支按发布清单 §3 全量序列通过（test 340 文件 3561 用例 / coverage / lint / typecheck / build / mobile / 全部契约门禁 / db:test 5 组 / e2e 164 通过 1 跳过）；锁文件以钉住的 npm 10.9.4 重算并逐条目复现；`check:release-tag` 23 条记录全部落地。
+- 部署：release commit 上 Vercel 部署状态 success（生产构建由 main 推送自动触发）。
+- 生产冒烟：**未完成**。`ops:smoke-prod` 10/10 「fetch failed」——本机直连 vercel.app 被网络阻断（DNS 把域名污染到非 Vercel IP，强制正确 IP 仍 SNI 阻断；google.com 同样不可达，vercel.com 可达），属本机网络环境限制而非站内回归。网络可达时重跑 `npm run ops:smoke-prod`（清单要求 `/zh/changelog` 必须读到 0.7.19，确认部署跟上 main）。
+- 回滚：无数据库迁移；站点回滚 `git revert` 发布提交后重新部署，或 Vercel 控制台把 Production 切回上一个正常构建止血。
+- 下一项：开放 roadmap 项余量皆 BLOCKED_EXTERNAL 或需产品拍板；继续盘点 R16 学习数据口径系列的残余可执行项。
+- 更新时间：2026-09-29 23:59（Asia/Shanghai）。
+
 ## 2026-09-29 — R16.235 落地：登录 SDK 撤出 454 条路由的首屏
 
 - 状态：已提交，分支 `feat/supabase-lazy-chunk`，PR 待开。
