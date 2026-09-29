@@ -37,7 +37,7 @@ function listHtmlRoutes(dir = appOut) {
   return routes.sort();
 }
 
-function findAiChunk() {
+function findChunkByFingerprint(fingerprint) {
   if (!fs.existsSync(chunksDir)) return null;
   const stack = [chunksDir];
   const matches = [];
@@ -48,12 +48,16 @@ function findAiChunk() {
       const file = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         stack.push(file);
-      } else if (entry.name.endsWith(".js") && fs.readFileSync(file, "utf8").includes("X-Quota-Limit")) {
+      } else if (entry.name.endsWith(".js") && fs.readFileSync(file, "utf8").includes(fingerprint)) {
         matches.push(`/_next/${path.relative(path.join(root, ".next"), file).split(path.sep).join("/")}`);
       }
     }
   }
   return matches.length > 0 ? matches[0] : null;
+}
+
+function findAiChunk() {
+  return findChunkByFingerprint("X-Quota-Limit");
 }
 
 function printRouteFailure(measurement, budget, failedMetrics) {
@@ -89,6 +93,7 @@ function main() {
   }
 
   const aiChunk = findAiChunk();
+  const supabaseChunk = findChunkByFingerprint("GoTrueClient");
   const measurements = [];
   let fail = false;
 
@@ -148,6 +153,26 @@ function main() {
     if (leaks.length === 0) {
       const checked = measurements.length - measurements.filter((measurement) => measurement.budget.id === "ai").length;
       console.log(`[bundle] ✓ AI chunk 隔离：${checked} 条非 AI 路由均未引用 ${path.basename(aiChunk)}`);
+    }
+  }
+
+  // R16.235：supabase-js（GoTrueClient 指纹）只许出现在 auth 预算的路由上。
+  // 登录 SDK 曾被 auth-provider / auth-header / sync-layer 的静态 import 压进全部路由首屏。
+  if (!supabaseChunk) {
+    console.error("[bundle] ✗ 未找到带 GoTrueClient 指纹的 supabase 专属 chunk");
+    fail = true;
+  } else {
+    const supabaseLeaks = measurements.filter(
+      (measurement) =>
+        measurement.budget.id !== "auth" && measurement.assets.js.some((asset) => asset.url === supabaseChunk)
+    );
+    for (const measurement of supabaseLeaks) {
+      console.error(`[bundle] ✗ supabase chunk 泄漏进 ${measurement.route}: ${supabaseChunk}`);
+      fail = true;
+    }
+    if (supabaseLeaks.length === 0) {
+      const checked = measurements.length - measurements.filter((measurement) => measurement.budget.id === "auth").length;
+      console.log(`[bundle] ✓ supabase chunk 隔离：${checked} 条非 auth 路由均未引用 ${path.basename(supabaseChunk)}`);
     }
   }
 
