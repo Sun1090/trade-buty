@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { withReturnTo } from "@/lib/auth-return";
 import { clearLocalAccountData, requestAccountDeletion } from "@/lib/account-delete";
 
@@ -150,7 +149,11 @@ export function AuthHeader({ locale, dict }: {
                 role="menuitem"
                 onClick={() => {
                   setOpen(false);
-                  void getSupabaseBrowser().auth.signOut({ scope: "local" });
+                  // R16.235：supabase-js 只在点「退出」时才动态拉取——本组件随 layout
+                  // 出现在每条路由，静态 import 曾把整个登录 SDK 压进首屏。
+                  void import("@/lib/supabase/client")
+                    .then(({ getSupabaseBrowser }) => getSupabaseBrowser().auth.signOut({ scope: "local" }))
+                    .catch(() => {});
                 }}
                 className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm text-down hover:bg-down/10 transition"
               >

@@ -42,8 +42,10 @@ const h = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/lib/supabase/client", () => ({
+vi.mock("@/lib/supabase/env", () => ({
   hasSupabaseEnv: () => h.state.hasEnv,
+}));
+vi.mock("@/lib/supabase/client", () => ({
   getSupabaseBrowser: () => h.getBrowser(),
 }));
 vi.mock("@/lib/sync-layer", () => ({
