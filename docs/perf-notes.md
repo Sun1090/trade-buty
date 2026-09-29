@@ -32,7 +32,7 @@
 
 **拆分自身的代价**：动态 import 会失败（该 chunk 首载就没下成功、或发布后旧 hash 404），而调用点是 fire-and-forget。所以 `sync-layer-queue-fallback.ts` 把这类写入缓冲在模块内存里，等 chunk 可用时按同一去重/截断口径补落盘，并就地吞掉失败（`service worker` 只预缓存 `offline.html`，JS chunk 一律走网络）。
 
-**净结果**：内容页 +12KB gzip。当时把这笔成本判成「删不掉」，理由是它由 Next/React + Supabase 客户端 + `sync-layer` 共同构成——**这半句后来被推翻了**：R16.235 在构建产物里量到 `@supabase/supabase-js` 那一颗 chunk 单独就 **59.3KB gzip**，且 454 条 locale 路由的 HTML 全都引用它（入口是 `auth-provider.tsx:4`、`auth-header.tsx:7`、`sync-layer.ts:3` 三处静态 import，全都只在挂载后或点击时才用）。所以「删不掉」不成立，成立的是「消除它需要能端到端验证登录态，而 E2E 跑在没有 Supabase env 的环境（R7.7 降级路径）」。
+**净结果**：内容页 +12KB gzip。当时把这笔成本判成「删不掉」，理由是它由 Next/React + Supabase 客户端 + `sync-layer` 共同构成——**这半句后来被推翻了**：R16.235 在构建产物里量到 `@supabase/supabase-js` 那一颗 chunk 单独就 **59.3KB gzip**，且 454 条 locale 路由的 HTML 全都引用它（入口是 `auth-provider.tsx:4`、`auth-header.tsx:7`、`sync-layer.ts:3` 三处静态 import，全都只在挂载后或点击时才用）。所以「删不掉」不成立，成立的是「消除它需要能端到端验证登录态，而 E2E 跑在没有 Supabase env 的环境（R7.7 降级路径）」——这个验证条件本身也在 2026-09-29 被 R16.235 的落地推翻了：本地 `supabase start` 栈 + `e2e/auth-flow.spec.ts` 把 OTP 登录 → 会话恢复 → 退出登录整条链路真跑通了，三处静态 import 已全部改为动态引入（读数见下方 2026-09-29 的复测表）。
 
 **当时的预算调整**（v0.5 时期，`a8b1820`（perf(bundle): lazy-load sync queue modules + bump budgets for login-aware pages (R9.6)））：那一次把 `check-bundle.mjs` 抽查清单里的四条各抬高 15KB——`zh` 与 `en` 从 280 到 295、`zh/search` 从 280 到 295、`zh/knowledge/getting-started/market-overview` 从 290 到 305。**这些数字今天没有任何脚本持有**：R13.15 之后「按页面逐个定价」换成了「按分组定价」，唯一清单是 `scripts/bundle-budgets.json`（见下面那一节；`scripts/perf-notes-claims.test.mjs` 逐条比对文档与清单，`check-bundle.mjs` 只是读清单的巡检脚本）。这一段保留原样当历史，读的人别拿它去核对现在的预算。
 
@@ -93,3 +93,27 @@
 | auth | 312.5 KB | 340 KB | `zh/auth` |
 
 **为什么给 lesson 组让出 4KB（以及这笔债）**：这一组从 386.8KB（9-12）涨到本地 397.8KB，而 **CI 上是 399.9KB**（`main@478effc` 那次 `ci` 的 `check:bundle` 读数），同一份代码两台机器差 **2.2KB**——这 2.2KB 出在哪一段还没查明（CI 只报了 `total` 超，没报 `js`，所以差异至少不完全在 JS 上）。预算容差比构建机之间的噪声还小，结果就是「任何往字典里加一句话的 PR 都会让 CI 红」（PR #317 加了一句邮件订阅说明，CI 读到 400.0/400 就是这个形状）。404 = CI 当前最大 + 约两倍于那个差异，仍然抓得住真正的回归（第二十三轮那次误加整本字典是 +13.7KB）。还债的一条登记在 `docs/roadmap.md` **R16.235**：课文首屏里躺着 **59.3KB gzip 的 `@supabase/supabase-js` chunk**（`2ul2-0o5b9aur.js`，指纹 `GoTrueClient`/`RealtimeClient`），454 条路由的 HTML 全都引用它——入口是 `auth-provider.tsx:4`、`auth-header.tsx:7` 与 `sync-layer.ts:3` 三处静态 import，而这三处全都在挂载后或点击时才用它。把它挪出首屏后这一组的预算要往下收到 350 以下。没在本轮动手的原因也登记在同一条：E2E 跑在没有 Supabase env 的环境（R7.7 降级路径），改完的登录态恢复我**没有办法端到端验证**，不能凭推断改登录链路。
+
+### 复测（2026-09-29，R16.235 落地：无 env 干净构建 `npm run build` 后跑 `npm run check:bundle`）
+
+R16.235 那笔债在这一轮还掉：`auth-provider.tsx` 与 `auth-header.tsx` 改为挂载后 / 点击时动态 `import("@/lib/supabase/client")`，`sync-layer.ts` 的 15 处调用点改走惰性 `resolveSupabaseBrowser()`（解析失败仍走原来的入队/降级分支）；env 判断拆进不依赖 supabase-js 的 `src/lib/supabase/env.ts`。落地前用本地 `supabase start` 栈 + 新增的 `e2e/auth-flow.spec.ts`（OTP 登录 → 会话恢复 → 退出登录）把登录链路端到端跑通——上面那段「没有办法端到端验证」的前提不再成立。`check:bundle` 按 AI chunk 同一形状加了 supabase chunk 隔离判据（`GoTrueClient` 指纹，非 auth 预算的全部路由（门禁现读）均不得引用），`knowledge-lesson.total` 从 404 收回 **348**。
+
+| 分组 | 今天最大 total | 预算 | 最大路由 |
+|---|---:|---:|---|
+| home | 283.3 KB | 360 KB | `zh` |
+| path | 284.1 KB | 365 KB | `zh/path` |
+| knowledge-chapter | 268.3 KB | 370 KB | `zh/knowledge/markets-instruments` |
+| knowledge-lesson | 338.8 KB | 348 KB | `zh/knowledge/technical-analysis/drawing-tools` |
+| search | 251.3 KB | 335 KB | `zh/search` |
+| review | 272.2 KB | 350 KB | `zh/review` |
+| bookmarks | 246.4 KB | 335 KB | `zh/bookmarks` |
+| stats | 305.7 KB | 370 KB | `zh/stats` |
+| ai | 253.9 KB | 350 KB | `zh/ai` |
+| chart | 303.9 KB | 390 KB | `zh/chart` |
+| replay | 320.6 KB | 400 KB | `zh/replay` |
+| privacy | 256.0 KB | 340 KB | `zh/privacy` |
+| glossary | 252.6 KB | 340 KB | `zh/glossary` |
+| static-info | 265.8 KB | 340 KB | `zh/changelog` |
+| auth | 312.9 KB | 340 KB | `zh/auth` |
+
+与 9-25 相比，非 auth 各组整体掉了约 46–66KB——那正是原来压在每条路由首屏的 supabase-js（59.3KB gzip 的 chunk，扣掉 auth 组仍需加载它的差异）；auth 组反而略涨（312.5 → 312.9），因为登录 SDK 现在只属于这四条路由。
