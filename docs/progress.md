@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-09-29 — 修复 PR #338：jsdom 30.1 的 createObjectURL 桩失效
+
+- 状态：已提交并推送，PR #338 等待 CI 复跑。
+- 里程碑 / 版本：v0.7.18 质量加固，暂不发布。
+- 分支 / 提交：`dependabot/npm_and_yarn/npm-minor-and-patch-372430d996`，commit `576e121`。
+- 完成内容：
+  - 定位 PR #338（dependabot npm 组升级 6 项，含 jsdom 30.0.1 → 30.1.1）CI `test:coverage` 失败：4 个分享卡下载用例 waitFor 超时，页面渲染出「Download failed」。main 上同测试 14/14 通过，二分确认唯一元凶是 jsdom 30.1.1。
+  - 根因：jsdom 30.1 起在 `URL` 上自带 `createObjectURL` / `revokeObjectURL`，但其 Blob 实现会抛 `Cannot read properties of undefined (reading '_buffer')`（最小探针实测）。三个测试文件用「`!("createObjectURL" in URL)` 才补桩」的写法，升级后桩被跳过，`triggerBrowserDownload` 走进 jsdom 的坏实现，`share_card_download` 只记到 failed。
+  - 修复：`streak-share-card.test.tsx`、`quiz-share-card.test.tsx`、`share-card-preview.test.tsx` 改为无条件 `Object.defineProperty` 覆盖（与 `replay-share-card.test.tsx` 既有写法一致），对 jsdom 30.0 / 30.1 都成立。产品代码（`src/lib/download.ts` 等）只在真实浏览器路径调用该 API，不受影响，无需改动。
+- 变更文件：
+  - `src/components/streak-share-card.test.tsx`
+  - `src/components/quiz-share-card.test.tsx`
+  - `src/components/share-card-preview.test.tsx`
+- 验证命令与结果：
+  - `npx vitest run`（9 个下载相关测试文件）：通过（9 文件 / 134 用例）。
+  - `npm run lint`：通过。
+  - `npm run typecheck`：通过。
+  - `npm run test:coverage`：通过（340 文件 / 3561 用例；statements 95.25%，branches 90.93%，functions 95.28%，lines 97.16%，均高于门禁）。
+  - `npm run build`：通过。
+- 阻塞：无。
+- 风险 / 回滚：仅测试桩写法加固，不改产品代码、迁移或配置；如需回滚，撤回本提交即可。
+- 下一项：PR #338 CI 绿后合并，重新检查仓库选下一项工作。
+- 更新时间：2026-09-29 21:50（Asia/Shanghai）。
+
 ## 2026-09-21 — 认证批次 32：退出登录错误处理与当前会话语义
 
 - 状态：本地开发、提交前验证完成；当前未推送，避免继续触发 Vercel 部署配额。
