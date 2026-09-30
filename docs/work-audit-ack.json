@@ -128,6 +128,10 @@
     {
       "number": 348,
       "reason": "重复登记：dependabot 对同一 brace-expansion bump（1.1.18 → 1.1.21）先后开了 #343 与 #348，本仓已按 #343 的重放指引把改动真正落地（PR #350，lockfile-repro/audit/全量 test 验证通过），#348 属于重复工作、无需重放。"
+    },
+    {
+      "number": 344,
+      "reason": "分支自身的 lockfile 编辑与 package.json 失同步（npm ci 报缺 proxy-agent 等条目），dependabot rebase 未完成。同型 bump 已重放为 PR #352（package.json 范围 + 钉住 npm 10.9.4 的 lockfile，lockfile-repro / 全量 test 验证通过）并先合入 main；本 PR 随即关闭，去向即 #352。"
     }
   ]
 }
