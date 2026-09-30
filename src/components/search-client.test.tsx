@@ -254,6 +254,8 @@ describe("SearchClient keyboard navigation", () => {
   it("exposes the suggestion listbox and active option to assistive technology", async () => {
     render(<SearchClient dict={dict} />);
     const box = screen.getByRole("searchbox");
+    // 列表未打开时 aria-controls 必须缺席——指向不存在的 id 是读屏的悬空引用
+    expect(box).not.toHaveAttribute("aria-controls");
     fireEvent.change(box, { target: { value: "限价单" } });
 
     const listbox = await screen.findByRole("listbox");

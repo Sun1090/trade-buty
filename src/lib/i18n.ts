@@ -5,7 +5,7 @@ export const LOCALES: Locale[] = ["zh", "en"];
 export const DEFAULT_LOCALE: Locale = "en";
 
 const zh = {
-  nav: { home: "首页", path: "学习路线", chart: "行情", replay: "回放", review: "复习", search: "搜索", github: "GitHub 仓库", menu: "菜单", theme: "切换主题", language: "切换语言" },
+  nav: { home: "首页", path: "学习路线", chart: "行情", replay: "回放", review: "复习", search: "搜索", github: "GitHub 仓库", menu: "菜单", breadcrumb: "面包屑导航", theme: "切换主题", language: "切换语言" },
   auth: {
     login: "登录",
     logout: "退出",
@@ -143,6 +143,7 @@ const zh = {
     customSymbolPlaceholder: "自定义",
     lastPriceLabel: "最新价",
     chartNameTpl: "{symbol} 蜡烛图",
+    chartAttribution: "图表由 TradingView 提供",
     fullscreenEnter: "全屏",
     fullscreenExit: "退出全屏",
   },
@@ -422,7 +423,7 @@ const zh = {
 type Dict = typeof zh;
 
 const en: Dict = {
-  nav: { home: "Home", path: "Learn", chart: "Markets", replay: "Replay", review: "Review", search: "Search", github: "GitHub repo", menu: "Menu", theme: "Switch theme", language: "Switch language" },
+  nav: { home: "Home", path: "Learn", chart: "Markets", replay: "Replay", review: "Review", search: "Search", github: "GitHub repo", menu: "Menu", breadcrumb: "Breadcrumb", theme: "Switch theme", language: "Switch language" },
   auth: {
     login: "Log in",
     logout: "Log out",
@@ -556,6 +557,7 @@ const en: Dict = {
     customSymbolPlaceholder: "Custom",
     lastPriceLabel: "Last price",
     chartNameTpl: "{symbol} candlestick chart",
+    chartAttribution: "Chart by TradingView",
     fullscreenEnter: "Fullscreen",
     fullscreenExit: "Exit fullscreen",
   },

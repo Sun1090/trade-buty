@@ -25,7 +25,7 @@ export function RelatedCourses({
   if (docs.length === 0) return null;
 
   return (
-    <aside className="mt-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
+    <aside aria-label={label} className="mt-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
       <p className="text-xs font-semibold uppercase tracking-widest text-faint mb-4">{label}</p>
       <ul className="space-y-2">
         {docs.map((d) => (

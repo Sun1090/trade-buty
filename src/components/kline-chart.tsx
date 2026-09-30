@@ -69,6 +69,7 @@ interface ChartDict {
   customSymbolPlaceholder: string;
   lastPriceLabel: string;
   chartNameTpl: string;
+  chartAttribution: string;
   compactNote: string;
   fullNote: string;
   showFull: string;
@@ -121,6 +122,10 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
         textColor: rootStyle.getPropertyValue("--muted").trim() || "#8892a6",
         fontFamily:
           "var(--font-geist-sans), -apple-system, 'PingFang SC', sans-serif",
+        // 库内嵌的署名 logo 是个聚焦链接，落在 role=img 容器里就是「可交互控件
+        // 嵌套在图片里」（axe nested-interactive）。按许可要求改为等价署名：
+        // 图表卡片底部放同样的可见链接（见下方 chartAttribution）。
+        attributionLogo: false,
       },
       grid: {
         vertLines: { color: "rgba(233,237,245,.05)" },
@@ -411,10 +416,15 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
         data-density={density}
         data-network-quality={networkQuality}
         className="relative rounded-2xl border border-[var(--border-strong)] bg-[var(--surface)] overflow-hidden"
-        role="img"
-        aria-label={dict.chartNameTpl.replace("{symbol}", symbol)}
       >
-        <div ref={containerRef} className={density === "compact" ? "h-[300px]" : "h-[420px]"} />
+        {/* role="img" 在画布这一层而不是外框：错误态的「重试」按钮落在 img 角色之外，
+            不再有「可交互控件嵌套在图片里」（axe nested-interactive）的问题 */}
+        <div
+          ref={containerRef}
+          role="img"
+          aria-label={dict.chartNameTpl.replace("{symbol}", symbol)}
+          className={density === "compact" ? "h-[300px]" : "h-[420px]"}
+        />
         {displayStatus === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-faint">
             {dict.loading}
@@ -452,6 +462,16 @@ export function KlineChart({ dict }: { dict: ChartDict }) {
           </div>
         )}
       </div>
+      {/* TradingView 署名（Lightweight Charts 许可要求的等价署名）：库内嵌 logo
+          是聚焦链接、会被 role=img 包住，改为图外的可见文字链接 */}
+      <a
+        href="https://www.tradingview.com/"
+        target="_blank"
+        rel="noreferrer"
+        className="mt-1.5 inline-block text-xs text-faint hover:text-muted transition-colors"
+      >
+        {dict.chartAttribution}
+      </a>
       {lowBandwidth && (
         <p
           data-testid="network-quality-note"

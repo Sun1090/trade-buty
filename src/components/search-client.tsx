@@ -269,7 +269,11 @@ export function SearchClient({
           placeholder={dict.placeholder}
           aria-label={dict.placeholder}
           aria-autocomplete="list"
-          aria-controls="search-suggestions"
+          // aria-controls 只在建议列表真的在场（已打开且有候选）时才带上：
+          // 指向不存在的 id 会让读屏拿到悬空引用（axe aria-valid-attr-value，critical）
+          aria-controls={
+            suggestOpen && suggestions.length > 0 ? "search-suggestions" : undefined
+          }
           aria-activedescendant={
             suggestOpen && suggestIdx >= 0
               ? `search-suggestion-${suggestIdx}`

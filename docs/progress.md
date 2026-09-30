@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-09-30 — R16.281：全站 a11y 扫描、四类真实违规修复与 axe 回归门禁
+
+- 状态：已提交，分支 `feat/a11y-axe-gate`，PR 待开。
+- 里程碑 / 版本：v0.7.20 后续加固，随下个 patch 发布。
+- 分支 / 提交：`feat/a11y-axe-gate`。
+- 完成内容：
+  - 首次全站 a11y 系统扫描（axe-core 4.13，20 条关键页，默认视口）：量出 1 critical / 1 serious / 2 moderate 四类真实违规。
+  - 修复：①搜索框 `aria-controls` 悬空引用（critical，条件化携带）；②`role="img"` 包裹重试按钮与库内嵌署名链接（serious，img 角色内移画布层 + `layout.attributionLogo: false` 并按许可加图外等价可见署名链接，新增 `chartAttribution` 字典键并穿透 chart-embed）；③六处 landmark 补可区分名（header 用 `t.nav.menu`、面包屑新增 `t.nav.breadcrumb`、侧栏/章节栏/相关课文各自带标签）；④练习 CTA 卡 aside → section。
+  - 回归门禁：新增 `e2e/a11y.spec.ts`（`@axe-core/playwright` 进入 devDependencies——仓库无现成 a11y 扫描依赖，这是它存在的理由）钉住三条已 triage 规则于 20 条关键页；上线第一天即抓到首扫漏网（chart 画布内库内嵌署名链接、课文页另两个未标注 aside），复扫后 20 页全绿。
+- 变更文件：`e2e/a11y.spec.ts`（新）、`package.json`、`package-lock.json`、`src/components/search-client.tsx`、`src/components/kline-chart.tsx`、`src/components/chart-embed.tsx`、`src/components/learning-sidebar.tsx`、`src/components/chapter-rail.tsx`、`src/components/related-courses.tsx`、`src/app/[locale]/layout.tsx`、`src/app/[locale]/knowledge/[chapter]/page.tsx`、`src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx`、`src/lib/i18n.ts`、`src/components/search-client.test.tsx`、`src/components/kline-chart.test.tsx`、`src/components/chart-embed.test.tsx`、`docs/roadmap.md`、`docs/scan-counts.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npm run test`：通过（342 文件 / 3569 用例，含 chart「重试不在 role=img 内」与 search aria-controls 两头断言）。
+  - `npm run build` + `npm run e2e`：通过（185 通过 / 1 跳过，含新 a11y 门禁 20 页全绿）。
+  - `npm run lint`、`npm run typecheck`、`check:localized-labels`、`check:dead-copy`、`check:secrets`、`check:docs`：通过；coverage statements 95.20% / branches 90.94% / functions 95.13% / lines 97.13%（高于门禁）；`check:report-freshness` 在 scan-counts 入库后绿。
+- 阻塞：无。
+- 风险 / 回滚：a11y 修复涉及图表卡新增一行可见署名链接与若干 landmark 标签，无数据/路由变更；回滚即 revert。
+- 下一项：PR 合并后随下个 patch 发布；其余开放项仍需拍板或外部凭据。
+- 更新时间：2026-09-30 13:05（Asia/Shanghai）。
+
+## 2026-09-30 — v0.7.20 发布：404 出口跟随 URL 语言（patch）
 ## 2026-09-30 — v0.7.20 发布：404 出口跟随 URL 语言（patch）
 
 - 状态：已发布。tag `v0.7.20` 打在 release commit `c52515e`；生产部署 Vercel 确认 success；生产冒烟 9/10（唯一失败为既有外部阻塞）。

@@ -96,7 +96,7 @@ export default async function ChapterPage({
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-5 py-10 sm:py-14">
-      <nav className="text-sm text-muted mb-6">
+      <nav aria-label={t.nav.breadcrumb} className="text-sm text-muted mb-6">
         <Link href={p("/")} className="hover:text-accent">
           {t.nav.home}
         </Link>

@@ -21,6 +21,7 @@ export interface ChartEmbedDict {
   customSymbolPlaceholder: string;
   lastPriceLabel: string;
   chartNameTpl: string;
+  chartAttribution: string;
   compactNote: string;
   fullNote: string;
   showFull: string;
@@ -69,6 +70,7 @@ export function LazyChartEmbed({ dict }: { dict: ChartEmbedDict }) {
             customSymbolPlaceholder: dict.customSymbolPlaceholder,
             lastPriceLabel: dict.lastPriceLabel,
             chartNameTpl: dict.chartNameTpl,
+            chartAttribution: dict.chartAttribution,
             compactNote: dict.compactNote,
             fullNote: dict.fullNote,
             showFull: dict.showFull,
