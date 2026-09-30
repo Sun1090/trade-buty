@@ -4,6 +4,7 @@ import { knowledgeHref } from "@/lib/hrefs";
 import { DEFAULT_LOCALE, getDict } from "@/lib/i18n";
 import { buildKnowledgeCorpus } from "@/lib/url-suggest-server";
 import { NotFoundSuggestions } from "@/components/not-found-suggestions";
+import { NotFoundExits } from "@/components/not-found-exits";
 
 // 根级 404：无 locale 上下文 → 默认 locale；客户端组件读 pathname 再做距离推荐
 export default function NotFound() {
@@ -38,24 +39,12 @@ export default function NotFound() {
         </span>
       </h1>
       <div className="mt-10 flex flex-wrap justify-center gap-3" data-testid="root-no-result-cta">
-        <Link
-          href={`/${DEFAULT_LOCALE}/search`}
-          className="rounded-full bg-accent-strong hover:bg-accent text-white dark:text-[#06281c] font-semibold px-7 py-3 transition"
-        >
-          🔍 {t.notFound.searchCta}
-        </Link>
-        <Link
-          href={`/${DEFAULT_LOCALE}`}
-          className="rounded-full border border-border-strong px-7 py-3 font-medium hover:border-accent/60 transition"
-        >
-          {t.notFound.homeCta}
-        </Link>
-        <Link
-          href={`/${DEFAULT_LOCALE}/path`}
-          className="rounded-full border border-border-strong px-7 py-3 font-medium hover:border-accent/60 transition"
-        >
-          {t.notFound.pathCta}
-        </Link>
+        {/* R16.41 最小伤害版：SSR 按 DEFAULT_LOCALE 出一版（静态边界的首渲染必须与
+            之一致），挂载后出口的 href 跟随 URL 前缀——正文与推荐位仍是英文，那份
+            取舍仍登记在 R16.41 / R16.159 待拍板 */}
+        <NotFoundExits
+          labels={{ search: t.notFound.searchCta, home: t.notFound.homeCta, path: t.notFound.pathCta }}
+        />
       </div>
 
       {/* R8.11：URL 推荐位（客户端组件：按地址排得出推荐才显示；排不出就整栏不渲染，

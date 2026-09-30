@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-09-30 — R16.41 最小伤害版：404 的出口跟随 URL 前缀
+
+- 状态：已提交，分支 `feat/404-locale-exits`，PR 待开。
+- 里程碑 / 版本：v0.7.19 后续修复，随下个 patch 发布。
+- 分支 / 提交：`feat/404-locale-exits`。
+- 完成内容：
+  - 修掉「中文链接坏了，404 却把用户送回 /en」的半个伤害（R16.41 作者明文给出的最小伤害分支）：`src/lib/locale-from-path.ts`（纯函数，pathname 第一段认得 locale 原样返回，其余回落 DEFAULT_LOCALE——与既有 e2e「locale-less → 默认语言」同口径）+ `src/components/not-found-exits.tsx`（根级 404 三个出口；SSR 首渲染必须与静态 HTML 一致，两段式：挂载后读 usePathname 修正 href）+ `error.tsx` 的 Home 链接同修。
+  - 正文与六张推荐位仍按 DEFAULT_LOCALE（语料载荷与 global-not-found 的取舍不替用户做），R16.41/R16.159 保持开放并补落地注记。
+  - 门禁三面：`locale-from-path.test.ts`（纯函数）、`not-found-exits.test.tsx`（组件行为：/zh 挂载后三出口随 URL、locale-less 停在 /en、标签来自传入字典）、smoke e2e 新用例钉住 `/zh/nope` 挂载后出口为 `/zh/search` `/zh` `/zh/path`。
+  - 连带：smoke 行号后移使 R16.267 台账的点名行号漂移（181/192/203 → 191/202/213，处数不变），台账已按尺子现读更新；`docs/scan-counts.md`（817 → 821）与 `docs/test-clock-hygiene.md` 两份报告随 producers 重算入库。
+- 变更文件：`src/lib/locale-from-path.ts`（新）、`src/lib/locale-from-path.test.ts`（新）、`src/components/not-found-exits.tsx`（新）、`src/components/not-found-exits.test.tsx`（新）、`src/app/not-found.tsx`、`src/app/error.tsx`、`e2e/smoke.spec.ts`、`docs/roadmap.md`、`docs/scan-counts.md`、`docs/test-clock-hygiene.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npx vitest run`（三个新/相关测试文件）：通过。
+  - `npm run test:coverage`：通过（342 文件 / 3568 用例；statements 95.21%，branches 90.92%，functions 95.21%，lines 97.15%）。
+  - `npm run lint`、`npm run typecheck`：通过。
+  - `npm run build` + `npm run e2e`：通过（165 通过 / 1 跳过，新用例真实通过）。
+  - `npm run check:bundle`：通过（457 条路由 + 两项 chunk 隔离）。
+  - `scripts/e2e-wait-hygiene.test.mjs`、`check:localized-labels`、`check:dead-copy`、`check:secrets`、`check:docs`：通过；`check:report-freshness` 在报告入库后绿。
+- 阻塞：无。
+- 风险 / 回滚：改动集中在根级 404/错误边界与新增小组件，不动数据与路由结构；回滚即 revert。
+- 下一项：PR 合并后继续盘点开放项（其余均需拍板或外部凭据）。
+- 更新时间：2026-09-30 10:30（Asia/Shanghai）。
+
+## 2026-09-30 — R16.280：登录链路端到端进 CI（auth-e2e 作业）
 ## 2026-09-30 — R16.280：登录链路端到端进 CI（auth-e2e 作业）
 
 - 状态：已提交，分支 `feat/auth-e2e-ci`，PR 待开。

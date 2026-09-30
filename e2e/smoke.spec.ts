@@ -171,6 +171,16 @@ test.describe("无结果页面 CTA（R13.18）", () => {
     await expect(ctas.locator('a[href="/en"]')).toBeVisible();
   });
 
+  test("R16.41 最小伤害版：/zh 下未知地址的出口跟随 URL 前缀，不再把人送回 /en", async ({ page }) => {
+    await page.goto("/zh/nope");
+    const ctas = page.getByTestId("root-no-result-cta");
+    await expect(ctas).toBeVisible();
+    // SSR 一版是 /en（静态边界的默认语言），挂载后两段式修正为 URL 自己的语言
+    await expect(ctas.locator('a[href="/zh/search"]')).toBeVisible();
+    await expect(ctas.locator('a[href="/zh"]')).toBeVisible();
+    await expect(ctas.locator('a[href="/zh/path"]')).toBeVisible();
+  });
+
   test("未知章节的搜索 CTA 进入当前语言搜索页", async ({ page }) => {
     await page.goto("/zh/knowledge/nonexistent-chapter");
     const ctas = page.getByTestId("chapter-no-result-cta");
