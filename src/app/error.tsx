@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 import { localeFromPathname } from "@/lib/locale-from-path";
 import { reportRouteError } from "@/lib/error-report";
+
+/** pathname 在错误边界生命周期内基本不变，订阅只需占位（与 not-found-exits 同款） */
+const subscribeNoop = () => () => {};
 
 export default function ErrorPage({
   error,
@@ -18,14 +21,15 @@ export default function ErrorPage({
     reportRouteError(error, "route-error");
   }, [error]);
 
-  // R16.41 最小伤害版：SSR 按 DEFAULT_LOCALE 出一版，挂载后 Home 的 href
-  // 跟随 URL 前缀（两段式，直接在首渲染读 pathname 会水合错位）
-  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  // R16.41 最小伤害版：SSR 按 DEFAULT_LOCALE 出一版，水合后 Home 的 href 跟随
+  // URL 前缀（useSyncExternalStore 的 server 快照保证首渲染一致，不需要 effect 里
+  // setState——react-hooks/set-state-in-effect 禁的就是它）
   const pathname = usePathname();
-  useEffect(() => {
-    const fromUrl = localeFromPathname(pathname);
-    if (fromUrl !== locale) setLocale(fromUrl);
-  }, [pathname, locale]);
+  const locale = useSyncExternalStore<Locale>(
+    subscribeNoop,
+    () => localeFromPathname(pathname),
+    () => DEFAULT_LOCALE,
+  );
 
   return (
     <div className="relative mx-auto max-w-3xl px-5 py-28 text-center overflow-hidden">
