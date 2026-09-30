@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-09-30 — R16.280：登录链路端到端进 CI（auth-e2e 作业）
+
+- 状态：已提交，分支 `feat/auth-e2e-ci`，PR 待开。
+- 里程碑 / 版本：v0.7.19 后续加固，暂不发布。
+- 分支 / 提交：`feat/auth-e2e-ci`。
+- 完成内容：
+  - 关掉 R16.235 的一个遗留敞口：登录链路 E2E（`e2e/auth-flow.spec.ts`）只在维护者本机跑过——CI 的 `npm run e2e` 跑在无 Supabase env 的环境里该 spec 显式跳过，登录态路径没有任何机器守着。`ci.yml` 新增 `auth-e2e` 作业：`npx --yes supabase@2.118.0 start -x` 九个登录用不到的服务（第一版没排 `vector`，它向已排除的 logflare 发日志导致健康检查卡死，服务名单是试出来的）→ `status -o env` 提取本地连接信息（本地栈默认键，CLI 按 project_id 确定性派生）→ 带 env 构建 → `npm run e2e:auth`。
+  - `package.json` 新增 `e2e:auth` 脚本；`docs/ops.md` 门禁表补行、作业数改三；`docs/architecture.md` §8 同步；`scripts/ci-workflow.test.mjs` 加契约用例钉住作业存在与内部顺序（栈 → 浏览器 → env 构建 → e2e），防它被静默删掉。
+  - roadmap 登记 R16.280 并置 [x]（含已知边界：作业不跑 check:bundle，auth 预算归主 ci 作业的无 env 构建管）。
+- 变更文件：`.github/workflows/ci.yml`、`package.json`、`docs/ops.md`、`docs/architecture.md`、`docs/roadmap.md`、`scripts/ci-workflow.test.mjs`、`docs/progress.md`。
+- 验证命令与结果：
+  - 本机按 CI 同一命令序列实测：`supabase start -x …` 最小栈起、迁移自动应用（11 张表）、带 env 构建、`npm run e2e:auth` 绿。
+  - `npx vitest run scripts/ci-workflow.test.mjs scripts/e2e-suite.test.mjs scripts/architecture-claims.test.mjs`：通过。
+  - `npm run test`：通过（340 文件 / 3562 用例）。
+  - `npm run lint`、`npm run typecheck`、`npm run check:docs`：通过。
+- 阻塞：无。
+- 风险 / 回滚：纯 CI 增量，不改产品代码；作业超时上界 20 分钟。回滚即 revert 提交。
+- 下一项：PR 合并后重试生产冒烟（上轮被本机网络阻断）；继续盘点剩余开放项（均需拍板或外部凭据）。
+- 更新时间：2026-09-30 08:35（Asia/Shanghai）。
+
+## 2026-09-29 — v0.7.19 发布：登录 SDK 撤出首屏（patch）
 ## 2026-09-29 — v0.7.19 发布：登录 SDK 撤出首屏（patch）
 
 - 状态：已发布。tag `v0.7.19` 已打在 main（release commit）；生产部署由 Vercel 确认成功；生产冒烟因本机网络无法直连 vercel.app 未能执行（见下）。

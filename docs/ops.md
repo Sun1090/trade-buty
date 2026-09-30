@@ -3,7 +3,7 @@
 > v0.6 内容运营手册：覆盖 R6（内容运营自动化）与 R10（内容扩产与双语覆盖）全部质量门禁。
 > 所有命令在仓库根目录执行；`npm run check:*` 为内容/产物质量门禁，
 > `npm run ops:*` / `npm run kb:*` 为运营工具。
-> 下表覆盖 `.github/workflows/ci.yml` 的两个作业（`ci` / `db-tests`）的全部执行步骤，并按实际顺序排列；`db-tests` 作业的步骤以 `db-tests ·` 前缀标注。
+> 下表覆盖 `.github/workflows/ci.yml` 的三个作业（`ci` / `db-tests` / `auth-e2e`）的全部执行步骤，并按实际顺序排列；`db-tests` 与 `auth-e2e` 作业的步骤以各自作业名前缀标注。
 > 覆盖与顺序由 `scripts/ci-workflow.test.mjs` 机检：每个 `npm run` / `node scripts` 门禁必须在表中登记（漏登记即失败），首列命令的相对顺序必须与工作流一致。
 
 ## 质量门禁（CI 自动运行；除非某一行写明了严重级别是 `warn`，失败即阻断合并）
@@ -67,6 +67,7 @@
 | `db-tests` · `docker pull supabase/postgres:17.6.1.155` | 拉取与线上一致的 Supabase Postgres 17 镜像，供迁移/RLS/同步门禁使用（Q2.8 / Q5.4） | 核对镜像 tag 是否仍在；不要改用本地随意镜像绕过 |
 | `db-tests` · `node scripts/db-test.mjs` | 在真实 Postgres 镜像里应用全部迁移、跑 RLS 越权与双设备同步 pgTAP 测试，并把 `supabase/rollback/` 里的每一项（现 `0008`、`0009`）都做回滚 → 重放演练（Q2.8） | 修正迁移/策略/回滚脚本；不得跳过 pgTAP 断言或改用内存库伪造通过 |
 | `db-tests` · `npm run backup:drill` | 备份恢复演练：`pg_dump` 源库 → 全新实例恢复 → 数据/schema/RLS 指纹对比 → 恢复库重跑 pgTAP（Q5.4） | 按 `scripts/backup-drill.mjs` 报错修备份/恢复路径或表覆盖；不得缩小 `DATA_TABLES` 覆盖面 |
+| `auth-e2e` · `npm run e2e:auth` | 登录链路端到端（R16.280）：本地 Supabase 栈（`supabase start` 最小服务组合，GoTrue 发 OTP 邮件进 Mailpit）+ `e2e/auth-flow.spec.ts` 真跑 OTP 登录 → 魔法链接换会话 → 刷新后会话仍在（`getSession` 恢复 + `hydrateFromCloud`）→ 退出登录。此前这条链路只在本地验证过（R16.235 落地时），CI 的 `npm run e2e` 跑在无 Supabase env 的环境里、该 spec 显式跳过——游客降级路径有门禁守着，登录态路径没有。R16.235 改的就是这条链路的加载时机，它不能再退回「只凭推断改登录」的状态 | 栈起不来先查 Docker 与镜像拉取；用例红了先看 `.gate-logs` 式的 Playwright 报告定位到哪一跳（发信 / 链接 / 会话恢复 / 登出），再对照 `auth-provider.tsx` / `auth-header.tsx` / `sync-layer.ts` 的动态 import 时序；不许给 spec 加 `skip` 或删断言来变绿 |
 
 > 执行顺序注记：E2E 与 Lighthouse 排在所有产物校验之后（E2E 运行时向 `.next` 写 fallback 页，避免污染其后的 check 产物；顺序由 ci.yml 保证）。
 > 供应链注记：官方 actions（`checkout` ≥ v5 / `setup-node` ≥ v5 / `cache` ≥ v5 / `upload-artifact` ≥ v6）必须固定到 40 位 commit SHA 并保留 `# vN` 注释，既避免 Node.js 20 弃用回退，也避免可变 tag 被重写；Dependabot 每周跟踪 npm 与 GitHub Actions，`scripts/ci-workflow.test.mjs` 会拦截未固定 action 和配置漂移。
