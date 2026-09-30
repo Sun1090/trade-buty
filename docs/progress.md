@@ -34,10 +34,10 @@
   - 依赖批次（supabase-js / drizzle-orm / Next 16.3.6 / jsdom 30.1 等 6 项）+ jsdom 30.1 的 `URL.createObjectURL` 测试桩修复（PR #338）。
 - 验证：发布分支按发布清单 §3 全量序列通过（test 340 文件 3561 用例 / coverage / lint / typecheck / build / mobile / 全部契约门禁 / db:test 5 组 / e2e 164 通过 1 跳过）；锁文件以钉住的 npm 10.9.4 重算并逐条目复现；`check:release-tag` 23 条记录全部落地。
 - 部署：release commit 上 Vercel 部署状态 success（生产构建由 main 推送自动触发）。
-- 生产冒烟：**未完成**。`ops:smoke-prod` 10/10 「fetch failed」——本机直连 vercel.app 被网络阻断（DNS 把域名污染到非 Vercel IP，强制正确 IP 仍 SNI 阻断；google.com 同样不可达，vercel.com 可达），属本机网络环境限制而非站内回归。网络可达时重跑 `npm run ops:smoke-prod`（清单要求 `/zh/changelog` 必须读到 0.7.19，确认部署跟上 main）。
+- 生产冒烟（2026-09-30 复跑，网络恢复后）：9/10 通过——**生产已确认跟上 v0.7.19**（`/zh/changelog` 读到本次发布版本），页面、sitemap、robots、分享落地页、游客会话判定全部 200。唯一失败：游客 AI 模型路径 502（护栏路径 200+X-Refused 正常，站内代码无涉）——即 AGENTS.md「Upstream / Environment Blocked」早已登记的生产 AI 上游配置问题（AI_API_URL / AI_API_KEY / 出口网络），需维护者在 Vercel 生产环境变量与部署日志侧排查，代理无凭据无法代查。`ops:smoke-prod` 10/10 「fetch failed」——本机直连 vercel.app 被网络阻断（DNS 把域名污染到非 Vercel IP，强制正确 IP 仍 SNI 阻断；google.com 同样不可达，vercel.com 可达），属本机网络环境限制而非站内回归。网络可达时重跑 `npm run ops:smoke-prod`（清单要求 `/zh/changelog` 必须读到 0.7.19，确认部署跟上 main）。
 - 回滚：无数据库迁移；站点回滚 `git revert` 发布提交后重新部署，或 Vercel 控制台把 Production 切回上一个正常构建止血。
 - 下一项：开放 roadmap 项余量皆 BLOCKED_EXTERNAL 或需产品拍板；继续盘点 R16 学习数据口径系列的残余可执行项。
-- 更新时间：2026-09-29 23:59（Asia/Shanghai）。
+- 更新时间：2026-09-30 09:05（Asia/Shanghai）。
 
 ## 2026-09-29 — R16.235 落地：登录 SDK 撤出 454 条路由的首屏
 
