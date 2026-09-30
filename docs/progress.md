@@ -4,7 +4,7 @@
 
 ## 2026-09-30 — R16.281：全站 a11y 扫描、四类真实违规修复与 axe 回归门禁
 
-- 状态：已提交，分支 `feat/a11y-axe-gate`，PR 待开。
+- 状态：已合并（PR #354，rebase 合并进 main）。中途一次自造故障如实记录：装 `@axe-core/playwright` 时用了系统 npm 11 重算锁文件，CI 上 npm ci 报缺条目（与 dependabot #344 同病）——补 `check:lockfile-repro` 钉住的 npm 10.9.4 重算后修复。教训与 docs/deps.md 一致：凡动 package.json/lockfile，必须用钉住的 npm 重算并跑复现门禁。
 - 里程碑 / 版本：v0.7.20 后续加固，随下个 patch 发布。
 - 分支 / 提交：`feat/a11y-axe-gate`。
 - 完成内容：
@@ -19,7 +19,7 @@
 - 阻塞：无。
 - 风险 / 回滚：a11y 修复涉及图表卡新增一行可见署名链接与若干 landmark 标签，无数据/路由变更；回滚即 revert。
 - 下一项：PR 合并后随下个 patch 发布；其余开放项仍需拍板或外部凭据。
-- 更新时间：2026-09-30 13:05（Asia/Shanghai）。
+- 更新时间：2026-09-30 14:35（Asia/Shanghai）。
 
 ## 2026-09-30 — v0.7.20 发布：404 出口跟随 URL 语言（patch）
 ## 2026-09-30 — v0.7.20 发布：404 出口跟随 URL 语言（patch）
