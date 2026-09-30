@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-09-30 — v0.7.21 发布：无障碍四类真实违规修复（patch）
+
+- 状态：已发布。tag `v0.7.21` 打在 release commit `dc38aa1`（推送前已核实 tag 与远端 main 一致）；生产部署 Vercel 确认 success；生产冒烟 9/10。
+- 里程碑 / 版本：v0.7.21（patch）。判级理由：无障碍缺陷修复（搜索框悬空 aria-controls / 图表嵌套交互 / 六处 landmark 命名）+ axe E2E 回归门禁，无新增产品能力。
+- 发布内容：R16.281 全站 a11y 修复批（详见 PR #354 与 roadmap 该条）。
+- 验证：发布分支按清单 §3 全序列通过（test 342 文件 3569 用例 / coverage / lint / typecheck / build / mobile / 全部契约门禁 / db:test / e2e 185 通过 1 跳过）；锁文件钉住 npm 10.9.4 重算复现（985 包条目）。
+- 生产冒烟：9/10——`/zh/changelog` 读到 0.7.21（部署跟上 main），页面/sitemap/robots/分享落地页/游客会话全绿；唯一失败是游客 AI 模型路径 502（护栏路径正常），即 AGENTS.md 已登记的生产 AI 上游配置外部阻塞。
+- 回滚：无数据库迁移；`git revert` 发布提交后重新部署，或 Vercel 控制台切回上一构建止血。
+- 下一项：开放 roadmap 项全部需拍板或外部凭据；自主可执行队列已清空。
+- 更新时间：2026-09-30 15:30（Asia/Shanghai）。
+
+## 2026-09-30 — v0.7.20 发布：404 出口跟随 URL 语言（patch）
 ## 2026-09-30 — R16.281：全站 a11y 扫描、四类真实违规修复与 axe 回归门禁
 
 - 状态：已合并（PR #354，rebase 合并进 main）。中途一次自造故障如实记录：装 `@axe-core/playwright` 时用了系统 npm 11 重算锁文件，CI 上 npm ci 报缺条目（与 dependabot #344 同病）——补 `check:lockfile-repro` 钉住的 npm 10.9.4 重算后修复。教训与 docs/deps.md 一致：凡动 package.json/lockfile，必须用钉住的 npm 重算并跑复现门禁。
