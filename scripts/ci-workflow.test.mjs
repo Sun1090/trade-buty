@@ -309,6 +309,29 @@ describe("CI workflow contract", () => {
     expect(commands).toContain("docker pull supabase/postgres:17.6.1.155");
   });
 
+  it("auth-e2e 作业用本地 Supabase 栈验证登录链路（R16.280）", () => {
+    const job = workflow.jobs["auth-e2e"];
+    expect(job, "缺少 auth-e2e 作业——登录态路径退回「只凭推断改登录」的状态了").toBeTruthy();
+    const commands = jobCommands(job);
+    expect(commands, "缺少本地 Supabase 栈（登录链路没有 GoTrue 与 Mailpit 就只能空跳）").toContain(
+      "npx --yes supabase@2.118.0 start -x studio,imgproxy,storage-api,edge-runtime,realtime,logflare,postgres-meta,vector,supavisor",
+    );
+    expect(commands, "栈状态里提取的连接信息必须喂给 NEXT_PUBLIC_* env").toContain(
+      "NEXT_PUBLIC_SUPABASE_URL=$API_URL",
+    );
+    const lines = commands.split("\n");
+    const installIndex = lines.findIndex((command) => command.includes("playwright install"));
+    const buildIndex = lines.indexOf("npm run build");
+    const authIndex = lines.indexOf("npm run e2e:auth");
+    expect(installIndex, "缺少 Playwright 浏览器安装步骤").toBeGreaterThanOrEqual(0);
+    expect(installIndex, "浏览器安装必须早于构建").toBeLessThan(buildIndex);
+    expect(buildIndex, "env 构建必须早于 auth E2E").toBeLessThan(authIndex);
+    expect(
+      jobCommands(workflow.jobs.ci),
+      "npm run e2e（CI 主作业，无 env）仍是游客降级路径的门禁——两条腿缺一不可",
+    ).toContain("npm run e2e");
+  });
+
   it("docs/ops.md 门禁表登记 ci.yml 的每一道门禁（防漏登记）", () => {
     const ops = fs.readFileSync(opsPath, "utf8");
     const missing = [...new Set(ciGateIdentifiers(workflow))].filter((id) => !ops.includes(id));

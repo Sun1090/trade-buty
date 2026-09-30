@@ -194,3 +194,34 @@ jobs:
         run: node scripts/db-test.mjs
       - name: 备份恢复演练（Q5.4：dump / 全新实例恢复 / 指纹 / RLS 重跑）
         run: npm run backup:drill
+
+  # R16.280：登录链路端到端（OTP 登录 → 会话恢复 → 退出登录）。这条链路在 R16.235
+  # 落地时只能在本机验证——`npm run e2e` 跑在没有 Supabase env 的环境里，auth-flow
+  # spec 会 describe 级跳过。runner 有 Docker，用 supabase/config.toml 拉起最小本地栈
+  # （排除 studio / storage / realtime 等登录用不到的服务），把这一环变成常规门禁。
+  auth-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: 安装 Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: 启动最小本地 Supabase 栈（GoTrue + Mailpit，迁移自动应用）
+        run: npx --yes supabase@2.118.0 start -x studio,imgproxy,storage-api,edge-runtime,realtime,logflare,postgres-meta,vector,supavisor
+      - name: 从栈状态提取本地连接信息（密钥是本地栈默认值，不是仓库凭据）
+        run: |
+          npx --yes supabase@2.118.0 status -o env | tr -d '"' >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+      - name: 带本地 env 构建
+        run: npm run build
+      - name: 登录链路 E2E（auth-flow，Playwright 自起生产服务）
+        run: npm run e2e:auth

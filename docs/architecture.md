@@ -219,11 +219,14 @@ stack、URL、用户身份和自由文本不会离开浏览器，端点也不把
 
 `.github/workflows/` 下有两个工作流：`ci.yml`（下面这两个并行作业）与 `link-patrol.yml`（`patrol` 作业，
 知识库外链月度巡检，`schedule` 加手动触发，不阻断合并）。整句写成「GitHub Actions 包含两个并行作业」
-会把第二个工作流漏掉。`ci.yml` 的两个作业是：
+会把第二个工作流漏掉。`ci.yml` 的三个作业是：
 
 - `ci`：依赖/漏洞审计、secrets、lint、测试、typecheck、build、移动端、内容门禁、E2E 和
   Lighthouse。
 - `db-tests`：Supabase Postgres migrations、RLS/同步 pgTAP、0008 回滚重放和备份恢复演练。
+- `auth-e2e`：本地 Supabase 栈（GoTrue + Mailpit）+ `e2e/auth-flow.spec.ts` 验证登录链路
+  （OTP 登录 → 会话恢复 → 退出登录）；主 `ci` 作业的 `npm run e2e` 跑在无 Supabase env 的
+  环境里，该 spec 显式跳过（R16.280）。
 
 合并门禁以命令退出码为准；不要通过 `tail` 等管道隐藏失败状态。Vercel 预览是部署验证，
 GitHub Actions 才是仓库合并的权威门禁。
