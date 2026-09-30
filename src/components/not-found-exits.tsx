@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 import { localeFromPathname } from "@/lib/locale-from-path";
 
@@ -10,21 +10,24 @@ interface Props {
   labels: { search: string; home: string; path: string };
 }
 
+/** pathname 在 404 页生命周期内不变，订阅只需占位；语言变化由重渲染时的快照带出 */
+const subscribeNoop = () => () => {};
+
 /**
  * 根级 404 的三个出口（R16.41 最小伤害版）：
- * 根级边界没有 locale 上下文，SSR 只能按 DEFAULT_LOCALE 出一版——所以第一渲染
- * 必须与静态 HTML 一致（仍是 /en），挂载后读 `usePathname()` 的前缀把 href 修正
- * 成 URL 自己的语言。两段式不是装饰：直接在首次渲染里读 pathname 会让静态边界
- * 的 href 属性水合错位。正文与推荐位仍是英文（那份取舍登记在 R16.41 / R16.159），
- * 本组件只修「把中文用户从自己的 locale 里送走」这半个伤害。
+ * 根级边界没有 locale 上下文，SSR 只能按 DEFAULT_LOCALE 出一版——useSyncExternalStore
+ * 的 server 快照保证首渲染与静态 HTML 一致，水合后 React 自己换算到客户端快照
+ * （URL 前缀认出的语言），既无水合错位也不需要 effect 里 setState。
+ * 正文与推荐位仍是英文（那份取舍登记在 R16.41 / R16.159），本组件只修
+ * 「把中文用户从自己的 locale 里送走」这半个伤害。
  */
 export function NotFoundExits({ labels }: Props) {
-  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
   const pathname = usePathname();
-  useEffect(() => {
-    const fromUrl = localeFromPathname(pathname);
-    if (fromUrl !== locale) setLocale(fromUrl);
-  }, [pathname, locale]);
+  const locale = useSyncExternalStore<Locale>(
+    subscribeNoop,
+    () => localeFromPathname(pathname),
+    () => DEFAULT_LOCALE,
+  );
 
   const exits = [
     { href: `/${locale}/search`, label: `🔍 ${labels.search}`, primary: true },
