@@ -124,6 +124,10 @@
     {
       "number": 343,
       "reason": "非丢失而是未落地：dependabot 自动关闭时 bump 尚未随任何合并进入 lockfile（后续 lockfile 重生成保留 1.1.18）。已按审计指引重放为 PR #350（deps: replay brace-expansion 1.1.18 → 1.1.21，同型 5.0.9 → 5.0.12），lockfile-repro / audit / 全量 test 验证通过；去向即该 PR。"
+    },
+    {
+      "number": 348,
+      "reason": "重复登记：dependabot 对同一 brace-expansion bump（1.1.18 → 1.1.21）先后开了 #343 与 #348，本仓已按 #343 的重放指引把改动真正落地（PR #350，lockfile-repro/audit/全量 test 验证通过），#348 属于重复工作、无需重放。"
     }
   ]
 }
