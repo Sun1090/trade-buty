@@ -42,6 +42,7 @@ import { LazyChartEmbed, type ChartEmbedDict } from "./chart-embed";
 
 const dict: ChartEmbedDict = {
   heading: "K 线图",
+  chartAttribution: "图表由 TradingView 提供",
   loading: "加载中",
   error: "出错了",
   badSymbol: "没有这个交易对",

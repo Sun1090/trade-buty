@@ -60,7 +60,7 @@
     "check:bundle": "node scripts/check-bundle.mjs",
     "check:structured-data": "node scripts/check-structured-data.mjs",
     "e2e:auth": "playwright test e2e/auth-flow.spec.ts",
-    "e2e": "playwright test e2e/smoke.spec.ts e2e/mobile-overflow.spec.ts e2e/pwa-offline.spec.ts e2e/metadata-routes.spec.ts e2e/static-surface.spec.ts e2e/full-site.spec.ts e2e/runtime-health.spec.ts e2e/light-contrast.spec.ts e2e/placeholder-leak.spec.ts e2e/print-surface.spec.ts e2e/auth-flow.spec.ts",
+    "e2e": "playwright test e2e/smoke.spec.ts e2e/mobile-overflow.spec.ts e2e/pwa-offline.spec.ts e2e/metadata-routes.spec.ts e2e/static-surface.spec.ts e2e/full-site.spec.ts e2e/runtime-health.spec.ts e2e/light-contrast.spec.ts e2e/placeholder-leak.spec.ts e2e/print-surface.spec.ts e2e/auth-flow.spec.ts e2e/a11y.spec.ts",
     "e2e:visual": "playwright test e2e/visual.spec.ts",
     "lhci": "lhci autorun",
     "check:mobile": "node scripts/check-mobile.mjs",
@@ -100,6 +100,7 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",

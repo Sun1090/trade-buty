@@ -78,7 +78,7 @@ export default async function LocaleLayout({
             />
             <AuthHeader locale={locale} dict={t.auth} />
           </div>
-          <nav className="hidden sm:flex text-sm items-center gap-0.5 sm:gap-1">
+          <nav aria-label={t.nav.menu} className="hidden sm:flex text-sm items-center gap-0.5 sm:gap-1">
             <Link
               href={p("/path")}
               aria-label={t.nav.path}

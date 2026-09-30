@@ -172,7 +172,7 @@ export default async function DocPage({
           />
         )}
         <div className="min-w-0 max-w-3xl">
-      <nav className="text-sm text-muted mb-6">
+      <nav aria-label={t.nav.breadcrumb} className="text-sm text-muted mb-6">
         <Link href={p("/")} className="hover:text-accent">
           {t.nav.home}
         </Link>
@@ -349,6 +349,7 @@ export default async function DocPage({
           <LazyChartEmbed
             dict={{
               heading: t.chart.embedHeading,
+              chartAttribution: t.chart.chartAttribution,
               loading: t.chart.loading,
               error: t.chart.error,
               badSymbol: t.chart.badSymbol,
@@ -371,7 +372,7 @@ export default async function DocPage({
             }}
           />
         ) : (
-          <aside className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 flex flex-wrap items-center justify-between gap-4">
+          <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="font-semibold">{t.doc.practiceTitle}</p>
               <p className="mt-1 text-sm text-muted">{t.doc.practiceBody}</p>
@@ -382,7 +383,7 @@ export default async function DocPage({
             >
               {t.doc.practiceCta}
             </Link>
-          </aside>
+          </section>
         )}
       </div>
 

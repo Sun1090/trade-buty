@@ -85,6 +85,7 @@ const dict = {
   customSymbolPlaceholder: "如 DOGEUSDT",
   lastPriceLabel: "最新价",
   chartNameTpl: "{symbol} 蜡烛图",
+  chartAttribution: "图表由 TradingView 提供",
   compactNote: "紧凑模式",
   fullNote: "完整模式",
   showFull: "显示完整",
@@ -197,6 +198,15 @@ describe("KlineChart 加载失败与重试", () => {
     fireEvent.click(screen.getByText("重试"));
     await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
     expect(screen.queryByText("行情加载失败")).toBeNull();
+  });
+
+  it("错误态的「重试」按钮不在 role=img 之内（可交互控件不许嵌在图片角色里，axe nested-interactive）", async () => {
+    mocks.fetchKlines.mockRejectedValueOnce(new Error("boom"));
+    render(<KlineChart dict={dict} />);
+    await waitFor(() => expect(screen.getByText("行情加载失败")).toBeInTheDocument());
+    const retry = screen.getByText("重试");
+    expect(retry.closest('[role="img"]')).toBeNull();
+    expect(screen.getByRole("img")).not.toContainElement(retry);
   });
 
   it("交易对不存在时说的是「没有这个交易对」，而不是「API 可能不可达」，也不给一个必定无效的「重试」", async () => {
@@ -563,7 +573,7 @@ describe("KlineChart 移动端密度", () => {
         <KlineChart dict={{ ...dict, chartNameTpl: labels.chartNameTpl }} />,
       );
       await waitFor(() => expect(mocks.candleSeries.setData).toHaveBeenCalled());
-      const name = screen.getByTestId("kline-chart").getAttribute("aria-label") ?? "";
+      const name = screen.getByRole("img").getAttribute("aria-label") ?? "";
       expect(name).toContain("BTCUSDT");
       expect(name).not.toContain("{symbol}");
       const cjk = /[一-鿿㐀-䶿]/;
