@@ -5,6 +5,22 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.20] - 2026-09-30
+
+**404 不再把中文用户送回英文站 / 404 exits no longer push Chinese visitors to the English site**
+
+### 中文
+
+- 中文链接失效时，404 页上的「搜索课程 / 返回首页 / 学习路线」三个出口（以及出错页的「Home」）现在会跟随地址里的语言：`/zh/nope` 的出口指向 `/zh`，不再把人送回英文站。页面正文与推荐位仍是英文——把整个 404 页本地化的取舍仍待定，本轮只修最伤人的那一半
+- 持续集成新增一条登录链路端到端门禁：用本地 Supabase 栈（含邮件服务）在每次 PR 上真跑「OTP 登录 → 会话恢复 → 退出登录」。此前这条链路只在维护者本机验证过，机器上没人守着它
+
+### English
+
+- When a Chinese link breaks, the three exits on the 404 page (search / back home / learning path) — plus the error page's Home button — now follow the language in the URL: `/zh/nope` exits point to `/zh` instead of pushing visitors back to the English site. The page body and suggestions remain English; localizing the whole 404 page is still an open decision, and this round only fixes the most damaging half
+- Continuous integration gained a login-flow end-to-end gate: a local Supabase stack (with a mail service) exercises OTP sign-in → session restore → sign-out on every pull request. The flow had only ever been verified on the maintainer's machine — no machine was guarding it
+
+参考：[docs/roadmap.md](docs/roadmap.md) · [docs/progress.md](docs/progress.md) · [docs/ops.md](docs/ops.md)
+
 ## [0.7.19] - 2026-09-29
 
 **登录 SDK 撤出首屏：每条内容路由轻了 59KB / Login SDK off the critical path: every content route sheds 59 KB**
