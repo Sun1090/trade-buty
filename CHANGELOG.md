@@ -5,6 +5,26 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.21] - 2026-09-30
+
+**读屏与键盘的四类真实障碍修掉了 / Four real screen-reader and keyboard barriers fixed**
+
+### 中文
+
+- 无障碍首查：本站第一次用 axe-core 对 20 条关键页做全规则扫描，量出四类真实违规并全部修掉。最重的一条（critical）：搜索框在建议列表没打开时，读屏拿到的是一个指向不存在元素的引用（aria-controls 悬空）——现在只在列表真的在场时才携带
+- 行情图表的「重试」按钮和图表署名链接原本嵌在 role="img" 容器里——可交互控件嵌在图片角色内，键盘用户与读屏都会遇到语义错乱。图片角色内移到画布层，署名按许可要求改为图外等价的可见文字链接
+- 页面顶部导航、篇章与课文面包屑、学习侧栏、相关课文等六处地标（landmark）补上了可区分的名字——读屏用户按地标跳转时不再听到几个一样的「导航」
+- 以上三条规则钉进每次 PR 的 E2E 套件（20 条关键页），新代码把同类问题带回来会当场红；其余规则未逐条核查前不进硬门禁
+
+### English
+
+- First accessibility audit: axe-core scanned 20 key pages with all rules and found four classes of real violations, all fixed. The heaviest (critical): with the search suggestions closed, screen readers were handed a reference to an element that doesn't exist (a dangling aria-controls) — the attribute is now present only when the list actually is
+- The chart's retry button and the chart attribution link used to sit inside the role="img" container — interactive controls nested in an image role confuse both keyboard and screen-reader navigation. The image role moved down to the canvas layer, and attribution became an equivalent visible text link outside it, as the license allows
+- Six landmarks (header navigation, chapter and lesson breadcrumbs, the learning sidebar, the chapter rail, related courses) now carry distinguishable names — jumping by landmarks no longer reads out several identical "navigation"s
+- Those three rules are pinned for 20 key pages in the per-PR E2E suite; new code bringing the same classes back fails immediately. Rules that haven't been triaged one-by-one stay out of the hard gate
+
+参考：[docs/roadmap.md](docs/roadmap.md) · [docs/progress.md](docs/progress.md) · [docs/perf-notes.md](docs/perf-notes.md)
+
 ## [0.7.20] - 2026-09-30
 
 **404 不再把中文用户送回英文站 / 404 exits no longer push Chinese visitors to the English site**
