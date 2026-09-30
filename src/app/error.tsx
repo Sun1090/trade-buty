@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { DEFAULT_LOCALE } from "@/lib/i18n";
+import { usePathname } from "next/navigation";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
+import { localeFromPathname } from "@/lib/locale-from-path";
 import { reportRouteError } from "@/lib/error-report";
 
 export default function ErrorPage({
@@ -15,6 +17,15 @@ export default function ErrorPage({
   useEffect(() => {
     reportRouteError(error, "route-error");
   }, [error]);
+
+  // R16.41 最小伤害版：SSR 按 DEFAULT_LOCALE 出一版，挂载后 Home 的 href
+  // 跟随 URL 前缀（两段式，直接在首渲染读 pathname 会水合错位）
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  const pathname = usePathname();
+  useEffect(() => {
+    const fromUrl = localeFromPathname(pathname);
+    if (fromUrl !== locale) setLocale(fromUrl);
+  }, [pathname, locale]);
 
   return (
     <div className="relative mx-auto max-w-3xl px-5 py-28 text-center overflow-hidden">
@@ -44,7 +55,7 @@ export default function ErrorPage({
           Retry ↻
         </button>
         <Link
-          href={`/${DEFAULT_LOCALE}`}
+          href={`/${locale}`}
           className="rounded-full border border-border-strong px-7 py-3 font-medium hover:border-accent/60 transition"
         >
           Home
