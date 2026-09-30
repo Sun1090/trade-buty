@@ -120,6 +120,10 @@
     {
       "number": 290,
       "reason": "补丁等价，只是换了载体（与 #125/#134/#211/#287 同一情形）：#290 从 #289 合入前的 main(4cc3946) 起分支，#289 以 rebase 落地（main 头 92f7ef5）之后，两条分支都在 docs/roadmap.md 与 docs/progress.md 的文件尾部追加，GitHub 判定 CONFLICTING/DIRTY；更新已推送分支需要 force push（本仓库禁止），所以把 15 笔整体 rebase 到最新 origin/main 后重开分支 fix/review-ai-export-claims-round-11b，另开 PR #291。等价性核对：两条分支相对各自基线的改动文件集完全相同（35 个），逐文件的 patch 除 `src/lib/i18n.ts` 与 `src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx` 外全部逐字节一致——那两个文件正是 #289 也改过的（chartNameTpl 的字典穿线与图表语言键），rebase 后两侧改动并存（字典里 #289 的 6 处与本批的 12 处都在，本批的 +19 行增删数不变）；两处文档冲突按「两段都留」解决。rebase 后的树跑通 303 个测试文件 / 2975 条用例。#290 的 15 笔内容因此没有一扇门被关丢：全部在 #291 里。"
+    },
+    {
+      "number": 343,
+      "reason": "非丢失而是未落地：dependabot 自动关闭时 bump 尚未随任何合并进入 lockfile（后续 lockfile 重生成保留 1.1.18）。已按审计指引重放为 PR #350（deps: replay brace-expansion 1.1.18 → 1.1.21，同型 5.0.9 → 5.0.12），lockfile-repro / audit / 全量 test 验证通过；去向即该 PR。"
     }
   ]
 }
