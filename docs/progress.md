@@ -4,7 +4,7 @@
 
 ## 2026-10-01 — R16.283：全规则 a11y 扫描再抓四类，修复并复验
 
-- 状态：已提交，分支 `fix/a11y-full-rules`，PR 待开。
+- 状态：已合并（PR #362）。
 - 里程碑 / 版本：v0.7.21 后续修复，随下个 patch 发布。
 - 分支 / 提交：`fix/a11y-full-rules`。
 - 完成内容：
@@ -23,6 +23,21 @@
 - 更新时间：2026-10-01 07:55（Asia/Shanghai）。
 
 ## 2026-10-01 — 知识库指针保鲜：kline-buty@1dabd73（v0.5.35）
+
+- 状态：已合并（PR #360）。
+- 里程碑 / 版本：v0.7.21 后续维护，无用户可见变化。
+- 分支 / 提交：`chore/kb-pointer-refresh`，`e60c432`。
+- 完成内容：
+  - 首次系统核对知识库子模块与上游的差距：kline-buty main 领先 289 个提交（a57d510 → 1dabd73，tag v0.5.35），经 `git diff --stat HEAD..origin/main -- docs/knowledge/` 核实**本站消费的内容树零差异**——289 个提交全部是上游应用侧工作。
+  - `npm run kb:update` 六步全流程（拉取 → changelog 对比 → 契约校验 → 资产/搜索索引同步 → 构建回归）跑通后提交指针与 manifest 快照；指针保鲜使未来内容同步的 diff 保持干净。
+- 变更文件：`content/kline-buty`（指针）、`scripts/kb-manifest.json`。
+- 验证：kb:update 全流程通过；`check:kb-pointer`（提交后在 main 上归位）/ `test` 3569 用例 / `typecheck` / glossary / slug-conflicts / nav-chain / relative-links / frontmatter / kb-en-content 全绿；PR #360 的 CI（含 auth-e2e）全绿。
+- 阻塞：无。
+- 风险 / 回滚：内容零差异，回滚即 revert 指针提交。
+- 下一项：开放项仍需拍板或外部凭据。
+- 更新时间：2026-10-01 07:05（Asia/Shanghai）。
+
+## 2026-09-30 — R16.282 覆盖度地板收紧 + R16.281 扩展复扫验证
 ## 2026-09-30 — R16.282 覆盖度地板收紧 + R16.281 扩展复扫验证
 
 - 状态：已合并（PR #358，rebase 合并进 main）。本轮为 CI/工具向改动（无用户可见变化），不单独发版，随下个用户可见批次一起走。
