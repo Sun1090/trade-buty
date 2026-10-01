@@ -17,7 +17,7 @@
 | `npm run check:secrets` | 扫描受版本控制与未忽略的新文本文件，阻断私钥、平台 token 和疑似硬编码密钥；输出不包含命中值。R16.83：`git ls-files` 列出的待扫文件数低于下限 700 即判失败（「已扫描 0 个」不是通过），通过时打印扫到多少个 | 吊销并移除泄露凭据，改用环境变量/密钥管理；测试夹具使用明确占位值；下限被踩到先查清单为什么变少，再改数 |
 | `npm run ops:work-audit` | 工作保全审计（R14.4）：有没有提交既不在 `main` 也不在任何远端分支，以及有没有 PR 被关闭而工作去向从未确认。CI 用 `WORK_AUDIT_REQUIRE_GH=1` 把它当门禁：读不到 GitHub 也判失败，不允许静默变绿 | 需要的工作重放到新 topic 分支并提 PR；确认已无需保留的关闭 PR 在 `docs/work-audit-ack.json` 记下理由（每条必须写原因） |
 | `npm run lint` | 全仓库 ESLint，**0 error / 0 warning** | 修复规则报告；定向例外必须附理由，脚本本身固定 `--max-warnings=0` |
-| `npm run test:coverage` | Vitest 单元、组件、脚本契约与集成测试，并跑 V8 覆盖度地板门禁（语句 84 / 分支 77 / 函数 83 / 行 87） | 修复失败用例；覆盖度跌破地板时补测试，不得跳过/删除断言或下调阈值伪造通过 |
+| `npm run test:coverage` | Vitest 单元、组件、脚本契约与集成测试，并跑 V8 覆盖度地板门禁（语句 94 / 分支 89 / 函数 94 / 行 96，2026-09-30 按实测下约 1–2pp 收紧，唯一权威是 `vitest.config.mts`） | 修复失败用例；覆盖度跌破地板时补测试，不得跳过/删除断言或下调阈值伪造通过 |
 | `npm run typecheck` | Next.js 16 路由类型生成 + `tsc --noEmit` | 修复类型错误；不得用 `any`/忽略指令掩盖真实不匹配 |
 | `npm run build` | prebuild 契约/资产/搜索索引/标题同步 + 生产构建 | 按构建错误修内容契约或代码；宽松渲染应 warn+skip，不能静默发布空站 |
 | `npx playwright install --with-deps chromium` | 安装 E2E 所需的固定 Chromium 运行时 | 检查 CI runner 系统依赖与 Playwright 版本 |
