@@ -32,7 +32,7 @@ export default function ErrorPage({
   );
 
   return (
-    <div className="relative mx-auto max-w-3xl px-5 py-28 text-center overflow-hidden">
+    <main className="relative mx-auto max-w-3xl px-5 py-28 text-center overflow-hidden">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -65,6 +65,6 @@ export default function ErrorPage({
           Home
         </Link>
       </div>
-    </div>
+    </main>
   );
 }

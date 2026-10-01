@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-10-01 — R16.283：全规则 a11y 扫描再抓四类，修复并复验
+
+- 状态：已提交，分支 `fix/a11y-full-rules`，PR 待开。
+- 里程碑 / 版本：v0.7.21 后续修复，随下个 patch 发布。
+- 分支 / 提交：`fix/a11y-full-rules`。
+- 完成内容：
+  - 全规则（默认集除 region）a11y 扫描铺到移动视口核心页、en 静态页、分享落地页与 404，抓到 4 处并全部修复：①首页行情加载占位 div 补 `role="status"`（serious：generic 元素禁用 aria-label）；②`Markdown` 的 `table` 加 `tabIndex={0}`（serious：窄屏横向滚动的表格键盘不可达）；③④根级 404（`not-found.tsx`）、错误边界（`error.tsx`）与分享落地页外壳 div → `<main>`（moderate：整页无 main 地标）。
+  - 查证乌龙如实记录：分享页违规最初量到的是「手拼载荷不合法 → notFound() → 根级 404」，但 404 缺 main 恰是真缺陷；分享页用与 `prod-smoke` 同编码的合法载荷单独复验。
+  - 复扫（合法载荷 share 页 + 404 + 首页/课文移动视口，全规则）：4 个页面运行零发现。
+- 变更文件：`src/components/market-ticker.tsx`、`src/components/markdown.tsx`、`src/app/not-found.tsx`、`src/app/error.tsx`、`src/app/share/[kind]/[path]/page.tsx`、`docs/roadmap.md`、`docs/progress.md`。
+- 验证命令与结果：
+  - `npm run test`：通过（342 文件 / 3569 用例）。
+  - `npm run lint`、`npm run typecheck`：通过。
+  - `npm run build` + `npm run e2e`：通过（185 通过 / 1 跳过）。
+  - axe 复扫（含合法 share 载荷）：4 个页面运行零发现。
+- 阻塞：无。
+- 风险 / 回滚：均为标签/角色级修改，无数据与路由变更；回滚即 revert。
+- 下一项：PR 合并后随下个 patch 发布；开放项仍需拍板或外部凭据。
+- 更新时间：2026-10-01 07:55（Asia/Shanghai）。
+
+## 2026-10-01 — 知识库指针保鲜：kline-buty@1dabd73（v0.5.35）
 ## 2026-09-30 — R16.282 覆盖度地板收紧 + R16.281 扩展复扫验证
 
 - 状态：已合并（PR #358，rebase 合并进 main）。本轮为 CI/工具向改动（无用户可见变化），不单独发版，随下个用户可见批次一起走。

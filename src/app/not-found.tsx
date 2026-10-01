@@ -13,7 +13,7 @@ export default function NotFound() {
   const starters = getChapters(DEFAULT_LOCALE).slice(0, 6);
 
   return (
-    <div className="relative mx-auto max-w-3xl px-5 py-20 text-center overflow-hidden">
+    <main className="relative mx-auto max-w-3xl px-5 py-20 text-center overflow-hidden">
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.04]"
         style={{
@@ -85,6 +85,6 @@ export default function NotFound() {
         * 由 `src/app/not-found-claims.test.tsx` 钉住这一句真的在场。
         */}
       <p className="relative mt-16 text-xs text-faint">{t.footer.disclaimer}</p>
-    </div>
+    </main>
   );
 }

@@ -58,6 +58,15 @@ export function Markdown({
             // eslint-disable-next-line @next/next/no-img-element
             return <img src={src} alt={alt ?? ""} loading="lazy" {...interactiveProps} />;
           },
+          table({ children, ...props }) {
+            // 宽表格在窄屏横向滚动：可滚动区域必须可键盘聚焦（axe
+            // scrollable-region-focusable），否则键盘用户滚不到被裁掉的列
+            return (
+              <table tabIndex={0} {...props}>
+                {children}
+              </table>
+            );
+          },
           pre({ children, ...props }) {
             // 提取语言标签显示在代码块右上角
             const codeEl = children as React.ReactElement<{ className?: string }>;

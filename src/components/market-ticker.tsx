@@ -138,6 +138,7 @@ export function MarketTicker({ locale = "zh" }: { locale?: "zh" | "en" }) {
       {!tickers && !failed && (
         <div
           data-testid="market-loading"
+          role="status"
           className="grid grid-cols-3 gap-2"
           aria-label={dict.loading}
         >
