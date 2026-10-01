@@ -46,7 +46,7 @@ export default async function ShareLandingPage({
   const t = getDict(locale);
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-12 sm:py-16">
+    <main className="mx-auto max-w-3xl px-5 py-12 sm:py-16">
       <JsonLd data={siteGraph(locale)} />
       <ShareCardPreview kind={shareKind} path={sharePath} locale={locale} labels={t.share} />
 
@@ -75,6 +75,6 @@ export default async function ShareLandingPage({
           pageHref: `/share/${shareKind}/${sharePath}`,
         })}
       />
-    </div>
+    </main>
   );
 }
