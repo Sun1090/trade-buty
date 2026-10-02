@@ -96,4 +96,26 @@ describe("R7.2 图片懒加载", () => {
     );
     expect(screen.getByRole("button", { name: "打开大图" })).toBeInTheDocument();
   });
+
+  it("GFM 任务清单的复选框通过包裹 label 获得可访问名称（R16.283 追扫）", () => {
+    const { container } = render(
+      <Markdown content={"- [ ] 爆仓后立刻开新仓\n- [x] 设好的止损\n"} />,
+    );
+    const boxes = screen.getAllByRole("checkbox");
+    expect(boxes).toHaveLength(2);
+    for (const box of boxes) {
+      expect(box).toHaveAccessibleName();
+    }
+    // 包裹关系是关联的来源：input 必须是 label 的后代，而不是裸兄弟
+    for (const box of boxes) {
+      expect(box.closest("label")).not.toBeNull();
+      expect(box.closest("label")).toHaveTextContent(/爆仓后|止损/);
+    }
+    expect(container.querySelectorAll(".task-list-item")).toHaveLength(2);
+  });
+
+  it("普通清单项不包 label（不做无谓的包裹）", () => {
+    const { container } = render(<Markdown content={"- 普通条目\n"} />);
+    expect(container.querySelector("label")).toBeNull();
+  });
 });
