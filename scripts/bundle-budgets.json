@@ -22,9 +22,9 @@
     },
     {
       "id": "knowledge-lesson",
-      "description": "Rendered lesson content; HTML budget covers long-form lesson output. 预算从 400 让到 404（是放宽，不是收紧）（2026-09-25）：CI 实测本组最大 399.9KB（main@478effc），同一份代码本地构建是 397.7KB —— 2.2KB 的构建机差异还没查明（R16.234），而 0.1KB 的容差小过一次构建噪声，任何往字典里加一句话的 PR 都会把 CI 红。404 = CI 当前最大 + 约两倍于那个差异。还债的那一条是 R16.235：把 59.3KB 的 supabase-js 从 454 条路由的首屏里拿掉，之后本组预算要往下收到 350 以下。2026-09-29 已还：supabase chunk 隔离落地后本组最大 338.8KB，total 收回 348。",
+      "description": "Rendered lesson content; HTML budget covers long-form lesson output. 预算从 400 让到 404（是放宽，不是收紧）（2026-09-25）：CI 实测本组最大 399.9KB（main@478effc），同一份代码本地构建是 397.7KB —— 2.2KB 的构建机差异还没查明（R16.234），而 0.1KB 的容差小过一次构建噪声，任何往字典里加一句话的 PR 都会把 CI 红。404 = CI 当前最大 + 约两倍于那个差异。还债的那一条是 R16.235：把 59.3KB 的 supabase-js 从 454 条路由的首屏里拿掉，之后本组预算要往下收到 350 以下。2026-09-29 已还：supabase chunk 隔离落地后本组最大 338.8KB，total 收回 348。 2026-10-02 再定价（348 → 357）：R16.283/R16.284 两批 a11y 修复给全部课文页共享的 Markdown 组件新增 table/pre/li 覆盖与任务清单 label 逻辑，实测本组最大从 339.0 涨到 CI 352.1（本地 349.9，同码两机差仍约 2.2KB，成因沿 R16.234 未查明）；357 = CI 当前最大 + 约两倍该差异。",
       "match": "^(?:zh|en)/knowledge/[^/]+/[^/]+$",
-      "maxGzipKB": { "js": 310, "css": 20, "html": 95, "total": 348 }
+      "maxGzipKB": { "js": 310, "css": 20, "html": 95, "total": 357 }
     },
     {
       "id": "search",
