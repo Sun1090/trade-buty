@@ -445,6 +445,9 @@ body {
 :root[data-theme="light"] .kb-prose code,
 :root[data-theme="sepia"] .kb-prose code {
   background: rgba(0, 0, 0, 0.055);
+  /* accent 绿 #047857 在浅色提示框底（#dee9e6）上只有 4.41:1（axe color-contrast，
+     阈值 4.5），加深到 #04724a 达 4.81:1，视觉几乎不变 */
+  color: #04724a;
 }
 :root[data-theme="light"] .kb-prose pre code,
 :root[data-theme="sepia"] .kb-prose pre code {

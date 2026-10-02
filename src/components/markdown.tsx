@@ -59,6 +59,16 @@ export function Markdown({
             // eslint-disable-next-line @next/next/no-img-element
             return <img src={src} alt={alt ?? ""} loading="lazy" {...interactiveProps} />;
           },
+          th({ children, ...props }) {
+            // GFM 表格「| | 列A | 列B |」的左上角是空 th（axe empty-table-header，
+            // 读屏无法命名该列）：角落本来就是占位而非表头，空时降级为 td
+            const empty = children === null || children === undefined || children === "" ||
+              (Array.isArray(children) && children.every((c) => c === null || c === ""));
+            if (empty) {
+              return <td {...props}>{children}</td>;
+            }
+            return <th {...props}>{children}</th>;
+          },
           table({ children, ...props }) {
             // 宽表格在窄屏横向滚动：可滚动区域必须可键盘聚焦（axe
             // scrollable-region-focusable），否则键盘用户滚不到被裁掉的列

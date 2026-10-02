@@ -118,4 +118,18 @@ describe("R7.2 图片懒加载", () => {
     const { container } = render(<Markdown content={"- 普通条目\n"} />);
     expect(container.querySelector("label")).toBeNull();
   });
+
+  it("GFM 表格的空角落 th 降级为 td（axe empty-table-header：读屏无法命名空列头）", () => {
+    const { container } = render(
+      <Markdown content={"| | 亏 | 盈 |\n| --- | --- | --- |\n| 例子 | 1 | 2 |\n"} />,
+    );
+    const ths = container.querySelectorAll("th");
+    expect(ths).toHaveLength(2);
+    for (const th of ths) expect(th).toHaveTextContent(/亏|盈/);
+    // 空角落不再以 th 形态出现——它本来就是占位
+    expect(container.querySelectorAll("thead th")).toHaveLength(2);
+    expect(container.querySelectorAll("thead td")).toHaveLength(1);
+    const tds = container.querySelectorAll("tbody td");
+    expect(tds).toHaveLength(3);
+  });
 });
