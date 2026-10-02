@@ -5,6 +5,26 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.22] - 2026-10-01
+
+**无障碍第二批：四类真实违规修掉 / Second accessibility batch: four more real violations fixed**
+
+### 中文
+
+- 首页行情加载占位块原来带着一句读屏文案却没有对应的角色——generic 元素上的 aria-label 是被读屏规范禁止的写法，那句「正在加载行情…」实际上从未被播报。现在它是正确的 status 状态区，加载中的提示真正可达
+- 课文里的宽表格在窄屏上横向滚动，但键盘用户根本无法把焦点放进表格里——滚不到被裁掉的列。表格现在可键盘聚焦
+- 分享落地页、根级 404 与错误边界整页没有 main 地标，读屏按地标跳转时会跳过整页内容。三处外壳已改为 main
+- 这三类问题由全规则 a11y 扫描量出（上一批只钉了三条已修规则；本轮把全部默认规则铺到移动视口、分享落地页与 404 复扫），修复后同样场景零发现
+
+### English
+
+- The market-loading placeholder on the home page carried a screen-reader label without a valid role — aria-label on a generic element is prohibited by the ARIA spec, so "loading market data…" was never actually announced. It is now a proper status region and the message is reachable
+- Wide tables inside lessons scroll horizontally on narrow screens, but a keyboard user could not focus into the table at all — the clipped columns were unreachable. Tables are now keyboard-focusable
+- The share landing page, the root 404 and the error boundary had no main landmark, so jumping by landmarks skipped the entire page content. All three wrappers are now main elements
+- These classes were found by a full-rule accessibility sweep (the previous batch pinned only the three rules it had fixed; this round ran every default rule across mobile viewports, the share landing page and the 404), and the same scenarios re-scan clean after the fixes
+
+参考：[docs/roadmap.md](docs/roadmap.md) · [docs/progress.md](docs/progress.md)
+
 ## [0.7.21] - 2026-09-30
 
 **读屏与键盘的四类真实障碍修掉了 / Four real screen-reader and keyboard barriers fixed**
