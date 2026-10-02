@@ -5,6 +5,24 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.25] - 2026-10-02
+
+**暗色主题在本站切换时终于按设计渲染 / Dark theme now renders as designed when switched in-site**
+
+### 中文
+
+- 修掉一个系统级主题 bug：站点的暗色主题由页面内属性驱动，而样式框架的暗色变体默认跟随「操作系统偏好」——用系统浅色、但在站内切到暗色的用户，看到的是一套错位的外观：主按钮是白字绿底（对比度 2.53:1，几乎读不清）。现在暗色变体正确跟随站内切换，按设计渲染（深字绿底 7:1）
+- 护眼主题的对比度整体不达标：警示标题只有 2.31:1、提示标题 4.3:1、表格内代码 3.92:1——按实测把相关文字逐组加深到 4.5:1 以上
+- 无障碍巡检至此覆盖三套主题 × 全部关键页与全量课文页；巡检中两处偶现的「页面缺 h1」「播放态按钮低对比」经直接探测定性为水合窗口测量伪影，理由记录在台账
+
+### English
+
+- Fixed a systemic theme bug: the site's dark theme is driven by an in-page attribute, but the style framework's dark variant followed the operating-system preference instead — users on a light OS who switched to dark in-site saw a mis-rendered theme where primary buttons were white-on-green at 2.53:1 contrast. The variant now follows the in-site toggle and renders as designed (dark-on-green at 7:1)
+- The sepia theme broadly failed contrast: warning titles measured 2.31:1, tip titles 4.3:1, in-table code 3.92:1 — each group is now darkened past 4.5:1 based on measurements
+- The accessibility audit now covers three themes across all key pages and the full lesson tree; two intermittent findings (missing h1, low-contrast playback buttons) were investigated and classified as hydration-window measurement artifacts, with the reasoning on record
+
+参考：[docs/roadmap.md](docs/roadmap.md) · [docs/progress.md](docs/progress.md)
+
 ## [0.7.24] - 2026-10-02
 
 **209 篇课文页逐页过完无障碍巡检 / Every lesson page passed a full accessibility audit**
