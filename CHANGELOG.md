@@ -5,6 +5,26 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.23] - 2026-10-02
+
+**17 篇课文的任务清单复选框有了名字 / Task-list checkboxes across 17 lessons finally have names**
+
+### 中文
+
+- 无障碍巡检扩面到全规则后抓到最重的一类（critical）：17 篇课文里的任务清单复选框在读屏里没有名字——清单文字只是复选框的兄弟节点，读屏听到的是 8 个无名复选框。现在清单项内容包进 label，复选框与文字真正关联
+- 窄屏横向滚动的代码块与统计页三个趋势图滚动区现在可以键盘聚焦——键盘用户终于能看到被裁掉的部分
+- 每次 PR 的无障碍门禁按规则白名单运行；本轮把全部默认规则铺到移动视口、分享落地页与含代码块/任务清单的课文页做了一次全量巡检，修完后同类场景零发现
+- 连带：本批修复让课文页共享的渲染组件变大约 11KB，课文页体积预算按既有公式（CI 实测最大 + 约两倍构建机差异）从 348KB 重定价到 357KB——真实的可及性成本计入预算
+
+### English
+
+- The broadest accessibility sweep so far found the heaviest class yet (critical): task-list checkboxes in 17 lessons had no accessible name — the list text was only a sibling of the checkbox, so screen readers heard 8 unnamed boxes. List items now wrap their content in a label, properly associating the two
+- Horizontally scrolling code blocks on narrow screens and the three trend-chart scrollers on the stats page are now keyboard-focusable — keyboard users can finally reach the clipped parts
+- The per-PR accessibility gate runs a rule whitelist; this round ran every default rule across mobile viewports, the share landing page and lessons with code blocks and task lists — zero findings after the fixes
+- Follow-up: the fixes grew the shared lesson-rendering component by about 11 KB, and the lesson-page budget was re-priced from 348 KB to 357 KB using the existing formula (CI-measured max plus about twice the cross-machine variance) — real accessibility cost is priced into the budget
+
+参考：[docs/roadmap.md](docs/roadmap.md) · [docs/progress.md](docs/progress.md) · [docs/perf-notes.md](docs/perf-notes.md)
+
 ## [0.7.22] - 2026-10-01
 
 **无障碍第二批：四类真实违规修掉 / Second accessibility batch: four more real violations fixed**
