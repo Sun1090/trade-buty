@@ -1,4 +1,10 @@
 @import "tailwindcss";
+/* 站点主题由 html[data-theme] 属性驱动（layout 内联脚本按 localStorage 写入），
+   而 Tailwind v4 的 dark: 变体默认跟 prefers-color-scheme 媒体查询——OS 偏好与
+   站点主题不一致时（用户手动切暗色、OS 是浅色），所有 dark: 工具类都不生效：
+   主按钮渲染成白字绿底，对比度 2.53:1（axe color-contrast 实测）。把变体键到
+   属性上，dark: 的设计意图才真正成立。 */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* ---------- Trade Buty 主题（暗色终端风） ---------- */
 :root {
@@ -445,9 +451,14 @@ body {
 :root[data-theme="light"] .kb-prose code,
 :root[data-theme="sepia"] .kb-prose code {
   background: rgba(0, 0, 0, 0.055);
-  /* accent 绿 #047857 在浅色提示框底（#dee9e6）上只有 4.41:1（axe color-contrast，
-     阈值 4.5），加深到 #04724a 达 4.81:1，视觉几乎不变 */
+}
+/* accent 绿 #047857 在浅色提示框底（#dee9e6）上只有 4.41:1（axe color-contrast，
+   阈值 4.5）；light 加深到 #04724a 达 4.81:1，sepia 的合成底更浅一档、要求更深 */
+:root[data-theme="light"] .kb-prose code {
   color: #04724a;
+}
+:root[data-theme="sepia"] .kb-prose code {
+  color: #025f3f;
 }
 :root[data-theme="light"] .kb-prose pre code,
 :root[data-theme="sepia"] .kb-prose pre code {
@@ -455,6 +466,28 @@ body {
 }
 
 /* ---------- 护眼（sepia）主题 ---------- */
+/* sepia 的提示框合成底比 light 深一档，accent/warn/info 的原色在上面不到 4.5:1
+   （axe color-contrast 实测：warn 标题 2.31、tip 标题/链接 4.3）。这里给 sepia
+   单独加深——dark 主题经 @custom-variant 修复后无同类问题 */
+:root[data-theme="sepia"] .callout-tip .callout-title,
+:root[data-theme="sepia"] .callout a,
+:root[data-theme="sepia"] blockquote a {
+  color: #025f3f;
+}
+:root[data-theme="sepia"] .callout-warning .callout-title {
+  color: #8a4a06;
+}
+:root[data-theme="sepia"] .callout-info .callout-title {
+  color: #1e40af;
+}
+:root[data-theme="sepia"] .callout-danger .callout-title {
+  color: #a32014;
+}
+/* 「accent-dim 底 + accent 字」的选中态芯片（书签数、回放档位等）在 sepia 合成底
+   上 4.3:1；该组合出现在多个组件，按组合整体覆盖 */
+:root[data-theme="sepia"] .bg-accent-dim.text-accent {
+  color: #025f3f;
+}
 :root[data-theme="sepia"] {
   --background: #f4ebd9;
   --foreground: #3c2f1f;
@@ -464,7 +497,9 @@ body {
   --surface-hover: #ddd1bd;
   --border: rgba(60, 47, 31, 0.12);
   --border-strong: rgba(60, 47, 31, 0.2);
-  --accent: #047857;
+  /* #036b46 在 sepia 最浅的卡片底（#e8dcc8）上也有 4.85:1（axe color-contrast）；
+     原 #047857 只有 4.05–4.33 */
+  --accent: #036b46;
   --accent-strong: #065f46;
   --accent-dim: rgba(5, 150, 105, 0.12);
   --accent-on: #ffffff;
