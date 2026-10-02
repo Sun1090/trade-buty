@@ -1,6 +1,33 @@
 {
   "releases": [
     {
+      "version": "0.7.24",
+      "date": "2026-10-02",
+      "name": {
+        "zh": "209 篇课文页逐页过完无障碍巡检",
+        "en": "Every lesson page passed a full accessibility audit"
+      },
+      "highlights": {
+        "zh": [
+          "把全规则无障碍巡检铺到全部 209 篇中文课文页与 209 篇英文课文页（此前只扫过篇章首页与个别课文），中文树量出三类问题并修掉，英文树复扫零发现",
+          "浅色与护眼主题下行内代码的绿色在浅色提示框底上对比度只有 4.41:1（低于 4.5 的标准）——颜色加深到 4.81:1，视觉几乎不变",
+          "GFM 表格「| | 列A」这种左上角为空的写法会渲染出一个没有名字的列头（读屏无法命名该列）——空角落现在降级为普通单元格，它本来就是占位而非表头",
+          "巡检里偶现的「页面缺少 h1」经直接探测定性为测量伪影（水合窗口期），两页实际各有且仅有 1 个 h1；未修的原因写进了台账"
+        ],
+        "en": [
+          "The full-rule accessibility audit now covers all 209 Chinese and 209 English lesson pages (previously only chapter indexes and a handful of lessons were scanned); the Chinese tree surfaced three issue classes, all fixed, and the English tree re-scans clean",
+          "In light and sepia themes, inline code's green on tinted callout backgrounds measured 4.41:1 contrast (below the 4.5 standard) — the color is darkened to 4.81:1 with virtually no visual change",
+          "GFM tables written with an empty top-left corner (\"| | Col A\") rendered a nameless column header that screen readers could not announce — empty corners now degrade to plain cells, which is what they always were",
+          "An occasional \"page lacks an h1\" finding was investigated and classified as a measurement artifact of the hydration window (both pages have exactly one h1); the reasoning is recorded rather than papered over"
+        ]
+      },
+      "docs": [
+        "docs/roadmap.md",
+        "docs/progress.md",
+        "docs/perf-notes.md"
+      ]
+    },
+    {
       "version": "0.7.23",
       "date": "2026-10-02",
       "name": {
