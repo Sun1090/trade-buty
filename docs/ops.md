@@ -13,7 +13,7 @@
 | `actions/checkout` + `actions/setup-node` + `npm ci` | 递归检出知识库子模块；固定 Node.js 22，与根 `package.json` 的 `engines.node >=22` 对齐；按 lockfile 做干净依赖安装 | 检查子模块权限/指针；不要用 `npm install` 改写锁文件绕过 |
 | `npm run check:lockfile-repro` | 用 `devEngines.packageManager` 钉住的 npm（10.9.4，对齐 lockfile 生成工具）重新生成 `package-lock.json`，逐条目比较；有差异即说明提交的 lockfile 不是 CI 的 npm 主版本生成的（npm 10 vs npm 11 漂移） | 用 CI 的 npm 主版本重新生成：`npx --yes npm@10.9.4 install --package-lock-only --registry=https://registry.npmjs.org`；详见 docs/deps.md |
 | `npm run audit:prod` | 生产依赖高危及以上漏洞审计（npm 官方 registry） | 升级/替换受影响依赖；不得通过降低 audit level 掩盖 |
-| `npm run audit:all` | 全量依赖（含开发工具链）高危及以上漏洞审计；当前 0 漏洞 | 升级/替换受影响依赖，优先用经验证的 overrides；不得用 `--omit=dev` 掩盖开发链回归 |
+| `npm run audit:all` | 全量依赖（含开发工具链）高危及以上漏洞审计（R16.288 起由 `scripts/audit-all.mjs` 实现）：存在「上游确认无补丁」的例外白名单（每条带 GHSA 号、理由与重审日，**过期自动转红**），其余任何 high / critical 照常拦截 | 升级/替换受影响依赖，优先用经验证的 overrides；补白名单条目必须先在 docs/deps.md 建延期台账（含解除条件与重审日），不得删除重审检查掩盖回归 |
 | `npm run check:secrets` | 扫描受版本控制与未忽略的新文本文件，阻断私钥、平台 token 和疑似硬编码密钥；输出不包含命中值。R16.83：`git ls-files` 列出的待扫文件数低于下限 700 即判失败（「已扫描 0 个」不是通过），通过时打印扫到多少个 | 吊销并移除泄露凭据，改用环境变量/密钥管理；测试夹具使用明确占位值；下限被踩到先查清单为什么变少，再改数 |
 | `npm run ops:work-audit` | 工作保全审计（R14.4）：有没有提交既不在 `main` 也不在任何远端分支，以及有没有 PR 被关闭而工作去向从未确认。CI 用 `WORK_AUDIT_REQUIRE_GH=1` 把它当门禁：读不到 GitHub 也判失败，不允许静默变绿 | 需要的工作重放到新 topic 分支并提 PR；确认已无需保留的关闭 PR 在 `docs/work-audit-ack.json` 记下理由（每条必须写原因） |
 | `npm run lint` | 全仓库 ESLint，**0 error / 0 warning** | 修复规则报告；定向例外必须附理由，脚本本身固定 `--max-warnings=0` |

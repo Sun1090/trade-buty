@@ -85,6 +85,7 @@
 |---|---|---|---|
 | `eslint` | 10.10.0 | 安装后 `npm run lint` 直接崩溃（exit 2）：`TypeError: Error while loading rule 'react/display-name': contextOrFilename.getFilename is not a function`，抛自 `eslint-plugin-react/lib/util/version.js`。`eslint-config-next@16.3.5` 依赖 `eslint-plugin-react@^7.37.0`，而 7.37.5（当前 latest）的 peer 仍是 `eslint: ^3 \|\| … \|\| ^9.7`，未声明 ESLint 10 支持 | `eslint-plugin-react` 发布支持 ESLint 10 的版本，且 `eslint-config-next` 跟随升级 |
 | `typescript` | 7.0.2 | `npm run lint` exit 2：`typescript-eslint does not support TS 7.0.`（`typescript-eslint@8.70.0` 的 peer 为 `typescript >=4.8.4 <6.1.0`）。`tsc --noEmit` 本身能跑 | `typescript-eslint` 放宽 peer 到 TS 7 |
+| `basic-ftp`（经 braces 通告 GHSA-vfj7-8cjw-p6xm / CVE-2026-93687） | 上游无补丁版本 | 2026-10-02 起 GHSA 把受影响范围改为 `<= 3.0.3` 全部版本且**无补丁**（braces 3.x 自 2024-05 起未再发版）；本仓锁文件 braces 3.0.3（经 micromatch → fast-glob → `@next/eslint-plugin-next` 的 dev 链）与 4.0.8（另一根，不在范围内）。`npm audit fix --force` 只能给 eslint-config-next 开 16 → 14.2.35 的破坏性降级；强推 basic-ftp@6.2.1 会破坏 micromatch 的 CJS require（4.x 依赖树与其 API 错配，未验证不敢上） | 上游 micromatch/fast-glob 迁离 braces，或 braces 发 3.0.4/4.x 补丁；重审日 **2026-11-15**（`scripts/audit-all.mjs` 的白名单条目到期自动转红） |
 
 为避免 Dependabot 每周重复开出这两个必然红灯的 major PR，`.github/dependabot.yml` 的 npm 条目已对 `eslint@10.x` 与 `typescript@7.x` 建了 `ignore` 规则（仅挡这两个 major，不挡 11.x / 8.x，也不影响 minor/patch 分组）；`scripts/ci-workflow.test.mjs` 有回归用例锁定该忽略，解除条件是上表「解除条件」列成立后先删掉对应 ignore 再升级。
 

@@ -9,7 +9,7 @@
     "build": "next build",
     "start": "next start",
     "audit:prod": "npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org",
-    "audit:all": "npm audit --audit-level=high --registry=https://registry.npmjs.org",
+    "audit:all": "node scripts/audit-all.mjs",
     "check:secrets": "node scripts/check-secrets.mjs",
     "lint": "eslint --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit",
