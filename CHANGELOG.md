@@ -5,6 +5,22 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.26] - 2026-10-03
+
+**护眼主题对比度清零，安全门禁学会记例外 / Sepia theme contrast cleared; the security gate learns exceptions**
+
+### 中文
+
+- 护眼主题的对比度清零：表格内代码、提示框标题与链接、选中态芯片等一组文字在护眼合成底上不达 4.5:1 标准（最重的警示标题只有 2.31:1）——逐组按实测加深到 4.5 以上，全树 209 页复扫零发现
+- 依赖安全门禁的一次机制升级：上游发布通告判定某构建依赖「全部版本受影响且无补丁」，硬门禁从此必然红。门禁改为白名单实现——例外必须带通告号、理由与重审日（过期自动转红），其余任何高危照常拦截；生产依赖审计不受影响、持续零暴露
+
+### English
+
+- Sepia theme contrast cleared: a group of text (in-table code, callout titles and links, selected chips) failed the 4.5:1 standard on sepia's composited backgrounds — the worst, a warning title, measured 2.31:1. Each group is darkened past 4.5 based on measurements, and the full 209-page tree re-scans clean
+- A mechanism upgrade for the dependency-security gate: an upstream advisory declared a build dependency vulnerable in all versions with no patch, making the hard gate permanently red. The gate now runs an allowlist — every exception must carry its advisory ID, a reason and a revisit date (auto-expiring back to red), while any other high or critical finding still blocks. Production-dependency auditing is unaffected and stays at zero
+
+参考：[docs/roadmap.md](docs/roadmap.md) · [docs/progress.md](docs/progress.md) · [docs/deps.md](docs/deps.md)
+
 ## [0.7.25] - 2026-10-02
 
 **暗色主题在本站切换时终于按设计渲染 / Dark theme now renders as designed when switched in-site**
