@@ -458,7 +458,8 @@ body {
   color: #04724a;
 }
 :root[data-theme="sepia"] .kb-prose code {
-  color: #025f3f;
+  /* #025f3f 在 blockquote 的合成底（#c1c8b2）上 4.48:1 差 0.02；#025a3c 约 5.2 */
+  color: #025a3c;
 }
 :root[data-theme="light"] .kb-prose pre code,
 :root[data-theme="sepia"] .kb-prose pre code {
@@ -487,6 +488,11 @@ body {
    上 4.3:1；该组合出现在多个组件，按组合整体覆盖 */
 :root[data-theme="sepia"] .bg-accent-dim.text-accent {
   color: #025f3f;
+}
+/* 风险提示标题的 amber-700 在 sepia 合成底（amber-500/30 × #e8dcc8 ≈ #eed397）上
+   3.44:1；#92400e 达 4.86:1。dark 主题用 dark:text-amber-300 不受影响 */
+:root[data-theme="sepia"] .text-amber-700 {
+  color: #92400e;
 }
 :root[data-theme="sepia"] {
   --background: #f4ebd9;
