@@ -28,7 +28,7 @@
  * 第一版把这两条也写在这里，本地全绿而 CI 上 `ENOENT: .next/app-path-routes-manifest.json`：
  * 门禁把构建产物变成了单元测试的硬前置。拆开的理由写在 `check-bundle.mjs` 的调用点注释里。
  */
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import rootManifest from "../src/app/manifest";
@@ -59,7 +59,6 @@ async function loadRouteHandler() {
 }
 
 const root = process.cwd();
-const read = (rel) => readFileSync(path.join(root, rel), "utf8");
 const LOCALES = ["zh", "en"];
 
 /** 调真正的 Route Handler 拿 JSON，而不是复制一份构造逻辑——复制的那份会与实现漂开。 */
