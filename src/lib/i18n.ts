@@ -51,6 +51,10 @@ const zh = {
     closeLabel: "关闭",
   },
   brand: { name: "Trade Buty", badge: "免费 · 中立" },
+  // R16.292：PWA manifest 按语言分家后，装到桌面的名字与描述跟着页面走。
+  // 根级那份（`src/app/manifest.ts`）保留中文作默认入口，这两条是它的同源文案。
+  appName: "Trade Buty · 免费中立交易教育",
+  appDescription: "面向全球中文用户的免费中立交易教育平台：分级课程 + 真实行情图表与回放训练。",
   home: {
     title1: "先学会不亏大钱",
     readTpl: "📖 你已读 {r} / {t} 篇",
@@ -465,6 +469,12 @@ const en: Dict = {
     closeLabel: "Close",
   },
   brand: { name: "Trade Buty", badge: "Free · Neutral" },
+  // R16.292：英文用户装到桌面上时看到的名字与描述。此前 `/en` 的安装引导印英文，
+  // 装出来的却是个中文应用（根级 manifest 钉死在 `lang: "zh-CN"` 与 `start_url: "/zh"`）。
+  // 这两条**不写成中文那句的直译**：桌面图标名与描述是给人看的第一句话，
+  // 「面向全球中文用户」对英文用户既不成立也不是他们需要知道的——只说这是什么。
+  appName: "Trade Buty · Free, neutral trading education",
+  appDescription: "Free, neutral trading education: graded courses with real market charts and replay drills.",
   home: {
     title1: "Learn not to lose big first.",
     readTpl: "📖 Read {r} / {t} lessons",

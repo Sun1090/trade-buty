@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getDict, isLocale } from "@/lib/i18n";
+import type { Metadata } from "next";
+import { getDict, isLocale, DEFAULT_LOCALE } from "@/lib/i18n";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { SearchHotkey } from "@/components/search-hotkey";
@@ -31,6 +32,25 @@ function CandleMark() {
 
 export function generateStaticParams() {
   return [{ locale: "zh" }, { locale: "en" }];
+}
+
+/**
+ * R16.292：manifest 跟着页面语言走。
+ *
+ * 用 `metadata.manifest` 而不是手写 `<link rel="manifest">`：Next 会**自动**为
+ * `app/manifest.ts` 注入一条指向根级 `/manifest.webmanifest` 的 link，手写那条会与它并存
+ * 成两条（产物实测确实是两条），而「多条 manifest link 浏览器取哪一条」并无一致裁定。
+ * 走 metadata 这条通道等于**覆盖**那个默认值，页面上恰好剩一条，指向本语言那份。
+ *
+ * 根级那份仍服务中文站与直接访问 `/manifest.webmanifest` 的工具（`e2e/metadata-routes.spec.ts`
+ * 与 `src/lib/pwa-offline.test.ts` 都按那个路径断言）。两份的 `id`/`scope` 逐字相同，
+ * 所以无论哪一份被采用，设备上都只有一个 Trade Buty——见 `manifest.webmanifest/route.ts` 的文件头。
+ */
+export async function generateMetadata({
+  params,
+}: LayoutProps<"/[locale]">): Promise<Metadata> {
+  const { locale } = await params;
+  return { manifest: `/${isLocale(locale) ? locale : DEFAULT_LOCALE}/manifest.webmanifest` };
 }
 
 export default async function LocaleLayout({
