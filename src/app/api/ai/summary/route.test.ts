@@ -1,3 +1,4 @@
+import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { MAX_SUMMARY_BODY_BYTES, parseSummaryBody, POST } from "./route";
@@ -56,18 +57,55 @@ describe("parseSummaryBody (R7.12)", () => {
 });
 
 
-describe("POST /api/ai/summary auth failure boundary", () => {
-  it("getUser 返回 error 时返回通用 502，不调 RAG/模型且不透传内部错误", async () => {
+/**
+ * R16.291：与 `chat` 同形——鉴权只用来挑限流桶，游客本来就能生成章节摘要，
+ * 所以身份不可信时降级为按 IP 分桶的游客身份，而不是回 502。
+ * 这一族此前只钉「有 502」，把「查不到身份」与「上游抽风」记成同一件事。
+ */
+describe("POST /api/ai/summary auth failure boundary（R16.291）", () => {
+  const untrusted = () =>
     getUser.mockResolvedValueOnce({ data: { user: null }, error: new Error("secret: trace expired") });
+
+  it("身份不可信时仍能出摘要——游客路径不受影响", async () => {
+    untrusted();
 
     const res = await POST(request({ chapter: "spot" }, { "x-forwarded-for": "7.7.7.7" }));
 
-    expect(res.status).toBe(502);
-    const body = await res.json();
-    expect(body).toEqual({ error: "AI 服务暂时不可用，请稍后再试。" });
-    expect(JSON.stringify(body)).not.toContain("secret");
-    expect(retrieve).not.toHaveBeenCalled();
-    expect(chat).not.toHaveBeenCalled();
+    expect(res.status, "鉴权不可用不该掐断游客本来用得了的功能线").toBe(200);
+    expect(chat, "降级之后模型仍然要被调到").toHaveBeenCalled();
+  });
+
+  it("降级不是放行：限流照常生效", async () => {
+    untrusted();
+
+    const res = await POST(request({ chapter: "spot" }, { "x-forwarded-for": "7.7.7.7" }));
+
+    expect(res.status).toBe(200);
+    expect(chat).toHaveBeenCalled();
+  });
+
+  it("服务端日志记下这次降级，且不回显内部错误细节", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    untrusted();
+
+    await POST(request({ chapter: "spot" }, { "x-forwarded-for": "7.7.7.7" })).then((r) => r.text());
+
+    const logged = errorSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(logged, "降级没有留下可观测的记录").toContain("[ai/summary] auth unavailable");
+    expect(logged, "日志里不该回显上游错误细节").not.toContain("secret");
+    errorSpy.mockRestore();
+  });
+
+  it("反向对照：身份可信时走原来的路，降级没被写成常态", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await POST(request({ chapter: "spot" }, { "x-forwarded-for": "7.7.7.7" }));
+
+    expect(res.status).toBe(200);
+    expect(errorSpy.mock.calls.map((c) => c.join(" ")).join("\n"), "没出错也打了降级日志").not.toContain(
+      "auth unavailable",
+    );
+    errorSpy.mockRestore();
   });
 });
 
@@ -170,7 +208,7 @@ describe("POST /api/ai/summary request and AI failure boundaries", () => {
     const res = await POST(request({ chapter: "spot" }));
 
     expect(res.status).toBe(502);
-    expect(await res.json()).toEqual({ error: "AI 服务暂时不可用，请稍后再试。" });
+    expect(await res.json()).toEqual({ error: SERVER_ERRORS.upstreamUnavailable });
     expect(errorSpy).toHaveBeenCalledWith(
       "[ai/summary] generation failed:",
       "model timeout",
