@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useLocalProgress } from "@/components/use-local-progress";
-import { readDocsInChapter } from "@/lib/learning-overview";
+import { assertDocCountMatchesList, readDocsInChapter } from "@/lib/learning-overview";
 import { knowledgeHref } from "@/lib/hrefs";
 
 interface RailDict {
@@ -48,6 +48,8 @@ export function ChapterRail({
   const readSet = new Set(progress?.[chapterSlug] ?? []);
   // 只数本章现在真有的课（与课文清单同一个口径）：知识库改课后 localStorage 会留下旧 slug
   // 的已读键，按原始长度算会把进度顶过 100%，也和清单上的勾选对不上。
+  // docCount 是传进来的分母、交集是分子，两者必须同一个来源（chapter-rail.tsx）
+  assertDocCountMatchesList(docCount, docs.map((d) => d.slug), "ChapterRail 的进度分母");
   const readCount = readDocsInChapter(progress?.[chapterSlug], docs.map((d) => d.slug));
   const pct = docCount > 0 ? Math.round((readCount / docCount) * 100) : 0;
   const done = readCount >= docCount && docCount > 0;

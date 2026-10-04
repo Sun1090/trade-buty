@@ -22,7 +22,12 @@
 import { describe, expect, it } from "vitest";
 import { buildCourseCompletionTrend } from "./course-completion-trend";
 import { readSummary } from "./learn-stats";
-import { buildLearningOverview, readDocsForChapter } from "./learning-overview";
+import {
+  assertDocCountMatchesList,
+  buildLearningOverview,
+  readDocsForChapter,
+  readDocsInChapter,
+} from "./learning-overview";
 import { localDateStr, shiftDate } from "./date-utils";
 
 /** 两个有课的篇章 + 一个 0 课的篇章（后者是本轮判据的分歧点） */
@@ -97,5 +102,65 @@ describe("封顶口径只有一个出口", () => {
         days: 7,
       }).latest.readDocs,
     ).toBe(3);
+  });
+});
+
+/**
+ * R16.58/R16.122 的收口：两把尺的分母必须是同一个来源。
+ *
+ * 这一段补的不是「又一把尺」，而是两把尺之间的**那条缝**。`chapter-rail.tsx` 拿
+ * `docCount` 当分母、拿 `readDocsInChapter`（存储键 ∩ 清单）当分子——两个数一旦来自
+ * 不同来源，同一屏就能同时出现「清单说还差一篇、进度条已经满了」。
+ *
+ * `assertDocCountMatchesList` 就是钉住那条缝的：清单和 docCount 一起传进来却对不上时
+ * 抛错。今天线上两者必然相等（docCount 由构建期同一份 `docMetas` 算出），所以这条用例
+ * 不会靠真实数据通过——它拿手工造出来的不一致喂进去，确保那一天真的有人被拦下。
+ */
+describe("两把尺的分母必须是同一个来源", () => {
+  const SLUGS = ["a", "b", "c"];
+
+  it("docCount 与清单长度一致时安静通过", () => {
+    expect(() => assertDocCountMatchesList(3, SLUGS, "用例")).not.toThrow();
+    expect(() => assertDocCountMatchesList(0, [], "用例")).not.toThrow();
+  });
+
+  it("docCount 大于清单长度时抛错，并把两个数与出处一起念出来", () => {
+    let message = "";
+    try {
+      assertDocCountMatchesList(7, SLUGS, "ChapterRail 的进度分母");
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message, "不一致时安静通过 = 同一屏两个分母").toContain("ChapterRail 的进度分母");
+    expect(message).toContain("docCount=7");
+    expect(message).toContain("=3");
+  });
+
+  it("docCount 小于清单长度同样抛错（少算那一侧也算错）", () => {
+    expect(() => assertDocCountMatchesList(2, SLUGS, "用例")).toThrow(/docCount=2/);
+  });
+
+  it("禁令抓得住旧写法：不等就静默采信 docCount，正是 R16.122 要修的那类同一屏两个答案", () => {
+    const legacy = (docCount: number, list: readonly string[]) => Math.min(
+      new Set(list).size,
+      Math.max(0, docCount),
+    );
+    expect(legacy(7, SLUGS), "这条旧写法的样例本身得算出 3（封顶到清单长度）").toBe(3);
+    expect(legacy(7, SLUGS)).not.toBe(7);
+  });
+
+  it("交集口径在不一致时确实比 docCount 小——这正是必须报错的理由", () => {
+    const stored = ["a", "b", "c", "gone-1", "gone-2", "gone-3", "gone-4"];
+    // docCount 仍是改课之前的 7，清单已经缩到 3：交集 3 < 封顶 7
+    expect(readDocsInChapter(stored, SLUGS)).toBe(3);
+    expect(readDocsForChapter(stored, 7)).toBe(7);
+    expect(readDocsInChapter(stored, SLUGS)).toBeLessThan(readDocsForChapter(stored, 7));
+    // 两个分母同时到场就必须当场拦下
+    expect(() => assertDocCountMatchesList(7, SLUGS, "用例")).toThrow();
+  });
+
+  it("扫描地板：真的能碰到这一段而不是空跑", () => {
+    expect(SLUGS.length, "上面的用例全靠这份清单，空了就是空转").toBeGreaterThan(0);
+    expect(readDocsInChapter(["a", "b"], SLUGS), "交集必须仍小于清单长度（用例才有意义）").toBe(2);
   });
 });

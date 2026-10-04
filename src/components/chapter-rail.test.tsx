@@ -54,6 +54,19 @@ describe("ChapterRail", () => {
     expect(screen.getByText("33%")).toBeInTheDocument();
   });
 
+  /**
+   * R16.58 的最后一段：进度条的分母（docCount）与分子（交集）必须同一个来源。
+   *
+   * 这条不靠真实内容通过——docCount 由构建期同一份 docMetas 算出，线上必然相等。
+   * 它喂进去一份「docCount 还是改课之前的 7、清单已经缩到 3」的 props，
+   * 要求当场抛错而不是画出「3/7 课 = 43%」——那一屏正是 R16.122 修完剩下的缝。
+   */
+  it("docCount 与课文清单对不上时当场抛错，不画出两个分母并存的一屏", () => {
+    progress = { "chapter-a": ["d1", "d2", "d3"] };
+    const stale = { ...base, docCount: 7 };
+    expect(() => render(<ChapterRail {...stale} />)).toThrow(/docCount=7/);
+  });
+
   it("未读列表默认收起，aria-expanded=false", () => {
     progress = {};
     render(<ChapterRail {...base} />);
