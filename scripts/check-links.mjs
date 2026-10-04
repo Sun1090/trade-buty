@@ -59,11 +59,16 @@ function main() {
         !raw.startsWith("/") ||
         raw.startsWith("/_next") ||
         raw.startsWith("//") ||
-        raw.startsWith("/manifest.webmanifest") ||
+        // 根级那份 + R16.292 的 `/{locale}/manifest.webmanifest`。
+        // 用正则而不是逐个列举 `/zh/…` `/en/…`：语言增删时不必回来改这里（那正是本条被漏掉的原因）。
+        /^\/(?:[a-z]{2}\/)?manifest\.webmanifest$/.test(raw) ||
         raw.startsWith("/favicon.ico") ||
         raw.startsWith("/icon")
       )
-        continue; // Next.js 框架动态元数据路由（manifest/icon），运行时存在
+        // Next.js 框架动态元数据路由（manifest/icon），运行时存在，不产出 html 文件——
+        // 带语言前缀的那份（R16.292）是**动态 Route Handler**，靠 `manifest.webmanifest.body`
+        // 在运行时应答，所以同样不能按 `public/` 静态文件核对。
+        continue;
       const [noQuery] = raw.split("?");
       const hashIdx = noQuery.indexOf("#");
       const urlPath =
