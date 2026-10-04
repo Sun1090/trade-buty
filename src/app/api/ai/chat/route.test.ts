@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { NextRequest } from "next/server";
 import { MAX_CHAT_BODY_BYTES, POST } from "./route";
+import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 import { BODY_ERRORS } from "@/lib/ai/chat-input";
 import { retrieve } from "@/lib/ai/rag";
 import { TRUNCATED_MARKER } from "@/lib/ai/streaming";
@@ -74,19 +75,70 @@ beforeEach(() => {
 });
 
 
-describe("POST /api/ai/chat auth failure boundary", () => {
-  it("getUser 返回 error 时返回通用 502，不调 RAG/模型且不透传内部错误", async () => {
+/**
+ * R16.291：鉴权不可用时本端点**降级为游客**而不是 502。
+ *
+ * 这一族此前只钉住「有 502」，于是把「鉴权查不到身份」与「上游抽风」记成同一件事，
+ * 挂了同一个字符串——而那句「暂时不可用，请稍后再试」对配置缺失是假话。下面四条
+ * 分别钉住降级本身、降级不是放行（限流与护栏照常）、不透传内部错误、以及
+ * **正常游客路径没有被这次改动波及**（反向对照：门禁最怕的就是「把服务整条掐掉也算通过」）。
+ */
+describe("POST /api/ai/chat auth failure boundary（R16.291）", () => {
+  const untrusted = () =>
     getUser.mockResolvedValueOnce({ data: { user: null }, error: new Error("secret: trace expired") });
+
+  it("身份不可信时仍答得出来——鉴权只用来挑限流桶，游客本来就能问", async () => {
+    untrusted();
 
     const res = await POST(request({ messages: [{ role: "user", content: "你好" }] }));
 
-    expect(res.status).toBe(502);
-    const body = await res.json();
-    expect(body).toEqual({ error: "AI 服务暂时不可用，请稍后再试。" });
-    expect(JSON.stringify(body)).not.toContain("secret");
-    expect(retrieve).not.toHaveBeenCalled();
-    expect(streamChat).not.toHaveBeenCalled();
-    expect(chat).not.toHaveBeenCalled();
+    expect(res.status, "鉴权不可用不该掐断一条游客本来用得了的功能线").toBe(200);
+    expect(await res.text()).toContain("默认回答");
+    expect(streamChat, "降级之后模型仍然要被调到").toHaveBeenCalled();
+  });
+
+  it("降级不是放行：内容红线照常生效（护栏在调上游之前返回）", async () => {
+    untrusted();
+
+    const res = await POST(request({ messages: [{ role: "user", content: "推荐一只明天必涨的股票" }] }));
+
+    expect(res.headers.get("X-Refused"), "身份不可信时护栏被跳过了").toBeTruthy();
+    expect(streamChat, "命中护栏时不该调模型").not.toHaveBeenCalled();
+  });
+
+  it("降级不是放行：限流照常生效，且按游客桶计（响应头暴露游客配额）", async () => {
+    untrusted();
+
+    const res = await POST(request({ messages: [{ role: "user", content: "你好" }] }));
+
+    expect(res.headers.get("X-Quota-Limit"), "游客配额头没回，限流被跳过了").toBeTruthy();
+    expect(res.headers.get("X-Quota-Remaining")).toBeTruthy();
+  });
+
+  it("服务端日志记下这次降级，且不透传内部错误细节", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    untrusted();
+
+    const res = await POST(request({ messages: [{ role: "user", content: "你好" }] }));
+    await res.text();
+
+    const logged = errorSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(logged, "降级没有留下可观测的记录").toContain("[ai/chat] auth unavailable");
+    expect(logged, "日志里也不该回显上游的错误细节").not.toContain("secret");
+    errorSpy.mockRestore();
+  });
+
+  it("反向对照：身份可信时走原来的路，本轮没有把降级写成常态", async () => {
+    // 默认夹具就是「身份可信的游客」（`user: null` 且无 error），它必须走老路。
+    const res = await POST(request({ messages: [{ role: "user", content: "你好" }] }));
+
+    expect(res.status).toBe(200);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(
+      errorSpy.mock.calls.map((c) => c.join(" ")).join("\n"),
+      "没出错也打了降级日志",
+    ).not.toContain("auth unavailable");
+    errorSpy.mockRestore();
   });
 });
 
@@ -495,7 +547,7 @@ describe("POST /api/ai/chat 流式与缓存（R1.4）", () => {
     expect(res.status).toBe(502);
     expect(res.headers.get("Content-Type")).toBe("text/plain; charset=utf-8");
     const text = await res.text();
-    expect(text).toBe("AI 服务暂时不可用，请稍后再试。");
+    expect(text).toBe(SERVER_ERRORS.upstreamUnavailable);
     expect(text).not.toContain("openai.com");
     expect(errorSpy).toHaveBeenCalledWith(
       "[ai/chat] generation failed:",

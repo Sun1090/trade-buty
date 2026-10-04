@@ -1,3 +1,4 @@
+import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { MAX_PLAN_BODY_BYTES, parsePlanBody, POST } from "./route";
@@ -76,7 +77,7 @@ describe("POST /api/ai/plan auth failure boundary", () => {
 
     expect(res.status).toBe(502);
     const body = await res.json();
-    expect(body).toEqual({ error: "AI 服务暂时不可用，请稍后再试。" });
+    expect(body).toEqual({ error: SERVER_ERRORS.authUnavailable });
     expect(JSON.stringify(body)).not.toContain("secret");
     expect(chat).not.toHaveBeenCalled();
   });
@@ -162,7 +163,7 @@ describe("POST /api/ai/plan 限流（R7.12）", () => {
     );
 
     expect(res.status).toBe(502);
-    expect((await res.json()).error).toBe("AI 服务暂时不可用，请稍后再试。");
+    expect((await res.json()).error).toBe(SERVER_ERRORS.upstreamUnavailable);
   });
 
   it("模型调用失败时返回通用 502", async () => {
@@ -177,6 +178,6 @@ describe("POST /api/ai/plan 限流（R7.12）", () => {
     );
 
     expect(res.status).toBe(502);
-    expect((await res.json()).error).toBe("AI 服务暂时不可用，请稍后再试。");
+    expect((await res.json()).error).toBe(SERVER_ERRORS.upstreamUnavailable);
   });
 });

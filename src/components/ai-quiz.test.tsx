@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { AiQuiz } from "./ai-quiz";
+import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 
 // jsdom 环境无 localStorage，用 Map mock（同 daily-goal.test.ts 惯例）
 const store = new Map<string, string>();
@@ -235,7 +236,7 @@ describe("AiQuiz 入口、错误态与多题流程", () => {
         headers: { get: () => "120" },
         json: async () => ({ error: "Rate limit exceeded" }),
       })
-      .mockResolvedValueOnce({ ok: false, status: 502, json: async () => ({ error: "AI 服务暂时不可用" }) })
+      .mockResolvedValueOnce({ ok: false, status: 502, json: async () => ({ error: SERVER_ERRORS.upstreamUnavailable }) })
       .mockRejectedValueOnce("offline");
     vi.stubGlobal("fetch", fetchMock);
     render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
@@ -252,7 +253,7 @@ describe("AiQuiz 入口、错误态与多题流程", () => {
     expect(await screen.findByText(dict.error)).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(4);
     // 上游的三条状态串一条都不该出现在屏幕上
-    for (const raw of ["Login required", "Rate limit exceeded", "AI 服务暂时不可用"]) {
+    for (const raw of ["Login required", "Rate limit exceeded", SERVER_ERRORS.upstreamUnavailable]) {
       expect(screen.queryByText(raw), `上游状态串漏到了界面上：${raw}`).not.toBeInTheDocument();
     }
   });
