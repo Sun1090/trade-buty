@@ -12,7 +12,7 @@
  *    入口分流，身份不分家。
  * 2. **每份的界面字段跟着语言走**。`lang`/`name`/`description`/`start_url` 四项在两份里
  *    必须不同——若有人把英文那份改回中文，这里红。
- * 3. **页面上恰好一条 manifest link，且指向本语言那份**。这条是本轮踩出来的：
+ * 3. **（另一半，见 `manifest-artifact.mjs`）页面上恰好一条 manifest link，且指向本语言那份**。这条是本轮踩出来的：
  *    Next 会**自动**为 `app/manifest.ts` 注入一条指向根级 `/manifest.webmanifest` 的 link，
  *    手写 `<link rel="manifest">` 会与它并存成两条（产物实测确实是两条），
  *    而「多条 manifest link 取哪一条」并无一致裁定。所以判据按**构建产物里的 `<head>`**
@@ -21,10 +21,12 @@
  *    都按 `/manifest.webmanifest` 断言；顺手把两处现在仍写「中文默认入口」的地方钉住，
  *    免得有人为了修英文那份把中文那份一起删了。
  *
- * 走 Route Handler 而不是 `app/[locale]/manifest.ts` 的原因记在那个文件的头注释里，
- * 这里补一条可执行的判据防它退回去：**构建产物里必须出现 `"/[locale]/manifest.webmanifest"`**。
- * 元数据文件那条路在 Next 16 匹配不上（正则锚在 app 根目录），文件会被静默忽略——
- * 一个「改了但什么都没发生」的写法，必须靠这条判据当场暴露。
+ * **这份文件只管不依赖构建产物的那些断言**（字段、字典、脏 locale、根级那份仍在）。
+ * 「数产物里那条 link」与「路由真的注册了」两半住在 `scripts/manifest-artifact.mjs`，
+ * 由 `check:bundle` 在 build 之后调用——因为 CI 把 `npm run test:coverage` 排在
+ * `npm run build` **之前**，单元测试跑的时候还没有 `.next`。
+ * 第一版把这两条也写在这里，本地全绿而 CI 上 `ENOENT: .next/app-path-routes-manifest.json`：
+ * 门禁把构建产物变成了单元测试的硬前置。拆开的理由写在 `check-bundle.mjs` 的调用点注释里。
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import path from "node:path";
@@ -72,21 +74,6 @@ async function servedManifest(locale) {
   return JSON.parse(await res.text());
 }
 
-/** 构建产物里的 `<head>`——数 manifest link 只能从这里数，源码里看不见 Next 自动注入的那条。 */
-function builtHead(locale) {
-  // SSG 的首页落在 `.next/server/app/{locale}.html`（不是 `{locale}/index.html`）。
-  for (const file of [
-    path.join(root, ".next/server/app", `${locale}.html`),
-    path.join(root, ".next/server/app", locale, "index.html"),
-  ]) {
-    if (existsSync(file)) return readFileSync(file, "utf8");
-  }
-  throw new Error(
-    `找不到 ${locale} 的构建产物 HTML（试过 ${locale}.html 与 ${locale}/index.html）——先 npm run build。` +
-      "这条判据量的是产物里真实发出的 link，源码里数不出来（Next 自动注入的那条不在任何源文件里）。",
-  );
-}
-
 describe("PWA manifest 按语言分家（R16.292）", () => {
   it("两份的身份字段逐字相同——否则设备上会并存两个同名应用", async () => {
     const root_ = rootManifest();
@@ -129,34 +116,6 @@ describe("PWA manifest 按语言分家（R16.292）", () => {
     expect(m.lang, "未知语言没有退回默认语言").toBe("en");
     expect(m.start_url).toBe("/en");
     expect(m.name, "未知语言产出的 manifest 没有名字").toBeTruthy();
-  });
-
-  it("构建产物里 `/{locale}/manifest.webmanifest` 这个路由真的注册了", () => {
-    // 这条专防「改成元数据文件那条路」：Next 16 判定元数据文件的正则锚在 app 根目录，
-    // `app/[locale]/manifest.ts` 匹配不上，会被静默忽略——源码改得很像样，构建产物里什么都没有。
-    const raw = read(".next/app-path-routes-manifest.json");
-    const routes = Object.values(JSON.parse(raw)).filter((v) => typeof v === "string");
-    expect(
-      routes,
-      "构建产物里没有 /[locale]/manifest.webmanifest——如果改成了 app/[locale]/manifest.ts，" +
-        "它在 Next 16 匹配不上元数据文件判定，会被静默忽略（实测 `/zh/manifest.webmanifest` 直接 404）",
-    ).toContain("/[locale]/manifest.webmanifest");
-  });
-
-  it("每种语言的页面上恰好一条 manifest link，且指向本语言那份", () => {
-    for (const locale of LOCALES) {
-      const html = builtHead(locale);
-      const links = [...html.matchAll(/<link[^>]*rel="manifest"[^>]*>/g)].map((m) => m[0]);
-      expect(
-        links.length,
-        `${locale} 页面上有 ${links.length} 条 manifest link（${links.join(" ")}）：` +
-          "Next 会为 app/manifest.ts 自动注入一条，手写 <link rel=\"manifest\"> 会与它并存成两条，" +
-          "而多条 link 取哪一条并无一致裁定——要改指向请走 metadata.manifest（见 layout 的 generateMetadata）",
-      ).toBe(1);
-      expect(links[0], `${locale} 页面的 manifest link 没指向本语言那份`).toContain(
-        `href="/${locale}/manifest.webmanifest"`,
-      );
-    }
   });
 
   it("根级那份仍在，且继续服务中文默认入口（e2e 与 pwa-offline 两处都按这个路径断言）", () => {

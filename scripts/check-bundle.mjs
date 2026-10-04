@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
+import { checkManifestArtifacts } from "./manifest-artifact.mjs";
 import {
   BUDGET_METRICS,
   compileBudgetManifest,
@@ -178,6 +179,19 @@ function main() {
 
   const unmatched = measurements.filter((measurement) => !measurement.budget);
   if (unmatched.length > 0) fail = true;
+
+  // R16.292：产物里的 manifest link 必须按语言分家。
+  //
+  // **为什么放在这里而不是 Vitest**：这两条判据量的是 `.next/` 里的构建产物，
+  // 而 CI 的 `ci` job 把 `npm run test:coverage` 排在 `npm run build` **之前**
+  // （`ci.yml` 第 62 / 64 行），单元测试跑的时候根本还没有 `.next`。
+  // 第一版把这两条写进 `scripts/manifest-per-locale-claims.test.mjs`，本地全绿、
+  // CI 上 `ENOENT: .next/app-path-routes-manifest.json` 红了——**门禁把构建产物
+  // 变成了单元测试的硬前置**。所以「数产物里那条 link」这一半挪到这里：这道门禁本来就
+  // 在 build 之后跑（`ci.yml` 第 131 行），产物现成。
+  //
+  // 判据本身在 `src/lib/manifest-artifact.mjs`，两处共用（单测那份在有 `.next` 时才跑）。
+  if (!checkManifestArtifacts({ appOut })) fail = true;
 
   if (fail) {
     console.error("[bundle] 超预算、路由缺预算或 AI chunk 泄漏：请检查 scripts/bundle-budgets.json");
