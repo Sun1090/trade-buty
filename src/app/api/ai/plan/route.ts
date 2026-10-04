@@ -3,6 +3,7 @@ import { chat } from "@/lib/ai/client";
 import { getServerAuthUser } from "@/lib/supabase/server";
 import { parseJsonLoose } from "@/lib/ai/json-extract";
 import { createRateLimiter } from "@/lib/ai/rate-limit";
+import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 import { readJsonBody } from "@/lib/request-body";
 
 // R7.12：学习计划会调用 LLM，按用户限流，避免单账号无限打端点烧预算。
@@ -67,10 +68,9 @@ export async function POST(req: NextRequest) {
     try {
       user = await getServerAuthUser();
     } catch {
-      return NextResponse.json(
-        { error: "AI 服务暂时不可用，请稍后再试。" },
-        { status: 502 },
-      );
+      // R16.291：与「上游暂时不可用」分开——鉴权不可用不是暂时故障，措辞不许承诺「稍后」。
+      // 详见 `src/lib/ai/server-errors.ts` 的文件头（这句话此前被同一个值盖住了两种成因）。
+      return NextResponse.json({ error: SERVER_ERRORS.authUnavailable }, { status: 502 });
     }
     if (!user) return NextResponse.json({ error: "Login required" }, { status: 401 });
 
@@ -126,11 +126,11 @@ export async function POST(req: NextRequest) {
         ? parsed.plan.trim()
         : raw.trim().slice(0, MAX_PLAN_CHARS);
     if (!plan) {
-      return NextResponse.json({ error: "AI 服务暂时不可用，请稍后再试。" }, { status: 502 });
+      return NextResponse.json({ error: SERVER_ERRORS.upstreamUnavailable }, { status: 502 });
     }
     return NextResponse.json({ plan });
   } catch (e) {
     console.error("[ai/plan] generation failed:", e instanceof Error ? e.message : e);
-    return NextResponse.json({ error: "AI 服务暂时不可用，请稍后再试。" }, { status: 502 });
+    return NextResponse.json({ error: SERVER_ERRORS.upstreamUnavailable }, { status: 502 });
   }
 }

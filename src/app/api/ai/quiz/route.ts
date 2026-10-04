@@ -12,6 +12,7 @@ import { QUIZZES } from "@/lib/quizzes";
 import { parseJsonLoose } from "@/lib/ai/json-extract";
 import { BoundedMap, sweepExpired } from "@/lib/bounded-map";
 import { createRateLimiter } from "@/lib/ai/rate-limit";
+import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 import { readJsonBody } from "@/lib/request-body";
 
 // R7.12：AI 出题会调用 LLM，按用户限流（缓存命中不消耗生成预算，但仍走限流防刷）。
@@ -59,10 +60,8 @@ export async function POST(req: NextRequest) {
   try {
     user = await getServerAuthUser();
   } catch {
-    return NextResponse.json(
-      { error: "AI 服务暂时不可用，请稍后再试。" },
-      { status: 502 },
-    );
+    // R16.291：见 `src/lib/ai/server-errors.ts`——这一支是永久性失败，措辞不带「暂时」。
+    return NextResponse.json({ error: SERVER_ERRORS.authUnavailable }, { status: 502 });
   }
   // 登录用户才可用（消耗较大）
   if (!user) {
@@ -178,7 +177,7 @@ const profile = getRetrievalProfile('quiz');
   } catch (e) {
     // 只留服务端日志，不把上游/内部错误文本回传客户端
     console.error("[ai/quiz] variant generation failed:", e instanceof Error ? e.message : e);
-    return NextResponse.json({ error: "AI 服务暂时不可用，请稍后再试。" }, { status: 502 });
+    return NextResponse.json({ error: SERVER_ERRORS.upstreamUnavailable }, { status: 502 });
   }
 }
 
@@ -242,6 +241,6 @@ async function handleChapterQuiz(body: GenerateBody): Promise<NextResponse> {
     if (fixedQuiz) {
       return NextResponse.json({ questions: fixedQuiz.questions, source: "fallback" });
     }
-    return NextResponse.json({ error: "AI 服务暂时不可用，请稍后再试。" }, { status: 502 });
+    return NextResponse.json({ error: SERVER_ERRORS.upstreamUnavailable }, { status: 502 });
   }
 }

@@ -23,6 +23,7 @@ import {
   MAX_CONTINUE_FROM_CHARS,
   parseChatBody,
 } from "@/lib/ai/chat-input";
+import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 import { readJsonBody } from "@/lib/request-body";
 import { BoundedMap, sweepExpired } from "@/lib/bounded-map";
 import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
@@ -55,10 +56,16 @@ export async function POST(req: NextRequest) {
   try {
     user = await getServerAuthUser();
   } catch {
-    return NextResponse.json(
-      { error: "AI 服务暂时不可用，请稍后再试。" },
-      { status: 502 },
-    );
+    // R16.291：这一支原本回 502 +「AI 服务暂时不可用，请稍后再试。」，两处都不成立。
+    // 一是「暂时」：缺 Supabase env 时这是永久状态，重试不会变。
+    // 二是「不可用」：本端点的鉴权只用来挑限流桶（下面 `chatLimiter.check(user?.id ?? ip, …)`），
+    // 游客本来就能问——`resolveAuthUser` 抛出来的是「身份不可信」而不是「没有身份」，
+    // 而游客身份对这条功能线完全够用。所以这里退化成按 IP 分桶的游客身份继续服务，
+    // 并把这次降级打进服务端日志供观测，而不是掐断一次本来答得了的请求。
+    // 这是**降级不是放行**：限流与内容红线都在这一行之后照常生效（护栏在调上游之前跑），
+    // 变的只是「按谁的配额算」，而游客配额（10 次）本来就是给未登录者用的。
+    console.error("[ai/chat] auth unavailable, serving as guest: identity untrusted");
+    user = null;
   }
   const ip = clientIp(req);
 
@@ -263,7 +270,7 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     // 不回传上游错误细节（可能含上游 URL/状态/内部标识），只留服务端日志
     console.error("[ai/chat] generation failed:", e instanceof Error ? e.message : e);
-    return new Response("AI 服务暂时不可用，请稍后再试。", {
+    return new Response(SERVER_ERRORS.upstreamUnavailable, {
       status: 502,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
