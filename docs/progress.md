@@ -22,6 +22,24 @@
 
 ---
 
+## 2026-10-04 · 第四十八轮（R16.297）：英文站上的中文题——把「没说出口」变成「说明在案」
+
+- 里程碑 / 版本：R16 质量与事实门禁；关账 R16.124 的 (a) 路，R16.109 仍未决；无产品版本变更。
+- 分支 / PR：`fix/internal-link-locale-prefix`（随 R16.296 的 PR #387 一起入库）。
+- 完成内容：
+  - **实测**：27 个篇章页的入口卡片印着 `QUIZZES[slug].title`（「入门基础 · 随堂测」），下一行却是字典里货真价实的英文 `3 concept questions · instant grading`；课文页的答题卡同形。**访客读到的是「一门英文页面在推荐一个中文东西」，而页面上没有任何一句话说明这件事。**
+  - **为什么这不需要拍板**：原状不是一种排版取向，是一个没说出口的事实。R16.124 当初列的三条路里，(b) 补英文题是内容工作、要过宪法审；在那之前 (c) 与 (a) 的差别只是「说不说」。
+  - **具体做法**：题库自带的中文标题**照旧原样印出**（那是数据，翻译它等于伪造），紧跟一句**界面文案**按当前页面的语言说明「此题库目前只有中文」；中文页面上一句都不多。结构化数据那侧 `QUIZ_BANK_LANGUAGE` 早已如实报 `zh-CN`（R16.102 改的），本轮只补注释说清「语言跟题库走而不是跟页面走」。
+- 变更文件：`src/lib/i18n.ts`（+`quiz.otherLangOnly` 两语）、`src/app/[locale]/knowledge/[chapter]/page.tsx`、`src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx`、`src/components/chapter-exam-card.tsx`、`src/components/chapter-exam-card.test.tsx`（+3 条）、`docs/roadmap.md`（关账 R16.124、登记 R16.297、更新 R16.109）、本文件。
+- **一个门禁自己踩出来的坑，比修的东西更值得记**：`quiz.otherLangOnly` 第一版塞进了 `QuizDict`（`src/components/quiz.tsx`），`check:dead-copy` 当场判红——那个接口是给 `<Quiz>`（真正的答题组件）用的，它自己不渲染这句；`ChapterExamCard` 是另一个组件却共用了这个 dict。改成独立 prop，字典那一侧留在 `t.quiz`。**门禁比我想的更准**：如果 `check:dead-copy` 不咬这一口，这个字段会在类型检查里一直是「已装配」的形状，直到某天有人清理死代码才发现它其实没人渲染。
+- 探针：两组各杀一次。① 去掉语言判断（限定语无条件显示）→ 中文页那条红；② 只去掉 `locale === "zh"` 而保留空值保护 → 同样红。
+- 验证：`npm run test:coverage` **345 文件 / 3619 用例全绿**；`lint`；`typecheck`；`check:dead-copy`（死键 0、未读字段 0、词条 437 → 438）；`check:localized-labels`（两节都绿）。
+- 阻塞 / 风险：**R16.109 仍未决**——「英文站要不要挂随堂测」是产品决定（不挂 / 补英文题 / 接受现状）。本轮让现状至少是诚实的。回滚：revert 本轮提交，英文页面恢复原样（继续无声地印中文）。
+- 下一项：PR #387 合并后继续盘点。
+- 更新时间：2026-10-04（Asia/Shanghai）。
+
+---
+
 ## 2026-10-04 · 第四十七轮（R16.296）：课文链接的 locale 前缀只认本仓真实有的两个
 
 - 里程碑 / 版本：R16 质量与事实门禁；无产品版本变更。
