@@ -65,6 +65,18 @@ describe("ChapterCompleteCelebration (R12.18)", () => {
 
   // 「进度是满的」不等于「刚刚完成」：按前者判定会让用户几周后随便点开一篇已学完的
   // 篇章目录页时再放一次礼花，对着早已完成的成就喊「篇章完成！」是假反馈。
+  /**
+   * R16.58：礼花喊「篇章完成」之前，先确认它手里那份清单就是「这一章有几篇」的全部依据。
+   * 与 chapter-rail 那条同源——两个数一旦来自不同来源，这一屏就能同时说「清单还没读完、
+   * 但礼花已经放完了」。今天两者必然相等，所以这条也是手工造出不一致来验证。
+   */
+  it("清单为空时不误判成读完全章（分母为 0 的那一支）", () => {
+    // 台账里明明记着「这一章读完了」，但站上现在一课都没有——不许因此放礼花
+    seedCompletion("getting-started", "gone", Date.now());
+    render(<ChapterCompleteCelebration chapterSlug="getting-started" docSlugs={[]} locale="zh" />);
+    expect(screen.queryByText(/篇章完成/)).not.toBeInTheDocument();
+  });
+
   it("回访早已学完的篇章不再庆祝", () => {
     store.set("tb-progress", JSON.stringify({ "getting-started": ["a", "b"] }));
     seedCompletion(

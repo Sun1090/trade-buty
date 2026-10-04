@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { readProgress, readProgressCompletions } from "@/lib/progress";
-import { readDocsInChapter } from "@/lib/learning-overview";
+import { assertDocCountMatchesList, readDocsInChapter } from "@/lib/learning-overview";
 
 /**
  * 篇章完成庆祝：检测从「未完成→完成」的过渡，弹出 emoji confetti。
@@ -48,6 +48,8 @@ export function ChapterCompleteCelebration({
     // 于是同一页课文清单勾着 2/7、礼花却在喊「篇章完成！」。
     // 直接 JSON.parse 原始存储更不行：字符串也有 `.length`，重复键也照算。
     const current = slugKey === "" ? [] : slugKey.split("|");
+    // 礼花喊「篇章完成」之前，先确认「这一章有几篇」这个分母就是它手里那份清单
+    assertDocCountMatchesList(current.length, current, "ChapterCompleteCelebration 的完成判定");
     const read = readDocsInChapter(readProgress()[chapterSlug], current);
     const done = current.length > 0 && read >= current.length;
     const lastAt = Object.values(readProgressCompletions())

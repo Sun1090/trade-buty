@@ -119,6 +119,34 @@ export function readDocsInChapter(
 }
 
 /**
+ * 「这一章有几篇」的口径只有一个主人在场：拿到课表 slug 清单的地方，
+ * 必须承认那个长度就是总数；连清单一起传、却另带一个对不上的 docCount 时，
+ * 这里报错而不是照抄 docCount。
+ *
+ * 为什么要这条：当下一段那个 `readDocsInChapter` 返回严格更小的值（它与清单取交集），
+ * 于是同一屏上会出现「清单说还差一篇读完、进度条却已经满了」——
+ * `chapter-rail.tsx` 的 `readCount/docs` 就是这个形状，它拿 docCount 当分母、
+ * 拿交集当分子。docCount 是**构建期从同一份 `docMetas` 算出来的**，所以线上今天
+ * 两者必然相等；这条是钉住「哪一天它们会不等」，因为那一天到了之后没有第二个人会
+ * 想到去查这两把尺的分母。
+ *
+ * 不选「静默采信 docCount」：那等于把一个对不上的事实藏起来，正是 R16.122 要修的那类
+ * 同一屏两个答案。也不选「静默采信清单长度」：调用方手里那个 docCount 就再也没人用，
+ * 改了它没人会发现。
+ */
+export function assertDocCountMatchesList(
+  docCount: number,
+  currentSlugs: readonly string[],
+  where: string
+): void {
+  if (docCount === currentSlugs.length) return;
+  throw new Error(
+    `${where}：docCount=${docCount} 与这一章现在真有的课文数=${currentSlugs.length} 对不上。` +
+      `两把尺的分母必须是同一个来源（构建期同一份 docMetas）——请一起传，别只改一个。`
+  );
+}
+
+/**
  * 聚合面的封顶口径：只知道「这一章有几篇」（docCount）、拿不到课表时，
  * 去重后按课数封顶。统计页、路线页总进度、PathProgress 用它——
  * 那些界面上一屏之内没有课文清单可对照，封顶就足以挡住「已读 6/4 篇」「完成度 150%」。

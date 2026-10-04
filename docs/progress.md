@@ -22,6 +22,28 @@
 
 ---
 
+## 2026-10-04 · 第四十五轮（R16.294）：两把尺的分母钉在一起；核并关账 R16.97
+
+- 里程碑 / 版本：R16 质量与事实门禁；关账 R16.97，R16.58 收窄但不关账；无产品版本变更（未发布，随下轮积累）。
+- 分支 / PR：`feat/ruler-parity-gate`。
+- 完成内容：
+  - **R16.97 关账（事实已变）**：注册时那三个角标是整句英文（`path.label`「Learning Path」、chart/replay 都是「Practice」）。本轮把 14 处角标逐个量过——13 处 `<HeroCard label=…>` 加路线页那处裸 `<p>`——**zh 侧已全部合规**：「学习路线 / 行情 / 回放 / 我的收藏 / 复习 / 搜索 / 日历 / 你的数据 / 使用说明 / 关于 / 术语表 / 更新日志 / 学习统计 / FAQ」，没有一处整串英文；en 侧 `path.label`「Learn」也不再逐字复读自己的 h1。R16.163 把名字的所有权交给 `nav.*` 时，判定（漏译而非风格）已由它作出，本轮量出来关账。
+  - **R16.58 收窄但不关账**：注册时那句「清单与侧栏在走交集口径」今天已不成立，R16.122 已把两处收敛到 `readDocsInChapter`。剩下的缝在**分母**：`chapter-rail.tsx` 的分子是交集、分母是传进来的 `docCount`，两者一旦来自不同来源，同一屏会同时出现「清单说还差一篇、进度条已经满了」。
+  - **修法不是把两边改成同一个数**（那要动构建期 props），而是承认它们必须同源：新增 `assertDocCountMatchesList(docCount, currentSlugs, where)`，清单与分母一起到场却对不上就抛错，错里带出处与两个数。不选「静默采信 docCount」——那是把一个对不上的事实藏起来，正是 R16.122 要修的那类同一屏两个答案；也不选「静默采信清单长度」——调用方手里那个 docCount 就再没人用。
+  - 装在两个真正有两个分母的位置：`chapter-rail.tsx`（进度条）与 `chapter-complete-celebration.tsx`（礼花放不放）。**今天恒等**：唯一调用点 `[chapter]/[doc]/page.tsx` 的 `docCount={docMetas.length}` 与 `docs={docMetas.map(...)}` 出自同一份 `docMetas`，不会因真实数据误伤。它防的是内容仓改课文名/删课文而调用点只改一个的那一天。
+- 变更文件：`src/lib/learning-overview.ts`（+`assertDocCountMatchesList`）、`src/components/chapter-rail.tsx`、`src/components/chapter-complete-celebration.tsx`、`src/lib/read-count-owner.test.ts`（+6 条）、`src/components/chapter-rail.test.tsx`（+1 条）、`src/components/chapter-complete-celebration.test.tsx`（+1 条）、`docs/roadmap.md`（关账 R16.97、更新 R16.58、登记 R16.294）、本文件。产品界面零变化。
+- 探针：四组，三组杀一次、一组如实报了缺口。
+  - M1 把「不一致就抛错」改成静默采信 docCount → 4 条红。
+  - M2 删掉 rail 那处守门 → 新加的组件用例红。
+  - **M3 删掉礼花那处守门 → 全绿，这是真缺口**：礼花那处的 `docCount` 就是 `current.length` 自己，本来恒等，探针证明不了它。改成防另一件事——**清单为空时台账里有「读完」也不许放礼花**——并补了一条空清单用例。**记录这件事本身比补它更重要**：装一道守门之前得先证明它在一个真实调用点上不是恒等式，恒等的守门是装饰。
+  - M4 把 rail 守门换成「只打 console.error」→ 红（证明这条不能用日志冒充）。
+- 验证：`npm run test:coverage` **345 文件 / 3611 用例全绿**，覆盖 95.04/90.87/95.08/96.93（地板 94/89/94/96）；`lint`；`typecheck`；`check:scan-counts`（6 处登记、报告无变化）。
+- 阻塞 / 风险：无产品阻塞。R16.58 未关账的触发条件是内容仓改名/删课文，而本仓按 AGENTS.md 不得就地改内容仓——那天真来了，先看这次抛错有没有响。回滚：revert 本轮提交，零行为变更。
+- 下一项：PR 合并后重新盘点 roadmap 未决项；下一批候选 R16.159（根级 404 只出一版）、R16.41（中文 404 整页英文）。
+- 更新时间：2026-10-04（Asia/Shanghai）。
+
+---
+
 ## 2026-10-04 · 第四十四轮（R16.293）：导语不许宣称自己是全站的首/末篇
 
 - 里程碑 / 版本：R16 质量与事实门禁；关账 R16.164，无产品版本变更（未发布，随下轮积累）。
