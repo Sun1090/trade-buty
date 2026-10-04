@@ -381,12 +381,23 @@ describe("§5 应用内点击断网时谁接（实测：回退成整页导航 �
     return acc;
   };
 
-  it("全仓 `src/app` 下 error boundary 只有一个，且它渲染的是探针找的那句文案", () => {
+  it("全仓 `src/app` 下 error boundary 只有一个，且它渲染的是探针找的那句文案", async () => {
     const found = boundaries();
     expect(found, `error boundary 不再只有一个（读到 ${JSON.stringify(found)}），§5 的归因要重看`).toEqual([
       path.join("src/app", "error.tsx"),
     ]);
-    expect(read("src/app/error.tsx"), "边界文案换了，探针找的词与 §5 的说法都要重看").toContain("Something went wrong");
+    // R16.295：边界文案改成取字典（R16.41 那条「这一页说哪门语言」仍开着），所以这里
+    // 认的是「渲染时真的会印出来的那句」——从字典查，不再对源码里的字面量。
+    // 若边界页改回写死某一种语言，这条会随 i18n 一起红，探针找的词与 §5 的说法仍然对得上。
+    const { getDict } = await import("../src/lib/i18n.ts");
+    expect(
+      read("src/app/error.tsx"),
+      "边界文案换了，探针找的词与 §5 的说法都要重看",
+    ).toContain("errorPageTitle");
+    expect(
+      getDict("en").notFound.errorPageTitle,
+      "en 侧的 errorPageTitle 与探针在缓存文档里找的词不是同一句，§5 的说法要重看",
+    ).toBe("Something went wrong");
   });
 
   it("文档写明回退成整页导航、尽头是离线壳，且不再把这条路径判给 error.tsx", () => {
