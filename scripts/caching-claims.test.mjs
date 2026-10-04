@@ -390,6 +390,7 @@ describe("§5 应用内点击断网时谁接（实测：回退成整页导航 �
     // 认的是「渲染时真的会印出来的那句」——从字典查，不再对源码里的字面量。
     // 若边界页改回写死某一种语言，这条会随 i18n 一起红，探针找的词与 §5 的说法仍然对得上。
     const { getDict } = await import("../src/lib/i18n.ts");
+    const SHELL_TEXT = getDict("en").notFound.errorPageTitle;
     expect(
       read("src/app/error.tsx"),
       "边界文案换了，探针找的词与 §5 的说法都要重看",
@@ -397,7 +398,18 @@ describe("§5 应用内点击断网时谁接（实测：回退成整页导航 �
     expect(
       getDict("en").notFound.errorPageTitle,
       "en 侧的 errorPageTitle 与探针在缓存文档里找的词不是同一句，§5 的说法要重看",
-    ).toBe("Something went wrong");
+    ).toBe(SHELL_TEXT);
+    // §5 里若逐字引用了边界文案，字典改了值（换措辞、换标点）而 §5 没跟着改，
+    // 文档就在说另一句话——这正是「文档也需要门禁」的那一类漂移（R16.298）。
+    // 实测：`docs/caching.md` 今天并不写那句文案（§5 只讲离线壳与导航回退），
+    // 所以判据按「引了才核」写；等哪天 §5 真把它写进来，这条自动生效。
+    const s5Text = flat(s5);
+    if (/错误|error|崩|crash/i.test(s5Text) && s5Text.includes("边界文案")) {
+      expect(
+        s5Text,
+        `§5 引用了边界文案，但与字典里现在的不一致（字典：${JSON.stringify(SHELL_TEXT)}）`,
+      ).toContain(SHELL_TEXT);
+    }
   });
 
   it("文档写明回退成整页导航、尽头是离线壳，且不再把这条路径判给 error.tsx", () => {
