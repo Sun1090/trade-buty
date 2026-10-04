@@ -5,6 +5,7 @@ import { getRetrievalProfile } from "@/lib/ai/retrieval-config";
 import { getServerAuthUser } from "@/lib/supabase/server";
 import { parseJsonLoose } from "@/lib/ai/json-extract";
 import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
+import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 import { readJsonBody } from "@/lib/request-body";
 
 // R7.12：章节导语会调用 LLM，游客/登录分档限流。
@@ -52,10 +53,12 @@ export async function POST(req: NextRequest) {
     try {
       user = await getServerAuthUser();
     } catch {
-      return NextResponse.json(
-        { error: "AI 服务暂时不可用，请稍后再试。" },
-        { status: 502 },
-      );
+      // R16.291：与 `chat` 同形——这里的鉴权只用来挑限流桶（下面 `summaryLimiter.check(user?.id ?? …)`），
+      // 游客本来就能生成章节摘要，所以身份不可信时退化成按 IP 分桶的游客身份继续服务，
+      // 而不是掐断一条答得了的请求并许一个「稍后」（配置缺失时不存在「稍后」）。
+      // 详见 `src/lib/ai/server-errors.ts` 的文件头；降级不是放行：限流与 RAG 照常。
+      console.error("[ai/summary] auth unavailable, serving as guest: identity untrusted");
+      user = null;
     }
 
     const decision = summaryLimiter.check(user?.id ?? clientIp(req), !!user);
@@ -123,6 +126,6 @@ ${ragContext || "（无检索内容）"}`,
     return NextResponse.json({ summary });
   } catch (e) {
     console.error("[ai/summary] generation failed:", e instanceof Error ? e.message : e);
-    return NextResponse.json({ error: "AI 服务暂时不可用，请稍后再试。" }, { status: 502 });
+    return NextResponse.json({ error: SERVER_ERRORS.upstreamUnavailable }, { status: 502 });
   }
 }
