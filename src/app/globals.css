@@ -503,9 +503,10 @@ body {
   --surface-hover: #ddd1bd;
   --border: rgba(60, 47, 31, 0.12);
   --border-strong: rgba(60, 47, 31, 0.2);
-  /* #036b46 在 sepia 最浅的卡片底（#e8dcc8）上也有 4.85:1（axe color-contrast）；
-     原 #047857 只有 4.05–4.33 */
-  --accent: #036b46;
+  /* #025a3c 在 sepia 所有底（surface #e8dcc8 / surface-hover #ddd1bd / 卡片 #e8e5d2
+     / callout 合成 #c1c8b2）上 ≥5.2:1（axe color-contrast）；#036b46 在
+     surface-hover 上只有 ~4.4（行情条实测），#047857 只有 4.05–4.33 */
+  --accent: #025a3c;
   --accent-strong: #065f46;
   --accent-dim: rgba(5, 150, 105, 0.12);
   --accent-on: #ffffff;
