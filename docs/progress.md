@@ -2,6 +2,19 @@
 
 ---
 
+## 2026-10-04 — v0.7.27 发布：sepia 强调色加深 + 三主题无障碍矩阵门禁（patch）
+
+- 状态：已发布。tag `v0.7.27` 打在 `154502a`（与 `origin/main` 逐字核对一致）；Vercel 部署 success；生产冒烟 9/10。
+- 里程碑 / 版本：v0.7.27（patch）。判级理由：缺陷修复（sepia 主题行情涨跌文字约 4.4:1，未达 AA）+ 新增测试门禁，无新增产品能力。
+- 发布内容：
+  - R16.290（PR #381）：sepia `--accent` 由 `#036b46` 整体加深至 `#025a3c`。行情条涨跌幅文字此前压在 accent 上，实测约 4.4:1；加深后回到 ≥4.5:1。同一组变量连带 `globals.css` 里的 sepia 覆盖点同步收口。
+  - 三主题矩阵门禁（`e2e/a11y-themes.spec.ts`，随同一 PR）：暗色 + 护眼 × 8 个关键页，`page.addInitScript` 预置 `localStorage["tb-theme"]`，跑 `color-contrast` / `aria-valid-attr-value` / `nested-interactive` / `landmark-unique` 四条规则。此前只有浅色一档被门禁覆盖，主题层面的退化可以从 CI 里完全溜过去。
+- 验证：发布分支按清单 §3 全序列通过（test 343 文件 3579 用例 / coverage 新地板 94/89/94/96 / lint / typecheck / build / mobile / bundle / 契约门禁全套 / db:test / e2e 201 通过 1 跳过）；锁文件钉住 npm 10.9.4 重算，`check:lockfile-repro` 复现。
+- 生产冒烟：9/10——`/zh/changelog` 读到 0.7.27（部署确实跟上 main），页面风险提示 / sitemap / robots / 分享落地页 / 游客会话判定全绿；唯一失败仍是既有生产 AI 上游 502 外部阻塞（站内护栏路径 200 + `X-Refused` 正常，模型路径 502 指向部署快照里的 `AI_API_URL`/`AI_MODEL`/`AI_API_KEY` 或出口网络），需 Vercel 账号侧排查，非站内回归。
+- 回滚：无数据库迁移；`git revert` 发布提交后重新部署，或 Vercel 控制台切回上一构建止血。注意回滚会退回 sepia 强调色的旧色值并撤掉三主题门禁。
+- 下一项：重扫 roadmap 未决项与 TODO/FIXME/CI 现状，选下一条不依赖产品拍板或外部凭据的可执行任务。
+- 更新时间：2026-10-04（Asia/Shanghai）。
+
 ## 2026-10-03 — v0.7.26 发布：护眼主题对比度清零 + 审计门禁白名单机制（patch）
 
 - 状态：已发布。tag `v0.7.26` 打在 `7fb1e3c`（推送前核实指向）；等部署 success 后冒烟 9/10。
