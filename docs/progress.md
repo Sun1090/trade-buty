@@ -30,13 +30,21 @@
   - **分家只发生在入口上**：`id`/`scope` 两份逐字相同（否则同一台设备会并存两个 Trade Buty，卸载得删两个），界面字段（`lang`/`name`/`description`/`start_url`）才跟着语言走。英文访客装到桌面拿到英文名字与英文描述，启动页是 `/en` 而不是被甩到 `/zh`。**英文文案不是中文那句的直译**——「面向全球中文用户」对英文用户既不成立也不是他们需要知道的。
   - **R16.107 当时的挂账是「需要拍板：两条路都要改用户可见的东西」**。本轮核清成本后选了零用户可见代价的那条，所以**不需要产品拍板**：分家的是入口，不是应用身份。
   - 根级那份刻意保留（`e2e/metadata-routes.spec.ts` 与 `src/lib/pwa-offline.test.ts` 都按 `/manifest.webmanifest` 断言），继续服务中文站与直接访问那个路径的工具。
-  - **门禁** `scripts/manifest-per-locale-claims.test.mjs`（6 条）：两份身份字段逐字相同、界面字段跟着语言走、脏 locale 退回默认语言、**构建产物里 `/{locale}/manifest.webmanifest` 真的注册了**、每种语言页面上**恰好一条** link 且指向本语言那份、根级那份仍在。
+  - **门禁** `scripts/manifest-per-locale-claims.test.mjs`（4 条，单元测试）+ `scripts/manifest-artifact.mjs`（2 条，经 `check:bundle` 在 build 之后跑）：两份身份字段逐字相同、界面字段跟着语言走、脏 locale 退回默认语言、**构建产物里 `/{locale}/manifest.webmanifest` 真的注册了**、每种语言页面上**恰好一条** link 且指向本语言那份、根级那份仍在。
 - 变更文件：`src/app/[locale]/manifest.webmanifest/route.ts`（新）、`src/app/[locale]/layout.tsx`、`src/lib/i18n.ts`（新增 `appName`/`appDescription` 两语各一条）、`scripts/manifest-per-locale-claims.test.mjs`（新）、`docs/roadmap.md`、`docs/scan-counts.md`、`docs/test-clock-hygiene.md`、本文件。
 - **踩到的三个坑（都是「改了但看起来没事」，所以都写进了代码注释与 roadmap）**：
   1. **元数据文件那条路在 Next 16 走不通**：`app/[locale]/manifest.ts` 不会被注册。判定「这是个元数据文件」的正则 `^[\/]manifest(\.(ts|…|webmanifest|json))?$` **锚在 app 根目录**；用那条正则本地复刻验证过（`/manifest` 命中、`/[locale]/manifest` 不命中）。构建不报错、文件被静默忽略、实测 `/zh/manifest.webmanifest` 直接 404。改用手写 Route Handler 后正常注册。
   2. **手写 `<link rel="manifest">` 会与 Next 自动注入的那条并存成两条**（产物实测确实是两条），而「多条 manifest link 取哪一条」并无一致裁定。正确做法是走 `generateMetadata` 的 `metadata.manifest`，它**覆盖**那个默认值。
   3. **探针第一版只咬住 3 组共 6 组**：M4/M5 改的是产物里那条 link 的来源，脚本变异后**没有重建**，判据读的是上一份产物——变异根本没发生却报「没咬住」。补上重建后两组都红。**第三个坑在门禁自己身上**：M6（换成元数据文件那条路）最初跑出来是**加载期崩溃**（`Cannot find module`），输出里看不到任何断言名——正是 R16.206 记过的「探针把启动期崩溃读成抓到」。把 handler 改成**动态 import** 后，那组失败会指名道姓说出「实现被搬走了、`manifest.ts` 会被静默忽略」。
 - 验证：`npm run test` **345 文件 / 3598 用例全绿**（+6 新门禁）；`lint`；`typecheck`；`build`；`check:mobile`（14 页 320px 无横向溢出）；`check:bundle`（454 条路由预算全过，supabase/AI chunk 隔离照常）；`check:dead-copy`（死键仍 0，词条 429 → 431，新键被 manifest 读到）；`check:docs`；`check:constitution`；报告台账 `check:scan-counts` → `check:report-freshness`（漂移 0）与 `check:test-clock-hygiene` 重算入库。另用真实 `next start` 实测三个 URL：`/manifest.webmanifest` 200 中文、`/zh/manifest.webmanifest` 200 中文、`/en/manifest.webmanifest` 200 英文且 `start_url=/en`；并 grep 产物确认两种语言各**恰好一条** link。
+- **PR #385 第一版在 CI 上红了一次，教训值得单独记**：门禁 6 条全写进单元测试，本地全绿，
+  CI 上 `ENOENT: .next/app-path-routes-manifest.json`——`ci.yml` 把 `npm run test:coverage` 排在
+  `npm run build` **之前**（第 62 / 64 行），单元测试跑的时候还没有 `.next`。
+  **门禁把构建产物变成了单元测试的硬前置**。拆开：不依赖产物的 4 条留在单测，
+  「路由真的注册了」与「产物里恰好一条 link」两半搬进 `scripts/manifest-artifact.mjs`，
+  由 `check:bundle` 在 build 之后调用（第 131 行，产物现成）。拆完把 M4/M5 两组变异对着新家重跑，
+  都以 `check:bundle exit=1` 转红；并把 `.next` 整个移走复跑单测确认 4 条仍绿（模拟 CI 的执行顺序）。
+  **给下一轮的规矩**：新增门禁前先看 `ci.yml` 的步骤顺序——「本地要 `npm run build` 才跑得起来」的判据不能放进 `npm test`。
 - 阻塞 / 风险：无。回滚只需 revert 两个提交（撤掉 `[locale]` 那份路由与 `generateMetadata`，回到「所有语言共用中文 manifest」）。**已知边界**：安装行为本身无法在本地验证——`beforeinstallprompt` 与桌面图标由浏览器决定，判据只能钉到「产物里 link 指向哪、那份 manifest 的字段是什么」这一层，真实安装结果需要人工在浏览器里点一次。
 - 下一项：PR #385 合并后继续盘点未决项；R16.292 之后，剩余未决项里需要拍板的比例明显升高，优先找仍可从仓库证据自行判定的。
 - 更新时间：2026-10-04（Asia/Shanghai）。
