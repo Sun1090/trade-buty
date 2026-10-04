@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-10-04 · 第四十二轮（R16.291）：AI 路由的 5xx 文案把「永久失败」与「暂时故障」说成了同一件事
+
+- 里程碑 / 版本：R16 质量与事实门禁；关账 R16.205，无产品版本变更（未发布，随下轮积累）。
+- 分支 / PR：`fix/ai-5xx-error-caliber`，PR #384。
+- 完成内容：
+  - **成因分家**：新增 `src/lib/ai/server-errors.ts`，`SERVER_ERRORS` 把 5xx 标识串拆成 `authUnavailable`（永久：缺 Supabase env 时重试一万次同一个结果）与 `upstreamUnavailable`（真暂时）。四个路由八处 catch 全部改引常量，手写字面量清零。此前它们抄的是同一个值，所以「鉴权失败」与「上游抽风」在契约里长得一模一样——生产那条 502 挂了几个轮次都被记成上游故障。
+  - **chat / summary 的鉴权 catch 从 502 改成降级**：这两个端点的鉴权**只用来挑限流桶**（`chatLimiter.check(user?.id ?? ip, …)` / `summaryLimiter.check(user?.id ?? clientIp(req), …)`），游客本来就能问、能生成摘要，掐成 502 是把一次降级说成一次不可用。现在身份不可信时退化成按 IP 分桶的游客身份继续服务并打服务端日志。**降级不是放行**：限流与内容红线照常生效，且落到的是**更低**的游客配额（chat 10 / summary 20 次每窗口），不是绕过。`plan` / `quiz` 保持 502（登录才可用，身份不可信时不能放行成游客），但理由从「AI 暂时不可用」换成「鉴权不可用」。
+  - **界面上零变化**：`ai-chat.tsx` 对 ≥500 一律换成本地化 `dict.errorServer`，这些串只在直接打 API 时可见——因此**不需要产品拍板**，R16.205 当初「要连带看 502 语义」的挂账，本轮把语义看了。
+  - **门禁** `scripts/ai-server-errors-claims.test.mjs`（6 条）：5xx 单一出处（**按同一次调用括号配平后的 `status: 5xx` 判**，4xx 的 `BODY_ERRORS` 不在射程内）、**永久性失败不许承诺「稍后」**（主判据，不依赖路由源码）、两种成因都有真实落点且无多余键、chat/summary 鉴权 catch 走降级且不得同时回 5xx。行为用例 chat 5 条 / summary 4 条，含「降级不是放行」与反向对照。
+- 变更文件：`src/lib/ai/server-errors.ts`（新）、四个 `src/app/api/ai/*/route.ts`、`scripts/ai-server-errors-claims.test.mjs`（新）、`route.test.ts` × 3、`src/components/ai-quiz.test.tsx`、`docs/roadmap.md`、`docs/scan-counts.md`、`docs/test-clock-hygiene.md`、本文件。产品界面零变化。
+- 探针：8 组全部转红（`.gate-logs/r42-probe.sh`）——M1 chat 上游退回手写 / M2 plan 退回手写 / **M3 把两个成因合并回同一个带「暂时」的值** / M4 chat 鉴权改回 502 / M5 summary 降级分支偷偷回 5xx / M6 删掉 `upstreamUnavailable`（分家只做一半）/ M7 去掉降级日志 / M8 把护栏挪进 `if (user)`（降级变放行，5 条红）。**M3 只被主判据抓住**，这正是把它写成主判据的理由（去重那条单独管不住「合并回去」）。
+- **判据自己栽过一次（记下来）**：第一版按「所有 error 响应」判 5xx，于是把 `status: 413` 的 `BODY_ERRORS.tooLarge` 也报成「手写了 5xx」，一跑出来就是红的。改成按同一次调用**括号配平后**的文本判（`{ status: 502 }` 常写在下一行，只看同一行同样会漏），并给 `new Response("…")` 那支补了正向对照——chat 的上游走的是它而不是 `NextResponse.json`。
+- 验证：`npm run test` **344 文件 / 3592 用例全绿**；`test:coverage` 95.04/90.86/95.07/96.93（地板 94/89/94/96，branches 因新模块的用例上行）；`lint`；`typecheck`；`build`；`check:mobile`（14 页 320px 无横向溢出）；`check:bundle`（454 条路由预算全过，supabase/AI chunk 隔离照常）；契约门禁 `check:constitution` / `check:docs` / `check:risk-warning` / `check:localized-labels` / `check:dead-copy` 全绿；报告台账 `check:scan-counts` → `check:report-freshness`（漂移 0）与 `check:test-clock-hygiene` 重算入库。
+- **一个环境事实，别当成回归**：本机负载下 `npm run test` 偶发 14–15 个文件 5s 超时（`toc-anchor-claims` / `lessons-unit` 等渲染型用例）。**`git stash` 后在干净 main 上复跑同样文件仍然红**，`--testTimeout=30000` 下 3592 条全绿——是环境超时，不是本轮改动引入。记在这里是为了下次再看到它不必重新查一遍。
+- 阻塞 / 风险：无产品阻塞。**遗留的外部阻塞**：生产那条 502 究竟属不属于鉴权那一支，要等 Vercel 部署快照确认 `AI_API_URL`/`AI_API_KEY`——`ops:smoke-prod` 仍把「模型路径 502」一律判为上游问题，本轮不替它猜。回滚只需 revert 两个提交（产品行为变更面：chat/summary 在鉴权不可用时由 502 变可用，这是一次**放宽**，若要收紧先看 M4/M5 两条探针）。
+- 下一项：PR #384 合并后重新盘点 roadmap 未决项，继续挑不依赖产品拍板或外部凭据的可执行任务。
+- 更新时间：2026-10-04（Asia/Shanghai）。
+
+---
+
 ## 2026-10-04 — v0.7.27 发布：sepia 强调色加深 + 三主题无障碍矩阵门禁（patch）
 
 - 状态：已发布。tag `v0.7.27` 打在 `154502a`（与 `origin/main` 逐字核对一致）；Vercel 部署 success；生产冒烟 9/10。
