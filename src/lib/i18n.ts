@@ -102,6 +102,7 @@ const zh = {
   },
   quiz: {
     questionsUnit: "道概念题 · 即时判分",
+    otherLangOnly: "（此题库目前只有中文）",
     bestTpl: "历史最佳 {n}/{total}",
     start: "开始测验",
     retry: "再测一次",
@@ -528,6 +529,7 @@ const en: Dict = {
   },
   quiz: {
     questionsUnit: "concept questions · instant grading",
+    otherLangOnly: "(this quiz bank is Chinese-only for now)",
     bestTpl: "Best {n}/{total}",
     start: "Start quiz",
     retry: "Try again",

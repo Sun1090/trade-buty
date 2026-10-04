@@ -246,7 +246,10 @@ export default async function DocPage({
         })}
       />
       {/* 这套题的宿主就是本节（篇章页的入口卡片指向这里）；同章其他课文底部放的是同一张
-          入口卡片，但 Quiz 结构化数据只由宿主这一页发，免得一个实体被多个页面认领 */}
+          入口卡片，但 Quiz 结构化数据只由宿主这一页发，免得一个实体被多个页面认领。
+          R16.124：language 报 QUIZ_BANK_LANGUAGE（题库真实语言）而不是当前页面的 locale，
+          这半边不需要拍板——题是中文的，机器可读侧就该说是中文；「英文界面上要不要挂中文题」
+          是另一件事，见 R16.109 / R16.124 */}
       {QUIZZES[chapterSlug] && quizHostDocSlug(chapterSlug) === docSlug && (
         <JsonLd
           data={quiz({
@@ -319,7 +322,7 @@ export default async function DocPage({
       {/* 测验 + 边学边练 双栏 */}
       <div className="mt-8 grid gap-4 lg:grid-cols-2">
         {QUIZZES[chapterSlug] ? (
-          <ChapterExamCard quiz={QUIZZES[chapterSlug]} dict={t.quiz} locale={locale} chapterTitle={doc.title} />
+          <ChapterExamCard quiz={QUIZZES[chapterSlug]} dict={t.quiz} locale={locale} chapterTitle={doc.title} otherLangOnly={t.quiz.otherLangOnly} />
         ) : (
           <AiChapterQuizCard
             chapter={chapterSlug}
