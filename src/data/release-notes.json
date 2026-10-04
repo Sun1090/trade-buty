@@ -1,6 +1,28 @@
 {
   "releases": [
     {
+      "version": "0.7.27",
+      "date": "2026-10-03",
+      "name": {
+        "zh": "三主题无障碍矩阵进了每条 PR",
+        "en": "The three-theme accessibility matrix is now a per-PR gate"
+      },
+      "highlights": {
+        "zh": [
+          "护眼主题的品牌绿整体加深一档（#036b46 → #025a3c）：行情条的正向变动文字在卡片底色上此前只有 ~4.4:1（低于 4.5 标准）——它是数据到达后才渲染的元素，之前的巡检等不到它现形。加深后所有护眼背景组合 ≥5.2:1",
+          "无障碍门禁升级为三主题矩阵：此前每条 PR 只巡检默认主题的 20 个页面；现在暗色与护眼主题各有 8 个关键页随每条 PR 巡检（同一白名单规则）。门禁首跑就抓到了上面那条漏网——这正是矩阵化的价值"
+        ],
+        "en": [
+          "The sepia brand green is darkened one step (#036b46 → #025a3c): the market ticker's positive-change text on card backgrounds measured ~4.4:1 (below the 4.5 standard) — it only renders after live data arrives, so earlier audits never caught it. All sepia background combinations now measure ≥5.2:1",
+          "The accessibility gate upgraded to a three-theme matrix: per-PR audits previously covered 20 pages in the default theme only; dark and sepia now each audit 8 key pages on every PR (same rule whitelist). The gate's first run caught the missed finding above — which is exactly why the matrix was worth building"
+        ]
+      },
+      "docs": [
+        "docs/roadmap.md",
+        "docs/progress.md"
+      ]
+    },
+    {
       "version": "0.7.26",
       "date": "2026-10-03",
       "name": {
