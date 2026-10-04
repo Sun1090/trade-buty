@@ -22,6 +22,27 @@
 
 ---
 
+## 2026-10-04 · 第四十六轮（R16.295）：根级 404 与错误页不再一句话里混两种语言
+
+- 里程碑 / 版本：R16 质量与事实门禁；R16.41 / R16.159 仍未关账（版式待拍板），无产品版本变更。
+- 分支 / PR：`feat/ruler-parity-gate`（随 R16.294 的 PR #386 一起入库）。
+- 完成内容：
+  - **与 R16.41 / R16.159 同族但不同题**：那两行问的是「这一页说哪门语言」（跟随 URL 还是中英并列），属待拍板；本轮问的是「这一页**不许两句话各说一种语言**」——无论最后拍成哪一种版式，混搭都不是其中任何一种。所以这一轮**不需要拍板**。
+  - **实测的毛病**：`not-found.tsx` 的 h1 里 `Page not found`（英文）与「市场永远都在，页面不一定。」（中文）相邻；`error.tsx` 同形（`Something went wrong` + 「止损要快，重试要果断。」），`Retry` / `Home` 两个按钮同样写死。
+  - **修法**：八个文案全部取字典——新增 `notFound.rootTitle` / `rootTagline` / `errorPageTitle` / `errorPageTagline` / `errorPageRetry` / `errorPageHome`（中英各一）。英文那条不是中文的直译（`Markets always open; this page doesn't.` / `Cut losses fast; be decisive about retrying.`）。
+  - **门禁**：`check:localized-labels` 新增第四节 `scanSingleLanguage`（**按文件**判「一页之内不许中英混搭」），并把根级 `not-found.tsx` / `error.tsx` 从 `LOCALE_FREE_SURFACES` 移走——**不是**因为它们拿到了 locale（还是 `DEFAULT_LOCALE`，三条路与代价仍开着），而是因为混搭与「语言选哪个」无关。
+  - **为什么不并进前三类**：前三类的判据是「这一处根本没问语言」，而这两页的每一处现在都取了字典——混搭发生在**字典之外**（有人新加一句时顺手写死）。
+  - **顺带改的**：`scripts/caching-claims.test.mjs` 那条断言原是对源码里 `Something went wrong` 字面量做 `toContain`，文案改走字典后必然红。改成从 `getDict("en").notFound.errorPageTitle` 查，**判据没放松**——边界页改回写死某一种语言时它照样红。
+- 变更文件：`src/app/not-found.tsx`、`src/app/error.tsx`、`src/lib/i18n.ts`（+6 键×2 语）、`scripts/check-localized-labels.mjs`、`scripts/check-localized-labels.test.mjs`、`scripts/caching-claims.test.mjs`、`docs/roadmap.md`、本文件。
+- **这道判据是被三次误报逼出来的，记下来给下一轮**：① 只看字符串字面量 → className 的 Tailwind 值（`mt-10 flex flex-wrap justify-center gap-3`）全被当成英文界面字，一条真违规报出八行噪音；② 改成只扫 JSX 文本节点 → `Trade Buty`（品牌名）与 `Retry`（单词按钮）被算进去；③ 最后定成「拉丁字母 + 空格 + 无 `=` + 非首字母大写词组」，`FAQ` / `Trade Buty` / `manifest.webmanifest` 才被正确放行。**一条新判据至少要被三类非目标形状各撞一次，否则你不知道自己放行了什么。**
+- 探针：两组各杀一次。① `error.tsx` 整段退回修复前 → 红，**两种判据同时报**（前三类报中文那条，第四节报混搭）；② 把 `SINGLE_LANGUAGE_FILES` 清空 → 门禁**安静通过**并打出「0 个边界页」——这一组照着 R16.113 那条「地板不许缩」设计的：豁免面扩大时门禁必须自己看见。
+- 验证：`npm run test:coverage` **345 文件 / 3615 用例全绿**，覆盖 95.00/90.82/94.97/96.88（地板 94/89/94/96）；`lint`；`typecheck`；`check:localized-labels`（两节都绿）；`check:dead-copy`（死键 0，词条 429 → 437，新键被两页读到）；`check:scan-counts`（报告无变化）。
+- 阻塞 / 风险：无产品阻塞。**R16.41 / R16.159 仍未关账**：这一页现在整页说英文，中文访客读到的是一张英文 404（出口 href 仍按 URL 前缀走，是 R16.41 已落地的最小伤害版）；「中英并列」还是「跟随 URL」仍待拍板。回滚：revert 本轮提交，用户可见文案回到原样。
+- 下一项：PR #386 合并后重新盘点 roadmap 未决项。
+- 更新时间：2026-10-04（Asia/Shanghai）。
+
+---
+
 ## 2026-10-04 · 第四十五轮（R16.294）：两把尺的分母钉在一起；核并关账 R16.97
 
 - 里程碑 / 版本：R16 质量与事实门禁；关账 R16.97，R16.58 收窄但不关账；无产品版本变更（未发布，随下轮积累）。

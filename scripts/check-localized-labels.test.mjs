@@ -3,7 +3,9 @@ import { join } from "node:path";
 import {
   findUnlocalizedLabels,
   LOCALE_FREE_SURFACES,
+  scanSingleLanguage,
   scanSource,
+  SINGLE_LANGUAGE_FILES,
 } from "./check-localized-labels.mjs";
 
 describe("check:localized-labels（R16.50 / R16.51）", () => {
@@ -68,12 +70,73 @@ describe("check:localized-labels（R16.50 / R16.51）", () => {
     expect(findUnlocalizedLabels(join(process.cwd(), "src"))).toEqual([]);
   });
 
-  it("豁免清单只放拿不到 locale 的表面", () => {
-    // 每加一条豁免就等于放弃一处检查，所以先钉住它现在只有这三处
+  it("豁免清单只放拿不到 locale 的表面（R16.295 起是两个边界页不再豁免）", () => {
+    // 每加一条豁免就等于放弃一处检查，所以先钉住它现在只有分享卡降级图这一处。
+    // 根级 not-found / error 在 R16.295 之前在这里：拿不到 locale 是一回事，
+    // 但它们原先同一页上标题写死英文、tagline 写死中文——那是另一回事，与语言选哪个无关。
     expect(LOCALE_FREE_SURFACES).toEqual([
-      join("src", "app", "not-found.tsx"),
-      join("src", "app", "error.tsx"),
       join("src", "app", "share", "[kind]", "[path]", "opengraph-image.tsx"),
     ]);
+    // 不豁免的代价是它们要受另一层检查，所以那一层不能是空的
+    expect(SINGLE_LANGUAGE_FILES).toEqual([
+      join("src", "app", "not-found.tsx"),
+      join("src", "app", "error.tsx"),
+    ]);
+  });
+});
+
+/**
+ * R16.295 的第四节：一页之内不许中英混搭。
+ *
+ * 「这一页说哪门语言」是 R16.41/R16.52 待拍板的产品问题，「两句话不许各说一种语言」不是——
+ * 无论最后拍成中英并列还是跟随 URL，混搭都不是其中任何一种。
+ */
+describe("check:localized-labels · 同页不得中英混搭（R16.295）", () => {
+  it("抓到标题英文 + tagline 中文那一对（修复前 404 页的原样）", () => {
+    // 判据要认得出裸文字，而 TEXT_NODE_RE 只匹配不含标签的节点：
+    // 所以用一段真的会被静态 HTML 吞掉标签的写法来测（VitePress 容器语法同款）。
+    const hits = scanSingleLanguage(
+      "<h1>\n  Page not found\n  <span>市场永远都在，页面不一定。</span>\n</h1>",
+    );
+    expect(hits).toEqual([
+      { line: 1, kind: "mixed", where: "英文界面字", value: "Page not found" },
+      { line: 3, kind: "mixed", where: "中文文案", value: "市场永远都在，页面不一定。" },
+    ]);
+  });
+
+  it("只报成对的那一对，不把整份 className 算成英文界面字", () => {
+    const hits = scanSingleLanguage(
+      `<main className="relative mx-auto max-w-3xl px-5 py-20 text-center">\n` +
+        `  <h1>\n    Page not found\n    <span>止损要快，重试要果断。</span>\n  </h1>\n` +
+        `  <div className="mt-10 flex flex-wrap justify-center gap-3" data-testid="x">\n` +
+        `    <button>\n      Retry now\n    </button>\n  </div>\n` +
+        `  <p>\n    manifest.webmanifest\n  </p>\n` +
+        `  <p>\n    Trade Buty\n  </p>\n` +
+        `  <p>\n    FAQ\n  </p>\n` +
+        `</main>`,
+    );
+    expect(hits.filter((hit) => hit.where === "英文界面字").map((hit) => hit.value)).toEqual([
+      "Page not found",
+      "Retry now",
+    ]);
+  });
+
+  it("全页统一一种语言时不报（修复后的形状：都取字典，源码里只有 key）", () => {
+    expect(
+      scanSingleLanguage(
+        "<h1>\n  {t.notFound.rootTitle}\n  <span>{t.notFound.rootTagline}</span>\n</h1>",
+      ),
+    ).toEqual([]);
+  });
+
+  it("className / testid / 标识符形状的字面量不算界面文案", () => {
+    expect(
+      scanSingleLanguage(
+        `<div className="grid gap-3 sm:grid-cols-2" data-testid="root-no-result-cta">\n` +
+          `  <p>\n    止损要快\n  </p>\n  <p>\n    Trade Buty\n  </p>\n  <p>\n    FAQ\n  </p>\n` +
+          `</div>`,
+      ),
+      "只剩中文、没有英文句子 = 没有混搭；标识符形状被判成英文界面字了",
+    ).toEqual([]);
   });
 });

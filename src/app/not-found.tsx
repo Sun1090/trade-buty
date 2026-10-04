@@ -32,10 +32,12 @@ export default function NotFound() {
         aria-hidden
       />
       <p className="relative font-mono text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-accent to-[var(--info)]">404</p>
+      {/* R16.295：标题与那句 tagline 都取字典。原先标题写死英文、tagline 写死中文，
+          一张页面上两句话各说一种语言——而这一页还「代表全站」出现在两个 locale 上。 */}
       <h1 className="mt-6 text-2xl font-bold">
-        Page not found
+        {t.notFound.rootTitle}
         <span className="block mt-2 text-sm font-normal text-muted">
-          市场永远都在，页面不一定。
+          {t.notFound.rootTagline}
         </span>
       </h1>
       <div className="mt-10 flex flex-wrap justify-center gap-3" data-testid="root-no-result-cta">

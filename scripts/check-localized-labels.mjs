@@ -51,19 +51,105 @@ const CJK_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 
 /**
  * 拿不到 locale 的表面，逐条写明归属：
- * - 根级 `not-found.tsx` / `error.tsx`：整页在 `[locale]` 之外，语言无从判定，
- *   三条备选路与代价见 docs/roadmap.md 的 R16.41；
  * - 分享卡的降级图：payload 解码失败时访客语言无从判定（正常的三张卡都按 `p.locale` 出文案，
  *   课程页的 OG 卡也已在 R16.51 改按 locale），要不要把这一张的品牌行改成中英并列见 R16.52。
+ *
+ * R16.295 从这份清单里移走了根级 `not-found.tsx` / `error.tsx`，**不是因为它们拿到了 locale**
+ * （还是 `DEFAULT_LOCALE`，三条路与代价仍然开着，见 R16.41），而是因为这两页原先的毛病
+ * 与「语言选哪个」无关：同一张页面上标题写死英文、tagline 写死中文，一句话的中英混搭。
+ * 拿不到 locale 只意味着「这一页说哪门语言」，不意味着「这门语言里可以两句话各说一种」。
+ * 它们现在与站内所有页面一样按字典取值，因此适用下面第三节那层「同页不得混两种语言」的判据。
  */
 export const LOCALE_FREE_SURFACES = [
+  ["src", "app", "share", "[kind]", "[path]", "opengraph-image.tsx"].join(sep),
+];
+
+/**
+ * R16.295：一份文件里不许同时出现中文字面量与英文界面字面量。
+ *
+ * 为什么单开一节而不并进前三类：前三类的判据是「这一处根本没问语言」，而这一页的每一处
+ * **都**取了字典（`getDict(DEFAULT_LOCALE)`），字典是对的——混搭发生在**字典之外**：
+ * 有人新加一句时顺手写死，于是标题成了英文、tagline 成了中文，而两条都躺在同一个 `<h1>` 里。
+ * 「这一页用哪门语言」是待拍板的产品问题（R16.41/R16.52），**「这一页不许两句话各说一种语言」不是**：
+ * 无论最后拍成中英并列还是跟随 URL，它都成立。
+ *
+ * 判据按**文件**而不是按属性：拿不到 locale 的边界页是少数，按文件判才判得着「这张页面混了」。
+ * 判「英文界面字」而不是「英文」：装饰性的品牌名与缩写（FAQ、Trade Buty）天然两种语言都出现。
+ */
+export const SINGLE_LANGUAGE_FILES = [
   ["src", "app", "not-found.tsx"].join(sep),
   ["src", "app", "error.tsx"].join(sep),
-  ["src", "app", "share", "[kind]", "[path]", "opengraph-image.tsx"].join(sep),
 ];
 
 function isLocaleFree(relativePath) {
   return LOCALE_FREE_SURFACES.includes(relativePath);
+}
+
+/**
+ * R16.295 的第四节：一份文件里的界面文案不许中英混搭。
+ *
+ * 认的是「界面字」而不是「英文」——带拉丁字母又有空格/大小写分词的才是界面文案，
+ * `FAQ`、`Trade Buty` 这类品牌名与缩写两种语言都出现，不算混搭。
+ *
+ * 返回的形状与前三类一致（file + 行号 + 值），好让 `main` 用同一套报错。
+ */
+export function scanSingleLanguage(source) {
+  const stripped = withoutComments(source);
+  const literals = [];
+  for (const lit of stripped.matchAll(STRING_LITERAL_RE)) {
+    const value = lit[1] ?? lit[2] ?? lit[3] ?? "";
+    if (!value.trim()) continue;
+    literals.push({ value, offset: lit.index });
+  }
+const textNodes = [];
+  for (const match of stripped.matchAll(TEXT_NODE_RE)) {
+    const value = match[1].replace(/<[^<>]*>/g, " ").replace(/\s+/g, " ").trim();
+    if (value) textNodes.push({ value, offset: match.index + 1 });
+  }
+
+  /**
+   * 像界面文案：拉丁字母 + 空格 + 没有 `=`。
+   *
+   * 两条负向判据都是被实测逼出来的：只认「空格」不够，className 的 Tailwind 值
+   * （`mt-10 flex flex-wrap justify-center gap-3`）也有空格，第一版因此把八行 className
+   * 当英文界面字报出来；于是加 `=` 排除（Tailwind 修饰符与工具类都带 `=`）。
+   * 标识符形状的字符串——`FAQ`、`Trade Buty`、`manifest.webmanifest`、本文件自己的报错
+   * 文案——没有空格、带斜杠或带 `=`，同样被排除。剩下的就是真会印在页面上的句子。
+   */
+  // 品牌名与缩写放行：`Trade Buty`、`FAQ` 与两种语言都共处一站，不算「一句英文」。
+  // 判据是「含空格但每个词都是首字母大写」——句子很少是这个形状。
+  const BRAND_SHAPE_RE = /^(?:[A-Z][A-Za-z0-9]*)(?: [A-Z][A-Za-z0-9]*)*$/;
+  const looksLikeUi = (value) =>
+    LATIN_RE.test(value) && !CJK_RE.test(value) && value.includes(" ") && !value.includes("=")
+    && !BRAND_SHAPE_RE.test(value)
+    // 单个词也不是句子（`Retry` / `Search` 这类按钮与链接文案）
+    && !/^[A-Z][a-z]+$/.test(value);
+
+  // 中文那一半也走文本节点：属性值里的中文（aria-label="篇章导航" 之类）不算这一页的
+  // 界面文案，它属于前三类的射程；从字符串字面量里捞会连门禁自己的报错文案一起捞进来。
+  const cjk = textNodes.filter((lit) => CJK_RE.test(lit.value));
+  const latin = textNodes.filter((lit) => looksLikeUi(lit.value));
+  if (cjk.length === 0 || latin.length === 0) return [];
+
+  const lineAt = (offset) => stripped.slice(0, offset).split("\n").length;
+  const hits = [];
+  // 报成对的那一方：中文是本地化的主角（「这一处没问语言」），英文那半边是它混进来的。
+  // 两边都报会让一条违规变成两条噪音，反而看不出是哪一对。
+  for (const lit of cjk) {
+    hits.push({ line: lineAt(lit.offset + lit.value.search(CJK_RE)), kind: "mixed", where: "中文文案", value: lit.value });
+  }
+  for (const lit of latin) {
+    hits.push({ line: lineAt(lit.offset), kind: "mixed", where: "英文界面字", value: lit.value });
+  }
+  return hits.sort((a, b) => a.line - b.line);
+}
+
+/** 拿不到 locale 的边界页：查「同页不得中英混搭」，查法与前三类不同故分开 */
+export function findMixedLanguageFiles() {
+  return SINGLE_LANGUAGE_FILES.map((rel) => {
+    const source = readFileSync(join(root, rel), "utf8");
+    return { file: rel, hits: scanSingleLanguage(source) };
+  }).filter((entry) => entry.hits.length > 0);
 }
 
 /** 去掉块注释与行注释，避免注释里的示例被当成界面文案 */
@@ -192,17 +278,26 @@ export function findUnlocalizedLabels(srcDir) {
 }
 
 export function main() {
-  const offenders = findUnlocalizedLabels(join(root, "src"));
+  const offenders = [
+    ...findUnlocalizedLabels(join(root, "src")),
+    ...findMixedLanguageFiles(),
+  ];
   if (offenders.length === 0) {
     console.log(
       "[localized-labels] ✅ 界面文案没有写死单一语言（属性值、属性表达式里的字面量、JSX 文本节点三类都查了）",
+    );
+    console.log(
+      `[localized-labels] ✅ 拿不到 locale 的 ${SINGLE_LANGUAGE_FILES.length} 个边界页也没有中英混搭（R16.295）`,
     );
     return;
   }
   for (const entry of offenders) {
     for (const hit of entry.hits) {
+      const reason = hit.kind === "mixed"
+        ? "这一页两种语言各说一句话——无论最后拍成哪一种版式，混搭都不是其中任何一种"
+        : "这一处没问语言，却会原样出现在另一种语言的界面上";
       console.error(
-        `[localized-labels] ${entry.file}:${hit.line} ${hit.where} = "${hit.value}" — 这一处没问语言，却会原样出现在另一种语言的界面上`,
+        `[localized-labels] ${entry.file}:${hit.line} ${hit.where} = "${hit.value}" — ${reason}`,
       );
     }
   }
