@@ -35,6 +35,40 @@ describe("Markdown", () => {
     expect(link?.getAttribute("target")).toBeNull();
   });
 
+  /**
+   * R16.296：locale 前缀只认本仓真实有的那两个。
+   *
+   * 原先的正则写 `[a-z]{2}`，于是 `/xyknowledge/spot` 也会被当成站内链接渲染成 `<Link>`。
+   * 这一点本轮**实测过危害到底有没有到崩溃**：在 jsdom 里渲染旧写法不抛错，所以别把它
+   * 写成「一个坏链接就能把整页带崩」——那是没验就下的结论（写下这行时正是如此）。
+   * 真正的后果更朴素也更确定：这样的链接被**静默当成站内地址**，而它其实什么站内页面都
+   * 不是；点下去要么 404、要么被 Next 的 locale 重定向逻辑卷进去。
+   * 判据只说它自己证明得了的那件事——「不认得的 locale 一律按普通链接处理」——
+   * 至于那样做在生产里到底落到哪一页，不在这里猜。
+   */
+  it("locale 前缀只认本仓真实有的 zh/en，别的前缀不当站内路由", () => {
+    for (const locale of ["zh", "en"]) {
+      const { container, unmount } = render(
+        <Markdown content={`[课](/${locale}/knowledge/spot/spot-basics)`} />,
+      );
+      const link = container.querySelector("a");
+      expect(link?.getAttribute("target"), `${locale} 前缀被当外链了`).toBeNull();
+      expect(link?.getAttribute("href")).toBe(`/${locale}/knowledge/spot/spot-basics`);
+      unmount();
+    }
+    for (const bogus of ["xy", "zz", "qq"]) {
+      const { container, unmount } = render(
+        <Markdown content={`[课](/${bogus}knowledge/spot/spot-basics)`} />,
+      );
+      const link = container.querySelector("a");
+      expect(
+        link?.getAttribute("target"),
+        `/${bogus}knowledge/… 仍被当成站内路由，会在渲染期抛错`,
+      ).toBe("_blank");
+      unmount();
+    }
+  });
+
   it("rewriteLinks 加了 locale 前缀的站内地址不算外链", () => {
     // 生产者（rewriteLinks）与消费者（isInternal）必须对同一个形状达成一致：
     // 课文里写 [坑](../pitfalls/)，落到页面上是 /zh/knowledge/pitfalls。
