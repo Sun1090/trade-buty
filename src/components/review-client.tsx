@@ -8,6 +8,7 @@ import { effectiveSrs, isSrsDue, isSrsOverdue, daysUntilDue, type SrsState } fro
 import { addStudyTime } from "@/lib/study-time";
 import { localDateStr } from "@/lib/date-utils";
 import { AiQuiz } from "@/components/ai-quiz";
+import { getDict } from "@/lib/i18n";
 
 export interface ReviewDict {
   empty: string;
@@ -82,6 +83,13 @@ export function ReviewClient({
   pruneOrphanWrong(validKeys);
 
   const todayStr = localDateStr();
+
+  // R16.108：AiQuiz 装配里中英两侧都与字典逐字相同的字段走字典，不在调用点拼第二副本。
+  // 名字用 siteDict：本组件已有一个 `dict` prop（ReviewDict，复习页自己的那份），
+  // 两者不是同一本字典，重名会读错。
+  const siteDict = getDict(locale);
+  const aiDict = siteDict.ai;
+  const quizDict = siteDict.quiz;
 
   const items: ReviewItem[] = Object.values(wrong)
     .map((e) => {
@@ -469,19 +477,23 @@ export function ReviewClient({
             aiEnabled={aiEnabled}
             wrongItems={items.map((i) => ({ chapterNum: i.chapterNum, questionIdx: i.questionIdx }))}
             dict={{
+              // R16.108：中英两侧都与字典逐字相同的字段一律取字典，不再在调用点拼第二副本。
+              // 剩下 8 条（generate/generating/error/rateLimited/badge/correct/wrong/done）
+              // 以哪边措辞为准会改到用户可见的句子，待产品拍板，见 docs/roadmap.md R16.108；
+              // scripts/ai-quiz-copy-single-source.test.mjs 守住已并入的这一半不许再分叉。
               generate: locale === "en" ? "AI quiz from your wrong answers" : "AI 针对错题出变体题",
               generating: locale === "en" ? "Generating…" : "正在生成…",
               error: locale === "en" ? "Generation failed, retry" : "生成失败，请重试",
-              loginRequired: locale === "en" ? "Log in to use AI quiz" : "登录后可用 AI 出题",
+              loginRequired: aiDict.aiQuizLogin,
               rateLimited: locale === "en" ? "Too many requests, try again later" : "请求过于频繁，请稍后再试",
-              retryInTpl: locale === "en" ? "Retry in about {n} min" : "约 {n} 分钟后重试",
-              report: locale === "en" ? "Report question" : "举报题目",
-              reported: locale === "en" ? "Reported" : "已举报",
-              reportFailed: locale === "en" ? "Report not sent — tap to retry" : "举报没送出去，点这里重试",
+              retryInTpl: aiDict.retryInTpl,
+              report: aiDict.aiQuizReport,
+              reported: aiDict.aiQuizReported,
+              reportFailed: aiDict.aiQuizReportFailed,
               badge: locale === "en" ? "AI variant" : "AI 变体题",
               correct: locale === "en" ? "Correct" : "正确",
               wrong: locale === "en" ? "Wrong" : "错误",
-              next: locale === "en" ? "Next →" : "下一题 →",
+              next: quizDict.nextQ,
               done: locale === "en" ? "Done" : "完成",
             }}
           />
