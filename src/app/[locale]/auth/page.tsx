@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getDict, isLocale, LOCALES } from "@/lib/i18n";
 import { LoginClient } from "@/components/login-client";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -47,9 +48,14 @@ export default async function AuthPage({
           <span className="font-bold text-lg">Trade Buty</span>
         </div>
         <h1 className="text-3xl font-bold">{t.auth.title}</h1>
-        <p className="mt-3 text-sm text-muted leading-relaxed">
-          {t.auth.subtitle}
-        </p>
+        {/* R16.215：subtitle 承诺「登录后进度自动云端存档」。没配 Supabase 的部署上
+            这句不成立（登录根本走不通），所以那一屏不该出现这句承诺 —— 只在真的有
+            云端时才渲染。 */}
+        {hasSupabaseEnv() && (
+          <p className="mt-3 text-sm text-muted leading-relaxed">
+            {t.auth.subtitle}
+          </p>
+        )}
       </header>
       <LoginClient dict={t.auth} locale={locale} />
       <p className="mt-6 text-center text-xs text-faint leading-relaxed">

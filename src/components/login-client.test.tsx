@@ -12,6 +12,12 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+// env 判据可控（R16.215）：默认「有云端」，个别用例切成「没配」
+const envState = { hasEnv: true };
+vi.mock("@/lib/supabase/env", () => ({
+  hasSupabaseEnv: () => envState.hasEnv,
+}));
+
 // supabase client mock —— 用共享 spy 实例（类型放宽到 any 以接受任意 { error }）
 const signInSpy = vi.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
 vi.mock("@/lib/supabase/client", () => ({
@@ -31,6 +37,8 @@ const dict = {
   errorInvalidEmail: "邮箱格式不对",
   errorNetwork: "网络异常",
   errorUnknown: "未知错误",
+  cloudUnavailable: "此部署未启用云端登录",
+  cloudUnavailableHint: "这个部署没有配置云端服务",
   cooldownTpl: "请 {sec}s 后再试",
   cooldownButton: "{sec}s 后重发",
   returnToNoticeTpl: "📍 {path}",
@@ -38,6 +46,7 @@ const dict = {
 };
 
 beforeEach(() => {
+  envState.hasEnv = true;
   searchMap = new Map();
   signInSpy.mockReset();
   signInSpy.mockImplementation(async () => ({ error: null }));
@@ -268,4 +277,51 @@ describe("限流提示说的是本站的节流（真字典，R16.191）", () => 
       expect(text, "冷却是本站的节流，不是邮件服务商的").toMatch(/本站|this site|\bours?\b/i);
     });
   }
+});
+
+// R16.215：没有 Supabase env 的部署上，登录链接发不出去（getSupabaseBrowser 直接抛）。
+// 这是**永久状态**，不是网络抖动 —— 让人点一次注定失败的按钮、再把「部署没开云端」
+// 说成「网络异常，请稍后重试」，是在把配置问题推给用户的网络。
+describe("没有配云端 env 的部署（R16.215）", () => {
+  it("说清是部署没开云端，并禁用发送按钮", () => {
+    envState.hasEnv = false;
+    render(<LoginClient dict={dict} locale="zh" />);
+    expect(screen.getByText(dict.cloudUnavailable)).toBeInTheDocument();
+    expect(screen.getByText(dict.cloudUnavailableHint)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "发送链接" })).toBeDisabled();
+  });
+
+  it("不显示「稍后重试」那类把配置问题说成网络问题的文案", () => {
+    envState.hasEnv = false;
+    render(<LoginClient dict={dict} locale="zh" />);
+    expect(screen.queryByText(dict.errorNetwork)).not.toBeInTheDocument();
+    expect(screen.queryByText(dict.errorUnknown)).not.toBeInTheDocument();
+  });
+
+  it("点按钮不会碰到 supabase（纵深防御：连抛都不抛）", () => {
+    envState.hasEnv = false;
+    render(<LoginClient dict={dict} locale="zh" />);
+    const input = screen.getByPlaceholderText("邮箱");
+    fireEvent.change(input, { target: { value: "a@b.com" } });
+    fireEvent.submit(input.closest("form") as HTMLFormElement);
+    expect(signInSpy, "缺 env 时竟然还是发了请求").not.toHaveBeenCalled();
+  });
+
+  it("邮箱输入框一并禁用，让人一眼看出这一屏不可用", () => {
+    envState.hasEnv = false;
+    render(<LoginClient dict={dict} locale="zh" />);
+    expect(screen.getByPlaceholderText("邮箱")).toBeDisabled();
+  });
+
+  it("有 env 时不显示该提示，按钮照常可点（别把好部署也一起禁了）", async () => {
+    render(<LoginClient dict={dict} locale="zh" />);
+    expect(screen.queryByText(dict.cloudUnavailable)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "发送链接" })).toBeEnabled();
+    const input = screen.getByPlaceholderText("邮箱");
+    fireEvent.change(input, { target: { value: "a@b.com" } });
+    await act(async () => {
+      fireEvent.submit(input.closest("form") as HTMLFormElement);
+    });
+    expect(signInSpy).toHaveBeenCalledTimes(1);
+  });
 });

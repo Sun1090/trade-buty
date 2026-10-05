@@ -35,6 +35,11 @@ const zh = {
     errorInvalidEmail: "邮箱格式不正确，请检查后重试",
     errorNetwork: "网络异常，请检查连接后重试",
     errorUnknown: "发送失败，请稍后重试",
+    // R16.215：没有配 Supabase env 的部署上，登录链接发不出去 —— 这是永久状态，
+    // 不是「网络不好」，所以要说清是部署没开，而不是让用户反复重试一个必然失败的按钮。
+    cloudUnavailable: "此部署未启用云端登录",
+    cloudUnavailableHint:
+      "这个部署没有配置云端服务，登录链接发不出去。你的阅读进度仍会只存在这台设备的浏览器里；想跨设备同步，请换一个启用了云端的部署。",
     cooldownTpl: "请 {sec}s 后再试",
     cooldownButton: "请 {sec}s 后重发",
     // R9.7：登录后合并摘要卡片
@@ -460,6 +465,11 @@ const en: Dict = {
     errorInvalidEmail: "That email address doesn't look right — double-check and retry",
     errorNetwork: "Network problem — check your connection and retry",
     errorUnknown: "Couldn't send — please try again later",
+    // R16.215: deployments without Supabase env can never send a login link.
+    // That is a permanent state, not a flaky network — say so instead of inviting retries.
+    cloudUnavailable: "Cloud login isn't enabled on this deployment",
+    cloudUnavailableHint:
+      "This deployment has no cloud service configured, so login links can't be sent. Your reading progress stays in this browser only; to sync across devices, use a deployment with the cloud enabled.",
     cooldownTpl: "Please wait {sec}s",
     cooldownButton: "Resend in {sec}s",
     // R9.7: login merge summary card
