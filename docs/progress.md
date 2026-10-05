@@ -5,8 +5,8 @@
 ## 2026-10-05 · 第五十三轮（R16.58 关账的一半）：那道「两把尺分母必须同源」的门在礼花这侧恒真
 
 - 里程碑 / 版本：R16 质量与事实门禁；完成 R16.58 的可执行部分（第五十三轮），未改产品版本（当前 v0.7.27）。
-- 分支：`fix-r16-58-celebration-dead-assert`（自合并后的 `main` 顶点 `885826a`）。分支内两笔：
-  `5beef17`（代码 + 判据）+ 本条记录。
+- 分支 / PR：`fix/r16-58-celebration-dead-assert` → PR **#396**（自合并后的 `main` 顶点 `885826a`）。
+  分支内三笔：`5beef17`（代码 + 判据）、`78aa4fb`（调用点扫描判据 + 两份重算台账）、本条记录。
 - **完成内容**：R16.294 给 `ChapterCompleteCelebration` 补的 `assertDocCountMatchesList`
   传的是 `assertDocCountMatchesList(current.length, current, ...)` —— **同一个数组的长度跟数组本身比**，
   `docCount === currentSlugs.length` 恒成立，于是运行期永远撞不到那行 throw。
@@ -25,9 +25,20 @@
 - 变更文件：`src/components/chapter-complete-celebration.tsx`（多一个 `docCount` prop、传参、effect 依赖）、
   `src/app/[locale]/knowledge/[chapter]/page.tsx`（传 `docs.length`）、
   `src/components/chapter-complete-celebration.test.tsx`（13 条）。
-- 验证：`npx vitest run` **347 文件 / 3637 条**全绿；`npm run typecheck` exit 0；
+- 验证：`npx vitest run` **348 文件 / 3643 条**全绿（第二轮新增一个判据文件 +6 条）；`npm run typecheck` exit 0；
   `npm run lint`（`--max-warnings=0`）exit 0；`npm run build` exit 0（474 页 SSG 不变）；
   `check:docs` / `check:dead-copy` / `check:localized-labels` 全 0；`git diff --check` 干净。
+- **第二轮（同一分支内，判据本身）**：`src/lib/read-doc-count-assert-callers.test.ts`（6 条）——
+  扫**全部**调用点，挡这一类长出第二处。三条形状 + 一道地板：地板「调用点 ≥ 2」
+  （删到只剩一个就退化成「检查那一个点」，而那正是本次的失效形状）；
+  `docCount` 不得是清单的 `.length`（逐字相同）；**`docCount` 与清单不得是同一批数据的另一种量法**
+  （`docs.length` 对 `docs.map(...)`）；两个实参不得是同一标识符；出处不得退化成占位。
+  **第三条是补出来的漏网**：只做前两条时把 `ChapterRail` 退回 `docs.length` vs `docs.map(...)`，
+  判据**全绿** —— 逐字不同但量的是同一批东西，与本次失效同形状。
+  三条变异各自单红：ChapterRail 退回 `docs.length` / 礼花退回原始自比较 / 出处退化成「用例」。
+  **我的错**：第一版判据只按**字面**比，于是亲手放过了一个与本次失效同形状的变体；
+  是靠「把对的调用点也改坏试试」这条变异发现的，不是靠读代码。**判据量的是形状还是字面，
+  只有拿一个真的对的调用点去变异才验得出来**。
 - 阻塞 / 风险：无新增阻塞，**界面零变化** —— 今天两把尺必然相等（`docCount` 与 `docSlugs` 同源于
   `docMetas`），所以这道门在生产上一直是「安静通过」，改它只是让它在**那一天**真的响。
   不判发布。
