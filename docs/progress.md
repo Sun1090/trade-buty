@@ -2,6 +2,23 @@
 
 ---
 
+## 2026-10-05 · 第四十八轮（R16.299）：AiQuiz 装配里零风险的那 6 条改取字典（R16.108 部分收口）
+
+- 里程碑 / 版本：R16 质量与事实门禁；**R16.108 部分收口**（8 条仍待拍板），无产品版本变更。
+- 分支 / PR：`fix/ai-quiz-copy-single-source`，PR #389 → main `01af29d`（rebase 合并，仓库禁 squash）。
+- 完成内容：
+  - **把「待拍板」拆成两半**：R16.108 登记的 14 条里，有 6 条（`loginRequired`/`retryInTpl`/`report`/`reported`/`reportFailed`/`next`）中英两侧都与字典**逐字相同**，改成取字典是**用户可见文案一个字都不动**的纯收敛，根本不需要拍板；剩下 8 条原样留着。
+  - **`done` 为什么不能一起并**（本轮实测，也是判据设计的实证）：中文侧与 `quiz.finish` 逐字相同（都是「完成」），英文侧不同——字典 `Finish`、装配点 `Done`。**单侧相同不等于可以合**：合进去等于替产品把英文访客看到的 `Done` 改成 `Finish`。这正是「两侧逐字比」比「字典里存在同一句话」严的实证，后者会放行它。
+  - **门禁**：`scripts/review-ai-copy-claims.test.mjs`（R16.272 建）扩两条。① `assembled()` 认「取字典引用」形状，并按**该键的字典实际取值**参与四格测量，于是「并入/未并入」不改变测量口径——**实测分布仍是 6/3/1/4**，与 roadmap 登记数一致（换出处不改变这句话在字典里的位置）。② 新增「已并入的字段不许退回内联三元、且取值逐字等于该键」+ 一条对照。
+- 变更文件：`src/components/review-client.tsx`、`scripts/review-ai-copy-claims.test.mjs`、`docs/roadmap.md`（R16.108 行）、本文件。产品界面零变化。
+- **新写判据的坑，记给下一轮**：第一版断言「迁移后仍要广播」，fixture 只给 800 根（< `CULL_THRESHOLD`），裁剪窗口迁移根本不发生——**变异后仍然绿**，是个恒真的判据，比没有判据更坏。改 2600 根后变异才真的转红。
+- 验证：`npm run test` **345 文件 / 3622 用例全绿**；`typecheck`；`lint`；`build`；`check:dead-copy` / `check:localized-labels` / `check:scan-counts` / `check:report-freshness` / `check:constitution` / `check:docs` / `check:risk-warning` / `check:links` / `check:nav-chain` / `check:relative-links` / `check:ai-copy` / `check:dark-pattern-copy` / `check:frontmatter` / `check:image-alt` / `check:slug-conflicts` / `check:description-dupes` / `check:glossary` / `check:search-index` / `check:structured-data` / `check:sitemap` / `check:seo-surface` 全绿；`review-client.test.tsx` 32 passed；PR CI 八项全绿。
+- 阻塞 / 风险：无产品阻塞。**R16.108 剩 8 条待拍板**（`generate`/`generating`/`error`/`rateLimited`/`badge`/`correct`/`wrong`/`done`）：以哪边措辞为准会改到用户可见的句子。回滚 = revert `01af29d`，无行为变更。
+- 下一项：盘点 roadmap 余下 34 条未决项——多数是 `BLOCKED_EXTERNAL` 或需产品拍板；继续挑不依赖外部凭据的可执行项。
+- 更新时间：2026-10-05（Asia/Shanghai）。
+
+---
+
 ## 2026-10-04 · 第四十二轮（R16.291）：AI 路由的 5xx 文案把「永久失败」与「暂时故障」说成了同一件事
 
 - 里程碑 / 版本：R16 质量与事实门禁；关账 R16.205，无产品版本变更（未发布，随下轮积累）。
