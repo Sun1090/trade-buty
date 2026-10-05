@@ -24,7 +24,15 @@ const I18N = "src/lib/i18n.ts";
 const LESSON_PAGE = "src/app/[locale]/knowledge/[chapter]/[doc]/page.tsx";
 const ROADMAP = "docs/roadmap.md";
 
-/** 取 `dict={{ … }}` 里那些 `x: locale === "en" ? "…" : "…"` 的装配项。 */
+/**
+ * 取 `dict={{ … }}` 里的装配项，两种取值形状都认：
+ *  - 现场拼的内联三元：`x: locale === "en" ? "EN" : "ZH"`（R16.108 待拍板的那几条）
+ *  - 取字典的引用：`x: aiDict.aiQuizLogin` / `x: quizDict.nextQ`（R16.108 已并入的那几条）
+ *
+ * 引用形状按**字典实际取值**展开，而不是把字段名抄进来：这样四格分布仍然是
+ * 「这句话在字典的哪一侧找得到」的同一份测量，并入与否不改变测量口径。
+ * 认两种形状不是放过内联三元——「已并入的字段不许退回内联」由下面那条独立判据卡着。
+ */
 function assembled(source) {
   const lines = source.split("\n");
   const start = lines.findIndex((l) => /^\s+dict=\{\{$/.test(l));
@@ -32,10 +40,26 @@ function assembled(source) {
   const rows = [];
   for (let i = start + 1; i < lines.length; i++) {
     if (/^\s*\}\}$/.test(lines[i])) break;
-    const m = /^\s+(\w+):\s*locale === "en" \? "((?:[^"\\]|\\.)*)" : "((?:[^"\\]|\\.)*)",\s*$/.exec(
+    const inline = /^\s+(\w+):\s*locale === "en" \? "((?:[^"\\]|\\.)*)" : "((?:[^"\\]|\\.)*)",\s*$/.exec(
       lines[i]
     );
-    if (m) rows.push({ field: m[1], en: m[2].replace(/\\"/g, '"'), zh: m[3] });
+    if (inline) {
+      rows.push({
+        field: inline[1],
+        en: inline[2].replace(/\\"/g, '"'),
+        zh: inline[3],
+        shape: "inline",
+      });
+      continue;
+    }
+    const ref = /^\s+(\w+):\s*(aiDict|quizDict)\.([\w.]+),\s*$/.exec(lines[i]);
+    if (!ref) continue;
+    rows.push({
+      field: ref[1],
+      ref: `${ref[2]}.${ref[3]}`,
+      dictPath: `${ref[2] === "aiDict" ? "ai" : "quiz"}.${ref[3]}`,
+      shape: "dict",
+    });
   }
   return rows;
 }
@@ -110,6 +134,41 @@ describe("R16.108 那行对 AiQuiz 文案副本的说法", () => {
   const fields = declared(aiQuiz);
   const zh = valueIndex(i18n, "zh");
   const en = valueIndex(i18n, "en");
+  // 取字典形状的条目按**该键的字典实际取值**参与测量：口径仍是「这句话在字典哪一侧
+  // 找得到」。在这里补取值而不是在 assembled() 里塞死值，是为了让四格分布不因
+  // 「并入 / 未并入」而变——并入只是换了出处，这句话在字典里的位置没变。
+  // valueIndex 是「取值 → 键名」倒排，这里要的是正查，故单独按行取。
+  const keyValue = (name, dotted) => {
+    // dotted 形如 `ai.aiQuizLogin`：末段是键，其余是分组路径（分组只有一层）
+    const segs = dotted.split(".");
+    const group = segs.pop();
+    const path = segs.join(".");
+    const block = new RegExp(`^const ${name}(?::[^=]+)? = \\{`, "m").exec(i18n);
+    expect(block, `找不到 const ${name} = {`).toBeTruthy();
+    let depth = 1;
+    let i = block.index + block[0].length;
+    for (; i < i18n.length && depth > 0; i++) {
+      if (i18n[i] === "{") depth += 1;
+      else if (i18n[i] === "}") depth -= 1;
+    }
+    const body = i18n.slice(block.index, i);
+    if (path) {
+      // 分组是 `  ai: {` 这种**行内**开头（值在下一行），键在 4 空格缩进上
+      const at = body.search(new RegExp(`^  ${path}: \\{$`, "m"));
+      expect(at, `${name} 里找不到分组 ${path}`).toBeGreaterThanOrEqual(0);
+      const m = new RegExp(`^\\s{4}${group}:\\s*"((?:[^"\\\\]|\\\\.)*)"`, "m").exec(body.slice(at));
+      return m ? m[1].replace(/\\"/g, '"') : undefined;
+    }
+    const m = new RegExp(`^  ${group}:\\s*"((?:[^"\\\\]|\\\\.)*)"`, "m").exec(body);
+    return m ? m[1].replace(/\\"/g, '"') : undefined;
+  };
+  for (const entry of entries) {
+    if (entry.shape !== "dict") continue;
+    entry.zh = keyValue("zh", entry.dictPath);
+    entry.en = keyValue("en", entry.dictPath);
+    expect(entry.zh, `装配引用 ${entry.ref} 在中文侧字典里取不到值`).toBeTypeOf("string");
+    expect(entry.en, `装配引用 ${entry.ref} 在英文侧字典里取不到值`).toBeTypeOf("string");
+  }
   const buckets = { both: [], zhOnly: [], enOnly: [], neither: [] };
   for (const entry of entries) buckets[bucketOf(entry, zh, en)].push(entry);
 
@@ -172,6 +231,42 @@ describe("R16.108 那行对 AiQuiz 文案副本的说法", () => {
     expect(entries.length).toBe(
       buckets.both.length + buckets.zhOnly.length + buckets.enOnly.length + buckets.neither.length
     );
+  });
+
+  it("已并入字典的那几条，取值必须逐字等于该键在字典里的值（不许退回内联三元）", () => {
+    // R16.108 本轮：`loginRequired`/`retryInTpl`/`report`/`reported`/`reportFailed`/`next`
+    // 六条的中英两侧都与字典逐字相同，因此并入字典是**零用户可见变更**的纯收敛。
+    // 本条守住这个「零变更」性质：日后有人把其中一条改回现场拼、或改了字，这里立刻红
+    // ——而四格分布那条判据看不见「并入 / 未并入」本身的变化。
+    const merged = entries.filter((e) => e.shape === "dict");
+    expect(merged.length, "一条都没并入字典，这条判据是空转").toBeGreaterThanOrEqual(6);
+    const drift = [];
+    for (const entry of merged) {
+      const wantZh = zh.get(entry.zh) ?? [];
+      const wantEn = en.get(entry.en) ?? [];
+      // 该键自己就得是这个值（不是「别处也有同一句」）
+      if (!wantZh.includes(entry.dictPath)) drift.push(`${entry.field}：中文侧取值与 ${entry.dictPath} 不符`);
+      if (!wantEn.includes(entry.dictPath)) drift.push(`${entry.field}：英文侧取值与 ${entry.dictPath} 不符`);
+    }
+    expect(drift, `并入的字段与字典分叉：\n${drift.join("\n")}`).toEqual([]);
+  });
+
+  it("正向对照：把一条并入的字段改回内联三元并改一个字，两种形状必须分得开", () => {
+    // 「值相同但键不同」是分叉温床，故反向也钉一次：并入之后仍有人另写一份。
+    const src = read(REVIEW);
+    const reverted = src.replace(
+      "reportFailed: aiDict.aiQuizReportFailed,",
+      'reportFailed: locale === "en" ? "Report not sent — retry" : "举报没送出去，点这里重试",'
+    );
+    expect(reverted, "对照没替换成功：装配块形状已经变了？").not.toBe(src);
+    const rows = assembled(reverted);
+    const bad = rows.filter((e) => e.field === "reportFailed")[0];
+    expect(bad?.shape, "改回内联后形状应变成 inline").toBe("inline");
+    expect(rows.filter((e) => e.field === "report")[0].shape, "没动的那条应仍是 dict 形状").toBe("dict");
+    // 内联版与字典版的英文侧差一个词 —— 这正是要抓的分叉
+    const good = keyValue("en", "ai.aiQuizReportFailed");
+    expect(bad.en, "对照里的内联英文侧应当与字典不同（否则这条对照是空转）").not.toBe(good);
+    expect(rows.filter((e) => e.field === "reportFailed")[0].shape).toBe("inline");
   });
 
   it("行里点名的每一道 `check:*` 门禁都得真的存在，或是被明说成历史误写", () => {
