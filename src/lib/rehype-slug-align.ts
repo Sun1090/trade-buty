@@ -21,17 +21,17 @@
  * 哪天真要用上「按标题生成目录」，再连算法一起对齐，那时该由那条需求来驱动。
  */
 import type { Root } from "hast";
+import { alignHeadingId } from "./heading-id";
 
-/** rehype 插件：标题 id 剥掉首尾连字符，与知识库 slugify 的最后一步一致 */
+/** rehype 插件：标题 id 对齐到知识库 slugify 的口径（剥首尾连字符） */
 export function rehypeSlugAlign() {
   return (tree: Root) => {
     const visit = (node: { type: string; tagName?: string; properties?: Record<string, unknown>; children?: unknown[] }) => {
       if (node.type === "element" && node.tagName && /^h[1-6]$/.test(node.tagName)) {
         const id = node.properties?.id;
         if (typeof id === "string") {
-          const trimmed = id.replace(/^-+/, "").replace(/-+$/, "");
-          // 全剥光时（标题非拉丁字符且被剥净）保留原值，避免出现空 id
-          if (trimmed) node.properties = { ...node.properties, id: trimmed };
+          const aligned = alignHeadingId(id);
+          if (aligned !== id) node.properties = { ...node.properties, id: aligned };
         }
       }
       for (const child of (node.children ?? []) as typeof node[]) visit(child);
