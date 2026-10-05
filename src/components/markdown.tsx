@@ -3,6 +3,7 @@ import remarkGfm from "remark-gfm";
 import remarkCjkFriendly from "remark-cjk-friendly";
 import rehypeRaw from "rehype-raw";
 import rehypeSlug from "rehype-slug";
+import { rehypeSlugAlign } from "@/lib/rehype-slug-align";
 import Link from "next/link";
 import { isValidElement } from "react";
 
@@ -36,7 +37,7 @@ export function Markdown({
     <div className="kb-prose">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkCjkFriendly]}
-        rehypePlugins={[rehypeRaw, rehypeSlug]}
+        rehypePlugins={[rehypeRaw, rehypeSlug, rehypeSlugAlign]}
         components={{
           a({ href, children, ...props }) {
             if (isInternal(href)) {
