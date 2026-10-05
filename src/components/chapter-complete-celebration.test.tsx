@@ -77,6 +77,26 @@ describe("ChapterCompleteCelebration (R12.18)", () => {
     expect(screen.queryByText(/篇章完成/)).not.toBeInTheDocument();
   });
 
+  /**
+   * R16.298：礼花是按**完成台账**判的，所以台账记的是哪个篇章就得认哪个。
+   *
+   * 这条钉的是一次真实的认领错误：读数走的是本组件的 `chapterSlug`，而「刚读完」的
+   * 时间取自 `Object.values(readProgressCompletions())` 里属于本篇章的最新一条——
+   * 两条数据源一旦各自指向不同的篇章，礼花就会在「A 章刚读完」时挂到 B 章头上。
+   * 实现若改成直接取全局最新一条（一个很容易写出来的简化），这条立刻红。
+   */
+  it("台账记的是别的篇章时不认领（不许把 A 章的完成时间算到 B 章头上）", () => {
+    store.set(
+      "tb-progress",
+      JSON.stringify({ "getting-started": ["a", "b"] }),
+    );
+    // 完成台账里只有 spot 那一章，而且是**刚发生**的（9 分钟前，在 10 分钟窗口内）——
+    // 这才是 M1 探针第一次失手的原因：种子放在窗口外，两个分支都不放礼花，过滤怎么删都测不出来。
+    seedCompletion("spot", "a", Date.now() - 9 * 60_000);
+    render(<ChapterCompleteCelebration chapterSlug="getting-started" docSlugs={["a", "b"]} locale="zh" />);
+    expect(screen.queryByText(/篇章完成/)).not.toBeInTheDocument();
+  });
+
   it("回访早已学完的篇章不再庆祝", () => {
     store.set("tb-progress", JSON.stringify({ "getting-started": ["a", "b"] }));
     seedCompletion(

@@ -7,7 +7,17 @@ import Link from "next/link";
 import { isValidElement } from "react";
 
 // rewriteLinks 把课文里的相对链接改写成 /{locale}/knowledge/…，正文里的 #锚点 也在本页
-const INTERNAL_HREF = /^(?:#|\/(?:[a-z]{2}\/)?knowledge\/)/;
+//
+// 这条正则是 `rewriteLinks`（src/lib/kb-links.ts，写回 markdown 源码）与这里的消费者之间
+// 唯一的契约：凡是不在这张单子上的站内地址都会被当外链开新标签 + 挂 ↗。两处必须一起改，
+// 否则同一段课文里会有一半链接在站内跳、一半开新窗（生产测试 markdown.test.tsx:38 已钉住
+// 一条，往里加名字时要连它一起加）。
+//
+// 收窄这一条（R16.296）：`[a-z]{2}` 那个前缀形如 `xy`，而本仓只有 zh/en 两个 locale
+// （i18n.ts 的 LOCALES / DEFAULT_LOCALE）。于是 `/xyknowledge/…` 原先会被静默当成站内链接：
+// 渲染成 <Link> 指向一个什么站内页面都不是的地址，点下去不是 404 就是被 locale 重定向卷走。
+// 本轮实测过「旧写法会不会直接抛错」——jsdom 里不抛，所以这里不写「整页崩溃」那个结论。
+const INTERNAL_HREF = /^(?:#|\/(?:zh|en)\/knowledge\/|\/knowledge\/)/;
 
 function isInternal(href?: string) {
   return !!href && INTERNAL_HREF.test(href);

@@ -28,6 +28,41 @@ function renderCard() {
   return render(<ChapterExamCard quiz={quiz} dict={dict} locale="zh" />);
 }
 
+/**
+ * R16.124：题库自带的中文标题是**数据**，语言随题库走；把它当成界面文案印在英文页面上，
+ * 等于让英文页面无声地推荐一个中文东西。这条限定语就是那句「无声」的替代品——
+ * 它必须只在「题库语言 ≠ 页面语言」时出现，中文页面上一句都不该多。
+ */
+describe("题库语言与页面语言不同时，说明这件事", () => {
+  it("英文页面挂中文题时，那句限定语在场（题库标题原样保留，不翻译）", () => {
+    render(
+      <ChapterExamCard
+        quiz={quiz}
+        dict={dict}
+        locale="en"
+        otherLangOnly="(this quiz bank is Chinese-only for now)"
+      />,
+    );
+    expect(screen.getByText("现货测验")).toBeInTheDocument();
+    expect(screen.getByText("(this quiz bank is Chinese-only for now)")).toBeInTheDocument();
+  });
+
+  it("中文页面上不出这句（题库语言就是页面语言，没什么要说明的）", () => {
+    render(
+      <ChapterExamCard quiz={quiz} dict={dict} locale="zh" otherLangOnly="（此题库目前只有中文）" />,
+    );
+    expect(screen.getByText("现货测验")).toBeInTheDocument();
+    expect(screen.queryByText("（此题库目前只有中文）")).toBeNull();
+  });
+
+  it("传进来的 prop 缺了也不许炸（那时就是今天修复前的样子：无声地印中文）", () => {
+    expect(() =>
+      render(<ChapterExamCard quiz={quiz} dict={dict} locale="en" />),
+    ).not.toThrow();
+    expect(screen.getByText("现货测验")).toBeInTheDocument();
+  });
+});
+
 beforeEach(() => {
   readQuizProgress.mockReturnValue(null);
 });

@@ -184,7 +184,11 @@ export default async function ChapterPage({
         </section>
       )}
 
-      {/* 整章测验入口：测验挂在某一节末尾，这里给入口 */}
+      {/* 整章测验入口：测验挂在某一节末尾，这里给入口。
+          R16.124：题库标题是**数据**（目前只有中文一套，QUIZ_BANK_LANGUAGE 已如实报 zh-CN），
+          把它当成界面文案印在英文界面上等于让英文页面推荐一个中文东西——这要拍板（见
+          R16.109 / R16.124）。本轮只做那半边不必拍板的事：别把它伪装成界面文案，
+          语言按题库的真实语言报，不要按当前页面的 locale 报。 */}
       {QUIZZES[slug]?.docSlug && (
         <Link
           href={p(`/knowledge/${slug}/${QUIZZES[slug].docSlug}`)}
@@ -195,6 +199,14 @@ export default async function ChapterPage({
             <div>
               <p className="font-semibold text-sm group-hover:text-accent transition-colors">
                 {QUIZZES[slug].title}
+                {/* R16.124：题库只有中文一套，这一行是**界面文案**所以按当前页面的语言走；
+                    上面那行是数据（题库自带的标题），语言随题库走。两者分开之后，
+                    「英文页面推荐一个中文东西」不再是无声的——它自己说明了这一点。 */}
+                {locale === "zh" ? null : (
+                  <span className="ms-1 font-normal text-xs text-faint">
+                    {t.quiz.otherLangOnly}
+                  </span>
+                )}
               </p>
               <p className="text-xs text-faint">
                 {QUIZZES[slug].questions.length} {t.quiz.questionsUnit}

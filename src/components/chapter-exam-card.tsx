@@ -24,11 +24,15 @@ export function ChapterExamCard({
   dict,
   locale,
   chapterTitle,
+  otherLangOnly,
 }: {
   quiz: ChapterQuiz;
   dict: QuizDict;
+  /** R16.124：题库语言跟题库走，与页面语言未必一致（目前只有中文一套） */
   locale: ShareLocale;
   chapterTitle?: string;
+  /** R16.124：这一张卡片自己用的那两句（答题组件 `<Quiz>` 不渲染它们，故不走 QuizDict） */
+  otherLangOnly?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   // 成绩存在 localStorage 里。直接在渲染期读它会让服务端快照与客户端首帧不一致：
@@ -60,6 +64,16 @@ export function ChapterExamCard({
         <div>
           <p className="font-semibold">
             <span aria-hidden>📝 </span>{quiz.title}
+            {/* R16.124：题库自带的中文标题是**数据**，语言随题库走；这一行是界面文案，
+                所以按当前页面的语言说清楚它只有中文一种。篇章页那张入口卡片同款处理。
+                这句作为独立 prop 进来，不塞进 `QuizDict`——那个接口是给 `<Quiz>`
+                （真正的答题组件）用的，它自己不渲染这一句，塞进去会被 check:dead-copy
+                当成「装配了却从不读取的字段」判红。 */}
+            {locale === "zh" || !otherLangOnly ? null : (
+              <span className="ms-1 text-xs font-normal text-faint">
+                {otherLangOnly}
+              </span>
+            )}
           </p>
           <p className="mt-1 text-sm text-muted">
             {total} {dict.questionsUnit}
