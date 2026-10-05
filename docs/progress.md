@@ -2,6 +2,36 @@
 
 ---
 
+## 2026-10-05 · 第四十九轮（R16.300）：标题 id 对齐知识库 slug 规则，R16.114 关账
+
+- 里程碑 / 版本：R16 质量与事实门禁；**R16.114 关账**，无产品版本变更。
+- 分支 / PR：`fix/kb-anchor-slug-align`，PR #391。
+- 完成内容：
+  - **登记时的归属判错了**：R16.114 记的是「知识库里手写锚点差一个前导连字符，修在上游」。实测不是——问题在**两个渲染器的 slug 规则不同**：kline-buty 的 `kb-anchor-check.mjs` 用自己的 `slugify()`，末尾 `.replace(/^-|-$/g,'')` 剥掉首尾连字符，而内容里的锚点就是按它手抄的（作者对着 VitePress 实际 id 抄），所以上游那道门一直是绿的；本站用 `rehype-slug`（GitHub 规则）**没有**这一步。`## ⑤ 金银比与油金比：…` 在两处得到 `金银比与油金比…` 与 `-金银比与油金比…`，那两条锚点因此在本站点不动。
+  - **两边各自自洽、合起来却错**——这正是它能从上游漏到线上的机制：只在任一侧加断言都抓不到。
+  - **改渲染器，不动内容**：新增 `src/lib/rehype-slug-align.ts`（只剥首尾连字符），挂进
+    `markdown.tsx` 的 rehype 链。子模块内容一个字未动（AGENTS.md 明文禁止原地改，且跨仓取舍超出本轮）。
+  - **只剥连字符、不重写整个 slug 算法，是量过的**：全库 8960 个标题里两侧规则有 **2264 处**不同
+    （多为 `·` → `--` vs `-` 这类），但全库 `](#…)` 链接**只有 8 条**，指向的都不是那批。改了只会
+    扩大影响面而无收益；真要用上「按标题生成目录」时再连算法一起对齐。
+- 变更文件：`src/lib/rehype-slug-align.ts`（新）、`src/components/markdown.tsx`、
+  `scripts/kb-anchor-links.test.mjs`（新）、`docs/roadmap.md`、本文件。
+- **门禁**（3 条）：用**真实渲染管线**（remark-parse → remark-rehype → rehype-slug → rehypeSlugAlign）
+  逐个核对每个 `](#…)` 能否命中本页标题；**不抄一份 slugify**（抄的那份下次有人改插件就悄悄过期，
+  这正是本条要避免的）；不许空转（扫到锚点数 ≥ 4）；正向对照「只挂 rehype-slug 时那两条必须重新变红」
+  ——实测确实变红。
+- **写 .mjs 判据的坑（第二次了，记下来）**：`scripts/**/*.test.mjs` 里写 TS 标注会在 vitest 的
+  rolldown 解析阶段炸（`Parse failure`），且报错指向的位置常常不是出错那行。类型标注一律去掉。
+- 验证：`npm run test` **346 文件 / 3625 用例全绿**；`typecheck`；`lint`；`build`；
+  `check:links` / `check:relative-links` / `check:localized-labels` / `check:dead-copy` /
+  `check:scan-counts` 全绿。
+- 阻塞 / 风险：无产品阻塞。回滚 = revert 本 PR（两条锚点会重新点不动）。
+- 下一项：继续盘点 roadmap 未决项；本仓 34 条未决里多数是 `BLOCKED_EXTERNAL` 或需拍板，
+  优先挑「能像本条一样把待拍板项先量出可执行部分」的。
+- 更新时间：2026-10-05（Asia/Shanghai）。
+
+---
+
 ## 2026-10-05 · 第四十八轮（R16.299）：AiQuiz 装配里零风险的那 6 条改取字典（R16.108 部分收口）
 
 - 里程碑 / 版本：R16 质量与事实门禁；**R16.108 部分收口**（8 条仍待拍板），无产品版本变更。
