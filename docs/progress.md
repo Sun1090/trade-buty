@@ -2,6 +2,41 @@
 
 ---
 
+## 2026-10-05 · 第五十一轮（R16.215）：没配云端的部署不再骗人点「发送登录链接」
+
+- 里程碑 / 版本：R16 质量与事实门禁；**R16.215 关账**（无产品版本变更）。
+- 分支 / PR：`fix/auth-cloud-unavailable-gate`，PR #394。
+- **注册项自己就留了个尾巴**：它写「R16.208 之后不再谎称『网络异常』，改说『发送失败，
+  请稍后重试』」—— 但**那句话仍然在邀请重试，而这里没有任何重试能成功**。
+- 根因（实测代码路径）：`getSupabaseBrowser()` 在缺 `NEXT_PUBLIC_SUPABASE_*` 时
+  **同步抛**，被 `login-client.tsx` 的 onSubmit catch 接住，归类成「网络异常/发送失败」。
+  配置缺失是**永久状态**；让人去查自己的网络、让人重试，是把**部署方的配置问题**
+  推给了**访客的网络**。预览环境、CI E2E、任何没配 env 的部署都会走到这条。
+- 完成内容：
+  - `login-client.tsx` 复用 `hasSupabaseEnv()`（**不重写 env 判断**）：缺 env 时显示
+    「此部署未启用云端登录」并说清后果（进度只存本机、换部署才同步），邮箱框与按钮一并禁用，
+    `onSubmit` 再加早退作纵深防御（连抛都不抛）。
+  - `auth/page.tsx` 的 `subtitle` 承诺「登录后进度自动云端存档」，没配云端时不成立 ——
+    改成**只在真的有云端时渲染**。只修按钮不修这句，等于同一屏一边说没开云端、一边
+    承诺自动存档，**自相矛盾**。
+  - 字典补 `cloudUnavailable` / `cloudUnavailableHint` **中英各一条**，英文独立翻译
+    （不把中文原文塞进 `en` —— R16.108 的纪律）。
+- 门禁 `src/lib/cloud-login-availability.test.ts`（新，4 条）：client 的 env 判断就是
+  `hasSupabaseEnv()`（改 env 判断会漏到这里）；页面与组件**都**问过；
+  既有可交互的门（按钮纳入 `cloudReady`）也有不可交互的早退；`subtitle` 受约束。
+  **四个变异全部实测转红**；组件用例另加 5 条，含「有 env 时别把好部署一起禁了」这条反向对照。
+- 变更文件：`src/components/login-client.tsx`、`src/app/[locale]/auth/page.tsx`、
+  `src/lib/i18n.ts`、`src/components/login-client.test.tsx`、
+  `src/lib/cloud-login-availability.test.ts`（新）、本文件、`docs/roadmap.md`。
+- 验证：`npm run test` **347 文件 / 3636 用例全绿**；`typecheck`；`lint`；`build`；
+  `check:links` / `check:relative-links` / `check:localized-labels` / `check:dead-copy` /
+  `check:secrets` / `check:translation-history` 全绿。
+- 阻塞 / 风险：无产品阻塞。回滚 = revert 本 PR（回到「点一次、再被告知重试」）。
+- 下一项：继续盘点 roadmap 未决项，优先挑**不需要产品拍板、且能像本条一样先证伪再改**的。
+- 更新时间：2026-10-05（Asia/Shanghai）。
+
+---
+
 ## 2026-10-05 · 第五十轮（R16.301）：目录也共享 slug 对齐口径，270 条目录入口修好
 
 - 里程碑 / 版本：R16 质量与事实门禁；**R16.301 开账**（承接 R16.114 的漏网部分）。
