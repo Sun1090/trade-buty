@@ -26,6 +26,13 @@ import { extractHeadings } from "../src/lib/toc";
 
 const ROOT = "content/kline-buty/docs/knowledge";
 
+/**
+ * 下面两条要跑全库 419 个文件、每个文件一份全新渲染管线，实测本地 ~3s。
+ * vitest 默认单条 5s，而 `test:coverage`（CI 跑的那条）开了 v8 插桩后会到 ~9s ——
+ * 于是本地全绿、CI 超时红。**门禁自己超时等于没有门禁**，所以显式给足预算。
+ */
+const CORPUS_TIMEOUT = 120_000;
+
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
@@ -68,7 +75,7 @@ function ids_fallback() {
   throw new Error("渲染管线跑不通，这条门禁失去判据");
 }
 
-describe("R16.114：课文锚点在本站渲染器下真的点得到", () => {
+describe("R16.114 / R16.301：锚点与目录在本站渲染器下真的点得到", () => {
   it("知识库目录在树内（否则下面全是空转）", () => {
     expect(readdirSync(ROOT).sort()).toContain("zh");
     expect(readdirSync(ROOT).sort()).toContain("en");
@@ -91,7 +98,7 @@ describe("R16.114：课文锚点在本站渲染器下真的点得到", () => {
     // 判据不许空转：全库至少要有若干条锚点链接
     expect(checked, "一条锚点链接都没扫到，这条门禁是空转").toBeGreaterThanOrEqual(4);
     expect(broken, `这些锚点在本站点不动：\n${broken.join("\n")}`).toEqual([]);
-  });
+  }, CORPUS_TIMEOUT);
 
   it("正向对照：去掉 slug 对齐那一步，R16.114 那两条必须重新变红", async () => {
     // 只挂 rehype-slug、不挂 rehypeSlugAlign —— 即修复前的渲染行为
@@ -126,7 +133,7 @@ describe("R16.114：课文锚点在本站渲染器下真的点得到", () => {
     }
     expect(checked, "一个目录条目都没扫到，这条门禁是空转").toBeGreaterThanOrEqual(100);
     expect(broken, `这些目录条目在本站点不动：\n${broken.slice(0, 20).join("\n")}`).toEqual([]);
-  });
+  }, CORPUS_TIMEOUT);
 
   it("正向对照：目录若各 slug 一次而不共享口径，R16.301 立刻现形", async () => {
     const file = join(ROOT, "zh/markets-instruments/precious-metals-energy.md");
