@@ -2,6 +2,80 @@
 
 ---
 
+## 2026-10-05 · 第五十轮（R16.301）：目录也共享 slug 对齐口径，270 条目录入口修好
+
+- 里程碑 / 版本：R16 质量与事实门禁；**R16.301 开账**（承接 R16.114 的漏网部分）。
+- 分支 / PR：`fix/kb-toc-slug-align`，PR #392。
+- **起因是合并前没做到的一件事**：#391 合并后去生产核一眼，发现 R16.114 只修了一半 ——
+  渲染出的标题 id 已是不带前导连字符的 `金银比与油金比…`，而「本页目录」里的 href 仍带前导连字符。
+  **目录点不动，而且比正文那两条更显眼**（目录是用户的主要入口）。
+- **漏在哪**：目录 href **不来自课文**，是 `extractHeadings()` 用 `github-slugger`
+  **自己再 slug 一次**生成的 —— 全库共**三份** slug 实现。上一版只改了第二份（`rehype-slug`），
+  门禁只扫课文里的 `](#…)`，**压根没量目录**，所以门禁是绿的。
+- **登记口径本身偏窄（实测）**：目录条目共 8356 条，修复前**270 条点不动、涉及 40 个文件**；
+  例如 `en/data-interpretation/earnings-calls.md` 整页目录全坏。R16.114 记的是「两条锚点」。
+- 完成内容：
+  - 新增 `src/lib/heading-id.ts` 导出 `alignHeadingId()`，`rehype-slug-align.ts` 与 `toc.ts`
+    **共用同一份**口径。不做两份各写各的 `.replace()` —— 上一轮的教训正是两份口径必然走散。
+  - 门禁补两条（现共 5 条）：目录条目逐条比对真实标题 id（判据不许空转，条目数 ≥ 100）；
+    naive 口径必须出现「命不中渲染结果」的条目，否则对照自身无判据。
+  - **两个变异都实测转红**：把 `toc.ts` 改回 `slugger.slug(text)` → 目录用例红、对照也红。
+- **顺带修掉判据自身的不确定（这条更要紧）**：第一版把一个 `unified` processor 复用到全库
+  419 个文件上，**单跑绿、全量跑偶发红** —— slugger 的去重计数（重复标题追加 `-1`/`-2`）
+  会跨文件累积，于是「渲染出的 id」与 `extractHeadings`（每文件新建 slugger）在某些文件上分叉。
+  **判据自身不确定 = 没有判据。** 改为每个文件一份全新管线，并在默认与 `--no-isolate` 两种模式下
+  各连跑三遍确认稳定。
+- 变更文件：`src/lib/heading-id.ts`（新）、`src/lib/rehype-slug-align.ts`、`src/lib/toc.ts`、
+  `scripts/kb-anchor-links.test.mjs`、本文件、`docs/roadmap.md`。
+- 验证：`npm run test` **346 文件 / 3627 用例全绿（连跑两遍）**；`typecheck`；`lint`；`build`；
+  `check:links` / `check:relative-links` / `check:localized-labels` / `check:dead-copy` /
+  `check:secrets` 全绿。
+- 阻塞 / 风险：无产品阻塞。回滚 = revert 本 PR（270 条目录入口重新失效）。
+- **一条流程教训**：修渲染契约时，**合并前对着生产核一次**。#391 门禁全绿、CI 全绿，
+  却在生产上只修了一半 —— 因为门禁量的东西和坏的入口不是同一个。
+- 下一项：继续盘点 roadmap 未决项；本仓 34 条未决里多数是 `BLOCKED_EXTERNAL` 或需拍板，
+  优先挑「能像本条一样先量出可执行部分」的。
+- 更新时间：2026-10-05（Asia/Shanghai）。
+
+---
+
+## 2026-10-05 · 第五十轮（R16.301）：目录也共享 slug 对齐口径，270 条目录入口修好
+
+- 里程碑 / 版本：R16 质量与事实门禁；**R16.301 开账**（承接 R16.114 的漏网部分）。
+- 分支 / PR：`fix/kb-toc-slug-align`，PR #392。
+- **起因是合并前没做到的一件事**：#391 合并后去生产核一眼，发现 R16.114 只修了一半——
+  渲染出的标题 id 已是不带前导连字符的 `金银比与油金比…`，而「本页目录」里仍是
+  `href="#-金银比与油金比…"`。**目录点不动，而且比正文那两条更显眼**（目录是主要入口）。
+- **漏在哪**：目录 href **不来自课文**，是 `extractHeadings()` 用 `github-slugger`
+  **自己再 slug 一次**生成的——全库共**三份** slug 实现。上一版只改了第二份（`rehype-slug`），
+  门禁只扫课文里的 `](#…)`，**压根没量目录**，所以门禁是绿的。
+- **登记口径本身偏窄（实测）**：目录条目共 8356 条，修复前**270 条点不动、涉及 40 个文件**；
+  例如 `en/data-interpretation/earnings-calls.md` 整页目录全坏。R16.114 记的是「两条锚点」。
+- 完成内容：
+  - 新增 `src/lib/heading-id.ts` 导出 `alignHeadingId()`，`rehype-slug-align.ts` 与 `toc.ts`
+    **共用同一份**口径。不做两份各写各的 `.replace()`——上一轮的教训正是两份口径必然走散。
+  - 门禁补两条（现共 5 条）：目录条目逐条比对真实标题 id（判据不许空转，条目数 ≥ 100）；
+    naive 口径必须出现「命不中渲染结果」的条目，否则对照自身无判据。
+  - **两个变异都实测转红**：把 `toc.ts` 改回 `slugger.slug(text)` → 目录用例红、对照也红。
+- **顺带修掉判据自身的不确定（这条更要紧）**：第一版把一个 `unified` processor 复用到全库
+  419 个文件上，**单跑绿、全量跑偶发红** —— slugger 的去重计数（重复标题追加 `-1`/`-2`）
+  会跨文件累积，于是「渲染出的 id」与 `extractHeadings`（每文件新建 slugger）在某些文件上分叉。
+  **判据自身不确定 = 没有判据。** 改为每个文件一份全新管线，并在默认与 `--no-isolate` 两种模式下
+  各连跑三遍确认稳定。
+- 变更文件：`src/lib/heading-id.ts`（新）、`src/lib/rehype-slug-align.ts`、`src/lib/toc.ts`、
+  `scripts/kb-anchor-links.test.mjs`、本文件、`docs/roadmap.md`。
+- 验证：`npm run test` **346 文件 / 3627 用例全绿（连跑两遍）**；`typecheck`；`lint`；`build`；
+  `check:links` / `check:relative-links` / `check:localized-labels` / `check:dead-copy` /
+  `check:secrets` 全绿。
+- 阻塞 / 风险：无产品阻塞。回滚 = revert 本 PR（270 条目录入口重新失效）。
+- **一条流程教训**：修渲染契约时，**合并前对着生产核一次**。#391 门禁全绿、CI 全绿，
+  却在生产上只修了一半——因为门禁量的东西和坏的入口不是同一个。
+- 下一项：继续盘点 roadmap 未决项；本仓 34 条未决里多数是 `BLOCKED_EXTERNAL` 或需拍板，
+  优先挑「能像本条一样先量出可执行部分」的。
+- 更新时间：2026-10-05（Asia/Shanghai）。
+
+---
+
 ## 2026-10-05 · 第四十九轮（R16.300）：标题 id 对齐知识库 slug 规则，R16.114 关账
 
 - 里程碑 / 版本：R16 质量与事实门禁；**R16.114 关账**，无产品版本变更。
