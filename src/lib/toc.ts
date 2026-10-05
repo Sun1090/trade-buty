@@ -1,4 +1,5 @@
 import GithubSlugger from "github-slugger";
+import { alignHeadingId } from "./heading-id";
 
 export interface TocItem {
   text: string;
@@ -39,7 +40,7 @@ function cleanHeadingText(raw: string): string {
   return text.replace(/[*`~]/g, "").trim();
 }
 
-/** 与 rehype-slug（github-slugger）一致的 id 算法，按文档顺序提取 H2/H3 */
+/** 与正文标题 id 同源（`alignHeadingId`）：目录 href 必须命中渲染出来的真实 id */
 export function extractHeadings(markdown: string): TocItem[] {
   const slugger = new GithubSlugger();
   const items: TocItem[] = [];
@@ -56,7 +57,7 @@ export function extractHeadings(markdown: string): TocItem[] {
     const depth = m[1].length as 2 | 3;
     const text = cleanHeadingText(m[2]);
     if (!text) continue;
-    items.push({ text, depth, id: slugger.slug(text) });
+    items.push({ text, depth, id: alignHeadingId(slugger.slug(text)) });
   }
   return items;
 }

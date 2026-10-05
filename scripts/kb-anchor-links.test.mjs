@@ -21,6 +21,8 @@ import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import rehypeSlug from "rehype-slug";
 import { rehypeSlugAlign } from "../src/lib/rehype-slug-align";
+import GithubSlugger from "github-slugger";
+import { extractHeadings } from "../src/lib/toc";
 
 const ROOT = "content/kline-buty/docs/knowledge";
 
@@ -31,6 +33,18 @@ function walk(dir, out = []) {
     else if (name.endsWith(".md")) out.push(p);
   }
   return out;
+}
+
+/**
+ * 每个文件一份全新管线。
+ *
+ * **踩过的坑**：第一版把一个 `unified` processor 复用到全库 419 个文件上，
+ * 单跑绿、全量跑偶发红 —— 因为 slugger 的去重计数（重复标题追加 `-1`/`-2`）
+ * 会跨文件累积，于是「渲染出来的 id」与 `extractHeadings`（每文件新建 slugger）
+ * 在某些文件上分叉。判据自身不确定，等于没有判据。
+ */
+function makeProcessor() {
+  return unified().use(remarkParse).use(remarkRehype).use(rehypeSlug).use(rehypeSlugAlign);
 }
 
 function headingIds(body, processor) {
@@ -55,8 +69,6 @@ function ids_fallback() {
 }
 
 describe("R16.114：课文锚点在本站渲染器下真的点得到", () => {
-  const processor = unified().use(remarkParse).use(remarkRehype).use(rehypeSlug).use(rehypeSlugAlign);
-
   it("知识库目录在树内（否则下面全是空转）", () => {
     expect(readdirSync(ROOT).sort()).toContain("zh");
     expect(readdirSync(ROOT).sort()).toContain("en");
@@ -70,7 +82,7 @@ describe("R16.114：课文锚点在本站渲染器下真的点得到", () => {
       const body = raw.replace(/^---\n[\s\S]*?\n---\n/, "");
       const targets = [...body.matchAll(/\]\(#([^)]+)\)/g)].map((m) => m[1]);
       if (targets.length === 0) continue;
-      const ids = await headingIds(body, processor);
+      const ids = await headingIds(body, makeProcessor());
       for (const t of targets) {
         checked += 1;
         if (!ids.includes(t)) broken.push(`${file.replace(`${ROOT}/`, "")} → #${t}`);
@@ -90,7 +102,47 @@ describe("R16.114：课文锚点在本站渲染器下真的点得到", () => {
     expect(anchor, "这一行没找到 R16.114 那条锚点，样例可能挪了位置").toBeTruthy();
     const ids = await headingIds(body, unaligned);
     expect(ids, "对照失效：未对齐时 id 里不该有前导连字符").toContain(`-${anchor}`);
-    const aligned = await headingIds(body, processor);
+    const aligned = await headingIds(body, makeProcessor());
     expect(aligned, "对齐后应当命中").toContain(String(anchor));
+  });
+
+  // ↓↓↓ R16.301 ↓↓↓
+  // 第一版只有上面那条，于是漏了「本页目录」。上线后一查生产才发现：目录里的 href 带前导
+  // 连字符、而渲染出来的 id 不带 —— 也就是说**目录比正文坏得更明显**（目录是主要入口），
+  // 而门禁是绿的。原因很直白：目录 href 不来自课文，它由 `extractHeadings()` 用
+  // github-slugger **自己**再 slug 一次，是**第三份** slug 实现，压根没经过上面那条断言。
+  it("目录里每个条目都能命中本页真实标题（目录 href 来自第三份 slug 实现）", async () => {
+    const broken = [];
+    let checked = 0;
+    for (const file of walk(ROOT)) {
+      const body = readFileSync(file, "utf8").replace(/^---\n[\s\S]*?\n---\n/, "");
+      const tocIds = extractHeadings(body).map((h) => h.id);
+      if (tocIds.length === 0) continue;
+      const ids = await headingIds(body, makeProcessor());
+      for (const id of tocIds) {
+        checked += 1;
+        if (!ids.includes(id)) broken.push(`${file.replace(`${ROOT}/`, "")} → #${id}`);
+      }
+    }
+    expect(checked, "一个目录条目都没扫到，这条门禁是空转").toBeGreaterThanOrEqual(100);
+    expect(broken, `这些目录条目在本站点不动：\n${broken.slice(0, 20).join("\n")}`).toEqual([]);
+  });
+
+  it("正向对照：目录若各 slug 一次而不共享口径，R16.301 立刻现形", async () => {
+    const file = join(ROOT, "zh/markets-instruments/precious-metals-energy.md");
+    const body = readFileSync(file, "utf8").replace(/^---\n[\s\S]*?\n---\n/, "");
+    const rendered = await headingIds(body, makeProcessor());
+
+    // 「目录自己 slug 一次、不共享 alignHeadingId」= 第一版的漏法
+    const naive = new GithubSlugger();
+    const naiveIds = extractHeadings(body).map((h) => h.text).map((t) => naive.slug(t));
+
+    expect(
+      naiveIds.filter((id) => !rendered.includes(id)),
+      "对照失效：naive 目录 id 竟然全都命中了，这条对照已无判据"
+    ).not.toEqual([]);
+
+    // 共享口径之后，目录条目必须逐条命中
+    expect(extractHeadings(body).map((h) => h.id).filter((id) => !rendered.includes(id))).toEqual([]);
   });
 });
