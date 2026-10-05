@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { normalizeReturnTo } from "@/lib/auth-return";
 import {
   classifyOtpError,
@@ -21,6 +22,8 @@ type AuthDict = {
   errorInvalidEmail: string;
   errorNetwork: string;
   errorUnknown: string;
+  cloudUnavailable: string;
+  cloudUnavailableHint: string;
   cooldownTpl: string; // 占位符 "{sec}"
   cooldownButton: string; // 占位符 "{sec}"
   returnToNoticeTpl: string; // 占位符 "{path}"
@@ -43,6 +46,10 @@ export function LoginClient({
   dict: AuthDict;
   locale: string;
 }) {
+  // R16.215：判据与真正发起请求的那道门是同一个（getSupabaseBrowser 在缺 env 时直接抛），
+  // 所以这里问hasSupabaseEnv() 而不是让用户点一次注定失败的按钮、再把「部署没开云端」
+  // 说成「网络异常，请稍后重试」。
+  const cloudReady = hasSupabaseEnv();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [cooldownSec, setCooldownSec] = useState<number>(0);
@@ -75,6 +82,7 @@ export function LoginClient({
     e.preventDefault();
     if (!email || status === "sending") return;
     // 基础邮箱格式校验
+    if (!cloudReady) return; // R16.215：按钮已禁用，这里是纵深防御，不去碰注定抛的 supabase
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
     // 客户端冷却：避免用户误连点触发服务端 429
     if (isOtpCoolingDown(lastSentRef.current)) {
@@ -124,7 +132,7 @@ export function LoginClient({
 
   // 冷却期内的可点击/禁用提示：按钮文案+禁用+冷却剩余
   const inCooldown = cooldownSec > 0;
-  const buttonDisabled = status === "sending" || inCooldown;
+  const buttonDisabled = status === "sending" || inCooldown || !cloudReady;
   const buttonLabel = inCooldown
     ? dict.cooldownButton.replace("{sec}", String(cooldownSec))
     : status === "sending"
@@ -149,6 +157,16 @@ export function LoginClient({
           </p>
         </div>
       )}
+      {!cloudReady && (
+        <div
+          className="rounded-xl border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn space-y-1"
+          role="status"
+          aria-live="polite"
+        >
+          <p className="font-medium">{dict.cloudUnavailable}</p>
+          <p className="text-muted">{dict.cloudUnavailableHint}</p>
+        </div>
+      )}
       <form onSubmit={onSubmit} className="space-y-4">
         <input
           type="email"
@@ -159,7 +177,7 @@ export function LoginClient({
           placeholder={dict.emailPlaceholder}
           aria-label={dict.emailPlaceholder}
           className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm focus:border-accent/50 focus:shadow-[0_0_0_3px_var(--accent-dim)] transition-all"
-          disabled={status === "sending"}
+          disabled={status === "sending" || !cloudReady}
         />
         <button
           type="submit"
