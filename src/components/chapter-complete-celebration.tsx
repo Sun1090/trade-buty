@@ -30,11 +30,18 @@ export const CELEBRATION_EMOJIS = ["🎉", "📖", "✨", "✅", "📚", "🎓"]
 export function ChapterCompleteCelebration({
   chapterSlug,
   docSlugs,
+  docCount,
   locale = "zh",
 }: {
   chapterSlug: string;
   /** 这一章现在真有的课文——礼花只数这些，旧键不算 */
   docSlugs: readonly string[];
+  /**
+   * 「这一章有几篇」的分母，由章节页从构建期的同一份 `docMetas` 算出。
+   * 它与 `docSlugs` 必须是同一个来源：两者不等时礼花的完成判定会说出一个
+   * 清单上不存在的答案（R16.58）。
+   */
+  docCount: number;
   locale?: string;
 }) {
   const [show, setShow] = useState(false);
@@ -48,8 +55,12 @@ export function ChapterCompleteCelebration({
     // 于是同一页课文清单勾着 2/7、礼花却在喊「篇章完成！」。
     // 直接 JSON.parse 原始存储更不行：字符串也有 `.length`，重复键也照算。
     const current = slugKey === "" ? [] : slugKey.split("|");
-    // 礼花喊「篇章完成」之前，先确认「这一章有几篇」这个分母就是它手里那份清单
-    assertDocCountMatchesList(current.length, current, "ChapterCompleteCelebration 的完成判定");
+    // 这一处**不是**自比较：docCount 由调用方（章节页）从 `docMetas` 传进来，
+    // 与本组件手里的 docSlugs 是两把尺，R16.58 登记的分叉正是它们不等的那一刻。
+    // 旧写法传的是 `current.length` 与 `current` 本身——同一个数组的长度跟自己比，
+    // `assertDocCountMatchesList` 恒等于「安静通过」，于是这道门在运行期形同虚设
+    // （单测里那三条喂的是手工造的不一致，量不到这个恒真形态）。
+    assertDocCountMatchesList(docCount, current, "ChapterCompleteCelebration 的完成判定");
     const read = readDocsInChapter(readProgress()[chapterSlug], current);
     const done = current.length > 0 && read >= current.length;
     const lastAt = Object.values(readProgressCompletions())
@@ -64,7 +75,7 @@ export function ChapterCompleteCelebration({
       return () => clearTimeout(t);
     }
     prevDoneRef.current = done;
-  }, [chapterSlug, slugKey]);
+  }, [chapterSlug, slugKey, docCount]);
 
   if (!show) return null;
 
