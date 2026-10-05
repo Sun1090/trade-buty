@@ -2,6 +2,46 @@
 
 ---
 
+## 2026-10-05 · 第五十三轮（R16.58 关账的一半）：那道「两把尺分母必须同源」的门在礼花这侧恒真
+
+- 里程碑 / 版本：R16 质量与事实门禁；完成 R16.58 的可执行部分（第五十三轮），未改产品版本（当前 v0.7.27）。
+- 分支：`fix-r16-58-celebration-dead-assert`（自合并后的 `main` 顶点 `885826a`）。分支内两笔：
+  `5beef17`（代码 + 判据）+ 本条记录。
+- **完成内容**：R16.294 给 `ChapterCompleteCelebration` 补的 `assertDocCountMatchesList`
+  传的是 `assertDocCountMatchesList(current.length, current, ...)` —— **同一个数组的长度跟数组本身比**，
+  `docCount === currentSlugs.length` 恒成立，于是运行期永远撞不到那行 throw。
+  这道门在 R16.294 记为「钉住那条缝」，实际在礼花这侧**什么都没钉住**。
+  改成由章节页从构建期同一份 `docMetas` 传 `docCount` 进来（与 `ChapterRail` 同一口径），
+  两把尺真的分开：`5beef17`。
+- **为什么 R16.294 的单测量不到**（本轮最该记的一条）：`read-count-owner.test.ts` 那三条
+  喂的是**手工造的不一致**（`docCount=7` + 三个 slug），而调用点自己传出来的两个值**永远一致**。
+  判据的形状（不一致就抛）与被测代码的失效形态（构造出恒真的不一致）**不在同一处** ——
+  这正是本项目反复吃过的那一咬的变体：**门禁量的东西不是坏的那个东西**。
+  新判据必须从**调用点真的会把两个值分开**这个角度写，不能从 `assertDocCountMatchesList` 的契约写。
+- **判据**：新用例把两把尺真的分开（`docCount={7}` / `docSlugs` 两篇）并放一份「按清单两篇都读完」
+  的完成台账 —— 礼花本该按清单判定为完成，但分母说的是 7，不一致必须当场报错。
+  变异（退回 `current.length, current`）后**该用例单红**（`1 failed | 12 passed`），
+  报错正是「安静放行 = 这道门恒真」。既有 12 条用例补上 `docCount` prop 后全绿。
+- 变更文件：`src/components/chapter-complete-celebration.tsx`（多一个 `docCount` prop、传参、effect 依赖）、
+  `src/app/[locale]/knowledge/[chapter]/page.tsx`（传 `docs.length`）、
+  `src/components/chapter-complete-celebration.test.tsx`（13 条）。
+- 验证：`npx vitest run` **347 文件 / 3637 条**全绿；`npm run typecheck` exit 0；
+  `npm run lint`（`--max-warnings=0`）exit 0；`npm run build` exit 0（474 页 SSG 不变）；
+  `check:docs` / `check:dead-copy` / `check:localized-labels` 全 0；`git diff --check` 干净。
+- 阻塞 / 风险：无新增阻塞，**界面零变化** —— 今天两把尺必然相等（`docCount` 与 `docSlugs` 同源于
+  `docMetas`），所以这道门在生产上一直是「安静通过」，改它只是让它在**那一天**真的响。
+  不判发布。
+- **登记两处已知边界（不顺手补）**：①`ChapterRail` 那一侧的 `assertDocCountMatchesList(docCount, docs.map(...))`
+  形状是对的（真两把尺），本轮没动，也没有对应「恒真形态」的判据；
+  ②R16.58 的另一半（内容仓真发生改名/删除课文时那声抛错有没有响）仍然关不掉 ——
+  实测自 2026-08-22 双语重构以来零次改名，而本仓按 AGENTS.md 不得就地改内容仓。
+- 分支 / PR：`fix-r16-58-celebration-dead-assert`，待开 PR。第四十三轮候选：
+  给 `ChapterRail` 侧补一条同形状的「恒真形态」判据（把 `assertDocCountMatchesList` 的
+  **调用点**全部扫一遍，凡是把同一个值当两把尺传的当场红）、
+  `runtime-health` 那一族覆盖面窄要不要有个说法（kline-buty 那边记的）、
+  以及台账 `file:line` 引用的人口与主人。
+- 更新时间：2026-10-05（Asia/Shanghai）。
+
 ## 2026-10-05 · 第五十二轮：R16.215 的合并前后对照（浏览器实测，不是推断）
 
 - 分支 / PR：`docs/r16-215-before-after`（仅文档，无代码变更）。
