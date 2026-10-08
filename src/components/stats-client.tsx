@@ -913,10 +913,10 @@ export function StatsClient({
           {locked.map((b: Badge) => (
             <div
               key={b.id}
-              className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-center opacity-40"
+              className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-center"
             >
               <p className="text-3xl" aria-hidden>🔒</p>
-              <p className="mt-2 text-sm font-semibold">{b.name[badgeLocale]}</p>
+              <p className="mt-2 text-sm font-semibold text-muted">{b.name[badgeLocale]}</p>
               <p className="mt-1 text-xs text-faint">{b.desc[badgeLocale]}</p>
             </div>
           ))}

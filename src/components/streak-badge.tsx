@@ -33,7 +33,7 @@ export function StreakBadge({ labels }: { labels: { current: string; longest: st
         <span className="text-xs text-muted">{labels.days}</span>
       </div>
       {longest > streak && (
-        <span className="text-xs text-faint border-l border-[var(--border)] pl-3">
+        <span className="text-xs text-muted border-l border-[var(--border)] pl-3">
           {labels.longest} {longest}
         </span>
       )}
