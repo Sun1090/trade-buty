@@ -2,6 +2,20 @@
 
 ---
 
+## 2026-10-08 · RELEASE_FREEZE：v0.7.28（patch）
+
+- 判级：patch——`v0.7.27` 之后合入 `main` 的 47 个提交全部是缺陷修复、门禁/工具链加固与文档（R16.215 / R16.294–R16.304 及 R16.58 / R16.114 / R16.301 关账），无新增产品能力。判级只数 `v0.7.27..HEAD`，不看计划中的工作。
+- 分支：`release/0.7.28`（自 `origin/main@c7006f3` 切出）。
+- 内容（发布记录 `src/data/release-notes.json`，四条 highlights 中英各四条）：①「本页目录」270 条点不动（R16.301）；②三主题矩阵种台账后的四处数据门对比度 + 根级 404 混语言（R16.302 / R16.304 / R16.295）；③没配云端的部署不再骗人点发送（R16.215）；④哑火的 `audit:all` 复活 + 四条告警走 overrides（R16.303）。
+- 冻结前检查：`ops:work-audit` 悬空 0 / 未确认关闭 PR 0；`origin/main..HEAD` 空。
+- 全量验证（按 `docs/release-checklist.md` §3 顺序）：`test` 348 文件 / 3645 条、`lint` / `typecheck` / `build`（474 页 SSG）、`check:mobile`、构建产物门禁（seo-surface / search-index / structured-data / risk-warning）、报告台账（kb:inventory / kb:gap-priority / kb:accept / title-terminology / description-quality / description-dupes / glossary / test-clock-hygiene / dead-copy / faq-candidates）、`check:scan-counts` → `check:report-freshness`（漂移 0）、`check:constitution`、`check:docs`（package 0.7.28）、`check:changelog`（32 条一致）、`check:lockfile-repro`（983 包逐条目一致，钉住的 npm 10.9.4 重生成）、`db:test` 5/5、`e2e` 201 passed / 1 skipped——全绿。
+- `check:release-tag`：打印「最新 0.7.28 待合并后补打 v0.7.28」，按设计不判失败。
+- 合并后待办：tag `v0.7.28` 打到合并后的 `main`、推送、`check:release-tag` 复跑、等 Vercel 生产构建、`ops:smoke-prod`（特别核 `/zh/changelog` 出现 0.7.28——合并 ≠ 上线）、删除远端发布分支。
+- 回滚方案：`git revert` 发布提交后重新部署；或 Vercel 把 Production Deployment 切回 v0.7.27 构建止血。本轮无数据库迁移。
+- 更新时间：2026-10-08（Asia/Shanghai）。
+
+---
+
 ## 2026-10-08 · 第五十六轮（R16.304）：门禁不种本地台账，两处「数据门」后的对比度缺陷看不见
 
 - 里程碑 / 版本：R16 无障碍；完成 R16.304（当前 v0.7.27，无发布）。
