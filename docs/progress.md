@@ -19,6 +19,21 @@
 
 ---
 
+## 2026-10-08 · 第五十四轮（R16.302）：sepia 首页行情条跌色 3.20:1，而三主题门禁在 CI 里根本没看过那一行
+
+- 里程碑 / 版本：R16 质量与无障碍；完成 R16.302（当前 v0.7.27，无发布）。
+- 分支 / PR：`fix/sepia-down-contrast`。
+- **完成内容**：本地跑 `npm run e2e` 时 `a11y-themes.spec.ts` 的 `a11y（sepia）：/zh` 红了：`--down: #dc2626` 落在 `--surface-hover: #ddd1bd` 上（首页 `MarketTicker` 的跌箭头 `.text-down`，12px），axe 实测 **3.20:1**（要求 4.5:1）。这是 R16.287 sepia 批次（code / tip / warn / danger / 芯片五组）的漏网，那一批量的是 callout 与表格，`--down` 只在行情组件里当文字色用。**为什么 CI 一直在安静通过**：`a11y-themes.spec.ts` 不拦跨源请求，而 CI 出口 IP 被 Binance 451 拒答（`runtime-health.spec.ts` 早就按域名豁免过这件事），于是 `tickers` 永远是 `null`、跌色行永远不渲染，`color-contrast` 扫到的是空卡片骨架——**门禁量的东西不是坏的那个东西**，本战役反复出现的那一咬这次显形在外部依赖的渲染分支上。
+- **修法两层**：①`src/app/globals.css` 的 sepia 块把 `--down` 从 `#dc2626` 改成 `#991b1b`，按实测选色：在 sepia 四种底（`background #f4ebd9` / `surface #e8dcc8` / `surface-hover #ddd1bd` / 卡片 `#e8e5d2`）与叠加 `bg-down/10` 的合成底 `#d6bfad` 上全部 ≥4.71:1；注释里逐底写读数，同 `--accent` 那条的格式。**light 与 dark 的 `--down` 不动**，白字按跌底的 `bg-down + text-white` 是反色路径、不受前景换色影响。②`e2e/a11y-themes.spec.ts` 给两个首页（`/zh`、`/en`）桩掉 `api.binance.com` 的 24hr 端点（形状对齐真响应，三条全跌），并显式等待 `.text-down` 可见后才跑 axe——不桩就是空转，桩了不等就是水合窗口伪影（R16.286 记过同类）。
+- **变更文件**：`src/app/globals.css`、`e2e/a11y-themes.spec.ts`、`docs/roadmap.md`、`docs/progress.md`（本轮无发布，不动由 `release-notes.json` 生成的 `CHANGELOG.md`）。
+- **验证**：**变异两组各杀一次**：①`--down` 退回 `#dc2626`——加强前的 `a11y-themes.spec.ts` 只 `sepia /zh` 单红；加强后 `sepia /zh` + `sepia /en` 两条同红，证明桩 + 等待让这一行进了门禁视野；②还原 `#991b1b`，16 条全绿。全站其余 e2e **201 passed / 1 skipped**（3.0m）、`npx vitest run` **348 文件 / 3643 条**全绿；`npm run lint` / `typecheck` / `build`（474 页 SSG）exit 0；`check:report-freshness` 工作区漂移 0；`check:dark-pattern-copy` / `check:localized-labels` / `check:test-clock-hygiene` / `check:dead-copy` / `check:scan-counts` / `check:docs` / `check:kb-pointer` / `check:kb-changelog` 全绿。
+- **用户可见变化**：只有 sepia（护眼）主题下首页与各处跌色文字由亮红变深红（对比度 3.2 → 5.5 上下），其余两主题零变化。界面文案、数据结构、外部请求形态都没动。
+- **阻塞 / 风险**：无；纯 CSS 变量与 e2e 桩，回滚只需撤回本轮提交。**登记边界（不顺手补）**：桩只覆盖了首页两处，`/zh/stats`、`/en/stats` 若日后也引入依赖外部数据的低对比度分支，同类「门禁看不见坏东西」的病还会复发——真正的普适防法是把「外部数据渲染出的色板」也纳入主题矩阵扫描，这不在本轮范围内。
+- **下一项**：继续按 `docs/progress.md` 上一轮留下的候选队列推进；优先给未决 roadmap 里那批「需拍板」行加一条更严的『门禁自身能真的看见目标缺陷』的巡检，或审计台账里其他「外部依赖渲染分支」的同族漏网。
+- 更新时间：2026-10-08（Asia/Shanghai）。
+
+---
+
 ## 2026-10-05 · 第五十三轮（R16.58 关账的一半）：那道「两把尺分母必须同源」的门在礼花这侧恒真
 
 - 里程碑 / 版本：R16 质量与事实门禁；完成 R16.58 的可执行部分（第五十三轮），未改产品版本（当前 v0.7.27）。
