@@ -2,6 +2,22 @@
 
 ---
 
+## 2026-10-08 · 第五十六轮（R16.304）：门禁不种本地台账，两处「数据门」后的对比度缺陷看不见
+
+- 里程碑 / 版本：R16 无障碍；完成 R16.304（当前 v0.7.27，无发布）。
+- 分支 / PR：`fix/seeded-theme-a11y-gaps`。
+- **起因（R16.302 的边界，本轮主动扫）**：R16.302 合入之后按它留下的那条边界——「`/zh/stats`、`/en/stats` 若日后也引入依赖外部数据的低对比度分支，同类『门禁看不见坏东西』的病还会复发」——跑了一次全矩阵扫描（`a11y-themes.spec.ts` 的 8 页 × 2 主题 + 本地台账种子）。结果两处：`/zh/stats` 的 8 张未解锁徽章 `opacity-40` 洗到 sepia 2.06 / dark 3.35（`--foreground`）与 1.65 / 1.71（`text-faint`）；首页 `StreakBadge` 那颗「最长 N」`text-faint` 落在 `--accent-dim` 合成底上 4.46 / 4.47。**两处在两种主题下都过不了 AA**。
+- **根因不是这两个组件、是门禁**：`a11y-themes.spec.ts` 起手只写 `tb-theme`，其他本地台账键一个都不种。`stats-client.tsx` 的三条短路 `overallPct===0 && totalStudySeconds===0 && currentStreak===0 → return null` 让成就徽章整块消失；`StreakBadge` 只在 `longest > streak` 时才渲染那颗芯片。**门禁量的东西不是坏的那个东西**——R16.302 同一形状第二次显形，这次被挡在渲染之外的是本地台账分支而不是外部数据分支。
+- **修在两层**：①组件——locked 徽章去 `opacity-40`、改用 `text-muted` 名字（实测 5.34–6.22）+ `text-faint` 描述（4.79–4.94），保留 🔒 图标与「未解锁」的视觉分层；`StreakBadge` 那颗把 `text-faint` 换成 `text-muted`（5.37–5.77）。②门禁——`e2e/a11y-themes.spec.ts` 加 `seedLedger(page, theme)`，一次性种齐 `runtime-health.spec.ts` 同一份键集与形状（`tb-streak` 的 `current=12 / longest=20` 让芯片必现、`tb-progress`+`tb-study-time`+`tb-activity` 让 stats 短路失效、`tb-wrong`+`tb-replay-history/best` 补齐其它台账路径），并给三处（`/zh`、`/en`、`/zh/stats`）加**水合下限探针**：跌色行情 + 「最长 / Best」芯片 + 「成就」标题都要 `waitFor({state:"visible",timeout:5_000})` 才跑 axe——桩/种但不等，门禁又会退化成「安静通过」（R16.302 已经说过一次）。
+- **变更文件**：`src/components/streak-badge.tsx`、`src/components/stats-client.tsx`、`e2e/a11y-themes.spec.ts`、`docs/roadmap.md`、`docs/progress.md`。
+- **验证**：**变异一组各杀一次**——把两处组件修复都退回原状 → **恰好 6 条红**（streak 芯片在 `/zh` `/en` × dark/sepia 各 1 = 4；locked 徽章在 `/zh/stats` × dark/sepia = 2），其他 10 条全绿；还原 → 16 条全绿。红条数量**逐处对应**（不是 seed 顺带撞出的噪声）。**顺带核**：`/zh/review` 那颗「过期 N 天」`.text-down` 芯片在 seed 之后不再红——它是 R16.302 `--down: #991b1b` 一起救的（seed 让本地错题台账真的落进 DOM，那颗从「门禁看不见」变成「门禁已经看了、已经过」）。全站其余 e2e **201 passed / 1 skipped**、vitest **348 文件 / 3645 条**通过；`npm run lint` / `typecheck` / `build`（474 页 SSG）exit 0；`check:report-freshness` / `check:dark-pattern-copy` / `check:localized-labels` / `check:dead-copy` / `check:scan-counts` / `check:docs` / `check:test-clock-hygiene` / `roadmap-open-reference-claims` / `doc-anchor-claims` 全绿。
+- **用户可见变化**：未解锁徽章**不再洗淡**（读屏、对比度、色觉障碍受益，🔒 图标仍在）；首页 streak 那颗「最长 20」由「几乎看不见」变成「次要但可读」。三主题矩阵的另外两处（light 主题的默认路径与 light-contrast 那三条页面）都过 axe 与 Lighthouse 无变化。
+- **阻塞 / 风险**：无；`opacity-40` 换 `text-muted` 是纯 CSS 类改动，回滚只需撤回本轮提交。**登记边界（不顺手补）**：`seedLedger` 目前只覆盖 8 页清单里那三处需要种台账才现形的分支；其他 5 页里若日后引入同类「数据门」色板，仍需按需加探针——R16.294 那条老规矩：先证明门禁能在真实调用点上量到失效，再装守门；不然只是又一件装饰。
+- **下一项**：本轮把 R16.302 的边界收了一次并给出普适方向（外部数据 / 本地台账 / 水合窗口 这三类**结构性风险面**，任何按主题矩阵扫对比度的门禁起手都要问「种子够不够把那一屏撑起来」）；后续候选仍是上一轮那条队列——未决 roadmap 那批「需拍板」行的证据主人、或再找一类同形状的漏网。
+- 更新时间：2026-10-08（Asia/Shanghai）。
+
+---
+
 ## 2026-10-08 · 第五十五轮（R16.303）：`audit:all` 门禁自 R16.288 起就是哑的——它只 export 了 `main()`，从没调用它
 
 - 里程碑 / 版本：R16 质量与安全门禁；完成 R16.303（当前 v0.7.27，无发布）。
