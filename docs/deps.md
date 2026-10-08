@@ -62,7 +62,13 @@
 
 `npm run audit:prod` 只审计实际部署的依赖，并在 high / critical 漏洞时阻断 CI。2026-09-12 的审计发现 `next@16.3.1` 命中 critical Image Optimization RCE 公告，已升级到 `16.3.5`；`sharp` 同时更新到 `0.35.4`。`gray-matter` 的 `js-yaml@3.15.2` 与 ESLint 配置链的 `js-yaml@4.3.2` 通过 npm `overrides` 固定到修复版本。生产依赖审计结果必须保持 0。
 
-完整依赖审计现已保持 0 漏洞。`@lhci/cli@0.15.1` 仍固定依赖 Lighthouse 12，但 Lighthouse 13.4.1 已修复其 Puppeteer/archive 链告警；本项目通过 npm `overrides` 固定 `lighthouse@13.4.1`、`tmp@0.2.7`、`uuid@11.1.1` 与 `qs@6.16.0`，并已用完整 `lhci autorun`、构建和测试回归验证兼容性。CI 同时运行 `audit:prod` 与 `audit:all`，任一 high/critical 漏洞都会阻断。
+2026-10-08：`next@16.3.8` 又带进两条新公告——`sharp <0.35.5`（GHSA-wq5f-xc86-pv6w / CVE-2026-96889，librsvg 依赖）与 `source-map-js 1.0.0–1.2.1`（GHSA-68fv-2mgg-jv7q，索引型 source-map section 偏移的 event-loop DoS）。两条都已修，走 `overrides` 精确锁定到 `sharp@0.35.5` 与 `postcss` 下的 `source-map-js@1.2.2`（范围只覆盖 `next` 的解析路径，不冲击直接依赖）；`audit:prod` 从此保持 0（余下 4 条 moderate 不属本门禁射程）。
+
+完整依赖审计现已保持 0 漏洞（**白名单例外除外**）。`@lhci/cli@0.15.1` 仍固定依赖 Lighthouse 12，但 Lighthouse 13.4.1 已修复其 Puppeteer/archive 链告警；本项目通过 npm `overrides` 固定 `lighthouse@13.4.1`、`tmp@0.2.7`、`uuid@11.1.1` 与 `qs@6.16.0`，并已用完整 `lhci autorun`、构建和测试回归验证兼容性。CI 同时运行 `audit:prod` 与 `audit:all`，任一 high/critical 漏洞都会阻断。
+
+2026-10-08：`audit:all` 门禁复活之后一次性暴露两条从未真被扫描到的 dev-only 高危——`compression <1.8.2`（high）与 `proxy-addr 1.1.0–2.0.7`（critical），都挂在 `@lhci/cli` 底下经 `express` 引入。上游都已发布修复，同 `sharp`/`source-map-js` 走 `overrides` 精确锁到 `compression@1.8.2` 与 `express/proxy-addr@2.0.8`（范围只覆盖 `@lhci/cli` 的解析路径）。CI 与本地实测：`audit:all` 通过、`lhci autorun` 全绿、构建与测试无回归。
+
+**同一次修复里最要紧的其实是那句「门禁哑火」的因果**：`scripts/audit-all.mjs` 自 R16.288（2026-10-03）落地起只 **export** `main()`、从没在文件末尾**调用**它——`node scripts/audit-all.mjs` 于是等价于一次静默的 `exit 0`。这一层的直接后果是：过去五天 CI 里的 `audit:all` 步骤**从未打开过 npm audit 报告**（本次复活之后立刻看到两条真告警，就是它一直在吞的东西）。原因也不是玄学——单元测试只测了 `evaluateAuditReport` 这个纯函数（7 条纯函数全绿），从来没有任何一条判据跑过 CLI 本身；「跑一遍 CLI 应当打出 `[audit:all]` 报告」这条现在补进 `scripts/audit-all.test.mjs`，同一文件里另一条反向对照钉住「被 `import` 时不触发 CLI」，避免未来任何把 `main()` 挪回文件末尾直接执行、让 vitest 联网的写法混进来。这一类「门禁量的东西不是坏的那个东西」在本战役里已经第 N 次出现——这一次坏的是门禁自己。
 
 ## 工具链 major 升级（2026-09-13 实测）
 

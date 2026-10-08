@@ -2,6 +2,23 @@
 
 ---
 
+## 2026-10-08 · 第五十五轮（R16.303）：`audit:all` 门禁自 R16.288 起就是哑的——它只 export 了 `main()`，从没调用它
+
+- 里程碑 / 版本：R16 质量与安全门禁；完成 R16.303（当前 v0.7.27，无发布）。
+- 分支 / PR：`fix/audit-all-gate-revive`。
+- **起因（不是有人报漏洞，是别的 PR 撞出来的）**：R16.302（sepia 对比度）那条 PR #397 在 CI 红在 `audit:prod` —— `sharp <0.35.5`（GHSA-wq5f-xc86-pv6w / CVE-2026-96889）与 `source-map-js 1.0.0–1.2.1`（GHSA-68fv-2mgg-jv7q），都由 `next@16.3.8` 带进来、上游都已发补丁。走 `overrides` 把 `sharp→0.35.5`、`next→postcss→source-map-js→1.2.2` 锁死，`audit:prod` 转绿。**核 `audit:all` 是否也覆盖这两条时，发现它根本没在跑。**
+- **缺陷本体**：`scripts/audit-all.mjs` 自 R16.288（2026-10-03）落地起只 `export function main()`、文件末尾从不调用它 —— `node scripts/audit-all.mjs` 是静默 `exit 0` 的 no-op。CI 的 `audit:all` 步骤**过去五天从未打开过 npm audit 报告**。激活 `main()` 后同一次扫描立刻跳出两条**从未被真扫到**的 dev-only 高危：`compression <1.8.2`（high）与 `proxy-addr 1.1.0–2.0.7`（critical），都挂在 `@lhci/cli → express` 底下。
+- **为什么七条单测全绿而门禁是死的**：它们只喂夹具给纯函数 `evaluateAuditReport`，**没有任何一条跑过 CLI 本身**。这正是本战役反复那条「门禁量的东西不是坏的那个东西」——这次坏的是门禁自己。
+- **完成内容**：①文件末尾补 `import.meta.url`/`process.argv` 守卫调用 `main()`（与仓库里 22 个同族脚本的入口形状一致）；②`compression@1.8.2`、`@lhci/cli→express→proxy-addr@2.0.8` 走 `overrides` 精确锁到 `@lhci/cli` 的解析路径；③`scripts/audit-all.test.mjs` 补两条集成判据——以 `spawnSync` 真跑 CLI 断言出现 `[audit:all]` 报告行 + 退出码落在 `{0,1}`，以及反向对照「`import()` 不触发 CLI」；④`docs/deps.md`、`docs/roadmap.md` 更正「完整依赖审计现已保持 0 漏洞」那句与 R16.288 那行当时的说法。
+- **变更文件**：`scripts/audit-all.mjs`、`scripts/audit-all.test.mjs`、`package.json`、`package-lock.json`、`docs/deps.md`、`docs/roadmap.md`、`docs/progress.md`。
+- **验证**：变异——删掉末尾 `main()` 调用（复刻 R16.288 原始缺陷）→ 集成用例①红、纯函数 7 条仍全绿、反向对照②仍绿（证明新判据真的在测「CLI 会不会跑」而不是又一条纯函数）；还原 → `audit-all.test.mjs` **9 条全绿**（且第一版没给 `testTimeout`，`spawnSync` 跑真 `npm audit` 要十几秒被 5s 默认判成 `Test timed out`——R16.301 刚记过「门禁自己超时=没有门禁」，本轮显式给 180s 预算）。`npm run audit:prod` / `audit:all` exit 0；`check:lockfile-repro` 用钉住的 npm 10.9.4 重生成逐条目一致（983 包，diff 只含本次 overrides 引入的版本切换）；`lint` / `typecheck` / `build`（474 页 SSG）exit 0；**`npm run lhci` 实跑全绿**（3 URL × 2 run 全部 assert 通过；被 override 的 `compression`/`proxy-addr` 正在 `@lhci/cli` 的 serve 路径上，光测单测证明不了它没被换坏）；`doc-anchor-claims` / `roadmap-open-reference-claims` / `ops-doc-claims` 共 81 条全绿；`npx vitest run` 全量 **348 文件 / 3645 条**通过；`check:report-freshness` 漂移 0。
+- **用户可见变化**：零——所有 override 都落在 `next` / `@lhci/cli` 的传递依赖解析路径上，界面与运行时行为不变。
+- **阻塞 / 风险**：无新增阻塞；回滚只需撤回本轮提交。**已知边界（不顺手补）**：本轮只把「跑过 CLI」这件事钉在 `audit-all` 一个脚本上；22 个同族脚本的入口形状靠约定而非判据保证——要装一条「凡 `export function main/run` 的入口，文件末尾必须有对应守卫调用」的巡检，得先有「哪个 `main` 是 CLI 入口、哪个是被 import 的库函数」的判定，那不是这一轮能顺手造的。
+- **下一项**：PR #397（R16.302）与本轮 PR 都过 CI 后 rebase 合并（两条都动 `docs/progress.md` 与 `docs/roadmap.md` 的头部，后合并者需 rebase 解一次顺序冲突）；之后按上轮留下的候选队列继续：给未决 roadmap 那批「需拍板」行的证据主人在门禁里再收一轮，或审计台账里其他「外部依赖渲染分支」的同族漏网（本轮的行情条正是这一族的第一次显形）。
+- 更新时间：2026-10-08（Asia/Shanghai）。
+
+---
+
 ## 2026-10-05 · 第五十三轮（R16.58 关账的一半）：那道「两把尺分母必须同源」的门在礼花这侧恒真
 
 - 里程碑 / 版本：R16 质量与事实门禁；完成 R16.58 的可执行部分（第五十三轮），未改产品版本（当前 v0.7.27）。

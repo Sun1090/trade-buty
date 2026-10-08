@@ -128,6 +128,18 @@
     "gray-matter": {
       "js-yaml": "3.15.2"
     },
+    "next": {
+      "sharp": "0.35.5",
+      "postcss": {
+        "source-map-js": "1.2.2"
+      }
+    },
+    "@lhci/cli": {
+      "compression": "1.8.2",
+      "express": {
+        "proxy-addr": "2.0.8"
+      }
+    },
     "tmp": "0.2.7",
     "uuid": "11.1.1",
     "qs": "6.16.0",

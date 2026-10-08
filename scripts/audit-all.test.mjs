@@ -1,5 +1,31 @@
 import { describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { evaluateAuditReport, AUDIT_ALLOWLIST } from "./audit-all.mjs";
+
+const CLI = fileURLToPath(import.meta.url).replace(/\.test\.mjs$/, ".mjs");
+
+describe("audit:all 的 CLI 真的会跑 main（R16.288 曾把入口漏掉，门禁哑火六天）", () => {
+  it("直接以脚本执行会打出审计报告，而不是 import 完就静默退出", () => {
+    const proc = spawnSync(process.execPath, [CLI], { encoding: "utf8", timeout: 180_000 });
+    // 白名单外若有 high/critical 应 exit 1 并点名，那同样是在「跑」；
+    // 只有哑火的 no-op 才是 exit 0 + 零输出。
+    expect(proc.stdout + proc.stderr).toMatch(/\[audit:all\]/);
+    expect([0, 1]).toContain(proc.status);
+  }, 180_000);
+
+  it("被 import 时不触发 CLI（单测必须只跑纯函数，不联网、不 process.exit）", () => {
+    const url = new URL(`file://${CLI}`).href;
+    const proc = spawnSync(
+      process.execPath,
+      ["-e", `import(${JSON.stringify(url)}).then(m => console.log('OK', Object.keys(m).join(',')))`],
+      { encoding: "utf8", timeout: 60_000 },
+    );
+    expect(proc.status).toBe(0);
+    expect(proc.stdout).toContain("OK");
+    expect(proc.stdout).not.toMatch(/\[audit:all\]/);
+  });
+});
 
 /** 与白名单同形的测试夹具 */
 const bracesChain = {

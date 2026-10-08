@@ -1,4 +1,6 @@
 import { execFileSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 /**
  * `npm run audit:all` 的实现（R16.288）：跑全量依赖审计，但对「上游确认无补丁、
@@ -137,4 +139,8 @@ export function main() {
     "  → 修复它们，或（确认上游无补丁且 dev-only 后）按 docs/deps.md 的延期先例补白名单条目并更新重审日",
   );
   process.exit(1);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
 }
