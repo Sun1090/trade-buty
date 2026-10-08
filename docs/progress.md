@@ -10,8 +10,10 @@
 - 冻结前检查：`ops:work-audit` 悬空 0 / 未确认关闭 PR 0；`origin/main..HEAD` 空。
 - 全量验证（按 `docs/release-checklist.md` §3 顺序）：`test` 348 文件 / 3645 条、`lint` / `typecheck` / `build`（474 页 SSG）、`check:mobile`、构建产物门禁（seo-surface / search-index / structured-data / risk-warning）、报告台账（kb:inventory / kb:gap-priority / kb:accept / title-terminology / description-quality / description-dupes / glossary / test-clock-hygiene / dead-copy / faq-candidates）、`check:scan-counts` → `check:report-freshness`（漂移 0）、`check:constitution`、`check:docs`（package 0.7.28）、`check:changelog`（32 条一致）、`check:lockfile-repro`（983 包逐条目一致，钉住的 npm 10.9.4 重生成）、`db:test` 5/5、`e2e` 201 passed / 1 skipped——全绿。
 - `check:release-tag`：打印「最新 0.7.28 待合并后补打 v0.7.28」，按设计不判失败。
-- 合并后待办：tag `v0.7.28` 打到合并后的 `main`、推送、`check:release-tag` 复跑、等 Vercel 生产构建、`ops:smoke-prod`（特别核 `/zh/changelog` 出现 0.7.28——合并 ≠ 上线）、删除远端发布分支。
-- 回滚方案：`git revert` 发布提交后重新部署；或 Vercel 把 Production Deployment 切回 v0.7.27 构建止血。本轮无数据库迁移。
+- **已落地**：PR **#400** rebase 合并到 `main` → 发布提交 `ed5dfb2`（rebase 改写 SHA）；附注 tag **`v0.7.28` → `ed5dfb2`** 已推送；`check:release-tag` 复跑「32 条 tag 均已落地（最新 0.7.28 → v0.7.28）」；远端发布分支随合并自动删除 + `git remote prune` 收尾。
+- **生产部署与冒烟**：main 推送触发 Vercel 生产构建，post-merge `CI` 8m7s 全绿；`/zh/changelog` 线上已读到 **0.7.28**（部署真的跟上 main）。`ops:smoke-prod` **9/10 通过**，唯一红的是 `POST /api/ai/chat` 模型路径 **502**——护栏路径正常、站内代码没问题，属**外部阻塞**（部署快照里的 `AI_API_URL`/`AI_API_KEY`/出口网络），R16.291 / AGENTS.md「Upstream / Environment Blocked」已登记，本轮不替它猜成因。
+- 下一项：站内可执行工作已收口到发布；回到候选队列，找下一处真缺陷或加固（不再为已闭合的数据门对比度族预装装饰性判据）。
+- 回滚方案：`git revert` 发布提交 `ed5dfb2`（或其中任一逻辑提交）后重新部署；Vercel 亦可直接把 Production Deployment 切回 v0.7.27 构建止血，随后仍用 revert 收敛历史。本轮无数据库迁移，无数据回滚面。
 - 更新时间：2026-10-08（Asia/Shanghai）。
 
 ---
