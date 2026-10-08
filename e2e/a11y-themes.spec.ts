@@ -16,7 +16,22 @@ import { AxeBuilder } from "@axe-core/playwright";
  * 已知测量伪影（不修）：全树巡检中 `page-has-heading-one` 在个别页面偶现——
  * 直接探测显示恰好 1 个 h1，是 200–500ms 急等时机下的水合窗口产物；本门禁
  * 用 400ms 等待 + 白名单规则，该规则不在白名单内，不受影响。
+ *
+ * **行情条必须被强制渲染出来**（本轮补）：首页 `MarketTicker` 里那条
+ * `.text-down` 跌箭头只在 `fetchPrices()` 成功、`setTickers()` 落地之后才挂进 DOM，
+ * 而 CI 出口 IP 被 Binance 451 拒答（`runtime-health.spec.ts` 里已经按域名豁免过）。
+ * 于是 2026-10-08 本地实测 sepia 下首页行情行 3.20:1（`--down: #dc2626` 落在
+ * `--surface-hover: #ddd1bd` 上），CI 里 `a11y-themes` 却因为行情压根没渲染出来而
+ * 「安静通过」。行情是外部依赖、门禁不能随出口网络抖动，所以这里显式桩掉那个
+ * 24hr 端点（形状对齐真响应），让跌色行必现；桩只覆盖 `text-down` 所在的那一屏，
+ * 不改组件、不碰其它路由。
  */
+
+const BINANCE_24HR_STUB = [
+  { symbol: "BTCUSDT", lastPrice: "65000.1", priceChangePercent: "-2.34" },
+  { symbol: "ETHUSDT", lastPrice: "3000.5", priceChangePercent: "-1.10" },
+  { symbol: "SOLUSDT", lastPrice: "150.25", priceChangePercent: "-0.80" },
+];
 
 const PAGES = [
   "/zh",
@@ -32,6 +47,10 @@ const PAGES = [
 /** 与 e2e/a11y.spec.ts 同一白名单：三类已 triage 的规则 */
 const RULES = ["aria-valid-attr-value", "nested-interactive", "landmark-unique", "color-contrast"];
 
+/** 首页带 `<MarketTicker>`：桩掉 24hr 端点后必须等那一行跌色真的挂进 DOM 才跑 axe，
+ *  否则桩不生效或组件没水合完成，门禁又会退化成「安静通过」。 */
+const HOME_PAGES = new Set(["/zh", "/en"]);
+
 for (const theme of ["dark", "sepia"] as const) {
   for (const path of PAGES) {
     test(`a11y（${theme}）：${path}`, async ({ page }) => {
@@ -40,7 +59,16 @@ for (const theme of ["dark", "sepia"] as const) {
           localStorage.setItem("tb-theme", t);
         } catch {}
       }, theme);
+      if (HOME_PAGES.has(path)) {
+        await page.route(
+          (url) => url.hostname === "api.binance.com" && url.pathname === "/api/v3/ticker/24hr",
+          (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify(BINANCE_24HR_STUB) }),
+        );
+      }
       await page.goto(path, { waitUntil: "load" });
+      if (HOME_PAGES.has(path)) {
+        await expect(page.locator(".text-down").first()).toBeVisible({ timeout: 5_000 });
+      }
       await page.waitForTimeout(400);
       const res = await new AxeBuilder({ page })
         .disableRules(["region"])

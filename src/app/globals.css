@@ -514,7 +514,12 @@ body {
   --info-dim: rgba(37, 99, 235, 0.08);
   --warn: #d97706;
   --warn-dim: rgba(217, 119, 6, 0.08);
-  --down: #dc2626;
+  /* #dc2626（light 的 down）在 sepia 最深的合成底 surface-hover #ddd1bd 上只有
+     3.20:1（首页行情条跌箭头实测，axe color-contrast）——sepia 底比 light 暖且深一档，
+     原红在那儿不够 AA。#991b1b 在 sepia 所有底（background #f4ebd9 / surface #e8dcc8 /
+     surface-hover #ddd1bd / 卡片 #e8e5d2，以及叠加 bg-down/10 的 #d6bfad）上 ≥4.71:1；
+     白字按跌底（bg-down + text-white）读的是反色，此处只动前景红，白字路径不受影响 */
+  --down: #991b1b;
 }
 .kb-prose table {
   width: 100%;
