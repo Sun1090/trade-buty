@@ -2,6 +2,22 @@
 
 ---
 
+## 2026-10-09 · 第五十八轮（R14.11 第一项）：7 篇章 README 缺标准风险提示块，源头（kline-buty）补齐后站内 54/54 pass
+
+- 里程碑 / 版本：R14.11 上游内容遗留 / R10.5 风险块门禁；关账其第一项（README 风险块），未改产品版本（当前 v0.7.28）。
+- 分支 / PR：跨两仓三个 PR —— kline-buty PR **#306**（squash → kline-buty main `29b851b`，7 篇章 zh/en 共 14 篇 README 补块）、trade-buty PR **#404**（rebase → main `ceb9f68`/`891619f`/`551dd82` 三笔：同步 / roadmap 关账 / 台账认账）。
+- **起因（主动扫 R14.11 三项里的可自主推进项）**：R14.11 登记三项上游遗留——①14 篇章节 README 风险块不合规、②70 篇 description 待复核、③120 条标题术语待复核。②③属「人工编辑判断」（报告自己写着「只提示，不替代人工编辑」），①是**规范明文要求**（kline-buty `docs/agents/knowledge.md` §2「正文必须有标准风险提示容器」）却长期漏在课文之外的导语 README 上——这条不需要拍板，能在源头做实，先挑它。
+- **实测（不是推断）**：用消费侧 `scripts/risk-warning-lib.mjs` 的 `analyzeRiskWarning({kind:"readme"})` 逐篇跑，改前 `technical-analysis`（zh/en）判 gap（完全缺失）、其余 5 章 zh/en 判 review（mention-only / unboxed-risk-sentence），共 12 review + 2 gap；改后 14 篇**全部 pass**。门禁的判据口径写清：pass = 命中 VitePress `::: warning` 容器或行内 `> …⚠️…风险提示/Risk Warning` 块引用；「提到风险提示四个字」「未装箱的强风险句」都只算 near-miss，不算合规块——所以补的必须是**真块**。
+- **改法（形状对齐站内合规篇章，措辞逐篇贴合主题）**：照 `futures` / `bonds-rates` / `pitfalls` 导语的既有形状——首个 `---` 与正文之间插一条行内块引用（zh「⚠️ 风险提示」/ en「⚠️ Risk Warning」）。措辞不套通用废话：现货讲归零/流动性枯竭/交易所暴雷/私钥失窃、合约讲百倍杠杆插针穿仓、技术讲指标滞后/形态未确认即猜测/震荡假信号、财报讲方法不保证盈利/示例皆虚构、行业讲不点名标的/景气会转向护城河会失效。内容在 kline-buty 仓改（本仓 AGENTS.md 明令不得就地改 submodule）。
+- **变更文件**：kline-buty `docs/knowledge/{zh,en}/{technical-analysis,getting-started,spot,stocks,crypto-perpetuals,financial-statements,industry-research}/README.md`（14 篇 +84 行）；trade-buty `content/kline-buty`（指针 `a1c0128`→`29b851b`）、`scripts/kb-manifest.json`（14 条 hash）、`docs/kb-changelog-draft.md` + `docs/kb-changelog-2026-10-09.md`（按 `2b25615` 内容变更惯例入库）、`docs/risk-warning-coverage.{md,json}`（重算）、`docs/scan-counts.md`（待扫文件 +1 显式认账）、`docs/roadmap.md`（R16.164 已在上一轮关账、本轮关 R14.11 第一项）。
+- **验证**：kline-buty `npm run docs:lint`（418 文件无结构问题）+ `validate-knowledge.py`（364 篇通过）；trade-buty `npm run kb:update` 全流程通过 → `check:risk-warning` 实测 `lessons 364/364 pass · readmes 54/54 pass（review 0 / gap 0）`、产物兜底块 0/418 页（站内不再需要给不合规导语补本地化兜底）；`check:kb-pointer`（= `29b851b`）/ `check:kb-changelog` / `check:report-freshness`（漂移 0）/ `check:scan-counts`（无缩小）/ `check:docs` / `check:structured-data` / `check:search-index` / `check:constitution` / `check:frontmatter` 等 14 道全绿；`npx vitest run` **348 文件 / 3645 条**、`lint --max-warnings=0` / `typecheck` / `build` exit 0；PR #404 CI（`ci`+`auth-e2e`+`db-tests`+CodeQL 共 8 项）全绿后 rebase 合并。
+- **用户可见变化**：`/knowledge/{technical-analysis,getting-started,spot,stocks,crypto-perpetuals,financial-statements,industry-research}` 7 个篇章导语页顶部各出现一段风险提示（此前 14 页在消费侧靠 R14.2 兜底块代打，现在导语自带，兜底块归零）。
+- **阻塞 / 风险**：无。回滚 = kline-buty revert PR #306 + 本仓指针退回 `a1c0128`。**剩余 R14.11 两项（description 复核、标题术语复核）仍在队列**：两者按报告口径都需人工编辑判断（「只提示，不替代人工编辑」），非本代理可自主定稿的机械修复——若要推进，需要一次「按什么标准算合格」的产品口径，或接受逐篇人工过稿（成本高、属内容决策）。
+- **下一项**：站内可执行机械项已收口；R14.11 余下两项与未决 roadmap 里那批 `BLOCKED_EXTERNAL` / 需拍板项同级，都等人定口径或凭据。继续扫有没有「不需拍板、能先证伪再改」的真缺陷。
+- 更新时间：2026-10-09（Asia/Shanghai）。
+
+---
+
 ## 2026-10-09 · 第五十七轮（R16.164 关账 + R16.293 判据升级）：上游改口「主线最后一站」，首/末声明改按「所声称的范围」核对，豁免归零
 
 - 里程碑 / 版本：R16 内容质量与派生文案门禁；关账 R16.164、升级 R16.293 的判据形态；未改产品版本（当前 v0.7.28）。
