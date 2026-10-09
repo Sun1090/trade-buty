@@ -59,7 +59,7 @@
 - `npm run audit:all` → exit 0：按白名单过滤 `braces`（GHSA-vfj7-8cjw-p6xm，dev-only 链，重审 2026-11-15）及其依赖链后无 high/critical；`audit:all` 门禁本身已于 R16.303 复活（此前只 export 不调用 `main()`，五天哑火）。
 - `npm outdated`：本轮落后项全部是 minor/patch（已可 `npm update` 范围内、或属工具链 major），无新增可直接安全落地的项；工具链 major 逐条现状（**2026-10-09 实测**，非印象）：
   - `eslint` 9.39.5 → 10.12.0：**仍延期**，理由与 2026-09-13 同（`eslint-plugin-react` 未支持 ESLint 10，实跑 `npm run lint` 崩溃；见「工具链 major 升级」）。
-  - `typescript` 6.0.3 → 7.0.2：**仍延期**——本轮核到新的可复现依据：`typescript-eslint` 的 peer 是 `>=4.8.4 <6.1.0`（本机 8.67.0），TS 7 直接越界、`npm run lint` 必挂；与 kline-buty AGENTS.md「TypeScript 7 upgrade = 等 typescript-eslint 官方支持 TS7」是同一道门，两边一致。
+  - `typescript` 6.0.3 → 7.0.2：**仍延期**——本轮核到新的可复现依据：`typescript-eslint` 的 peer 是 `>=4.8.4 <6.1.0`（本机 8.67.0），TS 7 直接越界、`npm run lint` 必挂。这道「等 typescript-eslint 官方支持 TS7」的门与 kline-buty 把它列在 Upstream Blocked 是同一件事，两边一致。
   - `next` / `eslint-config-next` 16.3.8 → 16.4.0：minor，非阻断；留待下次常规依赖更新一并升（升级后须复跑 `check:bundle`/`check:mobile`/e2e 全套，不在此单跳）。
   - 其余落后项（`@playwright/test`、`@supabase/supabase-js`、`@types/node`、`axe-core`、`drizzle-orm`、`ip-address`、`js-yaml`、`jsdom`）全部是 minor/patch（`wanted`/`latest` 都落在各自 semver 范围内，`npm update` 可取），无 major 迁移需求，留待下次常规依赖更新一并推进。
 
