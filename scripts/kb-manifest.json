@@ -531,7 +531,7 @@
     "en/options-strategies/options-tools-review.md": "e2f8249aef3cab27a49d8fa1f260eacd7d157c900f0f73d24a8bd5df844043d8",
     "en/options-strategies/options-trading-risk.md": "63156a206aab8088dc0ad136a3f5428658c3fc45d9ff3ee3c08316cd5dd91c58",
     "en/options-strategies/pricing-volatility.md": "25fc14c3f8614c0b9c323bd0064076cd4f2ea4080c0ed8ab347c470a2e78abec",
-    "en/pitfalls/README.md": "6f17ecbd8f40f765a1f5aba0443c3c1d030a78e24330b806707c41a15ad903fb",
+    "en/pitfalls/README.md": "d719ba135d66f78b0c08415332822635af90267e734608db1d84260ed2854a22",
     "en/pitfalls/compliance-taxes.md": "fd2f6a1b71438fce22de40ec97ba71e4230fb98cdae92f832c3750b4e5401c69",
     "en/pitfalls/scam-detection.md": "4bcf2b7ca6f2229cf4caf95114a8cf102846bbab5ab0a8fca02e92b0f511304e",
     "en/pitfalls/why-traders-lose.md": "5a6951f3fd45d9d63f09d5799e54237e53013a03f004e8d7bb13446a8b164d1a",
@@ -740,7 +740,7 @@
     "zh/options-strategies/options-tools-review.md": "50a5734ef863afeac823e600a1a31482465b66610f2e93bdd9e152a4d31d1652",
     "zh/options-strategies/options-trading-risk.md": "8800e7ed6df7f0c33f070aeb36aa63670d88d4efba93f1898b17d481a7f07129",
     "zh/options-strategies/pricing-volatility.md": "c793106c2e376a040c11eecd30e5ca5e290a99bf4a069dcd86f63f23b37ee158",
-    "zh/pitfalls/README.md": "55ec0f30303d827c81c84e5caed28a4c7a3c7409fb7e6df100f056db35ebdf5d",
+    "zh/pitfalls/README.md": "5efb0515ec921e956374fad851d9ed67f04f6cec3e4dec2ba768d77529762e1b",
     "zh/pitfalls/compliance-taxes.md": "e0a16c523c540b84f67d0c53e27c0b7706022f6ff32548f52b22d06739d3ffa9",
     "zh/pitfalls/scam-detection.md": "391762a4d11fc20368b8b5cd6c7f81ef2090800e781389eec2713a72df33e184",
     "zh/pitfalls/why-traders-lose.md": "b66059fdbacb5431d3339dd81fae171923e508f206fbaa31cea474da1fc582c6",
@@ -841,6 +841,6 @@
     "zh/wealth-allocation/overseas-allocation.md": "4c24766abb14c21ed961970e6a50ec30ef73b0466eaf6d0b325fca10f64664a8",
     "zh/wealth-allocation/tax-planning.md": "340e30417a4c8e4b94ddc3a45795f1fb6d74cae184273f99591e24af06af6d4b"
   },
-  "pointer": "1dabd7384e48039d46282789aaa676a43034332f",
-  "at": "2026-10-01T06:39:14.438Z"
+  "pointer": "a1c012831cb14dde9c5b52b8718768fce6b60228",
+  "at": "2026-10-09T01:48:49.517Z"
 }
