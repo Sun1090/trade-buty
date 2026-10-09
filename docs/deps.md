@@ -52,6 +52,19 @@
 
 > 判断依据：`npm outdated` 只把「latest 领先 wanted」的包列出来；本仓库锁文件已把想要的版本都拉到锁内，因此本表只讨论 major 迁移。
 
+### 2026-10-09
+
+- `npm run audit:prod` → exit 0，但 `npm audit --omit=dev` 报出 **4 moderate**：同一条链 `sprintf-js 1.0.3 ← argparse ← js-yaml@3.15.2 ← gray-matter`（GHSA-hp3w-g68c-fv3c / CVE-2026-97058，medium，DoS via 无界 precision specifier）。**不是新洞**：这是本站刻意把 `gray-matter` 的 `js-yaml` override 到 `3.15.2` 所带出的已知链（见「安全基线」与 R16.303）；`audit:prod` 门禁按 `--audit-level=high` 运行，medium 不在阻断射程内，故 exit 0（2026-10-08 那条「余下 4 条 moderate 不属本门禁射程」就是它）。
+  - **为什么不修**：GHSA 的 `first_permitting_security_fix = null`——上游 `sprintf-js` 最高就到 1.1.3，而受影响范围写成 `<= 1.1.3`（全部已发布版本），即**没有可用补丁**；`npm audit fix --force` 只会把 `gray-matter` 降到 2.0.1 这种破坏性旧版。属上游无解，不冒充「已修」。登记为已知中等、门禁射程外，重审随 `sprintf-js` 上游出新版本（或本仓把 `gray-matter` 换成不依赖 `js-yaml@3` 的方案时）。
+- `npm run audit:all` → exit 0：按白名单过滤 `braces`（GHSA-vfj7-8cjw-p6xm，dev-only 链，重审 2026-11-15）及其依赖链后无 high/critical；`audit:all` 门禁本身已于 R16.303 复活（此前只 export 不调用 `main()`，五天哑火）。
+- `npm outdated`：本轮落后项全部是 minor/patch（已可 `npm update` 范围内、或属工具链 major），无新增可直接安全落地的项；工具链 major 逐条现状（**2026-10-09 实测**，非印象）：
+  - `eslint` 9.39.5 → 10.12.0：**仍延期**，理由与 2026-09-13 同（`eslint-plugin-react` 未支持 ESLint 10，实跑 `npm run lint` 崩溃；见「工具链 major 升级」）。
+  - `typescript` 6.0.3 → 7.0.2：**仍延期**——本轮核到新的可复现依据：`typescript-eslint` 的 peer 是 `>=4.8.4 <6.1.0`（本机 8.67.0），TS 7 直接越界、`npm run lint` 必挂；与 kline-buty AGENTS.md「TypeScript 7 upgrade = 等 typescript-eslint 官方支持 TS7」是同一道门，两边一致。
+  - `next` / `eslint-config-next` 16.3.8 → 16.4.0：minor，非阻断；留待下次常规依赖更新一并升（升级后须复跑 `check:bundle`/`check:mobile`/e2e 全套，不在此单跳）。
+  - 其余落后项（`@playwright/test`、`@supabase/supabase-js`、`@types/node`、`axe-core`、`drizzle-orm`、`ip-address`、`js-yaml`、`jsdom`）全部是 minor/patch（`wanted`/`latest` 都落在各自 semver 范围内，`npm update` 可取），无 major 迁移需求，留待下次常规依赖更新一并推进。
+
+> 判断依据：`npm outdated` 只把「latest 领先 wanted」的包列出来；本仓库锁文件已把想要的版本都拉到锁内，因此本表只讨论 major 迁移。
+
 ## 审查流程
 
 1. PR 中说明：解决什么问题、为什么内置/已有依赖不行、体积影响（`npm run check:bundle`）
