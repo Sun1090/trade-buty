@@ -2,6 +2,23 @@
 
 ---
 
+## 2026-10-09 · 第五十七轮（R16.164 关账 + R16.293 判据升级）：上游改口「主线最后一站」，首/末声明改按「所声称的范围」核对，豁免归零
+
+- 里程碑 / 版本：R16 内容质量与派生文案门禁；关账 R16.164、升级 R16.293 的判据形态；未改产品版本（当前 v0.7.28）。
+- 分支 / PR：`fix/sync-kb-pitfalls-tagline`。上游修复在 kline-buty：PR **#303**（squash → kline-buty main `a1c0128`）把 `pitfalls/README.md` 导语从「知识库的最后一站」/ "the last stop of the knowledge base" 收窄成「**主线学习路径**的最后一站」/ "the last stop of the **core learning path**"，并补一句「学完本篇后知识库还有进阶与深潜各篇」。本仓三笔原子提交：`c06fd7c`（`npm run kb:update` 同步指针到 `a1c0128`，manifest 刷新 zh/en 两条 hash）→ `9d06930`（判据升级 + 豁免归零）→ `6fa0220`（翻译台账再算）。
+- **为什么不是只删豁免**：旧判据只会拿 `pitfalls` 在全站 `CHAPTER_ORDER` 里的位置（第 9/27）去卡那句「最后一站」。上游把**范围**改成 core 阶段之后，这句话在阶段范围内是真的（`path.ts` STAGES 的 core 组末篇正是 `pitfalls`），而全站位置没变——直接删豁免，判据会**误红**。所以升级判据本身：**按声明的范围核对**，而不是按某一行文案。
+- **判据（`src/lib/derived-copy-claims.test.ts`）**：`CLAIMS_LAST`/`CLAIMS_FIRST` 命中后先分范围——点出「主线/core path」→ 按 core 组的头/末核对；点出「知识库/全站」或**没点范围**（最严）→ 仍按全站核对。范围判别进正向对照：旧导语判全站、新导语判 core，堵住「把范围词删掉蒙混」那条路（未点范围一律按全站，所以缩范围反而更可能被卡）。另把「pitfalls 在中间位」那条钉子改成「**pitfalls 是 core 末篇**」——core 顺序一变、上游导语就不成立，这条先红。`FIRST_LAST_EXEMPTIONS` 归零，回到零容忍（豁免机制本身保留，下次再有跨仓违规仍用它、带重审日）。
+- **变异核对**：把 `coreScoped` 分支改成恒 `false`（退回纯全站判据）→ zh/en 两条「核对末」各红并点名 `pitfalls（第 9/27）说自己是最后：…core learni…`，证明新分支真的有牙齿、不是恒真。还原 → 12 条全绿。
+- **变更文件**：`content/kline-buty`（指针）、`scripts/kb-manifest.json`（两条 hash）、`src/lib/derived-copy-claims.test.ts`（判据升级 + 豁免归零）、`docs/translation-history.json` / `docs/translation-status.md`（台账再算）。
+- **验证**：`npx vitest run` **348 文件 / 3645 条**全绿；`npm run typecheck` / `lint`（`--max-warnings=0`）exit 0；`npm run build` 全绿；`check:kb-pointer`（指针=工作区=快照 `a1c0128`）/ `check:kb-changelog`（419 文件基线一致）/ `check:report-freshness`（漂移 0）/ `check:translation-history`（2026-10-09 最新）/ `check:scan-counts`（6 处无变化）/ `check:glossary`/`frontmatter`/`image-alt`/`slug-conflicts`/`description-dupes`/`quiz-mounts`/`quiz-coverage`/`nav-chain`/`relative-links`/`sitemap`/`seo-surface`/`search-index`/`structured-data`/`risk-warning`/`docs`/`changelog`/`constitution` 全绿。
+- **用户可见变化**：`/path` 与篇章页里 pitfalls 的导语由「知识库的最后一站」改为「主线学习路径的最后一站」+「学完本篇后还有进阶与深潜各篇」——之前那句在 `/path` 同一屏「27 篇章 × 3 阶段」下方自相矛盾（R16.164 的原始现象）。
+- **登记边界（不顺手补）**：`e2e` 全站 201 条留待 CI 跑（本机不装三浏览器全量）；`docs/kb-changelog-*` 走 `e60c432` 既定惯例（同步提交只带指针+manifest，不附 changelog 草稿），本轮一致。
+- **阻塞 / 风险**：无。回滚 = revert 这三笔 + 把 kline-buty 指针退回 `1dabd73`（源头导语也可 revert PR #303）。
+- **下一项**：站内可执行工作回到候选队列（未决 roadmap 里多数是 `BLOCKED_EXTERNAL` / 需产品拍板）；继续找一处不需拍板、能先证伪再改的真缺陷或加固。
+- 更新时间：2026-10-09（Asia/Shanghai）。
+
+---
+
 ## 2026-10-08 · RELEASE_FREEZE：v0.7.28（patch）
 
 - 判级：patch——`v0.7.27` 之后合入 `main` 的 47 个提交全部是缺陷修复、门禁/工具链加固与文档（R16.215 / R16.294–R16.304 及 R16.58 / R16.114 / R16.301 关账），无新增产品能力。判级只数 `v0.7.27..HEAD`，不看计划中的工作。
