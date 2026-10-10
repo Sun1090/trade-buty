@@ -182,7 +182,16 @@ const CLICK_ROUTES = [
   "/zh/review",
   "/zh/knowledge/getting-started/first-trade",
 ] as const;
-const MAX_CLICKS = 14;
+/**
+ * 单条路由最多点几颗按钮（挡的是「某页按钮暴涨把这条用例拖成几分钟」）。
+ *
+ * 2026-10-10 实测：6 条路由的按钮数是 7 / 7 / 12 / 6 / 6 / **22**，
+ * 课文页那一颗早就超过旧上限 14，于是「开始测验」、随堂测的「下一步」「再看一次」
+ * 与 4 个代码块的「复制」**从没被点过**——而这一族的报表写的是「点击页内按钮」。
+ * 上限提到 32 让当前 6 条全部真正覆盖；不够时下面那条断言会先红，
+ * 而不是让缺口静默地继续扩大（旧写法是把漏掉的那部分直接丢掉，没人知道）。
+ */
+const MAX_CLICKS = 32;
 
 for (const route of CLICK_ROUTES) {
   test(`点击页内按钮不抛未捕获错误：${route}`, async ({ page }) => {
@@ -193,7 +202,20 @@ for (const route of CLICK_ROUTES) {
     await page.goto(route, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(1_200);
     const startedAt = page.url();
-    const total = Math.min(await page.locator("button").count(), MAX_CLICKS);
+
+    const buttonCount = await page.locator("button").count();
+    // 覆盖缺口必须自己红。旧写法 `Math.min(count, MAX_CLICKS)` 把点不完的那部分
+    // 直接丢掉，报表照样写「点击页内按钮」——课文页 22 颗按钮就是这样漏了 8 颗
+    // 而没人知道。上限不够时先红在这里：要么补覆盖，要么说明这一页的按钮多得
+    // 该拆组件了，都不是可以默默截断的事。
+    expect(
+      buttonCount,
+      `这一页有 ${buttonCount} 颗按钮，超过 MAX_CLICKS(${MAX_CLICKS})：` +
+        "有新按钮族没人点过，就补覆盖或提上限并写实测数字；" +
+        "不要静默截断——截断出来的绿不是绿。",
+    ).toBeLessThanOrEqual(MAX_CLICKS);
+
+    const total = buttonCount;
 
     for (let i = 0; i < total; i++) {
       try {
