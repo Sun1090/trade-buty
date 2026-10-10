@@ -119,3 +119,34 @@ R16.235 那笔债在这一轮还掉：`auth-provider.tsx` 与 `auth-header.tsx` 
 与 9-25 相比，非 auth 各组整体掉了约 46–66KB——那正是原来压在每条路由首屏的 supabase-js（59.3KB gzip 的 chunk，扣掉 auth 组仍需加载它的差异）；auth 组反而略涨（312.5 → 312.9），因为登录 SDK 现在只属于这四条路由。
 
 **2026-10-02 再定价（348 → 357）**：R16.283/R16.284 两批 a11y 修复（R16.284 = 滚动代码块/趋势图键盘可达 + 任务清单复选框命名，见 roadmap）给全部课文页共享的 Markdown 组件新增了 `table`/`pre`/`li` 覆盖与任务清单 label 逻辑，本组最大从 339.0 涨到 CI 352.1（本地 349.9；同码两机差仍约 2.2KB，成因沿 R16.234 未查明）。357 = CI 当前最大 + 约两倍该差异，与 R16.234 同一公式；这是把真实的可及性成本计入预算，不是把尺子挪掉。
+
+### 复测（2026-10-10，本地干净构建 `npm run build` 后由 `scripts/perf-notes-claims.test.mjs` 现读产物重算）
+
+上面那张（2026-09-29）保留原样当历史。今天的读数（最大 total / 预算 / 最大路由）：
+
+| 分组 | 今天最大 total | 预算 | 最大路由 |
+|---|---:|---:|---|
+| home | 281.6 KB | 360 KB | `zh` |
+| path | 282.3 KB | 365 KB | `zh/path` |
+| knowledge-chapter | 267.2 KB | 370 KB | `zh/knowledge/markets-instruments` |
+| knowledge-lesson | 351.3 KB | 357 KB | `zh/knowledge/technical-analysis/drawing-tools` |
+| search | 249.3 KB | 335 KB | `zh/search` |
+| review | 284.3 KB | 350 KB | `zh/review` |
+| bookmarks | 244.4 KB | 335 KB | `zh/bookmarks` |
+| stats | 304.0 KB | 370 KB | `zh/stats` |
+| ai | 251.9 KB | 350 KB | `zh/ai` |
+| chart | 302.1 KB | 390 KB | `zh/chart` |
+| replay | 318.6 KB | 400 KB | `zh/replay` |
+| privacy | 254.1 KB | 340 KB | `zh/privacy` |
+| glossary | 250.6 KB | 340 KB | `zh/glossary` |
+| static-info | 255.8 KB | 340 KB | `zh/changelog` |
+| auth | 311.0 KB | 340 KB | `zh/auth` |
+
+与 9-29 相比：`knowledge-lesson` **+12.5KB**（338.8 → 351.3）、`review` **+12.1KB**（272.2 → 284.3），
+`static-info` **−10.0KB**（265.8 → 255.8），其余各组 −1~2KB。三组变动都还没顶到预算
+（lesson 351.3 / 357、review 284.3 / 350、static-info 255.8 / 340），所以 `check:bundle` 是绿的——
+**预算没红不等于读数没烂**：这 15 个数字此前全靠手抄，抄进去之后没有任何一道门再看过它们。
+本轮起由 `scripts/perf-notes-claims.test.mjs` 现读构建产物重算并与最新这张表逐行比对
+（历史那两张不判：它们是当时的读数，拿今天的产物去要求它们等于要求历史撒谎）。
+注意本地单测跑在 `ci.yml` 第 62 行、`build` 在第 64 行，所以 CI 那一趟**没有产物、这道判据会明说跳过**；
+预算那一半由排在第 131 行的 `check:bundle` 在 build 之后管——两道工序不重叠。

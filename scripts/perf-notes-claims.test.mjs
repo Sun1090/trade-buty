@@ -19,6 +19,8 @@
  *
  * 运行：`npx vitest run scripts/perf-notes-claims.test.mjs`（跟随 `npm test`）
  */
+import fs from "node:fs";
+import zlib from "node:zlib";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -158,4 +160,129 @@ describe("perf-notes 的历史段落不许冒充现在", () => {
     const missing = refs.filter((ref) => !roadmap.includes(ref));
     expect(missing, `docs/perf-notes.md 引用了 roadmap.md 里不存在的编号：${missing.join("、")}`).toEqual([]);
   });
+});
+
+/**
+ * 「分组 → 最大 total / 最大路由」那几张表的**实测列**此前没人判：预算列有上面几条
+ * 逐字比对，实测列是每次复测手抄进去的读数，之后再没人对过。
+ * 2026-10-10 实测：最新那张（2026-09-29）已有 13 组与当场重算不一致——
+ * knowledge-lesson 从 338.8 涨到 351.3（10-02 那次「再定价 348 → 357」的账），
+ * 其余各组也各自漂了 1~3KB。读数会烂，而没人喊。
+ *
+ * 这里**现读构建产物重算**，不把任何一个数字抄进测试：那两列由产物说了算。
+ *
+ * **只判最新那一张**：这篇文档里住着三种身份——09-12 的「首次全量测量」与 09-25 那张
+ * 复测都是历史读数（正文自己写着「保留原样当历史」），拿今天的产物去要求它们，
+ * 等于要求历史记录撒谎。与 `db-assertion-counts.mjs` 的 `CURRENT_SECTIONS` 同一族规矩。
+ *
+ * 与 `check:bundle`（`ci.yml` 第 131 行，排在 build 之后）是两道工序：那道管
+ * 「产物 vs 预算」，这道管「文档读数 vs 产物」。而单测在 CI 里跑在 build **之前**
+ * （第 62 行），所以那一趟必然没有产物——缺产物时明说跳过，不许把它读成「一致」。
+ */
+describe("perf-notes 最新那张测量表的实测列由产物说了算（缺产物时明说跳过）", () => {
+  const appOut = path.join(root, ".next/server/app");
+
+  /** 最后一个 `### 复测` 之后的那张表：分组 → { 最大total, 最大路由 } */
+  function currentTable() {
+    const lines = doc.split("\n");
+    const headings = lines.map((l, i) => (l.startsWith("### 复测") ? i : -1)).filter((i) => i >= 0);
+    expect(headings.length, "这篇文档一张复测表都没有了？").toBeGreaterThanOrEqual(1);
+    const start = headings[headings.length - 1];
+    const rows = new Map();
+    for (const line of lines.slice(start)) {
+      // 两列表头不同（首次那张多一列「路由数」），故两列都认，按「有没有数字+KB」取。
+      const m = line.match(/^\|\s*([a-z-]+)\s*\|\s*(?:(?:\d+)\s*\|\s*)?([\d.]+)\s*KB\s*\|[^|]*\|\s*`([^`]+)`\s*\|/);
+      if (m) rows.set(m[1], { maxTotalKB: Number(m[2]), maxRoute: m[3] });
+    }
+    return rows;
+  }
+
+  function skipOrMeasure() {
+    if (!fs.existsSync(appOut)) return null;
+    const budgetsLocal = budgetLib.compileBudgetManifest(manifest).budgets;
+    const gzipCache = new Map();
+    const gzipOf = (file) => {
+      if (!gzipCache.has(file)) gzipCache.set(file, zlib.gzipSync(fs.readFileSync(file)).length);
+      return gzipCache.get(file);
+    };
+    const listHtml = (dir = appOut) => {
+      const out = [];
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const file = path.join(dir, entry.name);
+        if (entry.isDirectory()) out.push(...listHtml(file));
+        else if (entry.name.endsWith(".html")) {
+          out.push(path.relative(appOut, file).split(path.sep).join("/").replace(/\.html$/, ""));
+        }
+      }
+      return out.sort();
+    };
+    const all = [];
+    for (const route of listHtml().filter((r) => /^(?:zh|en)(?:\/|$)/.test(r))) {
+      const html = fs.readFileSync(path.join(appOut, route + ".html"), "utf8");
+      const measurement = budgetLib.measureRoute({
+        route,
+        html,
+        assetGzip: (url) => gzipOf(path.join(root, budgetLib.staticAssetRepoPath(url))),
+        htmlGzip: (value) => zlib.gzipSync(value).length,
+      });
+      const match = budgetLib.matchRouteBudget(route, budgetsLocal);
+      if (match.error) continue;
+      measurement.budget = match.budget;
+      all.push(measurement);
+    }
+    const byGroup = new Map();
+    for (const budget of budgetsLocal) {
+      const group = all.filter((m) => m.budget.id === budget.id);
+      if (group.length === 0) continue;
+      const max = group.reduce((a, c) => (c.metrics.total > a.metrics.total ? c : a));
+      byGroup.set(budget.id, {
+        maxTotalKB: Number(budgetLib.formatKB(max.metrics.total)),
+        maxRoute: max.route,
+      });
+    }
+    return byGroup;
+  }
+
+  it("最新那张表还在、且列齐了 13 个以上分组（扫描缩水即红）", () => {
+    const rows = currentTable();
+    expect(rows.size, "最新那张表的行形状变了或整表被删——实测列的比对会随之空转").toBeGreaterThanOrEqual(13);
+    for (const name of rows.keys()) {
+      expect(manifest.budgets.some((b) => b.id === name), `表里有个清单里没有的分组：${name}`).toBe(true);
+    }
+  });
+
+  // 显式放宽超时：这条要遍历 454 条路由的 HTML 逐份 gzip，单文件跑 ~2.8s，
+  // 而全量 349 个 worker 并发时 IO 被摊薄，实测超过默认 5s（第一次就是这样红的——
+  // 报错写的是 `Test timed out`，不是读数不一致，别把它当成文档错了）。
+  it(
+    "实测列与当场重算一致（先 npm run build）",
+    { timeout: 60_000 },
+    () => {
+    const rows = currentTable();
+    const actual = skipOrMeasure();
+    if (!actual) {
+      // 没有产物就不许声称一致——CI 的第 62 行跑在 build 之前，那一趟注定没有 .next。
+      console.warn("[perf-notes] 跳过实测列比对：缺构建产物（先 npm run build；CI 里由 check:bundle 在 build 之后管预算那一半）");
+      expect(rows.size, "表都不在了，跳过也该先在这里红").toBeGreaterThanOrEqual(13);
+      return;
+    }
+    const drift = [];
+    for (const [id, row] of rows) {
+      const now = actual.get(id);
+      if (!now) {
+        drift.push(`${id}：表里列着，产物里量不到这一组（路由数为 0？）`);
+        continue;
+      }
+      // 不给容差：同一份产物重算应当逐字相同。第一版给了 0.1KB 容差，
+      // 探针把 351.3 改成 351.4 正好落在边界上没红（判据错，不是文档对）。
+      if (now.maxTotalKB !== row.maxTotalKB) {
+        drift.push(`${id}：最大 total 表 ${row.maxTotalKB}KB / 实测 ${now.maxTotalKB}KB`);
+      }
+      if (now.maxRoute !== row.maxRoute) {
+        drift.push(`${id}：最大路由 表 ${row.maxRoute} / 实测 ${now.maxRoute}`);
+      }
+    }
+    expect(drift, `docs/perf-notes.md 最新那张复测表的实测列是过期读数：\n${drift.join("\n")}`).toEqual([]);
+    },
+  );
 });
