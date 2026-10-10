@@ -46,6 +46,7 @@ describe("StudyPlan", () => {
         doneChapters={[]}
         wrongChapters={[]}
         currentChapter="getting-started"
+        locale="zh"
         dict={dict}
       />,
     );
@@ -60,6 +61,7 @@ describe("StudyPlan", () => {
         doneChapters={[]}
         wrongChapters={[]}
         currentChapter="getting-started"
+        locale="zh"
         dict={dict}
       />,
     );
@@ -84,6 +86,7 @@ describe("StudyPlan", () => {
         doneChapters={["getting-started"]}
         wrongChapters={["risk"]}
         currentChapter="spot"
+        locale="zh"
         dict={dict}
       />,
     );
@@ -99,9 +102,29 @@ describe("StudyPlan", () => {
           doneChapters: ["getting-started"],
           wrongChapters: ["risk"],
           currentChapter: "spot",
+          locale: "zh",
         }),
       }),
     );
+  });
+
+  it("locale 跟着界面语言走，不是写死 zh（英文界面送 en，prompt 才取对那一侧的名字）", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ plan: "Review sizing" }) });
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <StudyPlan
+        doneChapters={[]}
+        wrongChapters={[]}
+        currentChapter="spot"
+        locale="en"
+        dict={dict}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "生成学习计划" }));
+    await screen.findByText("Review sizing");
+    const body = JSON.parse(String((fetchMock.mock.calls.at(-1)?.[1] as RequestInit)?.body));
+    // 「传了 locale」与「传对了」是两件事：钉死成 zh 时这条必须红。
+    expect(body.locale).toBe("en");
   });
 
   // 屏幕上那颗按钮写的是「生成学习计划」，没有一颗叫「重试」——R16.54 修的是「失败把按钮
@@ -113,6 +136,7 @@ describe("StudyPlan", () => {
         doneChapters={[]}
         wrongChapters={[]}
         currentChapter="spot"
+        locale="zh"
         dict={dict}
       />,
     );
@@ -128,6 +152,7 @@ describe("StudyPlan", () => {
         doneChapters={[]}
         wrongChapters={[]}
         currentChapter="spot"
+        locale="zh"
         dict={dict}
       />,
     );
@@ -143,6 +168,7 @@ describe("StudyPlan", () => {
         doneChapters={[]}
         wrongChapters={[]}
         currentChapter="spot"
+        locale="zh"
         dict={dict}
       />,
     );
@@ -158,6 +184,7 @@ describe("StudyPlan", () => {
         doneChapters={[]}
         wrongChapters={[]}
         currentChapter="spot"
+        locale="zh"
         dict={enDict}
       />,
     );

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chat } from "@/lib/ai/client";
+import { getChapterTitle } from "@/lib/ai/chapters";
 import { getServerAuthUser } from "@/lib/supabase/server";
 import { parseJsonLoose } from "@/lib/ai/json-extract";
 import { createRateLimiter } from "@/lib/ai/rate-limit";
@@ -13,6 +14,8 @@ export interface PlanBody {
   doneChapters: string[];
   currentChapter: string;
   wrongChapters: string[];
+  /** 界面语言：决定篇章名取 zh 还是 en（与 /api/ai/chat 同一形状） */
+  locale: "zh" | "en";
 }
 
 /** 拼进 prompt 的章节 slug 数量/长度上限，避免客户端塞任意长文本 */
@@ -59,7 +62,29 @@ export function parsePlanBody(value: unknown): PlanBody | null {
     currentChapter = trimmed;
   }
 
-  return { doneChapters, currentChapter, wrongChapters };
+  // 与 /api/ai/chat 同一形状：只认两个真实 locale，缺省按 zh（界面默认语言）。
+  const locale = body.locale === "en" ? "en" : "zh";
+
+  return { doneChapters, currentChapter, wrongChapters, locale };
+}
+
+/**
+ * 把章节 slug 换成本地化篇章名；查不到就退回 slug 本身。
+ * 为什么必须换：`/api/ai/chat` 与 `/api/ai/quiz` 都先经 `getChapterTitle()` 再进 prompt，
+ * 只有这里把英文 slug 直接拼进中文句子（「我当前学习的篇章：spot」）——
+ * 同一条句子里混着 slug 与中文，而「slug → 篇章名」这件事在站内早有一个主人。
+ * 为什么查不到不报错：客户端传来的 slug 来自 `getChapters()`（真篇章），
+ * 但知识库改名会让某个 slug 暂时查不到；那种情况下退回 slug 仍然把信息送到了模型，
+ * 比整条请求 400 更接近用户要的东西（与 `chat` 路由「未知章节静默忽略」不是一回事：
+ * 那边的篇章只是参考上下文，这边是用户进度本身，不能丢）。
+ */
+function chapterNames(slugs: readonly string[], locale: string): string[] {
+  return slugs.map((slug) => getChapterTitle(locale, slug) ?? slug);
+}
+
+function joinChapterNames(slugs: readonly string[], locale: string): string {
+  const names = chapterNames(slugs, locale);
+  return names.length > 0 ? names.join("、") : "无";
 }
 
 export async function POST(req: NextRequest) {
@@ -92,8 +117,12 @@ export async function POST(req: NextRequest) {
     const body = parsePlanBody(read.value);
     if (!body) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
-    const done = body.doneChapters.join("、") || "无";
-    const wrong = body.wrongChapters.join("、") || "无";
+    const done = joinChapterNames(body.doneChapters, body.locale);
+    const wrong = joinChapterNames(body.wrongChapters, body.locale);
+    // `currentChapter` 是单个 slug：换名之后为空仍要说「无」，与上面两处同一口径。
+    const current = body.currentChapter
+      ? (getChapterTitle(body.locale, body.currentChapter) ?? body.currentChapter)
+      : "无";
 
     const raw = await chat({
       messages: [
@@ -111,7 +140,7 @@ export async function POST(req: NextRequest) {
         },
         {
           role: "user",
-          content: `我已完成的篇章：${done}\n我错题所在的篇章：${wrong}\n我当前学习的篇章：${body.currentChapter || "无"}\n\n请给我学习建议。`,
+          content: `我已完成的篇章：${done}\n我错题所在的篇章：${wrong}\n我当前学习的篇章：${current}\n\n请给我学习建议。`,
         },
       ],
       temperature: 0.5,

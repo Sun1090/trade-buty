@@ -15,11 +15,14 @@ export function StudyPlan({
   doneChapters,
   wrongChapters,
   currentChapter,
+  locale,
   dict,
 }: {
   doneChapters: string[];
   wrongChapters: string[];
   currentChapter: string;
+  /** 界面语言：/api/ai/plan 用它把章节 slug 换成本地化篇章名再进 prompt */
+  locale: "zh" | "en";
   dict: PlanDict;
 }) {
   const [plan, setPlan] = useState<string | null>(null);
@@ -33,7 +36,7 @@ export function StudyPlan({
       const res = await fetch("/api/ai/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doneChapters, wrongChapters, currentChapter }),
+        body: JSON.stringify({ doneChapters, wrongChapters, currentChapter, locale }),
       });
       if (res.status === 401) {
         setFailed(dict.loginRequired);
