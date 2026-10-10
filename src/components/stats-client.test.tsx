@@ -23,6 +23,20 @@ const { localDateStr } = await import("@/lib/date-utils");
 
 const chapters = [{ slug: "getting-started", docCount: 2 }];
 
+/** R16.214：两篇章的夹具——「当前篇章」要能落在第二篇上，单篇章夹具守不住任何东西 */
+const chaptersWithDocs = [
+  {
+    slug: "getting-started",
+    docCount: 2,
+    title: "01 · Basics",
+    docs: [
+      { slug: "market-overview", title: "01 · Market overview" },
+      { slug: "candlestick-basics", title: "02 · Candlesticks" },
+    ],
+  },
+  { slug: "spot", docCount: 1, title: "02 · Spot", docs: [{ slug: "order-types", title: "01 · Order types" }] },
+];
+
 function todayDateStr(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -822,5 +836,61 @@ describe("AI 学习计划收到的是错题本里那几篇", () => {
   it("对照：错题本为空时这条就该是空的", async () => {
     const body = await planBody({});
     expect(body.wrongChapters).toEqual([]);
+  });
+});
+
+/**
+ * R16.214：`/api/ai/plan` 把 `currentChapter` 拼成「我当前学习的篇章：${… || "无"}」
+ * 送进 prompt，而 `/stats` 这一侧写死 `""`——每次都给模型报「无」。
+ * 该由谁定「当前」是产品判断（/path 那页也知道用户学到哪），但同一屏自己就有
+ * 「下一步建议」那张卡读的 `nextUnread`，两处同源才不会这一屏说读《X》、
+ * 下一行告诉模型「当前篇章：无」。
+ */
+describe("AI 学习计划收到的当前篇章不再恒为空", () => {
+  async function planChapter(progressMap: Record<string, string[]>) {
+    store.set("tb-progress", JSON.stringify(progressMap));
+    const bodies: Array<{ currentChapter: string }> = [];
+    // 只换 `fetch` 这一颗：`vi.unstubAllGlobals()` 会把文件顶上那枚 localStorage 夹具
+    // 一起撤掉（R16.175 那条注释记过同一个坑）。
+    const spy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (_url: RequestInfo | URL, init?: RequestInit) => {
+        bodies.push(JSON.parse(String(init?.body)) as { currentChapter: string });
+        return { ok: true, status: 200, json: async () => ({ plan: "下一步" }) } as Response;
+      });
+    render(<StatsClient chapters={chaptersWithDocs} dict={dict} locale="zh" />);
+    fireEvent.click(await screen.findByText("生成学习计划"));
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    spy.mockRestore();
+    return bodies[0].currentChapter;
+  }
+
+  it("报的是第一篇未读所在的篇章，而不是空串", async () => {
+    // 第一篇全读完：落在第二篇才守得住——夹具若只给一章，「恒空」与「恒等于这一章」
+    // 之外没有第三种可能，用例就退化成比一个常量。
+    const value = await planChapter({ "getting-started": ["market-overview", "candlestick-basics"] });
+    expect(value).toBe("spot");
+  });
+
+  it("同一屏「下一步建议」与学习计划说的是同一个篇章", async () => {
+    store.set("tb-progress", JSON.stringify({ "getting-started": ["market-overview", "candlestick-basics"] }));
+    const section = await (async () => {
+      render(<StatsClient chapters={chaptersWithDocs} dict={dict} locale="zh" />);
+      const title = await screen.findByText("Up next");
+      expect(title).toBeInTheDocument();
+      return document.querySelector("#next-suggestion-title")?.closest("section");
+    })();
+    const href = section?.querySelector("a")?.getAttribute("href") ?? "";
+    // 这条断言的形状是「两处同源」而不是「等于 spot」：href 里那段就是 nextUnread.chapter。
+    const fromCard = href.split("/knowledge/")[1]?.split("/")[0] ?? "";
+    expect(fromCard).toBe("spot");
+  });
+
+  it("对照：全部读完时这条就是空的（不是拿第一篇凑数）", async () => {
+    const value = await planChapter({
+      "getting-started": ["market-overview", "candlestick-basics"],
+      spot: ["order-types"],
+    });
+    expect(value).toBe("");
   });
 });

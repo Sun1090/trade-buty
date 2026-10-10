@@ -861,11 +861,14 @@ export function StatsClient({
 
       {/* 学习计划。R16.175：`wrongChapters` 以前写死 `[]`，而 `/api/ai/plan` 认真校验
           并把它拼成「我错题所在的篇章：无」送进 prompt——一条被接收、被读取、却永远为空的
-          通道。错题本就是同一个组件里的 `wrongEntries`（上面那几条复习趋势用的正是它）。 */}
+          通道。错题本就是同一个组件里的 `wrongEntries`（上面那几条复习趋势用的正是它）。
+          R16.214：`currentChapter` 同样写死 `""`，每次都给模型报「我当前学习的篇章：无」。
+          它取同屏「下一步建议」那张卡用的同一份 `nextUnread`（按篇章顺序第一篇未读），
+          两处同源才不会出现这一屏说「下一步读《X》」、下一行却告诉模型「当前篇章：无」。 */}
       <StudyPlan
         doneChapters={stats.readDocs > 0 ? chapters.filter((c) => c.docCount > 0 && readDocsForChapter(progress?.[c.slug], c.docCount) >= c.docCount).map((c) => c.slug).slice(0, 5) : []}
         wrongChapters={[...new Set(Object.values(wrongEntries).map((e) => e.chapterNum))].slice(0, 5)}
-        currentChapter=""
+        currentChapter={nextUnread?.chapter ?? ""}
         dict={{ generate: locale === "en" ? "Generate plan" : "生成学习计划", generating: locale === "en" ? "Generating..." : "生成中…", title: locale === "en" ? "AI Study Plan" : "AI 学习计划", error: locale === "en" ? "Plan generation is unavailable right now" : "暂时无法生成学习计划，请稍后重试。", loginRequired: locale === "en" ? "Log in to generate a study plan" : "登录后可生成学习计划" }}
       />
 
