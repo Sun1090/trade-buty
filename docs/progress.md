@@ -2,6 +2,105 @@
 
 ---
 
+## 2026-10-10 · 第六十二轮（R16.307）：`runtime-health` 那一族漏点了 8 颗按钮，而报表那句话一直是假的
+
+- 里程碑 / 版本：「说法 vs 事实」第六十二轮；新增 R16.307，未改产品版本（当前 v0.7.28）。分支 `codex/ai-plan-chapter-titles`（第三笔，PR #408 上）。
+
+### 真问题：那句「点击页内按钮」从来没完整发生过
+
+- `e2e/runtime-health.spec.ts` 的点击族用 `Math.min(await page.locator("button").count(), MAX_CLICKS)` 截断，而 `MAX_CLICKS` 停在 14；`CLICK_ROUTES` 6 条路由 2026-10-10 实测按钮数是 7 / 7 / 12 / 6 / 6 / **22**——课文页（`/zh/knowledge/getting-started/first-trade`）那一颗早就超了。
+- 于是「开始测验」、随堂测的「下一步」「再看一次」与 4 个代码块的「复制」**从没被点过**，而失败信息写的是「点击页内按钮不抛未捕获错误」。缺口不是「测得不够多」，是**那句话声称的事没发生过**：点完 14 颗就收工，剩下 8 颗有没有 handler 崩溃，这一族完全不知道。
+- **改法必须两条一起上，缺一条都不算修**：
+  - ① `MAX_CLICKS` 14 → 32。当前最高 22，留一倍余量给新增按钮族；注释里写清实测数字与「旧上限漏了哪 8 颗」，让下一个改这个数的人知道数字从哪来。
+  - ② **覆盖缺口自己红**。旧写法 `Math.min()` 把点不完的那部分直接丢掉，报表照样绿。现在按钮数超过上限就先红在一条 `expect` 上，报错带实测值：`这一页有 22 颗按钮，超过 MAX_CLICKS(6)：…不要静默截断——截断出来的绿不是绿。`
+- **只提上限不加断言等于没修**：今天 22 颗，明天加一族按钮又是静默漏点，缺口从「没人知道」回到「没人知道」。那道断言才把缺口变成门禁红。
+
+### 验证
+
+- 6 条用例实跑全绿（`PW_REUSE_SERVER=1` 复用 3111 上的生产构建，1.4m）：7 / 7 / 12 / 6 / 6 / 22 全部真正点完，未捕获异常 0。
+- **红探针**：把 `MAX_CLICKS` 临时改成 6，6 条全红，报的是实测值（课文页 `Expected: <= 6 / Received: 22`）；把上限还原成 32 后复跑，6 条回到全绿。探针读的是 runner 打印的失败名与数字，不是我自己念的。
+- 全量：`lint --max-warnings=0` exit 0、`typecheck` exit 0、`check:test-clock-hygiene`（348 文件 · clock-in-assertion 0，本轮未新增测试文件、只改数值与断言，`docs/test-clock-hygiene.md` 无变化）、`check:scan-counts` 6 处登记无变化。
+- 本轮**没有**新增测试文件，所以 `check:report-freshness` 之前必须重算的台账没有新增项（上上轮的坑没重踩：那一次是新增了 `perf-notes-claims.test.mjs` 的判据却忘了认账扫描基数）。
+
+### 下一步
+
+- PR #408 已挂 ci / auth-e2e / db-tests 全绿；CodeQL 那条 alert #31 已按 false positive 结案（R16.306 记过由来），dismiss 之后那次 run 仍是非绿，push 本轮第三笔或 rerun 后会转绿。盯它转绿就 rebase 合并。
+- 合并后下一项候选（按优先级）：①R16.174 三种走向仍待维护者拍板（roadmap 已写明未擅自选边，不编理由）；②生产 `POST /api/ai/chat` 502 的归属——接口两边都不像出错，AI_API_URL / AI_API_KEY 六个变量都在 Vercel Production env，疑点已收窄到额度或出口网络（外部阻塞，等 SenseNova/硅基流动核实）；③在已排除清单之外继续扫「没有主人的说法」。
+- 更新时间：2026-10-10
+
+# Progress
+
+---
+
+## 2026-10-10 · 第六十一轮（R16.306）：性能台账那张表的 15 个读数烂了三周，没人喊；顺带结掉一条挡门的 CodeQL 误报
+
+- 里程碑 / 版本：「说法 vs 事实」第六十一轮；新增 R16.306 并关账，未改产品版本（当前 v0.7.28）。
+- 分支：`codex/ai-plan-chapter-titles`（同一分支的第二笔，上一笔 R16.305 已开 PR #408）。
+
+### 真问题：那张表的实测列是手抄的，抄完没人再看
+
+- `docs/perf-notes.md` 的「分组 → 今天最大 total / 预算 / 最大路由」表，预算列有 `perf-notes-claims.test.mjs` 逐字比对，**实测列一个判据都没有**——每次复测手抄进去，抄完就没人管。
+- **实测（今天干净构建后现读产物重算）**：最新那张（2026-09-29）15 个分组全部漂了——`knowledge-lesson` **+12.5KB**（338.8 → 351.3）、`review` **+12.1KB**（272.2 → 284.3）、`static-info` **−10.0KB**（265.8 → 255.8），其余各组 −1~2KB。`static-info` 的最大路由早就从 `zh/about` 变成了 `zh/changelog`。
+- **预算列也烂了一处**：knowledge-lesson 印着 348 KB，而清单里 10-02 就再定价成 **357 KB**了。三组变动都还没顶到预算，所以 `check:bundle` 一直是绿的——**预算没红不等于读数没烂**。
+- 改法：按文档自己的惯例（「保留原样当历史」）**追加一张今天的复测表**，不动 09-12 / 09-25 / 09-29 那三张。数字全部由脚本现读产物重算填入，不手抄。
+- 新判据现读构建产物与**最新那张**逐行比对；历史那三张不判（拿今天的产物去要求历史读数，等于要求历史撒谎——与 `db-assertion-counts` 的 `CURRENT_SECTIONS` 同族）。缺产物时**明说跳过**，不许读成「一致」：CI 第 62 行 `test:coverage` 跑在第 64 行 `build` 之前，那一趟注定没有 `.next`；预算那一半由第 131 行的 `check:bundle` 管，两道工序不重叠。
+
+### 我自己错三次（都是判据错，不是文档对）
+
+- **①第一版判的是历史表**：我扫到的第一个形状是 09-12 那张「首次全量测量」，它正文自己写着「保留原样当历史」。拿今天的产物要求它，等于要求历史记录撒谎——改成只判最后一个 `### 复测` 之后那张。
+- **②容差放成 0.1KB**：探针把 351.3 改成 351.4 正好落在边界上**没红**。改成严格相等（同一份产物重算应当逐字相同）。
+- **③把超时读成了读数不一致**：单跑 2.8s 绿、全量跑红，报错写的是 `Test timed out in 5000ms`，不是 drift——全量 349 个 worker 并发把 IO 摊薄了。给这条显式设 60s 超时，并在注释里写明「别把它当成文档错了」。改完复跑探针：改一个 0.1KB 仍红，判据的牙齿没被 timeout 削弱。
+
+### 顺带：结掉一条挡门的 CodeQL 误报（alert #31）
+
+- PR #408 的 CodeQL 汇总检查红在两个 Analyze 作业**都 success** 的情况下——与 PR #335 那次同一族（汇总只看新增告警）。
+- 告警是 `js/stored-xss`（high），`src/app/[locale]/page.tsx:62`，指向 `chapter.tagline`。**创建于 2026-09-24，ref 是 `refs/heads/main`**，即 main 上一直开着的既有告警，不是本轮引入（`git diff main...HEAD` 对该文件为空）。
+- **判断为误报，有据**：`tagline` 出自 `getChapters()` → `readFirstParagraph()` → **`plainText()`**，而 `plainText` 内部的尖括号清理是逐字符扫描的 `dropAngleSpans`，**不含 `<…>` 形状的正则**（`md-utils.ts` 文件头把这件事和 CodeQL 的误判形状都写明了）。它只流向 React 文本节点与 `<meta content>`，页面里也没有 `dangerouslySetInnerHTML`。CodeQL 认不出这个 sanitizer。
+- 处置：`gh api PATCH` 按 **false positive** 结案，理由写进 dismiss comment。**没有为了迎合扫描器改产品代码**——那是 R16.119 记过的弯路（「半消毒的值比没消毒更危险」）。按 R16.41 那族「豁免要留痕」的规矩登记在 roadmap R16.306。
+
+### 验证
+
+- `npx vitest run --coverage=false` **349 文件 / 3661 条**全绿（上一轮 349 / 3659：+2 条）。
+- `lint` / `typecheck` / `build`（474 页）exit 0；`check:docs` / `check:scan-counts` / `check:report-freshness` / `check:dead-copy` / `check:constitution` / `check:bundle` 全 0。
+- 探针三组：改 0.1KB → 红；改最大路由 → 红；**只改历史那张 → 绿**（证明豁免真生效、不是把判据关掉）。
+
+### 下一项
+
+- 本分支第二笔开 PR，等 `ci` + `db-tests` + CodeQL 绿了 rebase 合并（CodeQL 那条已 dismiss，需重跑一次才会转绿）。
+- 第六十二轮候选：继续按「能先证伪」扫。已排除的不要再试（现行 `## Q` 节 0 条带行号引用、生产站那批实测全对、字典 321 键 0 孤儿、知识库指针已在上游最新）。
+
+- 更新时间：2026-10-10（Asia/Shanghai）。
+
+---
+
+## 2026-10-10 · 第六十轮（R16.305）：学习计划的 prompt 里印的是英文 slug，而「slug → 篇章名」站内早有一个主人
+
+- 里程碑 / 版本：「说法 vs 事实」第六十轮；新增 R16.305 并关账，未改产品版本（当前 v0.7.28）。
+- 分支：`codex/ai-plan-chapter-titles`（自合并后的 `main` 顶点 `09a2cac`）。
+- **怎么找到它的**：上一轮收尾后按「继续扫有没有不需拍板、能先证伪再改的真缺陷」往下走。先试了三个候选都**没有靶子**（记下来免得下一轮重复踩）：①`file:line` 引用主人问题——量出 roadmap/progress 共 2750 条路径引用、612 条指不到文件，但排除「历史台账里的老扩展名」（`.ts`→`.tsx`、`.js`→`.json`）后只剩 22 条，且多是 R16.41 那族明记为「试过未采用」的封闭豁免；现行 `## Q` 节里带行号的引用 **0 条**（R16.41 那道门禁已经清干净了），这条候选当初记的「47 条指不到唯一去处」是历史节的读数，不是现行的。②生产站实测——9 条路径全 200、软 404 确是 200 + `noindex, follow`（与 `docs/seo-surface.md` 一致）、sitemap 实测 430 URL / 知识库 418（与 `docs/growth-checklist.md` 一致）、英文站首页与 6 个英文页零 CJK 残留（`/en/changelog` 那 32 处是页面明写「Raw commit log」的仓库历史原文，属有意保留）；`/en/knowledge/*` 那 2 处「入门基础 · 随堂测」是 R16.124/R16.297 已处理过的数据照旧印出。③字典死键——321 个叶子键全仓有人读，0 条孤儿。
+- **真问题**：`/api/ai/chat` 与 `/api/ai/quiz` 都先经 `getChapterTitle(locale, slug)` 再把篇章拼进提示词，只有 `/api/ai/plan` 把英文 slug 直接写进中文句子——`我当前学习的篇章：spot`、`我错题所在的篇章：risk-management`。同一条句子里混着 slug 与中文，而「slug → 本地化篇章名」这件事在站内早有一个主人（`src/lib/ai/chapters.ts`，R2.1/R3.7 共用）。
+- 改法：`plan` 路由新增 `locale` 字段（与 `/api/ai/chat` 同一形状：只认两个真实值、缺省 zh），三处拼装经 `getChapterTitle()` 换成篇章名；**查不到名字时退回 slug 本身**而不是整条 400——客户端的 slug 来自 `getChapters()`（真篇章），知识库改名会让某个 slug 暂时查不到，那种情况下退回 slug 仍把信息送到模型。这与 `chat` 路由「未知章节静默忽略」不是一回事：那边的篇章只是参考上下文，这边是用户进度本身，不能丢。
+- 用例：`route.test.ts` 新增 4 条（中文三处都印篇章名且 slug 按词边界一次不许出现、英文取 en 那一侧、查不到退回 slug、全空时三处写「无」）+ `locale` 归一化 1 条；`study-plan.test.tsx` 新增 1 条（locale 跟着界面语言走，不是写死 zh——「传了」与「传对了」是两件事）。名字从 `getChapterTitle()` 现取，不把「现货基础」这种字面抄进测试。
+- 探针两组各红一次：三处退回裸 slug → 红 2 条（中英各一）；`locale` 钉死 zh → 红 2 条（归一化那条 + 英文那条）。还原后 17 + 8 条全绿。
+- **撞到并修好的两处（不是改动错，是夹具/类型没跟上）**：①`study-plan.test.tsx` 那条旧用例断言的是请求体的**精确 JSON**，多一个 `locale` 就红——这是它该有的牙齿，按新形状补上而不是放松断言；②新写的 `localeOf()` 让 `tsc` 报 4 处 `Object is possibly 'null'`（`parsePlanBody` 返回类型可空），改成「先断言非 null 再取字段」的形状，顺带堵住「`?.` 把整个 body 被拒也读成 zh」那条缝。
+- **流程缺口（上一轮 CI 返工的根因，这次提前避开了）**：`check:report-freshness` 比的是「工作区 vs HEAD」，而 `check:test-clock-hygiene` 的扫描基数会随新增测试文件变化；上一轮本地没跑它，CI 才报 `docs/test-clock-hygiene.md` 过期（返工一笔 `4da6ddb`）。本轮在提交前先跑一遍，漂移 0。
+
+### 验证
+
+- `npx vitest run --coverage=false` **349 文件 / 3659 条**全绿（上一轮 349 / 3653：+6 条）。
+- `lint`（No issues）/ `typecheck` / `build`（474 页）exit 0。
+- `check:docs` / `check:scan-counts` / `check:report-freshness` / `check:dead-copy` / `check:constitution` 全 0。
+
+### 下一项
+
+- 本分支开 PR，等 `ci` + `db-tests` + CodeQL 绿了 rebase 合并。
+- 上一笔 PR #407（R16.214 关账 + R16.174 部分落地）已全绿 rebase 合并到 `main`（`09a2cac`），`main` 已快进。
+- 第六十一轮候选：继续按「能先证伪」扫。已排除的不要再试（`file:line` 现行节 0 条、生产站那一批实测全对、字典 0 孤儿）。
+
+- 更新时间：2026-10-10（Asia/Shanghai）。
+
+---
+
 ## 2026-10-10 · 第五十九轮（R16.214 关账 + R16.174 部分落地）：两条「需拍板」登记里，谎报的那半边先修
 
 - 里程碑 / 版本：「说法 vs 事实」第五十九轮；关账 R16.214、部分落地 R16.174，未改产品版本（当前 v0.7.28）。
