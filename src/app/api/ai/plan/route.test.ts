@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { MAX_PLAN_BODY_BYTES, parsePlanBody, POST } from "./route";
 import { resolveAuthUser } from "@/lib/supabase/auth-result";
+import { getChapterTitle } from "@/lib/ai/chapters";
 
 const mocks = vi.hoisted(() => ({
   createSupabaseServerClient: vi.fn(),
@@ -42,6 +43,7 @@ describe("parsePlanBody (R7.12)", () => {
       doneChapters: ["getting-started", "spot"],
       wrongChapters: ["futures"],
       currentChapter: "technical-analysis",
+      locale: "zh",
     });
   });
 
@@ -50,6 +52,7 @@ describe("parsePlanBody (R7.12)", () => {
       doneChapters: [],
       wrongChapters: [],
       currentChapter: "",
+      locale: "zh",
     });
   });
 
@@ -65,6 +68,83 @@ describe("parsePlanBody (R7.12)", () => {
     const many = Array.from({ length: 65 }, (_, i) => `c${i}`);
     expect(parsePlanBody({ doneChapters: many })).toBeNull();
     expect(parsePlanBody({ doneChapters: many.slice(0, 64) })).not.toBeNull();
+  });
+
+  it("locale 只认两个真实值，缺省按 zh", () => {
+    // 这条只判 locale 那一个字段，但 `parsePlanBody` 的返回类型可空——
+    // 用「先断言非 null」的形状取，免得 `?.` 把「整个 body 被拒」也读成 zh。
+    const localeOf = (value: unknown) => {
+      const parsed = parsePlanBody(value);
+      expect(parsed, `这一份 body 不该被拒：${JSON.stringify(value)}`).not.toBeNull();
+      return parsed!.locale;
+    };
+    expect(localeOf({ doneChapters: [], wrongChapters: [], locale: "en" })).toBe("en");
+    expect(localeOf({ doneChapters: [], wrongChapters: [], locale: "zh" })).toBe("zh");
+    expect(localeOf({ doneChapters: [] })).toBe("zh");
+    expect(localeOf({ doneChapters: [], locale: "fr" })).toBe("zh");
+    expect(localeOf({ doneChapters: [], locale: 5 })).toBe("zh");
+  });
+});
+
+/**
+ * 送进 prompt 的篇章必须是**篇章名**而不是 slug。
+ * `/api/ai/chat` 与 `/api/ai/quiz` 都先经 `getChapterTitle()`（站内唯一的主人）再把篇章
+ * 拼进提示词，只有 `/api/ai/plan` 把英文 slug 直接写进中文句子——「我当前学习的篇章：spot」。
+ * 判据不写死「现货基础」这种字面：名字从 `getChapterTitle()` 现取，换的是同一份映射。
+ */
+describe("POST /api/ai/plan 把篇章名送进 prompt，不是 slug", () => {
+  async function promptFor(body: Record<string, unknown>) {
+    chat.mockResolvedValue('{"plan":"先回顾已完成章节"}');
+    getUser.mockResolvedValue({ data: { user: { id: "plan-title-user" } }, error: null });
+    const res = await POST(request(body));
+    expect(res.status).toBe(200);
+    const call = chat.mock.calls.at(-1)?.[0] as { messages: { role: string; content: string }[] };
+    return call.messages.map((m) => m.content).join("\n");
+  }
+
+  it("中文界面：三处都印篇章名，slug 一次都不许出现", async () => {
+    const prompt = await promptFor({
+      doneChapters: ["getting-started"],
+      wrongChapters: ["futures"],
+      currentChapter: "spot",
+      locale: "zh",
+    });
+    for (const [slug, kind] of [["getting-started", "已完成"], ["futures", "错题"], ["spot", "当前"]]) {
+      const title = getChapterTitle("zh", slug);
+      expect(title, `kb-titles 里查不到 ${slug} 的中文名，靶子变了`).not.toBeNull();
+      expect(prompt, `${kind}那处应该印《${title}》`).toContain(title!);
+      // slug 本身不许单独成词出现（它可能作为别的串的子串，故按词边界判）
+      expect(prompt, `${kind}那处仍印着裸 slug ${slug}`).not.toMatch(
+        new RegExp(`(^|[^\w-])${slug}([^\w-]|$)`),
+      );
+    }
+  });
+
+  it("英文界面：取 en 那一侧的名字", async () => {
+    const prompt = await promptFor({
+      doneChapters: ["spot"],
+      wrongChapters: [],
+      currentChapter: "futures",
+      locale: "en",
+    });
+    expect(prompt).toContain(getChapterTitle("en", "spot")!);
+    expect(prompt).toContain(getChapterTitle("en", "futures")!);
+  });
+
+  it("对照：查不到名字的 slug 退回 slug 本身，不把用户进度丢掉", async () => {
+    const prompt = await promptFor({
+      doneChapters: ["no-such-chapter"],
+      wrongChapters: [],
+      currentChapter: "",
+      locale: "zh",
+    });
+    expect(getChapterTitle("zh", "no-such-chapter")).toBeNull();
+    expect(prompt).toContain("no-such-chapter");
+  });
+
+  it("对照：一条都没有时三处都写「无」", async () => {
+    const prompt = await promptFor({ doneChapters: [], wrongChapters: [], currentChapter: "", locale: "zh" });
+    expect(prompt.match(/无/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
   });
 });
 

@@ -2,6 +2,34 @@
 
 ---
 
+## 2026-10-10 · 第六十轮（R16.305）：学习计划的 prompt 里印的是英文 slug，而「slug → 篇章名」站内早有一个主人
+
+- 里程碑 / 版本：「说法 vs 事实」第六十轮；新增 R16.305 并关账，未改产品版本（当前 v0.7.28）。
+- 分支：`codex/ai-plan-chapter-titles`（自合并后的 `main` 顶点 `09a2cac`）。
+- **怎么找到它的**：上一轮收尾后按「继续扫有没有不需拍板、能先证伪再改的真缺陷」往下走。先试了三个候选都**没有靶子**（记下来免得下一轮重复踩）：①`file:line` 引用主人问题——量出 roadmap/progress 共 2750 条路径引用、612 条指不到文件，但排除「历史台账里的老扩展名」（`.ts`→`.tsx`、`.js`→`.json`）后只剩 22 条，且多是 R16.41 那族明记为「试过未采用」的封闭豁免；现行 `## Q` 节里带行号的引用 **0 条**（R16.41 那道门禁已经清干净了），这条候选当初记的「47 条指不到唯一去处」是历史节的读数，不是现行的。②生产站实测——9 条路径全 200、软 404 确是 200 + `noindex, follow`（与 `docs/seo-surface.md` 一致）、sitemap 实测 430 URL / 知识库 418（与 `docs/growth-checklist.md` 一致）、英文站首页与 6 个英文页零 CJK 残留（`/en/changelog` 那 32 处是页面明写「Raw commit log」的仓库历史原文，属有意保留）；`/en/knowledge/*` 那 2 处「入门基础 · 随堂测」是 R16.124/R16.297 已处理过的数据照旧印出。③字典死键——321 个叶子键全仓有人读，0 条孤儿。
+- **真问题**：`/api/ai/chat` 与 `/api/ai/quiz` 都先经 `getChapterTitle(locale, slug)` 再把篇章拼进提示词，只有 `/api/ai/plan` 把英文 slug 直接写进中文句子——`我当前学习的篇章：spot`、`我错题所在的篇章：risk-management`。同一条句子里混着 slug 与中文，而「slug → 本地化篇章名」这件事在站内早有一个主人（`src/lib/ai/chapters.ts`，R2.1/R3.7 共用）。
+- 改法：`plan` 路由新增 `locale` 字段（与 `/api/ai/chat` 同一形状：只认两个真实值、缺省 zh），三处拼装经 `getChapterTitle()` 换成篇章名；**查不到名字时退回 slug 本身**而不是整条 400——客户端的 slug 来自 `getChapters()`（真篇章），知识库改名会让某个 slug 暂时查不到，那种情况下退回 slug 仍把信息送到模型。这与 `chat` 路由「未知章节静默忽略」不是一回事：那边的篇章只是参考上下文，这边是用户进度本身，不能丢。
+- 用例：`route.test.ts` 新增 4 条（中文三处都印篇章名且 slug 按词边界一次不许出现、英文取 en 那一侧、查不到退回 slug、全空时三处写「无」）+ `locale` 归一化 1 条；`study-plan.test.tsx` 新增 1 条（locale 跟着界面语言走，不是写死 zh——「传了」与「传对了」是两件事）。名字从 `getChapterTitle()` 现取，不把「现货基础」这种字面抄进测试。
+- 探针两组各红一次：三处退回裸 slug → 红 2 条（中英各一）；`locale` 钉死 zh → 红 2 条（归一化那条 + 英文那条）。还原后 17 + 8 条全绿。
+- **撞到并修好的两处（不是改动错，是夹具/类型没跟上）**：①`study-plan.test.tsx` 那条旧用例断言的是请求体的**精确 JSON**，多一个 `locale` 就红——这是它该有的牙齿，按新形状补上而不是放松断言；②新写的 `localeOf()` 让 `tsc` 报 4 处 `Object is possibly 'null'`（`parsePlanBody` 返回类型可空），改成「先断言非 null 再取字段」的形状，顺带堵住「`?.` 把整个 body 被拒也读成 zh」那条缝。
+- **流程缺口（上一轮 CI 返工的根因，这次提前避开了）**：`check:report-freshness` 比的是「工作区 vs HEAD」，而 `check:test-clock-hygiene` 的扫描基数会随新增测试文件变化；上一轮本地没跑它，CI 才报 `docs/test-clock-hygiene.md` 过期（返工一笔 `4da6ddb`）。本轮在提交前先跑一遍，漂移 0。
+
+### 验证
+
+- `npx vitest run --coverage=false` **349 文件 / 3659 条**全绿（上一轮 349 / 3653：+6 条）。
+- `lint`（No issues）/ `typecheck` / `build`（474 页）exit 0。
+- `check:docs` / `check:scan-counts` / `check:report-freshness` / `check:dead-copy` / `check:constitution` 全 0。
+
+### 下一项
+
+- 本分支开 PR，等 `ci` + `db-tests` + CodeQL 绿了 rebase 合并。
+- 上一笔 PR #407（R16.214 关账 + R16.174 部分落地）已全绿 rebase 合并到 `main`（`09a2cac`），`main` 已快进。
+- 第六十一轮候选：继续按「能先证伪」扫。已排除的不要再试（`file:line` 现行节 0 条、生产站那一批实测全对、字典 0 孤儿）。
+
+- 更新时间：2026-10-10（Asia/Shanghai）。
+
+---
+
 ## 2026-10-10 · 第五十九轮（R16.214 关账 + R16.174 部分落地）：两条「需拍板」登记里，谎报的那半边先修
 
 - 里程碑 / 版本：「说法 vs 事实」第五十九轮；关账 R16.214、部分落地 R16.174，未改产品版本（当前 v0.7.28）。
