@@ -232,7 +232,15 @@ describe("perf-notes 最新那张测量表的实测列由产物说了算（缺�
     }
     const byGroup = new Map();
     for (const budget of budgetsLocal) {
-      const group = all.filter((m) => m.budget.id === budget.id);
+      // static-info 组的最大路由恒为 /changelog，而那一页在**构建期**执行
+      // `git log -15`（`src/app/[locale]/changelog/page.tsx:45`）把最近 15 条提交的
+      // hash/日期/subject 打进 HTML——多提交一笔，那一行的读数就变。
+      // 2026-10-10 就是这么红的：两笔提交让 255.8 变成 255.9（多 10 个字节原文，gzip 后约 100）。
+      // 这一组按「排除 /changelog」的口径现读，表与判据同口径；否则这道判据
+      // 每提交一笔必红一次，那种红不指向任何回归。
+      const group = all.filter(
+        (m) => m.budget.id === budget.id && !/\/changelog$/.test(m.route),
+      );
       if (group.length === 0) continue;
       const max = group.reduce((a, c) => (c.metrics.total > a.metrics.total ? c : a));
       byGroup.set(budget.id, {

@@ -139,14 +139,23 @@ R16.235 那笔债在这一轮还掉：`auth-provider.tsx` 与 `auth-header.tsx` 
 | replay | 318.6 KB | 400 KB | `zh/replay` |
 | privacy | 254.1 KB | 340 KB | `zh/privacy` |
 | glossary | 250.6 KB | 340 KB | `zh/glossary` |
-| static-info | 255.8 KB | 340 KB | `zh/changelog` |
+| static-info | 247.1 KB | 340 KB | `zh/about` |
 | auth | 311.0 KB | 340 KB | `zh/auth` |
 
 与 9-29 相比：`knowledge-lesson` **+12.5KB**（338.8 → 351.3）、`review` **+12.1KB**（272.2 → 284.3），
-`static-info` **−10.0KB**（265.8 → 255.8），其余各组 −1~2KB。三组变动都还没顶到预算
-（lesson 351.3 / 357、review 284.3 / 350、static-info 255.8 / 340），所以 `check:bundle` 是绿的——
+`static-info` **−18.7KB**（265.8 → 247.1，见下面那条口径说明），其余各组 −1~2KB。三组变动都还没顶到预算
+（lesson 351.3 / 357、review 284.3 / 350、static-info 247.1 / 340），所以 `check:bundle` 是绿的——
 **预算没红不等于读数没烂**：这 15 个数字此前全靠手抄，抄进去之后没有任何一道门再看过它们。
 本轮起由 `scripts/perf-notes-claims.test.mjs` 现读构建产物重算并与最新这张表逐行比对
 （历史那两张不判：它们是当时的读数，拿今天的产物去要求它们等于要求历史撒谎）。
 注意本地单测跑在 `ci.yml` 第 62 行、`build` 在第 64 行，所以 CI 那一趟**没有产物、这道判据会明说跳过**；
 预算那一半由排在第 131 行的 `check:bundle` 在 build 之后管——两道工序不重叠。
+
+**`static-info` 那一行的口径是「剔除 `/changelog`」**：那一页在构建期跑 `git log -15`
+（`src/app/[locale]/changelog/page.tsx:45`），把最近 15 条提交的 hash / 日期 / subject
+直接打进 HTML——`zh/changelog` 的 HTML 有 158KB，绝大部分是这份 raw commit log。
+所以这一组的「最大值」每提交一笔就变：2026-10-10 今天两笔提交把它从 255.8KB 推到
+255.9KB，而这道判据要求逐字相同，于是**每提交一笔必红一次**。那种红不指向任何回归，
+只是 git 历史的字节数。表与判据因此同口径：都排除 `changelog`，`static-info` 的最大路由
+取 `zh/about`（含 `changelog` 的全组读数是 255.9KB / `zh/changelog`，仍远在 340KB 之下，
+`check:bundle` 的预算比对遍历全部路由，不受这一行口径影响）。
