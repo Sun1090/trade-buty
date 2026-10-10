@@ -2,6 +2,47 @@
 
 ---
 
+## 2026-10-10 · 第六十一轮（R16.306）：性能台账那张表的 15 个读数烂了三周，没人喊；顺带结掉一条挡门的 CodeQL 误报
+
+- 里程碑 / 版本：「说法 vs 事实」第六十一轮；新增 R16.306 并关账，未改产品版本（当前 v0.7.28）。
+- 分支：`codex/ai-plan-chapter-titles`（同一分支的第二笔，上一笔 R16.305 已开 PR #408）。
+
+### 真问题：那张表的实测列是手抄的，抄完没人再看
+
+- `docs/perf-notes.md` 的「分组 → 今天最大 total / 预算 / 最大路由」表，预算列有 `perf-notes-claims.test.mjs` 逐字比对，**实测列一个判据都没有**——每次复测手抄进去，抄完就没人管。
+- **实测（今天干净构建后现读产物重算）**：最新那张（2026-09-29）15 个分组全部漂了——`knowledge-lesson` **+12.5KB**（338.8 → 351.3）、`review` **+12.1KB**（272.2 → 284.3）、`static-info` **−10.0KB**（265.8 → 255.8），其余各组 −1~2KB。`static-info` 的最大路由早就从 `zh/about` 变成了 `zh/changelog`。
+- **预算列也烂了一处**：knowledge-lesson 印着 348 KB，而清单里 10-02 就再定价成 **357 KB**了。三组变动都还没顶到预算，所以 `check:bundle` 一直是绿的——**预算没红不等于读数没烂**。
+- 改法：按文档自己的惯例（「保留原样当历史」）**追加一张今天的复测表**，不动 09-12 / 09-25 / 09-29 那三张。数字全部由脚本现读产物重算填入，不手抄。
+- 新判据现读构建产物与**最新那张**逐行比对；历史那三张不判（拿今天的产物去要求历史读数，等于要求历史撒谎——与 `db-assertion-counts` 的 `CURRENT_SECTIONS` 同族）。缺产物时**明说跳过**，不许读成「一致」：CI 第 62 行 `test:coverage` 跑在第 64 行 `build` 之前，那一趟注定没有 `.next`；预算那一半由第 131 行的 `check:bundle` 管，两道工序不重叠。
+
+### 我自己错三次（都是判据错，不是文档对）
+
+- **①第一版判的是历史表**：我扫到的第一个形状是 09-12 那张「首次全量测量」，它正文自己写着「保留原样当历史」。拿今天的产物要求它，等于要求历史记录撒谎——改成只判最后一个 `### 复测` 之后那张。
+- **②容差放成 0.1KB**：探针把 351.3 改成 351.4 正好落在边界上**没红**。改成严格相等（同一份产物重算应当逐字相同）。
+- **③把超时读成了读数不一致**：单跑 2.8s 绿、全量跑红，报错写的是 `Test timed out in 5000ms`，不是 drift——全量 349 个 worker 并发把 IO 摊薄了。给这条显式设 60s 超时，并在注释里写明「别把它当成文档错了」。改完复跑探针：改一个 0.1KB 仍红，判据的牙齿没被 timeout 削弱。
+
+### 顺带：结掉一条挡门的 CodeQL 误报（alert #31）
+
+- PR #408 的 CodeQL 汇总检查红在两个 Analyze 作业**都 success** 的情况下——与 PR #335 那次同一族（汇总只看新增告警）。
+- 告警是 `js/stored-xss`（high），`src/app/[locale]/page.tsx:62`，指向 `chapter.tagline`。**创建于 2026-09-24，ref 是 `refs/heads/main`**，即 main 上一直开着的既有告警，不是本轮引入（`git diff main...HEAD` 对该文件为空）。
+- **判断为误报，有据**：`tagline` 出自 `getChapters()` → `readFirstParagraph()` → **`plainText()`**，而 `plainText` 内部的尖括号清理是逐字符扫描的 `dropAngleSpans`，**不含 `<…>` 形状的正则**（`md-utils.ts` 文件头把这件事和 CodeQL 的误判形状都写明了）。它只流向 React 文本节点与 `<meta content>`，页面里也没有 `dangerouslySetInnerHTML`。CodeQL 认不出这个 sanitizer。
+- 处置：`gh api PATCH` 按 **false positive** 结案，理由写进 dismiss comment。**没有为了迎合扫描器改产品代码**——那是 R16.119 记过的弯路（「半消毒的值比没消毒更危险」）。按 R16.41 那族「豁免要留痕」的规矩登记在 roadmap R16.306。
+
+### 验证
+
+- `npx vitest run --coverage=false` **349 文件 / 3661 条**全绿（上一轮 349 / 3659：+2 条）。
+- `lint` / `typecheck` / `build`（474 页）exit 0；`check:docs` / `check:scan-counts` / `check:report-freshness` / `check:dead-copy` / `check:constitution` / `check:bundle` 全 0。
+- 探针三组：改 0.1KB → 红；改最大路由 → 红；**只改历史那张 → 绿**（证明豁免真生效、不是把判据关掉）。
+
+### 下一项
+
+- 本分支第二笔开 PR，等 `ci` + `db-tests` + CodeQL 绿了 rebase 合并（CodeQL 那条已 dismiss，需重跑一次才会转绿）。
+- 第六十二轮候选：继续按「能先证伪」扫。已排除的不要再试（现行 `## Q` 节 0 条带行号引用、生产站那批实测全对、字典 321 键 0 孤儿、知识库指针已在上游最新）。
+
+- 更新时间：2026-10-10（Asia/Shanghai）。
+
+---
+
 ## 2026-10-10 · 第六十轮（R16.305）：学习计划的 prompt 里印的是英文 slug，而「slug → 篇章名」站内早有一个主人
 
 - 里程碑 / 版本：「说法 vs 事实」第六十轮；新增 R16.305 并关账，未改产品版本（当前 v0.7.28）。
