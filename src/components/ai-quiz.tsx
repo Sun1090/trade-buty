@@ -86,7 +86,12 @@ export function AiQuiz({ wrongItems, dict, aiEnabled = true }: AiQuizProps & { a
 
   /**
    * R2.6/R2.8/R5.5：变体题与错题本打通，走 SRS 状态机。
-   * 挂对关系按**当前这道变体**算：`questions[current]` 记进 `wrongItems[current % 长度]`；
+   * R16.174：这里的「挂对关系」是一种**轮转**，不是对应关系——服务端把最多 5 道原题塞进
+   * 同一份 prompt（`api/ai/quiz/route.ts`）让模型产出 3 道同主题变体，返回的 `{questions}`
+   * 与输入条目没有任何下标关系，`filterRelevantQuestions` 还会再删掉几道。所以第 `current`
+   * 道变体被记到 `wrongItems[current % 长度]` 上，是排程策略（逐个轮一遍来源错题），
+   * **不代表这道变体就是从那道题变来的**。三种走向待产品拍板（docs/roadmap.md R16.174）：
+   * 让模型逐题回指来源并校验 / 变体题不再写 SRS / 把轮转明确当成排程并改界面口径。
    * `pick(i)` 的 `i` 是选项序号，答对推进间隔、答错重置（幂等）。
    * R5.8：每次复习应答计入每日目标（1 题记 1 分钟）。
    */
