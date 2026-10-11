@@ -2,6 +2,52 @@
 
 ---
 
+## 2026-10-11 · 第六十六轮（R16.312）：README 那句「81 题」也是手抄的；探针的一条腿因手抄锚点而语法崩溃，作废重做
+
+- 里程碑 / 版本：「说法 vs 事实」第六十六轮；R16.312 新增并关账，未改产品版本（当前 v0.7.28）。分支 `codex/readme-quiz-count`（一笔 `gate(docs)` + 本台账）。上一轮的 #410（R16.311）本轮已 rebase 合并进 main（`6ba447a`），远端分支已 prune。
+
+### 真问题：章数课文数有主人，同一屏的题数没有
+
+- `README.md:15` / `README.zh-CN.md:15`：「27 章随堂测验（81 题全解析）」。`check:docs` 的 `auditReadmeCounts` 早就把**章数与课文数**对着内容树现读核了，题数却没人管：它由 `src/lib/quizzes.ts` 的固定题库决定，某一章补一道题这句话就漂，文档不会红。
+- 主人同样在隔壁：`check:quiz-coverage` 自己就用 `parseQuizMounts()` 数出 `totalQuestions` 并印在成功行里（`共 81 道固定题`）。R16.310（抄来的 27）、R16.311（抄来的 418）、本轮（抄来的 81）是同一条病的三个实例——**门禁知道答案，却允许文档另说一遍**。
+
+### 做法
+
+- `docs-consistency-lib.mjs` 新增 `extractReadmeQuizCounts` / `auditReadmeQuizCounts`：章数与题数分别核、错里各点名两个数；**找不到那句说法同样报 issue**（R16.303 的「判据不许空转」）。
+- 调用点取 `actual.chapters`（内容树现读，与上面那条同源）+ `parseQuizMounts()` 现数的题数，**复用 `check:quiz-coverage` 同一个解析器**，不再手写第二遍取数（R16.271 ① 的账：手抄一遍就是重新写一个断言）。
+- 英文那句写成 `chapter (?:quiz|quizzes)` 而不是 `quizzes?`：`quiz` 的复数不是 `quiezs`，`quizzes?` 认不出单数，测试里喂 `1 chapter quiz (3 questions)` 当场把它抓出来了——**这条是我测出来的，不是想到的**。
+- 4 条新单测（13→17）。其中「真实 README 对着现读数据」那条**刻意把章数基准取成 `readdirSync` 数出来的**，不取 README 自己印的：否则这条判据在此刻的世界里是恒等式（R16.294 / R16.310 各记过一次，M6 就是专门造这个恒等式给探针撞的）。
+
+### 探针 9 条腿 BAD=0，但两条腿是我自己写坏的
+
+- **① M7 手抄锚点导致 CLI 语法崩溃**：第一版把 `issues.push(\n  ...auditReadmeQuizCounts(` 当作**一行**去替换，锚点少了一个逗号，替换后源码不合法，`check:docs` 报 `Expected ","`。按 R16.206「启动期崩溃不能读成抓到」，那条腿当时**完全作废**。改成从源码**现取整段调用块**、再换成裸调用形式（`dynamicBlock()`），锚点不再靠手抄。
+- **② M7 修好后 BAD=1**：那条腿叠加了「文档改漂 84」，于是 C 必然红，我却把它标在 expectGreen。期望必须跟着**这条腿实际制造出来的状态**写，不是照抄别的腿的期望。
+- 其余各腿都按预期红：M1 英文题数 84 / M2 中文章数 28 / M3 整句被删 → C 红且门禁 exit 1；M4 import 不调用 / M5 题数抄成常数 / M6 章数从文档自己推 / M7 返回值不进 issues → 各自红在 D（M7 还确认 `check:docs` 在文档漂了时 exit 0，正是本腿要证的静默通过面）；M8 把「找不到锚点」当一致放过 → 红在 B 与 C；M9 只改判据自己的注释 → 四条全活。
+
+### 顺带：主题串门第二次，这次在推送前拦住了
+
+- R16.312 那笔提交一度落在 #410（R16.311）的分支上。因为**还没推**，用 `git branch -f codex/readme-quiz-count <sha>` + `git rebase --onto origin/main` 挪走，再把 `codex/seo-doc-page-count` 指回它自己的顶点；核对远端 `ls-remote` 的顶点始终是 `6593096`，#410 的 diff 从未包含这笔，因此**不需要 revert**（对比上一轮 #409 那笔已推送的串门，只能用追加 revert）。
+- 删 `codex/seo-doc-page-count` 本地分支时 `git branch -d` 拒绝（rebase 合并后 SHA 不等价），先用 `git cherry origin/main <branch>` 确认四笔全是 `-`（补丁已进 main），再用 `-D` 删除——**先证明等价再强删**，不凭印象。
+
+### 验证
+
+- `npx vitest run scripts/docs-consistency-lib.test.mjs` **17 条全绿**；`npm run check:docs` exit 0；手工把 README 改 84 题、中文改 28 章，各报一句且 exit 1，复原后 exit 0（写探针之前先手工量过一遍，确保锚点取的是真实形状）。
+- 合并 #410 后在 main 上复跑 `seo-surface-lib` 41 条 + `docs-consistency-lib` 17 条 = 54 条全绿。
+- 本轮改动只落在 `scripts/`（判据 + 测试），不新增测试文件：`check:docs` / `check:quiz-coverage` 均 exit 0，`.gate-logs/probe-r67.mjs` 每腿结束都 `git checkout --` 还原、收尾 `git status` 干净。
+
+### 阻塞 / 风险 / 回滚
+
+- 无阻塞。已知边界两条：① 英文正则认 `chapter quiz` / `chapter quizzes` 两种，若将来 README 那句换成「测验题共 N 道」这类写法会红在「找不到可校验的测验章数/题数」——**红=去看**，不是放过；② 题数口径 = `parseQuizMounts` 数出的**固定题库**题数，AI 出题不在内（与 `check:quiz-coverage` 一致），README 那句本来也只说固定题。回滚一笔撤回，不涉数据。
+
+### 下一项
+
+- 全量验证链（`test:coverage` / build / 门禁链）后推 PR。
+- 同族候选还剩：`docs/growth-checklist.md:3` 那句「sitemap（430 URL，其中知识库 418）」——418 半边已被 R16.311 管住，430（`stats.sitemapUrls`）还没有主人。
+
+- 更新时间：2026-10-11（Asia/Shanghai）
+
+---
+
 ## 2026-10-11 · 第六十五轮（R16.311）：一条「防静默通过」的判据自己就是静默通过的；探针把这件事量了出来
 
 - 里程碑 / 版本：「说法 vs 事实」第六十五轮；R16.311 新增并关账，未改产品版本（当前 v0.7.28）。分支 `codex/seo-doc-page-count`（三笔：`451edb1` 门禁本体、`bf41db2` 退出码判据收紧、`d55fd78` 失败分支条件也钉住）。R16.310 的台账在 PR #409 的 `d8c21f8`（第六十四轮），本轮编号跳过它以免相撞。
@@ -49,6 +95,8 @@
 
 - #409 的 `ci` 跑绿后 rebase 合并、本地 main 快进、清分支；本轮分支推上去开 PR。
 - 同族候选：文档里还有哪些「手抄的数字」没有主人。已排除项见上一轮：docs 仓库路径引用、判定级静默截断、`file:line` 引用主人、ops.md 幽灵登记。
+
+- 更新时间：2026-10-11（Asia/Shanghai）
 
 ---
 
