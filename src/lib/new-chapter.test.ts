@@ -184,10 +184,14 @@ describe("new-chapter lib (R10.16)", () => {
       path.join(process.cwd(), "scripts/dry-run-new-chapter.mjs"),
       "utf8",
     );
+    // 只看**调用点**那一段：`zhChapterCount` 在文件里出现两处（定义与传参），
+    // 拿全文第一个匹配去判，抓到的是定义那一处，「传参抄回 27」就躲过去了（探针 M1 暴露的）。
+    const call = cli.match(/planIntegration\(\{[^)]*\}\)/);
+    expect(call, "dry-run 里找不到 planIntegration 的调用——判据在空转").toBeTruthy();
     // 两种形状都要认：`zhChapterCount: 27`（抄来的常数）与 `zhChapterCount }`（变量简写）。
     // 只认冒号那一种，「改成简写但变量仍是 27」这条路就躲过去了。
-    const passed = cli.match(/zhChapterCount\s*(?::\s*([^,)\n]+))?/);
-    expect(passed, "dry-run 里找不到传 zhChapterCount 的那一处——判据在空转").toBeTruthy();
+    const passed = call![0].match(/zhChapterCount\s*(?::\s*([^,)\n]+))?/);
+    expect(passed, "planIntegration 的调用里没有 zhChapterCount 这个入参").toBeTruthy();
     expect(
       passed![1] === undefined || !/^\s*\d+\s*$/.test(passed![1]),
       `dry-run 又把章数抄成常数了（zhChapterCount: ${(passed![1] ?? "").trim()}）`,
