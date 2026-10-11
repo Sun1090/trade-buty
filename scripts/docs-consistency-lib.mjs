@@ -38,6 +38,53 @@ export function auditReadmeCounts(readmes, expected) {
   return issues;
 }
 
+/**
+ * README 那句「27 章随堂测验（81 题全解析）」里的题数。
+ *
+ * 章节数与课文数由 `auditReadmeCounts` 对着内容树核（R16.312 之前就有），
+ * 但同一屏的**题数**没有任何东西对着：它由 `src/lib/quizzes.ts` 的固定题库决定，
+ * 某一章补一道题，这句话就漂，而文档不会红。主人同样现成——
+ * `check:quiz-coverage` 自己就在用 `parseQuizMounts()` 把 `totalQuestions` 数出来印在成功行里。
+ */
+export function extractReadmeQuizCounts(markdown) {
+  const text = String(markdown);
+  const en = text.match(
+    /\*\*Test\*\*:\s*(\d+)\s+chapter (?:quiz|quizzes)\s*\((\d+)\s+questions?/i,
+  );
+  const zh = text.match(/\*\*测\*\*：\s*(\d+)\s*章随堂测验（(\d+)\s*题/);
+  const toCounts = (match) =>
+    match ? { chapters: Number(match[1]), questions: Number(match[2]) } : null;
+  return { en: toCounts(en), zh: toCounts(zh) };
+}
+
+export function auditReadmeQuizCounts(readmes, expected) {
+  const issues = [];
+  const parsed = extractReadmeQuizCounts(readmes.en ?? "");
+  const parsedZh = extractReadmeQuizCounts(readmes.zh ?? "");
+  for (const [file, counts] of [
+    ["README.md", parsed.en],
+    ["README.zh-CN.md", parsedZh.zh],
+  ]) {
+    if (!counts) {
+      issues.push(`${file}: 找不到可校验的测验章数/题数`);
+      continue;
+    }
+    for (const [field, label] of [
+      ["chapters", "章"],
+      ["questions", "题"],
+    ]) {
+      if (!Number.isFinite(counts[field])) {
+        issues.push(`${file}: 那句里的${label}数不是数字：${JSON.stringify(counts[field])}`);
+      } else if (counts[field] !== expected[field]) {
+        issues.push(
+          `${file}: 写为 ${counts[field]} ${label}，实际为 ${expected[field]} ${label}`,
+        );
+      }
+    }
+  }
+  return issues;
+}
+
 export function auditAgentsContract(markdown) {
   const text = String(markdown);
   const issues = [];
