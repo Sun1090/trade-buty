@@ -52,6 +52,16 @@ const existing = new Set(
   ),
 );
 
+/**
+ * zh 树当前的篇章数。过去这里往下传的是**写死的 27**——而 27 是知识库契约里
+ * `validate-knowledge-contract` 现读树得到的期望值（AGENTS.md「zh must have all 27
+ * chapters」）。两处口径必须一致：同样排除非篇章的 `scripts` 目录。
+ * 写死的后果是树里已经有 28 章时，这句仍然印「zh 章节数将由 27 变为 28」。
+ */
+const zhChapterCount = fs
+  .readdirSync(path.join(KB, "zh"), { withFileTypes: true })
+  .filter((e) => e.isDirectory() && e.name !== "scripts").length;
+
 const problems = [];
 const notes = [];
 
@@ -109,7 +119,7 @@ for (const f of mdFiles) {
   }
 }
 
-for (const n of planIntegration({ chapter, existingOrder: CHAPTER_ORDER, zhChapterCount: 27 })) {
+for (const n of planIntegration({ chapter, existingOrder: CHAPTER_ORDER, zhChapterCount })) {
   notes.push(n);
 }
 
