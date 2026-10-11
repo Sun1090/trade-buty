@@ -477,9 +477,11 @@ describe("文档那句知识库页数由产物说了算（R16.311）", () => {
     // 这条必须匹配 `[...errors, ...docErrors]` 这个形状。上一版只写
     // `/allErrors[\s\S]*process\.exit\(1\)/`，变异探针把 docErrors 摘掉（改成 `[...errors]`）之后
     // 正则照样命中，四条单测全绿而文档核对是死的（R16.311 的 M5）。
+    // 两处都钉形状：并集那一行、以及「失败分支的条件真的看 allErrors」。
+    // 只钉前者会漏掉 `if (errors.length > 0)` 这种把条件换掉的改法（探针 M7）。
     const exitWired =
       /const allErrors = \[\.\.\.errors,\s*\.\.\.docErrors\]/.test(cli) &&
-      /allErrors\.length[\s\S]*?process\.exit\(1\)/.test(cli);
+      /if \(allErrors\.length > 0\)[\s\S]*?process\.exit\(1\)/.test(cli);
     expect(exitWired, "docErrors 没并进失败判定——不一致会静默通过").toBe(true);
   });
 });
