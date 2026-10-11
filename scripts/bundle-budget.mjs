@@ -1,7 +1,48 @@
 import path from "node:path";
+import fs from "node:fs";
 
 export const BYTES_PER_KB = 1024;
 export const BUDGET_METRICS = Object.freeze(["js", "css", "html", "total"]);
+
+/**
+ * Next 每次 `npm run build` 都会重新生成一个随机构建号（`.next/BUILD_ID`，默认 21 字符
+ * base64url），并把它**内联进每一条页面 HTML**（RSC payload 里的 `"b":"<buildId>"`）。
+ * 后果实测（2026-10-11，同一份源码连构三次）：三个 BUILD_ID 互不相同，
+ * 15 个分组的 gzip 原始字节**每次都变**（±1~4 字节）。
+ *
+ * 这对预算门禁无所谓（余量是 KB 量级），但对「把读数逐字登记进文档、再用同一份产物重算比对」
+ * 的判据是致命的：那张表抄的是**某一次**构建的读数，下一次构建就可能翻掉 0.1KB 的舍入位，
+ * 于是判据随机红，而那种红不指向任何回归（本轮就撞到一次：`knowledge-chapter` 表 267.2 / 实测 267.1）。
+ * 与 R16.308 那条 `/changelog`（每提交必变）同形，只是这次的变量是**每构建**变的。
+ *
+ * 所以量尺寸之前先把构建号换成**定长占位符**：长度不变（不掺进「字符串变短」这种假收益），
+ * 内容又是固定的，于是同一份源码在任意两次构建里量出逐字节相同的结果（已实测）。
+ */
+export const BUILD_ID_PLACEHOLDER = "x".repeat(21);
+
+/** 读 `.next/BUILD_ID`；缺产物就抛错——宁可响，也不要拿着 undefined 去 replace。 */
+export function readBuildId(root) {
+  const file = path.join(root, ".next", "BUILD_ID");
+  const value = fs.readFileSync(file, "utf8").trim();
+  if (!/^[^\s]{8,}$/.test(value)) {
+    throw new Error(`BUILD_ID 形状不对（长度 ${value.length}）：${JSON.stringify(value)}`);
+  }
+  return value;
+}
+
+/**
+ * 把 HTML 里出现的构建号换成定长占位符。返回 `{ html, replaced }`，
+ * 让调用方能对「到底替换了几处」说话——静默返回原串就等于这条规则没生效。
+ */
+export function neutralizeBuildId(html, buildId) {
+  if (typeof html !== "string") throw new Error("neutralizeBuildId 需要字符串 HTML");
+  if (!/^[^\s]{8,}$/.test(String(buildId ?? ""))) {
+    throw new Error(`拒绝用可疑的构建号做替换：${JSON.stringify(buildId)}`);
+  }
+  const parts = html.split(buildId);
+  const replaced = parts.length - 1;
+  return { html: parts.join(BUILD_ID_PLACEHOLDER), replaced };
+}
 
 const JS_ASSET_RE = /<script\b[^>]*\bsrc=["'](\/_next\/static\/[^"'?#]+\.js)(?:[?#][^"']*)?["'][^>]*>/gi;
 const CSS_ASSET_RE = /<link\b[^>]*\bhref=["'](\/_next\/static\/[^"'?#]+\.css)(?:[?#][^"']*)?["'][^>]*>/gi;

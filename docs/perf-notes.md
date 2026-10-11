@@ -126,18 +126,18 @@ R16.235 那笔债在这一轮还掉：`auth-provider.tsx` 与 `auth-header.tsx` 
 
 | 分组 | 今天最大 total | 预算 | 最大路由 |
 |---|---:|---:|---|
-| home | 281.6 KB | 360 KB | `zh` |
+| home | 281.5 KB | 360 KB | `zh` |
 | path | 282.3 KB | 365 KB | `zh/path` |
-| knowledge-chapter | 267.2 KB | 370 KB | `zh/knowledge/markets-instruments` |
+| knowledge-chapter | 267.1 KB | 370 KB | `zh/knowledge/markets-instruments` |
 | knowledge-lesson | 351.3 KB | 357 KB | `zh/knowledge/technical-analysis/drawing-tools` |
 | search | 249.3 KB | 335 KB | `zh/search` |
-| review | 284.3 KB | 350 KB | `zh/review` |
+| review | 284.2 KB | 350 KB | `zh/review` |
 | bookmarks | 244.4 KB | 335 KB | `zh/bookmarks` |
-| stats | 304.0 KB | 370 KB | `zh/stats` |
+| stats | 303.9 KB | 370 KB | `zh/stats` |
 | ai | 251.9 KB | 350 KB | `zh/ai` |
 | chart | 302.1 KB | 390 KB | `zh/chart` |
 | replay | 318.6 KB | 400 KB | `zh/replay` |
-| privacy | 254.1 KB | 340 KB | `zh/privacy` |
+| privacy | 254.0 KB | 340 KB | `zh/privacy` |
 | glossary | 250.6 KB | 340 KB | `zh/glossary` |
 | static-info | 247.1 KB | 340 KB | `zh/about` |
 | auth | 311.0 KB | 340 KB | `zh/auth` |
@@ -150,6 +150,19 @@ R16.235 那笔债在这一轮还掉：`auth-provider.tsx` 与 `auth-header.tsx` 
 （历史那两张不判：它们是当时的读数，拿今天的产物去要求它们等于要求历史撒谎）。
 注意本地单测跑在 `ci.yml` 第 62 行、`build` 在第 64 行，所以 CI 那一趟**没有产物、这道判据会明说跳过**；
 预算那一半由排在第 131 行的 `check:bundle` 在 build 之后管——两道工序不重叠。
+
+**读数口径（R16.314）：量尺寸之前先剔除构建号**。Next 每次 `npm run build` 都重新生成一个
+随机构建号（`.next/BUILD_ID`），并把它内联进每一条页面 HTML（RSC payload 里的 `"b":"…"`，
+本轮实测产物里每一条 zh/en 页面 HTML 都含它）。同一份源码连构三次的实测：三个 BUILD_ID 互不相同，
+15 个分组的 gzip **原始字节每次都变 ±1~4 字节**——预算门禁不在意（余量是 KB 量级），
+但「读数逐字登记进文档、再用同一份产物重算比对」的判据会被它**随机打红**。
+2026-10-11 就是这么红过一次（`knowledge-chapter` 表 267.2 / 实测 267.1），
+而那种红不指向任何回归，与 R16.308 那条 `/changelog`（每提交必变）同形，只是这次的变量是**每构建**变的。
+所以 `scripts/bundle-budget.mjs` 提供 `readBuildId()` / `neutralizeBuildId()`：把构建号换成**定长**占位符
+（长度不变，不掺进「字符串变短」这种假收益），`check:bundle` 与上面这张表**同口径**量。
+已实测：脱敏后同一份源码在任意两次构建里逐字节相同（三次构建的两两 diff 为空）。
+代价是本表这 15 个读数比「真实产物」低约 10~20 字节（0.0~0.1KB），换来的是判据不再掷硬币；
+`check:bundle` 的预算比对同样按脱敏后判定，两组数字互相可比。
 
 **`static-info` 那一行的口径是「剔除 `/changelog`」**：那一页在构建期跑 `git log -15`
 （`src/app/[locale]/changelog/page.tsx:45`），把最近 15 条提交的 hash / 日期 / subject

@@ -10,6 +10,8 @@ import {
   measureRoute,
   metricFailures,
   staticAssetRepoPath,
+  neutralizeBuildId,
+  readBuildId,
 } from "./bundle-budget.mjs";
 
 const root = process.cwd();
@@ -84,6 +86,15 @@ function main() {
     console.error("[bundle] 缺少构建产物：请先 npm run build");
     process.exit(1);
   }
+  // 量尺寸之前先剔除每构建随机的构建号（详见 bundle-budget.mjs 的注释）。
+  // 缺 BUILD_ID 就当场停：拿 undefined 去替换等于静默不脱敏，读数又会变成掷硬币。
+  let buildId;
+  try {
+    buildId = readBuildId(root);
+  } catch (error) {
+    console.error(`[bundle] 读不到 .next/BUILD_ID：${error instanceof Error ? error.message : String(error)}`);
+    process.exit(1);
+  }
 
   let manifest;
   try {
@@ -99,7 +110,8 @@ function main() {
   let fail = false;
 
   for (const route of listHtmlRoutes().filter((route) => /^(?:zh|en)(?:\/|$)/.test(route))) {
-    const html = fs.readFileSync(path.join(appOut, route + ".html"), "utf8");
+    const raw = fs.readFileSync(path.join(appOut, route + ".html"), "utf8");
+    const { html } = neutralizeBuildId(raw, buildId);
     const measurement = measureRoute({
       route,
       html,

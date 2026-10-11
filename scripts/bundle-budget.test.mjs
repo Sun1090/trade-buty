@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
@@ -10,6 +11,9 @@ import {
   metricFailures,
   staticAssetRepoPath,
   validateBudgetManifest,
+  BUILD_ID_PLACEHOLDER,
+  neutralizeBuildId,
+  readBuildId,
 } from "./bundle-budget.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -179,5 +183,69 @@ describe("bundle matching and asset boundaries", () => {
     expect(() => staticAssetRepoPath("/_next/static/..\\..\\package.json")).toThrow(
       "asset is outside /_next/static",
     );
+  });
+});
+
+/**
+ * R16.314：Next 每构建重新生成随机构建号，并把它内联进每一条页面 HTML。
+ * 实测（同一份源码连构三次）：三个 BUILD_ID 互不相同，15 个分组的 gzip 原始字节
+ * 每次都变 ±1~4 字节。预算门禁不在意这个，但「读数逐字登记进文档、再用同一份产物
+ * 重算比对」的判据会被它随机打红——所以量尺寸之前必须先脱敏。
+ */
+describe("构建号脱敏（R16.314）", () => {
+  const idOf = (seed) =>
+    // 21 字符 base64url，与 Next 默认 BUILD_ID 同形状
+    Buffer.from(seed.padEnd(16).slice(0, 16)).toString("base64url").slice(0, 21);
+
+  it("替换全部出现处，且长度不变（不掺进「字符串变短」这种假收益）", () => {
+    const id = idOf("abc");
+    const html = `<script>self.__next_f.push(["1",{"b":"${id}"}])</script><a href="/x">重复 ${id}</a>`;
+    const out = neutralizeBuildId(html, id);
+    expect(out.replaced).toBe(2);
+    expect(out.html.includes(id)).toBe(false);
+    expect(out.html.length).toBe(html.length);
+    expect(out.html.split(BUILD_ID_PLACEHOLDER).length - 1).toBe(2);
+  });
+
+  it("同一份内容换任何一批随机构建号，脱敏后逐字相同（这才是这条规矩要买的性质）", () => {
+    const body = (id) => `<!doctype html><div>${"trading buty ".repeat(40)}</div><b>${id}</b>`;
+    const variants = ["one", "two", "three", "four", "five"].map((seed) => neutralizeBuildId(body(idOf(seed)), idOf(seed)));
+    for (const v of variants) expect(v.replaced).toBe(1);
+    expect(new Set(variants.map((v) => v.html)).size, "脱敏后仍随构建号变化——这条等于没生效").toBe(1);
+  });
+
+  it("不做脱敏时同一份内容确实会随构建号抖动（证明这条判据不是恒等式）", () => {
+    const payloads = ["one", "two", "three", "four", "five", "six", "seven", "eight"].map((seed) => {
+      const id = idOf(seed);
+      return zlib.gzipSync(`<!doctype html><div>${"trading buty ".repeat(300)}</div><b>${id}</b>`).length;
+    });
+    expect(new Set(payloads).size, "gzip 字节本来就不随构建号变——这条规矩没有靶子，得重新确认前提").toBeGreaterThan(1);
+  });
+
+  it("可疑的构建号一律拒收（拿 undefined 去替换等于静默不脱敏）", () => {
+    const html = "<b>x</b>";
+    for (const bad of ["", "short", "有 空 格", null, undefined, 42]) {
+      expect(() => neutralizeBuildId(html, bad), `接受了可疑构建号 ${JSON.stringify(bad)}`).toThrow();
+    }
+    expect(() => neutralizeBuildId(null, idOf("ok"))).toThrow();
+  });
+
+  it("readBuildId 读的是 .next/BUILD_ID，且形状不对就抛", async () => {
+    const os = await import("node:os");
+    const fsp = await import("node:fs/promises");
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "bid-"));
+    try {
+      const nextDir = path.join(dir, ".next");
+      await fsp.mkdir(nextDir, { recursive: true });
+      const id = idOf("real");
+      await fsp.writeFile(path.join(nextDir, "BUILD_ID"), `${id}\n`);
+      expect(readBuildId(dir)).toBe(id); // 尾部换行必须被剥掉
+      await fsp.writeFile(path.join(nextDir, "BUILD_ID"), "  \n");
+      expect(() => readBuildId(dir)).toThrow("形状不对");
+      await fsp.rm(path.join(nextDir, "BUILD_ID"));
+      expect(() => readBuildId(dir)).toThrow(); // 缺文件也抛，不返回 undefined
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true });
+    }
   });
 });
