@@ -8,6 +8,8 @@ import {
   auditNeutrality,
   auditPlanContract,
   auditReadmeCounts,
+  auditReadmeQuizCounts,
+  extractReadmeQuizCounts,
   auditReadmeImplementationReferences,
   auditReleaseChecklist,
   auditReleaseVersion,
@@ -212,5 +214,104 @@ describe("docs-consistency-lib", () => {
       "utf8"
     );
     expect(auditReleaseChecklist(shipped)).toEqual([]);
+  });
+
+  /**
+   * R16.312：README 那句「27 章随堂测验（81 题全解析）」里的题数由 `src/lib/quizzes.ts`
+   * 说了算。章数与课文数早就对着内容树核，同一屏的题数此前没有任何东西对着——
+   * 某一章补一道题，这句话就漂而文档不红（与 R16.310 抄来的 27、R16.311 抄来的 418 同一族病）。
+   */
+  it("extracts the bilingual quiz counts from README", () => {
+    expect(extractReadmeQuizCounts("**Test**: 27 chapter quizzes (81 questions, all explained)").en).toEqual({
+      chapters: 27,
+      questions: 81,
+    });
+    expect(extractReadmeQuizCounts("- **测**：27 章随堂测验（81 题全解析）、阅读进度追踪").zh).toEqual({
+      chapters: 27,
+      questions: 81,
+    });
+    // 单数写法与措辞变体不该被误当成「找不到」
+    expect(extractReadmeQuizCounts("**Test**: 1 chapter quiz (3 questions)").en).toEqual({
+      chapters: 1,
+      questions: 3,
+    });
+    expect(extractReadmeQuizCounts("什么都没说")).toEqual({ en: null, zh: null });
+  });
+
+  it("reports missing and stale README quiz counts", () => {
+    const expected = { chapters: 27, questions: 81 };
+    expect(
+      auditReadmeQuizCounts(
+        {
+          en: "**Test**: 27 chapter quizzes (81 questions, all explained)",
+          zh: "- **测**：27 章随堂测验（81 题全解析）",
+        },
+        expected,
+      ),
+    ).toEqual([]);
+    expect(
+      auditReadmeQuizCounts(
+        {
+          en: "**Test**: 27 chapter quizzes (84 questions, all explained)",
+          zh: "- **测**：28 章随堂测验（81 题全解析）",
+        },
+        expected,
+      ),
+    ).toEqual([
+      "README.md: 写为 84 题，实际为 81 题",
+      "README.zh-CN.md: 写为 28 章，实际为 27 章",
+    ]);
+    expect(auditReadmeQuizCounts({}, expected)).toEqual([
+      "README.md: 找不到可校验的测验章数/题数",
+      "README.zh-CN.md: 找不到可校验的测验章数/题数",
+    ]);
+  });
+
+  it("accepts the quiz counts the READMEs actually ship", async () => {
+    const [en, zh, quizSource] = await Promise.all([
+      readFile(new URL("../README.md", import.meta.url), "utf8"),
+      readFile(new URL("../README.zh-CN.md", import.meta.url), "utf8"),
+      readFile(new URL("../src/lib/quizzes.ts", import.meta.url), "utf8"),
+    ]);
+    const parsedZh = extractReadmeQuizCounts(zh).zh;
+    const parsedEn = extractReadmeQuizCounts(en).en;
+    expect(parsedZh, "README.zh-CN.md 那句的形状变了").toBeTruthy();
+    expect(parsedEn, "README.md 那句的形状变了").toBeTruthy();
+    const { parseQuizMounts } = await import("./quiz-source-lib.mjs");
+    const questions = parseQuizMounts(quizSource).reduce(
+      (sum, mount) => sum + (mount.questionCount ?? 0),
+      0,
+    );
+    expect(questions).toBeGreaterThan(0);
+    // 章数取内容树现读的那一个，**不取 README 自己印的**——否则这条退化成
+    // 「文档等于文档」的恒等式（R16.294 / R16.310 各记过一次：恒等的守门是装饰）。
+    const { readdirSync } = await import("node:fs");
+    const chapters = readdirSync(new URL("../content/kline-buty/docs/knowledge/zh", import.meta.url), {
+      withFileTypes: true,
+    }).filter((entry) => entry.isDirectory()).length;
+    expect(chapters).toBeGreaterThan(0);
+    expect(auditReadmeQuizCounts({ en, zh }, { chapters, questions })).toEqual([]);
+  });
+
+  it("the CLI actually derives these numbers instead of hardcoding them", async () => {
+    // 上一课（R16.303 / R16.311 的 M3–M5）：纯函数测得再全，调用点不接就等于没有门禁。
+    const cli = await readFile(new URL("../scripts/check-docs-consistency.mjs", import.meta.url), "utf8");
+    expect(cli, "调用点不再 import auditReadmeQuizCounts——这条核对是死的").toContain("auditReadmeQuizCounts");
+    const wired = cli.match(/auditReadmeQuizCounts\(\{?[\s\S]*?\),/);
+    expect(wired, "import 了却没调用——正是要防的那种哑门禁").toBeTruthy();
+    expect(wired[0], "题数没有从 parseQuizMounts 推出来").toContain("questionCount");
+    expect(wired[0], "章数没有取内容树那个 actual.chapters").toContain("actual.chapters");
+    expect(
+      /questions:\s*\d/.test(wired[0]) || /chapters:\s*\d/.test(wired[0]),
+      "调用点把章数/题数抄成了常数：它必须吃现读的数",
+    ).toBe(false);
+    // 结果真的进失败判定与退出码（R16.311：并集与「判定读了这个结果」两处都得钉）
+    // 先压平换行与缩进：这条管的是「这个调用的结果有没有进 issues」，
+    // 而不是调用点恰好排成几行（换行就红只会逼人把调用挤成一行）。
+    const flat = cli.replace(/\s+/g, "");
+    expect(flat, "issue 没并进失败判定——漂了会静默通过").toContain(
+      "issues.push(...auditReadmeQuizCounts(",
+    );
+    expect(cli).toMatch(/if \(issues\.length > 0\)[\s\S]*?process\.exit\(1\)/);
   });
 });

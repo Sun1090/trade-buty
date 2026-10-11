@@ -8,10 +8,12 @@ import {
   auditNeutrality,
   auditPlanContract,
   auditReadmeCounts,
+  auditReadmeQuizCounts,
   auditReadmeImplementationReferences,
   auditReleaseChecklist,
   auditReleaseVersion,
 } from "./docs-consistency-lib.mjs";
+import { parseQuizMounts } from "./quiz-source-lib.mjs";
 
 const root = process.cwd();
 const knowledgeRoot = path.join(root, "content/kline-buty/docs/knowledge");
@@ -51,6 +53,20 @@ function readRequiredDoc(relativePath) {
 }
 
 issues.push(...auditReadmeCounts({ en: readmes["README.md"], zh: readmes["README.zh-CN.md"] }, actual));
+// 同一屏那句题数由固定题库说了算（R16.312）。章数取内容树现读的 `actual.chapters`，
+// 与上面那条同源；题数从 `src/lib/quizzes.ts` 现数，口径与 `check:quiz-coverage` 一致。
+const quizMounts = parseQuizMounts(
+  fs.readFileSync(path.join(root, "src/lib/quizzes.ts"), "utf8"),
+);
+issues.push(
+  ...auditReadmeQuizCounts(
+    { en: readmes["README.md"], zh: readmes["README.zh-CN.md"] },
+    {
+      chapters: actual.chapters,
+      questions: quizMounts.reduce((sum, mount) => sum + (mount.questionCount ?? 0), 0),
+    },
+  ),
+);
 issues.push(...auditReadmeImplementationReferences(readmes));
 issues.push(...auditAgentsContract(fs.readFileSync(path.join(root, "AGENTS.md"), "utf8")));
 issues.push(...auditPlanContract(fs.readFileSync(path.join(root, "docs/plan.md"), "utf8"), actual.lessons));
