@@ -5,6 +5,7 @@ import {
   auditAgentsContract,
   auditArchitectureContract,
   auditContributingContract,
+  auditDocNumberClaims,
   auditNeutrality,
   auditPlanContract,
   auditReadmeCounts,
@@ -13,7 +14,12 @@ import {
   auditReadmeImplementationReferences,
   auditReleaseChecklist,
   auditReleaseVersion,
+  DOC_NUMBER_CLAIMS,
+  DOC_NUMBER_MIN_CLAIMS,
+  DOC_NUMBER_MIN_HITS,
+  DOC_NUMBER_SCAN_TARGETS,
   extractReadmeCounts,
+  scanDocNumberHits,
 } from "./docs-consistency-lib.mjs";
 
 const expected = { chapters: 27, lessons: 182 };
@@ -312,6 +318,202 @@ describe("docs-consistency-lib", () => {
     expect(flat, "issue 没并进失败判定——漂了会静默通过").toContain(
       "issues.push(...auditReadmeQuizCounts(",
     );
+    expect(cli).toMatch(/if \(issues\.length > 0\)[\s\S]*?process\.exit\(1\)/);
+  });
+});
+
+
+/**
+ * R16.315：把「手抄数字没有主人」这条战役从撞一个修一个换成登记制闭合。
+ *
+ * 前四轮各修一处（R16.310 的 27、R16.311 的 418、R16.312 的 81、R16.313 的 430），
+ * 每一次都是「有人读到那句话才发现它对不上」。这一族判据要防的是**下一处**手抄：
+ * 现行文档里扫到的每一个数字，要么登记主人，要么写明为什么不归内容管。
+ *
+ * 夹具一律取**真实文档的内存副本**再改：登记表与豁免表都是全局表，凭空造一份小文档
+ * 会同时撞出十几条「锚点打空」，那种噪音里看不出判据到底咬住了什么。
+ */
+async function realRegistryInput() {
+  const { readdirSync } = await import("node:fs");
+  const files = {};
+  for (const file of DOC_NUMBER_SCAN_TARGETS) {
+    files[file] = await readFile(new URL(`../${file}`, import.meta.url), "utf8");
+  }
+  const zhRoot = new URL("../content/kline-buty/docs/knowledge/zh", import.meta.url);
+  const chapters = readdirSync(zhRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory());
+  let lessons = 0;
+  for (const entry of chapters) {
+    const names = readdirSync(new URL(`../content/kline-buty/docs/knowledge/zh/${entry.name}`, import.meta.url));
+    lessons += names.filter((name) => name.endsWith(".md") && name !== "README.md").length;
+  }
+  const { MIN_QUESTIONS_PER_CHAPTER, parseQuizMounts } = await import("./quiz-source-lib.mjs");
+  const quizSource = await readFile(new URL("../src/lib/quizzes.ts", import.meta.url), "utf8");
+  const { AUDITED_DOCS } = await import("./db-assertion-counts.mjs");
+  return {
+    files,
+    actual: {
+      chapters: chapters.length,
+      lessons,
+      questions: parseQuizMounts(quizSource).reduce((sum, mount) => sum + (mount.questionCount ?? 0), 0),
+      minQuestionsPerChapter: MIN_QUESTIONS_PER_CHAPTER,
+      dbAuditedDocs: AUDITED_DOCS.length,
+    },
+  };
+}
+
+describe("doc number registry (R16.315)", () => {
+  it("flags a freshly hand-copied number that no owner claims", async () => {
+    const { files, actual } = await realRegistryInput();
+    expect(auditDocNumberClaims({ files, actual })).toEqual([]);
+    const mutated = { ...files, "docs/plan.md": `${files["docs/plan.md"]}\n> 知识库现有 300 篇课程。\n` };
+    const issues = auditDocNumberClaims({ files: mutated, actual });
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toContain("docs/plan.md: 扫到一个没有主人的数字「300 篇」");
+    expect(issues[0]).toContain("DOC_NUMBER_CLAIMS");
+  });
+
+  it("reports a registered claim whose anchor no longer matches the sentence", async () => {
+    const { files, actual } = await realRegistryInput();
+    const mutated = {
+      ...files,
+      // 那句被改写成人话，数字没了：登记表里的两条锚点都该打空报错，而不是「没扫到所以一致」
+      "README.md": files["README.md"].replace("**Learn**: 27 chapters / 182 lessons", "**Learn**: a graded knowledge base"),
+    };
+    const issues = auditDocNumberClaims({ files: mutated, actual });
+    const blind = issues.filter((issue) => issue.includes("登记的说法找不到锚点"));
+    expect(blind).toHaveLength(2);
+    for (const issue of blind) expect(issue).toContain("README.md");
+  });
+
+  it("names both numbers when a registered claim drifts from its owner", async () => {
+    const { files, actual } = await realRegistryInput();
+    const drifted = {
+      ...files,
+      "README.zh-CN.md": files["README.zh-CN.md"].replace("182 篇课程", "183 篇课程"),
+    };
+    const issues = auditDocNumberClaims({ files: drifted, actual });
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toContain("印的是 183");
+    expect(issues[0]).toContain("主人「lessons」当场是 182");
+  });
+
+  it("treats an owner the call site failed to resolve as an error, never a silent pass", async () => {
+    // R16.294 那一族：解析不到就当作一致，等于给判据装了个开关。
+    const { files, actual } = await realRegistryInput();
+    const noQuestions = { ...actual };
+    delete noQuestions.questions;
+    const issues = auditDocNumberClaims({ files, actual: noQuestions });
+    const unowned = issues.filter((issue) => issue.includes("没有被调用点解析成非负整数"));
+    expect(unowned.length).toBeGreaterThan(0);
+    expect(unowned.every((issue) => issue.includes("「questions」"))).toBe(true);
+    // 字符串「27」不是数字：它来自文档而不是现读的数，正是这套东西要禁的形状
+    const stringly = auditDocNumberClaims({ files, actual: { ...actual, chapters: String(actual.chapters) } });
+    expect(stringly.filter((issue) => issue.includes("「chapters」")).length).toBeGreaterThan(0);
+    expect(auditDocNumberClaims({ files, actual: undefined }).length).toBeGreaterThan(0);
+  });
+
+  it("reports a document the scan list expects but the call site did not read", async () => {
+    const { files, actual } = await realRegistryInput();
+    const withoutOps = { ...files };
+    delete withoutOps["docs/ops.md"];
+    const issues = auditDocNumberClaims({ files: withoutOps, actual });
+    expect(
+      issues.filter((issue) => issue.includes("docs/ops.md: 扫描清单里的文档没被读进来")),
+    ).toHaveLength(1);
+    // 少读一份文档同时会让命中数跌破地板：两条各管一种后果，都要在
+    expect(
+      issues.some((issue) => issue.includes("处数量说法，地板")),
+      "ops.md 里登记的 5 处说法一并消失，命中地板不该装作「只是少了一份文件」",
+    ).toBe(true);
+  });
+
+  it("keeps exemptions tied to the shape of the sentence rather than its value", async () => {
+    const { files, actual } = await realRegistryInput();
+    // 立项期规模那条是历史：数字被换掉也仍然在豁免形状里（豁免不该变成「这两个值我认了」）
+    const history = {
+      ...files,
+      "docs/research.md": files["docs/research.md"].replace("立项时 27 篇章 / 201 篇", "立项时 28 篇章 / 999 篇"),
+    };
+    expect(auditDocNumberClaims({ files: history, actual })).toEqual([]);
+    // 同一串数字换了个说法（不再是「立项时…」），就必须被当成无主人手抄
+    const reworded = {
+      ...files,
+      "docs/research.md": files["docs/research.md"].replace("立项时 27 篇章 / 201 篇", "另一版 27 篇章 / 201 篇"),
+    };
+    const issues = auditDocNumberClaims({ files: reworded, actual });
+    expect(issues.filter((issue) => issue.includes("没有主人的数字"))).toHaveLength(2);
+    // 政策触发线（引入虚拟化的那道 >20 题）同理：形状不在豁免里就红
+    const policy = {
+      ...files,
+      "docs/perf-notes.md": files["docs/perf-notes.md"].replace("若未来题库扩到每章 >20 题", "未来每章可到 20 题"),
+    };
+    expect(
+      auditDocNumberClaims({ files: policy, actual }).filter((issue) => issue.includes("「20 题」")),
+    ).toHaveLength(1);
+  });
+
+  it("fires its own floors when the registry is emptied or the scanner sees nothing", async () => {
+    expect(DOC_NUMBER_CLAIMS.length).toBeGreaterThanOrEqual(DOC_NUMBER_MIN_CLAIMS);
+    expect(DOC_NUMBER_CLAIMS.every((claim) => claim.anchor.source.includes("(\\d+)"))).toBe(
+      true,
+      "每条登记都要有一个捕获组：没有捕获组就定位不到那个数，同句另一个数会被误判成已登记",
+    );
+    const { actual } = await realRegistryInput();
+    const emptied = Object.fromEntries(DOC_NUMBER_SCAN_TARGETS.map((file) => [file, ""]));
+    const issues = auditDocNumberClaims({ files: emptied, actual });
+    expect(issues.some((issue) => issue.includes(`本次只扫到 0 处数量说法，地板 ${DOC_NUMBER_MIN_HITS}`))).toBe(
+      true,
+      "扫不到东西时「全部已登记」是空话：判据必须红在自己失效上",
+    );
+    expect(issues.filter((issue) => issue.includes("登记的说法找不到锚点"))).toHaveLength(
+      DOC_NUMBER_CLAIMS.length,
+    );
+  });
+
+  it("ships with every current number already owned or explicitly excused", async () => {
+    const { files, actual } = await realRegistryInput();
+    // 主人来自内容树而不是文档自己：否则这条退化成「文档等于文档」
+    expect(actual.chapters).toBeGreaterThan(0);
+    expect(actual.lessons).toBeGreaterThan(0);
+    expect(actual.questions).toBeGreaterThan(0);
+    const hits = DOC_NUMBER_SCAN_TARGETS.reduce((sum, file) => sum + scanDocNumberHits(files[file]).length, 0);
+    expect(hits).toBeGreaterThanOrEqual(DOC_NUMBER_MIN_HITS);
+    expect(auditDocNumberClaims({ files, actual })).toEqual([]);
+  });
+
+  it("gives the per-chapter quiz floor one owner instead of three copies", async () => {
+    const { MIN_QUESTIONS_PER_CHAPTER } = await import("./quiz-source-lib.mjs");
+    const owned = DOC_NUMBER_CLAIMS.filter((claim) => claim.owner === "minQuestionsPerChapter");
+    expect(owned.length).toBeGreaterThan(1);
+    // 同一份文档里两处不同说法可以共用一个主人；重复的是「文件 + 锚点」这一对
+    const keys = DOC_NUMBER_CLAIMS.map((claim) => `${claim.file}::${claim.anchor.source}`);
+    expect(keys).toHaveLength(new Set(keys).size);
+    expect(new Set(owned.map((claim) => claim.anchor.source)).size).toBe(owned.length);
+    const gate = await readFile(new URL("../scripts/check-quiz-coverage.mjs", import.meta.url), "utf8");
+    expect(gate, "门禁还在写死字面量，那文档抄的那个数就仍然没有主人").toContain("MIN_QUESTIONS_PER_CHAPTER");
+    const { files, actual } = await realRegistryInput();
+    expect(actual.minQuestionsPerChapter).toBe(MIN_QUESTIONS_PER_CHAPTER);
+    const raised = auditDocNumberClaims({ files, actual: { ...actual, minQuestionsPerChapter: 4 } });
+    expect(raised).toHaveLength(owned.length);
+    for (const claim of owned) {
+      expect(
+        raised.some((issue) => issue.startsWith(`${claim.file}: 那句「`) && issue.includes("当场是 4")),
+        `${claim.file} 那条抄了纪律的说法要红出来`,
+      ).toBe(true);
+    }
+  });
+
+  it("wires the registry in the CLI to numbers it reads on the spot", async () => {
+    const cli = await readFile(new URL("../scripts/check-docs-consistency.mjs", import.meta.url), "utf8");
+    expect(cli, "调用点不再 import auditDocNumberClaims——这条核对是死的").toContain("auditDocNumberClaims");
+    const wired = cli.match(/auditDocNumberClaims\(\{[\s\S]*?\}\)/);
+    expect(wired, "import 了却没调用——正是要防的那种哑门禁").toBeTruthy();
+    expect(wired[0]).toContain("chapters: actual.chapters");
+    expect(wired[0]).toContain("MIN_QUESTIONS_PER_CHAPTER");
+    expect(wired[0]).toContain("AUDITED_DOCS.length");
+    expect(/(chapters|lessons|questions):\s*\d/.test(wired[0]), "调用点把主人抄成了常数").toBe(false);
+    const flat = cli.replace(/\s+/g, "");
+    expect(flat, "issue 没并进失败判定——漂了会静默通过").toContain("issues.push(...auditDocNumberClaims({");
     expect(cli).toMatch(/if \(issues\.length > 0\)[\s\S]*?process\.exit\(1\)/);
   });
 });
