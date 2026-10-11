@@ -25,6 +25,31 @@ function request(body: unknown, raw = false): NextRequest {
   });
 }
 
+/**
+ * slug 有没有作为**完整词**出现在 prompt 里。
+ *
+ * 原先这里拼了一条动态正则去找前后边界，那个写法有两处坑：
+ * ① slug 会被当正则元字符解析（`spot` 侥幸没事，带 `.` 的 slug 是另一回事）；
+ * ② `\\w` 写在模板字符串里并不是字符类——JS 会把它变成字面量 `w`，于是那道边界
+ *   实际是「前后不是字母 w、不是连字符」，`xspot` / `spot_more` 都照样放行
+ *   （15 组等价性对照里有 4 组不等价，全部是这个方向）。CodeQL 的
+ *   js/useless-regexp-character-escape 也正是被这处引出来的。
+ * 改成逐字符判：前后那一格不是字母 / 数字 / 下划线 / 连字符，才算独立成词。
+ */
+function promptHasSlugAsWord(prompt: string, slug: string): boolean {
+  const isWordChar = (ch: string | undefined) =>
+    ch !== undefined && /[A-Za-z0-9_-]/.test(ch);
+  let from = 0;
+  for (;;) {
+    const at = prompt.indexOf(slug, from);
+    if (at < 0) return false;
+    const before = at > 0 ? prompt[at - 1] : undefined;
+    const after = prompt[at + slug.length];
+    if (!isWordChar(before) && !isWordChar(after)) return true;
+    from = at + 1;
+  }
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   createSupabaseServerClient.mockResolvedValue({ auth: { getUser } });
@@ -114,9 +139,10 @@ describe("POST /api/ai/plan 把篇章名送进 prompt，不是 slug", () => {
       expect(title, `kb-titles 里查不到 ${slug} 的中文名，靶子变了`).not.toBeNull();
       expect(prompt, `${kind}那处应该印《${title}》`).toContain(title!);
       // slug 本身不许单独成词出现（它可能作为别的串的子串，故按词边界判）
-      expect(prompt, `${kind}那处仍印着裸 slug ${slug}`).not.toMatch(
-        new RegExp(`(^|[^\w-])${slug}([^\w-]|$)`),
-      );
+      expect(
+        promptHasSlugAsWord(prompt, slug),
+        `${kind}那处仍印着裸 slug ${slug}`,
+      ).toBe(false);
     }
   });
 
@@ -147,6 +173,34 @@ describe("POST /api/ai/plan 把篇章名送进 prompt，不是 slug", () => {
     expect(prompt.match(/无/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
   });
 });
+  // 「独立成词」这件事的口径自己也要被测住，否则下一个人再改边界时，上面那条断言
+  // 悄悄变松没人知道（旧版动态正则就是这么松的：反斜杠 w 在模板字符串里退化成字面量 w）。
+  describe("promptHasSlugAsWord 的词边界口径", () => {
+    it.each([
+      ["（spot）", "spot"],
+      ["  spot  ", "spot"],
+      ["spot", "spot"],
+      ["我当前学习的篇章：spot", "spot"],
+      ["risk-management 章节", "risk-management"],
+      ["a risk-management b", "risk-management"],
+    ])("独立成词：%s", (prompt, slug) => {
+      expect(promptHasSlugAsWord(prompt, slug)).toBe(true);
+    });
+
+    it.each([
+      ["spotx", "spot"],
+      ["xspot", "spot"],
+      ["spot_more", "spot"],
+      ["spotty-spot", "spot"],
+      ["spot-x", "spot"],
+      ["x-spot", "spot"],
+      ["", "spot"],
+      ["另一个篇章", "spot"],
+    ])("只是子串，不算独立成词：%s", (prompt, slug) => {
+      expect(promptHasSlugAsWord(prompt, slug)).toBe(false);
+    });
+  });
+
 
 
 describe("POST /api/ai/plan auth failure boundary", () => {
