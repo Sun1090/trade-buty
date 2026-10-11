@@ -163,6 +163,49 @@ describe("new-chapter lib (R10.16)", () => {
     ).toContain("未收录 kb-order.CHAPTER_ORDER");
   });
 
+  /**
+   * R16.310：`zh 章节数将由 X 变为 X+1` 里那个 X 必须由**当场数出来的树**给，不是抄来的常数。
+   *
+   * `dry-run-new-chapter.mjs` 过去传的是字面量 27，与知识库契约里那个 27 长得一模一样，
+   * 于是树里已经有 28 章时，这句仍然说「由 27 变为 28」——它描述的是抄下来的旧世界。
+   * 两条判据各钉一段，缺一不可：
+   *  - 行为侧：换一个非 27 的数进来，那句话必须跟着变（证明这个数**有用**）；
+   *  - 静态侧：CLI 传进去的实参与它的定义都必须来自 `readdirSync`（否则真实树正好 27 时，
+   *    行为侧是**恒等式**，红不了——R16.294 那条「恒等的守门是装饰」）。
+   */
+  it("章数那句话跟着参数走（换成 28 就说 28→29）", () => {
+    const notes = planIntegration({ chapter: "spot", existingOrder: ["spot"], zhChapterCount: 28 });
+    expect(notes[1]).toContain("由 28 变为 29");
+    expect(notes[1]).not.toContain("由 27 变为 28");
+  });
+
+  it("dry-run 的章数来自现读树，不是抄来的 27（R16.310）", () => {
+    const cli = fs.readFileSync(
+      path.join(process.cwd(), "scripts/dry-run-new-chapter.mjs"),
+      "utf8",
+    );
+    // 两种形状都要认：`zhChapterCount: 27`（抄来的常数）与 `zhChapterCount }`（变量简写）。
+    // 只认冒号那一种，「改成简写但变量仍是 27」这条路就躲过去了。
+    const passed = cli.match(/zhChapterCount\s*(?::\s*([^,)\n]+))?/);
+    expect(passed, "dry-run 里找不到传 zhChapterCount 的那一处——判据在空转").toBeTruthy();
+    expect(
+      passed![1] === undefined || !/^\s*\d+\s*$/.test(passed![1]),
+      `dry-run 又把章数抄成常数了（zhChapterCount: ${(passed![1] ?? "").trim()}）`,
+    ).toBe(true);
+    const declared = cli.match(/const\s+zhChapterCount\s*=\s*([^;]+)/);
+    expect(declared, "找不到 zhChapterCount 的定义——它被挪去哪了？").toBeTruthy();
+    expect(
+      /^\s*\d+\s*$/.test(declared![1]),
+      `zhChapterCount 的定义是抄来的常数（${declared![1].trim().slice(0, 40)}）`,
+    ).toBe(false);
+    expect(declared![1], "zhChapterCount 不再由目录数出来").toContain("readdirSync");
+    // 现读那一段必须排除 scripts/，与 validate-knowledge-contract 同一口径
+    expect(
+      declared![1],
+      "数 zh 篇章目录时没排除 scripts/——与 validate-knowledge-contract 口径分家，章数会多数一个",
+    ).toContain('!== "scripts"');
+  });
+
   it("parseStageSlugs 跳过一切不合形状的语句而不是崩在 AST 上", () => {
     // 解构声明、别的变量名、非数组初始化器都要被略过。
     expect(
