@@ -335,6 +335,31 @@ function safePathname(url) {
 // 所以「知识库」到「可索引」之间只跨过**一个**单元格。
 export const KNOWLEDGE_PAGE_COUNT_CLAIM = /知识库 \|[^\n]*?\|\s*可索引，全部进 sitemap（(\d+) 页）/;
 
+/**
+ * `docs/growth-checklist.md` 开头那句「sitemap（430 URL，其中知识库 418）」里**两个数**
+ * 都是手抄的（R16.313）：430 = 产物的 `stats.sitemapUrls`，418 = `stats.knowledgePages`。
+ * 前者随收录声明（加一个可索引页面）变，后者随知识库内容变。
+ */
+export const SITEMAP_URL_COUNT_CLAIM = /sitemap（(\d+) URL，其中知识库 (\d+)）/;
+
+/**
+ * 拿文档里的一句说法与当场数出来的一个数比对。`missingText` 让每条锚点用自己的说法
+ * 报错——「找不到」不是「一致」，判据必须为此红（R16.303 立的规矩）。
+ */
+function compareOne({ printed, actual, label, unit, where }) {
+  const claimed = Number(printed);
+  if (!Number.isFinite(claimed)) {
+    return [`${where} 那句里的${label}不是数字：${JSON.stringify(printed)}`];
+  }
+  if (claimed !== actual) {
+    return [
+      `${where} 印的是 ${claimed} ${unit}，构建产物当场数出来是 ${actual} ${unit}——` +
+        "这个数由产物说了算（声明或知识库内容变了就要一起改这里）",
+    ];
+  }
+  return [];
+}
+
 export function checkDocPageCount({ doc, claimRe = KNOWLEDGE_PAGE_COUNT_CLAIM, actual, where }) {
   const match = doc.match(claimRe);
   if (!match) {
@@ -343,15 +368,31 @@ export function checkDocPageCount({ doc, claimRe = KNOWLEDGE_PAGE_COUNT_CLAIM, a
         "说法被删了就要连着删这条核对，留着判据却不留锚点等于没有判据",
     ];
   }
-  const claimed = Number(match[1]);
-  if (!Number.isFinite(claimed)) {
-    return [`${where} 那句说法里的页数不是数字：${JSON.stringify(match[1])}`];
-  }
-  if (claimed !== actual) {
+  return compareOne({ printed: match[1], actual, label: "页数", unit: "页", where });
+}
+
+/**
+ * `docs/growth-checklist.md` 那句同时含 sitemap 总条数与知识库页数（R16.313）。
+ * 两个数各判一次：只核其中一个的话，另一个照样漂而门禁绿。
+ *
+ * @param {{doc: string, claimRe?: RegExp, actual: {sitemapUrls: number, knowledgePages: number}, where: string}} input
+ * @returns {string[]}
+ */
+export function checkDocSitemapCounts({
+  doc,
+  claimRe = SITEMAP_URL_COUNT_CLAIM,
+  actual,
+  where,
+}) {
+  const match = doc.match(claimRe);
+  if (!match) {
     return [
-      `${where} 印的是 ${claimed} 页，构建产物当场数出来是 ${actual} 页——` +
-        "这一行的数由产物说了算（知识库内容变了就要一起改这里）",
+      `${where} 找不到那句带 sitemap 条数的说法（正则 ${claimRe} 没命中）——` +
+        "说法被删了就要连着删这条核对，留着判据却不留锚点等于没有判据",
     ];
   }
-  return [];
+  return [
+    ...compareOne({ printed: match[1], actual: actual.sitemapUrls, label: "sitemap 条数", unit: "URL", where }),
+    ...compareOne({ printed: match[2], actual: actual.knowledgePages, label: "知识库页数", unit: "页", where }),
+  ];
 }

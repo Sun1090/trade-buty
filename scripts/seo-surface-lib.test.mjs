@@ -15,6 +15,8 @@ import {
   validateDeclaration,
   checkDocPageCount,
   KNOWLEDGE_PAGE_COUNT_CLAIM,
+  checkDocSitemapCounts,
+  SITEMAP_URL_COUNT_CLAIM,
 } from "./seo-surface-lib.mjs";
 
 const BASE = "https://example.test";
@@ -427,6 +429,13 @@ describe("auditSeoSurface", () => {
   });
 });
 
+// 并集那行把哪些结果并进了失败判定。逐变量判：新增一份核对，这里就多登记一个名字。
+function unionSpreads(cli) {
+  const union = cli.match(/const allErrors = \[([\s\S]*?)\];/);
+  if (!union) throw new Error("找不到失败判定用的并集那一行");
+  return [...union[1].matchAll(/\.\.\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]);
+}
+
 /**
  * R16.311：`docs/seo-surface.md` 收录策略表那句「知识库 418 页」此前没人对着——
  * 它等于 `2 × (27 篇章页 + 182 课文页)`，内容由 kline-buty 决定，加一章或补一课就漂。
@@ -473,15 +482,111 @@ describe("文档那句知识库页数由产物说了算（R16.311）", () => {
       /actual:\s*\d/.test(wired[0]),
       "调用点又把页数抄成常数了：它必须吃 stats.knowledgePages",
     ).toBe(false);
-    // 失败要真的影响退出码，不能只打一行字
-    // 这条必须匹配 `[...errors, ...docErrors]` 这个形状。上一版只写
-    // `/allErrors[\s\S]*process\.exit\(1\)/`，变异探针把 docErrors 摘掉（改成 `[...errors]`）之后
-    // 正则照样命中，四条单测全绿而文档核对是死的（R16.311 的 M5）。
-    // 两处都钉形状：并集那一行、以及「失败分支的条件真的看 allErrors」。
-    // 只钉前者会漏掉 `if (errors.length > 0)` 这种把条件换掉的改法（探针 M7）。
-    const exitWired =
-      /const allErrors = \[\.\.\.errors,\s*\.\.\.docErrors\]/.test(cli) &&
-      /if \(allErrors\.length > 0\)[\s\S]*?process\.exit\(1\)/.test(cli);
-    expect(exitWired, "docErrors 没并进失败判定——不一致会静默通过").toBe(true);
+    // 失败要真的影响退出码，不能只打一行字。削弱面有两个（R16.311 的 M5 / M7）：
+    // 把某个核对结果从并集里摘掉；把失败分支的条件换成不读 allErrors。所以这里**逐变量**钉，
+    // 不把整行字面量写死——上一版写死 `[...errors, ...docErrors]`，R16.313 新增
+    // `...growthErrors`（合法扩展）时它自己红了。新增核对必须在那个 helper 里登记一次。
+    expect(
+      unionSpreads(cli).includes("docErrors"),
+      "docErrors 没并进失败判定——不一致会静默通过（M5）",
+    ).toBe(true);
+    expect(
+      /if \(allErrors\.length > 0\)[\s\S]*?process\.exit\(1\)/.test(cli),
+      "失败分支的条件没读 allErrors——照样静默通过（M7）",
+    ).toBe(true);
+  });
+});
+
+/**
+ * R16.313：`docs/growth-checklist.md` 开头那句「sitemap（430 URL，其中知识库 418）」
+ * 两个数都是手抄的。418 半边在 R16.311 之后已由 `stats.knowledgePages` 管着，430
+ * （`stats.sitemapUrls`）此前没人对着：加一个可索引页面它就变，而文档不红。
+ * 与 R16.311 同一族病，同一位主人；这条只测纯函数与接线，不读构建产物。
+ */
+describe("文档那句 sitemap 条数由产物说了算（R16.313）", () => {
+  const growthDoc = fs.readFileSync(
+    path.join(process.cwd(), "docs/growth-checklist.md"),
+    "utf8",
+  );
+  const actual = () => {
+    const m = growthDoc.match(SITEMAP_URL_COUNT_CLAIM);
+    return { sitemapUrls: Number(m[1]), knowledgePages: Number(m[2]) };
+  };
+
+  it("锚点在真实文档里找得到，且抓到两个数", () => {
+    const match = growthDoc.match(SITEMAP_URL_COUNT_CLAIM);
+    expect(match, "docs/growth-checklist.md 那句「sitemap（N URL，其中知识库 M）」的形状变了").toBeTruthy();
+    expect(Number(match[1])).toBeGreaterThan(0);
+    expect(Number(match[2])).toBeGreaterThan(0);
+  });
+
+  it("一致时不报问题；任一数漂了就点名两个数", () => {
+    const a = actual();
+    expect(checkDocSitemapCounts({ doc: growthDoc, actual: a, where: "那句" })).toEqual([]);
+    const driftUrls = checkDocSitemapCounts({
+      doc: growthDoc,
+      actual: { ...a, sitemapUrls: a.sitemapUrls + 1 },
+      where: "那句",
+    });
+    expect(driftUrls).toHaveLength(1);
+    expect(driftUrls[0]).toContain(String(a.sitemapUrls));
+    expect(driftUrls[0]).toContain(String(a.sitemapUrls + 1));
+    // 知识库那一半单独漂也必须红——只核第一个数等于放过第二个
+    const driftKb = checkDocSitemapCounts({
+      doc: growthDoc,
+      actual: { ...a, knowledgePages: a.knowledgePages + 2 },
+      where: "那句",
+    });
+    expect(driftKb).toHaveLength(1);
+    expect(driftKb[0]).toContain(String(a.knowledgePages));
+    expect(driftKb[0]).toContain(String(a.knowledgePages + 2));
+  });
+
+  it("两个数同时漂就报两条", () => {
+    const a = actual();
+    const errors = checkDocSitemapCounts({
+      doc: growthDoc,
+      actual: { sitemapUrls: a.sitemapUrls + 1, knowledgePages: a.knowledgePages + 1 },
+      where: "那句",
+    });
+    expect(errors).toHaveLength(2);
+  });
+
+  it("说法被删掉时报错，不静默通过", () => {
+    const errors = checkDocSitemapCounts({
+      doc: "技术侧已就绪：sitemap、robots、OG 卡片",
+      actual: { sitemapUrls: 430, knowledgePages: 418 },
+      where: "那句",
+    });
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("找不到那句带 sitemap 条数的说法");
+  });
+
+  it("check:seo-surface 真的调了它，并把产物数出来的两个数都递进去", () => {
+    const cli = fs.readFileSync(
+      path.join(process.cwd(), "scripts/check-seo-surface.mjs"),
+      "utf8",
+    );
+    expect(cli, "调用点不再 import checkDocSitemapCounts——这条核对是死的").toContain("checkDocSitemapCounts");
+    const wired = cli.match(/checkDocSitemapCounts\(\{[\s\S]*?\}\)/);
+    expect(wired, "import 了却没调用——正是要防的那种哑门禁").toBeTruthy();
+    // 两个数都得来自产物，且不许抄常数
+    expect(wired[0]).toContain("stats.sitemapUrls");
+    expect(wired[0]).toContain("stats.knowledgePages");
+    expect(
+      /(sitemapUrls|knowledgePages):\s*\d/.test(wired[0]),
+      "调用点把其中一个数抄成常数了：两个都必须吃 stats",
+    ).toBe(false);
+    // 读的是那份文档，不是 seo-surface.md 那一遍
+    expect(cli, "growth-checklist.md 根本没被读——这条核对拿的是空话").toContain("growth-checklist.md");
+    expect(
+      unionSpreads(cli).includes("growthErrors"),
+      "growthErrors 没并进失败判定——不一致会静默通过（R16.311 的 M5）",
+    ).toBe(true);
+    // 只读不判：文档路径在场但没传给核对函数，等于装饰
+    expect(
+      cli.match(/const growthDoc = fs\.readFileSync\([\s\S]*?\);[\s\S]*?checkDocSitemapCounts\(\{[\s\S]*?doc: growthDoc,/),
+      "读了 growth-checklist.md 却没把它递进核对",
+    ).toBeTruthy();
   });
 });

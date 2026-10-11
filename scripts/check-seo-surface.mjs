@@ -23,6 +23,7 @@ import {
   parseRobotsTxt,
   parseSitemapXml,
   checkDocPageCount,
+  checkDocSitemapCounts,
 } from "./seo-surface-lib.mjs";
 
 const root = process.cwd();
@@ -104,8 +105,15 @@ const docErrors = checkDocPageCount({
   actual: stats.knowledgePages,
   where: "docs/seo-surface.md 的收录策略表",
 });
+// `docs/growth-checklist.md` 开头那句同时抄了 sitemap 总条数与知识库页数（R16.313）。
+const growthDoc = fs.readFileSync(path.join(root, "docs", "growth-checklist.md"), "utf8");
+const growthErrors = checkDocSitemapCounts({
+  doc: growthDoc,
+  actual: { sitemapUrls: stats.sitemapUrls, knowledgePages: stats.knowledgePages },
+  where: "docs/growth-checklist.md 的「技术侧已就绪」那句",
+});
 
-const allErrors = [...errors, ...docErrors];
+const allErrors = [...errors, ...docErrors, ...growthErrors];
 if (allErrors.length > 0) {
   console.error(`❌ SEO 表面复核失败：${allErrors.length} 个问题`);
   console.error(allErrors.slice(0, 30).join("\n"));
