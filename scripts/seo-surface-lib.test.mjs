@@ -474,6 +474,12 @@ describe("文档那句知识库页数由产物说了算（R16.311）", () => {
       "调用点又把页数抄成常数了：它必须吃 stats.knowledgePages",
     ).toBe(false);
     // 失败要真的影响退出码，不能只打一行字
-    expect(cli, "docErrors 没并进失败判定——不一致会静默通过").toMatch(/allErrors[\s\S]*process\.exit\(1\)/);
+    // 这条必须匹配 `[...errors, ...docErrors]` 这个形状。上一版只写
+    // `/allErrors[\s\S]*process\.exit\(1\)/`，变异探针把 docErrors 摘掉（改成 `[...errors]`）之后
+    // 正则照样命中，四条单测全绿而文档核对是死的（R16.311 的 M5）。
+    const exitWired =
+      /const allErrors = \[\.\.\.errors,\s*\.\.\.docErrors\]/.test(cli) &&
+      /allErrors\.length[\s\S]*?process\.exit\(1\)/.test(cli);
+    expect(exitWired, "docErrors 没并进失败判定——不一致会静默通过").toBe(true);
   });
 });
