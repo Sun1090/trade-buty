@@ -1,5 +1,14 @@
 import ts from "typescript";
 
+/**
+ * 固定题库「每章最少几道题」的下限（R6.4 定的纪律）。
+ *
+ * 它此前只以字面量 `3` 活在 `check-quiz-coverage.mjs` 的判断里，而 `docs/ops.md`、
+ * `docs/perf-notes.md` 两处文档都把它抄成了一句现行说法——某一章把纪律提到 5 道，
+ * 那两句不会红。抽成导出的常量就是给它立主人：门禁读它，文档登记也由它对账（R16.315）。
+ */
+export const MIN_QUESTIONS_PER_CHAPTER = 3;
+
 function literalText(node) {
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
     return node.text;

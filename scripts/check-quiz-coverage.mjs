@@ -6,7 +6,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { parseQuizMounts } from "./quiz-source-lib.mjs";
+import { MIN_QUESTIONS_PER_CHAPTER, parseQuizMounts } from "./quiz-source-lib.mjs";
 
 const root = process.cwd();
 const zhDir = path.join(root, "content/kline-buty/docs/knowledge/zh");
@@ -24,7 +24,11 @@ const rows = [];
 let covered = 0;
 for (const c of chapters) {
   const mount = mounts.get(c);
-  const hasQuiz = Boolean(mount && mount.questionCount !== null && mount.questionCount >= 3);
+  // 每章最少的题数是这条门禁的纪律，也是 `docs/ops.md`、`docs/perf-notes.md` 抄了两处的数——
+  // 它现在只有一个主人（R16.315）：改这里，文档那句跟着红。
+  const hasQuiz = Boolean(
+    mount && mount.questionCount !== null && mount.questionCount >= MIN_QUESTIONS_PER_CHAPTER,
+  );
   if (hasQuiz) covered++;
   const qCount = mount?.questionCount ?? 0;
   rows.push(
@@ -34,7 +38,7 @@ for (const c of chapters) {
 
 console.log(`# 题库覆盖率（${chapters.length} 章）
 
-- 站方固定题库：${covered}/${chapters.length}（每章最少 3 道达标）
+- 站方固定题库：${covered}/${chapters.length}（每章最少 ${MIN_QUESTIONS_PER_CHAPTER} 道达标）
 - AI 章节出题：${chapters.length}/${chapters.length}（24h 缓存 + 固定题回退）
 
 | 章节 | slug | 出题来源 |
