@@ -552,7 +552,7 @@ describe("文档那句 sitemap 条数由产物说了算（R16.313）", () => {
     expect(errors).toHaveLength(2);
   });
 
-  it("说法被删掉时报错，不静默通过", () => {
+  it("那句说法被删掉时报错，不静默通过", () => {
     const errors = checkDocSitemapCounts({
       doc: "技术侧已就绪：sitemap、robots、OG 卡片",
       actual: { sitemapUrls: 430, knowledgePages: 418 },
