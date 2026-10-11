@@ -190,16 +190,20 @@ describe("new-chapter lib (R10.16)", () => {
     expect(call, "dry-run 里找不到 planIntegration 的调用——判据在空转").toBeTruthy();
     // 两种形状都要认：`zhChapterCount: 27`（抄来的常数）与 `zhChapterCount }`（变量简写）。
     // 只认冒号那一种，「改成简写但变量仍是 27」这条路就躲过去了。
-    const passed = call![0].match(/zhChapterCount\s*(?::\s*([^,)\n]+))?/);
+    // 值只取到空白 / 逗号 / 括号为止：写成 `([^,)\n]+)` 时 `zhChapterCount: 27 }` 捕获到的是
+    // "27 }"，那条「纯数字才算抄常数」的正则判不中，抄回来的常数就这么躲过去了（探针 M1 抓到）。
+    const passed = call![0].match(/zhChapterCount\s*(?::\s*([^\s,)\n]+))?/);
     expect(passed, "planIntegration 的调用里没有 zhChapterCount 这个入参").toBeTruthy();
     expect(
-      passed![1] === undefined || !/^\s*\d+\s*$/.test(passed![1]),
+      passed![1] === undefined || !/^\d/.test(passed![1]),
       `dry-run 又把章数抄成常数了（zhChapterCount: ${(passed![1] ?? "").trim()}）`,
     ).toBe(true);
     const declared = cli.match(/const\s+zhChapterCount\s*=\s*([^;]+)/);
     expect(declared, "找不到 zhChapterCount 的定义——它被挪去哪了？").toBeTruthy();
     expect(
-      /^\s*\d+\s*$/.test(declared![1]),
+      // 定义侧同理：`27 || fs…` 这种「前面塞个常数、后面照旧数」的写法必须也被判出来，
+      // 所以问的是「这段定义里出现的第一个值是不是数字」，而不是「整段是不是纯数字」。
+      /^\s*\d/.test(declared![1]),
       `zhChapterCount 的定义是抄来的常数（${declared![1].trim().slice(0, 40)}）`,
     ).toBe(false);
     expect(declared![1], "zhChapterCount 不再由目录数出来").toContain("readdirSync");
