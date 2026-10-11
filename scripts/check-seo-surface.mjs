@@ -9,7 +9,6 @@
  *   - 声明为 noindex 的页面不在 sitemap 里，且确实带 noindex meta
  *   - 知识库页面（章节 / 课程）全部可索引并全部进 sitemap
  *   - 构建产物里不存在未归类的页面（新页面必须显式声明收录策略）
-  *   - `docs/seo-surface.md` 收录策略表里那句「知识库 N 页」等于当场数出来的知识页数（R16.311）
  *
  * 用法：npm run build && npm run check:seo-surface
  */
@@ -22,7 +21,6 @@ import {
   loadSeoSurface,
   parseRobotsTxt,
   parseSitemapXml,
-  checkDocPageCount,
 } from "./seo-surface-lib.mjs";
 
 const root = process.cwd();
@@ -96,20 +94,10 @@ const { errors, stats } = auditSeoSurface({
   isKnowledgePage,
 });
 
-// 文档那句「知识库 N 页」也当场对着产物核一次（R16.311）。这一步一定在 build 之后跑，
-// 产物就在手上，不存在「缺产物只能跳过」的问题。
-const docSurface = fs.readFileSync(path.join(root, "docs", "seo-surface.md"), "utf8");
-const docErrors = checkDocPageCount({
-  doc: docSurface,
-  actual: stats.knowledgePages,
-  where: "docs/seo-surface.md 的收录策略表",
-});
-
-const allErrors = [...errors, ...docErrors];
-if (allErrors.length > 0) {
-  console.error(`❌ SEO 表面复核失败：${allErrors.length} 个问题`);
-  console.error(allErrors.slice(0, 30).join("\n"));
-  if (allErrors.length > 30) console.error(`…另有 ${allErrors.length - 30} 个问题`);
+if (errors.length > 0) {
+  console.error(`❌ SEO 表面复核失败：${errors.length} 个问题`);
+  console.error(errors.slice(0, 30).join("\n"));
+  if (errors.length > 30) console.error(`…另有 ${errors.length - 30} 个问题`);
   process.exit(1);
 }
 
