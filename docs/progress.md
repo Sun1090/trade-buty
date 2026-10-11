@@ -2,6 +2,56 @@
 
 ---
 
+## 2026-10-11 · 第六十五轮（R16.311）：一条「防静默通过」的判据自己就是静默通过的；探针把这件事量了出来
+
+- 里程碑 / 版本：「说法 vs 事实」第六十五轮；R16.311 新增并关账，未改产品版本（当前 v0.7.28）。分支 `codex/seo-doc-page-count`（三笔：`451edb1` 门禁本体、`bf41db2` 退出码判据收紧、`d55fd78` 失败分支条件也钉住）。R16.310 的台账在 PR #409 的 `d8c21f8`（第六十四轮），本轮编号跳过它以免相撞。
+
+### 真问题：文档那句页数是手抄的，而数它的主人一直就站在旁边
+
+- `docs/seo-surface.md:28` 收录策略表写「可索引，全部进 sitemap（418 页）」。418 = 2 ×（27 篇章页 + 182 课文页），完全由 kline-buty 内容决定——加一章、补一课、把 en 侧填几篇，这句话就漂，此前没有任何东西核对它。
+- 讽刺的是主人一直在场：`check:seo-surface` 自己数出 `stats.knowledgePages` 并把它印在成功行里（`知识库 418 个`），只是从来没跟文档比过。同一份门禁既知道答案、又允许文档自己另说一遍。
+
+### 做法
+
+- `scripts/seo-surface-lib.mjs` 新增纯函数 `checkDocPageCount({doc, claimRe, actual, where})`，三种结局各写清楚：一致→不报；漂了→错里同时点名「印的是 N」与「当场数出来是 M」；**锚点找不到→报错**，不静默过（R16.303 立的「判据不许自己空转」）。
+- 锚点常量 `KNOWLEDGE_PAGE_COUNT_CLAIM` 放 lib 而非测试里，这样单测能拿**真实文档**核锚点确实命中，而不是只核一个我随手编的字符串。
+- 调用点并进 `const allErrors = [...errors, ...docErrors]`，失败退出码 1。这一步天然落在 build 之后（`ci.yml` 第 127 行），不违反「单测不许依赖产物」那条约束（第 62 行 `test:coverage` 在第 64 行 `build` 之前，R16.292 记过）。
+- 四条单测（37→41）：A 锚点在真实文档找得到且抓到的就是那个数；B 一致不报、漂了点名两个数；Cd 说法被删时报错；E CLI 真接了线、且递进去的是 `stats.knowledgePages` 不是常数。
+
+### 探针 6→7 组：两处红，一处是我的腿错，一处是判据真弱
+
+- 先过的三条：M1（文档改 420）CLI exit 1 并报「印的是 420，数出来是 418」；M3（import 了不调用）红在 E；M4（调用点把 418 抄成常数）红在 E；M6（只改判据自己的注释）四条全活。
+- **M2 是我把期望写错，不是判据错**：那一行整段删掉时，A（锚点）与 B（`match(...)[1]` 抛）必然红，我却标了 expectGreen。判据的红是对的，腿要跟着事实改。
+- **M5 是真缺口**：`[...errors, ...docErrors]` → `[...errors]`，四条单测**全绿**、CLI 在文档漂了的情况下 **exit 0 静默通过**。E 里那条退出码判据只写 `/allErrors[\s\S]*process\.exit\(1\)/`——它证明的是「有个 allErrors 会 exit(1)」，不是「文档核对的结果进了 allErrors」。这正是 R16.303 那类哑门禁，只不过这次哑在我的新判据身上。
+- **第一版修法又漏一层**：只补成「并集那一行必须存在」。于是给探针加腿 M7——并集照做，但把 `if (allErrors.length > 0)` 换成 `if (errors.length > 0)`——仍然全绿。最终 E 要求两处形状同时成立：并集那一行、以及失败分支的**条件真的读 allErrors**。M5 / M7 各红一次，末了 **BAD=0**（`.gate-logs/probe-r66.mjs` / `.log`，首尾 BASE 全绿）。
+- **给下一轮的规矩**：退出码判据要钉两件事——「结果进了判定」和「判定读了这个结果」。只钉其中一件，另一件就是免费的削弱面。
+
+### 顺带收的账：PR #409 分支上误留了一笔别主题的提交
+
+- `codex/kb-dryrun-chapter-count` 顶上多了一笔 `baef456`（seo-surface 主题，串门时留下的），已原样 cherry-pick 到本轮分支。AGENTS.md 禁止改写已推送的共享分支，所以**不是** rebase 摘除，而是在该分支追加一笔 `fe174b0 chore: 摘掉误留在这条分支上的 seo-surface 那笔`。摘完 #409 的 diff 只剩 R16.310 的四个文件（`docs/progress.md`、`docs/roadmap.md`、`scripts/dry-run-new-chapter.mjs`、`src/lib/new-chapter.test.ts`），复验 `seo-surface-lib` 在还原态 37 条、kb-dry-run 17 条各自全绿。
+
+### 验证
+
+- `npx vitest run scripts/seo-surface-lib.test.mjs` **41 条全绿**；`npm run check:seo-surface` exit 0（`sitemap 430 条 · 页面 454 个 · 知识库 418 个 · 未声明 0 个`）；三条独立来源一致：文档 418 = 产物 418 = 内容树现读 418。
+- 全量：`test:coverage` 349 文件 / **3679** 条全绿（覆盖率 95.01 / 90.78 / 95.03 / 96.88）；`build` 474 页；`check:bundle` 全组通过；`lint` / `typecheck` / `check:docs`（27 章 / 182 篇对齐）/ `check:dead-copy`（死键 0）/ `check:scan-counts`（6 处登记无变化）/ `check:test-clock-hygiene`（348 文件 · 0 命中 · 报告无变化）/ `check:report-freshness`（漂移 0）/ `check:localized-labels` 全 0；`git diff --check` 干净。
+- 往已有测试文件加用例，不新增扫描基数，故 `scan-counts` / `test-clock-hygiene` 无需认账——这一点本轮在链上确认过，不是凭印象。
+- **先 commit 再探针**这条（R16.308 记过、R16.310 又踩过）本轮守住了：判定收紧那两笔落定之后才跑探针，`git checkout --` 还原只回 HEAD，没有吞掉未提交的工作。
+
+### 依赖安全旁注（不新增台账，只记一句去向）
+
+- 推送时 GitHub 提示默认分支 1 条 Dependabot alert（#10，`sprintf-js` / CVE-2026-97058，medium，DoS via 无界 precision specifier）。现查 `docs/deps.md` 2026-10-09 那条已登记：受影响范围 `<= 1.1.3` 覆盖**全部已发布版本**，`first_permanent_fix = null`，即上游无补丁；`npm audit fix --force` 只会把 `gray-matter` 降级到 2.0.1 那种破坏性旧版。`audit:prod` 门禁按 `--audit-level=high` 运行，medium 不在射程内。**结论：不重复处理，不改产品代码迎合**；重审条件是 sprintf-js 出新版本，或本仓换掉依赖 `js-yaml@3` 的 frontmatter 方案。
+
+### 阻塞 / 风险 / 回滚
+
+- 无阻塞。风险一个：锚点常量与文档措辞耦合——将来那张表把页数改写成别句式，A 会红并报「形状变了」，这是有意的（红=去看），不是放过。回滚各自一笔撤回，不涉数据。
+
+### 下一项
+
+- #409 的 `ci` 跑绿后 rebase 合并、本地 main 快进、清分支；本轮分支推上去开 PR。
+- 同族候选：文档里还有哪些「手抄的数字」没有主人。已排除项见上一轮：docs 仓库路径引用、判定级静默截断、`file:line` 引用主人、ops.md 幽灵登记。
+
+---
+
 ## 2026-10-11 · 第六十四轮（R16.310）：`kb:dry-run` 那句章数是抄来的 27，而树里的 27 与它长得一模一样
 
 - 里程碑 / 版本：「说法 vs 事实」第六十四轮；新增并关账 R16.310，未改产品版本（当前 v0.7.28）。
