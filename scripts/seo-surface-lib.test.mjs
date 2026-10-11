@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 import {
   auditSeoSurface,
   compileRobotsPattern,
@@ -11,6 +13,8 @@ import {
   parseRobotsTxt,
   parseSitemapXml,
   validateDeclaration,
+  checkDocPageCount,
+  KNOWLEDGE_PAGE_COUNT_CLAIM,
 } from "./seo-surface-lib.mjs";
 
 const BASE = "https://example.test";
@@ -420,5 +424,56 @@ describe("auditSeoSurface", () => {
     expect(decl.noindex).toContain("/stats");
     expect(decl.robotsDisallow).toContain("/api/");
     expect(decl.robotsDisallow).not.toContain("/*/ai"); // ai 页改用 noindex，不再 Disallow
+  });
+});
+
+/**
+ * R16.311：`docs/seo-surface.md` 收录策略表那句「知识库 418 页」此前没人对着——
+ * 它等于 `2 × (27 篇章页 + 182 课文页)`，内容由 kline-buty 决定，加一章或补一课就漂。
+ * 这四条**不读构建产物**（CI 把单测排在 build 之前）：产物那一侧的比对发生在
+ * `check:seo-surface`（排在 build 之后），这里只管「纯函数对不对」与「调用点还在不在接线」。
+ */
+describe("文档那句知识库页数由产物说了算（R16.311）", () => {
+  const doc = fs.readFileSync(path.join(process.cwd(), "docs/seo-surface.md"), "utf8");
+
+  it("锚点在真实文档里找得到，且抓到的就是那个数", () => {
+    const match = doc.match(KNOWLEDGE_PAGE_COUNT_CLAIM);
+    expect(match, "docs/seo-surface.md 里那句「可索引，全部进 sitemap（N 页）」的形状变了").toBeTruthy();
+    expect(Number(match[1])).toBeGreaterThan(0);
+  });
+
+  it("一致时不报问题，漂了就点名两个数", () => {
+    const claimed = Number(doc.match(KNOWLEDGE_PAGE_COUNT_CLAIM)[1]);
+    expect(checkDocPageCount({ doc, actual: claimed, where: "表" })).toEqual([]);
+    const drift = checkDocPageCount({ doc, actual: claimed + 2, where: "表" });
+    expect(drift).toHaveLength(1);
+    expect(drift[0]).toContain(String(claimed));
+    expect(drift[0]).toContain(String(claimed + 2));
+  });
+
+  it("说法被删掉时报错，不静默通过", () => {
+    const errors = checkDocPageCount({ doc: "这一节整段被删了", actual: 418, where: "表" });
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("找不到那句带页数的说法");
+  });
+
+  // 哑门禁那一课（R16.303：audit:all 只 export 了 main() 从没调用它，七条单测全绿而门禁是死的）：
+  // 上面三条全测纯函数，**没有任何一条跑到 CLI**。这一条钉住调用点确实把它接上了，
+  // 且递进去的是当场数出来的 `stats.knowledgePages`——不是又一个手抄的常数。
+  it("check:seo-surface 真的调了它，并把产物数出来的页数递进去", () => {
+    const cli = fs.readFileSync(
+      path.join(process.cwd(), "scripts/check-seo-surface.mjs"),
+      "utf8",
+    );
+    expect(cli, "调用点不再 import checkDocPageCount——这条核对是死的").toContain("checkDocPageCount");
+    const wired = cli.match(/checkDocPageCount\(\{[\s\S]*?\}\)/);
+    expect(wired, "import 了却没调用——正是要防的那种哑门禁").toBeTruthy();
+    expect(wired[0]).toContain("stats.knowledgePages");
+    expect(
+      /actual:\s*\d/.test(wired[0]),
+      "调用点又把页数抄成常数了：它必须吃 stats.knowledgePages",
+    ).toBe(false);
+    // 失败要真的影响退出码，不能只打一行字
+    expect(cli, "docErrors 没并进失败判定——不一致会静默通过").toMatch(/allErrors[\s\S]*process\.exit\(1\)/);
   });
 });
