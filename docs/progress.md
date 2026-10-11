@@ -2,6 +2,53 @@
 
 ---
 
+## 2026-10-11 · 第六十七轮（R16.313）：先做了一次全量盘点再动手；上一轮的退出码判据被证明是过拟合的
+
+- 里程碑 / 版本：「说法 vs 事实」第六十七轮；R16.313 新增并关账，未改产品版本（当前 v0.7.28）。分支 `codex/sitemap-url-count`，**叠在 #411（R16.312）之上**（本笔动了 `docs/roadmap.md` 与 `check:docs` 的同一族判据，分开两条分支会撞车）。三笔：`f0aae0a` 门禁本体、`130bc49` 重名用例改名、本台账。
+
+### 先盘后做：这一族到底还有几个没主人
+
+- 上几轮都是撞一个修一个，本轮先用 `.gate-logs/survey-r68.mjs`（只读）把**手写文档**里这类数字全量数出来：排除 12 份「自动生成」报告与 progress/roadmap 两份台账，命中 **133 处**。逐个看过后的分类：
+  - **历史记录，不该被今天的产物要求相等**：各版 `v0.6/v0.7.x-release-review.md`、`accessibility-audit.md`、`deps.md` 里「当天跑了 237 文件 / 1701 用例 / 473 页」这类——那是当时的事实。
+  - **已有主人**：`database-testing.md` 的断言数（`check:db-assertion-counts`，R16.13）、`caching.md` 的键数（`caching-claims.test.mjs`）、`retention-metrics.md` 的窗口数（R16.271 / R16.273 那族）、`perf-notes.md` 最新那张表（R16.306）、`plan.md` 与 README 的章数课文数（`auditReadmeCounts` / `auditPlanContract`）、README 的题数（R16.312）。
+  - **没主人的现行说法，剩下的就是本条**：`docs/growth-checklist.md:3`「sitemap（430 URL，其中知识库 418）」。430 = `stats.sitemapUrls`（随收录声明变，加一个可索引页面双语各 +1），418 = `stats.knowledgePages`。R16.311 只管住了 `seo-surface.md` 那张表的 418，这一句两个数都没人对着。
+
+### 做法
+
+- `seo-surface-lib.mjs`：把只会比一个数的 R16.311 函数抽出 `compareOne()`，新增 `checkDocSitemapCounts` + 锚点 `SITEMAP_URL_COUNT_CLAIM`，**两个数各判一次**——只核第一个等于放过第二个（M5 专杀这一点）；找不到说法同样报错。
+- `check-seo-surface.mjs`：`stats.sitemapUrls` 与 `stats.knowledgePages` 都从产物递进来，结果并进 `allErrors`。5 条新单测（41→46）。
+
+### 两处自己的错，都比修的东西更值得记
+
+- **① R16.311 那条退出码判据是过拟合的**：它把整行字面量 `/const allErrors = \[\.\.\.errors,\s*\.\.\.docErrors\]/` 写死。本笔新增 `...growthErrors`（合法扩展）时**它自己红了**。改成 `unionSpreads(cli)` 逐变量钉：并集里必须出现 `errors`、`docErrors`（新增核对就多登记一个名字），失败分支的条件必须读 `allErrors.length`。M5 / M7 两个削弱面仍然各红一次。**写死的字面量判据会把扩展当削弱**——同一族教训第三次撞到（R16.306 的容差、R16.311 的形状、本轮的登记面）。
+- **② 新用例沿用了上一族的重名**：R16.311 已有「说法被删掉时报错，不静默通过」，本笔那条名字完全一样。vitest 不拦重名、两条都跑都绿，但**探针按用例名定位**：重名会让「本应只有 R16.313 那条红」的腿命中 R16.311 的同名用例，被读成「判据活着」。改名并单独一笔提交，探针里的 E 同步改。**用例名是这套体系的指针，不能重复。**
+
+### 探针 10 条腿 BAD=0
+
+M1 只漂 430 / M2 只漂 418 / M3 两个都漂 → 各 CLI exit=1；M4 整句被删 → 锚点与两条按值判的用例一起红 + CLI 红；M5 lib 少核第二个数 → 红在 B/Cd，并确认削弱后 CLI 在文档漂了时 exit 0（本腿要证的正是静默通过面）；M6 import 不调用 / M7 调用点抄常数 430 / M8 `growthErrors` 不并进失败判定 / M9 读了文档却递进另一份字符串 → 各红在接线判据；M10 只改判据自己的注释 → 五条全活。
+
+**M1–M3 的期望第一版写错**：我标了「单测应红」，可 B/Cd 的**期望值就是 `actual()` 从同一份文档现读的**——文档改了就跟着改，在「文档漂移」这个世界里是恒等式，红的是 CLI 那一侧（产物 vs 文档）。同 R16.294 / R16.310：**装一道守门之前，先证明它在一个真实变异上不是恒等式**。这条结构性事实已写进探针头部注释。
+
+### 验证
+
+- `npx vitest run scripts/seo-surface-lib.test.mjs` **46 条全绿**；`npm run check:seo-surface` exit 0（`sitemap 430 条 · 页面 454 个 · 知识库 418 个 · 未声明 0 个`）。
+- 手工把文档 430 改 431 → exit 1，错里点名「印的是 431 URL，构建产物当场数出来是 430」；复原后 exit 0（这一步在探针之前先量，确保锚点取的是真实形状）。
+- `lint` / `typecheck` 全 0；每腿 `git checkout --` 还原、收尾 `git status` 干净。改动只落 `scripts/`，不新增测试文件，扫描基数不变。
+
+### 阻塞 / 风险 / 回滚
+
+- 无阻塞。风险与 R16.311 同形：锚点常量与文档措辞耦合，那句改写成别句式会红在「找不到那句带 sitemap 条数的说法」——红=去看，不是放过。回滚各自一笔撤回，不涉数据。
+- 依赖关系：本 PR 的 diff 含 #411 未合并的两笔，需先合 #411 再 rebase；否则 review 时按 stacked PR 看。
+
+### 下一项
+
+- 盯 #411 绿 → 合并 → 本分支 rebase 到新 main → 推 PR。
+- 盘点剩下的候选（都不需拍板）：`docs/ops.md` 那 11 处里「check:mobile 写死的 14 条路径」「ops 表里 27 章 × 3 道」等描述性数字是否真与脚本一致；`growth-checklist.md:16` 那句「知识库 182 篇」尚无主人（`auditReadmeCounts` 只核 README）。
+
+- 更新时间：2026-10-11（Asia/Shanghai）
+
+---
+
 ## 2026-10-11 · 第六十六轮（R16.312）：README 那句「81 题」也是手抄的；探针的一条腿因手抄锚点而语法崩溃，作废重做
 
 - 里程碑 / 版本：「说法 vs 事实」第六十六轮；R16.312 新增并关账，未改产品版本（当前 v0.7.28）。分支 `codex/readme-quiz-count`（一笔 `gate(docs)` + 本台账）。上一轮的 #410（R16.311）本轮已 rebase 合并进 main（`6ba447a`），远端分支已 prune。
