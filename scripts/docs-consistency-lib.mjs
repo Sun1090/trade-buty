@@ -7,6 +7,27 @@
  */
 
 import { newestReleaseVersion } from "./release-tag-lib.mjs";
+import { execFileSync } from "node:child_process";
+
+/**
+ * 仓库里每一份 markdown：走 `git ls-files`，与 `check:secrets` 同一口径。
+ *
+ * 用 git 而不是自己遍历目录，是因为归类核对要问的是「这份仓库**声称**自己有哪些文档」：
+ * `.gitignore` 掉的产物与临时目录不该进来，而工作树里未跟踪的新文档必须进来——
+ * 那正是登记制最该看见的东西（新建一份文档抄一个数，就是这一条要拦的）。
+ */
+export function listRepoMarkdown(root = process.cwd()) {
+  const listed = execFileSync(
+    "git",
+    ["ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+    { cwd: root },
+  );
+  return listed
+    .toString("utf8")
+    .split("\0")
+    .filter((file) => file.endsWith(".md"))
+    .sort();
+}
 
 export function extractReadmeCounts(markdown) {
   const text = String(markdown);
@@ -303,19 +324,43 @@ export const DOC_NUMBER_SCAN_RE = new RegExp(
 );
 
 /**
+ * 报告头部的「这是机器重算的」标记。
+ *
+ * 生成件不需要登记主人：它们的数字由生产者每次重算写回（`check:report-freshness` 盯的就是
+ * 「跑完生成步骤后工作区与 HEAD 是否一致」）。按标记而不是按文件名清单排除，是因为那份清单
+ * 会随报告增多而失真——新加一份报告忘了写进清单，等于给它开了一个「手抄也没人管」的口子。
+ *
+ * 判据必须认的是**生成器写回的那一行的形状**（引用块/注释 + 「自动生成于｜由…重算」+ 一条
+ * `npm run` 命令），而不是「正文里出现过自动生成这五个字」。否则一份手写台账只要在叙述里
+ * 提到「非自动生成文档」就整篇被当成机器产物，退出扫描——那正是本函数要防的那道暗门。
+ */
+export function isGeneratedReport(markdown) {
+  const lines = String(markdown ?? "").split("\n").slice(0, 20);
+  return lines.some((line) => isGeneratedMarkerLine(line));
+}
+
+/** 一行是不是生成器写回的标记行：三个条件同时成立才算。 */
+export function isGeneratedMarkerLine(line) {
+  const text = String(line ?? "");
+  // 1. 行首是引用块或 HTML 注释——生成器都这么写；正文句子不算。
+  if (!/^\s*(?:>|<!--)/.test(text)) return false;
+  // 2. 声明了「这是产出物」：写明自动生成于某天，或由某条命令重算。
+  if (!/自动生成于|重算/.test(text)) return false;
+  // 3. 点出重新生成的命令，让人能顺着找到生产者。
+  return /npm run/.test(text);
+}
+
+/**
  * 被扫的文档：会说「现在有多少内容/题/页」的现行说法载体。
- * 不在清单里的两类各有理由：追加式台账（`CHANGELOG.md`、`docs/progress.md`、
- * `docs/roadmap.md`、`docs/kb-changelog-*.md`、`docs/v*-release-review.md`）引用的是
- * 当时被改掉的旧数字；门禁重算的自动生成件（`docs/translation-status.md`、
- * `docs/content-inventory.md`、`docs/risk-warning-coverage.md` 等）由生产者自己保持新鲜。
- * 剩下的少量未列入文档（`docs/deps.md`、`docs/accessibility-audit.md`、
- * `docs/social-features-review.md`）只有带日期的实测记录与政策阈值，没有现行数量说法。
+ * 手写文档只有三个去处：这张表、下面那张 `DOC_NUMBER_EXCUSED`、或带生成标记；
+ * 三者都不沾就红（见 `auditDocNumberClaims` 的归类核对）。
  */
 export const DOC_NUMBER_SCAN_TARGETS = Object.freeze([
   "AGENTS.md",
   "README.md",
   "README.zh-CN.md",
   "CONTRIBUTING.md",
+  "supabase/rollback/README.md",
   "docs/plan.md",
   "docs/research.md",
   "docs/growth-checklist.md",
@@ -325,7 +370,64 @@ export const DOC_NUMBER_SCAN_TARGETS = Object.freeze([
   "docs/architecture.md",
   "docs/release-checklist.md",
   "docs/database-testing.md",
+  // 以下九份本轮随「归类核对」一并纳入：它们此刻**一处数量说法都没有**，
+  // 纳进来不是为了抓今天，是为了让「往现行文档里抄一个内容数字」这件事从今天起有门可拦。
+  // 顺序按文件名，与 `listRepoMarkdown` 的输出一致，方便比对漏了哪一份。
+  "docs/caching.md",
+  "docs/env.md",
+  "docs/error-reporting.md",
+  "docs/growth-copy-policy.md",
+  "docs/growth-event-privacy-audit.md",
+  "docs/growth-events.md",
+  "docs/new-chapter-release-checklist.md",
+  "docs/p2-research.md",
+  "docs/retention-metrics.md",
 ]);
+
+/**
+ * 手写、但**故意**不扫的文档：每条必须写明为什么不扫。
+ *
+ * 这张表的全部意义是让「不扫」成为一个要签字的决定。只写 `DOC_NUMBER_SCAN_TARGETS` 的话，
+ * 判据的覆盖面就由一份手写清单决定——新建一份 `docs/whatever.md` 并在里面抄一个内容数字，
+ * 扫描器根本看不到它，登记制就留着一扇不用绕的门（与 R16.83 / R16.146 那族
+ * 「扫描范围自己缩小了却判绿」同形）。
+ *
+ * `pattern` 用于成批出现的命名族（每次发布一份 release-review、每次同步一份 kb-changelog）：
+ * 逐条列举那种文件名的话，下一份新文件又会落在清单外。
+ */
+export const DOC_NUMBER_EXCUSED = Object.freeze([
+  { file: "CHANGELOG.md", reason: "发布说明：每条只描述当次发布做了什么，是历史陈述" },
+  { file: "docs/progress.md", reason: "逐轮追加式台账：会把被改掉的旧数字原文引一遍当证据" },
+  {
+    file: "docs/roadmap.md",
+    reason:
+      "逐轮结案台账（同 `db-assertion-counts.mjs` 的 `CURRENT_SECTIONS` 只取 `## Q` 节的理由）；未决条目的引用由 `roadmap-open-reference-claims.test.mjs` 单独审",
+  },
+  {
+    pattern: /^docs\/kb-changelog-/,
+    reason: "每次知识库同步生成的变更摘要，文件名带日期，属历史快照",
+  },
+  {
+    pattern: /^docs\/v[\d.]+-release-review\.md$/,
+    reason: "发布当轮的复核快照：里面那些「当天跑了多少用例/多少页」是当时的事实",
+  },
+  {
+    file: "docs/deps.md",
+    reason: "依赖评审：其中的数量都写成带日期的实测记录（R7.9 起逐条标注），属历史证据",
+  },
+  {
+    file: "docs/accessibility-audit.md",
+    reason: "Q2.4 审计记录：通篇是「某日某提交上量到什么」的现场快照，写死日期",
+  },
+  {
+    file: "docs/social-features-review.md",
+    reason:
+      "R13.22 设计评审：那份里程碑阶梯是当时的设计稿；现行口径由 `src/lib/milestone-share.ts` 的 `MILESTONE_LADDER` 持有（代码是阈值的主人，界面文案由它代入），文档复述的是决定而非现状",
+  },
+]);
+
+/** 归类核对自己的地板：清单式判据最怕「一份都没看到，于是全部合规」。 */
+export const DOC_NUMBER_MIN_MARKDOWN_FILES = 40;
 
 /**
  * 登记表：每条锚点**只捕获它要对账的那一个数**，`owner` 指向调用点现读出来的量。
@@ -471,13 +573,86 @@ const sameSpan = (a, b) =>
 const contains = (outer, inner) => outer.start <= inner.start && inner.end <= outer.end;
 
 /**
- * @param {{files: Record<string, string>, actual: Record<string, number>}} input
- *   `files` 以登记表用的相对路径为键；`actual` 是调用点现读出来的那些量。
- * @returns {string[]} 空数组代表每一处命中都有主人、且与主人相符
+ * 一份 markdown 落在哪一类：生成件 / 明示豁免 / 待扫 / **没归类**。
+ * 顺序有意为之：台账与生成件的标记优先，避免「同一份文件既是历史又要求登记主人」。
  */
-export function auditDocNumberClaims({ files, actual }) {
+export function classifyDocNumberTarget(relativePath, text) {
+  if (isGeneratedReport(text)) return "generated";
+  const excuse = DOC_NUMBER_EXCUSED.find(
+    (entry) =>
+      entry.file === relativePath || (entry.pattern instanceof RegExp && entry.pattern.test(relativePath)),
+  );
+  if (excuse) return "excused";
+  if (DOC_NUMBER_SCAN_TARGETS.includes(relativePath)) return "scanned";
+  return "unclassified";
+}
+
+/**
+ * @param {{all: Record<string, string>, actual: Record<string, number>}} input
+ *   `all` 是仓库里**每一份** markdown 的「相对路径 → 正文」；`actual` 是调用点现读出来的那些量。
+ * @returns {string[]} 空数组代表每份文档都有归类、每处命中都有主人、且与主人相符
+ */
+export function auditDocNumberClaims({ all, actual }) {
+  const files = all ?? {};
   const issues = [];
   const missing = [];
+
+  // 归类核对：新增一份手写文档，既不在扫描清单也不在豁免表，就当场红
+  const buckets = { generated: [], excused: [], scanned: [], unclassified: [] };
+  for (const [relativePath, text] of Object.entries(files)) {
+    buckets[classifyDocNumberTarget(relativePath, String(text ?? ""))].push(relativePath);
+  }
+  for (const file of buckets.unclassified) {
+    issues.push(
+      `${file}: 这份 markdown 没有归类——它要么该进 DOC_NUMBER_SCAN_TARGETS（里面的数量说法要登记主人），` +
+        `要么该进 DOC_NUMBER_EXCUSED（写明它为什么是历史记录或不归内容管）。` +
+        `「不在清单里」不是一种理由：那正是登记制要堵的那扇门`,
+    );
+  }
+  const classified = Object.values(buckets).reduce((sum, list) => sum + list.length, 0);
+  if (classified < DOC_NUMBER_MIN_MARKDOWN_FILES) {
+    issues.push(
+      `归类核对只看到 ${classified} 份 markdown，地板 ${DOC_NUMBER_MIN_MARKDOWN_FILES}：` +
+        `调用点少喂一批文件，「全部已归类」这句话就自动成立了`,
+    );
+  }
+  for (const entry of DOC_NUMBER_EXCUSED) {
+    if (entry.file && !(entry.file in files)) {
+      issues.push(
+        `${entry.file}: 豁免表里登记的这份文档不见了（${entry.reason}）——` +
+          `文件被删或改名就要连着删这条豁免，留着它等于给一个不存在的类别签字`,
+      );
+    }
+  }
+  // 被扫清单也要逐份在场：`buckets.scanned` 是从**在场的文件**里分出来的，所以一份当前
+  // 零命中的文档被删掉时，它不会落进任何桶、也不会留下任何声音——那正是「扫描范围自己
+  // 缩小了却判绿」（R16.83 / R16.146 同一族）。这里按清单点名，删文档必须连着改清单。
+  for (const file of DOC_NUMBER_SCAN_TARGETS) {
+    if (!(file in files)) {
+      issues.push(
+        `${file}: 扫描清单里的这份文档不见了——它此刻可能一处数量说法都没有，` +
+          `但「不扫了」不能靠删文件悄悄发生：要么文件还在，要么把它从清单里显式删掉`,
+      );
+    }
+  }
+  // 归类只能签一次字。`classifyDocNumberTarget` 里生成标记的优先级最高，于是「在文档头部
+  // 写一句自动生成」就成了退出扫描的暗门；同一份文件既进扫描清单又进豁免表也是同一类
+  // 双重签字。两种矛盾都当场报，而不是让优先级替它们保密。
+  for (const file of DOC_NUMBER_SCAN_TARGETS) {
+    if (!(file in files)) continue;
+    if (isGeneratedReport(files[file])) {
+      issues.push(
+        `${file}: 它在 DOC_NUMBER_SCAN_TARGETS 里，头部却写着「自动生成 / 勿手改」——` +
+          `生成标记的优先级更高，这份文档因此悄悄退出了扫描。它要么真是重算出来的报告（那就从清单里删掉），` +
+          `要么不是（那就别写这个标记）`,
+      );
+    }
+    if (DOC_NUMBER_EXCUSED.some((entry) => entry.file === file)) {
+      issues.push(
+        `${file}: 同时出现在扫描清单与豁免表里——两处都签了字等于哪处都没签，挑一个`,
+      );
+    }
+  }
   const read = (relativePath) => {
     if (!(relativePath in files)) {
       if (!missing.includes(relativePath)) missing.push(relativePath);
@@ -529,7 +704,7 @@ export function auditDocNumberClaims({ files, actual }) {
   }
 
   let hits = 0;
-  for (const file of DOC_NUMBER_SCAN_TARGETS) {
+  for (const file of buckets.scanned) {
     const text = read(file);
     if (text === null) continue;
     const claims = claimedByFile.get(file) ?? [];
@@ -552,8 +727,8 @@ export function auditDocNumberClaims({ files, actual }) {
 
   for (const file of missing) {
     issues.push(
-      `${file}: 扫描清单里的文档没被读进来——调用点少给了一份文件，` +
-        "判据不能默认它「没有数字」；改名或删掉要连着改 DOC_NUMBER_SCAN_TARGETS",
+      `${file}: 登记表点名了这份文档，调用点却没读到它——少喂一批文件等于让那几条登记凭空消失；` +
+        "改名或删掉要连着改 DOC_NUMBER_CLAIMS 与 DOC_NUMBER_SCAN_TARGETS",
     );
   }
 
