@@ -155,14 +155,45 @@ describe("滚动 7 天窗口的文案说出它真的是 7 天", () => {
     ];
     const readSrc = (rel: string) => readFileSync(path.join(process.cwd(), rel), "utf8");
 
-    // ① 数据入口：全仓任何地方都不许用字面量向 getStudySeries 要窗口
+    // ① 逐个**形状**点名：每一处表达「窗口有多长」的表达式，它的值必须来自常量。
+    // 为什么不扫裸数字 6/7：同一批文件里 7 还说别的事（星期循环、趋势区间档位、
+    // 样式里的 px 值），扫数字要么误伤要么靠一张手抄豁免清单——那张清单本身就是下一个
+    // 没人管的登记面。锚定形状则是「这一处确实是窗口长度」的正面证据。
+    const SHAPES: Array<{ rel: string; label: string; re: RegExp; want: string }> = [
+      { rel: "src/components/weekly-report.tsx", label: "柱状图取数据的天数", re: /getStudySeries\(\s*([^)]+?)\s*\)/, want: "WEEK_WINDOW_DAYS" },
+      { rel: "src/components/weekly-report.tsx", label: "服务端空快照的格数", re: /length:\s*([^,}]+)\s*},\s*\(\) => "0"/, want: "WEEK_WINDOW_DAYS" },
+      { rel: "src/components/weekly-report.tsx", label: "日均的分母", re: /avg = Math\.round\(total\s*\/\s*([^)]+)\)/, want: "WEEK_WINDOW_DAYS" },
+      { rel: "src/components/weekly-report.tsx", label: "哪一根是今天", re: /isToday = i === ([^;]+);/, want: "WEEK_WINDOW_DAYS - 1" },
+      { rel: "src/components/week-mini-bar.tsx", label: "迷你条倒着走几天", re: /for \(let offset = ([^;]+);/, want: "WEEK_WINDOW_DAYS - 1" },
+      { rel: "src/components/stats-client.tsx", label: "摘要卡喂进去的天数", re: /getStudySeries\(\s*([^)]+?)\s*\)/, want: "WEEK_WINDOW_DAYS" },
+    ];
     const offenders: string[] = [];
-    for (const rel of WINDOW_SURFACES) {
-      const src = readSrc(rel);
-      const literalCall = src.match(/getStudySeries\(\s*\d+/);
-      if (literalCall) offenders.push(rel + " → " + literalCall[0]);
+    for (const shape of SHAPES) {
+      const found = readSrc(shape.rel).match(shape.re);
+      if (!found) {
+        offenders.push(shape.rel + " → 找不到「" + shape.label + "」那一处（形状变了，判据得跟着改，不许静默放过）");
+        continue;
+      }
+      const value = found[1].trim();
+      if (!value.includes(shape.want)) offenders.push(shape.rel + " → " + shape.label + "写的是 " + value + "，应当由 " + shape.want + " 生成");
     }
-    expect(offenders, "窗口长度必须由 WEEK_WINDOW_DAYS 传入：\n" + offenders.join("\n")).toEqual([]);
+    expect(offenders, "窗口长度只有一个主人：\n" + offenders.join("\n")).toEqual([]);
+
+    // 非空转：每一条形状都要先证明它抓得住对应的旧写法（R16.40 / R16.318 同一族规矩）
+    const LEGACY: Array<[string, string, RegExp, string]> = [
+      ["柱状图取数据", "  return getStudySeries(7)", /getStudySeries\(\s*([^)]+?)\s*\)/, "7"],
+      ["日均分母", "  const avg = Math.round(total / 7);", /avg = Math\.round\(total\s*\/\s*([^)]+)\)/, "7"],
+      ["今天那根", "          const isToday = i === 6;", /isToday = i === ([^;]+);/, "6"],
+      ["迷你条循环", "  for (let offset = 6; offset >= 0; offset -= 1) {", /for \(let offset = ([^;]+);/, "6"],
+    ];
+    for (const [name, legacy, re, wantValue] of LEGACY) {
+      const found = legacy.match(re);
+      expect(found, "判据抓不住旧写法（连形状都对不上）：" + name).toBeTruthy();
+      expect(found![1].trim(), name + " 的旧写法必须被判据判为不合规").toBe(wantValue);
+    }
+    // 空快照那一处走的是另一种红：旧写法连 `length: …` 这个形状都没有，
+    // 上面循环里的「找不到就登记 offender」会让它红，而不是被放过。这条核对钉的就是那个前提。
+    expect(/length:\s*([^,}]+)\s*},\s*\(\) => "0"/.test('const EMPTY_SNAPSHOT = "0,0,0,0,0,0,0";'), "空快照的旧写法应当扫不出形状").toBe(false);
 
     // ② 三个表面都真的用上了常量（少一个 = 那一处还长着私有字面量）
     for (const rel of WINDOW_SURFACES) {
@@ -174,14 +205,7 @@ describe("滚动 7 天窗口的文案说出它真的是 7 天", () => {
       expect(src.match(/WEEK_WINDOW_DAYS/g), rel + " 里常量一次都没用上").not.toBeNull();
     }
 
-    // ③ 非空转：把旧写法喂给①那条判据，必须每条都能抓住
-    const LEGACY_SHAPES = [
-      "  return getStudySeries(7)",
-      "          dailySeconds: getStudySeries(7).map((d) => d.total),",
-    ];
-    for (const shape of LEGACY_SHAPES) {
-      expect(/getStudySeries\(\s*\d+/.test(shape), "判据抓不住旧写法：" + shape).toBe(true);
-    }
+    // ② 三个表面都真的用上了常量（下面这段），非空转见上面的 LEGACY 逐形状自证
   });
 
   /**
