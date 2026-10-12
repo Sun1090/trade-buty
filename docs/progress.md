@@ -2,9 +2,9 @@
 
 ---
 
-## 2026-10-12 · 第六十九轮（R16.315）：把「撞一个修一个」换成登记制——新增一处无主人的手抄，从此在提交时被拦
+## 2026-10-12 · 第六十九轮（R16.315）：把「撞一个修一个」换成登记制，再让登记制的覆盖面由仓库自己决定——新增一处无主人的手抄或一份没归类的文档，都在提交时被拦
 
-- 里程碑 / 版本：「说法 vs 事实」第六十九轮；R16.315 新增并关账，未改产品版本（当前 v0.7.28）。分支 `codex/doc-content-claims`（自合并后的 `main` 顶点 `b370fad`），四笔：`b7d34fe`（refactor(quiz)）先给一个真正没主人的数立主人、`f50589c`（gate(docs)）登记制本体、`d701bd4`（gate(docs)）补豁免边界断言与白名单注释、`bf554e9`（docs）台账。本轮同时收掉 #413（R16.314，已 rebase 合并进 main）。
+- 里程碑 / 版本：「说法 vs 事实」第六十九轮；R16.315 新增并关账，未改产品版本（当前 v0.7.28）。分支 `codex/doc-content-claims`（自合并后的 `main` 顶点 `b370fad`），六笔：`b7d34fe`（refactor(quiz)）先给一个真正没主人的数立主人、`f50589c`（gate(docs)）登记制本体、`d701bd4`（gate(docs)）补豁免边界断言与白名单注释、`bf554e9` + `b7c5ddb`（docs）台账、`9f0be1c`（gate(docs)）归类核对——覆盖面不再由手写清单决定。本轮同时收掉 #413（R16.314，已 rebase 合并进 main）。
 
 ### 为什么这轮不再「找一处修一处」
 
@@ -26,12 +26,19 @@
 
 ### 变更文件
 
-- `scripts/quiz-source-lib.mjs`（新增 `MIN_QUESTIONS_PER_CHAPTER`）、`scripts/check-quiz-coverage.mjs`（判断与输出都改读常量）、`scripts/docs-consistency-lib.mjs`（登记制本体）、`scripts/check-docs-consistency.mjs`（接线，主人全部现读）、`scripts/docs-consistency-lib.test.mjs`（10 条新用例，17→27）、`docs/ops.md`（`check:docs` 那一行说明登记制与两条地板）、`docs/roadmap.md`（R16.315）、`docs/progress.md`（本段）。
+- `scripts/quiz-source-lib.mjs`（新增 `MIN_QUESTIONS_PER_CHAPTER`）、`scripts/check-quiz-coverage.mjs`（判断与输出都改读常量）、`scripts/docs-consistency-lib.mjs`（登记制本体）、`scripts/check-docs-consistency.mjs`（接线，主人全部现读）、`scripts/docs-consistency-lib.test.mjs`（新用例 17→33：登记制 10 条 + 归类核对 6 条）、`docs/ops.md`（`check:docs` 那一行说明登记制与两条地板）、`docs/roadmap.md`（R16.315）、`docs/progress.md`（本段）。
 
 ### 验证
 
-- `npx vitest run scripts/docs-consistency-lib.test.mjs` **27 条全绿**；`npm run check:docs` exit 0；`npm run test:coverage` **349 文件 / 3700 条全绿**（覆盖率 95.04 / 90.8 / 95.06 / 96.89）；`lint` / `typecheck` / `build` / `check:bundle`（454 条路由全过）/ `check:seo-surface` / `check:scan-counts`（6 处登记，报告无变化）/ `check:changelog` / `check:dead-copy` / `check:report-freshness` / `check:test-clock-hygiene` 全部 exit 0。
-- 探针 `.gate-logs/probe-r69.mjs`：**15 条腿 BAD=0**，结束确认工作树只剩预期改动。
+- `npx vitest run scripts/docs-consistency-lib.test.mjs` **33 条全绿**（登记制 10 条 + 归类核对 6 条 + 既有 17 条）；`npm run check:docs` exit 0；`npm run test:coverage` **349 文件 / 3713 条全绿**（覆盖率 95.04 / 90.77 / 95.09 / 96.90）；`lint` / `typecheck` / `build` / `check:bundle`（454 条路由全过）/ `check:seo-surface` / `check:scan-counts`（6 处登记，报告无变化）/ `check:changelog` / `check:dead-copy` / `check:report-freshness` / `check:test-clock-hygiene` 全部 exit 0。
+- 探针 `.gate-logs/probe-r69.mjs`：**25 条腿 BAD=0**（登记制 10 条 + 归类核对 10 条 + 边界/地板 5 条），结束确认工作树干净。
+
+### 续做：归类核对——登记制的覆盖面不能再由一份手写清单决定
+
+- 登记制上线后马上发现它自己留着同一族漏洞：**被扫清单是手写的**，新建一份 `docs/whatever.md` 抄个数字，扫描器看不见那扇门。改成让仓库自己决定覆盖面：`listRepoMarkdown()`（`git ls-files --cached --others --exclude-standard`，与 `check:secrets` 同口径，未跟踪的新文档必须进来）→ 每份 markdown 必须落进**生成件 / 明示豁免 / 待扫 / 没归类（红）**四桶之一。
+- 新增四种红：未归类的 md、归类数低于地板（40，防「一份都没看到于是全部合规」）、豁免或扫描清单点名的文档不见了（「不扫了」不能靠删文件悄悄发生）、被扫文档**双重签字**（头部自称生成件，或同时进两张表——否则分类优先级本身成了暗门）。扫描清单 13 → 23 份。
+- **判据自己开的那道暗门是测试抓出来的**：`isGeneratedReport` 原判「前 20 行出现过『自动生成』或『勿手改』」，于是本轮台账第 12 行那句「非自动生成文档」把手写台账整篇判成机器产物、退出扫描。现改为认生成器写回**那一行的形状**（行首引用块/注释 + 声明产出 + 点出 `npm run` 命令），只把这几个字写进叙述句不算标记。
+- 探针 15 → 25 条腿：C1 新建未归类 md → CLI 红、删后复绿；C2 被扫文档自称生成件 → 红在双重签字；C3 调用点只喂五份 → 红在「归类核对只看到 5 份」；C4 生成标记判据退回整段匹配 → 单测红；C5/C6 豁免与扫描清单的在场核对被削弱 → 各自单测腿红。**第一版 C6 跑错了用例名**（削的是扫描清单在场核对，却去跑「少喂文件」那条用例，exit=0 被记成红），再次印证「用例名是探针的指针」。
 
 ### 阻塞 / 风险 / 回滚
 
