@@ -2,6 +2,45 @@
 
 ---
 
+## 2026-10-13 · 第七十三轮（R16.319）：`WEEK_WINDOW_DAYS` 那句「三处共用这一个数」没有主人——改常量，柱子照旧画 7 根，零红
+
+- 里程碑 / 版本：口径与文档一致性收敛一轮；R16.319 新增并关账，未改产品版本（当前 v0.7.29）。分支 `fix/week-window-single-source`（自合并后的 `main` 顶点 `3ab6020`），两笔：`8c99632`（fix(stats)）三处表面改读常量、`cb1755c`（test(stats)）判据改逐形状锚定。
+- 承上一轮：#422（R16.318 秒→分钟口径）已 rebase 合并进 `main`，远端分支由 GitHub 自动删除，`ops:work-audit` 判绿（悬空 0 · 陈旧 0 · 未确认 0）。
+
+### 病灶：一句注释承诺「摘要、周目标、柱状图共用这一个数」，而柱状图一处都没读它
+
+`weekly-report.tsx` 里 `getStudySeries(7)`、`EMPTY_SNAPSHOT` 那串七个零、`total / 7`、`i === 6`、`dayLabels` 的偏移全是字面量；`week-mini-bar.tsx` 循环写 `offset = 6`、读屏名字里「近 7 天…从 6 天前到今天」硬编码；`stats-client.tsx` 喂给摘要卡的 `dailySeconds` 同样传 `getStudySeries(7)`。
+
+**先做证伪实验再下结论**（`.gate-logs/probe_window.mjs`）：把常量改成 14，红的只有 R16.129 那族文案判据与 `weekly-summary.test.ts`，柱状图与迷你条的组件用例**一条都不红**。标题会变「近 14 天」，柱子照旧 7 根、日均照旧除以 7——那句话承诺的「改窗口时三张卡一起改」从来没发生过。
+
+### 判据的形状是本轮最值钱的部分
+
+`weekly-window-claims.test.ts` +2 条（共 11 条）。**第一版是错的**：只扫 `getStudySeries\\(\\s*\\d+` 一种形状，探针 M3（迷你条循环退回 `offset = 6`）当场不响。
+
+**也不能改成扫裸数字 6/7**：同一批文件里 7 还说别的事——星期循环那七个标签、趋势区间档位 `rangeDays > 7`、样式里的 `px-6`。扫数字要么误伤，要么得配一张手抄豁免清单，而那张清单本身就是下一个没人管的登记面（R16.315 刚为这类登记制立过规矩）。
+
+最终形状：**六条 SHAPES 各配 `want` 值**（取数据、空快照格数、日均分母、哪一根是今天、迷你条倒着走几天、摘要卡喂进去的天数），每条先证明抓得住对应的旧写法（LEGACY 逐形状自证），并且**「找不到那一处」也算红**——形状变了不许静默放过。另配一条边界用例：星期标签那个 7 是星期数、不是窗口长度，不许并进窗口常量（M7 专杀这一点）。
+
+### 如实登记一处「不是修 bug」
+
+`dayLabels[...]` 的下标我顺手重写成对负数取模安全的形式，但实测旧写法 `(today - 6 + i + 14) % 7` 与新写法在 today×i 全 49 组里**逐点相同**，窗口=14 时旧写法照样给出正确标签（`- 6` 与 `- 13` 相差 7 的倍数，mod 7 之后无差别）。那一处改的是「窗口长度有主人」，不是修一个算错的标签。真正会算错的是 `isToday = i === 6`：窗口 14 时会把第 7 根标成今天——那才是本轮修掉的显示错误（前提当然是有人改窗口）。
+
+### 探针 8 条腿 BAD=0，三处是探针/期望自己的错
+
+`.gate-logs/probe-r73.mjs` / `.log`（首尾 BASE 全绿）。M1–M4 各把一处退回字面量、各红在形状判据；M5 把读屏名字退回硬编码、红在 R16.129 那族；M6（只改判据自己的注释）与 M7（星期循环误并进窗口常量）是反向对照。
+
+- **M0 是题眼，期望要按「收敛之后」的世界写**：改常量时形状判据**不该**红（六处都读常量了，不构成违规），该红的是「画出来的格数」——组件用例实测红 7 条（门槛 5）。我第一版把「形状判据该红」写进期望，那是把自己**打算修的东西**当成**已经发生的事**。
+- **`patch()` 签名写错**：定义是 `(file, pairs)`，调用点传了三个参数，M0 因此报「锚点打空」。锚点自检报错比假通过好——这条腿没被读成红，改完签名才判得对。
+- **M4 的期望留着第一版判据的缺口**：逐形状改造后日均分母已经能红，期望还写着「不红」。期望要跟着判据的当前能力改，不是照抄上一轮。
+
+- 变更文件：`src/components/weekly-report.tsx`、`src/components/week-mini-bar.tsx`、`src/components/stats-client.tsx`、`src/lib/weekly-window-claims.test.ts`、`docs/roadmap.md`（R16.319）、`docs/progress.md`。**用户可见行为零变化**：窗口仍是 7 天，三张卡画的格数、算的日均、念的读屏名字逐字与改动前相同。
+- 验证：全量 `test:coverage` **352 文件 / 3754 条**绿（覆盖率 95.06 / 90.76 / 95.08 / 96.9，阈值 94/89/94/96 未动）；`lint` 0 warning、`typecheck` 0、`build` 0、`check:bundle` 0（`week-mini-bar` 新增对 `weekly-summary` 的静态依赖没有改变任何分组读数——`perf-notes-claims` 那条逐字判据仍然绿）、`check:comment-paths` / `check:mobile` / `check:seo-surface` / `check:search-index` / `check:structured-data` / `check:risk-warning` / `kb:inventory` / `kb:gap-priority` / `kb:accept` / `check:title-terminology` / `check:description-quality` / `check:description-dupes` / `check:glossary` / `check:test-clock-hygiene` / `check:dead-copy` / `ops:faq-candidates` / `check:scan-counts` / `check:report-freshness` / `check:constitution` / `check:docs` / `check:changelog` / `check:quiz-coverage` / `check:quiz-mounts` / `check:links` / `check:sitemap` / `check:nav-chain` / `check:relative-links` / `check:env-docs` / `check:secrets` / `check:lockfile-repro` / `audit:prod` / `audit:all` 全 0，`git status` 干净（无纯日期 diff）。
+- 阻塞 / 风险：无新增阻塞。回滚只需撤回这两笔（无迁移、无数据；显示逐字不变）。**登记一处已知边界**（不顺手补）：`STATS_RANGE_OPTIONS = [7, 30]` 与 `getStatsRangeDays` 的默认 7 是**趋势区间档位**，与 `WEEK_WINDOW_DAYS` 恰好同值但不同事——本轮刻意不合并（合并会把「用户可切换的档位」和「摘要窗口」绑死）。若哪天要改窗口长度，那一处仍要人工判断，这一句写在形状判据的注释里。
+- 下一项：本分支开 PR，等 `ci` + `db-tests` 绿了 rebase 合并。第七十四轮候选（不需拍板、能先证伪）：AGENTS.md in-scope 的「隐私与三方服务文档事实订正」与「C 端体验与 a11y」各挑一处；同族口径还剩 `ACTIVE_DAY_MIN_SECONDS` 的 `/ 60` 代入是否只有一处主人。
+- 更新时间：2026-10-13（Asia/Shanghai）。
+
+---
+
 ## 2026-10-13 · 第七十二轮（R16.318）：秒→分钟长着两份实现，而「全站唯一口径」那句话从来没有主人守着
 
 - 里程碑 / 版本：内容质量与口径收敛一轮；R16.318 新增并关账，未改产品版本（当前 v0.7.29）。分支 `fix/study-minutes-caliber`（自合并后的 `main` 顶点 `8544794`），四笔：`e15a265`（fix(stats)）口径搬家 + 删别名、`4c63fa4`（test(stats)）新判据 8 条 + 台账登记、`1922121`（test(stats)）扫描面结构核对、`c19b130`（docs(perf)）复测表重录。
