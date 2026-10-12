@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-10-13 · v0.7.29 发布（RELEASE_FREEZE 完成）
+
+- 版本 / tag：`v0.7.29` → `bba5949c52471a1c80b0f19b9cf30f61cb8ae0b1`（`git rev-parse v0.7.29^{commit}`），tag 已推送。
+- 判级：**patch**。`git rev-list --count v0.7.28..origin/main` = **54** 笔，类型分布 docs 23 / gate 8 / test 7 / fix 7 / chore 6 / build 2 / refactor 1，无新增产品能力（§0 只看已合入 main 且未发布的提交）。上一担 v0.7.28 同算法量出 48 笔，节奏一致。
+- 发布内容：AI 学习计划两处（R16.214 统计页恒报「当前篇章：无」、R16.305 prompt 混英文 slug）、复习页变体题说明改诚实（R16.174 部分）、依赖十项刷新（next 16.4.0）+ Dependabot 合不动的根因、文档手抄数字登记制（R16.315）。
+- PR：#418（rebase 合并，非 admin——`ci` 与 `db-tests` 两项必需检查自然变绿后才合）。合并后本地 `main` 快进到 `bba5949`，远端分支由 GitHub 自动删除并已 `git remote prune`。
+- 部署：Vercel 由 main 推送自动触发，生产别名指向 `trade-buty-qejp86ml4`（status Ready）。
+- 生产冒烟：**9/10 通过，exit 1**。`/zh/changelog` 已读到 0.7.29（部署确实跟上 main，不是停在旧构建）；页面/sitemap/robots/分享落地页/游客会话全绿。唯一失败仍是既有的生产 AI 上游 `POST /api/ai/chat → 502`（护栏路径正常 → 站内代码无问题），属 `BLOCKED_EXTERNAL`：需维护者核对现有免费上游额度 / 出口网络。
+- 回滚：无数据库迁移。`git revert bba5949` 即把版本号与发布记录退回 0.7.28 形态；Vercel 侧可先把 Production Deployment 切回上一构建止血，随后仍以 revert 收敛历史。
+
+### 这次发布自己犯的两个错，都记下来
+
+1. **把「自 v0.7.28 以来多少笔」手抄成 51，实测 54**——而且抄进了**发布提交的提交信息**。这正是 R16.315 登记制要防的那类病（手抄一个当场能算出来的数），区别在于：登记制的射程是 markdown 文档，**管不到 commit message**。提交一旦推送就无法在不 force push 的前提下修正（本仓库禁止），所以那个数字永久留在历史里。PR #418 描述已按实测改正并写明此事。教训：判级依据这类数要么现算要么不写进不可改写的载体。
+2. **`ops:smoke-prod` 第一次跑成「假绿」**：我写的是 `... | tail -20; echo "smoke=$?"`，`$?` 取的是 `tail` 的退出码（0），而脚本本身 exit 1。复测不带管道才拿到真值。这与本轮台账里刚记的那条（`npm run outdated` 那次误判）**同一个根**：管道把退出码换成了下游命令的退出码。凡引用退出码，先跑一次不带管道的。
+- `notes.date` 写成冻结当天（2026-10-12）、tag 落在次日（2026-10-13）：与 v0.7.28 的先例一致（notes 10-08 / tag 10-09），不是笔误。
+
+### 下一项
+
+- 重新检查仓库，继续按「不需拍板、能先证伪」挑下一条。剩余落后依赖：`eslint` 10 / `typescript` 7 两个 major 仍延期（各有可复现依据），`vitest` 与 `@vitest/coverage-v8` 的 5.0.4 是 patch，可在下一轮常规刷新里落地。
+
+- 更新时间：2026-10-13（Asia/Shanghai）。
+
+---
+
 ## 2026-10-12 · 第七十轮（R16.316）：一担常规依赖刷新，顺带把「Dependabot 的 lockfile 为什么合不动」钉死第二次
 
 - 里程碑 / 版本：「说法 vs 事实」之外的依赖/发布工程一轮；R16.316 新增并关账，未改产品版本（当前 v0.7.28）。分支 `chore/npm-minor-patch-2026-10-12`（自合并后的 `main` 顶点 `2c6d201`），两笔：`e6b6d55`（build(deps)）十项刷新 + perf-notes 按产物重算、`d8ea1b3`（docs(deps)）台账。承上一轮：#416（R16.315 登记制 + 归类核对）本轮已 rebase 合并进 `main`，#415（actions 组）同样合并并删分支。
