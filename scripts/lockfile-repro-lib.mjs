@@ -12,6 +12,14 @@
  * scripts/check-lockfile-reproducibility.mjs。
  */
 
+/**
+ * `docs/deps.md` 里那节讲 npm 主版本漂移的标题。
+ *
+ * 失败文案会原样印出它，所以这是个**面向读者的指针**：那节一旦改名，指针就悄悄指空。
+ * `lockfile-repro-lib.test.mjs` 拿它去核对 `docs/deps.md` 里真实存在的标题，改名不更新这里即红。
+ */
+export const DEPS_DRIFT_SECTION = "lockfile 工具链漂移（npm 10 vs npm 11）";
+
 /** 从 `devEngines.packageManager` 解析 npm 钉版；缺字段或不是 npm 时返回 null。 */
 export function parseNpmPin(pkg) {
   const manager = pkg?.devEngines?.packageManager;
@@ -95,7 +103,7 @@ export function formatDriftReport({ runningNpm, pin, added = [], removed = [], r
     "修复：用 CI 的 npm 主版本重新生成，并把退出码写进 PR：",
     `  npx --yes npm@${pin?.exact ?? "<CI 的 npm 版本>"} install --package-lock-only --registry=https://registry.npmjs.org`,
     "  git add package-lock.json",
-    "详见 docs/deps.md「lockfile 工具链漂移（npm 10 vs npm 11）」。",
+    "详见 docs/deps.md「" + DEPS_DRIFT_SECTION + "」。",
   ];
   return lines.filter((line) => line !== null).join("\n");
 }

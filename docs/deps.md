@@ -68,7 +68,7 @@
 
 ### 2026-10-12
 
-- 常规 minor/patch 刷新落地十项：`@supabase/supabase-js`、`drizzle-orm`、`next` 与 `eslint-config-next`（16.3.8 → 16.4.0）、`@playwright/test`、`@types/node`、`axe-core`、`ip-address`、`js-yaml`、`jsdom`。lockfile 一律用 `npx --yes npm@10.9.4 install --package-lock-only` 生成（见下方「lockfile 与 npm 主版本」），`npm run check:lockfile-repro` 与 `npm ci` 双双 exit 0。
+- 常规 minor/patch 刷新落地十项：`@supabase/supabase-js`、`drizzle-orm`、`next` 与 `eslint-config-next`（16.3.8 → 16.4.0）、`@playwright/test`、`@types/node`、`axe-core`、`ip-address`、`js-yaml`、`jsdom`。lockfile 一律用 `npx --yes npm@10.9.4 install --package-lock-only` 生成（见「lockfile 工具链漂移（npm 10 vs npm 11）」一节），`npm run check:lockfile-repro` 与 `npm ci` 双双 exit 0。
 - **Dependabot 那批（#414）为什么不能直接合**：它红在 `npm ci` 的 `EUSAGE / Missing: <pkg> from lock file`，不是依赖不兼容，而是**生成 lockfile 的 npm 主版本与 CI 不一致**——这条病 2026-09-13 就登记过一次，本轮原样复发（被删的仍是 `puppeteer-core` 名下那批嵌套 optional-peer 条目）。该 PR 的 `maintainerCanModify` 为 false，本仓改不动它的 lockfile，所以在自己的分支上重做同一批升级。
 - 升级后按 2026-10-09 那条自己立的要求复跑了全套：`check:bundle`、`check:mobile`、`npm run e2e`（201 passed / 1 skipped）以及 CI 里其余 30 余条 `check:*` 门禁，全部 exit 0。唯一红的是 `scripts/perf-notes-claims.test.mjs` 那条「实测列与当场重算一致」——它抓到 `next` 的 minor 改了内联进每条页面 HTML 的框架字节。为确认红的是产物不是判据，先退回 16.3.8 重新干净构建：那一趟与文档里那张旧表逐字相同。结论与处理写在 `docs/perf-notes.md` 的新复测表里，预算未动。
 - `npm outdated` 当日剩余落后项（**2026-10-12 实测**）：`eslint` 9.39.5 → 10.12.0 与 `typescript` 6.0.3 → 7.0.2 **仍延期**，理由与 2026-10-09 相同（`eslint-plugin-react` 未支持 ESLint 10；`typescript-eslint` 的 peer 上界 `<6.1.0` 容不下 TS 7）；`@vitest/coverage-v8` 5.0.3 → 5.0.4 与 `vitest` 5.0.3 → 5.0.4 是 patch，属下一轮常规刷新，本轮不掺进这担。
