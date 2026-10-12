@@ -450,6 +450,18 @@ describe("doc number registry (R16.315)", () => {
     expect(
       auditDocNumberClaims({ files: policy, actual }).filter((issue) => issue.includes("「20 题」")),
     ).toHaveLength(1);
+    // 豁免还必须**只对它登记的那份文档生效**：把 research.md 那句历史规模原样搬到
+    // plan.md 里，它就不再是「立项期事实」而是当代会出现的手抄，必须红。
+    // （这一断言是探针逼出来的：去掉 `entry.file === file` 那道过滤，此前没有任何用例会红。）
+    const leaked = {
+      ...files,
+      "docs/plan.md": `${files["docs/plan.md"]}\n- 知识库（立项时 27 篇章 / 201 篇）\n`,
+    };
+    const leakIssues = auditDocNumberClaims({ files: leaked, actual });
+    expect(
+      leakIssues.filter((issue) => issue.includes("docs/plan.md: 扫到一个没有主人的数字")),
+      `豁免跨文件泄漏了：${JSON.stringify(leakIssues)}`,
+    ).toHaveLength(2);
   });
 
   it("fires its own floors when the registry is emptied or the scanner sees nothing", async () => {
