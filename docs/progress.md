@@ -43,6 +43,18 @@
 - 变更文件：`src/lib/study-caps.ts`（新）、`src/lib/study-caps.test.ts`（新）、`src/lib/study-time.ts`、`src/lib/replay-time-trend.ts`、`src/components/replay-trainer.tsx`、`src/components/stats-client.tsx`（订正被本轮弄漂的行号引用）、`src/lib/study-time.test.ts`（+2 条：读侧夹点此前零覆盖；顺带补回 R16.182 那笔丢掉的换行）、`docs/roadmap.md`（R16.320）、`docs/progress.md`、两份自动报告重算入库。**用户可见行为零变化**：四处夹点的数值一个都没动。
 - 验证：全量 `test:coverage` **353 文件 / 3760 条**绿（覆盖率 95.06 / 90.76 / 95.08 / 96.9，阈值未动）；`lint` 0 warning、`typecheck` 0、`build` 0、`check:bundle` 0、`check:comment-paths`（382 份源码 / 150 条引用）/ `check:mobile` / `check:seo-surface` / `check:search-index` / `check:structured-data` / `check:risk-warning` / `kb:inventory` / `kb:gap-priority` / `kb:accept` / `check:title-terminology` / `check:description-quality` / `check:description-dupes` / `check:glossary` / `check:test-clock-hygiene`（352 个测试文件）/ `check:dead-copy` / `ops:faq-candidates` / `check:scan-counts`（`secrets-listed-files` 844）/ `check:report-freshness` / `check:constitution` / `check:docs` / `check:changelog` / `check:quiz-coverage` / `check:quiz-mounts` / `check:links` / `check:sitemap` / `check:nav-chain` / `check:relative-links` / `check:env-docs` / `check:secrets` / `check:lockfile-repro` / `audit:prod` / `audit:all` 全 0。台账里这四个数（353 / 3760 / 352 / 382 / 844）落笔前逐个回查了实测输出——R16.317 那条「当场能算出来的数，落笔前重算一次」。
 - 阻塞 / 风险：无新增阻塞。回滚撤回这三笔即可（无迁移、无数据、数值未变）。**登记一处已知边界**（不顺手补）：`REPLAY_ROUND_CAP_SEC` 与 `DAILY_SOURCE_CAP_SEC` 目前数值相同，判据钉的是「单轮 ≤ 当日」这条**关系**；若哪天把当日上限单独调小，行为判据会红，届时要么同时调单轮上限、要么承认两张卡本就该说两个数并改写 `/stats` 的说明——那是产品决定，本轮不替它选边。
+
+### 收尾补记（同日）：重跑门禁时那条逐字判据红了，查出来两件事
+
+推 PR 之前重跑全量链（`a8d1fb5` / `8ddcb62` 之后没跑过），40+ 门禁全 0，唯一红的是 `perf-notes-claims` 那条「实测列与当场重算一致」：4 组各 +0.1KB。`check:comment-paths` 仍 150 条引用、`check:scan-counts` 报告无变化（那笔注释订正没有改变计数）。**先归因再落笔**（`git worktree` 各建一次干净构建做同环境 A/B）：
+
+- `718aefc`（表录进去那棵树）→ 15/15 逐字复现旧表；`e08aff6`（上一轮合并点）→ 同样逐字复现（R16.319 确实零字节影响）；只加上本轮 `5c0c628` → 6 组字节变（+22~+49B）、4 组跨过 0.1KB 档界。**表当时没抄错**，红的是本轮真实漂移，按 R16.316 先例重录一张新表（`3443a95`）。
+- 中途被环境差异骗过一次：第一次 A/B 时 `ai` 组凭空差 1.7KB，原因是 worktree 里没有 `.env.local`，而 `NEXT_PUBLIC_*` 会被内联进产物。补齐后两次干净构建的 15 组读数 diff 为空。这条排查事实写进了 `docs/perf-notes.md`。
+- **新表最值钱的不是那 22~49 字节，是跨界后的余量**：`path` 距下界 3.8 字节、`knowledge-lesson` 3.4 字节、未跨界的 `review` 距上界 6.0 字节。上一轮担心的是「被推回 318.4」，本轮实测发生在别的组身上、方向相反（被推过界）。产物在档界上抖，而判据比的是舍入后的显示值——重录这件事因此可能在同一天里来回翻转。
+
+**第二件事比表过期值钱得多**：为什么同一批提交在 6 分钟前的那一趟链里是绿的？查 `ci.yml` 与 main 上最近一趟 run 的日志——`npm run test:coverage` 排在 `npm run build` 之前，那条判据在 CI 里**必然**命中「缺产物 → 明说跳过」（日志印的就是那句 `[perf-notes] 跳过实测列比对：缺构建产物`）。也就是说自 R16.306 立起来那天起，**CI 的绿灯从来没为这句话签过字**；本地能判，靠的是工作区里恰好有一份 `.next`，而那份产物属于上一次构建的那棵树，不是被测的这棵。后果是判据系统性滞后一步：改变产物字节的提交第一趟链绿、第二趟链红。这与 R16.292 同族（不依赖产物的留在单测、依赖产物的搬去 build 之后），先例就在 roadmap 里躺着。登记 **R16.321**（`755e46e`，未勾，第七十五轮做），本轮只量清病灶、不改判据、不改表口径（R16.306「不给容差」仍成立）。
+
+重录后复跑全量链：`test:coverage` **353 文件 / 3760 条**全绿（覆盖率 95.06 / 90.76 / 95.08 / 96.9）、40+ 门禁全 0、`git status` 干净、`fail=0`。
 - 下一项：本分支开 PR，等 `ci` + `db-tests` 绿了 rebase 合并。第七十五轮候选（不需拍板、能先证伪）：AGENTS.md in-scope 的「隐私与三方服务文档事实订正」与「C 端体验与 a11y」各挑一处；`/stats` 那张页面上「回放时长」与「总学习时长」两个数并排出现，本轮钉的是**代码**不会说两个数，界面有没有把「为什么有时对不上」说清楚还没量过。
 - 更新时间：2026-10-13（Asia/Shanghai）。
 
