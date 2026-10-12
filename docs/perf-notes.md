@@ -172,3 +172,32 @@ R16.235 那笔债在这一轮还掉：`auth-provider.tsx` 与 `auth-header.tsx` 
 只是 git 历史的字节数。表与判据因此同口径：都排除 `changelog`，`static-info` 的最大路由
 取 `zh/about`（含 `changelog` 的全组读数是 255.9KB / `zh/changelog`，仍远在 340KB 之下，
 `check:bundle` 的预算比对遍历全部路由，不受这一行口径影响）。
+
+### 复测（2026-10-12，`next` 16.3.8 → 16.4.0 后本地干净构建，同样由 `scripts/perf-notes-claims.test.mjs` 现读产物重算）
+
+上面那张（2026-10-10）保留原样当历史。今天的读数（最大 total / 预算 / 最大路由）：
+
+| 分组 | 今天最大 total | 预算 | 最大路由 |
+|---|---:|---:|---|
+| home | 281.2 KB | 360 KB | `zh` |
+| path | 282.0 KB | 365 KB | `zh/path` |
+| knowledge-chapter | 267.2 KB | 370 KB | `zh/knowledge/markets-instruments` |
+| knowledge-lesson | 350.1 KB | 357 KB | `zh/knowledge/technical-analysis/drawing-tools` |
+| search | 249.6 KB | 335 KB | `zh/search` |
+| review | 284.2 KB | 350 KB | `zh/review` |
+| bookmarks | 244.8 KB | 335 KB | `zh/bookmarks` |
+| stats | 303.3 KB | 370 KB | `zh/stats` |
+| ai | 252.2 KB | 350 KB | `zh/ai` |
+| chart | 302.3 KB | 390 KB | `zh/chart` |
+| replay | 318.4 KB | 400 KB | `zh/replay` |
+| privacy | 254.2 KB | 340 KB | `zh/privacy` |
+| glossary | 250.9 KB | 340 KB | `zh/glossary` |
+| static-info | 247.4 KB | 340 KB | `zh/about` |
+| auth | 311.3 KB | 340 KB | `zh/auth` |
+
+**这张表是依赖升级逼出来的，不是例行复测**：升 `next` 到 16.4.0 之后，`perf-notes-claims.test.mjs`
+那条「实测列与当场重算一致」当场红了 14 组。为确认红的是产物而不是判据，先把 `next` 退回 16.3.8
+重新干净构建——那一趟与上一张表**逐字相同**，说明上一张表当时没抄错；换回 16.4.0 后 15 组里 14 组各变
+0.1~1.2KB（只有一组没动）。也就是：**框架内联进每条页面 HTML 的那一截随 minor 版本变了**，
+而课文内容与路由实现一处未改。最大的一组仍是 `knowledge-lesson`，它离自己的预算余量最小，
+所以这组数字变动最值得盯；本组预算未改，`check:bundle` 全绿。
