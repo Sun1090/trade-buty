@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 import { getDict, LOCALES } from "../src/lib/i18n";
 import { getStatsDict } from "../src/lib/i18n-stats";
 import { localDateStr, shiftDate } from "../src/lib/date-utils";
-import { weekMinutes } from "../src/lib/weekly-summary";
+import { studyMinutes } from "../src/lib/study-time";
 
 /**
  * R16.24：词典模板里的 `{占位符}` 必须在渲染处代入，漏一个用户就看到 `{chapters}`。
@@ -380,7 +380,7 @@ test.describe("占位符不泄漏到界面", () => {
     // 否则上面的用例可以在数据通路坏掉时静默退化成一遍 chrome 文案复读。
     await openWithStudyHistory(page, "/zh/stats");
     const surface = await domSurface(page);
-    const total = weekMinutes(SEED_DAY_SECONDS.reduce((a, b) => a + b, 0));
+    const total = studyMinutes(SEED_DAY_SECONDS.reduce((a, b) => a + b, 0));
     const expected = getStatsDict("zh").weeklySummaryTpl
       .replace("{n}", String(total))
       .replace("{avg}", String(Math.round(total / SEED_DAY_SECONDS.length)));
