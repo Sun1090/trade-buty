@@ -2,6 +2,91 @@
 
 ---
 
+## 2026-10-13 · 第七十一轮（R16.317）：注释里点名的路径没有主人，四处指向从未存在过的文件
+
+- 里程碑 / 版本：内容质量与门禁收敛一轮；R16.317 新增并关账，未改产品版本（当前 v0.7.29）。分支 `fix/comment-path-claims`（自合并后的 `main` 顶点 `8c388b3`），两笔：`c1f09d7`（fix(comments)）四处注释订正、`2c6434e`（gate(comments)）新门禁 + 用例 + 接线 + 台账。
+- 承上一轮：#420（vitest 与 @vitest/coverage-v8 收到 5.0.4）本轮已 rebase 合并进 `main`。
+
+### 先记一条 git 教训：BEHIND 不等于必须换载体
+
+- 交接状态判断 #420「卡在 BEHIND，只能换载体重放」。**实测不成立**：`gh pr update-branch 420 --rebase` 一次就成功（exit 0），因为它只是落后基线、**没有冲突**。GitHub 拒绝的是「rebase 合并时基线已前移」，而 update-branch 走的是另一条路径。
+- 换载体那条路（新分支 + 新 PR + ack 条目）是**有冲突时**才需要的，代价是多一轮 CI 与一条台账。这次先跑 `gh pr checks` 与 `mergeStateStatus`，再决定动不动载体。合并后核对：远端 tip `d38120e` 的 tree OID 与本地重放 `a8dc3d8` 完全相同（`c000701e0a2e8c5c590c2727c84f5e259a40371a`），内容一字不差；本地两条分支 `git cherry` 均无 `+`，`ops:work-audit` 判绿（悬空 0 · 陈旧 0 · 未确认 0）。
+
+### 本轮的题：把上一轮的尺子对准注释
+
+R16.315 把「手抄数字没有主人」改成登记制。这一轮量同一族病的另一面：**注释里的路径引用没有主人**。普查（`.gate-logs/survey-r71*.mjs`，gitignored）先出假阳性 477 处——正则把 `.json` 截成 `.js`，扩展名分支必须按长度降序；修正后 381 份非测试源码的注释里 150 条路径引用，其中 **4 处指向从未存在过的文件**（`git log --all` 对这四个名字零历史，不是改名也不是删除）：
+
+| 注释所在 | 写的主人 | 真实主人 |
+|---|---|---|
+| `src/components/markdown.tsx` | `src/lib/kb-links.ts` | `src/lib/content.ts` |
+| `scripts/check-bundle.mjs` | `src/lib/manifest-artifact.mjs` | `scripts/manifest-artifact.mjs` |
+| `src/components/ai-chat.tsx` | `src/lib/ai-error-cause-claims.test.ts` | `src/components/` 同名文件 |
+| `src/components/review-client.tsx` | `scripts/ai-quiz-copy-single-source.test.mjs` | `scripts/review-ai-copy-claims.test.mjs` |
+
+第一处最刺眼：那半句注释自称「`rewriteLinks` 与这里的消费者之间**唯一的契约**」，却把契约另一端指到一个不存在的文件上。读注释的人按它去找主人，找不到，于是要么放弃核对、要么在错的文件里改——本仓修过的两处说反话的注释（R16.44 / R16.56）就在这条链的下游。
+
+### 门禁的三条收窄，每条都被用例追打了一次
+
+`npm run check:comment-paths`：非测试源码的注释行里点名的每个仓库路径必须真的存在。
+
+1. **只认注释行**——代码里的字符串是数据。
+2. **直引号 = 示例，反引号 = 引用**。反引号若也算示例，失效数从 4 变 0：那不是仓库干净了，是门禁瞎了。这条有用例钉住。
+3. **多根候选**：`node_modules/…` 走依赖根，其余在本站与 `content/kline-buty` 两个根下各试一次。第一版按「整行有没有 kline-buty」改根，`scripts/risk-warning-lib.mjs` 那句「产品红线（docs/plan.md）…（继承 kline-buty 规范）」里的本站文档被判成失效引用——同一行常常同时点名两个仓库的东西。`.gitignore` 掉的构建产物（`src/lib/kb-titles.json` 由 prebuild 生成、被四处门禁读取）在干净检出上本来就不存在，`git check-ignore` 命中即放行，否则本地绿、CI 首跑红。
+
+两处地板（源码文件数、注释引用数）+ `docs/scan-counts.md` 基线（本担新增 2 处登记，`MIN_KEYS` 6→8）。豁免表 `COMMENT_PATH_EXCUSED` 双向核对：路径真的存在了红，那句话改掉、豁免不再被用到也红。
+
+### 门禁落地后立刻判红了自己
+
+它自己的病灶叙述里写着 `src/lib/kb-links.ts`——那是本轮**已改掉**的错误写法，本就不该存在 → 进豁免表并写明理由；另外两处「形状示例」改走它自己立的规则 2。判据对自己的文件也兑现，是它真的在跑的证据。
+
+### 探针与两处探针自身的错
+
+`.gate-logs/probe-r71.mjs` **15 条腿 BAD=0**。两条是探针自己的错，值得记：
+
+- **D3 判定语义写反**：削掉「越界就 exit」那一支之后，门禁本体**不可能**红（它就是那个假绿），能喊红的只有覆盖该分支的用例。我原先把期望填成「门禁红」，于是它报 BAD——顺带暴露 CLI 的地板分支零覆盖。给 `run()` 加两个可注入地板（照 `check:secrets --min-files` 先例）补上 6 条 CLI 用例，探针才判得对。
+- **A1 的变异不敏感**：把注释识别改成「什么行都算」，用例仍绿，因为引号剥离那一半还在生效。补一条「反引号模板里的路径不靠引号、只靠『不是注释行』挡住」的夹具才真的红。
+
+测试底座改为**由豁免表推导**而不是手抄夹具：表里加一条豁免不用改测试，双向核对没松。
+
+### 又两次退出码踩坑（本仓第四次、第五次记同一件事）
+
+- `npm run check:scan-counts | tail` 读到 `EXIT=0`，实际 exit 1（取的是 `tail` 的码）。凡引用退出码，先跑不带管道的版本。
+- 全量验证脚本末尾的 `echo "fail=$fail"` 让整个脚本 exit 0，`VERIFY_EXIT=0` 与 `fail=1` 同时出现——判据要看 `fail=` 那一行，不是脚本退出码。
+
+### 我差点把普查第一版的假阳性抄进台账
+
+台账的「下一项」最初写着「`docs/architecture.md`、`docs/caching.md`、`docs/accessibility-audit.md` 里存在指向不存在文件的引用」——那串来自本轮**第一版**普查脚本，而它的正则把 `.json` 截成 `.js`，799 份文件报出 477 处「失效引用」。写台账时我没有回头核那个数。提交前用修正后的正则重测非台账文档：313 条引用里只有 4 条失效，而且**全部来自本轮我自己写进 `docs/ops.md` 的那句病灶叙述**（被点名的四个错误路径正是本轮订正的对象）。也就是说：docs 侧今天并没有一堆坏引用，「顺手把门禁扩到 docs」是个伪需求。
+
+这与 R16.315 立的规矩同源：**当场能算出来的数，落笔前重算一次**；抄来的结论哪怕是本轮自己量的，也会带着量它时那套工具的缺陷。台账里那两句已按实测改写。
+
+### 一笔未推送提交的自我修正
+
+门禁那一笔（`0531e3c`）落地时，lint 有一处死 import（`readFileSync`）——是我在底座改造中途留下的。该分支从未推送（`git branch -r --contains` 为空），用 `reset --soft` 重组 + amend 收敛成 `2c6434e`，让 main 上每一笔都可 bisect。共享历史未触碰。
+
+### 变更文件
+
+- 新增：`scripts/comment-path-lib.mjs`（纯判据）、`scripts/comment-path-lib.test.mjs`（20 条）、`scripts/check-comment-paths.mjs`（CLI）、`scripts/check-comment-paths.test.mjs`（6 条）。
+- 订正注释：`src/components/markdown.tsx`、`src/components/ai-chat.tsx`、`src/components/review-client.tsx`、`scripts/check-bundle.mjs`。
+- 接线：`package.json`（`check:comment-paths`）、`.github/workflows/ci.yml`、`scripts/check-scan-counts.mjs`（命令清单 + `MIN_KEYS`）、`docs/ops.md`（门禁表新行 + scan-counts 那行的命令清单与登记数）、`docs/roadmap.md`（R16.317）、`docs/progress.md`（本段）。
+- 台账重算：`docs/scan-counts.md`（8 条登记）、`docs/test-clock-hygiene.md`（350 个测试文件）。
+
+### 验证
+
+`npm test` → 351 文件 / 3740 条全绿；覆盖率 95.05 / 90.75 / 95.08 / 96.9（阈值 94/89/94/96 未动）；`npm run lint` exit 0（0 warning）；`npm run typecheck` exit 0；`npm run build` exit 0；`npm run check:comment-paths` exit 0；§3 全量序列（40+ 条门禁，含新增那条）除 lint 那一处已修的之外全部 exit 0；`check:report-freshness` exit 0；探针 15 条腿 BAD=0。
+
+### 阻塞 / 风险 / 回滚
+
+- 无阻塞。风险：判据按形状识别注释，行尾 `//` 之外的写法（如字符串里嵌注释形状）可能漏扫——漏扫只会少判，不会误判，且引用数地板会兜住大面积失效。回滚：`git revert 2c6434e c1f09d7`，无迁移、无数据变更。
+- 已知边界（如实登记，不装作已覆盖）：本轮射程是**非测试源码**的注释。`docs/*.md` 正文里的路径引用仍无门禁——重测（`.gate-logs/survey-r71g.mjs`，修正后的正则）41 份非台账文档共 313 条引用，失效只有 **4 条，全部来自本轮我自己写进 `docs/ops.md` 那一行的病灶叙述**（那四个错误路径名正是被订正的对象，属正当引用，将来把 docs 纳入扫描面时要按豁免处理）。测试文件的注释里另有 3 处指向不存在的路径（`scripts/report-freshness-lib.test.mjs` 的 `docs/phantom*.md` 那族是刻意的反例夹具、`scripts/ci-workflow.test.mjs` 的 `scripts/X.mjs` 是占位符），本轮未纳入扫描面。
+
+### 下一项
+
+- 重新检查仓库，继续按「不需拍板、能先证伪」挑下一条。候选：把同一把尺子对准 `docs/` 非台账文档正文里的路径引用——量过了（313 条 / 4 条失效且全属本轮叙述），**收益比预想小得多**，真要推进得先回答「把 docs 纳入扫描面能拦住什么今天拦不住的事」，而不是为了对称再加一道门禁。
+
+- 更新时间：2026-10-13（Asia/Shanghai）。
+
+---
+
 ## 2026-10-13 · v0.7.29 发布（RELEASE_FREEZE 完成）
 
 - 版本 / tag：`v0.7.29` → `bba5949c52471a1c80b0f19b9cf30f61cb8ae0b1`（`git rev-parse v0.7.29^{commit}`），tag 已推送。
