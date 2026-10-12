@@ -110,10 +110,16 @@ function main() {
   const supabaseChunk = findChunkByFingerprint("GoTrueClient");
   const measurements = [];
   let fail = false;
+  // R16.321：脱敏的**前提**也在这里核。Next 哪天不再把构建号写进 HTML，
+  // `neutralizeBuildId` 就永远 replaced=0，那条逐字判据会静默变回恒等式。
+  // 红在这里 = 前提没了，要重新确认这条规矩，不是继续蒙着跑。
+  // （此前这条住在单元测试里，而它在 CI 里必然走跳过分支——等于没有。）
+  let buildIdHits = 0;
 
   for (const route of listHtmlRoutes().filter((route) => /^(?:zh|en)(?:\/|$)/.test(route))) {
     const raw = fs.readFileSync(path.join(appOut, route + ".html"), "utf8");
-    const { html } = neutralizeBuildId(raw, buildId);
+    const { html, replaced } = neutralizeBuildId(raw, buildId);
+    buildIdHits += replaced;
     const measurement = measureRoute({
       route,
       html,
@@ -193,6 +199,15 @@ function main() {
 
   const unmatched = measurements.filter((measurement) => !measurement.budget);
   if (unmatched.length > 0) fail = true;
+
+  if (buildIdHits === 0) {
+    console.error(
+      "[bundle] ✗ 页面 HTML 里一处构建号都没替换到——脱敏这条规矩没有靶子了，请重估是否还需要",
+    );
+    fail = true;
+  } else {
+    console.log(`[bundle] ✓ 构建号脱敏：${buildIdHits} 处替换（逐字比对的前提仍然成立）`);
+  }
 
   // R16.292：产物里的 manifest link 必须按语言分家。
   //
