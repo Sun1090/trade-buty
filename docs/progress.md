@@ -2,6 +2,54 @@
 
 ---
 
+## 2026-10-12 · 第七十轮（R16.316）：一担常规依赖刷新，顺带把「Dependabot 的 lockfile 为什么合不动」钉死第二次
+
+- 里程碑 / 版本：「说法 vs 事实」之外的依赖/发布工程一轮；R16.316 新增并关账，未改产品版本（当前 v0.7.28）。分支 `chore/npm-minor-patch-2026-10-12`（自合并后的 `main` 顶点 `2c6d201`），两笔：`e6b6d55`（build(deps)）十项刷新 + perf-notes 按产物重算、`d8ea1b3`（docs(deps)）台账。承上一轮：#416（R16.315 登记制 + 归类核对）本轮已 rebase 合并进 `main`，#415（actions 组）同样合并并删分支。
+
+### 为什么这一轮不写代码门禁
+
+- 上一轮闭合后，仓库里「不需拍板、能先证伪」的题里，最靠前的是一件**已经卡了两天的事**：#414 那批十项 minor/patch 红在 CI 第一步。它红的方式很有欺骗性——`npm ci` 报 `EUSAGE / Missing: proxy-agent@8.0.2 from lock file` 之类十几条，读起来像依赖冲突，实际是**生成 lockfile 的 npm 主版本和 CI 用的不是一回事**（npm 11 会删掉 `puppeteer-core` 名下那批嵌套 optional-peer 条目）。这条病 2026-09-13 就在 `docs/deps.md` 登记过，本轮原样复发。
+- 那个 PR 关着 `maintainerCanModify`，本仓改不动它的 lockfile，所以唯一可行的落地方式是自己重做同一批。
+
+### 一担有 breaking 风险的升级怎么验
+
+- `next` 16.3.8 → 16.4.0 是这批里唯一可能咬人的（AGENTS.md 明写「这不是你认识的那个 Next」，写码前先读随包文档）。本轮先读 `node_modules/next/dist/docs/`：16.4 的随包文档没有新增面向本站用法的破坏性条目；随后按 2026-10-09 那条自己立过的要求复跑全套——`check:bundle`、`check:mobile`、`npm run e2e`（201 passed / 1 skipped）、以及 CI 里其余 30 余条 `check:*`，全部 exit 0。
+- lockfile 一律 `npx --yes npm@10.9.4 install --package-lock-only` 生成；root `package.json` 的 semver 写法一处不改（`next` / `eslint-config-next` / `jsdom` 保持原有的精确钉版），免得顺手把钉版放宽成范围。`check:lockfile-repro` 与 `npm ci` 双双 exit 0。
+
+### 判据抓到 next 改了字节，而我没有立刻怀疑判据
+
+- 全量测试唯一红的是 `scripts/perf-notes-claims.test.mjs` 那条「实测列与当场重算一致」：15 组里 14 组各差 0.1~1.2KB。这种红有两种解释——文档过期，或者判据坏了——而上一轮（R16.314）刚被「同一份源码连构四次」教育过：**怀疑判据时不要靠推理，退回旧版本量一次**。
+- 于是把 `next` 退回 16.3.8 重新干净构建：那一趟与文档里那张 2026-10-10 的表**逐字相同**。旧表当时没抄错、新红来自产物，两边同时成立。结论是框架内联进每条页面 HTML 的那一截随 minor 版本变了，课文与路由实现一处未改。
+- 处理是补一张 2026-10-12 的复测表（历史那三张不判，与 R16.236 的口径一致），预算一处未改，`check:bundle` 全绿。
+
+### 我自己抄进台账的一条假话，以及它被自己抓出来的过程
+
+- 本轮一度在台账里写「`npm run outdated` 在 npm 11 下输出空表且 exit 0，是假绿」。提交前复测发现**这句不实**：本仓根本没有 `outdated` 脚本，`npm run outdated` 报的是 `Missing script: "outdated"` 且 **exit 1**；我当时看到的是 `npm run --silent outdated 2>&1 | tail -20` 打印了空——**空的是 `tail` 那侧，管道把真实退出码换成了 0**。所以「假绿」的来源是我自己的输出管道，不是 npm 的行为。
+- 这条改法值得留：凡「某命令判绿/判空」的结论，落笔前先单独跑一次不带管道的版本、看退出码（本轮 `npm outdated` 直接跑是 exit 1 + 四行真实落后项）。前几轮立的「退出码判据逐变量钉，别写死整行字面量」是同一条规矩的另一面。
+- 顺带记下真实的那四个落后项：`eslint` 9.39.5 → 10.12.0、`typescript` 6.0.3 → 7.0.2 两个 major 仍延期（各有可复现依据，见 `docs/deps.md`）；`vitest` 与 `@vitest/coverage-v8` 的 5.0.4 是 patch，留给下一轮。
+
+### 变更文件
+
+- `package.json`、`package-lock.json`（十项刷新）、`docs/perf-notes.md`（新增 2026-10-12 复测表与验证方向）、`docs/deps.md`（「2026-10-12」小节：#414 不能直接合的因果、复跑清单、剩余落后项）、`docs/roadmap.md`（R16.316）、`docs/progress.md`（本段）。
+
+### 验证
+
+- `npx --yes npm@10.9.4 ci` exit 0；`npm run check:lockfile-repro` exit 0（983 个包条目无差异）；`npm run test:coverage` **349 文件 / 3713 条全绿**（95.04 / 90.77 / 95.09 / 96.90）；`lint` / `typecheck` / `build` / `check:bundle` / `check:mobile` / `check:seo-surface` / `check:docs` / `check:changelog` / `check:report-freshness` / `check:scan-counts` / `check:dead-copy` / `check:test-clock-hygiene` / `audit:prod` / `audit:all` / `check:secrets` / `check:env-docs` 及 CI 里其余内容门禁全部 exit 0；`npm run e2e` **201 passed / 1 skipped**。
+- 本轮为跑 e2e 补装了 Playwright 1.64 对应的 Chromium headless shell（升级后本地缓存里没有那个构建，未装之前整套 e2e 会成片报 `Executable doesn't exist`——那种红不是回归）。
+
+### 阻塞 / 风险 / 回滚
+
+- 无新阻塞。风险面：`next` 的 minor 改了内联字节，读数随之变动；预算余量最紧的仍是 `knowledge-lesson`（350.1 / 357 KB），下次内容或框架再动要先看这一组。回滚：`git revert` 这两笔即可回到 16.3.8 形态，无数据与迁移。
+- 未处理（有意）：`eslint` 10 与 `typescript` 7 两个 major 仍延期，理由与 2026-10-09 相同且有可复现依据；`vitest` / `@vitest/coverage-v8` 的 5.0.4 是 patch，留给下一轮常规刷新，不掺进这担。Dependabot alert #10（`sprintf-js`，上游无补丁）状态不变。
+
+### 下一项
+
+- 重新检查仓库：#414 现在可以关掉（本担已覆盖它的十项），继续按「不需拍板、能先证伪」挑下一条。
+
+- 更新时间：2026-10-12（Asia/Shanghai）。
+
+---
+
 ## 2026-10-12 · 第六十九轮（R16.315）：把「撞一个修一个」换成登记制，再让登记制的覆盖面由仓库自己决定——新增一处无主人的手抄或一份没归类的文档，都在提交时被拦
 
 - 里程碑 / 版本：「说法 vs 事实」第六十九轮；R16.315 新增并关账，未改产品版本（当前 v0.7.28）。分支 `codex/doc-content-claims`（自合并后的 `main` 顶点 `b370fad`），六笔：`b7d34fe`（refactor(quiz)）先给一个真正没主人的数立主人、`f50589c`（gate(docs)）登记制本体、`d701bd4`（gate(docs)）补豁免边界断言与白名单注释、`bf554e9` + `b7c5ddb`（docs）台账、`9f0be1c`（gate(docs)）归类核对——覆盖面不再由手写清单决定。本轮同时收掉 #413（R16.314，已 rebase 合并进 main）。
