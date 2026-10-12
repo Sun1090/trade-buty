@@ -74,6 +74,14 @@
 - `npm outdated` 当日剩余落后项（**2026-10-12 实测**）：`eslint` 9.39.5 → 10.12.0 与 `typescript` 6.0.3 → 7.0.2 **仍延期**，理由与 2026-10-09 相同（`eslint-plugin-react` 未支持 ESLint 10；`typescript-eslint` 的 peer 上界 `<6.1.0` 容不下 TS 7）；`@vitest/coverage-v8` 5.0.3 → 5.0.4 与 `vitest` 5.0.3 → 5.0.4 是 patch，属下一轮常规刷新，本轮不掺进这担。
 - `npm run audit:prod` → exit 0；`npm run audit:all` → exit 0（白名单仍只有 `braces` 那条 dev-only 链，重审 2026-11-15）。Dependabot alert #10（`sprintf-js`，moderate，上游无补丁）状态不变，见 2026-10-09 那条。
 
+
+### 2026-10-13
+
+- 接上条刻意留下的那一对 patch：`vitest` 与 `@vitest/coverage-v8` 收到 5.0.4（PR #420）。lockfile 仍由 `npx --yes npm@10.9.4 install --package-lock-only` 生成，`check:lockfile-repro` 983 条逐条目复现无差异。
+- **两点读数，免得下轮误判**：① diff 有 167 行，比「两个 patch」看着大——`vitest` 5.0.4 在自己的依赖范围内带上了 `rolldown` 1.2.13 与 `@oxc-project/types` 0.153.0（多平台 binding 各一份），直接依赖的 semver 写法一处未改；② 覆盖率**分支**从 90.77 挪到 90.74，是 v8 provider 换版本后分支计数本身从 8469 变成 8481（分母跟着 instrumentation 动），不是有代码失去覆盖，阈值 89 未动（R14.12 只许上调）。
+- `npm outdated` 当日剩余落后项：只剩 `eslint` 9.39.5 → 10.12.0 与 `typescript` 6.0.3 → 7.0.2 两个 major，**仍延期**，依据与 2026-10-09 相同。**至此常规 minor/patch 落后项清零**。
+- v0.7.29 已发布（patch）：AI 学习计划两处、复习页变体题说明、依赖十项刷新、文档手抄数字登记制。生产冒烟 9/10（唯一失败仍是既有 AI 上游 502，`BLOCKED_EXTERNAL`）。
+
 ## 审查流程
 
 1. PR 中说明：解决什么问题、为什么内置/已有依赖不行、体积影响（`npm run check:bundle`）
