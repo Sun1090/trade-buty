@@ -13,7 +13,7 @@ import {
   auditReadmeImplementationReferences,
   auditReleaseChecklist,
   auditReleaseVersion,
-  DOC_NUMBER_SCAN_TARGETS,
+  listRepoMarkdown,
 } from "./docs-consistency-lib.mjs";
 import { MIN_QUESTIONS_PER_CHAPTER, parseQuizMounts } from "./quiz-source-lib.mjs";
 import { AUDITED_DOCS } from "./db-assertion-counts.mjs";
@@ -75,14 +75,13 @@ issues.push(
 // 这一条把它换成登记制——新增一处无主人的手抄在提交时就红，而不是等下一轮有人路过。
 // 主人全部现读：内容树（章/篇）、`src/lib/quizzes.ts`（题数）、`quiz-source-lib` 的纪律常量
 // （每章最少题数）、`db-assertion-counts` 的文档清单（对账篇数）。**不取任何文档自己印的数**。
-const docNumberFiles = {};
-for (const relativePath of DOC_NUMBER_SCAN_TARGETS) {
-  const fullPath = path.join(root, relativePath);
-  if (fs.existsSync(fullPath)) docNumberFiles[relativePath] = fs.readFileSync(fullPath, "utf8");
+const allMarkdown = {};
+for (const relativePath of listRepoMarkdown(root)) {
+  allMarkdown[relativePath] = fs.readFileSync(path.join(root, relativePath), "utf8");
 }
 issues.push(
   ...auditDocNumberClaims({
-    files: docNumberFiles,
+    all: allMarkdown,
     actual: {
       chapters: actual.chapters,
       lessons: actual.lessons,

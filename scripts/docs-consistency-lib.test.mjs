@@ -18,10 +18,15 @@ import {
   DOC_NUMBER_MIN_CLAIMS,
   DOC_NUMBER_MIN_HITS,
   DOC_NUMBER_SCAN_TARGETS,
+  DOC_NUMBER_EXCUSED,
+  DOC_NUMBER_MIN_MARKDOWN_FILES,
+  classifyDocNumberTarget,
+  listRepoMarkdown,
   extractReadmeCounts,
   scanDocNumberHits,
 } from "./docs-consistency-lib.mjs";
 
+const repoRoot = new URL("..", import.meta.url).pathname;
 const expected = { chapters: 27, lessons: 182 };
 const validReadmes = {
   en: "**Learn**: 27 chapters / 182 lessons",
@@ -335,8 +340,10 @@ describe("docs-consistency-lib", () => {
  */
 async function realRegistryInput() {
   const { readdirSync } = await import("node:fs");
+  // 与调用点同口径：判据现在看的是**仓库里每一份 markdown**，
+  // 夹具只喂扫描清单的话，归类核对会一律报「少喂文件」，那噪音里看不出任何真问题。
   const files = {};
-  for (const file of DOC_NUMBER_SCAN_TARGETS) {
+  for (const file of listRepoMarkdown(repoRoot)) {
     files[file] = await readFile(new URL(`../${file}`, import.meta.url), "utf8");
   }
   const zhRoot = new URL("../content/kline-buty/docs/knowledge/zh", import.meta.url);
@@ -364,9 +371,9 @@ async function realRegistryInput() {
 describe("doc number registry (R16.315)", () => {
   it("flags a freshly hand-copied number that no owner claims", async () => {
     const { files, actual } = await realRegistryInput();
-    expect(auditDocNumberClaims({ files, actual })).toEqual([]);
+    expect(auditDocNumberClaims({ all: files, actual })).toEqual([]);
     const mutated = { ...files, "docs/plan.md": `${files["docs/plan.md"]}\n> 知识库现有 300 篇课程。\n` };
-    const issues = auditDocNumberClaims({ files: mutated, actual });
+    const issues = auditDocNumberClaims({ all: mutated, actual });
     expect(issues).toHaveLength(1);
     expect(issues[0]).toContain("docs/plan.md: 扫到一个没有主人的数字「300 篇」");
     expect(issues[0]).toContain("DOC_NUMBER_CLAIMS");
@@ -379,7 +386,7 @@ describe("doc number registry (R16.315)", () => {
       // 那句被改写成人话，数字没了：登记表里的两条锚点都该打空报错，而不是「没扫到所以一致」
       "README.md": files["README.md"].replace("**Learn**: 27 chapters / 182 lessons", "**Learn**: a graded knowledge base"),
     };
-    const issues = auditDocNumberClaims({ files: mutated, actual });
+    const issues = auditDocNumberClaims({ all: mutated, actual });
     const blind = issues.filter((issue) => issue.includes("登记的说法找不到锚点"));
     expect(blind).toHaveLength(2);
     for (const issue of blind) expect(issue).toContain("README.md");
@@ -391,7 +398,7 @@ describe("doc number registry (R16.315)", () => {
       ...files,
       "README.zh-CN.md": files["README.zh-CN.md"].replace("182 篇课程", "183 篇课程"),
     };
-    const issues = auditDocNumberClaims({ files: drifted, actual });
+    const issues = auditDocNumberClaims({ all: drifted, actual });
     expect(issues).toHaveLength(1);
     expect(issues[0]).toContain("印的是 183");
     expect(issues[0]).toContain("主人「lessons」当场是 182");
@@ -402,29 +409,31 @@ describe("doc number registry (R16.315)", () => {
     const { files, actual } = await realRegistryInput();
     const noQuestions = { ...actual };
     delete noQuestions.questions;
-    const issues = auditDocNumberClaims({ files, actual: noQuestions });
+    const issues = auditDocNumberClaims({ all: files, actual: noQuestions });
     const unowned = issues.filter((issue) => issue.includes("没有被调用点解析成非负整数"));
     expect(unowned.length).toBeGreaterThan(0);
     expect(unowned.every((issue) => issue.includes("「questions」"))).toBe(true);
     // 字符串「27」不是数字：它来自文档而不是现读的数，正是这套东西要禁的形状
-    const stringly = auditDocNumberClaims({ files, actual: { ...actual, chapters: String(actual.chapters) } });
+    const stringly = auditDocNumberClaims({ all: files, actual: { ...actual, chapters: String(actual.chapters) } });
     expect(stringly.filter((issue) => issue.includes("「chapters」")).length).toBeGreaterThan(0);
-    expect(auditDocNumberClaims({ files, actual: undefined }).length).toBeGreaterThan(0);
+    expect(auditDocNumberClaims({ all: files, actual: undefined }).length).toBeGreaterThan(0);
   });
 
   it("reports a document the scan list expects but the call site did not read", async () => {
     const { files, actual } = await realRegistryInput();
     const withoutOps = { ...files };
     delete withoutOps["docs/ops.md"];
-    const issues = auditDocNumberClaims({ files: withoutOps, actual });
+    const issues = auditDocNumberClaims({ all: withoutOps, actual });
+    // 一份被扫文档消失，三条后果都要在，各管一种走法：
+    // ① 清单在场核对（「不扫了」不能靠删文件悄悄发生）② 登记表读不到（那几条登记凭空消失）
+    // ③ 命中地板（扫描范围缩了，「全部已登记」不再含信息）
+    expect(issues.filter((issue) => issue.startsWith("docs/ops.md: "))).toHaveLength(2);
+    expect(issues.some((issue) => issue.includes("扫描清单里的这份文档不见了"))).toBe(true);
+    expect(issues.some((issue) => issue.includes("登记表点名了这份文档，调用点却没读到它"))).toBe(true);
     expect(
-      issues.filter((issue) => issue.includes("docs/ops.md: 扫描清单里的文档没被读进来")),
-    ).toHaveLength(1);
-    // 少读一份文档同时会让命中数跌破地板：两条各管一种后果，都要在
-    expect(
-      issues.some((issue) => issue.includes("处数量说法，地板")),
+      issues.filter((issue) => issue.includes("处数量说法，地板")),
       "ops.md 里登记的 5 处说法一并消失，命中地板不该装作「只是少了一份文件」",
-    ).toBe(true);
+    ).toHaveLength(1);
   });
 
   it("keeps exemptions tied to the shape of the sentence rather than its value", async () => {
@@ -434,13 +443,13 @@ describe("doc number registry (R16.315)", () => {
       ...files,
       "docs/research.md": files["docs/research.md"].replace("立项时 27 篇章 / 201 篇", "立项时 28 篇章 / 999 篇"),
     };
-    expect(auditDocNumberClaims({ files: history, actual })).toEqual([]);
+    expect(auditDocNumberClaims({ all: history, actual })).toEqual([]);
     // 同一串数字换了个说法（不再是「立项时…」），就必须被当成无主人手抄
     const reworded = {
       ...files,
       "docs/research.md": files["docs/research.md"].replace("立项时 27 篇章 / 201 篇", "另一版 27 篇章 / 201 篇"),
     };
-    const issues = auditDocNumberClaims({ files: reworded, actual });
+    const issues = auditDocNumberClaims({ all: reworded, actual });
     expect(issues.filter((issue) => issue.includes("没有主人的数字"))).toHaveLength(2);
     // 政策触发线（引入虚拟化的那道 >20 题）同理：形状不在豁免里就红
     const policy = {
@@ -448,7 +457,7 @@ describe("doc number registry (R16.315)", () => {
       "docs/perf-notes.md": files["docs/perf-notes.md"].replace("若未来题库扩到每章 >20 题", "未来每章可到 20 题"),
     };
     expect(
-      auditDocNumberClaims({ files: policy, actual }).filter((issue) => issue.includes("「20 题」")),
+      auditDocNumberClaims({ all: policy, actual }).filter((issue) => issue.includes("「20 题」")),
     ).toHaveLength(1);
     // 豁免还必须**只对它登记的那份文档生效**：把 research.md 那句历史规模原样搬到
     // plan.md 里，它就不再是「立项期事实」而是当代会出现的手抄，必须红。
@@ -457,7 +466,7 @@ describe("doc number registry (R16.315)", () => {
       ...files,
       "docs/plan.md": `${files["docs/plan.md"]}\n- 知识库（立项时 27 篇章 / 201 篇）\n`,
     };
-    const leakIssues = auditDocNumberClaims({ files: leaked, actual });
+    const leakIssues = auditDocNumberClaims({ all: leaked, actual });
     expect(
       leakIssues.filter((issue) => issue.includes("docs/plan.md: 扫到一个没有主人的数字")),
       `豁免跨文件泄漏了：${JSON.stringify(leakIssues)}`,
@@ -471,8 +480,8 @@ describe("doc number registry (R16.315)", () => {
       "每条登记都要有一个捕获组：没有捕获组就定位不到那个数，同句另一个数会被误判成已登记",
     );
     const { actual } = await realRegistryInput();
-    const emptied = Object.fromEntries(DOC_NUMBER_SCAN_TARGETS.map((file) => [file, ""]));
-    const issues = auditDocNumberClaims({ files: emptied, actual });
+    const emptied = Object.fromEntries(listRepoMarkdown(repoRoot).map((file) => [file, ""]));
+    const issues = auditDocNumberClaims({ all: emptied, actual });
     expect(issues.some((issue) => issue.includes(`本次只扫到 0 处数量说法，地板 ${DOC_NUMBER_MIN_HITS}`))).toBe(
       true,
       "扫不到东西时「全部已登记」是空话：判据必须红在自己失效上",
@@ -490,7 +499,7 @@ describe("doc number registry (R16.315)", () => {
     expect(actual.questions).toBeGreaterThan(0);
     const hits = DOC_NUMBER_SCAN_TARGETS.reduce((sum, file) => sum + scanDocNumberHits(files[file]).length, 0);
     expect(hits).toBeGreaterThanOrEqual(DOC_NUMBER_MIN_HITS);
-    expect(auditDocNumberClaims({ files, actual })).toEqual([]);
+    expect(auditDocNumberClaims({ all: files, actual })).toEqual([]);
   });
 
   it("gives the per-chapter quiz floor one owner instead of three copies", async () => {
@@ -505,7 +514,7 @@ describe("doc number registry (R16.315)", () => {
     expect(gate, "门禁还在写死字面量，那文档抄的那个数就仍然没有主人").toContain("MIN_QUESTIONS_PER_CHAPTER");
     const { files, actual } = await realRegistryInput();
     expect(actual.minQuestionsPerChapter).toBe(MIN_QUESTIONS_PER_CHAPTER);
-    const raised = auditDocNumberClaims({ files, actual: { ...actual, minQuestionsPerChapter: 4 } });
+    const raised = auditDocNumberClaims({ all: files, actual: { ...actual, minQuestionsPerChapter: 4 } });
     expect(raised).toHaveLength(owned.length);
     for (const claim of owned) {
       expect(
@@ -527,5 +536,106 @@ describe("doc number registry (R16.315)", () => {
     const flat = cli.replace(/\s+/g, "");
     expect(flat, "issue 没并进失败判定——漂了会静默通过").toContain("issues.push(...auditDocNumberClaims({");
     expect(cli).toMatch(/if \(issues\.length > 0\)[\s\S]*?process\.exit\(1\)/);
+  });
+
+  /**
+   * 归类核对：登记制的覆盖面本身不能再由一份手写清单说了算。
+   *
+   * 只写 `DOC_NUMBER_SCAN_TARGETS` 的话，「新建一份文档并在里面抄一个内容数字」根本进不了
+   * 扫描器眼里——那扇门不用绕，直接走进去就行。这几条钉的是门本身。
+   */
+  it("classifies every markdown file into exactly one bucket", async () => {
+    const { files, actual } = await realRegistryInput();
+    expect(auditDocNumberClaims({ all: files, actual })).toEqual([]);
+    // 四类的判据各自成立：生成件看头部标记、豁免看 file/pattern、其余未列出的就是没归类
+    expect(classifyDocNumberTarget("docs/plan.md", files["docs/plan.md"])).toBe("scanned");
+    expect(classifyDocNumberTarget("docs/translation-status.md", files["docs/translation-status.md"])).toBe(
+      "generated",
+    );
+    expect(classifyDocNumberTarget("docs/progress.md", files["docs/progress.md"])).toBe("excused");
+    expect(classifyDocNumberTarget("docs/v0.6-release-review.md", files["docs/v0.6-release-review.md"])).toBe(
+      "excused",
+    );
+    expect(classifyDocNumberTarget("docs/kb-changelog-2099-01-01.md", "# 新的变更摘要\n")).toBe("excused");
+    expect(classifyDocNumberTarget("docs/brand-new-notes.md", "# 新写的东西\n")).toBe("unclassified");
+  });
+
+  it("does not let a sentence about the marker count as the marker", () => {
+    // 生成标记的判据若是「正文里出现过自动生成这五个字」，一份手写台账只要在叙述里提到
+    // 「非自动生成文档」就整篇被当成机器产物而退出扫描——暗门就开在判据自己身上。
+    const prose = "# 台账\n\n- 本轮盘点的是非自动生成文档里的数字。\n\n> 这一份不是机器重算的。\n";
+    expect(classifyDocNumberTarget("docs/plan.md", prose)).toBe("scanned");
+    // 真标记（生成器写回的那一行形状）仍然要认，否则 13 份报告会一起变成未归类
+    expect(
+      classifyDocNumberTarget(
+        "docs/content-inventory.md",
+        "# 目录\n\n> 自动生成于 2026-09-20（npm run kb:inventory），勿手改。\n",
+      ),
+    ).toBe("generated");
+    expect(
+      classifyDocNumberTarget(
+        "docs/scan-counts.md",
+        "# 计数\n\n<!-- 由 `npm run check:scan-counts` 重算，勿手改。 -->\n",
+      ),
+    ).toBe("generated");
+  });
+
+  it("a brand new hand-written document is reported until someone signs off on it", async () => {
+    const { files, actual } = await realRegistryInput();
+    // 关键形状：这份新文档**一处数量说法都没有**也照样要红——要签的是「它归哪一类」，
+    // 不是「它有没有数字」。否则今天干净的新文档就是明天那个没人看的藏身处。
+    const withNew = { ...files, "docs/brand-new-notes.md": "# 新写的说明\n\n随便说点什么。\n" };
+    const issues = auditDocNumberClaims({ all: withNew, actual });
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toContain("docs/brand-new-notes.md: 这份 markdown 没有归类");
+    // 两个合法出路都能让它闭嘴，且都必须是一次显式改动
+    expect(
+      auditDocNumberClaims({
+        all: { ...files, "docs/brand-new-notes.md": "# 新写的说明\n\n> 自动生成于 2026-10-12（npm run whatever），勿手改。\n" },
+        actual,
+      }),
+    ).toEqual([]);
+  });
+
+  it("refuses a document that signs itself into two buckets at once", async () => {
+    const { files, actual } = await realRegistryInput();
+    // 生成标记的优先级最高：在扫描清单里的文档头部写一句「自动生成」，就成了一道退出扫描的暗门
+    const claimedGenerated = {
+      ...files,
+      "docs/plan.md": `${files["docs/plan.md"].split("\n")[0]}\n\n> 自动生成于 2026-10-12（npm run plan），勿手改。\n`,
+    };
+    const genIssues = auditDocNumberClaims({ all: claimedGenerated, actual });
+    expect(
+      genIssues.filter((issue) => issue.includes("头部却写着「自动生成 / 勿手改」")),
+      `写个标记就能不扫：${JSON.stringify(genIssues.slice(0, 3))}`,
+    ).toHaveLength(1);
+    // 同时进扫描清单与豁免表也是双重签字
+    expect(
+      DOC_NUMBER_SCAN_TARGETS.filter((file) => DOC_NUMBER_EXCUSED.some((entry) => entry.file === file)),
+    ).toEqual([]);
+  });
+
+  it("reports an excuse whose document has gone missing", async () => {
+    const { files, actual } = await realRegistryInput();
+    const renamed = { ...files };
+    delete renamed["docs/deps.md"];
+    const issues = auditDocNumberClaims({ all: renamed, actual });
+    expect(
+      issues.filter((issue) => issue.includes("docs/deps.md: 豁免表里登记的这份文档不见了")),
+    ).toHaveLength(1);
+  });
+
+  it("counts the markdown it was fed, so a short feed cannot look like full compliance", async () => {
+    const { files, actual } = await realRegistryInput();
+    expect(Object.keys(files).length).toBeGreaterThanOrEqual(DOC_NUMBER_MIN_MARKDOWN_FILES);
+    // 调用点只喂扫描清单（旧口径）时，归类核对必须红在「看到多少份」上而不是「全部已归类」
+    const onlyTargets = Object.fromEntries(
+      DOC_NUMBER_SCAN_TARGETS.map((file) => [file, files[file]]),
+    );
+    const issues = auditDocNumberClaims({ all: onlyTargets, actual });
+    expect(
+      issues.filter((issue) => issue.includes("归类核对只看到")),
+      `只喂清单就该报数量不足：${JSON.stringify(issues.slice(0, 3))}`,
+    ).toHaveLength(1);
   });
 });
