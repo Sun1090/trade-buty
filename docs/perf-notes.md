@@ -201,3 +201,38 @@ R16.235 那笔债在这一轮还掉：`auth-provider.tsx` 与 `auth-header.tsx` 
 0.1~1.2KB（只有一组没动）。也就是：**框架内联进每条页面 HTML 的那一截随 minor 版本变了**，
 而课文内容与路由实现一处未改。最大的一组仍是 `knowledge-lesson`，它离自己的预算余量最小，
 所以这组数字变动最值得盯；本组预算未改，`check:bundle` 全绿。
+
+### 复测（2026-10-13，R16.318 把秒→分钟的两份私有副本合成一份之后，本地干净构建现读重算）
+
+上面那张（2026-10-12）保留原样当历史。今天的读数（最大 total / 预算 / 最大路由）：
+
+| 分组 | 今天最大 total | 预算 | 最大路由 |
+|---|---:|---:|---|
+| home | 281.2 KB | 360 KB | `zh` |
+| path | 282.0 KB | 365 KB | `zh/path` |
+| knowledge-chapter | 267.2 KB | 370 KB | `zh/knowledge/markets-instruments` |
+| knowledge-lesson | 350.1 KB | 357 KB | `zh/knowledge/technical-analysis/drawing-tools` |
+| search | 249.6 KB | 335 KB | `zh/search` |
+| review | 284.2 KB | 350 KB | `zh/review` |
+| bookmarks | 244.8 KB | 335 KB | `zh/bookmarks` |
+| stats | 303.3 KB | 370 KB | `zh/stats` |
+| ai | 252.2 KB | 350 KB | `zh/ai` |
+| chart | 302.3 KB | 390 KB | `zh/chart` |
+| replay | 318.5 KB | 400 KB | `zh/replay` |
+| privacy | 254.2 KB | 340 KB | `zh/privacy` |
+| glossary | 250.9 KB | 340 KB | `zh/glossary` |
+| static-info | 247.4 KB | 340 KB | `zh/about` |
+| auth | 311.3 KB | 340 KB | `zh/auth` |
+
+**15 组里只有 `replay` 动了（318.4 → 318.5），而且归因到本轮那一笔代码改动**：R16.318 删掉
+`daily-goal.ts` 的私有副本、并让 `weekly-summary.ts` 静态依赖 `study-time.ts` 的 `studyMinutes`，
+共享 chunk 的 gzip 净增十几个字节。归因不是推断：把那四个文件退回改动前重新干净构建，同一趟读回
+318.4；换回改动后的树读回 318.5（`.gate-logs/replay-bytes-r72.mjs` 量到 `zh/replay` 的 total 是
+326107 字节 = 318.4639KB）。
+
+**这一行真正值得记下来的不是那 15 字节，而是它离舍入边界有多近**：318.4639KB 距 318.45 的进位边界只有
+**14.2 字节**。也就是 `replay` 这一组的读数今天由十几个字节决定，任何一处无关的字节增减都可能把它推回
+318.4。这是 R16.306（不给容差）与 R16.314（先剔掉随机构建号）之后**仍然存在的第三种脆弱**：判据要的
+「同一份产物重算逐字相同」是可信的（两次干净构建的读数实测 diff 为空），但「表里的数与上一张表差 0.1」
+并不自动意味着回归——得看字节。本轮按规矩重录整张表而不是给判据加容差；`check:bundle` 的预算比对
+（这一组上限 400KB）与本轮改动都无争议地通过。
