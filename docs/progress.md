@@ -2,6 +2,51 @@
 
 ---
 
+## 2026-10-13 · 第七十五轮（R16.321）：那道「实测列由产物说了算」的判据在 CI 里从来没执行过——而我在这条账上归错了两次病因
+
+- 里程碑 / 版本：口径与门禁时机收敛第四轮；R16.321 新增并关账，未改产品版本（当前 v0.7.29）。分支 `fix/perf-notes-verdict-after-build`（自合并后的 `main` 顶点 `cfca5d2`），四笔：`e543849`（fix(perf)）判据搬进 build 之后 + 行为指纹、`6a1b0f8`（chore(reports)）两份台账认账、`176bc73`（refactor(perf)）拆净单元测试里那半、本笔台账。
+- 承上一轮：#424（R16.320 时长上限 + 本轮收尾）已 rebase 合并，本地分支已删、远端由 GitHub 自动清理，`ops:work-audit` 判绿（悬空 0 · 陈旧 0 · 未确认 0）。
+
+### 起手是上一轮遗留的一条待办，但真正的病灶要再挖一层
+
+上一轮登记 R16.321 时我只量清了「判据红了」。本轮动手前先问了一句「为什么同一批提交在 6 分钟前的那一趟链里是绿的」，答案在 CI 日志里：`npm run test:coverage` 排在 `npm run build` 之前，那条逐字判据在 CI 里**必然**命中「缺产物 → 明说跳过」——**自 R16.306 立起来那天起，CI 的绿灯从来没为这句话签过字**。本地能判靠的又恰好是上一次构建留下的 `.next`，于是它系统性滞后一步：改变产物字节的提交，第一趟链绿、第二趟链红。与 R16.292 同族（不依赖产物的留在单测、依赖产物的搬去 build 之后），先例就在 `manifest-artifact.mjs` 躺着。
+
+### 但我照搬先例之前先核了可行性，然后把自己推翻了两次
+
+1. **第一版归因「跨机不可比」**（`519d67d`）：同一提交本地与 CI 之间 14 个可比分组 14/14 读数不同、CI 每组偏高 +0.9~+2.3KB。→ **被容器实验推翻**：把**同一份本地产物**挂进 `node:22-alpine` / `bookworm-slim` / `node:22` 三个镜像量，**15/15 逐字相同**；只换 zlib 就 14/14 组全变；只换构建机只有 7/14 组各差 0.1KB。差异在**测量侧**。
+2. **第二版归因「zlib 版本」**（`a0d4576`）→ **实现这一轮再被推一次**：linux 上 node 20/22 报 `1.3.1-e00f703`、node 24/26 报 `1.3.2.1-motley-*`，**版本串不同而 15 组产物读数字节级逐字相同**（0/15 差异）。版本串只是行为的近似代理，而且是个**会误报**的代理。
+3. 最终落地的是**当场量 deflate 行为**：`scripts/deflate-fingerprint.mjs` 把 10 批固定输入压一遍、取各次输出长度拼串再 sha256 前 12 位。实测它区分得开「本地 vs CI」（darwin `4dbfa3ca2225` / linux `fab194c9217d`），又不被发行版、musl/glibc、node 主版本误导。**探针里刻意配了 256KB 与 1MB 两条大块输入**：只有 KB 级小块时，两个实现在小块上一致、在 200KB 级输入上分道扬镳（darwin 与 linux 在 `jsonish-6k` 只差 3 字节，在 `jsish-256k` 差 1821 字节），指纹就会漏判「该分时不分」。
+
+### 改法：搬判据，而不是给它加容差
+
+「实测列 vs 产物」这半搬出 Vitest、住进 `check:bundle`（它本来就跑在 build 之后、且已经遍历过全部 454 条路由，不额外读盘，实测约 3 秒（三趟 2.68 / 2.72 / 3.40））。搬之前先对指纹，不符就**明说跳过并印出两边指纹**——跳过要有理由、要看得见，而不是像以前那样由步骤顺序造成一场静默的不判。表下面新增一行 `- 记录环境指纹：…`。
+
+**顺手救活另一条同样哑掉的判据**：「构建号确实还内联在 HTML 里」（R16.314 那条规矩的前提）以前是一条单元测试用例，在 CI 里同样必然跳过。现在它由 `check:bundle` 当场核并印一行（`✓ 构建号脱敏：454 处替换`），**一处都没替换到就 fail**——比原来只抽一条样本强。
+
+`perf-notes-claims.test.mjs` 357 → 161 行（净删 196）：那半搬走之后，「表还在/行够多」由新文件接管，「两处调用点都脱了敏」搬进新文件的接线一节（现在只剩一处），死掉的 `fs` / `zlib` import 清掉。文档里那些「由 perf-notes-claims 现读产物判」「CI 那一趟会明说跳过」的现在时描述改成真话（历史那几张表的标题与已关账的台账叙述保持原样，它们说的是当时）。
+
+### 最有说服力的一条读数
+
+**把 `.next` 整个移走再跑全量 `vitest run` → 354 文件 / 3773 条全绿**。单元测试不再依赖构建产物（CI 的真实处境），而判据搬到了有产物的地方。本机 `check:bundle` 印 `✓ 实测列与当场重算逐字一致：15 组`；同一道门禁在 `node:22-alpine` 里跑 → **exit 0 并明说跳过、印出两边指纹**。
+
+### 探针 9 条腿 BAD=0，两条腿第一版是我自己写错的
+
+`.gate-logs/probe-r75.mjs`。M1 摘掉 fail 判定 / M2 当场指纹抄成表上那一个 / M3 摘掉脱敏 / M4 指纹行被删 / M5 最新那张表读数改漂 0.1KB / M6 指纹形状不合法 / M8 大块探针被删 / M9 notes 不印出来——各红在它该红的那一条；M7（只改判据自己的注释）是反向对照。
+
+- **M1 期望填成「门禁该红」是错的**：摘掉的正是那个 exit，门禁本体不可能红，能喊红的只有覆盖接线的用例（R16.311 记过同一条，本轮第二次踩）。
+- **M5 的锚点在文档里出现两次**（`| replay | 318.5 KB | 400 KB |` 在 R16.318 与 R16.320 两张表都有），`.replace()` 打到了**历史表**上，而历史不判、门禁正确地绿——于是这条腿被读成「判据没牙」。**规矩：往有多张同形表的文档里打变异，锚点必须当场数出现次数**（本轮改用 `| stats | 303.4 KB |`，只出现 1 次，已核）。
+- 另外 `.gate-logs` 那两份实验脚本（`zlib-attribution-r75.mjs` / `deflate-fingerprint-r75.mjs`）都写成**本机与容器里都能直接跑**（根目录由脚本自身位置推导），否则每次实验都要临时改 import 路径，改一次就多一次抄错的机会。
+
+### 未做（登记而不顺手补）
+
+路 ②「表由 CI 录」需要一条 CI 写回产物的路子，且会把这张表与维护者的笔记本脱钩，属产品取向；换纯 JS 的 gzip 实现（pako / fflate）能让读数彻底脱离宿主 zlib，但 `check:bundle` 与这条判据必须同口径（R16.314 立的规矩，两处都有用例钉着），换实现等于表与预算一起重录。**本轮也没量「换实现后预算是否必须重定价」**，只量到方向：CI 那套 zlib 让 15 组读数全部偏高，最紧的 `knowledge-lesson` 余量从 6.8KB 缩到 4.5KB（预算 357 / CI 读数 352.5），其余各组 ≥27KB——预算门禁同样吃这个差异，只是目前还没被吃掉。R16.306 那条「不给容差」仍然成立，本轮未动。
+
+- 变更文件：`scripts/deflate-fingerprint.mjs`（新）、`scripts/perf-readings.mjs`（新）、`scripts/perf-readings.test.mjs`（新，17 条）、`scripts/perf-notes-claims.test.mjs`（357 → 161 行，净删 196）、`scripts/check-bundle.mjs`（判据接线 + 脱敏前提当场核）、`docs/perf-notes.md`（表下新增 `- 记录环境指纹：4dbfa3ca2225`，现在时描述改真话）、`docs/ops.md`（同）、`docs/roadmap.md`（R16.321 关账并订正归错两次的病因）、`docs/scan-counts.md` 与 `docs/test-clock-hygiene.md`（两份自动报告重算入库）。**用户可见行为零变化**：改的是门禁的执行时机与判据归属。
+- 验证：全量 `test:coverage` **354 文件 / 3773 条**绿（覆盖率 95.06 / 90.75 / 95.08 / 96.9，阈值 94/89/94/96 未动）；`lint` 0 warning、`typecheck` 0、`build` 0、`check:bundle` 0 并印 `✓ 实测列与当场重算逐字一致：15 组 · 环境指纹 4dbfa3ca2225` + `✓ 构建号脱敏：454 处替换`；`check:comment-paths`（384 份源码 / 154 条引用）/ `check:mobile` / `check:seo-surface` / `check:search-index` / `check:structured-data` / `check:risk-warning` / `kb:inventory` / `kb:gap-priority` / `kb:accept` / `check:title-terminology` / `check:description-quality` / `check:description-dupes` / `check:glossary` / `check:test-clock-hygiene`（353 个测试文件）/ `check:dead-copy` / `ops:faq-candidates` / `check:scan-counts`（`secrets-listed-files` 847）/ `check:report-freshness` / `check:constitution` / `check:docs` / `check:changelog` / `check:quiz-coverage` / `check:quiz-mounts` / `check:links` / `check:sitemap` / `check:nav-chain` / `check:relative-links` / `check:env-docs` / `check:secrets` / `check:lockfile-repro` / `audit:prod` / `audit:all` 全 0，`git status` 干净、`fail=0`。**跨环境那条**：同一道 `check:bundle` 在 `node:22-alpine` 容器里跑 → exit 0、明说跳过并印出两边指纹（darwin `4dbfa3ca2225` / linux `fab194c9217d`）。**最强的一条读数**：把 `.next` 整个移走再跑全量 `vitest run` → 354 文件 / 3773 条全绿，单元测试从此不依赖构建产物。探针 `.gate-logs/probe-r75.mjs` 9 条腿 BAD=0。台账里这些数（354 / 3773 / 353 / 384 / 154 / 847 / 161 / 196 / 约 3 秒）落笔前逐个回查了实测输出——「3.3 秒」是当场抄的，重算三趟得 2.68 / 2.72 / 3.40，已订正为「约 3 秒」。
+- 阻塞 / 风险：无新增阻塞。回滚撤回这四笔即可（无迁移、无数据、无界面变化）。**登记两处已知边界**（不顺手补）：① 表只能在录它的那台机器上判——指纹不符时是**有理由的不判**，CI 的绿灯仍不为「实测列」这三个字签字，只是这次会明说；② 预算门禁同样吃这套 deflate 行为差异（`knowledge-lesson` 在 CI 那套下余量 4.5KB），本轮只是量到方向，没有重定价。
+- 下一项：本分支开 PR，等 `ci` + `db-tests` + `auth-e2e` + CodeQL 绿了 rebase 合并。第七十六轮候选（不需拍板、能先证伪）：AGENTS.md in-scope 的「隐私与三方服务文档事实订正」与「C 端体验与 a11y」各挑一处；`/stats` 那张页面上「回放时长」与「总学习时长」并排出现，R16.320 钉的是**代码**不会说两个数，界面有没有把「为什么有时对不上」说清楚还没量过；`ACTIVE_DAY_MIN_SECONDS` 那族 `/60` 代入是否也只有一处主人。
+- 更新时间：2026-10-13（Asia/Shanghai）。
+
 ## 2026-10-13 · 第七十四轮（R16.320）：「与 study-time 防呆一致」是句没有主人的话——`8 * 3600` 长在四处，其中两处零覆盖
 
 - 里程碑 / 版本：口径与防呆收敛第三轮；R16.320 新增并关账，未改产品版本（当前 v0.7.29）。分支 `fix/eight-hour-cap-single-owner`（自合并后的 `main` 顶点 `e08aff6`），三笔：`5c0c628`（fix(stats)）上限收进 `study-caps` + 四处接线、`0f88d0e`（test(stats)）跨聚合器不变式 + 两份报告重算、本笔台账。
