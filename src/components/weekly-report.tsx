@@ -1,8 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { getStudySeries } from "@/lib/study-time";
-import { weekMinutes } from "@/lib/weekly-summary";
+import { getStudySeries, studyMinutes } from "@/lib/study-time";
 
 // 快照必须是值稳定类型：用逗号串而非数组引用，避免 useSyncExternalStore 无限重渲染
 function getSeriesSnapshot(): string {
@@ -36,10 +35,10 @@ export function WeeklyReport({ dict }: { dict: WeeklyDict }) {
   ).split(",")
     .map(Number);
 
-  // 分钟口径与周度摘要共用 weekMinutes：整周合计向下取整，单日也不被抬成「1 分钟」，
-  // 否则同一页两张卡会对同一段时间报两个分钟数。
-  const minutes = series.map((s) => weekMinutes(s));
-  const total = weekMinutes(series.reduce((a, b) => a + b, 0));
+  // 秒→分钟只有 studyMinutes 一个算法（与周度摘要、日目标同一份）：整周合计向下取整，
+  // 单日也不被抬成「1 分钟」，否则同一页两张卡会对同一段时间报两个分钟数。
+  const minutes = series.map((s) => studyMinutes(s));
+  const total = studyMinutes(series.reduce((a, b) => a + b, 0));
   const avg = Math.round(total / 7);
   const max = Math.max(...minutes, 1);
   const dayLabels = ["S", "M", "T", "W", "T", "F", "S"];

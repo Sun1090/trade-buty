@@ -7,7 +7,7 @@
  * 旧版「篇数」目标（tb-daily-goal）保留字段不再读取，新 key 独立。
  */
 import { localDateStr } from "./date-utils";
-import { getTodayStudySeconds } from "./study-time";
+import { getTodayStudySeconds, studyMinutes } from "./study-time";
 
 const GOAL_KEY = "tb-daily-goal-min";
 
@@ -39,7 +39,7 @@ export function setDailyGoalMin(n: number): void {
     .catch(() => {});
 }
 
-/** 今日已学分钟数（向下取整，来自学习时长台账） */
+/** 今日已学分钟数（口径由 `studyMinutes` 持有，与周度摘要、柱状图同一份算法） */
 export function getTodayStudyMinutes(): number {
-  return Math.floor(getTodayStudySeconds().total / 60);
+  return studyMinutes(getTodayStudySeconds().total);
 }

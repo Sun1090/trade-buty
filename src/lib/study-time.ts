@@ -123,3 +123,19 @@ export function getStudyLedgerSpan(): { firstDay: string | null; lastDay: string
 export function getTodayStudySeconds(): DayStudy {
   return getStudySeconds(localDateStr());
 }
+
+/**
+ * 学习台账秒数 → 分钟数的唯一口径：向下取整。
+ *
+ * 为什么住在这里而不是 `weekly-summary.ts`：换算的输入是**这本台账**的去重秒数，
+ * 口径该跟数据源走；「周」与「今日」只是取哪几天的差别。原先它叫 `weekMinutes`，
+ * 头顶写着「全站唯一口径」，而同一本台账的秒→分钟在 `daily-goal.ts` 还长着第二份
+ * 私有副本（`Math.floor(getTodayStudySeconds().total / 60)`）——那句话从来没有主人守着。
+ *
+ * 为什么取整方向要紧：逐日取整再相加会把 30 秒的一天抬成「1 分钟」，7 天各 30 秒
+ * （整周 210 秒）能报成 7 分钟，而同一页的周度摘要报 3 分钟。本模块开头承诺
+ * 「绝不放松口径凑数」，所以合计必须是**先加秒、后取整**。
+ */
+export function studyMinutes(totalSeconds: number): number {
+  return Math.floor((Number.isFinite(totalSeconds) ? totalSeconds : 0) / 60);
+}
