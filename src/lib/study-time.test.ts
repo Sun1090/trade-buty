@@ -9,7 +9,7 @@ vi.stubGlobal("localStorage", {
 });
 vi.stubGlobal("window", { dispatchEvent: () => {} });
 
-const { addStudyTime, getStudySeconds, getTotalStudySeconds, getTodayStudySeconds, getStudyLedgerSpan, STUDY_LEDGER_KEEP_DAYS } = await import(
+const { addStudyTime, getStudySeconds, getTotalStudySeconds, getTodayStudySeconds, getStudyLedgerSpan, studyMinutes, STUDY_LEDGER_KEEP_DAYS } = await import(
   "./study-time"
 );
 const { shiftDate } = await import("./date-utils");
@@ -86,5 +86,35 @@ describe("study-time 台账边界（R4.2）", () => {
     addStudyTime("quiz", 45);
     expect(getTodayStudySeconds().date).toBe(key);
     expect(getTodayStudySeconds().quiz).toBe(45);
+  });
+});
+
+describe("studyMinutes：台账秒数 → 分钟的唯一口径", () => {
+  it("先加秒、后取整：7 天各 30 秒是 3 分钟，不是逐日取整的和", () => {
+    const days = [30, 30, 30, 30, 30, 30, 30];
+    const weekTotal = days.reduce((a, b) => a + b, 0);
+    expect(studyMinutes(weekTotal)).toBe(3);
+    // 反面（R4.10 之前的写法）：逐日取整再相加，30 秒的一天被抬成「1 分钟」
+    const perDayThenSum = days.reduce((a, d) => a + studyMinutes(d), 0);
+    expect(perDayThenSum).not.toBe(studyMinutes(weekTotal));
+  });
+
+  it("向下取整不放松口径：59 秒算 0 分钟，满 60 秒才算 1 分钟", () => {
+    expect(studyMinutes(59)).toBe(0);
+    expect(studyMinutes(60)).toBe(1);
+    expect(studyMinutes(119)).toBe(1);
+    expect(studyMinutes(210)).toBe(3);
+  });
+
+  it("非有限输入按 0 处理，不把 NaN 漏进界面文案", () => {
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      expect(studyMinutes(bad), String(bad)).toBe(0);
+    }
+  });
+
+  it("台账这一侧不会喂进负数：写坏的值读回来是 0 秒", () => {
+    store.set("tb-study-time", JSON.stringify({ "2026-09-05": { read: -600 } }));
+    expect(getStudySeconds("2026-09-05").total).toBe(0);
+    expect(studyMinutes(getStudySeconds("2026-09-05").total)).toBe(0);
   });
 });
