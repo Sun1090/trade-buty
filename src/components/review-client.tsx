@@ -480,7 +480,7 @@ export function ReviewClient({
               // R16.108：中英两侧都与字典逐字相同的字段一律取字典，不再在调用点拼第二副本。
               // 剩下 8 条（generate/generating/error/rateLimited/badge/correct/wrong/done）
               // 以哪边措辞为准会改到用户可见的句子，待产品拍板，见 docs/roadmap.md R16.108；
-              // scripts/ai-quiz-copy-single-source.test.mjs 守住已并入的这一半不许再分叉。
+              // scripts/review-ai-copy-claims.test.mjs 守住已并入的这一半不许再分叉。
               generate: locale === "en" ? "AI quiz from your wrong answers" : "AI 针对错题出变体题",
               generating: locale === "en" ? "Generating…" : "正在生成…",
               error: locale === "en" ? "Generation failed, retry" : "生成失败，请重试",

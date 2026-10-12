@@ -202,7 +202,7 @@ function main() {
   // 变成了单元测试的硬前置**。所以「数产物里那条 link」这一半挪到这里：这道门禁本来就
   // 在 build 之后跑（`ci.yml` 第 131 行），产物现成。
   //
-  // 判据本身在 `src/lib/manifest-artifact.mjs`，两处共用（单测那份在有 `.next` 时才跑）。
+  // 判据本身在 `scripts/manifest-artifact.mjs`，两处共用（单测那份在有 `.next` 时才跑）。
   if (!checkManifestArtifacts({ appOut })) fail = true;
 
   if (fail) {

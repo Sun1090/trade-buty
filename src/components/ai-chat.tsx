@@ -34,7 +34,7 @@ const EXAMPLE_COUNT = 5;
 
 /**
  * 从发出请求到**响应头到达**的等待上限（正文开始流式之后就不再看这个表）。
- * 界面里那句超时提示说的秒数以它为准，见 `src/lib/ai-error-cause-claims.test.ts`。
+ * 界面里那句超时提示说的秒数以它为准，见 `src/components/ai-error-cause-claims.test.ts`。
  */
 export const RESPONSE_HEADER_TIMEOUT_MS = 30_000;
 

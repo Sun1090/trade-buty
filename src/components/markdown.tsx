@@ -9,7 +9,7 @@ import { isValidElement } from "react";
 
 // rewriteLinks 把课文里的相对链接改写成 /{locale}/knowledge/…，正文里的 #锚点 也在本页
 //
-// 这条正则是 `rewriteLinks`（src/lib/kb-links.ts，写回 markdown 源码）与这里的消费者之间
+// 这条正则是 `rewriteLinks`（src/lib/content.ts，写回 markdown 源码）与这里的消费者之间
 // 唯一的契约：凡是不在这张单子上的站内地址都会被当外链开新标签 + 挂 ↗。两处必须一起改，
 // 否则同一段课文里会有一半链接在站内跳、一半开新窗（生产测试 markdown.test.tsx:38 已钉住
 // 一条，往里加名字时要连它一起加）。
