@@ -2,6 +2,50 @@
 
 ---
 
+## 2026-10-12 · 第六十九轮（R16.315）：把「撞一个修一个」换成登记制——新增一处无主人的手抄，从此在提交时被拦
+
+- 里程碑 / 版本：「说法 vs 事实」第六十九轮；R16.315 新增并关账，未改产品版本（当前 v0.7.28）。分支 `codex/doc-content-claims`（自合并后的 `main` 顶点 `b370fad`），四笔：`refactor(quiz)` 先给一个真正没主人的数立主人、`gate(docs)` 登记制本体、`gate(docs)` 补豁免边界断言与白名单注释、`docs` 台账。本轮同时收掉 #413（R16.314，已 rebase 合并进 main）。
+
+### 为什么这轮不再「找一处修一处」
+
+- 前四轮（R16.310 的 27、R16.311 的 418、R16.312 的 81、R16.313 的 430）都是同一族病，但**修法是一次一个靶子**：每一次都要有人（我）先读到那句话，才去找它的主人。修到第四处时该问的是：**下一处手抄什么时候会红**——答案是「永远不会，直到有人读到」。
+- 于是本轮先做只读全量盘点（`.gate-logs/survey-r69.mjs`），把非台账、非自动生成文档里的「数字紧跟单位」逐条列出并分类，再决定判据形状，而不是先写判据再找靶子。
+
+### 实现：登记表 + 扫描器 + 豁免表 + 两条地板
+
+- `scripts/docs-consistency-lib.mjs` 新增 `DOC_NUMBER_CLAIMS`（29 条：file + **只捕获一个数**的 anchor + owner 名）、`scanDocNumberHits`、`DOC_NUMBER_EXEMPTIONS`（4 条，各写明为什么不归内容管）与纯函数 `auditDocNumberClaims({files, actual})`。**三种红**：无主人的命中 / 登记的锚点在文档里打空 / 登记的数与主人不符。
+- **两条地板**各防一种空转：登记表被删空之后「所有命中都登记了」会退化成对空表成立；单位表被改到扫不出东西时「全部已登记」是空话。
+- 主人一律现读、**不取任何文档自己印的数**：章与篇来自内容树、题数来自 `parseQuizMounts(quizzes.ts)`、`minQuestionsPerChapter` 与 `dbAuditedDocs` 来自代码常量。`check:docs` 在 CI 里排在 `build` 之后但**拿不到产物**，所以登记项的 owner 只能来自内容树/代码，产物类数字（430/418）继续由 `check:seo-surface` 那两条（R16.311/R16.313）管，在本表里以**豁免**形式写明归属——两套口径不互相冒充。
+- **顺手给一个真正没主人的数立了主人**：「固定题库每章最少 3 道」此前只是 `check-quiz-coverage.mjs` 里的字面量 `3`，却被 `docs/ops.md`（两处）与 `docs/perf-notes.md`（两处）抄成现行说法。抽成 `quiz-source-lib.mjs` 的 `MIN_QUESTIONS_PER_CHAPTER`，门禁判断与它打印的那句都改读常量：改纪律即让那几句当场红（探针 M4 验的正是这个方向——**只改代码不动文档，三处说法一起红**）。
+
+### 三条探针教训，比修的东西值钱
+
+- **① M1 第一版 fixture 造假**：我往 `docs/plan.md` 追加「覆盖 12 个词条」期望判据红，而单位表里没有「个」——判据按设计不响。这不是漏洞是**白名单的边界**，于是把它转成一条如实记录边界的腿（M1b：期望绿），并把边界与「先给现有命中找主人、再扩表」的顺序写进注释：顺序反了就是拿一批假红去逼自己写豁免，豁免表一旦变垃圾桶，登记制名存实亡。
+- **② M7 那一版削弱根本不可观察**：去掉「豁免只对登记的那份文档生效」这道过滤后，没有任何用例红——不是判据弱，是当时**没有一条断言去看它**。补上断言（把 `research.md` 的立项期那句原样搬进 `plan.md` 必须红），真实库绿 / 削弱库红两边都验，探针才重新有效。**一条削弱的判据如果测不出红，说明缺的是断言而不是那条腿。**
+- **③ 探针自己的 replace 打空时会静默「通过」**：这正是我这几轮反复立的「锚点打空即报错」用在我自己身上。`mutate()` 现在命中不了就抛、内容没变也抛；追加型改写走 `appendClaim()`——第一版拿 `"\n# "` 当锚点，`plan.md` 里根本没有那个形状，整条探针当场作废（报错比假通过好）。
+
+### 变更文件
+
+- `scripts/quiz-source-lib.mjs`（新增 `MIN_QUESTIONS_PER_CHAPTER`）、`scripts/check-quiz-coverage.mjs`（判断与输出都改读常量）、`scripts/docs-consistency-lib.mjs`（登记制本体）、`scripts/check-docs-consistency.mjs`（接线，主人全部现读）、`scripts/docs-consistency-lib.test.mjs`（10 条新用例，17→27）、`docs/ops.md`（`check:docs` 那一行说明登记制与两条地板）、`docs/roadmap.md`（R16.315）、`docs/progress.md`（本段）。
+
+### 验证
+
+- `npx vitest run scripts/docs-consistency-lib.test.mjs` **27 条全绿**；`npm run check:docs` exit 0；`npm run test:coverage` **349 文件 / 3700 条全绿**（覆盖率 95.04 / 90.8 / 95.06 / 96.89）；`lint` / `typecheck` / `build` / `check:bundle`（454 条路由全过）/ `check:seo-surface` / `check:scan-counts`（6 处登记，报告无变化）/ `check:changelog` / `check:dead-copy` / `check:report-freshness` / `check:test-clock-hygiene` 全部 exit 0。
+- 探针 `.gate-logs/probe-r69.mjs`：**15 条腿 BAD=0**，结束确认工作树只剩预期改动。
+
+### 阻塞 / 风险 / 回滚
+
+- 无阻塞。风险面：判据只读文档与内容树，不改运行时；登记表是**人工维护的映射**，锚点写坏会被「打空即报错」抓到，但**漏登记一处新说法**会由扫描器兜住（无主人的命中即红）——这两条合起来才闭合。回滚：`git revert` 三笔 gate/refactor 提交即可，无数据与迁移。
+- 已知边界（写在代码注释里，不假装没有）：单位表是白名单，表外量词（个/条/次/组）扫不到；台账类文档（progress、roadmap、release-review、CHANGELOG）按历史豁免，与 `db-assertion-counts.mjs` 的 `CURRENT_SECTIONS` 同一族规矩。
+
+### 下一项
+
+- 重新检查仓库：#414 落地后，继续按「不需拍板、能先证伪」扫下一条事实门禁或核心缺陷。
+
+- 更新时间：2026-10-12（Asia/Shanghai）。
+
+---
+
 ## 2026-10-11 · 第六十八轮（R16.314）：一道判据每次构建都在掷硬币，而我不信推理、连构四次把它量了出来
 
 - 里程碑 / 版本：「说法 vs 事实」第六十八轮；R16.314 新增并关账，未改产品版本（当前 v0.7.28）。分支 `codex/perf-buildid-determinism`（自合并后的 `main` 顶点 `6c9e682`），两笔：`3ae016b` 修复本体、`9445d40` 把文档里那句代价按实测改对。本轮同时收掉 #412（R16.313，已 rebase 合并进 main）。
