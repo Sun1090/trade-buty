@@ -115,9 +115,15 @@ describe("滚动 7 天窗口的文案说出它真的是 7 天", () => {
     expect(zh, `摘要卡那句还在用一把没说明的尺：${zh}`).not.toMatch(VAGUE);
     expect(en, `摘要卡那句还在用一把没说明的尺：${en}`).not.toMatch(VAGUE);
 
-    const barPhrase = bar.match(/近 7 天里哪几天[\s\S]{0,90}/)?.[0] ?? "";
+    // 那句话里的天数由 `WEEK_WINDOW_DAYS` 代入（R16.319），所以锚点认的是模板形状而不是硬编码的 7：
+    // 读屏名字里写死一个数，改窗口时它就会悄悄落后于眼睛看到的那根条。
+    const barPhrase = bar.match(/天里哪几天[\s\S]{0,90}/)?.[0] ?? "";
     expect(barPhrase, "迷你条的读屏名字要点名它记的是哪三种事").toMatch(/标过已读|答过题|回放/);
     expect(barPhrase, "那一格按时长算就错了，句子里不许有分钟").not.toMatch(/分钟/);
+    expect(
+      bar.match(/近 \$\{WEEK_WINDOW_DAYS\} 天里哪几天/),
+      "迷你条那句读屏名字的天数必须由 WEEK_WINDOW_DAYS 代入，不许再抄一个 7",
+    ).toBeTruthy();
 
     // 正向对照：退役的三句喂给同一组禁令，必须条条报红
     const legacyVague = [
@@ -129,5 +135,63 @@ describe("滚动 7 天窗口的文案说出它真的是 7 天", () => {
       /标过已读|答过题|回放/.test("近 7 天学习记录（从 6 天前到今天）："),
       "旧的读屏名字什么都没点名",
     ).toBe(false);
+  });
+
+  /**
+   * R16.319：窗口长度也不许只活在文案里——同一屏那三张卡**画**的格数必须由它生成。
+   *
+   * 上面那族用例把「近 N 天」那几句字钉住了，而 `WEEK_WINDOW_DAYS` 头顶那句注释
+   * 写着「摘要、周目标、柱状图共用这一个数」：实测把常量改成 14，标题会变成「近 14 天」，
+   * 柱状图照旧画 7 根、日均照旧除以 7、迷你条照旧走 6 天，**一条测试都不红**。
+   * 也就是说那句话从来没有主人守着——与 R16.40（七份「今天」）/ R16.318（两份秒→分钟）同族。
+   * 判据分三层，缺一层就有对应的躲法：① 数据入口不许吃字面量（`getStudySeries(7)` 这种）；
+   * ② 渲染这三张卡的文件必须真的导入并使用常量；③ 常量自己不许在那几个文件里被写成裸数字。
+   */
+  it("柱状图与迷你条画的格数由 WEEK_WINDOW_DAYS 生成，不是各自抄一个 7", () => {
+    const WINDOW_SURFACES = [
+      "src/components/weekly-report.tsx",
+      "src/components/week-mini-bar.tsx",
+      "src/components/stats-client.tsx",
+    ];
+    const readSrc = (rel: string) => readFileSync(path.join(process.cwd(), rel), "utf8");
+
+    // ① 数据入口：全仓任何地方都不许用字面量向 getStudySeries 要窗口
+    const offenders: string[] = [];
+    for (const rel of WINDOW_SURFACES) {
+      const src = readSrc(rel);
+      const literalCall = src.match(/getStudySeries\(\s*\d+/);
+      if (literalCall) offenders.push(rel + " → " + literalCall[0]);
+    }
+    expect(offenders, "窗口长度必须由 WEEK_WINDOW_DAYS 传入：\n" + offenders.join("\n")).toEqual([]);
+
+    // ② 三个表面都真的用上了常量（少一个 = 那一处还长着私有字面量）
+    for (const rel of WINDOW_SURFACES) {
+      const src = readSrc(rel);
+      expect(
+        /import\s*\{[^}]*\bWEEK_WINDOW_DAYS\b[^}]*\}\s*from\s*"[^"]*weekly-summary"/.test(src),
+        rel + " 没有从 weekly-summary 导入 WEEK_WINDOW_DAYS（多半是又抄了一份字面量）",
+      ).toBe(true);
+      expect(src.match(/WEEK_WINDOW_DAYS/g), rel + " 里常量一次都没用上").not.toBeNull();
+    }
+
+    // ③ 非空转：把旧写法喂给①那条判据，必须每条都能抓住
+    const LEGACY_SHAPES = [
+      "  return getStudySeries(7)",
+      "          dailySeconds: getStudySeries(7).map((d) => d.total),",
+    ];
+    for (const shape of LEGACY_SHAPES) {
+      expect(/getStudySeries\(\s*\d+/.test(shape), "判据抓不住旧写法：" + shape).toBe(true);
+    }
+  });
+
+  /**
+   * 一周七天是**另一件事**，不许被上面那条误伤：柱状图的星期标签按下标循环取，
+   * 那个 7 是星期数、不是窗口长度。把两者混成一个常量，窗口一改标签就错位。
+   */
+  it("星期循环的那个 7 与窗口长度是两回事", () => {
+    const bar = readFileSync(path.join(process.cwd(), "src/components/weekly-report.tsx"), "utf8");
+    expect(bar.match(/dayLabels = \[[^\]]*\]/)?.[0], "柱状图应当有一份 7 个元素的星期标签").toMatch(/"S", "M", "T", "W", "T", "F", "S"/);
+    // 取标签的下标必须对负数安全（today - 窗口 + i 可以是负的），所以那一行有两次 % 7
+    expect(bar, "星期下标必须对负数取模安全").toMatch(/% 7\) \+ 7\) % 7/);
   });
 });
