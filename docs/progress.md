@@ -2,6 +2,39 @@
 
 ---
 
+## 2026-10-13 · 第七十二轮（R16.318）：秒→分钟长着两份实现，而「全站唯一口径」那句话从来没有主人守着
+
+- 里程碑 / 版本：内容质量与口径收敛一轮；R16.318 新增并关账，未改产品版本（当前 v0.7.29）。分支 `fix/study-minutes-caliber`（自合并后的 `main` 顶点 `8544794`），四笔：`e15a265`（fix(stats)）口径搬家 + 删别名、`4c63fa4`（test(stats)）新判据 8 条 + 台账登记、`1922121`（test(stats)）扫描面结构核对、`c19b130`（docs(perf)）复测表重录。
+
+### 病灶：一句「全站唯一口径」下面长着另一份实现
+
+`src/lib/weekly-summary.ts` 的 `weekMinutes` 头顶写着「周学习分钟数的全站唯一口径」，而同一本 `tb-study-time` 台账的秒→分钟在 `src/lib/daily-goal.ts` 还长着第二份私有副本（`Math.floor(getTodayStudySeconds().total / 60)`）。两份写法当时恰好等价，所以**没有任何测试会红**——与 R16.40（七份 `localDateStr`）、R16.57（四处「已读几篇」）、R16.317（注释里的路径没有主人）是同一条病，问题从来不在今天算得对不对，在于改口径时只改得动一份。
+
+改法与 R16.40 同构，但多走一步：① 换算搬回**数据源的持有者** `study-time.ts` 的 `studyMinutes`（口径该跟输入住——那本台账的去重秒数住在那儿，「周」与「今日」只是取哪几天的差别）；② **删掉 `weekMinutes` 别名**而不是留成「两个名字一个实现」。它从来不是按周的算法：`weekly-report.tsx` 拿它逐日换算柱高，`buildWeeklySummary` 拿它算整周合计。留着这个名字等于给下一个「按天口径」预先占好位置。四处读者（柱状图、周度摘要、日目标、e2e）一律直调 `studyMinutes`。
+
+### 判据：先量射程，再定形状
+
+`src/lib/study-minute-caliber.test.ts`（8 条，照 `date-caliber.test.ts` 那族的形状）。**本轮最容易判错的地方是射程**：`Math.floor(x / 60)` 这一族在 `reading-time.ts`（秒 → `xh xm` 分段）与 `quiz-timer.tsx`（秒 → `mm:ss`）各有合法住户，把它们并进 `studyMinutes` 反而会把「不足一分钟算 0」的口径塞进计时器显示。所以先跑只读普查（`.gate-logs/probe2.mjs`）量出真实命中，再决定「豁免 + 双向核对」而不是「把正则收窄到看不见」。判据因此盯**形状**：`Math.floor(` 的实参配到大括号闭合、在最外层除以 60 即命中，`elapsed / 60`、`(a + b) / 60`、拆成三元再除都跑不掉；注释与字符串先按长度保持原样剥掉（否则持有者注释里那句讲历史的旧写法会把自己判成副本）。
+
+### 探针 11 条腿 BAD=0，两条是探针自己的错
+
+`.gate-logs/probe-r72.mjs` / `.log`（首尾各跑一次 BASE 全绿）。M1 在消费方注入私有副本 / M3 豁免表留一条不再命中的条目 / M4 把旧写法样本换成判据抓不住的形状 / M6b 持有者长出第二处实现 / M7 消费方留同名本地副本不 import / M8 别名长回来——各红在它该红的那一条；M2（往**已豁免文件**里再加一处，豁免按文件所以不红）与 M10（只改判据自己的注释）是反向对照；M6 与 M6b 成对，证明「持有者恰好一份」那条判据本身不是装饰（削弱成 `>=1` 之后注入就不再红）。
+
+- **M9 逼出一条真缺口**：只把扫描根从 `src` 换成 `src/lib`，那条「文件数 > 100」的地板根本不响（`src/lib` 自己就有 124 份非测试源码），而组件侧的副本从此没人看——`weekly-report.tsx` 那一处正是历史住户。补了「扫描面按目录结构核对」：`src/app` / `src/components` / `src/lib` 三类住户各在场、总数贴近仓库真实规模。它的期望第一版我只写了一条，实际两条同时红（扫描根一缩，`quiz-timer.tsx` 不再命中，那条豁免跟着变成「不再被用到的条目」）——**连锁红是对的**，期望要跟着这条腿实际制造的状态写（R16.313 记过同一条）。
+- **探针自己翻车两次，都是本仓记过的账**：① 判定失败用例名的正则写成 `×\s+名字`，而 vitest 在 `×` 与用例名之间夹了 ANSI 颜色码，十一条腿全部读成「没红」——必须用 `×[^\n]*名字`。② **未提交的用例被 `git checkout --` 一起抹掉**（还原只到 HEAD），那条结构核对被抹之后 M9 报「期望红、实际没红」；重做并 commit 才判得对（R16.308 记过，本轮第三次踩）。
+
+### 产物侧真有一处变化，被自己的门禁当场抓住
+
+`perf-notes-claims` 那条「实测列与当场重算一致」报 `replay` 表 318.4 / 实测 318.5。**先归因再落笔**：把那四个文件退回改动前重新干净构建读回 318.4，换回改动后的树读回 318.5；两次干净构建的读数 diff 为空，所以不是 R16.314 那种随机构建号。字节级原因是 `weekly-summary.ts` 静态依赖 `study-time.ts` 之后共享 chunk 净增十几个字节，而 `zh/replay` 的 total 是 326107 字节 = 318.4639KB——**距 318.45 进位边界只有 14.2 字节**。处理按 R16.316 先例：补一张 2026-10-13 复测表（旧表留作历史，历史那几张不判），预算一处未改，并把「这 0.1 由十几个字节决定、下次无关增减可能推回去」写进明处。这是不给容差（R16.306）与先剔随机量（R16.314）之后**仍然存在的第三种脆弱**：判据的「同一份产物重算逐字相同」可信，但「与上一张表差 0.1」不自动意味着回归，得看字节。
+
+- 变更文件：`src/lib/study-time.ts`（新增 `studyMinutes`）、`src/lib/weekly-summary.ts`（删 `weekMinutes`，改依赖）、`src/lib/daily-goal.ts`、`src/components/weekly-report.tsx`、`e2e/placeholder-leak.spec.ts`、`src/lib/study-time.test.ts`（+4 条口径用例）、`src/lib/study-minute-caliber.test.ts`（新）、`docs/roadmap.md`（R16.318）、`docs/perf-notes.md`（新复测表）、`docs/scan-counts.md` 与 `docs/test-clock-hygiene.md`（重算入库）。**用户可见行为零变化**：三处读数在改动前后逐字相同（两份副本本来就等价），改的是「谁持有那个算法」。
+- 验证：`npm test` 全量 **352 文件 / 3752 条**绿，覆盖率 95.05 / 90.76 / 95.08 / 96.9（阈值 94/89/94/96 未动，R14.12 只许上调）；`lint` 0 warning、`typecheck` 0、`build` 0、`check:bundle` 0（15 组全通过；AI chunk 隔离 452 条、supabase chunk 隔离 450 条——`weekly-summary` 新增的静态依赖没有把任何东西拖进首页或 AI 侧）、`check:comment-paths` 0（381 份源码 / 150 条引用）、`check:mobile` / `check:seo-surface` / `check:search-index` / `check:structured-data` / `check:risk-warning` / `kb:inventory` / `kb:gap-priority` / `kb:accept` / `check:title-terminology` / `check:description-quality` / `check:description-dupes` / `check:glossary` / `check:dead-copy` / `ops:faq-candidates` / `check:scan-counts` / `check:report-freshness` / `check:constitution` / `check:docs` / `check:changelog` / `check:quiz-coverage` / `check:quiz-mounts` / `check:links` / `check:sitemap` / `check:nav-chain` / `check:relative-links` / `check:env-docs` / `check:secrets` / `check:lockfile-repro` / `audit:prod` / `audit:all` 全 0。
+- 阻塞 / 风险：无新增阻塞。回滚只需撤回这四笔（无迁移、无数据、无界面变化）。**登记一处已知边界**（不顺手补）：豁免表按**文件**粒度，所以往 `reading-time.ts` 里再加一处秒→分钟不会红（M2 就是这条边界的反向对照腿）——按符号粒度要求每个调用点登记，会把「同一格式化函数里的分段取整」误判成副本，代价大于收益，等真出现第三类住户再重估。
+- 下一项：本分支开 PR，等 `ci` + `db-tests` 绿了 rebase 合并。第七十三轮候选（不需拍板、能先证伪）：AGENTS.md in-scope 的「隐私与三方服务文档事实订正」与「C 端体验与 a11y」各挑一处；同族口径还有「秒→分钟」的**上游**——`getStudySeries` 的逐日秒数有没有第二份拼法（本轮只收敛了秒→分钟这一刀）。
+- 更新时间：2026-10-13（Asia/Shanghai）。
+
+---
+
 ## 2026-10-13 · 第七十一轮（R16.317）：注释里点名的路径没有主人，四处指向从未存在过的文件
 
 - 里程碑 / 版本：内容质量与门禁收敛一轮；R16.317 新增并关账，未改产品版本（当前 v0.7.29）。分支 `fix/comment-path-claims`（自合并后的 `main` 顶点 `8c388b3`），两笔：`c1f09d7`（fix(comments)）四处注释订正、`2c6434e`（gate(comments)）新门禁 + 用例 + 接线 + 台账。
