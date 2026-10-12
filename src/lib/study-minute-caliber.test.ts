@@ -140,6 +140,19 @@ describe("学习台账秒数 → 分钟只有一个算法", () => {
     expect(FILES).toContain(OWNER);
   });
 
+  /**
+   * 光有「文件数 > 100」挡不住把扫描根缩小：`src/lib` 自己就有 124 份非测试源码，
+   * 换成它之后那条地板照样不响，而组件侧的副本（`weekly-report.tsx` 那一处就是历史住户）
+   * 从此没人看。所以扫描面要按**目录结构**核对：三类住户各在场，且总数贴近仓库真实规模。
+   */
+  it("扫描面覆盖 src 下每一类目录，缩小扫描根当场红", () => {
+    for (const prefix of ["src/app/", "src/components/", "src/lib/"]) {
+      const n = FILES.filter((rel) => rel.startsWith(prefix)).length;
+      expect(n, `扫描面里 ${prefix} 只剩 ${n} 份，扫描根被缩小了（判据只看到一部分仓库）`).toBeGreaterThan(20);
+    }
+    expect(FILES.length, "扫描面远小于仓库非测试源码规模，多半是扫描根或排除规则被动过").toBeGreaterThan(200);
+  });
+
   it("判据抓得住每一份被删掉的旧写法（非空转自证）", () => {
     expect(LEGACY_SHAPES.length, "旧写法样本本身不能太少").toBeGreaterThanOrEqual(4);
     for (const [name, src] of LEGACY_SHAPES) {
