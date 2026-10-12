@@ -5,9 +5,12 @@
  * - 回放历史（tb-replay-history）每条记录自带真实时间戳 at，轮数可直接按天聚合。
  * - 耗时 durationSec 由 R12.5 起随新记录写入；旧记录缺省即「无时长」，
  *   不回推、不估算，统计口径内不计入时长，并给出 no-round-durations 警告。
- * - 时长清洗：负数/非数 → 按无时长处理；单轮 >8h → 截断到 8h（与 study-time 防呆一致）。
+ * - 时长清洗：负数/非数 → 按无时长处理；单轮超过 `REPLAY_ROUND_CAP_SEC` → 截到该上限。
+ *   那句「与 study-time 防呆一致」此前只是字面像：上限住在 `study-caps.ts`，
+ *   两处各自 import，而「单轮 ≤ 当日每源」这条关系由 `study-caps.test.ts` 钉住。
  */
 import { isLocalDateStr, localDateStr, shiftDate } from "./date-utils";
+import { REPLAY_ROUND_CAP_SEC } from "./study-caps";
 
 export interface ReplayHistoryEntry {
   at?: unknown;
@@ -53,8 +56,6 @@ export interface ReplayTimeTrend {
   warnings: string[];
 }
 
-const MAX_ROUND_SEC = 8 * 3600;
-
 const safeNonNegative = (value: unknown): number => {
   const n = typeof value === "number" ? value : Number(value);
   return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
@@ -63,7 +64,7 @@ const safeNonNegative = (value: unknown): number => {
 const safeDuration = (value: unknown): number | null => {
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n) || n <= 0) return null;
-  return Math.min(MAX_ROUND_SEC, Math.round(n));
+  return Math.min(REPLAY_ROUND_CAP_SEC, Math.round(n));
 };
 
 export function normalizeReplayHistory(raw: unknown): ReplayHistoryEntry[] {

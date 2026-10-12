@@ -11,6 +11,7 @@ import {
 import { fetchKlines, fetchRandomHistoryWindow, sampleHistoryWindowEndMs, type Kline } from "@/lib/binance";
 import { saveReplayRecord, saveReplayBest } from "@/lib/replay-store";
 import { addStudyTime } from "@/lib/study-time";
+import { REPLAY_ROUND_CAP_SEC } from "@/lib/study-caps";
 import { localDateStr, localDayEndMs } from "@/lib/date-utils";
 import { measureFps, LOW_END_FPS_THRESHOLD, REPLAY_REDUCED_CANDLES } from "@/lib/perf";
 import { ReplayShareCard } from "@/components/replay-share-card";
@@ -200,7 +201,7 @@ export function ReplayTrainer({ dict, locale }: { dict: ReplayDict; locale: "zh"
     ) {
       savedRoundRef.current = round;
       const elapsed = roundStartRef.current > 0
-        ? Math.min(Math.round((Date.now() - roundStartRef.current) / 1000), 8 * 3600)
+        ? Math.min(Math.round((Date.now() - roundStartRef.current) / 1000), REPLAY_ROUND_CAP_SEC)
         : 0;
       if (elapsed > 0) addStudyTime("replay", elapsed);
       roundStartRef.current = Date.now();

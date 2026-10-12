@@ -11,6 +11,7 @@
  */
 import { isLocalDateStr, localDateStr, shiftDate } from "./date-utils";
 import { isRecord, readStorageJson } from "./storage-json";
+import { DAILY_SOURCE_CAP_SEC } from "./study-caps";
 
 const KEY = "tb-study-time";
 
@@ -38,7 +39,7 @@ function readLedger(): Ledger {
     for (const source of ["read", "quiz", "replay"] as const) {
       const value = rawEntry[source];
       if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
-        entry[source] = Math.min(value, 8 * 3600);
+        entry[source] = Math.min(value, DAILY_SOURCE_CAP_SEC);
       }
     }
     if (Object.keys(entry).length > 0) out[day] = entry;
@@ -47,17 +48,19 @@ function readLedger(): Ledger {
 }
 
 /**
- * 累加某来源当日学习秒数。防呆只有一道闸，而且是按天算的：当日单源封顶 8 小时
- * （`8 * 3600`），于累加处夹一次、`readLedger` 读旧台账时再夹一次。
+ * 累加某来源当日学习秒数。防呆是**按天算**的：当日单源封顶 `DAILY_SOURCE_CAP_SEC`，
+ * 于累加处夹一次、`readLedger` 读旧台账时再夹一次。两道闸互为备份，所以任何一道单独失效都
+ * 不可观察（实测把任一处改成 12h，本模块 12 条用例全绿）——上限本身住在
+ * `study-caps.ts`，那边有用例钉住「两处夹点必须同一个主人」。
  * 单次调用没有上限——旧注释里的「单次 ≤4h」在代码里不存在：一次报多少就加多少，
- * 直到当日那一源被上面那道闸压到 8 小时（回放的 elapsed 就是一整轮的墙钟时间）。
+ * 直到当日那一源被上面那道闸压到上限（回放的 elapsed 就是一整轮的墙钟时间）。
  */
 export function addStudyTime(source: StudySource, seconds: number, day: string = localDateStr()): void {
   if (!Number.isFinite(seconds) || seconds <= 0) return;
   try {
     const ledger = readLedger();
     const entry = ledger[day] ?? {};
-    entry[source] = Math.min((entry[source] ?? 0) + seconds, 8 * 3600);
+    entry[source] = Math.min((entry[source] ?? 0) + seconds, DAILY_SOURCE_CAP_SEC);
     ledger[day] = entry;
     // 按日历裁剪，锚定台账里最新的一天：稀疏用户的 90 条记录可能横跨一年以上，
     // 按条数裁剪会留下远超 90 天的数据，与隐私页「以最后一次学习那天为终点向前保留 90 个日历日」的说法不符。
