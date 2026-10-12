@@ -199,6 +199,16 @@ describe("perf-notes 最新那张测量表的实测列由产物说了算（缺�
 
   function skipOrMeasure() {
     if (!fs.existsSync(appOut)) return null;
+    // 读数必须先把每构建随机的构建号剔除，否则同一份源码两次构建会差 ±1~4 字节，
+    // 这条逐字判据就成了掷硬币（R16.314：本轮实测撞到一次 267.2 / 267.1）。
+    // 读不到 BUILD_ID 多半是手上只有 `next dev` 的产物，按「缺产物」同一口径明说跳过。
+    let buildId;
+    try {
+      buildId = budgetLib.readBuildId(root);
+    } catch {
+      console.warn("[perf-notes] 跳过实测列比对：读不到 .next/BUILD_ID（不是生产构建产物；先 npm run build）");
+      return null;
+    }
     const budgetsLocal = budgetLib.compileBudgetManifest(manifest).budgets;
     const gzipCache = new Map();
     const gzipOf = (file) => {
@@ -218,7 +228,8 @@ describe("perf-notes 最新那张测量表的实测列由产物说了算（缺�
     };
     const all = [];
     for (const route of listHtml().filter((r) => /^(?:zh|en)(?:\/|$)/.test(r))) {
-      const html = fs.readFileSync(path.join(appOut, route + ".html"), "utf8");
+      const raw = fs.readFileSync(path.join(appOut, route + ".html"), "utf8");
+      const { html } = budgetLib.neutralizeBuildId(raw, buildId);
       const measurement = budgetLib.measureRoute({
         route,
         html,
@@ -293,4 +304,54 @@ describe("perf-notes 最新那张测量表的实测列由产物说了算（缺�
     expect(drift, `docs/perf-notes.md 最新那张复测表的实测列是过期读数：\n${drift.join("\n")}`).toEqual([]);
     },
   );
+
+  /**
+   * R16.314：读数必须先剔除随机构建号。上面那条「逐字一致」在此前是**掷硬币**——
+   * 同一份源码连构三次实测：三个 BUILD_ID 互不相同，15 个分组的 gzip 原始字节每次都变
+   * ±1~4 字节，本轮就撞到一次（`knowledge-chapter` 表 267.2 / 实测 267.1）。
+   * 这两条钉的是「两个量尺寸的地方都真的脱了敏」与「前提仍然成立」，
+   * 不是再核一遍数字：去掉任一处的脱敏，上面那条行为判据当场红 5 组（已实测）。
+   */
+  it("两个量读数的地方都真的脱了敏（哑门禁判据）", () => {
+    // `check:bundle` 与这条判据必须同口径：只脱一边，另一边的读数就成了另一种世界的数，
+    // 而文档那张表只可能匹配其中一边（届时另一边会常年红）。
+    const callSites = [
+      "scripts/check-bundle.mjs",
+      "scripts/perf-notes-claims.test.mjs",
+    ];
+    for (const file of callSites) {
+      const src = read(file);
+      expect(src, `${file} 不再 import neutralizeBuildId——那里的读数又开始随构建号抖了`).toContain(
+        "neutralizeBuildId",
+      );
+      expect(
+        /neutralizeBuildId\([\s\S]{0,400}?html,/.test(src),
+        `${file} 脱了敏却没把脱敏后的 HTML 交给 measureRoute：那条门是死的`,
+      ).toBe(true);
+      expect(
+        /html:\s*raw\b/.test(src),
+        `${file} 把未脱敏的原文直接递给了 measureRoute`,
+      ).toBe(false);
+      // 构建号读不到时不许静默按原样量：一处明说跳过，一处直接失败
+      expect(
+        /readBuildId|BUILD_ID/.test(src),
+        `${file} 不再从产物读构建号：拿一个常数去替换等于不替换`,
+      ).toBe(true);
+    }
+  });
+
+  it("前提仍然成立：构建号确实内联在页面 HTML 里（不成立就要重估这条规矩）", () => {
+    if (!fs.existsSync(appOut)) {
+      console.warn("[perf-notes] 跳过前提核对：缺构建产物（先 npm run build）");
+      return;
+    }
+    const buildId = budgetLib.readBuildId(root);
+    const sample = fs.readFileSync(path.join(appOut, "zh.html"), "utf8");
+    // 这条不是装饰：Next 哪天不再把构建号写进 HTML，脱敏就永远 replaced=0，
+    // 上面那条行为判据会静默变回恒等式。红在这里 = 前提没了，要重新确认，不是继续蒙着跑。
+    expect(
+      budgetLib.neutralizeBuildId(sample, buildId).replaced,
+      "页面 HTML 里找不到构建号——脱敏这条规矩没有靶子了，请重估是否还需要",
+    ).toBeGreaterThan(0);
+  });
 });
