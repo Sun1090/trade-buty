@@ -12,6 +12,7 @@ vi.stubGlobal("window", { dispatchEvent: () => {} });
 const { addStudyTime, getStudySeconds, getTotalStudySeconds, getTodayStudySeconds, getStudyLedgerSpan, studyMinutes, STUDY_LEDGER_KEEP_DAYS } = await import(
   "./study-time"
 );
+const { DAILY_SOURCE_CAP_SEC } = await import("./study-caps");
 const { shiftDate } = await import("./date-utils");
 
 beforeEach(() => store.clear());
@@ -75,11 +76,36 @@ describe("study-time 台账边界（R4.2）", () => {
     expect(getStudyLedgerSpan()).toEqual({ firstDay: "2026-09-05", lastDay: "2026-09-05" });
   });
 
-  it("同来源重复累加不覆盖", () => {    addStudyTime("read", 120, "2026-09-05");
+  it("同来源重复累加不覆盖", () => {
+    addStudyTime("read", 120, "2026-09-05");
     addStudyTime("read", 180, "2026-09-05");
     expect(getStudySeconds("2026-09-05").read).toBe(300);
   });
 
+  /**
+   * R16.320：读旧台账时那第二道闸此前**零覆盖**——所有用例都走 `addStudyTime`，
+   * 而写侧已经夹过一次，所以读侧那道闸在测试里从来没被单独试过：实测把它改成 12h，
+   * 本文件 12 条全绿。能喂进超限值的现实路径是外部写入（别的标签页、导出文件回填、
+   * 用户自己开控制台），那时读侧是唯一的闸。
+   */
+  it("外部写坏的超限值由读侧夹回上限（不靠写侧那一刀）", () => {
+    store.set("tb-study-time", JSON.stringify({ "2026-09-05": { read: 100 * 3600, quiz: 100 * 3600 } }));
+    const day = getStudySeconds("2026-09-05");
+    expect(day.read).toBe(DAILY_SOURCE_CAP_SEC);
+    expect(day.quiz).toBe(DAILY_SOURCE_CAP_SEC);
+    // 去重口径 max(read, quiz+replay) 也必须在夹完之后才算，否则超限值还能借加法漏回来
+    expect(day.total).toBe(DAILY_SOURCE_CAP_SEC);
+  });
+
+  it("上限只有一个主人：写侧与读侧夹的是同一个数", () => {
+    // 先证行为：同一笔超限值，走写入路径与走外部写入路径必须给出同一个读数
+    addStudyTime("read", 100 * 3600, "2026-09-06");
+    const viaWrite = getStudySeconds("2026-09-06").read;
+    store.set("tb-study-time", JSON.stringify({ "2026-09-07": { read: 100 * 3600 } }));
+    const viaRead = getStudySeconds("2026-09-07").read;
+    expect(viaRead, "两道闸分叉了：外部写入的超限值与累加路径给出的数不同").toBe(viaWrite);
+    expect(viaWrite).toBe(DAILY_SOURCE_CAP_SEC);
+  });
   it("getTodayStudySeconds 使用本地日期", () => {
     const today = new Date();
     const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
