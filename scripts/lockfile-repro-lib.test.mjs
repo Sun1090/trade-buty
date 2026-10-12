@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
+  DEPS_DRIFT_SECTION,
   diffLockPackages,
   formatDriftReport,
   isNpmVersionAllowed,
@@ -160,6 +163,21 @@ describe("formatDriftReport", () => {
     expect(report).toContain("+ node_modules/proxy-agent-negotiate");
     expect(report).toContain("npx --yes npm@10.9.4 install --package-lock-only");
     expect(report).toContain("docs/deps.md");
+    // 光查文件名不够：那一节被改名时指针会悄悄指空。断言报告里印出的那节标题
+    // 确实是 docs/deps.md 里存在的一个标题（与 DEPS_DRIFT_SECTION 常量同源）。
+    expect(report).toContain("「" + DEPS_DRIFT_SECTION + "」");
+  });
+
+  it("报告点名的那节确实存在于 docs/deps.md（指针不指空）", () => {
+    const deps = readFileSync(path.join(process.cwd(), "docs/deps.md"), "utf8");
+    const headings = deps
+      .split("\n")
+      .filter((line) => /^#{1,6}\s/.test(line))
+      .map((line) => line.replace(/^#+\s*/, "").trim());
+    expect(
+      headings.includes(DEPS_DRIFT_SECTION),
+      "lockfile-repro-lib 的失败文案点名了 docs/deps.md 的一节，但那节标题不存在——改名要同步 DEPS_DRIFT_SECTION",
+    ).toBe(true);
   });
 
   it("没有条目差异时给出（无）而不是空白", () => {
