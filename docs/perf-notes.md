@@ -259,6 +259,14 @@ R16.235 那笔债在这一轮还掉：`auth-provider.tsx` 与 `auth-header.tsx` 
 | static-info | 247.4 KB | 340 KB | `zh/about` |
 | auth | 311.3 KB | 340 KB | `zh/auth` |
 
+- 记录环境指纹：`4dbfa3ca2225`（**实测列的判据只在当场量到同一个指纹时才逐字比对**，见下）。
+  那一串不是机器 ID、也不是 node 版本，而是**当场量 deflate 行为**的结果：把一批固定输入压一遍，
+  取各次输出长度拼成串再取 sha256 前 12 位（`scripts/deflate-fingerprint.mjs`）。为什么不用
+  `process.versions.zlib`：linux 上 node 20/22 报 `1.3.1-e00f703`、node 24/26 报 `1.3.2.1-motley-*`，
+  版本串不同而 15 组产物读数**字节级逐字相同**——版本串变了不代表行为变了，拿它当指纹会误跳过。
+  实测这个行为指纹区分得开「本地 vs CI」（darwin `4dbfa3ca2225` / linux `fab194c9217d`），
+  又不被发行版、musl/glibc、node 主版本误导（alpine 与 bookworm-slim、node 20→26 给出同一指纹）。
+
 **15 组里 6 组的字节数变了，其中 4 组跨过 0.1KB 舍入边界**。归因是干净的同环境 A/B（`git worktree`
 各建一次，`.env.local` 补齐到同一份——见文末那条排查事实）：
 

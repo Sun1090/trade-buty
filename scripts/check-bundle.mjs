@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 import { checkManifestArtifacts } from "./manifest-artifact.mjs";
+import { checkPerfReadings } from "./perf-readings.mjs";
+import { deflateFingerprint, fingerprintId } from "./deflate-fingerprint.mjs";
 import {
   BUDGET_METRICS,
   compileBudgetManifest,
@@ -204,6 +206,27 @@ function main() {
   //
   // 判据本身在 `scripts/manifest-artifact.mjs`，两处共用（单测那份在有 `.next` 时才跑）。
   if (!checkManifestArtifacts({ appOut })) fail = true;
+
+  // R16.321：`docs/perf-notes.md` 最新那张表的**实测列**也必须在 build 之后判。
+  //
+  // **为什么放在这里而不是 Vitest**：CI 把 `npm run test:coverage` 排在 `npm run build`
+  // 之前，那道判据自 R16.306 立起来那天起在 CI 里**必然**走「缺产物 → 明说跳过」分支——
+  // CI 的绿灯从来没为这句话签过字；本地能判靠的又恰好是上一次构建留下的 `.next`，
+  // 于是它系统性滞后一步（改变产物字节的提交：第一趟绿、第二趟红）。
+  // 这半搬过来之后，产物与测量结果都是现成的（上面刚遍历过全部路由），不额外读盘。
+  //
+  // 读数依赖宿主 zlib 的 deflate 行为，跨环境不可比（darwin vs linux 实测 14/14 组不同），
+  // 所以判之前先对**行为指纹**；不符时明说跳过并印出两边指纹——跳过要有理由、要看得见。
+  const readings = checkPerfReadings({
+    doc: fs.readFileSync(path.join(root, "docs/perf-notes.md"), "utf8"),
+    measurements,
+    budgets: manifest.budgets,
+    formatKB,
+    currentFingerprintId: fingerprintId(deflateFingerprint((buf) => zlib.gzipSync(buf))),
+  });
+  for (const note of readings.notes) console.log(note);
+  for (const issue of readings.issues) console.error(`[bundle] ✗ ${issue}`);
+  if (readings.issues.length > 0) fail = true;
 
   if (fail) {
     console.error("[bundle] 超预算、路由缺预算或 AI chunk 泄漏：请检查 scripts/bundle-budgets.json");
