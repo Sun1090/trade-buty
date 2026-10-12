@@ -2,12 +2,12 @@
 /**
  * R16.146（未尽项）：扫描数量相对「上一次入库的快照」比，而不是只比一条手写地板。
  *
- * 五道计数型门禁各有一处 `scanFloorViolation`，它们只卡**跌破地板的**少扫；地板与实测之间
+ * 六道计数型门禁各有一处 `scanFloorViolation`，它们只卡**跌破地板的**少扫；地板与实测之间
  * 常年留着余量（2026-09-25 实测：700 对 771、400 对 419、11 对 12），所以「删掉 50 个文件、
  * 仍站在地板之上」的提交照样全绿。这一道补的就是那一段：把每处扫描当次数到的数写进
  * `docs/scan-counts.md`，与入库的那一份逐键相比，**变小就红**。
  *
- * 数量由门禁自己报，不由本脚本重数一遍：本脚本把五道门禁作为子进程跑一遍，环境里放一个
+ * 数量由门禁自己报，不由本脚本重数一遍：本脚本把六道门禁作为子进程跑一遍，环境里放一个
  * `SCAN_COUNTS_FILE`，被 `recordScanCount` 登记到那份临时件里。所以台账里的数字与门禁当场
  * 判绿时读的是同一个变量——两套口径正是这类基线最先烂掉的地方。
  *
@@ -32,10 +32,14 @@ export const SCAN_COUNT_COMMANDS = [
   "check:frontmatter",
   "check:kb-en-content",
   "check:request-body-bounds",
+  "check:comment-paths",
 ];
 
-/** 2026-09-25 实测 6 处登记点。少一处意味着某处 `recordScanCount` 被删或挪到了走不到的分支上。 */
-export const MIN_KEYS = 6;
+/**
+ * 实测（2026-10-13）8 处登记点：`check:comment-paths` 这担带来 2 处（源码文件数、注释引用数）。
+ * 少一处意味着某处 `recordScanCount` 被删或挪到了走不到的分支上。
+ */
+export const MIN_KEYS = 8;
 
 const root = process.cwd();
 /** 承认差异并把它写进基线：少扫与新增登记点都走这一个显式开关，不认就是红。 */
@@ -76,7 +80,7 @@ const seen = new Set(rows.map((row) => row.key));
 if (seen.size < MIN_KEYS) {
   console.error(
     `❌ 只收到 ${seen.size} 处扫描登记，地板 ${MIN_KEYS} 处（少 ${MIN_KEYS - seen.size}）。` +
-      `登记点不会自己消失：先确认这五道门禁都还在跑、都还调 recordScanCount。`,
+      `登记点不会自己消失：先确认这些门禁都还在跑、都还调 recordScanCount。`,
   );
   process.exit(1);
 }
