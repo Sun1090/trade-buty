@@ -42,7 +42,7 @@ import {
   type ReminderCadence,
 } from "@/lib/review-reminder";
 import { getDailyGoalMin } from "@/lib/daily-goal";
-import { ACTIVE_DAY_MIN_SECONDS, buildWeeklySummary, getWeeklyGoalMin, setWeeklyGoalMin, WEEKLY_GOAL_TIERS, type WeeklySummaryInput } from "@/lib/weekly-summary";
+import { ACTIVE_DAY_MIN_SECONDS, buildWeeklySummary, getWeeklyGoalMin, setWeeklyGoalMin, WEEKLY_GOAL_TIERS, type WeeklySummaryInput, WEEK_WINDOW_DAYS } from "@/lib/weekly-summary";
 import { getStudySeries } from "@/lib/study-time";
 import { useAuth } from "@/components/auth-provider";
 import { effectiveSrs, isSrsDue } from "@/lib/srs";
@@ -802,7 +802,7 @@ export function StatsClient({
           unit: dict.goalMinUnit,
         }}
         input={{
-          dailySeconds: getStudySeries(7).map((d) => d.total),
+          dailySeconds: getStudySeries(WEEK_WINDOW_DAYS).map((d) => d.total),
           completions,
           quizAttempts,
           reviewAttempts,

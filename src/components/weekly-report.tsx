@@ -2,14 +2,18 @@
 
 import { useSyncExternalStore } from "react";
 import { getStudySeries, studyMinutes } from "@/lib/study-time";
+import { WEEK_WINDOW_DAYS } from "@/lib/weekly-summary";
 
+// 窗口长度只有一个主人：`WEEK_WINDOW_DAYS`（住在 `weekly-summary.ts`）。那句注释此前写着
+// 「摘要、周目标、柱状图共用这一个数」，而柱状图这边一处都没读它——把常量改成 14，同一屏的
+// 标题会变成「近 14 天」，柱子照旧画 7 根、日均照旧除以 7，没有一条测试会红。
 // 快照必须是值稳定类型：用逗号串而非数组引用，避免 useSyncExternalStore 无限重渲染
 function getSeriesSnapshot(): string {
-  return getStudySeries(7)
+  return getStudySeries(WEEK_WINDOW_DAYS)
     .map((d) => d.total)
     .join(",");
 }
-const EMPTY_SNAPSHOT = "0,0,0,0,0,0,0";
+const EMPTY_SNAPSHOT = Array.from({ length: WEEK_WINDOW_DAYS }, () => "0").join(",");
 function subscribeStudyTime(callback: () => void) {
   const events = ["tb-study-time", "tb-goal", "tb-progress"] as const;
   events.forEach((e) => window.addEventListener(e, callback));
@@ -39,7 +43,7 @@ export function WeeklyReport({ dict }: { dict: WeeklyDict }) {
   // 单日也不被抬成「1 分钟」，否则同一页两张卡会对同一段时间报两个分钟数。
   const minutes = series.map((s) => studyMinutes(s));
   const total = studyMinutes(series.reduce((a, b) => a + b, 0));
-  const avg = Math.round(total / 7);
+  const avg = Math.round(total / WEEK_WINDOW_DAYS);
   const max = Math.max(...minutes, 1);
   const dayLabels = ["S", "M", "T", "W", "T", "F", "S"];
   const today = new Date().getDay();
@@ -50,7 +54,7 @@ export function WeeklyReport({ dict }: { dict: WeeklyDict }) {
       <div className="flex items-end gap-1.5 h-28" role="img" aria-label={dict.summaryTpl.replace("{n}", String(total)).replace("{avg}", String(avg))}>
         {minutes.map((m, i) => {
           const h = Math.max(4, Math.round((m / max) * 100));
-          const isToday = i === 6;
+          const isToday = i === WEEK_WINDOW_DAYS - 1;
           return (
             <div key={i} className="flex-1 min-w-0 flex flex-col items-center gap-1">
               <span className="text-[9px] font-mono text-faint">{m > 0 ? m : ""}</span>
@@ -62,7 +66,7 @@ export function WeeklyReport({ dict }: { dict: WeeklyDict }) {
                 />
               </div>
               <span className={`text-[9px] ${isToday ? "text-accent font-bold" : "text-faint"}`}>
-                {dayLabels[(today - 6 + i + 14) % 7]}
+                {dayLabels[(((today - (WEEK_WINDOW_DAYS - 1) + i) % 7) + 7) % 7]}
               </span>
             </div>
           );

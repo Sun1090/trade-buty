@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { readActivityDates } from "@/lib/activity-calendar";
 import { localDateStr, shiftDate } from "@/lib/date-utils";
+import { WEEK_WINDOW_DAYS } from "@/lib/weekly-summary";
 
 const DAYS_ZH = ["日", "一", "二", "三", "四", "五", "六"];
 const DAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -28,7 +29,9 @@ export function WeekMiniBar({ locale }: { locale: string }) {
   const active = new Set(dates);
   const today = localDateStr();
   const days: { label: string; onThisDay: boolean }[] = [];
-  for (let offset = 6; offset >= 0; offset -= 1) {
+  // 窗口长度与同一屏的摘要卡、柱状图共用 `WEEK_WINDOW_DAYS`：三张卡说的是同一段时间，
+  // 只有这把尺有主人，改窗口才会三张一起改，而不是其中一张悄悄落后。
+  for (let offset = WEEK_WINDOW_DAYS - 1; offset >= 0; offset -= 1) {
     const date = shiftDate(today, -offset);
     const [year, month, dayOfMonth] = date.split("-").map(Number);
     const weekday = new Date(year, month - 1, dayOfMonth).getDay();
@@ -40,16 +43,18 @@ export function WeekMiniBar({ locale }: { locale: string }) {
 
   // 亮/不亮原本只有颜色这一个通道，读屏用户什么也拿不到（WCAG 1.4.1 用色传信）。
   // role="img" 会让容器内的文字对 AT 变成装饰，所以名称必须自带整条模式——
-  // 按时间顺序报 7 格，而不是只报「哪几天有」，否则听的人不知道窗口从哪天开始。
+  // 按时间顺序报满整窗（今天在内向前 `WEEK_WINDOW_DAYS` 格），而不是只报「哪几天有」，
+  // 否则听的人不知道窗口从哪天开始。那两句里的天数与「从 N 天前」同样必须由常量生成：
+  // 读屏听到的窗口比眼睛看到的宽或窄，比没有名字更容易误导。
   // 更要紧的是这把尺子得说出口：这一格看的是「那天有没有记过一次学习活动」
   // （`activity-calendar`，由 `touchStreak` 写入），跟同一屏摘要卡那个「{d} 天各学满 1 分钟」
   // 不是同一把尺（那把见 `weekly-summary.ts` 的 `ACTIVE_DAY_MIN_SECONDS`），
   // 两个数可以互相超出，谁都不许冒充对方。
   const pattern = locale === "en"
-    ? `Which of the last 7 days recorded a learning activity (a lesson marked read, a question answered, or a replay round finished; oldest to newest): ${days
+    ? `Which of the last ${WEEK_WINDOW_DAYS} days recorded a learning activity (a lesson marked read, a question answered, or a replay round finished; oldest to newest): ${days
         .map((day) => (day.onThisDay ? "yes" : "no"))
         .join(", ")}`
-    : `近 7 天里哪几天记过一次学习活动（标过已读、答过题或打完一轮回放；从 6 天前到今天）：${days
+    : `近 ${WEEK_WINDOW_DAYS} 天里哪几天记过一次学习活动（标过已读、答过题或打完一轮回放；从 ${WEEK_WINDOW_DAYS - 1} 天前到今天）：${days
         .map((day) => (day.onThisDay ? "有" : "无"))
         .join("、")}`;
 
