@@ -2,6 +2,52 @@
 
 ---
 
+## 2026-10-13 · 第七十四轮（R16.320）：「与 study-time 防呆一致」是句没有主人的话——`8 * 3600` 长在四处，其中两处零覆盖
+
+- 里程碑 / 版本：口径与防呆收敛第三轮；R16.320 新增并关账，未改产品版本（当前 v0.7.29）。分支 `fix/eight-hour-cap-single-owner`（自合并后的 `main` 顶点 `e08aff6`），三笔：`5c0c628`（fix(stats)）上限收进 `study-caps` + 四处接线、`0f88d0e`（test(stats)）跨聚合器不变式 + 两份报告重算、本笔台账。
+- 承上两轮：#422（R16.318 秒→分钟）与 #423（R16.319 窗口长度）均已 rebase 合并，本地分支已删、远端由 GitHub 自动清理，`ops:work-audit` 判绿。
+
+### 先做三组证伪实验，再决定改什么
+
+普查（`.gate-logs/survey-r74.mjs`）量出 `8 * 3600` 在非测试源码里出现四处：`study-time.ts` 夹**两次**（累加处、`readLedger` 读旧台账时）、`replay-time-trend.ts` 的 `MAX_ROUND_SEC`（头顶写着「与 study-time 防呆一致」）、`replay-trainer.tsx` 存档前行内夹一次。三组实验：
+
+1. 把 `study-time` 读侧**或**写侧任一处改成 `12 * 3600` → 本模块 12 条全绿。两道闸互为备份，任何一道单独失效都不可观察。
+2. 把 trainer 那处改成 `12 * 3600` → trainer / trend / duration-claims / study-time 四个文件 **71 条全绿**。
+3. 全仓没有任何测试断言过这两个上限之间的**关系**。
+
+**但这两处不是同一件事**：`study-time` 管「一天里某一源」，trend 与 trainer 管「单轮回放」。数值相同是巧合还是约束？答案在 `/stats` 那一张页面上——「回放时长」读记录里的 `durationSec`（只被单轮闸夹），「总学习时长」读台账（还要被当日闸夹一次）。所以单轮 > 当日额度时，**同一轮回放会说两个数**：做完一轮 12 小时的人看到「回放 12h」与「共学 8h」。
+
+### 改法：两个名字，不是一个常量
+
+新增 `src/lib/study-caps.ts`：`DAILY_SOURCE_CAP_SEC` 与 `REPLAY_ROUND_CAP_SEC`。合并成一个常量会把两类语义绑死（与 R16.319 那条「趋势区间档位那个 7 与窗口长度同值但不同事」同理）。四处夹点全部改读它，并删掉 `MAX_ROUND_SEC` 这个「两个名字一个实现」的别名——R16.318 刚为同一件事删过 `weekMinutes`。
+
+### 判据的重心是行为，不是相等
+
+`src/lib/study-caps.test.ts`（4 条）。第一条把同一笔超限值分别喂给回放聚合器与学习台账，要求两张卡报同一个数。它**不是「比两个常数」的恒等式**：M2 实测把单轮上限改成 12h 时它红，报错说的是用户看到的两个数（`回放时长 43200s vs 学习台账 28800s`），不是「两个常量不相等」。第二条钉关系（单轮 ≤ 当日）；第三条钉四处夹点必须真的读常量——光有前两条不够，有人可以把两处都改回字面量而数值仍相同，那时行为与关系判据全绿，「改一处另一处跟着红」又回到没人守的状态；第四条扫全仓，`8 * 3600` 只允许住在 `study-caps.ts` 与 `binance.ts`（后者是展示位移量 `DISPLAY_TZ_OFFSET_SEC`，与时长防呆无关）。
+
+### 探针 8 条腿 BAD=0，一条腿是判据自己写的
+
+`.gate-logs/probe-r74.mjs` / `.log`（首尾 BASE 全绿）。M1 / M4 各红在静态侧与副本侧；M2 红在行为与关系；M5（第三个文件长出新副本）与 M7（夹点清单删一条）各红一次；M3 与 M8 是反向对照。
+
+- **M6 值得单独记**：把扫描削弱成 `git ls-files --others`（去掉 `--cached`）→ 红。`--others` 在 git 里是「仅未跟踪」而不是叠加，扫描面会缩到 1 份文件而判据照样绿——地板 `>100` 是唯一能喊出来的东西。这条是我在实现过程中真踩过的坑（第一版就写了 `--others`，靠地板才发现），转成了一条腿。
+- **M3 的读数**：把**当日**上限改成 12h，`study-caps` 那圈按设计不红（关系仍成立，这是正确的），但别处红 3 条——`study-time.test.ts` 与 `date-utils.test.ts` 用字面量钉着那个数值。「上限是多少」这件事本来就有主人，本轮没有替它再立一个。
+
+### 我自己的两处错
+
+- **第四次踩 `git checkout --` 抹掉未提交编辑**：清变异时把 `study-time.ts` 刚接好的线一起还原了，重做之后立刻 commit 才继续（R16.308 记过、R16.318 记过两次）。
+- **新用例第一版给 `buildReplayTimeTrend` 传 `now: Date`**，被 typecheck 拦下——它收的是本地日历日字符串 `today`。**传错形状会被静默忽略**并退化成「以墙钟今天为准」，那条用例会随运行日期飘，正好撞上 `check:test-clock-hygiene` 要管的那类病。
+
+### 顺手清掉一处我自己弄漂的行号引用
+
+改完接线才注意到 `stats-client.tsx:655` 那句注释写着「`replay-time-trend.ts:168` 那一行」，而我在同一个文件头部加了两行注释，`avgSecInRange` 从 168 漂到 169——那个行号现在指向 `timedRoundsInRange`，说的是另一件事。**这是本轮改动直接造成的**（`a8d1fb5` 单独一笔订正为点名符号）。普查（`.gate-logs/survey-lines-r74.mjs`）：非测试源码的注释里这类行号引用全仓只剩 1 处（`md-utils.ts:8` 引 `forex-trading/README.md:3`），那是内容子模块的原文、由 submodule 指针钉住，行号在给定提交上稳定，故保留。**没有据此再立一条门禁**：人口为 1 且那 1 处合法，扩门禁是伪需求（R16.317 刚为同一件事改过台账）。
+- 变更文件：`src/lib/study-caps.ts`（新）、`src/lib/study-caps.test.ts`（新）、`src/lib/study-time.ts`、`src/lib/replay-time-trend.ts`、`src/components/replay-trainer.tsx`、`src/components/stats-client.tsx`（订正被本轮弄漂的行号引用）、`src/lib/study-time.test.ts`（+2 条：读侧夹点此前零覆盖；顺带补回 R16.182 那笔丢掉的换行）、`docs/roadmap.md`（R16.320）、`docs/progress.md`、两份自动报告重算入库。**用户可见行为零变化**：四处夹点的数值一个都没动。
+- 验证：全量 `test:coverage` **353 文件 / 3760 条**绿（覆盖率 95.06 / 90.76 / 95.08 / 96.9，阈值未动）；`lint` 0 warning、`typecheck` 0、`build` 0、`check:bundle` 0、`check:comment-paths`（382 份源码 / 150 条引用）/ `check:mobile` / `check:seo-surface` / `check:search-index` / `check:structured-data` / `check:risk-warning` / `kb:inventory` / `kb:gap-priority` / `kb:accept` / `check:title-terminology` / `check:description-quality` / `check:description-dupes` / `check:glossary` / `check:test-clock-hygiene`（352 个测试文件）/ `check:dead-copy` / `ops:faq-candidates` / `check:scan-counts`（`secrets-listed-files` 844）/ `check:report-freshness` / `check:constitution` / `check:docs` / `check:changelog` / `check:quiz-coverage` / `check:quiz-mounts` / `check:links` / `check:sitemap` / `check:nav-chain` / `check:relative-links` / `check:env-docs` / `check:secrets` / `check:lockfile-repro` / `audit:prod` / `audit:all` 全 0。台账里这四个数（353 / 3760 / 352 / 382 / 844）落笔前逐个回查了实测输出——R16.317 那条「当场能算出来的数，落笔前重算一次」。
+- 阻塞 / 风险：无新增阻塞。回滚撤回这三笔即可（无迁移、无数据、数值未变）。**登记一处已知边界**（不顺手补）：`REPLAY_ROUND_CAP_SEC` 与 `DAILY_SOURCE_CAP_SEC` 目前数值相同，判据钉的是「单轮 ≤ 当日」这条**关系**；若哪天把当日上限单独调小，行为判据会红，届时要么同时调单轮上限、要么承认两张卡本就该说两个数并改写 `/stats` 的说明——那是产品决定，本轮不替它选边。
+- 下一项：本分支开 PR，等 `ci` + `db-tests` 绿了 rebase 合并。第七十五轮候选（不需拍板、能先证伪）：AGENTS.md in-scope 的「隐私与三方服务文档事实订正」与「C 端体验与 a11y」各挑一处；`/stats` 那张页面上「回放时长」与「总学习时长」两个数并排出现，本轮钉的是**代码**不会说两个数，界面有没有把「为什么有时对不上」说清楚还没量过。
+- 更新时间：2026-10-13（Asia/Shanghai）。
+
+---
+
 ## 2026-10-13 · 第七十三轮（R16.319）：`WEEK_WINDOW_DAYS` 那句「三处共用这一个数」没有主人——改常量，柱子照旧画 7 根，零红
 
 - 里程碑 / 版本：口径与文档一致性收敛一轮；R16.319 新增并关账，未改产品版本（当前 v0.7.29）。分支 `fix/week-window-single-source`（自合并后的 `main` 顶点 `3ab6020`），两笔：`8c99632`（fix(stats)）三处表面改读常量、`cb1755c`（test(stats)）判据改逐形状锚定。
