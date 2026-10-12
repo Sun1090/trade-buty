@@ -226,4 +226,20 @@ describe("接线：判据必须真的被 build 之后的那道门禁调用", () 
   it("跳过要印出来，不许静默（今天的病就是一场静默的不判）", () => {
     expect(src).toMatch(/for \(const note of readings\.notes\)/);
   });
+
+  it("量尺寸的地方真的脱了敏，并且当场核这个前提（R16.314 的规矩不许退化成恒等式）", () => {
+    // 原来这条住在单元测试里，钉的是「两处调用点都脱敏」。现在只剩一处
+    // （`perf-notes-claims` 那半搬走了），而「前提仍然成立」那半从一条用例
+    // 变成了门禁自己印的一行——它必须在**真的量过产物**的地方核，而不是在 CI 里必然跳过。
+    expect(src).toContain("neutralizeBuildId");
+    expect(
+      /neutralizeBuildId\([\s\S]{0,400}?html,/.test(src),
+      "脱了敏却没把脱敏后的 HTML 交给 measureRoute：那条门是死的",
+    ).toBe(true);
+    expect(src, "把未脱敏的原文直接递给了 measureRoute").not.toMatch(/html:\s*raw\b/);
+    expect(src, "不再从产物读构建号：拿一个常数去替换等于不替换").toMatch(/readBuildId/);
+    // 前提核对要有牙：一处都没替换到就得 fail，不能只印一行
+    expect(src).toMatch(/buildIdHits === 0/);
+    expect(src).toMatch(/replaced/);
+  });
 });
