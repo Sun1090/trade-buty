@@ -9,10 +9,10 @@
 | key | 数量 | 硬地板 | 数的是什么 |
 | --- | ---: | ---: | --- |
 | api-route-files | 12 | 11 | route.ts 接口文件 |
-| comment-path-refs | 157 | 60 | 注释里的仓库路径引用 |
+| comment-path-refs | 160 | 60 | 注释里的仓库路径引用 |
 | comment-path-source-files | 385 | 300 | 非测试源码文件 |
 | db-audited-docs | 2 | 2 | 对账用的现行文档 |
 | kb-en-md-files | 209 | 200 | en 树 md 文件 |
 | kb-md-files | 419 | 400 | 知识库 md 文件 |
 | kb-zh-md-files | 209 | 200 | zh 树 md 文件 |
-| secrets-listed-files | 850 | 700 | git 列出的待扫文件 |
+| secrets-listed-files | 851 | 700 | git 列出的待扫文件 |
