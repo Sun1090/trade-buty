@@ -14,25 +14,45 @@ import { test, expect, type Page } from "@playwright/test";
 /** 静置多久：首页轮询 5s 一次，留出一个完整周期再加余量 */
 const IDLE_MS = 7_000;
 
-const ROUTES = ["/zh", "/en", "/zh/chart", "/zh/replay"] as const;
+/**
+ * 观测面 = 所有「静态上能走到跨源模块」的页面（由 `scripts/privacy-ext-route-coverage.test.mjs`
+ * 对着源码树核，不许手抄）。课文页那条是**懒加载**图表（`LazyChartEmbed` 视口门控），
+ * 零点击时一个跨源请求都不发——所以它在清单里是「候选被观测过且确认无请求」，
+ * 而不是「每条都必须命中」；地板因此是全局的，见下面第一条判据。
+ */
+const ROUTES = [
+  "/zh",
+  "/en",
+  "/zh/chart",
+  "/zh/replay",
+  "/zh/knowledge/getting-started/candlestick-basics",
+] as const;
 
 /** 打开路由、什么都不做，收集这段时间里离开设备的跨源主机名 */
-async function zeroClickHosts(page: Page, route: string): Promise<Set<string>> {
+async function zeroClickHosts(
+  page: Page,
+  route: string,
+  tally?: (n: number) => void,
+): Promise<Set<string>> {
   const hosts = new Set<string>();
+  let count = 0;
   const externalHost = (raw: string): string | null => {
     const host = new URL(raw).hostname;
     return host === "localhost" || host === "127.0.0.1" ? null : host;
   };
   page.on("request", (req) => {
-    const host = externalHost(req.url());
-    if (host) hosts.add(host);
+    if (!externalHost(req.url())) return;
+    count += 1;
+    hosts.add(new URL(req.url()).hostname);
   });
   page.on("websocket", (sock) => {
-    const host = externalHost(sock.url());
-    if (host) hosts.add(host);
+    if (!externalHost(sock.url())) return;
+    count += 1;
+    hosts.add(new URL(sock.url()).hostname);
   });
   await page.goto(route, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(IDLE_MS);
+  tally?.(count);
   return hosts;
 }
 
@@ -49,13 +69,17 @@ async function thirdPartySection(page: Page, locale: "zh" | "en"): Promise<strin
 
 test("零点击时打到的每一个跨源主机，隐私页那一节都点名了", async ({ page }) => {
   const hosts = new Set<string>();
+  let observedRequests = 0;
   for (const route of ROUTES) {
-    const set = await zeroClickHosts(page, route);
-    // 地板：某条路由一条跨源都没观测到 = 判据在空转（网络被整体挡掉时不许静默变绿）
-    expect([...set], `${route} 零点击跨源请求数`).not.toHaveLength(0);
+    const set = await zeroClickHosts(page, route, (n) => {
+      observedRequests += n;
+    });
     for (const host of set) hosts.add(host);
   }
-  expect(hosts.size, "观测到的跨源主机数").toBeGreaterThan(0);
+  // 地板是**全局**的：按路由要求每条都命中，会把懒加载页判成缺陷（课文页实测零跨源）。
+  // 它挡的是「网络被整体挡掉于是整趟静默全绿」这一类空转。
+  expect(observedRequests, "整趟观测到的跨源请求总数").toBeGreaterThan(0);
+  expect(hosts.size, "观测到的跨源主机数").toBeGreaterThanOrEqual(2);
 
   // 两种语言各自核对：只在 zh 页面上查，等于默认英文文案永远不必提到这个主机名
   for (const locale of ["zh", "en"] as const) {
