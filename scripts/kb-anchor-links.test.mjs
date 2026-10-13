@@ -15,7 +15,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
@@ -113,8 +113,54 @@ describe("R16.114 / R16.301：锚点与目录在本站渲染器下真的点得�
     expect(aligned, "对齐后应当命中").toContain(String(anchor));
   });
 
+  // ↓↓↓ R16.324 ↓↓↓
+  // 上面那条只扫 `](#…)`（同页锚点），而课文里还有第二种手抄锚点：`](另一篇.md#…)`。
+  // 本站 `content.ts` 的 rewriteLinks **原样保留 hash**，所以它同样要在本站渲染器下命中
+  // 目标页的标题。实测漏法：把 `zh/forex-trading/forex-leverage-risk.md` 里一条
+  // `](forex-ea.md#…)` 改成不存在的目标 → 本文件其余各条全绿、`check:relative-links` 绿
+  // （它按文件解析，不看 hash）、`check:links` 只在「锚点疑似缺失（仅报告）」里冒一行、
+  // **exit 仍是 0**。也就是说这 8 条当时没有任何硬门禁。
+  it("跨文档锚点 `](其他.md#…)` 也必须命中目标页的标题", async () => {
+    const files = walk(ROOT);
+    /** 目标文件 → 它渲染出来的 id 集合（缓存一份，避免同一目标被重复渲染） */
+    const idCache = new Map();
+    const idsOf = async (abs) => {
+      if (!idCache.has(abs)) {
+        const body = readFileSync(abs, "utf8").replace(/^---\n[\s\S]*?\n---\n/, "");
+        idCache.set(abs, await headingIds(body, makeProcessor()));
+      }
+      return idCache.get(abs);
+    };
+    const broken = [];
+    let checked = 0;
+    for (const file of files) {
+      const body = readFileSync(file, "utf8").replace(/^---\n[\s\S]*?\n---\n/, "");
+      const hits = [...body.matchAll(/\]\(([^)\s#]+\.md)#([^)]+)\)/g)];
+      for (const m of hits) {
+        checked += 1;
+        const target = join(dirname(file), m[1]);
+        if (!statSync(target, { throwIfNoEntry: false })) {
+          broken.push(`${file.replace(`${ROOT}/`, "")} → ${m[1]}（目标文件不存在）`);
+          continue;
+        }
+        const ids = await idsOf(target);
+        if (!ids.includes(m[2])) broken.push(`${file.replace(`${ROOT}/`, "")} → ${m[1]}#${m[2]}`);
+      }
+    }
+    // 自证一（形状）：这条扫的是跨文档形状，扫到 0 条就等于空转。R16.324 实测人口 8 条，
+    // 地板取 4：留出上游删改的余量，又足以在「正则被改窄成只匹配同页」时喊出来。
+    expect(checked, "一条跨文档锚点都没扫到，这条门禁是空转").toBeGreaterThanOrEqual(4);
+    // 自证二（样例）：点名一条真实存在的样本。光有地板挡不住「正则匹配到别的形状」——
+    // 数量凑够了，扫的却不是手抄锚点。
+    expect(
+      readFileSync(join(ROOT, "zh/forex-trading/forex-leverage-risk.md"), "utf8"),
+      "样例课文挪了位置或改了写法，上面那条扫描可能已经扫不到东西了"
+    ).toContain("forex-ea.md#六平台选择的红线清单");
+    expect(broken, `这些跨文档锚点在本站点不动：\n${broken.join("\n")}`).toEqual([]);
+  }, CORPUS_TIMEOUT);
+
   // ↓↓↓ R16.301 ↓↓↓
-  // 第一版只有上面那条，于是漏了「本页目录」。上线后一查生产才发现：目录里的 href 带前导
+  // 第一版只有「每个 (#…) 锚点都能命中本页某个标题」那一条，于是漏了「本页目录」。上线后一查生产才发现：目录里的 href 带前导
   // 连字符、而渲染出来的 id 不带 —— 也就是说**目录比正文坏得更明显**（目录是主要入口），
   // 而门禁是绿的。原因很直白：目录 href 不来自课文，它由 `extractHeadings()` 用
   // github-slugger **自己**再 slug 一次，是**第三份** slug 实现，压根没经过上面那条断言。
