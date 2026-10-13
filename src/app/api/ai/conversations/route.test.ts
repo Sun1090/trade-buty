@@ -12,6 +12,7 @@ import {
   DELETE,
 } from "./route";
 import { resolveAuthUser } from "@/lib/supabase/auth-result";
+import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 
 const db = vi.hoisted(() => {
   const getUser = vi.fn();
@@ -139,7 +140,9 @@ describe("GET /api/ai/conversations", () => {
 
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body).toEqual({ error: "Failed to load conversations" });
+    // R16.330：这一处是**鉴权服务不可用**（永久），不是「读库失败」（暂时）。
+    // 以前两者共用一句 Failed to load conversations，把配置缺失说成了一次抖动。
+    expect(body).toEqual({ error: SERVER_ERRORS.authUnavailable });
     expect(JSON.stringify(body)).not.toContain("secret");
     expect(db.select).not.toHaveBeenCalled();
   });
@@ -261,7 +264,8 @@ describe("POST /api/ai/conversations", () => {
     db.getUser.mockRejectedValueOnce(new Error("bad jwt"));
     const res = await POST(request({ userMessage: "问题", assistantMessage: "回答" }));
     expect(res.status).toBe(500);
-    expect(await res.json()).toEqual({ error: "Failed to save conversation" });
+    // 同上：认证阶段抛错 = 鉴权不可用，不是存档失败（R16.330）
+    expect(await res.json()).toEqual({ error: SERVER_ERRORS.authUnavailable });
   });
 
   it("游客的畸形请求先被 401 挡下，不进入 body 解析", async () => {
@@ -319,7 +323,8 @@ describe("DELETE /api/ai/conversations", () => {
     const response = await DELETE();
 
     expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({ error: "Failed to clear conversations" });
+    // 同上：这一处是鉴权不可用，不是删除失败（R16.330）
+    expect(await response.json()).toEqual({ error: SERVER_ERRORS.authUnavailable });
     expect(db.del).not.toHaveBeenCalled();
   });
 

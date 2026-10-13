@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient, getServerAuthUser } from "@/lib/supabase/server";
 import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
 import { readJsonBody } from "@/lib/request-body";
+import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 
 
 // R7.12：与 /api/ai/feedback 同理——RLS 放行匿名插入，应用层必须自己设闸。
@@ -91,14 +92,14 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error("[ai/citation-click] insert failed:", error.message);
-      return NextResponse.json({ error: "Failed to record click" }, { status: 500 });
+      return NextResponse.json({ error: SERVER_ERRORS.recordClickFailed }, { status: 500 });
     }
   } catch (e) {
     console.error(
       "[ai/citation-click] unexpected failure:",
       e instanceof Error ? e.message : e
     );
-    return NextResponse.json({ error: "Failed to record click" }, { status: 500 });
+    return NextResponse.json({ error: SERVER_ERRORS.recordClickFailed }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

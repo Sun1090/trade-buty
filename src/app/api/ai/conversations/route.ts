@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient, getServerAuthUser } from "@/lib/supabase/server";
 import { createRateLimiter } from "@/lib/ai/rate-limit";
 import { readJsonBody } from "@/lib/request-body";
+import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 
 /**
  * 一轮问答 = 两行写入（各可达 8KB / 20KB）。这条路由此前是 AI 系列里唯一没有配额的
@@ -76,7 +77,9 @@ export async function GET() {
     try {
       user = await getServerAuthUser();
     } catch {
-      return NextResponse.json({ error: "Failed to load conversations" }, { status: 500 });
+      // 鉴权服务本身不可用是**永久**状态（缺 env 时重试一万次也是同一个结果），
+      // 与下面「数据库那一次查询失败」不是一回事，不许共用一句话（R16.330）。
+      return NextResponse.json({ error: SERVER_ERRORS.authUnavailable }, { status: 500 });
     }
     const supabase = await createSupabaseServerClient();
     if (!user) {
@@ -94,7 +97,7 @@ export async function GET() {
 
     if (error) {
       console.error("[ai/conversations] select failed:", error.message);
-      return NextResponse.json({ error: "Failed to load conversations" }, { status: 500 });
+      return NextResponse.json({ error: SERVER_ERRORS.loadConversationsFailed }, { status: 500 });
     }
 
     return NextResponse.json({ messages: (data ?? []).reverse() });
@@ -112,7 +115,8 @@ export async function POST(req: NextRequest) {
   try {
     user = await getServerAuthUser();
   } catch {
-    return NextResponse.json({ error: "Failed to save conversation" }, { status: 500 });
+    // 同上：这一处是鉴权不可用，不是存档失败（R16.330）
+    return NextResponse.json({ error: SERVER_ERRORS.authUnavailable }, { status: 500 });
   }
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -154,11 +158,11 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error("[ai/conversations] insert failed:", error.message);
-      return NextResponse.json({ error: "Failed to save conversation" }, { status: 500 });
+      return NextResponse.json({ error: SERVER_ERRORS.saveConversationFailed }, { status: 500 });
     }
   } catch (e) {
     console.error("[ai/conversations] unexpected failure:", e instanceof Error ? e.message : e);
-    return NextResponse.json({ error: "Failed to save conversation" }, { status: 500 });
+    return NextResponse.json({ error: SERVER_ERRORS.saveConversationFailed }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
@@ -179,7 +183,8 @@ export async function DELETE() {
   try {
     user = await getServerAuthUser();
   } catch {
-    return NextResponse.json({ error: "Failed to clear conversations" }, { status: 500 });
+    // 同上：这一处是鉴权不可用，不是删除失败（R16.330）
+    return NextResponse.json({ error: SERVER_ERRORS.authUnavailable }, { status: 500 });
   }
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -202,11 +207,11 @@ export async function DELETE() {
 
     if (error) {
       console.error("[ai/conversations] delete failed:", error.message);
-      return NextResponse.json({ error: "Failed to clear conversations" }, { status: 500 });
+      return NextResponse.json({ error: SERVER_ERRORS.clearConversationsFailed }, { status: 500 });
     }
   } catch (e) {
     console.error("[ai/conversations] unexpected failure:", e instanceof Error ? e.message : e);
-    return NextResponse.json({ error: "Failed to clear conversations" }, { status: 500 });
+    return NextResponse.json({ error: SERVER_ERRORS.clearConversationsFailed }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

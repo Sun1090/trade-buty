@@ -41,6 +41,27 @@ export const SERVER_ERRORS = {
   authUnavailable: "AI 服务鉴权不可用：无法确认请求方身份。",
   /** 上游模型端点不可用——**这一种才是暂时性故障**，措辞允许承诺「稍后重试」。 */
   upstreamUnavailable: "AI 上游暂时不可用，请稍后再试。",
+  /**
+   * R16.330：下面这几把键是「数据层那一次调用失败」，与上面两把的分别在于成因既不是配置、
+   * 也不是模型上游。它们按**操作**分家而不是合并成一句通用的 storage unavailable：这些串是
+   * 给开发者看的标识串（界面上不渲染，见文件头），「哪一个操作失败」正是它的信息量所在，
+   * 合并等于把排查线索抹掉。
+   *
+   * 值与收进常量之前**逐字相同**——本轮改的是出处不是措辞，所以消费这些串的 `route.test.ts`
+   * 里那些数据层断言一处不动（这是「改动半径为零」的凭据，不是我的声称）。
+   */
+  loadConversationsFailed: "Failed to load conversations",
+  saveConversationFailed: "Failed to save conversation",
+  clearConversationsFailed: "Failed to clear conversations",
+  saveFeedbackFailed: "Failed to save feedback",
+  recordClickFailed: "Failed to record click",
+  exportFeedbackFailed: "Failed to export feedback",
+  /**
+   * 缺 `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` 时导出端点回 503。
+   * 这是**永久**状态（不补配置就每一次都这样），所以措辞里不许有「稍后」——与
+   * `authUnavailable` 同一条规矩。原来手抄的是 `"export unavailable"`，同样不含「稍后」。
+   */
+  exportUnavailable: "export unavailable",
 } as const;
 
 export type ServerErrorKey = keyof typeof SERVER_ERRORS;

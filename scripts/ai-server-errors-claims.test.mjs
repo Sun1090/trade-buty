@@ -25,7 +25,7 @@
  * 形状与同族一致：扫带地板（路由数掉下来说明扫描坏了，不许报「0 违规」）、
  * 探测带正向对照（探测器必须抓得住一条已知违规，否则「0 违规」是空转）。
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { SERVER_ERRORS } from "../src/lib/ai/server-errors";
@@ -33,9 +33,36 @@ import { SERVER_ERRORS } from "../src/lib/ai/server-errors";
 const root = process.cwd();
 const read = (rel) => readFileSync(path.join(root, rel), "utf8");
 
-/** 四个 AI 路由：chat / plan / quiz / summary */
-const ROUTES = ["chat", "plan", "quiz", "summary"];
-const routePath = (n) => `src/app/api/ai/${n}/route.ts`;
+/**
+ * 扫描面 = `src/app/api/ai` 下所有 `route.ts`，**现读**（R16.330）。
+ *
+ * 病灶：这一族此前拿的是 `["chat","plan","quiz","summary"]` 一份手抄清单，而目录下其实有
+ * 八个端点。另外四个（citation-click / conversations / feedback / feedback/export）里
+ * 15 处手写 5xx 字面量从来没被这条门禁看过，其中三处把**永久性**的鉴权失败与**暂时性**的
+ * 读写失败说成同一句话——正是 R16.291 立这条判据时要杀的那个病，它在清单之外的四个端点上
+ * 一直活着。清单没有主人，改了源码树没人跟着改（与 R16.328 / R16.329 同一条病）。
+ *
+ * 身份用**端点全路径**而不是首段目录名：`ai/feedback/route.ts` 与 `ai/feedback/export/route.ts`
+ * 是两个端点，取首段会折叠成同一个 `feedback`，于是「八个」在计数里变成「七个」还不报错。
+ */
+const AI_DIR = "src/app/api/ai";
+function listEndpoints(dir = AI_DIR, out = []) {
+  for (const entry of readdirSync(path.join(root, dir), { withFileTypes: true })) {
+    const rel = path.posix.join(dir, entry.name);
+    if (entry.isDirectory()) listEndpoints(rel, out);
+    else if (entry.name === "route.ts") out.push(rel.slice(AI_DIR.length + 1).replace(/\/route\.ts$/, ""));
+  }
+  return out.sort();
+}
+const ENDPOINTS = listEndpoints();
+const routePath = (n) => `${AI_DIR}/${n}/route.ts`;
+
+/** 这个端点是否用服务端身份（`getServerAuthUser()`） */
+const usesAuth = (source) => /getServerAuthUser\(\)/.test(source);
+/** 这个端点是否有登录门禁（对匿名请求回 401） */
+const has401Gate = (source) => /status:\s*401/.test(source);
+/** 这个端点是否真的调上游模型 */
+const callsUpstream = (source) => /from "@\/lib\/ai\/client"/.test(source);
 
 /**
  * 把注释整块涂白，但保住行号（违规要报出第几行）。
@@ -100,15 +127,37 @@ function serverErrorRefs(source) {
 }
 
 describe("AI 路由的 5xx 标识串：单一出处，且按成因分家（R16.291）", () => {
-  it("扫描面没有被缩窄（四个路由都在，四条路线的源文件都存在）", () => {
-    expect(ROUTES.length, "路由名单被改短了，下面几条判据的范围跟着变小却还是绿的").toBe(4);
-    for (const n of ROUTES) {
-      expect(read(routePath(n)).length, `src/app/api/ai/${n}/route.ts 不存在或为空——路径或后缀变了`).toBeGreaterThan(0);
+  it("扫描面由源码树现读，且没有被缩窄（地板防空转）", () => {
+    // 地板数的是**现读到的端点数**，不是清单长度：清单已不存在，改源码树就是改判据射程
+    expect(
+      ENDPOINTS.length,
+      `只数到 ${ENDPOINTS.length} 个 AI 端点，低于地板 8：要么扫描本身坏了，要么有端点被删（那要连带重看下面几条的射程）`,
+    ).toBeGreaterThanOrEqual(8);
+    // 反向不许留着死名字：这里没有清单可陈旧，但 `routePath` 必须逐个读得动
+    for (const name of ENDPOINTS) {
+      expect(read(routePath(name)).length, `${routePath(name)} 不存在或为空——路径或后缀变了`).toBeGreaterThan(0);
     }
+    // 谓词本身也要有地板：三个分类若非空，下面那几条「只在…上」就成了空转
+    expect(
+      ENDPOINTS.filter((x) => usesAuth(read(routePath(x)))).length,
+      "没有任何端点用 getServerAuthUser，鉴权那一族判据空转",
+    ).toBeGreaterThanOrEqual(4);
+    expect(
+      ENDPOINTS.filter((x) => usesAuth(read(routePath(x))) && has401Gate(read(routePath(x)))),
+      "没有「登录门禁 + 用身份」的端点，authUnavailable 那条正向判据空转",
+    ).not.toHaveLength(0);
+    expect(
+      ENDPOINTS.filter((x) => usesAuth(read(routePath(x))) && !has401Gate(read(routePath(x)))),
+      "没有「用身份但游客可用」的端点，authUnavailable 那条反向判据空转",
+    ).not.toHaveLength(0);
+    expect(
+      ENDPOINTS.filter((x) => callsUpstream(read(routePath(x)))),
+      "没有任何端点 import 上游 client，upstreamUnavailable 那两条判据空转",
+    ).not.toHaveLength(0);
   });
 
   it("没有一处 5xx 手写字面量（都取自 SERVER_ERRORS）", () => {
-    for (const n of ROUTES) {
+    for (const n of ENDPOINTS) {
       const { literals, lines } = handWritten5xx(read(routePath(n)));
       expect(
         literals,
@@ -159,27 +208,38 @@ describe("AI 路由的 5xx 标识串：单一出处，且按成因分家（R16.2
     ).not.toBe(SERVER_ERRORS.upstreamUnavailable);
   });
 
+  /**
+   * 这一条的判据重心是**关系**而不是名字：「谁该引用哪把键」由端点自己的两个可推导属性决定
+   * （用不用服务端身份、有没有对匿名回 401），所以新增端点自动落入某一类，不需要有人记得改清单。
+   */
   it("两种成因都有真实落点：authUnavailable 只在登录门禁的端点上，upstreamUnavailable 只在上游 catch 上", () => {
-    const perRoute = new Map(ROUTES.map((n) => [n, serverErrorRefs(read(routePath(n)))]));
+    const perRoute = new Map(ENDPOINTS.map((n) => [n, serverErrorRefs(read(routePath(n)))]));
     const has = (n, key) => (perRoute.get(n) ?? []).includes(key);
 
-    // plan / quiz 登录才可用（`if (!user) return 401`），身份不可信时不能放行成游客 → 5xx
-    for (const n of ["plan", "quiz"]) {
+    // 登录门禁端点（用身份 + 对匿名回 401）：身份不可信时不能放行成游客 → 必须报 authUnavailable
+    for (const n of ENDPOINTS.filter((x) => usesAuth(read(routePath(x))) && has401Gate(read(routePath(x))))) {
       expect(has(n, "authUnavailable"), `${n} 是登录门禁端点，鉴权不可用时应当报 authUnavailable`).toBe(true);
     }
-    // 上游 catch：每个路由都有
-    for (const n of ROUTES) {
+    // 真的调上游模型的端点：上游 catch 必须取 upstreamUnavailable
+    for (const n of ENDPOINTS.filter((x) => callsUpstream(read(routePath(x))))) {
       expect(has(n, "upstreamUnavailable"), `${n} 的上游 catch 应当取 upstreamUnavailable`).toBe(true);
     }
-    // chat / summary 的鉴权走降级，不许引用 authUnavailable（否则那句 5xx 又回来了）
-    for (const n of ["chat", "summary"]) {
+    // 反向（豁免面也要核对）：不调上游的端点不许引用 upstreamUnavailable——引用了就是凭空造一个「上游故障」
+    for (const n of ENDPOINTS.filter((x) => !callsUpstream(read(routePath(x))))) {
       expect(
-        has(n, "authUnavailable"),
-        `${n} 的鉴权只用来挑限流桶、游客本来就能用，走降级即可；这里出现 authUnavailable 说明它又改回 5xx 了`,
+        has(n, "upstreamUnavailable"),
+        `${n} 根本不 import 上游 client，却引用了 upstreamUnavailable：把一次本地/数据层失败说成上游故障`,
       ).toBe(false);
     }
-    // 少引用一把键，说明「分家」只做了一半：常量里多出来的键没有任何路由用得上
-    const allRefs = new Set(ROUTES.flatMap((n) => perRoute.get(n) ?? []));
+    // 用身份但游客本来就能用的端点：鉴权走降级，不许引用 authUnavailable（否则那句 5xx 又回来了）
+    for (const n of ENDPOINTS.filter((x) => usesAuth(read(routePath(x))) && !has401Gate(read(routePath(x))))) {
+      expect(
+        has(n, "authUnavailable"),
+        `${n} 的鉴权只用来挑限流桶或署名，游客本来就能用，走降级即可；这里出现 authUnavailable 说明它又改回 5xx 了`,
+      ).toBe(false);
+    }
+    // 少引用一把键，说明「分家」只做了一半：常量里多出来的键没有任何端点用得上
+    const allRefs = new Set(ENDPOINTS.flatMap((n) => perRoute.get(n) ?? []));
     expect(
       [...Object.keys(SERVER_ERRORS)].filter((k) => !allRefs.has(k)),
       "SERVER_ERRORS 里有键没有任何路由引用——要么是多余的，要么是某个成因忘了落地",

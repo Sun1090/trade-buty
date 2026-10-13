@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient, getServerAuthUser } from "@/lib/supabase/server";
 import { clientIp, createRateLimiter } from "@/lib/ai/rate-limit";
 import { readJsonBody } from "@/lib/request-body";
+import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 
 export interface FeedbackBody {
   rating: "helpful" | "unhelpful";
@@ -93,11 +94,11 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error("[ai/feedback] insert failed:", error.message);
-      return NextResponse.json({ error: "Failed to save feedback" }, { status: 500 });
+      return NextResponse.json({ error: SERVER_ERRORS.saveFeedbackFailed }, { status: 500 });
     }
   } catch (e) {
     console.error("[ai/feedback] unexpected failure:", e instanceof Error ? e.message : e);
-    return NextResponse.json({ error: "Failed to save feedback" }, { status: 500 });
+    return NextResponse.json({ error: SERVER_ERRORS.saveFeedbackFailed }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
