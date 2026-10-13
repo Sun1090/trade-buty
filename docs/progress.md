@@ -2,6 +2,42 @@
 
 ---
 
+## 2026-10-14 · v0.7.31 发布（RELEASE_FREEZE 完成，部署再次被配额挡住）
+
+- 里程碑 / 版本：**v0.7.30 → v0.7.31**（patch）。判级依据：`v0.7.30..main` 逐笔只看类型——`fix` 5、`test` 6、`docs` 15、`chore(reports)` 2，**没有新增产品能力**，按 `docs/release-checklist.md` §0 记 patch。
+- 分支 / commit：`chore/release-v0.7.31`（PR #436，因基线问题关闭）→ `chore/release-v0.7.31-r2`（PR **#438**，rebase 合并为 `6f620aa`）。tag **`v0.7.31` → `6f620aa`**，`check:release-tag` 已不再打印待办。发布记录 35 条（zh/en 各 5 条 highlights）。
+- 用户可见变化三处：① 隐私页「第三方服务」一节按零点击实测改成分两种说（行情是自动发生的）；② **课文级未知地址在生产上是 500，现已回到软 404**（#437 / R16.331）；③ `/zh|en/changelog` 在 320px 下不再被 40 位 SHA 顶宽。开发者可见一处：AI 端点 5xx 标识串按成因分家（界面不渲染，UI 零变化）。
+
+### 发布过程中我自己犯的三件事（都记下来，不粉饰）
+
+1. **发布说明漏掉一条真实用户可见修复**：#437 在 #436 开出之后合并进 main，于是发布内容多了一条 500 修复，而 release-notes 一个字没提。补为 `docs(release)`（`d990df4`）。**发布说明漏掉真实用户可见修复就是假话**，不是「可以下次补」。
+2. **基线落后逼出重开 PR**：#436 的分支落后于 main，`gh pr merge` 直接拒（`the head branch is not up to date`）。rebase 会改写 SHA，而本仓库禁止 force push → 以 `-r2` 分支重开为 #438。**关闭未合并的 #436 被 `ops:work-audit` 判红**（历史上真发生过「关 PR 顺手删分支，19 笔提交只剩本地」）——按门禁既有机制在 `docs/work-audit-ack.json` 登记去向，登记用的是**补丁面比对**而不是记忆：`git diff --name-only origin/chore/release-v0.7.31 HEAD` 只列出 #437 那 4 个文件，即 #438 = #436 两笔 + 已合并的 #437，一笔未丢。
+3. **R16.331 台账里连着两句假话**：① 「顺手把 runtime-health 的 ROUTES 补上 10 条」——那是临时探针，没进 PR，台账说做了而仓库里没有；② 「页面上根本没有 `meta[name=robots]`、可被索引」——**探测器自己坏了**：`page.locator('meta[name="robots"]')` 在同名节点有两个时抛 strict-mode violation，而我的 `.catch(() => null)` 把「仪器故障」伪装成「测到了空值」。改用 `fetch` + 正则现读 `<head>` 之后：该页有 **2 个** robots meta（`noindex, nofollow` 与 `noindex`），索引侧没有暴露。两句都已在 `docs/roadmap.md` 就地作废并附正确读数。教训：**量元标签这种可能不止一个的东西，必须数个数、打原文，不许 `.catch` 兜默认值。**
+
+### 部署：合并 ≠ 上线（第二次撞上同一件事）
+
+- 生产仍停在 `0.7.30`：`/zh/changelog` 现读只有 `0.7.30`，`ops:smoke-prod` 那条部署探针**判红**。
+- **逐笔读数**（不是推断）：最近一次 production deployment 是 `main @ 39b7074`（17:04Z，即第八十四轮那次 push）；#437（18:07Z）与 #438（19:13Z）两次合并 main **都没有生成生产构建**，而同一时段的 preview 构建 6 条全部 READY（`0c081d2`、`2e34188`、`2da1407`、`626812a`、`1d36670`、`17e5358`）。项目配置核对无异常：`link.productionBranch = "main"`、`gitProvider = github`、`paused = null`。`vercel ls --json` 列出的 16 条**全部 state=READY，没有 queued / error 态**。
+- 试过两条手动路，都不成立：`vercel deploy --prod` 走的是上传本地工作区 + 拉 development 变量（不是让 GitHub 集成构建），上传 44MB 后 `Error: fetch failed`；`vercel api /v13/deployments` 带 `gitSource` 触发返回 400（空响应体）。**副作用已清理**：那次 CLI 运行改写了 gitignored 的 `.env.local` 并塞进一行 `VERCEL_OIDC_TOKEN=`，已删除（其余 9 个键逐字未动，本地凭据未破坏）。
+- 按 §5 的规矩**不为了「绿」重复空跑**：限流是账户级 24h 窗口。落地动作留给配额恢复后的下一次 main 推送——**届时必须先确认 `/zh/changelog` 读到 0.7.31，才算这次发布真的上线**。
+- 冒烟 10 条：8 绿 / 2 红。另一条红是 `POST /api/ai/chat → 502`（护栏路径正常 → 站内代码没问题；6 个 AI 变量实测都在 Vercel Production env，属上游额度 / 出口网络，需维护者核对）。
+
+### 验证（§3 顺序，全绿）
+
+`test:coverage` **357 文件 / 3797 条**通过，覆盖率 **95.06 / 90.76 / 95.08 / 96.9**（未降，阈值一处未调）；lint / typecheck / build / 34 项 `check:*` 与 `audit:*` 全 `exit=0`；`check:lockfile-repro` 983 个包条目无差异（锁文件由钉住的 `npm@10.9.4` 重算）；`db:test` 迁移 + RLS 44 条 + 同步约束 + 0008/0009 回滚重放演练通过；`e2e` **230 passed / 1 skipped**（+1 正是新增的课文级软 404 判据）；`git status` 无纯日期 diff。合并前 #438 的 CI 三项（`ci` / `db-tests` / `auth-e2e`）全绿。
+
+### 风险 / 回滚
+
+**无数据库迁移**（`git diff --name-only v0.7.30 v0.7.31 -- supabase/migrations rollback` 为空）。回滚：`git revert` 发布提交后重新部署，或把 Vercel Production Deployment 切回 v0.7.30 构建止血。注意回滚会把那条 500 修复一起带回（课文级未知地址恢复为 500 = 当前生产行为），所以止血时优先只 revert 发布记录、保留 `bc96931` 那一笔修复。
+
+### 下一项
+
+R16.332（已勘查、证据齐全，尚未动手）：① 同一个 `notFound()` 在动态路由（share，`cache-control: no-store`、无 `x-nextjs-prerender`）给 **200**、在静态路由（knowledge doc，`x-nextjs-prerender: 1` + `s-maxage`）给 **404**——我用「根级 `loading.tsx` 的 shell 先刷 headers」解释过，随后**自己证伪了**（两条页面 HTML 里都留着 `animate-pulse` skeleton 痕迹，状态码却不同），成因未查明，不许拿猜测当结论；② 字典里那三句「链接无效——分享链接已损坏或版本不匹配」（中英齐全）连同 `share-card-preview.tsx` 的对应分支都是**不可达代码**：`resolveShareLanding` 先用 `detectKind` 把畸形载荷拦成 null、路由直接 `notFound()`，用户看到的是通用「Page not found」而不是作者为这种情况专门写的那句话。修法取「让畸形载荷渲染作者已写好的软 404」（与章节级未知页同一条路），一次解决文案可达 + noindex + 与 OG 图降级对齐，不去硬修状态码。
+
+- **更新时间**：2026-10-14（Asia/Shanghai）。
+
+---
+
 ## 2026-10-14 · 第八十四轮（R16.330）：管「5xx 不许手抄」的那条门禁，自己拿的是 4 个路由名的手抄清单——`src/app/api/ai` 下实有 8 个端点，清单外那 4 个从没被它看过
 
 - 里程碑 / 版本：AGENTS.md in-scope「内容质量 / 契约 / 合规门禁收敛」；R16.330 新增并关账，未改产品版本（当前 v0.7.30）。分支 `test/handcopied-list-ownership`（自合并后的 `main` 顶点 `5af70bd`），两笔：`0884e17`（fix(ai)）扫描面现读 + 15 处手抄串收进单一出处 + 3 处鉴权 catch 改判成因、`dc0dcc7`（docs(roadmap)）R16.330 关账。
