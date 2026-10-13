@@ -140,6 +140,10 @@
     {
       "number": 436,
       "reason": "非丢失而是换了载体（与 #344 / #414 同一情形）：#436 是 v0.7.31 的发布 PR，开出之后 #437（R16.331：课文级未知地址在生产上是 500）合并进 main。按 docs/release-checklist.md §1「发布内容只能来自 main」，发布分支必须 rebase 承接它；rebase 改写 SHA，而本仓库禁止 force push，远端 topic 分支只能 fast-forward，于是整条链以 chore/release-v0.7.31-r2 分支重开为 #438。去向即 #438，且内容一笔未丢：`git diff --name-only origin/chore/release-v0.7.31 HEAD` 只列出 #437 那 4 个文件（src/lib/content.ts、src/lib/content.lenient.test.ts、e2e/smoke.spec.ts、docs/roadmap.md），即 #438 = #436 的两笔（17e5358 ship + 2e34188 发布说明补全，后者已 cherry-pick 为 0c081d2）+ 已合并的 #437。#436 自己的 CI 已在 2e34188 上跑绿（ci 9m56s、db-tests 43s），#438 在同一份内容上重跑。两个远端分支（chore/release-v0.7.31、chore/release-v0.7.31-r2）都保留到 #438 确实合并之后才删。"
+    },
+    {
+      "number": 441,
+      "reason": "非丢失而是换了载体（与 #125 / #344 / #414 / #436 同一情形）：#441 的分支从 #440 合并**之前**的 main 起分支，而本仓库全部用 rebase 合并——#440 落地后 main 头换成新的 SHA，#441 的分支因此落后于基线，GitHub 判为 CONFLICTING/DIRTY 并拒绝 rebase 合并。更新已推送分支需要 force push（本仓库禁止），于是整条链以 test/runtime-health-coverage-owner-r2 分支重开为 #442。去向即 #442，等价性用**补丁面**而不是记忆核对：两条分支的 tree 哈希逐字相同（`git rev-parse <分支>^{tree}` 两边都是 346ef67418b84ce09eff553e126b5eb79da7586d），`git diff --name-only origin/main <两条分支>` 的增量文件集也完全相同（8 个：docs/roadmap.md、docs/scan-counts.md、docs/test-clock-hygiene.md、e2e/runtime-health.spec.ts、scripts/mobile-coverage-claims.test.mjs 与新增的 page-template-coverage-lib{,.test}.mjs、runtime-health-coverage-claims.test.mjs）。#441 的三笔内容（be7c7c3 / f73f098 / 539ced3）在 #442 里逐笔对应（be7c7c3→同内容、f73f098→同内容、539ced3→同内容，仅 SHA 因 rebase 变址）。两个远端分支都保留到 #442 确实合并之后才删。"
     }
   ]
 }
