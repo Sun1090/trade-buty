@@ -2,6 +2,55 @@
 
 ---
 
+## 2026-10-13 · 第七十六轮（R16.322）：一句「订正出来的假话」是怎么长出来的——订正注释时只翻了写那句话的那个文件
+
+- 里程碑 / 版本：口径与防呆收敛第五轮；R16.322 新增并关账，未改产品版本（当前 v0.7.29）。分支 `fix/per-call-cap-owners`（自合并后的 `main` 顶点 `943ee33`），三笔：`5da4e4a`（fix(stats)）会话上限与复习记分收进 `study-caps` + 判据扩形、`101061b`（docs(perf)）重录实测表、本笔台账。
+- 承上一轮：#425（R16.321 判据搬到 build 之后）已 rebase 合并，本地分支已删、远端由 GitHub 自动清理，`ops:work-audit` 判绿（悬空 0 · 陈旧 0 · 未确认 0）。
+
+### 病灶是一句「把注释订正成真话」的动作产出来的假话
+
+`study-time.ts` 现在写着：「单次调用没有上限——旧注释里的『单次 ≤4h』在代码里不存在」。**这句话是假的**，而且它是一次「把注释里代码没有的东西订正掉」的动作产出来的（`148389d`，`docs(comments): 四处注释说的是代码没有的闸、没有的按钮、没有的地方`，其提交信息第 1 条明写「代码里只有后面那道」）。被它判为不存在的那道闸，从 R4.2（`b7669bc`）起一直长在 `quiz.tsx` 的 `save()` 里——`git merge-base --is-ancestor b7669bc 148389d` 已核，那道闸比那句订正早 20 天。**病因不是笔误，是范围**：那次订正只翻了写下这句话的那个文件，没看这个约定在全仓的实现点。
+
+### 四组证伪实验先做（`.gate-logs/survey-r76.mjs` / `survey-r76b.mjs`）
+
+1. 普查 `addStudyTime` 的调用点：非测试源码 **5 处**，其中 `quiz.tsx` 交卷时行内夹 `4 * 3600`、`review-client.tsx` 与 `ai-quiz.tsx` 各写一遍 `addStudyTime("quiz", 60)`。
+2. `quiz.tsx` 那个 `4 * 3600` 改成 `12 * 3600` → 只有 `quiz.test.tsx` 那一条「caps recorded quiz study time at four hours」红。它钉的是**数值**，不是「这个数有主人」；`study-caps` / `study-time` 两圈 31 条全绿。
+3. `ai-quiz.tsx` 那处 60 改成 120 → **该文件 14 条全绿**。同一政策在复习页有两条钉着，在 AI 变体题这一处**零覆盖**。
+4. 全仓没有任何测试断言过「一题记多少」与「活跃日门槛」之间的关系。
+
+### 改法：四个名字，数值一个都没动
+
+`study-caps.ts` 从两个扩到四个：新增 `QUIZ_SESSION_CAP_SEC = 4 * 3600`（一次测验会话）与 `REVIEW_CREDIT_SEC = 60`（一道复习应答记多少），三处调用点改读它；`study-time.ts` 那段改成真话（本函数不夹单次调用，但单次上限长在调用点共三处；「一次报多少就加多少」只对 read 源成立）。**`REVIEW_CREDIT_SEC` 不与 `ACTIVE_DAY_MIN_SECONDS` 合并**：两者都是 60，但一个是「答一题往台账记多少秒」、一个是「一天凑够多少秒算一个活跃学习日」，合并之后改活跃门槛会顺手改掉记分（与 R16.319 / R16.320 同一条规矩）。
+
+### 判据的形状本轮扩了一次
+
+扫描侧从只认 `8 * 3600` 一条乘式，扩到三条形状，**第三条是本轮新长的**：`addStudyTime("<源>", <字面秒数>)`。以前只扫乘式，而「计价写在调用点」正是病灶③那处副本的写法——扫不到就等于没有。三条各配自证，另加一条反向自证钉住 `binance.ts` 的 `7 * 24 * 3600_000` 不被乘式误伤（豁免表若被删这条会红）。静态侧夹点清单 4 → **7**，地板同步跟上。`ai-quiz.test.tsx` 补上病灶③的缺口：走**真实台账**（本文件不 mock `study-time`）断言「答一道变体题 → `getTodayStudySeconds().quiz === REVIEW_CREDIT_SEC`」，带一条幂等对照。
+
+### 探针 11 条腿 BAD=0，三条腿第一版是我自己写错的
+
+`.gate-logs/probe-r76.mjs`。**这一族我已经是第四次踩，但本轮踩出三种不同形状**：
+
+- **M2**：期望填成「退回字面量时行为侧也该红」——错。退回的是**同值**字面量，行为侧量的是「账上多了多少秒」，数值没变它就该绿；能喊红的只有静态与扫描两侧。改成断言它绿。
+- **M2b**（新加的一条）：改**数值**才是病灶③的原始形状。我原本以为静态侧会绿（「它读到的还是那个名字」），实测**也红**——那条正则锚的是完整调用形状，`REVIEW_CREDIT_SEC * 2` 就不匹配。判据比我想的严，这条腿把我的想当然否掉了。
+- **M6**：第一版把地板从 7 一起改成 6，于是**删掉清单项与放宽地板互相抵消，这条腿由构造保证绿**。只删条目不动地板，地板才真的喊出来。
+
+### 本轮另一笔收入：上一轮的修法当场被验证了一次
+
+`check:bundle` 里那条刚搬到 build 之后的「实测列 vs 产物」判据，**第一次红在第一趟链上**（`knowledge-lesson` 退位 350.2→350.1、`review` 进位 284.2→284.3）。以前这种漂移要等第二趟，红出来的读数与刚录进表的数字同一批，看起来像「表被改回去了」。同环境 A/B（`git worktree` 各建一次干净构建、`.env.local` 一起带过去）：基线树 15/15 逐字复现上一张表，本轮 6 组字节变、9 组逐字未动。**新读数**：同方向 5 组 +9~+17、`knowledge-lesson` 反倒 **−12 字节**——「加了代码一定变胖」在这张表上不成立，取决于 deflate 窗口怎么挪。读数由 `.gate-logs/rerecord-r76.mjs` 现算（import 判据自己的 `groupMaxima`），不手抄。
+
+**顺带被已有门禁抓一次**：`roadmap-open-reference-claims` 拦下我在未决项里写 `quiz.tsx:124`（会被改漂的行号引用），改成点名 `save()`。这条门禁本轮第一次为我干活。
+
+### 未做（登记而不顺手补）
+
+- **`QUIZ_SESSION_CAP_SEC` 与当日上限的关系没有钉**：`study-caps.test.ts` 那条关系判据只管「单轮回放 ≤ 当日每源」，因为回放时长在 `/stats` 上有**第二张卡**（读记录里的 `durationSec`）。测验那一源没有这种第二表面——`4 * 3600` 只在写台账前静默夹一刀，夹掉的字节去哪了没人展示，所以「两张卡说两个数」这个失效模式对它不成立。**没有据此再扩一条恒等式**（R16.315 那条老规矩：拿不到失效形状的判据是装饰）。若哪天给测验做「单次测验用时」这类展示，这条关系立刻需要主人，届时先量再补。
+- `reading-time-tracker.tsx` 每 5 秒喂 5 秒那一处是全仓唯一没有单次闸的写入点，本轮只在注释里如实写明「单次上限长在调用点，共三处」，没替 read 源补第四道闸——一次最多 5 秒，当日闸已经够用，补闸是伪需求（人口为 1 就不扩门禁）。
+
+- 变更文件：`src/lib/study-caps.ts`（两个名字扩到四个 + 文件头那张「谁管哪一段」的表）、`src/lib/study-caps.test.ts`（4 → 5 条，扫描侧从一条乘式扩到三条形状 + 自证 + 反向自证）、`src/lib/study-time.ts`（那段假话改成真话）、`src/components/quiz.tsx` / `src/components/review-client.tsx` / `src/components/ai-quiz.tsx`（三处调用点改读常量，注释同步）、`src/components/ai-quiz.test.tsx`（+1 条走真实台账的行为判据）、`docs/perf-notes.md`（重录一张新表 + 订正上一节末尾那句已被推翻的「待修方向」）、`docs/roadmap.md`（R16.322 新增并关账）、本笔台账。**用户可见行为零变化**：四个数值的值一个都没动。
+- 验证：全量 `test:coverage` **354 文件 / 3775 条**绿（覆盖率 95.06 / 90.75 / 95.08 / 96.9，阈值 94/89/94/96 未动）；**把 `.next` 整个移走再跑全量 → 同样 354 / 3775 全绿**（本轮新用例没把产物依赖带回单元测试，这是上一轮修果的回归读数）；`lint` 0 warning、`typecheck` 0、`build` 0、`check:bundle` 0 并印 `✓ 实测列与当场重算逐字一致：15 组 · 环境指纹 4dbfa3ca2225`；`check:comment-paths`（384 份源码 / 154 条引用）/ `check:mobile` / `check:seo-surface` / `check:search-index` / `check:structured-data` / `check:risk-warning` / `kb:inventory` / `kb:gap-priority` / `kb:accept` / `check:title-terminology` / `check:description-quality` / `check:description-dupes` / `check:glossary` / `check:test-clock-hygiene`（353 个测试文件）/ `check:dead-copy` / `ops:faq-candidates` / `check:scan-counts`（8 处登记，`secrets-listed-files` 847）/ `check:report-freshness` / `check:constitution` / `check:docs` / `check:changelog` / `check:quiz-coverage` / `check:quiz-mounts` / `check:links` / `check:sitemap` / `check:nav-chain` / `check:relative-links` / `check:env-docs` / `check:secrets` / `check:lockfile-repro` / `audit:prod` / `audit:all` 全 0，`git status` 干净、`fail=0`。探针 `.gate-logs/probe-r76.mjs` 11 条腿 BAD=0。两份自动报告本轮**无变化**（没有新增测试文件，只在已有文件里加用例）。台账里这些数（354 / 3775 / 353 / 384 / 154 / 847 / 11 条腿）落笔前逐个回查了实测输出。
+- 阻塞 / 风险：无新增阻塞。回滚撤回这三笔即可（无迁移、无数据、数值未动）。**登记一处已知风险**：`docs/perf-notes.md` 那张新表贴着档界的组更多了（`chart` 距退位界 **2 字节**、`knowledge-lesson` 距进位界 9 字节），下一笔碰共享 chunk 的改动几乎必然再触发一次重录——这是 R16.321 关账时登记的「档界余量小于一次无关改动的典型抖动」那个不收敛的又一次实测，不是本轮新缺陷。
+- 下一项：本分支开 PR，等 `ci` + `db-tests` + `auth-e2e` + CodeQL 绿了 rebase 合并。第七十七轮候选（不需拍板、能先证伪）：AGENTS.md in-scope 的「隐私与三方服务文档事实订正」——本轮这类「订正动作自己产出的假话」是一条可复用的病形，值得拿 `148389d` 那四条一起回扫（它一次改了四处注释，本轮只抓到其中一处）；`/stats` 上「回放时长」与「总学习时长」并排出现，R16.320 钉了代码不说两个数，界面有没有解释「为什么有时对不上」还没量过。
+- 更新时间：2026-10-13（Asia/Shanghai）。
+
 ## 2026-10-13 · 第七十五轮（R16.321）：那道「实测列由产物说了算」的判据在 CI 里从来没执行过——而我在这条账上归错了两次病因
 
 - 里程碑 / 版本：口径与门禁时机收敛第四轮；R16.321 新增并关账，未改产品版本（当前 v0.7.29）。分支 `fix/perf-notes-verdict-after-build`（自合并后的 `main` 顶点 `cfca5d2`），四笔：`e543849`（fix(perf)）判据搬进 build 之后 + 行为指纹、`6a1b0f8`（chore(reports)）两份台账认账、`176bc73`（refactor(perf)）拆净单元测试里那半、本笔台账。
