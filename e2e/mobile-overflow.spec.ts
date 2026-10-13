@@ -107,9 +107,37 @@ async function expectNoPageOverflow(page: Page, path: string) {
     client: document.documentElement.clientWidth,
     body: document.body.scrollWidth,
   }));
+  // R16.329：溢出时点名「是谁撑宽的」。同一页可以本地 320 不溢出、CI 354 溢出（字体度量
+  // 与仓库原文两处都可能不同），只报一个数字的判据红在 CI 上时无从下手，只能靠猜。
+  // 故仅在**已判定溢出**时才现读越界的叶子元素——通过的那一趟零开销，不做全量 DOM 扫描。
+  const overflowing = widths.scroll > 320;
+  const culprits = overflowing
+    ? await page.evaluate(() => {
+        const edge = window.innerWidth + 1;
+        const rows = Array.from(document.querySelectorAll("body *"))
+          .map((el) => {
+            const r = el.getBoundingClientRect();
+            return {
+              tag: el.tagName.toLowerCase(),
+              cls: (el.getAttribute("class") ?? "").slice(0, 60),
+              right: Math.round(r.right),
+              // 有没有更深的子元素也越界：外层容器必然跟着撑宽，报它没有信息量
+              deeper: Array.from(el.children).some(
+                (c) => c.getBoundingClientRect().right > edge
+              ),
+              text: (el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 60),
+            };
+          })
+          .filter((row) => row.right > edge)
+          .sort((a, b) => b.right - a.right);
+        const leaf = rows.filter((row) => !row.deeper);
+        return (leaf.length > 0 ? leaf : rows).slice(0, 6);
+      })
+    : [];
   expect(
     widths.scroll,
-    `${path}: page scrollWidth ${widths.scroll} > clientWidth ${widths.client}（320px 视口横向溢出）`,
+    `${path}: page scrollWidth ${widths.scroll} > clientWidth ${widths.client}（320px 视口横向溢出）` +
+      (overflowing ? ` · 越界的叶子元素：${JSON.stringify(culprits)}` : ""),
   ).toBeLessThanOrEqual(320);
   expect(widths.body).toBeLessThanOrEqual(320);
 }
