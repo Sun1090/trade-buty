@@ -471,3 +471,48 @@ R16.306「不给容差」仍然成立，判据与预算都没动。
 「表 254.2KB / 实测 254.8KB」，其余 14 组逐字绿）。退位只需 **5 字节**——本轮新长的这一组排到全表**第二**贴档界（最紧仍是 `chart` 的 2 B，`privacy` 是 5 B），
 下一笔无关改动只要动 5 字节就会把它推回 254.7。R16.306「不给容差」与 R16.318「这 0.1 由十几个字节决定」两条仍然成立，本轮没动判据、
 没动预算。
+
+### 复测（2026-10-13，R16.329 给更新日志页的 commit 行补上 `break-words` 之后，本地干净构建现读重算）
+
+上一张（同日 R16.327）保留原样当历史。今天的读数（最大 total / 预算 / 最大路由）：
+
+| 分组 | 今天最大 total | 预算 | 最大路由 |
+|---|---:|---:|---|
+| home | 281.3 KB | 360 KB | `zh` |
+| path | 282.1 KB | 365 KB | `zh/path` |
+| knowledge-chapter | 267.2 KB | 370 KB | `zh/knowledge/markets-instruments` |
+| knowledge-lesson | 350.2 KB | 357 KB | `zh/knowledge/technical-analysis/drawing-tools` |
+| search | 249.6 KB | 335 KB | `zh/search` |
+| review | 284.3 KB | 350 KB | `zh/review` |
+| bookmarks | 244.8 KB | 335 KB | `zh/bookmarks` |
+| stats | 303.6 KB | 370 KB | `zh/stats` |
+| ai | 252.2 KB | 350 KB | `zh/ai` |
+| chart | 302.3 KB | 390 KB | `zh/chart` |
+| replay | 318.5 KB | 400 KB | `zh/replay` |
+| privacy | 254.8 KB | 340 KB | `zh/privacy` |
+| glossary | 250.9 KB | 340 KB | `zh/glossary` |
+| static-info | 247.4 KB | 340 KB | `zh/about` |
+| auth | 311.3 KB | 340 KB | `zh/auth` |
+
+- 记录环境指纹：`4dbfa3ca2225`（与上一张同一套 deflate 行为，所以这张表仍然逐字判得动）。
+
+**这一笔的因果比表面看起来绕**：改动只在 `src/app/[locale]/changelog/page.tsx` 的一处 className 上加了
+一个 `break-words`，但它落进的是**共享样式表**——于是 15 组里 12 组各长 **+9 字节**（增量逐组相同），
+`privacy` +25、`auth` +10、`static-info` +7。Δ 由 `.gate-logs/rerecord-r83.mjs` 的两张表逐组相减现算。**「只改一页所以只有那一页变」这条直觉在 CSS 上不成立**：
+R16.327 那张表能「只有 privacy 变」是因为它改的是那一页的正文 HTML，而工具类进的是全站共用的那份 CSS。
+
+| 分组 | 上一张的字节 → 今天的字节 | Δ | 显示值 | 退位需 / 进位需 |
+|---|---|---:|---|---|
+| knowledge-lesson | 358545 → 358554 | +9 | **350.1 → 350.2** | **1 B** / 102 B |
+| privacy | 260868 → 260893 | +25 | 254.8（未跨界） | 30 B / 74 B |
+| auth | 318804 → 318814 | +10 | 311.3（未跨界） | 95 B / 9 B |
+| static-info | 253348 → 253355 | +7 | 247.4（未跨界） | 69 B / 34 B |
+| 其余 11 组 | — | 各 +9 | 全部未跨界 | 最紧 `chart` 11 B |
+
+**判据红在第一趟链**（`check:bundle` 报「表 350.1KB / 实测 350.2KB」，其余 14 组逐字绿），这是 R16.321
+落地之后第四次由判据自己喊出来的重录。读数由 `.gate-logs/rerecord-r83.mjs` 现算（import 判据自己的
+`groupMaxima`），余量由 `.gate-logs/margins-r79.mjs` 现算，都不经过手抄。
+
+**本轮最该担心的一条**：`knowledge-lesson` 现在距退位界只剩 **1 字节**——全表最紧（上一张最紧是 `chart`
+的 2 B）。它贴着 357 KB 预算的档界，任何一次无关改动都会把它推回 350.1，届时这张表又要重录一次。
+R16.306「不给容差」仍然成立，本轮没动判据、没动预算。
