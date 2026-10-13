@@ -2,6 +2,45 @@
 
 ---
 
+## 2026-10-13 · 第八十轮（R16.326）：「回放练习时长」可以大于「台账学习时长」——同一屏上**部分大于整体**，界面一句解释都没有
+
+- 里程碑 / 版本：口径与防呆收敛第九轮；R16.326 新增并关账。分支 `fix/replay-trend-daily-cap`（自合并后的 `main` 顶点 `e784891`），五笔：`a5ea6d9`（fix(stats)）聚合器数出越界天数 + 界面解释 + 5 条判据、`3ccfa42`（docs(perf)）重录实测表、`4855574`（docs）R16.326 关账、`59fcbc2`（test(quality)）静态夹点 7→8、`d791330`（docs）探针与 M6 来历。
+- 承上一轮：#428（R16.324 + R16.325 锚点两种形状）已 rebase 合并（`e784891`），本地分支已删、`ops:work-audit` 判绿。
+
+### 病灶：R16.320 钉住了「单轮 ≤ 当日」，但那条关系成立并不等于两个数一致
+
+`replay-time-trend.ts` 把窗口里**每一轮**的耗时相加（只被单轮闸 `REPLAY_ROUND_CAP_SEC` 夹），而「台账学习时长」读的是学习台账，另有**当日**封顶 `DAILY_SOURCE_CAP_SEC`。证伪实验（走真实聚合器 + 真实台账，不手算）：3 轮 × 4h（每轮都不越界）→ 回放那块 **12h**、台账 **8h**；2 轮 × 3h → 两边都是 6h。越界来自**多轮累加**，而 R16.320 那条行为判据只喂**一轮**，所以这个形状从构造上就抓不到。
+
+**顺带否掉一条我自己登记过的猜测**：曾怀疑「换设备后两块分叉」是第二个来源（回放历史上云、台账不上云）。实测**不成立**——云端 `replay_history` 压根没有时长列，合并到新设备后 `durationSec` 一条都没有，两块都是 0。**猜的来源也要量。**
+
+### 改法：让聚合器自己数出「越界几天」，界面据此解释；不把两块夹齐
+
+新增 `summary.daysOverDailyCapInRange`，界面在它 > 0 时显示一句解释；没越界时**不出现**——那时两个数本来就一致，冒出解释反而是假话。**没有把聚合器改成也夹当日**：两块说的是两件事（「这段时间回放花了多久」vs「今天各源封顶后算多少」），夹齐会让回放那块替别的源背锅（R16.320 同一条规矩）。
+
+### 判据 5 条 + 探针 7 条腿 BAD=0，其中 M6 量出一个真缺口并已补
+
+`replay-time-trend.test.ts` +2（越界按**天**数；夹到正好等于封顶不算越界）、`stats-client.test.tsx` +2 **双向**（12h 时解释在场 / 6h 时解释缺席）、`replay-duration-claims.test.ts` +1 钉文案（说清两侧 + **禁令**不许说成台账漏记 + 两种语言都提到对面那张卡的名字，用 `totalStudyTime.slice(0, 6)` 从词典派生）。
+
+**M6 是本轮最值钱的一条**：把比较基准从 `DAILY_SOURCE_CAP_SEC` 换成 `REPLAY_ROUND_CAP_SEC`（同值 8h），**行为侧与界面侧一字不差全绿**——同值时读数完全相同，行为判据原理上测不出「主人被换」。这不是合并常量，而是**引用了错的那一个**：写成单轮封顶今天恰好对，哪天单轮上限单独调整就静默变错。已登记进 `study-caps.test.ts` 的夹点清单（7 → **8**，地板同步），M6 现在红在该红的那条。
+
+**探针自己踩的两处**：① M5 第一版用「削尾巴」摘断言，先把要找的那段削掉了 → `indexOf` 找不到锚点；改成把禁令正则换成永不匹配的 `/(?!)/`，干净且可逆。② **M6 第一版期望 red 却实测 green**——不是判据没牙，而是这条腿跑的清单里**没有 `study-caps.test.ts`**，那颗牙长在静态侧，不跑它当然绿（R16.311 那一族第四次：腿的期望与它实际执行的范围要对得上）。
+
+### 本轮我自己的三处读数/文案错，都被当场抓到
+
+1. 往实测表写 `stats` 的档界余量时抄了上一张的公式（69 B / 33 B），当场用 `.gate-logs/margins-r79.mjs`（import 判据自己的 `groupMaxima`）算出 **19 B / 84 B**。余量必须由判据现算。
+2. roadmap 里写了「3785 条绿、fail=0」**在验证之前**——正是 R16.323 说的那类假话；跑完全量链才留下。
+3. 覆盖率分支抄成 90.75，实读 **90.76**，按当场输出订正。
+4. **被已有门禁抓一次**：`perf-notes-claims` 拦下我在实测表引用 `R16.326` 而 roadmap 还没有这一条。
+5. **夹具踩一次**：新那两条用例的回放记录漏了 `bestStreak`，被 `readReplayHistory` 规范化整条丢掉 → 界面显示「0 轮」，判据红在**产物为空**而不是红在逻辑。
+
+- 变更文件：`src/lib/replay-time-trend.ts`（`daysOverDailyCapInRange`）、`src/lib/i18n-stats.ts`（zh/en 各一句解释）、`src/components/stats-client.tsx`（条件渲染）、`src/lib/study-caps.ts`（文件头那句「做完一轮 12 小时」的失效形状订正）、`src/lib/replay-time-trend.test.ts`、`src/components/stats-client.test.tsx`、`src/lib/replay-duration-claims.test.ts`、`src/lib/study-caps.test.ts`（夹点 7→8）、`docs/perf-notes.md`（重录表）、`docs/roadmap.md`（R16.326 关账，575 条 / 未勾 31 条）、`docs/progress.md`（本台账）。
+- 验证：`node .gate-logs/probe-r80.mjs` → **BAD=0**（7 条腿）；全量链 `bash /tmp/verify_r71.sh` → **fail=0**，`test:coverage` **355 文件 / 3785 条**绿（覆盖率 95.06 / 90.76 / 95.08 / 96.9，阈值未动）、`lint` / `typecheck` / `build` / 40+ 门禁全 0、`git status` 干净；`check:bundle` 绿且实测表逐字一致（15 组 · 指纹 `4dbfa3ca2225`）。
+- 阻塞 / 风险：**本轮有用户可见变化**（一天做满超过当日封顶的回放之后，「回放练习时长」那块下面多出一句解释；其余数字一个都没动）。风险面：新那句解释的条件依赖 `daysOverDailyCapInRange`，M2/M3 两条腿钉住「恒真」和「永不触发」两个方向；M6 钉住比较基准的主人。回滚 = revert `a5ea6d9`…`d791330` 五笔。
+- 下一项：本轮是近六轮里第一处用户可见变化，按 `docs/release-checklist.md` §0 判级为 **patch**，进入 `RELEASE_FREEZE`（v0.7.29 → v0.7.30）：release-notes 双语 → CHANGELOG → 版本号 + 钉住 npm 重算 lockfile → 全量验证 → release commit → PR → 合并 → tag → 部署 → 生产冒烟。之后第八十一轮回到 AGENTS.md in-scope 的「隐私与三方服务文档事实订正」。
+- 更新时间：2026-10-13 12:10 (+08:00)
+
+---
+
 ## 2026-10-13 · 第七十九轮（R16.325）：`check:links` 那段「纯本页锚点」分支是**不可达代码**——7811 处目录锚点一处都没被核过
 
 - 里程碑 / 版本：口径与防呆收敛第八轮；R16.325 新增并关账，未改产品版本（当前 v0.7.29，用户可见行为零变化）。分支 `fix/anchor-justification-not-numbers`（与 R16.324 同一条 PR #428），三笔：`d7a6efd`（fix(anchors)）跨文档锚点门禁、`03c737d`（docs）第七十八轮台账、`55ee6d0`（fix(links)）本轮。
