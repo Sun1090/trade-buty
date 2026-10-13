@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { LOCALES } from "../src/lib/i18n";
+import { encodeQuiz, encodeReplay, encodeStreak } from "../src/lib/share-decode";
 
 /**
  * R13.7：320px 宽（最窄主流手机）核心路径不横向溢出。
@@ -24,7 +25,67 @@ const CORE_SUFFIXES = [
   "/glossary",
   "/chart",
   "/ai",
+  /**
+   * R16.329：以下 9 条是「两条移动门禁合起来仍然没量到」的那一批页面模板。
+   * 病灶不是漏写，而是**清单没有主人**——`scripts/privacy-ext-route-coverage.test.mjs`
+   * 上一轮给跨源判据立的那条规矩（清单由源码树推导）同样适用于这里，
+   * 由 `scripts/mobile-coverage-claims.test.mjs` 钉住「每个 page.tsx 至少被一条移动门禁量到」。
+   *
+   * 为什么 `/privacy` 最该先进来：R16.327 刚把那一节的文案从一句改写成三句（含
+   * `api.binance.com` 这种不可断行的长 token），而改完之后没有任何东西在 320px 下
+   * 看过这一页——**我改了一页自己量不到的界面**。
+   */
+  "/about",
+  "/terms",
+  "/faq",
+  "/privacy",
+  "/changelog",
+  "/calendar",
+  "/bookmarks",
+  "/search",
+  "/auth",
+  // 回调页与 /auth 是两页（一个是登录入口，一个是 OTP 落地），少一条就漏一整页
+  "/auth/callback",
 ];
+
+/**
+ * 根级 `/share/{kind}/{payload}`：locale 编在载荷里，所以它不在 `[locale]` 树下，
+ * 上面那份「× LOCALES」的矩阵结构上就盖不到它。载荷由 `src/lib/share-decode`
+ * 现生成（不抄 base64 串——编码器一改，抄的那串就变成一条测 404 的假覆盖）。
+ */
+const SHARE_PATHS = [
+  `/share/quiz/${encodeURIComponent(
+    encodeQuiz({
+      chapterTitle: "入门基础",
+      score: 7,
+      total: 10,
+      percent: 70,
+      locale: "zh",
+    }),
+  )}`,
+  `/share/replay/${encodeURIComponent(
+    encodeReplay({
+      symbol: "BTCUSDT",
+      interval: "1h",
+      correct: 7,
+      total: 10,
+      accuracyBps: 7000,
+      bestStreak: 5,
+      currentStreak: 3,
+      locale: "en",
+    }),
+  )}`,
+  `/share/streak/${encodeURIComponent(
+    encodeStreak({ currentStreak: 12, longestStreak: 30, locale: "zh" }),
+  )}`,
+];
+
+/**
+ * 本 spec 里**不靠 CORE_PATHS 静态清单**覆盖到的页面模板，写成 Next 的 page 文件形状。
+ * 门禁（`scripts/mobile-coverage-claims.test.mjs`）不照单全收：每一串都必须在 spec 源码里
+ * 真的对应一处 `page.goto("/<首段>/` ——删掉上面那三条用例而留着这个声明，就会红。
+ */
+const DYNAMIC_TEMPLATE_COVERAGE = ["/share/[kind]/[path]"];
 const CORE_PATHS = LOCALES.flatMap((locale) =>
   CORE_SUFFIXES.map((suffix) => `/${locale}${suffix}`)
 );
@@ -73,6 +134,31 @@ test.describe("R13.7 320px 核心路径不横向溢出", () => {
       await expectNoPageOverflow(page, path);
     });
   }
+
+  for (const path of SHARE_PATHS) {
+    test(`${path} 无页级横向滚动（根级分享落地页）`, async ({ page }) => {
+      await expectNoPageOverflow(page, path);
+    });
+  }
+
+  test("认领的动态模板必须有真用例兜着（认领不许空转）", () => {
+    // `DYNAMIC_TEMPLATE_COVERAGE` 是给门禁读的声明；声明本身可以被绕过，
+    // 所以这里在 spec 内部再钉一次：每一串认领都要在 SHARE_PATHS 里真的有具体路径。
+    expect(DYNAMIC_TEMPLATE_COVERAGE.length).toBeGreaterThan(0);
+    for (const template of DYNAMIC_TEMPLATE_COVERAGE) {
+      const head = `/${template.split("/").filter(Boolean)[0]}/`;
+      const matched = SHARE_PATHS.filter((path) => path.startsWith(head));
+      expect(
+        matched.length,
+        `认领了 ${template}，但 SHARE_PATHS 里没有以 ${head} 开头的路径：这条认领是空话`,
+      ).toBeGreaterThanOrEqual(3);
+      // 段数也要对得上：`/share/[kind]/[path]` 是三段模板
+      const segs = template.split("/").filter(Boolean).length;
+      for (const path of matched) {
+        expect(path.split("/").filter(Boolean).length, `${path} 与模板 ${template} 段数不同`).toBe(segs);
+      }
+    }
+  });
 
   test("课程页表格与代码块可块级滚动、页面不溢出（R13.10）", async ({ page }) => {
     await page.goto("/zh/knowledge/getting-started/first-trade");
