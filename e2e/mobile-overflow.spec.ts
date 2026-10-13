@@ -109,29 +109,42 @@ async function expectNoPageOverflow(page: Page, path: string) {
   }));
   // R16.329：溢出时点名「是谁撑宽的」。同一页可以本地 320 不溢出、CI 354 溢出（字体度量
   // 与仓库原文两处都可能不同），只报一个数字的判据红在 CI 上时无从下手，只能靠猜。
-  // 故仅在**已判定溢出**时才现读越界的叶子元素——通过的那一趟零开销，不做全量 DOM 扫描。
+  // 故仅在**已判定溢出**时才现读——通过的那一趟零开销，不做全量 DOM 扫描。
+  //
+  // 第一版只按「几何越界 + 没有更深的越界子元素」挑，结果点名了一个 `right: 367` 的
+  // 装饰光晕：它祖先带 `overflow-hidden`，压根撑不宽页面，而 `scrollWidth` 只有 354——
+  // 读数自相矛盾就是探测器挑错了人。现在按**能不能真的撑宽**筛：祖先链上有裁剪的先排除。
   const overflowing = widths.scroll > 320;
   const culprits = overflowing
     ? await page.evaluate(() => {
         const edge = window.innerWidth + 1;
+        // 祖先把溢出裁掉了，就不可能是它撑宽了页面
+        const clipped = (el: Element) => {
+          for (let a = el.parentElement; a; a = a.parentElement) {
+            const o = getComputedStyle(a).overflowX;
+            if (o === "hidden" || o === "clip" || o === "auto" || o === "scroll") return true;
+          }
+          return false;
+        };
         const rows = Array.from(document.querySelectorAll("body *"))
+          .filter((el) => el.getBoundingClientRect().right > edge)
           .map((el) => {
             const r = el.getBoundingClientRect();
             return {
               tag: el.tagName.toLowerCase(),
               cls: (el.getAttribute("class") ?? "").slice(0, 60),
               right: Math.round(r.right),
+              clipped: clipped(el),
               // 有没有更深的子元素也越界：外层容器必然跟着撑宽，报它没有信息量
               deeper: Array.from(el.children).some(
                 (c) => c.getBoundingClientRect().right > edge
               ),
               text: (el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 60),
             };
-          })
-          .filter((row) => row.right > edge)
-          .sort((a, b) => b.right - a.right);
-        const leaf = rows.filter((row) => !row.deeper);
-        return (leaf.length > 0 ? leaf : rows).slice(0, 6);
+          });
+        const live = rows.filter((row) => !row.clipped);
+        const leaf = live.filter((row) => !row.deeper);
+        return (leaf.length > 0 ? leaf : live.length > 0 ? live : rows).slice(0, 6);
       })
     : [];
   expect(
