@@ -7,11 +7,11 @@
  * 隐私红线：这份报告会提交进公开仓库，所以只收录出现 ≥K_MIN_COUNT 次的问题——
  * 单人独条的用户原话（可能带仓位、资金、平台名）不得被发布出去。
  */
-import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { writeReport } from "./report-write-lib.mjs";
+import { loadLocalEnv } from "./local-env-lib.mjs";
 
 /** 公开报告的最小样本数（k-匿名门槛） */
 export const K_MIN_COUNT = 3;
@@ -60,14 +60,8 @@ export function renderReport(rows, generatedAt = new Date()) {
 
 async function run() {
   const root = process.cwd();
-  try {
-    for (const line of readFileSync(path.join(root, ".env.local"), "utf8").split("\n")) {
-      const m = line.match(/^([A-Z_]+)=(.*)$/);
-      if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
-    }
-  } catch {
-    // .env.local 不存在则依赖已有环境变量
-  }
+  // R16.335：走内置 process.loadEnvFile（见 local-env-lib.mjs 的理由与实测读数）
+  loadLocalEnv(path.join(root, ".env.local"));
 
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
