@@ -7,6 +7,7 @@ import { readQuizProgress, saveQuizProgress, type QuizProgress } from "@/lib/qui
 import { quizScoreCount, quizScorePct } from "@/lib/quiz-score";
 import { QuizTimer } from "@/components/quiz-timer";
 import { addStudyTime } from "@/lib/study-time";
+import { QUIZ_SESSION_CAP_SEC } from "@/lib/study-caps";
 import { QuizShareCard } from "@/components/quiz-share-card";
 import type { ShareLocale } from "@/lib/share-card";
 import { encodeQuiz } from "@/lib/share-decode";
@@ -119,9 +120,10 @@ export function Quiz({ quiz, dict, locale, chapterTitle }: { quiz: ChapterQuiz; 
     };
     setProgress(p);
     saveQuizProgress(quiz.chapterNum, p, quiz.questions.length);
-    // R4.2：测验耗时入学习时长台账（quiz 源）
+    // R4.2：测验耗时入学习时长台账（quiz 源）。会话级上限住在 `study-caps.ts` 的
+    // `QUIZ_SESSION_CAP_SEC`，与当日那道闸串联（先夹单次，再夹当日）。
     if (startedAtRef.current > 0) {
-      const elapsed = Math.min(Math.round((Date.now() - startedAtRef.current) / 1000), 4 * 3600);
+      const elapsed = Math.min(Math.round((Date.now() - startedAtRef.current) / 1000), QUIZ_SESSION_CAP_SEC);
       if (elapsed > 0) addStudyTime("quiz", elapsed);
       startedAtRef.current = 0;
     }

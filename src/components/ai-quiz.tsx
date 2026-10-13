@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { applySrsResult } from "@/lib/wrongbook";
 import { addStudyTime } from "@/lib/study-time";
+import { REVIEW_CREDIT_SEC } from "@/lib/study-caps";
 import { isAiGloballyDisabled } from "@/lib/ai-toggle";
 import { sendAiFeedback, type ReportStatus } from "@/lib/ai-feedback";
 
@@ -93,7 +94,7 @@ export function AiQuiz({ wrongItems, dict, aiEnabled = true }: AiQuizProps & { a
    * **不代表这道变体就是从那道题变来的**。三种走向待产品拍板（docs/roadmap.md R16.174）：
    * 让模型逐题回指来源并校验 / 变体题不再写 SRS / 把轮转明确当成排程并改界面口径。
    * `pick(i)` 的 `i` 是选项序号，答对推进间隔、答错重置（幂等）。
-   * R5.8：每次复习应答计入每日目标（1 题记 1 分钟）。
+   * R5.8：每次复习应答计入每日目标（1 题记 `REVIEW_CREDIT_SEC`，与复习页同一个主人）。
    */
   function pick(i: number) {
     if (picked !== null) return;
@@ -101,7 +102,7 @@ export function AiQuiz({ wrongItems, dict, aiEnabled = true }: AiQuizProps & { a
     const q = questions[current];
     const src = wrongItems[current % wrongItems.length];
     if (!q || !src) return;
-    addStudyTime("quiz", 60);
+    addStudyTime("quiz", REVIEW_CREDIT_SEC);
     // 不传 `i`：那是**变体题**的选项序号，而变体题的选项是模型现写的，和来源题的选项
     // 不是一套（`ai/prompt.ts` 各写各的）。写进来源错题的 `picked`，复习页的「你的选择」
     // 就会指到一条用户从没见过的选项上——宁可留着来源题那次真正点过的序号。
