@@ -659,6 +659,13 @@ export function StatsClient({
             replayTrend!.summary.roundsInRange > replayTrend!.summary.timedRoundsInRange) && (
             <p className="mt-3 text-xs text-muted">{dict.replayNoDurations}</p>
           )}
+        {/* R16.326：这块的时长只夹单轮，下面那张「台账学习时长」还夹当日。实测（同一批
+            3 轮 × 4 小时）这块报 12h、台账报 8h——**部分大于整体**，而屏幕上没有任何一句
+            解释。条件用聚合器给的 `daysOverDailyCapInRange`，不是「有没有回放记录」：
+            没跨过当日封顶时两个数本来就一致，这时冒出解释反而是假话。 */}
+        {replayTrend!.summary.daysOverDailyCapInRange > 0 && (
+          <p className="mt-3 text-xs text-muted">{dict.replayOverDailyCap}</p>
+        )}
         {/* R12.11：从未做过回放时给出入口 */}
         {replayTrend!.allTime.totalRounds === 0 && (
           <p className="mt-3 text-xs text-muted">

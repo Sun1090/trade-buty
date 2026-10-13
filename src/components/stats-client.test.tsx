@@ -149,6 +149,7 @@ const dict: StatsDict = {
   replayTrendAvg: "Avg per round",
   replayTrendBestStreak: "Best streak",
   replayNoDurations: "No replay durations",
+  replayOverDailyCap: "Replay over daily cap notice",
   weeklyTitle: "Weekly",
   weeklySummaryTpl: "Weekly summary",
   milestoneShare: {
@@ -426,6 +427,43 @@ describe("StatsClient replay practice time", () => {
     expect(dd("Replay rounds")).toBe("3");
     expect(dd("Avg per round")).toBe("5m 0s");
     expect(screen.getByText("No replay durations")).toBeInTheDocument();
+  });
+
+  /**
+   * R16.326：一天做满 3 轮 × 4 小时时，这块的「期间时长」是 12h，而下面那张
+   * 「台账学习时长」被当日封顶夹成 8h——**同一屏上部分大于整体**。
+   * 这两条用例要的是：越界时那句解释在场，没越界时它**不许**在场。
+   */
+  it("期间时长跨过当日封顶时，界面要解释它为什么比台账大", async () => {
+    const day = new Date();
+    store.set("tb-replay-history", JSON.stringify(
+      [0, 1, 2].map((i) => ({
+        at: new Date(day.getFullYear(), day.getMonth(), day.getDate(), i + 1).getTime(),
+        symbol: "BTCUSDT", interval: "1h", total: 5, correct: 3, bestStreak: 2, durationSec: 4 * 3600,
+      })),
+    ));
+    render(<StatsClient chapters={chapters} dict={dict} locale="en" />);
+
+    expect(await screen.findByText("Replay practice time")).toBeInTheDocument();
+    const section = document.querySelector("#replay-time-trend-title")?.closest("section");
+    expect(section?.textContent).toContain("12h 0m");
+    expect(screen.getByText("Replay over daily cap notice")).toBeInTheDocument();
+  });
+
+  it("两个数本来就一致时，那句解释不许冒出来", async () => {
+    const day = new Date();
+    store.set("tb-replay-history", JSON.stringify(
+      [0, 1].map((i) => ({
+        at: new Date(day.getFullYear(), day.getMonth(), day.getDate(), i + 1).getTime(),
+        symbol: "BTCUSDT", interval: "1h", total: 5, correct: 3, bestStreak: 2, durationSec: 3 * 3600,
+      })),
+    ));
+    render(<StatsClient chapters={chapters} dict={dict} locale="en" />);
+
+    expect(await screen.findByText("Replay practice time")).toBeInTheDocument();
+    const section = document.querySelector("#replay-time-trend-title")?.closest("section");
+    expect(section?.textContent).toContain("6h 0m");
+    expect(screen.queryByText("Replay over daily cap notice")).not.toBeInTheDocument();
   });
 });
 

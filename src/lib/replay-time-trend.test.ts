@@ -176,4 +176,51 @@ describe("replay-time-trend sanitizer edges", () => {
     expect(result.warnings).toEqual(["no-round-durations"]);
     expect(result.summary.timedRoundsInRange).toBe(0);
   });
+
+  /**
+   * R16.326：这块的时长只夹**单轮**，而 `/stats` 下面那张「台账学习时长」读的是台账，
+   * 另有**当日**封顶。一天做满 3 轮 × 4 小时，这块 12h、台账 8h——同一屏上部分大于整体。
+   * 聚合器要能把自己「跨过了当日封顶的那几天」数出来，界面才知道该不该解释。
+   */
+  it("数出窗口里有几天「每轮相加」超过了当日封顶", () => {
+    const rounds = (n: number, each: number) =>
+      Array.from({ length: n }, (_, i) => ({
+        at: new Date(2026, 8, 7, i + 1, 0, 0).getTime(),
+        symbol: "BTCUSDT",
+        interval: "1h",
+        total: 5,
+        correct: 3,
+        durationSec: each,
+      }));
+
+    // 3 × 4h = 12h > 8h：一天越界
+    const over = buildReplayTimeTrend({ history: rounds(3, 4 * 3600), days: 7, today });
+    expect(over.summary.durationInRangeSec).toBe(12 * 3600);
+    expect(over.summary.daysOverDailyCapInRange).toBe(1);
+
+    // 2 × 3h = 6h ≤ 8h：同样的字段必须是 0，否则界面那句解释会在两个数本来就一致时冒出来
+    const within = buildReplayTimeTrend({ history: rounds(2, 3 * 3600), days: 7, today });
+    expect(within.summary.durationInRangeSec).toBe(6 * 3600);
+    expect(within.summary.daysOverDailyCapInRange, "没跨当日封顶时不许计数").toBe(0);
+
+    // 越界要按**天**数：两天各 12h 是 2，不是 1（界面说的是「哪几天会对不上」）
+    const twoDays = buildReplayTimeTrend({
+      history: [...rounds(3, 4 * 3600), ...rounds(3, 4 * 3600).map((r) => ({ ...r, at: r.at - 24 * 3600_000 }))],
+      days: 7,
+      today,
+    });
+    expect(twoDays.summary.daysOverDailyCapInRange).toBe(2);
+  });
+
+  it("单轮封顶与当日封顶同值时，一轮做满恰好不算越界", () => {
+    // `REPLAY_ROUND_CAP_SEC === DAILY_SOURCE_CAP_SEC`（8h）是巧合不是同一件事（R16.320）。
+    // 这条钉住边界：一天只做满一轮时两个数仍然一致，界面不该解释。
+    const result = buildReplayTimeTrend({
+      history: [{ at: dayAt(today), symbol: "BTCUSDT", interval: "1h", total: 5, correct: 3, durationSec: 99 * 3600 }],
+      days: 7,
+      today,
+    });
+    expect(result.summary.durationInRangeSec).toBe(8 * 3600);
+    expect(result.summary.daysOverDailyCapInRange, "夹到正好等于封顶不该算越界").toBe(0);
+  });
 });

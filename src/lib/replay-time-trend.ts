@@ -10,7 +10,7 @@
  *   两处各自 import，而「单轮 ≤ 当日每源」这条关系由 `study-caps.test.ts` 钉住。
  */
 import { isLocalDateStr, localDateStr, shiftDate } from "./date-utils";
-import { REPLAY_ROUND_CAP_SEC } from "./study-caps";
+import { DAILY_SOURCE_CAP_SEC, REPLAY_ROUND_CAP_SEC } from "./study-caps";
 
 export interface ReplayHistoryEntry {
   at?: unknown;
@@ -49,6 +49,15 @@ export interface ReplayTimeTrend {
     avgSecInRange: number | null;
     accuracyInRangePct: number | null;
     activeDays: number;
+    /**
+     * 窗口里有几天「每轮耗时相加」超过了台账的当日单源封顶。
+     *
+     * 这块的时长只被**单轮**闸夹（`safeDuration`），而 `/stats` 下面那张「台账学习时长」
+     * 读的是学习台账，它另有**当日**闸。所以一天做满 3 轮 × 4 小时，这块报 12 小时、
+     * 台账报 8 小时——同一屏上「部分」大于「整体」。这个计数就是给界面判断
+     * 「要不要说明这件事」用的：为 0 时两个数必然一致，不该冒出任何解释。
+     */
+    daysOverDailyCapInRange: number;
   };
   dataSource: "local-replay-history" | "no-replay-history";
   hasHistory: boolean;
@@ -116,6 +125,8 @@ export function buildReplayTimeTrend(input: {
   let timedRoundsInRange = 0;
   let correctInRange = 0;
   let totalInRange = 0;
+  // 窗口里有几天「每轮相加」超过了当日封顶（见 `daysOverDailyCapInRange` 的注释）
+  let daysOverDailyCapInRange = 0;
 
   for (let i = 0; i < days; i++) {
     const date = shiftDate(startDate, i);
@@ -130,6 +141,7 @@ export function buildReplayTimeTrend(input: {
     timedRoundsInRange += timedRounds;
     correctInRange += correct;
     totalInRange += total;
+    if (durationSec > DAILY_SOURCE_CAP_SEC) daysOverDailyCapInRange += 1;
     buckets.push({
       date,
       rounds,
@@ -169,6 +181,7 @@ export function buildReplayTimeTrend(input: {
       avgSecInRange: timedRoundsInRange > 0 ? Math.round(durationInRangeSec / timedRoundsInRange) : null,
       accuracyInRangePct: totalInRange > 0 ? Math.round((correctInRange / totalInRange) * 100) : null,
       activeDays: buckets.filter((bucket) => bucket.rounds > 0).length,
+      daysOverDailyCapInRange,
     },
     dataSource: hasHistory ? "local-replay-history" : "no-replay-history",
     hasHistory,

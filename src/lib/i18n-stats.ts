@@ -80,6 +80,8 @@ const zh = {
     replayTrendBestStreak: "历史最佳连胜",
     replayNoDurations:
       "这里不是每一轮都记了时长：老记录没有这个字段，新轮次里被四舍五入成 0 秒的那些也没有。「平均每轮」只按记了时长的轮算。",
+    replayOverDailyCap:
+      "这里的时长按每一轮各自相加，只夹单轮的上限；下面那张「台账学习时长」还多一道每日封顶。所以一天里做了很多轮时，这块会比台账大——两处夹的不是同一件事。",
     recoveryTitle: "断档没关系，今天重新数起",
     recoveryBodyTpl: "连续天数已经归零（历史最长 {n} 天）。今天学一点，哪怕只读完一课，就从 1 重新数起。",
     recoveryReviewTpl: "复习 {n} 道到期错题",
@@ -219,6 +221,8 @@ const en: StatsDict = {
     replayTrendBestStreak: "Best streak",
     replayNoDurations:
       "Not every round here has a duration: older records predate that field, and a new round that rounds to 0 seconds gets none either. “Avg per round” counts only the rounds that were timed.",
+    replayOverDailyCap:
+      "The time here adds up each round and only caps a single round; the “Study time” card below applies a daily cap on top. So after many rounds in one day this figure can exceed the ledger — the two cap different things.",
     recoveryTitle: "Breaks happen — restart today",
     recoveryBodyTpl: "Your streak is back at zero (longest: {n} days). Learn something today — even one lesson read — and it restarts at 1.",
     recoveryReviewTpl: "Review {n} due cards",
