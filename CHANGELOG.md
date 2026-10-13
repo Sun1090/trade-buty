@@ -5,6 +5,26 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.30] - 2026-10-13
+
+**回放时长终于肯解释自己为什么更大；页面里的锚点开始真的被核对 / Replay time explains why it is larger; in-page anchors are actually checked**
+
+### 中文
+
+- 统计页多出一句解释（本轮唯一用户可见变化）：同一天里回放做满超过当日封顶之后，「回放练习时长」会比「学习时长」大——以前同一屏上部分大于整体却一个字都不说明，现在那块下面会写清差异从哪来（每轮相加 vs 台账另有每日封顶）。没越界时这句话不出现，其余数字一个都没动
+- 链接与锚点从此真的被核对：`check:links` 里那段处理「纯本页锚点」的分支是不可达代码——过滤条件先把 `href="#…"` 挡在门外，于是构建产物里每页去重后 7811 处同页锚点（课文页目录的全部条目）一处都没被核过，锚点缺失也只「报告」不阻断。现在两种形状都查、缺失直接判失败，并加一条计数地板防「又静默不判」；课文里跨文档手抄的 `](其他.md#…)` 锚点此前同样零硬门禁，也补上了
+- 时长口径收敛到「谁说了算」这一层，数值一处未改：柱状图与迷你条改由 `WEEK_WINDOW_DAYS` 生成格数（以前把窗口改成 14 天，标题跟着变、柱子照旧画 7 根且零红）；秒→分钟换算搬回学习台账的持有者，删掉同一本台账上那份没人认领的私有副本；单次与每日上限收进 `study-caps.ts`，并登记住「回放比台账大的天数」必须按当日封顶比——它和单轮封顶恰好同值，同值换主人行为侧测不出来
+- 注释和文档里的读数开始有人认领：新增 `check:comment-paths`，注释点名的仓库路径必须真的存在（此前有四处指向从来没有存在过的文件，按它找主人的人只能放弃核对）；注释里那些「当场量的条数」必须带时间锚，否则加一条用例它就悄悄变成假话（这道新门禁第一次跑就扫到了自己）；「实测列 vs 产物」的核对搬进构建之后的 `check:bundle`，它在 CI 里此前从未执行过。工具链方面 `vitest` 与 `@vitest/coverage-v8` 收到 5.0.4，界面零变化
+
+### English
+
+- The stats page gained one sentence of explanation (the only user-visible change in this release): once a single day's replay sessions add up past the daily per-source cap, "replay practice time" is larger than "study time". The screen used to show a part bigger than its whole without saying a word; now the block explains where the gap comes from (rounds summed per session vs. a ledger with its own daily cap). The sentence stays hidden when nothing is over the cap, and no other number moved
+- Links and anchors are actually verified now: the branch handling same-page anchors in `check:links` was unreachable code — the filter rejected `href="#…"` first, so all 7,811 de-duplicated per-page anchors in the build output (every table-of-contents entry in the lessons) went unchecked, and a missing anchor was only "reported", never blocking. Both shapes are checked now, a miss fails the run, and a count floor guards against silently checking nothing again. Hand-copied cross-document `](other.md#…)` anchors in the lessons had no hard gate either; they got one
+- Time-related numbers now have a single owner, with no value changed: the bar chart and mini bar generate their slots from `WEEK_WINDOW_DAYS` (setting the window to 14 days used to change the heading while the chart still drew 7 bars, with nothing going red); seconds-to-minutes moved back to the owner of the study ledger, deleting an unowned private copy of the same conversion; single-round and daily caps live in `study-caps.ts`, and we registered that "days where replay exceeds the ledger" must be compared against the daily cap — it happens to equal the per-round cap, and swapping owners while values are equal is invisible to behavioral tests
+- Readings in comments and docs now have owners: a new `check:comment-paths` requires every repository path named in a comment to actually exist (four of them pointed at files that never existed, so anyone following the comment gave up verifying); measurements written in comments must carry a time anchor, otherwise adding one test case quietly turns the sentence into a lie (this new gate caught itself on its first run); the "measured column vs. actual artifact" check moved into `check:bundle` after the build — it had never actually run in CI. Tooling: `vitest` and `@vitest/coverage-v8` updated to 5.0.4, no interface changes
+
+参考：[docs/progress.md](docs/progress.md) · [docs/perf-notes.md](docs/perf-notes.md) · [docs/ops.md](docs/ops.md) · [docs/roadmap.md](docs/roadmap.md)
+
 ## [0.7.29] - 2026-10-12
 
 **AI 学习计划终于知道你学到哪，文档里的数字开始有人认领 / The AI study plan knows where you are; numbers in the docs now have an owner**
