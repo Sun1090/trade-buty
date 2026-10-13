@@ -2,6 +2,61 @@
 
 ---
 
+## 2026-10-14 · 第八十七轮（R16.332 合并 + R16.333）：第三条门禁的清单主人，以及一把被自己的新门禁抓到三处越界的尺子
+
+- 里程碑 / 版本：AGENTS.md in-scope「内容质量 / 契约 / 合规门禁收敛」；R16.332 已合并上线判定见下、R16.333 新增并关账。**未改产品版本**（当前 v0.7.31，本地已发布、生产仍待配额）。
+- 分支 / commit：
+  - `fix/share-invalid-payload-copy` → **PR #440 已 rebase 合并**（main 头 `8668c56`，三笔：`dbb1c43` R16.332 修复、`54a2d00` e2e 清单登记、`8668c56` scan-counts 台账）。
+  - `test/runtime-health-coverage-owner` → PR **#441**（因基线落后被 GitHub 判 CONFLICTING，**关闭未合并**，去向已用补丁面登记进 `docs/work-audit-ack.json`）。
+  - `test/runtime-health-coverage-owner-r2` → PR **#442**（四笔：`be7c7c3` 门禁+尺子+覆盖、`f73f098` roadmap 关账、`786e99f` 注释时态订正、`7c58dad` work-audit 登记），head `7c58dad`。
+- 更新时间：2026-10-14（Asia/Shanghai）。
+
+### R16.333 做了什么
+
+`e2e/runtime-health.spec.ts` 的 `ROUTES` 是手抄清单，而这一族是「服务端 HTML 与水合首帧对不上」的**唯一**探测器。现读：21 个页面模板里 **5 个从没被量过**（about / auth/callback / faq / knowledge 章节页 / terms）。
+
+**先做证伪实验**：把缺的模板临时补进去跑一遍 → **全绿，没有红出新缺陷**。所以这一笔**不是修 bug**，是给一条没主人的路补上主人。（上一轮我用同样方式量过，但只写在临时探针里、没进仓库，台账那句话被我自己判为不该写成已完成——这一轮它真的落地了。）
+
+三层改动：① 新门禁 `scripts/runtime-health-coverage-claims.test.mjs`（并集覆盖每个模板 / 不许只长不消 / 探测器自证 / 动态段要有具体值——只量课文页不算量过章节页）；② 新共享尺子 `scripts/page-template-coverage-lib.mjs`，`mobile-coverage-claims` 随之接上、删掉本文件里三份手写正则；③ `ROUTES` 22 → 31 条，`runtime-health` 单族 29 → **38 passed**。
+
+### 尺子被自己的新门禁抓到三处越界（都补了自证，都记进 roadmap）
+
+共同症状：**不是「读不到」而是「读到一堆没意义的东西」——越界不红，只会让覆盖面虚报**。
+
+1. 结尾 `\[([\s\S]*?)\];` 遇 `] as const;` 一路越过结尾，把 `values` / `localhost` / `blockedbyclient` 吞成路由：**22 条读成 55 条**。
+2. 清单里的注释含反引号时被当成条目——**触发者是我自己新加的注释**（内含 `src/app`、`page.tsx`）。新增 `blankComments()`（与 `e2e-wait-hygiene` 同族；行首空格仍只能 `[ \t]*`）。
+3. 字面量正则要求至少一个字符，而 `CORE_SUFFIXES` 第一项是空串（首页）→ **后续引号两两错位**，整份清单读成乱码。
+
+判据侧同时加 `nonPathLiterals()` 反向核对：混进非路径条目就红，而不是静默过滤。
+
+### 本轮最该记住的一条：我自己的「全绿」读数当时不成立
+
+第一次跑 `test:coverage` 读到 359 文件全绿，我把它写进了提交信息。**那个读数是假的**：`scripts/comment-measurement-claims.test.mjs` 的扫描面是 `git ls-files --cached`，而那三份新文件**还没进索引**——不是文件没问题，是它还没被看见。全量链第二次跑（文件已 commit）当场红出我注释里的「38 条全绿」是没标时间的现在时读数，正是 R16.323 立判据要杀的那个病，这一轮咬的是刚写下它的人。两处注释已改成「登记时（R16.333）实测」。
+
+**新规矩**：新文件在 commit 之前不受任何「扫全仓」门禁约束；这类门禁的绿灯必须在文件已进索引之后取。
+
+### 另一笔：#440 的 CI 红在台账，不红在代码
+
+`check:report-freshness` 判红：`docs/scan-counts.md` 里 `comment-path-source-files` 停在 385，而新增的 share spec 让它变成 386。**门禁是对的，是我推 CI 之前没重算这份台账**（R16.330 那轮刚为同一件事付过钱）。补 `8668c56` 后 CI 三项全绿。
+
+### 验证（§3 全量链，`fail=0`）
+
+`test:coverage` **359 文件 / 3817 条**通过，覆盖率 **95.08 / 90.77 / 95.13 / 96.91**（阈值 94/89/94/96，四项只升不降）；`playwright runtime-health` **38 passed**；lint / typecheck / build / 40+ 项 `check:*` 与 `audit:*` 全 `exit=0`；`check:bundle` 绿（未动页面与共享 CSS，perf 指纹 `4dbfa3ca2225` 无需重录）；`e2e-wait-hygiene` / `e2e-suite` / `roadmap-open-reference-claims` / `doc-anchor-claims` 绿。台账重算：`secrets-listed-files` 852 → **855**、`comment-path-refs` 161 → **170**、`comment-path-source-files` 386 → **387**、测试文件 356 → **358**。变异实验：摘掉 about 两条 → 只红在漏页那一条，其余 4 条仍绿。
+
+### 阻塞 / 风险 / 回滚
+
+- **Vercel 24h 构建配额仍未恢复**：#442 的 Vercel 检查报 `Deployment rate limited — retry in 24 hours`，与 #440 同一情形。生产仍停在 `main @ 39b7074` = **0.7.30**，即 v0.7.31 与 R16.332 尚未上线。**不空跑重试**，靠下一次 main push；届时必须先确认 `/zh/changelog` 读到新版本才算真上线。
+- 生产 `POST /api/ai/chat` 仍 502（外部上游，`BLOCKED_EXTERNAL`）。
+- 回滚：`git revert` #442 四笔。无迁移、无数据、无配置；**用户可见行为零变化**。
+
+### 下一项
+
+1. #442 合并后，按「bug fix → patch」判 **v0.7.32**：R16.332（分享链接坏了显示「链接无效」而非通用 Page not found）是用户可见修复，值得单独发一版。走 `docs/release-checklist.md` 全链。
+2. 候选：手搓 env 解析器不剥引号（`scripts/faq-candidates.mjs:65`、`scripts/generate-embeddings.mjs:19` 两处同形，本轮已核实全仓只有这两处）——`npx vercel deploy` 会写进字面双引号，实测崩过脚本。
+3. 候选：分享页 200 vs 404 的状态码成因（R16.332 已登记为已知边界，成因未查明，不许拿猜测当结论）。
+
+---
+
 ## 2026-10-14 · v0.7.31 发布（RELEASE_FREEZE 完成，部署再次被配额挡住）
 
 - 里程碑 / 版本：**v0.7.30 → v0.7.31**（patch）。判级依据：`v0.7.30..main` 逐笔只看类型——`fix` 5、`test` 6、`docs` 15、`chore(reports)` 2，**没有新增产品能力**，按 `docs/release-checklist.md` §0 记 patch。
