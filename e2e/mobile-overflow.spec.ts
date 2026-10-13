@@ -252,6 +252,36 @@ test.describe("R13.7 320px 核心路径不横向溢出", () => {
     }
   });
 
+  /**
+   * R16.329：更新日志页会渲染**仓库原文**（commit subject、文档路径），里面出现
+   * 40 位 SHA、`docs/v0.7.2-release-review.md` 这类不可断行长 token 是常态。
+   * 这条缺陷本地永远测不到：CI 上 HEAD 是 PR 的 merge 提交（subject 含 40 位完整 SHA），
+   * 本地 HEAD 的 subject 里没有这种 token——同一份代码，两个环境两个读数。
+   * 所以判据不能依赖「恰好有一条长 subject」，必须在真页面上**现造**一个最坏载荷来量。
+   */
+  test("更新日志页遇到不可断行的长 token 不许把页面顶宽（R16.329）", async ({ page }) => {
+    await page.goto("/zh/changelog");
+    const rows = page.locator('p[data-copy-source="commit"]');
+    await expect(rows.first()).toBeVisible();
+    // 用 CI 上真实出现过的那条 subject 作载荷：`Merge <40 位 SHA> into <8 位 SHA>`
+    await rows.first().evaluate((el) => {
+      el.textContent =
+        "Merge 782e4ba5900f11665b387694b602a1bdbe6c3c82 into 15b74e7f";
+    });
+    const widths = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      cell: (() => {
+        const el = document.querySelector('p[data-copy-source="commit"]');
+        return el ? `${el.scrollWidth}>${el.clientWidth}` : null;
+      })(),
+    }));
+    expect(
+      widths.scroll,
+      `/zh/changelog 塞入一条含 40 位 SHA 的 commit subject 后页级溢出（scrollWidth ${widths.scroll}，该行 ${widths.cell}）：这一页渲染仓库原文，长 token 必须由样式兜住断行`,
+    ).toBeLessThanOrEqual(320);
+
+  });
+
   test("课程页表格与代码块可块级滚动、页面不溢出（R13.10）", async ({ page }) => {
     await page.goto("/zh/knowledge/getting-started/first-trade");
 

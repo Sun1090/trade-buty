@@ -217,7 +217,15 @@ export default async function ChangelogPage({
                 {/* 提交标题与发布说明是仓库里的原文，不是词典代入的产物：里面出现
                     `{chapters}` 之类的花括号属于正常，e2e/placeholder-leak.spec.ts 按
                     data-copy-source 跳过这些节点。 */}
-                <p className="text-sm text-muted font-mono" data-copy-source="commit">
+                {/* `break-words` 是 R16.329 补的：CI 上 HEAD 是 PR 的 merge 提交，subject
+                    形如 `Merge <40 位完整 SHA> into <短 SHA>`，那个 40 字符 token 在
+                    `font-mono` 下宽约 320px，超过 270px 的可用宽度，把整页顶到横向溢出
+                    （本地读不到，因为本地 HEAD 的 subject 里没有这种 token）。
+                    这一页渲染的是仓库原文，长 token 是**常态**而不是意外。 */}
+                <p
+                  className="text-sm text-muted font-mono break-words"
+                  data-copy-source="commit"
+                >
                   {commit.message}
                 </p>
               </li>
