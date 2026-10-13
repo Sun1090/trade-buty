@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 
 
 export interface ExportQuery {
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return NextResponse.json({ error: "export unavailable" }, { status: 503 });
+    return NextResponse.json({ error: SERVER_ERRORS.exportUnavailable }, { status: 503 });
   }
   const q = parseExportQuery(new URL(req.url).searchParams);
 
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
     const { data, error } = await query;
     if (error) {
       console.error("[ai/feedback/export] select failed:", error.message);
-      return NextResponse.json({ error: "Failed to export feedback" }, { status: 500 });
+      return NextResponse.json({ error: SERVER_ERRORS.exportFeedbackFailed }, { status: 500 });
     }
     return NextResponse.json({ count: data?.length ?? 0, items: data ?? [] });
   } catch (e) {
@@ -71,6 +72,6 @@ export async function GET(req: NextRequest) {
       "[ai/feedback/export] unexpected failure:",
       e instanceof Error ? e.message : e
     );
-    return NextResponse.json({ error: "Failed to export feedback" }, { status: 500 });
+    return NextResponse.json({ error: SERVER_ERRORS.exportFeedbackFailed }, { status: 500 });
   }
 }
