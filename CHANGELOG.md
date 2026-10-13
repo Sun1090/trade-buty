@@ -5,6 +5,24 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.32] - 2026-10-14
+
+**分享链接坏了终于说「链接无效」；没配云端的登录回调页不再变成整站错误页 / A broken share link finally says "link invalid"; the login callback page stops turning into a site-wide error when the cloud isn't configured**
+
+### 中文
+
+- 分享链接被截断时不再显示通用「Page not found」：`/share/{类型}/{载荷}` 上，载荷解不开（IM、短信里链接被截断是常态，不是理论风险）此前与「类型不认识」压成同一种失败，一律落到整站 not-found。而作者其实为前者写过专门的话——「链接无效——分享链接已损坏或版本不匹配」，中英齐全，连同卡片预览里的三处 invalid 分支**全是不可达代码**。现在两种失败分开：类型不认识仍是整站 not-found（真·错路由不许被伪装成「你的链接坏了」，那是用户能自己重拼的问题），载荷坏了才渲染那句「链接无效」加站内出口与风险提示，并且不再挂着一张永远画不出来的卡片预览停在「正在生成预览…」这个假状态。既有测试里那两条「无效载荷回落」测的是纯函数可达性而不是路由可达性，所以「有测试覆盖」恰好掩盖了「路由到不了」
+- 没配置云端时，登录回调页显示自己的失败提示而不是整站错误页：`/zh|en/auth/callback` 在缺少 Supabase 环境变量的部署里，页面初始化时直接调用云端客户端工厂（它在缺配置时抛错），异常被记成一次路由级致命错误，用户看到的是「Something went wrong」，而这一页本来就写好了「登录失败，链接可能已过期，请重新发送」。生产配了环境变量所以不受影响，受影响的是预览部署与自建实例。改法沿用站内既有规矩：判据与真正会抛的那道门用同一个谓词，问一句再决定走哪条路
+- 「哪些页面被水合检查量过」改由源码树说了算，当场红出上面那条缺陷：`e2e/runtime-health.spec.ts` 拿的是一份手写路由清单，而这一族是「服务端 HTML 与浏览器接管后对不上」这类问题唯一的探测器——清单外新增一页就永远没有这项检查，而且没有任何东西会红。21 个页面模板里 5 个从没被量过（关于 / 隐私政策 / 服务条款 / 登录回调 / 篇章介绍页）。清单交给目录现读之后，回调页那条当天就在持续集成里红了。同一个病形此前已咬过两次（320px 移动端宽度检查、AI 端点错误文案），这是第三次；三条检查现在共用一把尺子，「有哪些页面」「怎么算量到」只有一份定义，不再各抄一遍
+
+### English
+
+- A truncated share link no longer shows the generic "Page not found". On `/share/{kind}/{payload}`, an undecodable payload (links getting cut off in IM apps and SMS is the norm, not a theoretical risk) used to collapse into the same failure as an unknown kind, so both landed on the site-wide not-found page. The author had actually written a dedicated message for the first case — "link invalid — this share link is corrupted or its version doesn't match", in both languages — along with three invalid branches in the card preview, and **all of it was unreachable code**. The two failures are now separated: an unknown kind still renders the site-wide not-found (a genuinely wrong route must not be disguised as "your link is broken", since that is something the user can fix by re-pasting), while a corrupted payload renders that "link invalid" message plus in-site exits and the risk warning, and no longer sits stuck on "generating preview…" for a card that can never be drawn. The two existing "invalid payload falls back" tests checked function reachability rather than route reachability, so having test coverage is exactly what hid the fact that the route could never get there
+- When the cloud isn't configured, the login callback page shows its own failure message instead of a site-wide error page: on deployments missing the Supabase environment variables, `/zh|en/auth/callback` called the browser client factory during initialisation (which throws when configuration is absent), the exception was recorded as a route-level fatal error, and users saw "Something went wrong" — while the page itself already had "sign-in failed, the link may have expired, please resend" written into it. Production sets those variables and is unaffected; preview deployments and self-hosted instances were. The fix follows the convention already used elsewhere in this codebase: ask the same predicate that the throwing gate uses, then choose the path
+- "Which pages does the hydration check cover" is now decided by the source tree, and it surfaced the defect above on the spot: `e2e/runtime-health.spec.ts` carried a hand-written route list, yet this family is the only detector for "server HTML disagrees with what the browser takes over" — a page added outside the list never gets the check, and nothing goes red. Five of the 21 page templates had never been checked (about, privacy, terms, auth callback, chapter index). Once the list was derived from the directory, the callback page went red in continuous integration the same day. This same shape of defect had already bitten twice before (the 320px mobile-width check, the AI endpoint error copy); this is the third, and all three checks now share one measuring stick — "what pages exist" and "what counts as covered" have exactly one definition instead of three copies
+
+参考：[docs/progress.md](docs/progress.md) · [docs/roadmap.md](docs/roadmap.md)
+
 ## [0.7.31] - 2026-10-14
 
 **隐私页那句「仅在你主动使用时才调用」被实测推翻；一个 500 的错误页终于肯说「找不到」 / Privacy page's "only when you use it" claim was disproven by measurement; a 500 error page finally says "not found"**
