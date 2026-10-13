@@ -136,6 +136,10 @@
     {
       "number": 414,
       "reason": "非丢失而是换了载体（与 #344 同一情形）：#414 的 ci 红在 `npm ci` 的 EUSAGE（缺 proxy-agent 等 puppeteer-core 嵌套条目），根因是它的 lockfile 由 npm 11 生成而 CI 用 Node 22 自带的 npm 10；本仓库禁止 force push，而该 PR 的 maintainerCanModify 为 false，仓库侧无法替它重算 lockfile。于是在最新 origin/main 上用 `npx --yes npm@10.9.4 install --package-lock-only` 重做同一批十项，由 PR #417 落地并已 rebase 合并（main 头 95c6684）。去向即 #417：十项版本逐条相同（next / eslint-config-next 16.4.0、@supabase/supabase-js 2.117.3、drizzle-orm 0.45.4、@playwright/test 1.64.0、@types/node 26.6.4、axe-core 4.14.0、ip-address、js-yaml 5.4.3、jsdom 30.1.2），并在 #417 里补了 next minor 引发的 perf-notes 读数重算与 deps.md 台账。"
+    },
+    {
+      "number": 436,
+      "reason": "非丢失而是换了载体（与 #344 / #414 同一情形）：#436 是 v0.7.31 的发布 PR，开出之后 #437（R16.331：课文级未知地址在生产上是 500）合并进 main。按 docs/release-checklist.md §1「发布内容只能来自 main」，发布分支必须 rebase 承接它；rebase 改写 SHA，而本仓库禁止 force push，远端 topic 分支只能 fast-forward，于是整条链以 chore/release-v0.7.31-r2 分支重开为 #438。去向即 #438，且内容一笔未丢：`git diff --name-only origin/chore/release-v0.7.31 HEAD` 只列出 #437 那 4 个文件（src/lib/content.ts、src/lib/content.lenient.test.ts、e2e/smoke.spec.ts、docs/roadmap.md），即 #438 = #436 的两笔（17e5358 ship + 2e34188 发布说明补全，后者已 cherry-pick 为 0c081d2）+ 已合并的 #437。#436 自己的 CI 已在 2e34188 上跑绿（ci 9m56s、db-tests 43s），#438 在同一份内容上重跑。两个远端分支（chore/release-v0.7.31、chore/release-v0.7.31-r2）都保留到 #438 确实合并之后才删。"
     }
   ]
 }
