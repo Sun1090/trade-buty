@@ -35,6 +35,26 @@ const ROUTES = [
   "/zh/knowledge/getting-started/first-trade",
   "/en/knowledge/getting-started/first-trade",
   "/zh/changelog",
+  /**
+   * R16.333：以下 5 个页面模板此前从没被水合巡检量过。
+   *
+   * 这一族是「服务端 HTML 与水合首帧对不上」的唯一探测器（单测跑 jsdom、移动门禁只量布局），
+   * 清单外新增一页就永远没有水合探测，而且没有任何东西会红。
+   * 判据住在 `scripts/runtime-health-coverage-claims.test.mjs`：页面清单由 `src/app` 下的
+   * `page.tsx` 说了算，不由这份数组说了算。
+   *
+   * 补进来的时候先跑过一遍：**没有红出新缺陷**（38 条全绿）。所以这一笔是补主人，不是修 bug。
+   * `/knowledge/[chapter]` 是章节页，与课文页是两个模板——只量课文页不算量过章节页。
+   */
+  "/zh/about",
+  "/en/about",
+  "/zh/faq",
+  "/en/faq",
+  "/zh/terms",
+  "/zh/auth/callback",
+  "/en/auth/callback",
+  "/zh/knowledge/getting-started",
+  "/en/knowledge/getting-started",
   // 分享落地页收到畸形载荷时必须降级而不是抛错
   "/share/streak/Zm9vYmFy",
 ] as const;
