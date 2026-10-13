@@ -2,6 +2,64 @@
 
 ---
 
+## 2026-10-14 · 第八十四轮（R16.330）：管「5xx 不许手抄」的那条门禁，自己拿的是 4 个路由名的手抄清单——`src/app/api/ai` 下实有 8 个端点，清单外那 4 个从没被它看过
+
+- 里程碑 / 版本：AGENTS.md in-scope「内容质量 / 契约 / 合规门禁收敛」；R16.330 新增并关账，未改产品版本（当前 v0.7.30）。分支 `test/handcopied-list-ownership`（自合并后的 `main` 顶点 `5af70bd`），两笔：`0884e17`（fix(ai)）扫描面现读 + 15 处手抄串收进单一出处 + 3 处鉴权 catch 改判成因、`dc0dcc7`（docs(roadmap)）R16.330 关账。
+- 承上一轮：#434（R16.329 320px 覆盖面主人）已 rebase 合并（`5af70bd`），远端分支已 prune、`ops:work-audit` 判绿。
+- **另有一件挂着的事本轮转绿了**：Vercel Hobby 的 24h 构建配额已恢复，`ops:smoke-prod` 那条「`/zh/changelog` 含最新发布版本（部署跟上 main 的探针）」**由红转绿** → **v0.7.30 已上线**。10 条里仍剩 1 条红：`POST /api/ai/chat` 502（上游，`BLOCKED_EXTERNAL`，需维护者核 AI 配额/出口网络）。
+
+### 病灶：这条病长在上一轮刚被我自己夸过的判据上
+
+`scripts/ai-server-errors-claims.test.mjs`（R16.291 立的）拿的是 `["chat","plan","quiz","summary"]` 一份字面量清单，而 `src/app/api/ai` 下实有 8 个端点。清单外那 4 个里 **15 处手写 5xx 字面量**从未被这条门禁看过，其中 `conversations` 的 GET/POST/DELETE 三处把**永久性**的鉴权失败（缺 Supabase env 时重试一万次同一个结果）与**暂时性**的读写失败说成同一句话——正是 R16.291 立判据时要杀的那个病，它在清单之外一直活着。
+
+### 先做证伪实验，再改判据
+
+造一个临时端点 `src/app/api/ai/probe-ghost/route.ts`（登录门禁 + 手写那句「AI 服务暂时不可用，请稍后再试。」）：**旧门禁 6 条全绿**。同族另外两条倒是红了——`caching-claims` 从源码树现读，当场点名幽灵没声明 no-cache。**这条对照很重要**：它说明「现读」在本仓不是新做法，只是这一族没跟上。
+
+### 改法：扫描面交给源码树，判据重心放在关系上
+
+① 端点列表由目录现读，**身份用端点全路径**——第一版取首段目录名，把 `feedback` 与 `feedback/export` 折叠成同一个名字，「八个」在计数里变成「七个」还不报错（**我自己写的推导器当场犯的错**）。② 「谁该引用哪把键」由端点自身两个可推导属性决定（用不用 `getServerAuthUser()`、有没有对匿名回 401），实测 8 个端点里恰好 3 个落入「登录门禁」（conversations / plan / quiz，全都有 `authUnavailable`）、5 个落入「游客可用」（全都没有）；并给豁免面补反向核对：不调上游 client 的端点**不许**引用 `upstreamUnavailable`。③ 数据层那 6 把新键的值与收常量前**逐字相同** → 9 条数据层断言一处未动（「改动半径为零」的凭据，不是声称）；只有那 3 处鉴权 catch 换成 `authUnavailable`（真 bug 的修法），对应 3 条测试断言随之改指。
+
+### 探针 5 条腿 BAD=0（`.gate-logs/probe-r84.mjs`）+ 一次反向验证
+
+L1 `usesAuth` 扫不到 → 红在地板 / L2 `callsUpstream` 扫不到 → 红在地板 / L3 `has401Gate` 恒真 → 红在反向腿 / L4 恒假 → 红在正向腿 / L5 列表写死回 4 条 → 红在地板。**反向验证**：幽灵端点再造一遍，新门禁**两次咬住它**（手写字面量 + 登录门禁端点缺 `authUnavailable`），旧版对同一份文件 6 条全绿。扩面不是把 4 改成 8，是新增端点自动落入某一类。
+
+### 我本轮自己犯的另外两错
+
+1. **第一版地板断言写成「用身份的端点数 == 另一堆端点数」**——两个集合毫无关系，长度恰好都是 7 才绿。**同值不是同一件事**（R16.328 那条规矩第四次生效），改成各自的绝对值地板。
+2. **提交信息里带反引号**，被 shell 当命令替换执行掉（第一行整个消失 + 一条 `permission denied`）→ 改用 `-F 文件`。这笔未推送，`--amend` 只修我自己的坏信息。
+
+### 普查的其余 4 处：本轮不动，逐处登记（上一轮刚为「顺手多修一处」付过钱）
+
+- `SINGLE_LANGUAGE_FILES`（2 条 vs 现读 7 个候选，扩面后 7 个全绿 = 不发现 bug）：谓词**推不出来**——「不在 `[locale]` 树下」不等价于「拿不到 locale」（`share/[kind]/[path]/page.tsx` 从载荷解出 locale 并 `getDict(locale)`），粗谓词反而会把清单里已有的 `error.tsx` 判成不该在清单里。**下一轮要么先定谓词，要么改成显式认领**。
+- `PAGE_PATHS`（prod-smoke 4 条）：**有意的抽样**（注释写明「课程页与课文页各一」），抽样不需要等于全量。
+- `AUDIT_ALLOWLIST`：每条带 `revisit` 日期且 `audit-all.test.mjs` 已判「过期即红」，**豁免面已有主人**。
+- `e2e/runtime-health.spec.ts` 的 `ROUTES`（14 条）：与 R16.329 那份 `CORE_SUFFIXES` 同族，但 `mobile-coverage-claims` 钉的是「两条移动门禁的并集」，这一份不在其内——**下一轮把第三条门禁纳入同一份覆盖面主人**。
+
+### 验证
+
+- `ai-server-errors-claims` 6 条绿；`src/app/api/ai/` 157 条绿；`typecheck` 0；`lint` 0。
+- 全量链 `fail=0`：`test:coverage` **357 文件 / 3796 条**（95.06 / 90.76 / 95.08 / 96.9，阈值未动）、40+ 门禁全 0、`git status` 干净；`check:bundle` **直接绿**（只动 API 路由不碰页面产物，与上一轮那颗 CSS 工具类正好对照）；`db:test` 全通过（86 条 pgTAP 断言 + 两组回滚演练）；`e2e` **229 passed / 1 skipped**。
+- 报告认账：本轮无新增文件，`check:report-freshness` 绿（先 commit 再跑）。
+
+### 用户可见变化
+
+`/api/ai/conversations` 在鉴权服务不可用时返回的标识串从 `Failed to load/save/clear …` 变成「AI 服务鉴权不可用：无法确认请求方身份。」。界面上不渲染（`ai-chat.tsx` 对 ≥500 一律换成本地化文案），变的是**排查线索**：配置缺失不再被记成一次数据层抖动。
+
+### 阻塞 / 风险 / 回滚
+
+- **生产 `POST /api/ai/chat` 仍 502**（本轮冒烟复现）：6 个 AI 变量实测都在 Vercel Production env，需维护者核上游配额/出口网络。
+- 风险：端点身份依赖「目录里有 `route.ts`」这一形状，若日后引入 route group 或中间层目录，`listEndpoints` 要重新对齐——漂移方向是「数出来的端点变少 → 红在地板」，不会静默缩窄射程。
+- 回滚：`git revert` 那两笔即可；无迁移、无数据变更。回滚 `0884e17` 会把 15 处手抄串与那三处「把永久故障说成抖动」还回去。
+
+### 下一项
+
+- 重新检查仓库继续。首选：`e2e/runtime-health.spec.ts` 的 `ROUTES` 纳入 `mobile-coverage-claims` 那份「覆盖面由源码树说了算」的主人（三条门禁共用一个主人，而不是两份手抄 + 一份漏网）；其次 `SINGLE_LANGUAGE_FILES` 先定谓词再谈扩面。
+
+- 更新时间：2026-10-14（Asia/Shanghai）。
+
+---
+
 ## 2026-10-13 · 第八十三轮（R16.329）：两条 320px 门禁各拿一份手抄清单，并集仍有 10 份 `page.tsx` 一处都没量过——最刺眼的是我上一轮刚改过文案的 `/privacy`
 
 - 里程碑 / 版本：AGENTS.md in-scope「C 端体验与 a11y」+「内容契约/门禁收敛」交汇处；R16.329 新增并关账，未改产品版本（当前 v0.7.30）。**本轮有一处用户可见变化**：`/zh|en/changelog` 的 commit 列表在遇到含 40 位 SHA 的 subject 时不再把整页顶宽（此前是整页横向滚动）。分支 `test/mobile-coverage-source-of-truth`（自合并后的 `main` 顶点 `15b74e7`），PR #434，工作提交：`e79451e`（test(mobile)）CORE_SUFFIXES +10 条 / SHARE_PATHS 3 条 / 认领声明 + 新门禁 6 条、`b416c5c`（chore(reports)）台账认账 + R16.267 行号漂移、`226efb3`（docs(roadmap)）R16.329 关账、`ff5b208`（docs）本轮台账、`952de55` / `41e0305` / `782e4ba`（test(mobile)）溢出探测器三改（点名元凶 → 排除被裁剪元素 → 抽成一份实现并加自证用例）、`62dbbe3`（fix(changelog)）那一处真实溢出的修法、`b811070`（docs(roadmap)）补记 + perf-notes 重录 + scan-counts 认账。
