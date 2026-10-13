@@ -8,14 +8,14 @@
 - 分支 / commit：
   - `fix/share-invalid-payload-copy` → **PR #440 已 rebase 合并**（main 头 `8668c56`，三笔：`dbb1c43` R16.332 修复、`54a2d00` e2e 清单登记、`8668c56` scan-counts 台账）。
   - `test/runtime-health-coverage-owner` → PR **#441**（因基线落后被 GitHub 判 CONFLICTING，**关闭未合并**，去向已用补丁面登记进 `docs/work-audit-ack.json`）。
-  - `test/runtime-health-coverage-owner-r2` → PR **#442**（四笔：`be7c7c3` 门禁+尺子+覆盖、`f73f098` roadmap 关账、`786e99f` 注释时态订正、`7c58dad` work-audit 登记），head `7c58dad`。
+  - `test/runtime-health-coverage-owner-r2` → PR **#442**（六笔：`be7c7c3` 门禁+尺子+覆盖、`f73f098` roadmap 关账、`786e99f` 注释时态订正、`7c58dad` work-audit 登记、`b5fdf3b` 本轮台账、`9ff05e7` R16.334 修复），head `9ff05e7`。
 - 更新时间：2026-10-14（Asia/Shanghai）。
 
 ### R16.333 做了什么
 
 `e2e/runtime-health.spec.ts` 的 `ROUTES` 是手抄清单，而这一族是「服务端 HTML 与水合首帧对不上」的**唯一**探测器。现读：21 个页面模板里 **5 个从没被量过**（about / auth/callback / faq / knowledge 章节页 / terms）。
 
-**先做证伪实验**：把缺的模板临时补进去跑一遍 → **全绿，没有红出新缺陷**。所以这一笔**不是修 bug**，是给一条没主人的路补上主人。（上一轮我用同样方式量过，但只写在临时探针里、没进仓库，台账那句话被我自己判为不该写成已完成——这一轮它真的落地了。）
+**先做证伪实验**：把缺的模板临时补进去跑一遍 → 本机全绿，我当时写下「没有红出新缺陷」。**那句结论随后被 R16.334 推翻**：读数取自带 `.env.local` 的本机，而 CI 的 `e2e` job 不带 Supabase env——覆盖面真的进 CI 之后当场红出一个缺陷（`auth/callback` 缺 env 时整页炸成错误页）。所以这一笔**既是补主人也确实修了 bug**。（上一轮我用同样方式量过却没把覆盖进仓库，台账那句「临时补 10 条」被我自己判为不该写成已完成——这一轮它真的落地了，落地当天就红。）
 
 三层改动：① 新门禁 `scripts/runtime-health-coverage-claims.test.mjs`（并集覆盖每个模板 / 不许只长不消 / 探测器自证 / 动态段要有具体值——只量课文页不算量过章节页）；② 新共享尺子 `scripts/page-template-coverage-lib.mjs`，`mobile-coverage-claims` 随之接上、删掉本文件里三份手写正则；③ `ROUTES` 22 → 31 条，`runtime-health` 单族 29 → **38 passed**。
 
@@ -29,6 +29,14 @@
 
 判据侧同时加 `nonPathLiterals()` 反向核对：混进非路径条目就红，而不是静默过滤。
 
+### R16.334：门禁扩上去当天红出的缺陷（`9ff05e7`，同一 PR 的第二笔修复）
+
+`/zh|en/auth/callback` 在缺 Supabase env 的部署里整页变错误页：effect 裸调 `getSupabaseBrowser()`（缺 env 直接抛），Next 记成 `[err:fatal] route-error`，而这一页本来就写好了失败提示。改法沿用同族既有形状（R16.215「判据与真正发起请求的那道门是同一个谓词」）。
+
+两处值得单独记的形状教训：① 第一版把这一问写在 effect 里 `setState("error")`，**被 eslint react-hooks 判红**（effect 内同步 setState 造成级联渲染）；改住初始 state 才对——`NEXT_PUBLIC_*` 是构建时内联的字面量，SSR 与水合同值，不会造成水合不匹配（而这一页正是水合巡检的对象）。② 既有六条用例 mock 了 `client` 却没 mock `env`，加守卫后全部走进降级分支，其中「四秒超时」那条**会以错误的理由通过**（守卫直接置 error，超时逻辑根本没跑）——补 mock 之后才各测各的。变异两次各红在一侧。
+
+**新增的验证口径**：任何「e2e 全绿」的读数必须说明取于带 env 还是不带 env 的环境；本轮起新增覆盖面一律**两种环境各跑一遍**。无 env 下：build 成功、`runtime-health -g auth/callback` 2 passed、**全量 `npm run e2e` 244 passed / 1 skipped**。`.env.local` 实验前后逐字核对（10 行 9 键）。
+
 ### 本轮最该记住的一条：我自己的「全绿」读数当时不成立
 
 第一次跑 `test:coverage` 读到 359 文件全绿，我把它写进了提交信息。**那个读数是假的**：`scripts/comment-measurement-claims.test.mjs` 的扫描面是 `git ls-files --cached`，而那三份新文件**还没进索引**——不是文件没问题，是它还没被看见。全量链第二次跑（文件已 commit）当场红出我注释里的「38 条全绿」是没标时间的现在时读数，正是 R16.323 立判据要杀的那个病，这一轮咬的是刚写下它的人。两处注释已改成「登记时（R16.333）实测」。
@@ -41,17 +49,17 @@
 
 ### 验证（§3 全量链，`fail=0`）
 
-`test:coverage` **359 文件 / 3817 条**通过，覆盖率 **95.08 / 90.77 / 95.13 / 96.91**（阈值 94/89/94/96，四项只升不降）；`playwright runtime-health` **38 passed**；lint / typecheck / build / 40+ 项 `check:*` 与 `audit:*` 全 `exit=0`；`check:bundle` 绿（未动页面与共享 CSS，perf 指纹 `4dbfa3ca2225` 无需重录）；`e2e-wait-hygiene` / `e2e-suite` / `roadmap-open-reference-claims` / `doc-anchor-claims` 绿。台账重算：`secrets-listed-files` 852 → **855**、`comment-path-refs` 161 → **170**、`comment-path-source-files` 386 → **387**、测试文件 356 → **358**。变异实验：摘掉 about 两条 → 只红在漏页那一条，其余 4 条仍绿。
+`test:coverage` **359 文件 / 3818 条**通过（R16.334 后），覆盖率 **95.08 / 90.77 / 95.13 / 96.91**（阈值 94/89/94/96，四项只升不降）；`playwright runtime-health` **38 passed**；lint / typecheck / build / 40+ 项 `check:*` 与 `audit:*` 全 `exit=0`；`check:bundle` 绿（未动页面与共享 CSS，perf 指纹 `4dbfa3ca2225` 无需重录）；`e2e-wait-hygiene` / `e2e-suite` / `roadmap-open-reference-claims` / `doc-anchor-claims` 绿。台账重算：`secrets-listed-files` 852 → **855**、`comment-path-refs` 161 → **170**、`comment-path-source-files` 386 → **387**、测试文件 356 → **358**。变异实验：摘掉 about 两条 → 只红在漏页那一条，其余 4 条仍绿。
 
 ### 阻塞 / 风险 / 回滚
 
 - **Vercel 24h 构建配额仍未恢复**：#442 的 Vercel 检查报 `Deployment rate limited — retry in 24 hours`，与 #440 同一情形。生产仍停在 `main @ 39b7074` = **0.7.30**，即 v0.7.31 与 R16.332 尚未上线。**不空跑重试**，靠下一次 main push；届时必须先确认 `/zh/changelog` 读到新版本才算真上线。
 - 生产 `POST /api/ai/chat` 仍 502（外部上游，`BLOCKED_EXTERNAL`）。
-- 回滚：`git revert` #442 四笔。无迁移、无数据、无配置；**用户可见行为零变化**。
+- 回滚：`git revert` #442 各笔。无迁移、无数据、无配置。**用户可见变化一处**（R16.334）：没配 Supabase env 时回调页从「整站错误页」变成这一页自己的失败提示——生产配了 env 所以生产无变化，受影响的是预览部署与自建实例。
 
 ### 下一项
 
-1. #442 合并后，按「bug fix → patch」判 **v0.7.32**：R16.332（分享链接坏了显示「链接无效」而非通用 Page not found）是用户可见修复，值得单独发一版。走 `docs/release-checklist.md` 全链。
+1. #442 合并后，按「bug fix → patch」判 **v0.7.32**：两条用户可见修复——R16.332（分享链接坏了显示「链接无效」而非通用 Page not found）与 R16.334（没配云端时回调页不再变整站错误页）。走 `docs/release-checklist.md` 全链。
 2. 候选：手搓 env 解析器不剥引号（`scripts/faq-candidates.mjs:65`、`scripts/generate-embeddings.mjs:19` 两处同形，本轮已核实全仓只有这两处）——`npx vercel deploy` 会写进字面双引号，实测崩过脚本。
 3. 候选：分享页 200 vs 404 的状态码成因（R16.332 已登记为已知边界，成因未查明，不许拿猜测当结论）。
 
