@@ -206,7 +206,19 @@ export function getDocMetas(locale: string, chapterSlug: string): DocMeta[] {
   const dir = path.join(localeRoot(locale), chapterSlug);
   let metas: DocMeta[] = [];
   const metasWithOrder: { meta: DocMeta; order: number }[] = [];
-  for (const f of fs.readdirSync(dir)) {
+  // R16.331：章节目录不存在时 `readdirSync` 抛 ENOENT。这一处此前是本文件四处
+  // `readdirSync` 里唯一没有兜底的，于是 `/knowledge/{不存在的章}/{不存在的篇}` 在生产上
+  // 是 500——异常抢在课文页那句本来写好的 `notFound()` 之前冒出来，作者设计的软 404
+  // 分支永远进不来。AGENTS.md 的宽容模式契约要求「告警并跳过，绝不把页面打崩」，
+  // 所以这里按同文件 `docOrderMap` 的既有形状处理：告警 + 空清单，让调用方自己降级。
+  let files: string[];
+  try {
+    files = fs.readdirSync(dir);
+  } catch {
+    console.warn(`[content] 篇章目录不存在，返回空课文清单（宽容模式）: ${locale}/${chapterSlug}`);
+    return [];
+  }
+  for (const f of files) {
     if (!f.endsWith(".md") || f === "README.md") continue;
     try {
       const raw = fs.readFileSync(path.join(dir, f), "utf8");

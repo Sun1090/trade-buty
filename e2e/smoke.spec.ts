@@ -67,6 +67,21 @@ test.describe("核心路径冒烟", () => {
     await expect(page.locator("body")).toContainText(/不存在|找不到|not found/i);
     expect(res!.status()).toBeLessThan(500);
   });
+
+  /**
+   * R16.331：上面那条只量**章节级**，课文级 URL（`/knowledge/{章}/{篇}`）从没被看过，
+   * 于是它在生产上是 500 而门禁全绿。成因：课文页先调 `getDoc()`，它第一行进
+   * `getDocMetas()`，那里对不存在的章节目录 `readdirSync` 抛 ENOENT——异常抢在页面里
+   * 那句本来写好的 `notFound()` 之前冒出来，作者设计的降级分支永远进不来。
+   * 判据与章节级那条同形：渲染出「不存在」的软 404，且状态码不得是 5xx。
+   */
+  test("未知篇章下的未知课文同样展示软 404，而不是 500", async ({ page }) => {
+    const res = await page.goto(
+      "/zh/knowledge/nonexistent-chapter/nonexistent-lesson",
+    );
+    await expect(page.locator("body")).toContainText(/不存在|找不到|not found/i);
+    expect(res!.status()).toBeLessThan(500);
+  });
 });
 
 /**
