@@ -7,21 +7,14 @@
  * 用法：node --import tsx scripts/generate-embeddings.mjs
  * 需要：AI_EMBEDDING_* + SUPABASE_SERVICE_ROLE_KEY 环境变量
  */
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { replaceLocaleEmbeddings } from "./generate-embeddings-lib.mjs";
+import { loadLocalEnv } from "./local-env-lib.mjs";
 
-// 手动加载 .env.local（不引 dotenv 依赖）
+// R16.335：走内置 process.loadEnvFile（见 local-env-lib.mjs 的理由与实测读数）
 const __root = join(dirname(fileURLToPath(import.meta.url)), "..");
-try {
-  for (const line of readFileSync(join(__root, ".env.local"), "utf8").split("\n")) {
-    const m = line.match(/^([A-Z_]+)=(.*)$/);
-    if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
-  }
-} catch {
-  // .env.local 不存在则依赖已有环境变量
-}
+loadLocalEnv(join(__root, ".env.local"));
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
