@@ -105,12 +105,17 @@ describe("时长防呆的上限只有一个主人", () => {
       ["src/components/quiz.tsx", /QUIZ_SESSION_CAP_SEC\)/, "交卷时夹会话 elapsed"],
       ["src/components/review-client.tsx", /addStudyTime\("quiz",\s*REVIEW_CREDIT_SEC\)/, "复习页一题记多少"],
       ["src/components/ai-quiz.tsx", /addStudyTime\("quiz",\s*REVIEW_CREDIT_SEC\)/, "AI 变体题一题记多少（此前零覆盖）"],
+      // R16.326：这一处不是「夹子」而是**比较基准**——它决定界面那句「回放时长比台账大」
+      // 的解释什么时候出现。探针 M6 实测：把它写成 `REPLAY_ROUND_CAP_SEC`（同值 8h）时
+      // 行为判据全绿、读数一字不差，**只有静态侧能发现主人被换**。这正是 R16.320
+      // 「同值但不同事不许合并」那一族的另一面：没合并常量，却引用了错的那一个。
+      ["src/lib/replay-time-trend.ts", /durationSec > DAILY_SOURCE_CAP_SEC/, "越界天数按**当日**封顶比，不是单轮封顶"],
     ];
     for (const [rel, re, label] of SITES) {
       expect(read(rel), `${rel} 里的「${label}」不再读常量了`).toMatch(re);
     }
-    // 地板：夹点数就是 7，少一个说明有夹点被搬走或改名，上面那圈会静默少判
-    expect(SITES.length, "夹点清单本身不能缩水").toBe(7);
+    // 地板：夹点数就是 8，少一个说明有夹点被搬走或改名，上面那圈会静默少判
+    expect(SITES.length, "夹点清单本身不能缩水").toBe(8);
 
     // 非空转：旧写法（字面量）必须被上面那圈抓住
     const LEGACY = [
