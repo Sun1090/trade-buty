@@ -2,6 +2,50 @@
 
 ---
 
+## 2026-10-13 · v0.7.30 发布（RELEASE_FREEZE 完成，部署被配额挡住）
+
+- 版本 / tag：`v0.7.30` → `c5e5108fef11975096f17a89bbfe31a1d1de8577`（`git rev-parse v0.7.30^{commit}`），tag 已推送；`npm run check:release-tag` 现印「34 条发布记录的 tag 均已落地（最新 0.7.30 → v0.7.30）」，不再打印待办。
+- 判级：**patch**。`git rev-list --count v0.7.29..v0.7.30` = **48** 笔（现场用两种写法复核：`bba5949..c5e5108` 同为 48，`--no-merges` 亦 48，merge commit 0 笔，类型分布相加 48 = docs 26 / fix 12 / test 5 / chore 2 / refactor 1 / gate 1 / build 1）。§0 的判据是「只有缺陷修复、门禁加固、文案与文档，没有新增产品能力」——本轮唯一用户可见变化是 R16.326 那句解释性文案，其余（R16.317–R16.325）全是口径收敛与判据补洞，数值与渲染逻辑一处未改。
+- 发布内容：见 `src/data/release-notes.json` 的 0.7.30 条目（zh / en 各 4 条 highlights，条数相等由 `check:changelog` 强制）与 `CHANGELOG.md`（33 → 34 条，纯由 JSON 生成，未手改）。
+- PR：#430（rebase 合并于 2026-10-13T04:50:37Z，非 admin——`ci`（9m30s）与 `db-tests`（47s）两项 strict 必需检查自然出绿后才合）。合并后本地 `main` 快进到 `c5e5108`，远端分支由 GitHub 自动删除并已 `git remote prune origin` 确认；`npm run ops:work-audit` 判「悬空 0 · 陈旧 0 · 未确认 0」。
+
+### 全量验证（`docs/release-checklist.md` §3 的顺序，未打乱）
+
+- `test:coverage`：**355 文件 / 3785 条**全绿；覆盖率 95.06 / 90.76 / 95.08 / 96.9（阈值 94 / 89 / 94 / 96 一处未动）。
+- `lint` / `typecheck` / `build`：exit 0。
+- 产物门禁在 e2e **之前**跑完：`check:seo-surface`（sitemap 430 · 页面 454 · 知识库 418）、`check:search-index`、`check:structured-data`、`check:risk-warning`、`check:bundle`、`check:links` 全 0；`check:links` 印 `✓ 锚点核对：同页 7811 处 · 跨页 6 处，全部命中`（R16.325 那条升级后的读数）。
+- 报告台账按「producers → freshness」顺序：`kb:inventory` / `kb:gap-priority` / `kb:accept` → 各内容门禁 → `check:scan-counts` → `check:report-freshness` → `check:constitution` / `check:docs`，全 0；**`git status` 干净，无纯日期 diff**。
+- 发布专属：`check:changelog` 34 条一致、`check:docs` 版本号与知识库一致（27 章 / 182 篇，package 0.7.30）、`check:lockfile-repro` 983 个包条目无差异（锁文件由钉住的 `npm@10.9.4` 重算）。
+- `db:test`：迁移 + RLS 越权 + 双设备同步约束 + 9 项回滚演练全通过；`e2e`：**201 passed / 1 skipped**（2.9m）。
+- 合并前 `check:release-tag` 按预期打印「最新 0.7.30 待合并后补打」且 exit 0——这条不判失败是设计如此（rebase 会改写 SHA）。
+
+### 部署：**被 Vercel Hobby 档 24h 构建配额挡住，生产仍停在 0.7.29 内容**
+
+- `c5e5108` 上的 Vercel 检查为 `failure`，描述原文 `Deployment rate limited — retry in 24 hours.`（target 指向 `?upgradeToPro=build-rate-limit`）。逐笔查 main 最近 12 笔的 Vercel status 量出真实边界：**最后一次成功部署是 `380c58e`（第八十轮台账，12:10）**，其前 `01a510f`（09:38）同样被限流；也就是说生产构建的内容 = 0.7.29 时代码，版本号一处未变。
+- 按 §5 的规矩**不为了「绿」重复空跑**：限流是账户级 24h 窗口，此刻任何重试（含手动 redeploy）都不会产出部署。落地动作留给配额恢复后的下一次 main 推送——**届时必须先确认 `/zh/changelog` 读到 0.7.30，才算这次发布真的上线**。
+- 这不是新病：`docs/ops.md`「生产冒烟」表里那条 `/zh/changelog → 含最新发布版本` 的来历正是 0.7.2 当天「合并打了 tag、生产停在旧构建」。区别在于那次是不知道，这次是探针当场喊出来的。
+
+### 生产冒烟：`ops:smoke-prod` **8/10、exit 1**（两条失败都归因清楚）
+
+1. `GET /zh/changelog → 含最新发布版本`——**失败原因如上**，是部署没跟上 main（配额），不是站内回归。这条判据的设计目的就是分辨「合并 ≠ 上线」，它今天正常工作了。
+2. `POST /api/ai/chat 游客`——`502`，护栏路径正常 → 站内代码无问题。既有 `BLOCKED_EXTERNAL`：6 个 AI 变量 2026-10-10 实测都在 Vercel Production env，剩下只有上游额度 / 出口网络 / 上游服务本身，需维护者核对。
+- 其余 8 条全绿：zh/en 首页、篇章页与课文页风险提示、sitemap、robots、`/share/streak` 落地页、游客会话 `200 {"user":null}`。
+- **我自己当场又踩了一次管道退出码**：第一次跑写成 `ops:smoke-prod 2>&1 | tail -18; echo "SMOKE_EXIT=$?"`，读到 `SMOKE_EXIT=0`——那是 `tail` 的码，脚本本身 exit 1。改成重定向到文件再看 `$?` 才拿到真值。这是本仓**第五次**为同一件事记账（R16.316 / R16.317 / v0.7.29 发布各记过），规矩仍是：凡引用退出码，先跑一次不带管道的。
+
+### 回滚
+
+- **无数据库迁移**：`git diff --name-only v0.7.29 v0.7.30 -- supabase/migrations rollback` 为空（51 个变更文件全在源码 / 门禁脚本 / 文档）。
+- 代码侧 `git revert c5e5108` 即把版本号与发布记录退回 0.7.29 形态；Vercel 侧可先把 Production 别名切回 `380c58e` 那次构建止血（内容本就等于 0.7.29，所以这一步今天不需要）。
+
+### 下一 milestone
+
+- 第八十一轮。候选（不需拍板、能先证伪）：① AGENTS.md in-scope 的「隐私与三方服务文档事实订正」——把 R16.324 那一族（口径量窄了）扫向文档里三方服务的数字与范围；② `check:constitution`（187 处命中）与 `check:test-clock-hygiene`（8 处）仍是报告式，属人工抽查类，登记观察不擅自阻断。
+- 另有一条**发布相关的外部依赖**要盯：Vercel 配额恢复后补一次部署，并复跑 `ops:smoke-prod` 直到 `/zh/changelog` 读到 0.7.30。
+
+- 更新时间：2026-10-13（Asia/Shanghai）。
+
+---
+
 ## 2026-10-13 · 第八十轮（R16.326）：「回放练习时长」可以大于「台账学习时长」——同一屏上**部分大于整体**，界面一句解释都没有
 
 - 里程碑 / 版本：口径与防呆收敛第九轮；R16.326 新增并关账。分支 `fix/replay-trend-daily-cap`（自合并后的 `main` 顶点 `e784891`），五笔：`a5ea6d9`（fix(stats)）聚合器数出越界天数 + 界面解释 + 5 条判据、`3ccfa42`（docs(perf)）重录实测表、`4855574`（docs）R16.326 关账、`59fcbc2`（test(quality)）静态夹点 7→8、`d791330`（docs）探针与 M6 来历。
