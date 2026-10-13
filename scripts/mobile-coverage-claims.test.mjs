@@ -15,58 +15,48 @@
  * 载荷里）由 spec 里的 `DYNAMIC_TEMPLATE_COVERAGE` 显式认领，而**认领必须兑现**：
  * 每一串都要在 spec 源码里真的对应一处被遍历的路径，删掉用例留着声明就红。
  */
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import {
+  blankComments,
+  diffTemplateCoverage,
+  listPageTemplates,
+  readLocalesFromI18n,
+  readRouteLiterals,
+  stripLocale,
+  templateMatches,
+} from "./page-template-coverage-lib.mjs";
 
 const root = process.cwd();
 const read = (rel) => readFileSync(path.join(root, rel), "utf8");
 const MOBILE_SCRIPT = "scripts/check-mobile.mjs";
 const MOBILE_SPEC = "e2e/mobile-overflow.spec.ts";
 
-function walk(dir, out = []) {
-  for (const e of readdirSync(path.join(root, dir), { withFileTypes: true })) {
-    const rel = path.posix.join(dir, e.name);
-    if (e.isDirectory()) walk(rel, out);
-    else out.push(rel);
-  }
-  return out;
-}
-
-/** 去掉语言前缀，得到「页面模板」形状（`/`、`/privacy`、`/share/[kind]/[path]`） */
-function stripLocale(route) {
-  return route.replace(/^\/(?:zh|en)(?=\/|$)/, "") || "/";
-}
-
+/**
+ * R16.333：模板枚举、locale 剥离、模板段匹配、路由字面量解析全部改用
+ * `page-template-coverage-lib.mjs` 那把共享尺子。此前这里与 `runtime-health-coverage-claims`
+ * 各抄了一份 `matches()`——两条门禁对「盖到了」的定义可以悄悄分叉，而「覆盖面」这个词
+ * 一旦有两个含义，两条同时绿就没有意义了。
+ */
+const LOCALES = readLocalesFromI18n(root);
 /** 源码树里真实存在的页面模板（现读，不抄） */
-const TEMPLATES = [
-  ...new Set(
-    walk("src/app")
-      .filter((f) => f.endsWith("/page.tsx"))
-      .map((f) => {
-        const rest = f
-          .replace(/^src\/app\/(?:\[locale\]\/)?/, "")
-          .replace(/(?:^|\/)page\.tsx$/, "");
-        return rest === "" ? "/" : `/${rest}`;
-      }),
-  ),
-].sort();
+const TEMPLATES = listPageTemplates(root);
 
 const mobileSrc = read(MOBILE_SCRIPT);
 const specSrc = read(MOBILE_SPEC);
 
 /** `check-mobile.mjs` 的 ROUTES：脚本自己那份写死清单 */
 function scriptRoutes() {
-  const block = /const ROUTES = \[([\s\S]*?)\];/.exec(mobileSrc);
-  expect(block, `${MOBILE_SCRIPT} 里找不到 const ROUTES = [...]`).toBeTruthy();
-  return [...block[1].matchAll(/"([^"]+)"/g)].map((m) => stripLocale(m[1]));
+  const literals = readRouteLiterals(mobileSrc, "ROUTES");
+  expect(literals, `${MOBILE_SCRIPT} 里找不到 const ROUTES = [...]`).toBeTruthy();
+  return literals.map((route) => stripLocale(route, LOCALES));
 }
 
 /** spec 的 CORE_SUFFIXES × LOCALES，与 SHARE_PATHS 那批根级路径 */
 function specRoutes() {
-  const suffixBlock = /const CORE_SUFFIXES = \[([\s\S]*?)\];/.exec(specSrc);
-  expect(suffixBlock, `${MOBILE_SPEC} 里找不到 const CORE_SUFFIXES = [...]`).toBeTruthy();
-  const suffixes = [...suffixBlock[1].matchAll(/"([^"]*)"/g)].map((m) => m[1]);
+  const suffixes = readRouteLiterals(specSrc, "CORE_SUFFIXES");
+  expect(suffixes, `${MOBILE_SPEC} 里找不到 const CORE_SUFFIXES = [...]`).toBeTruthy();
   const localesBlock = /const CORE_PATHS = LOCALES\.flatMap\(\(locale\) =>/.exec(specSrc);
   expect(
     localesBlock,
@@ -74,12 +64,9 @@ function specRoutes() {
   ).toBeTruthy();
   const out = [];
   // LOCALES 的真实人口由 i18n 说了算，不在这里抄一份
-  const locales = [...read("src/lib/i18n.ts").matchAll(/LOCALES(?::[^=]*)? = \[([^\]]+)\]/g)].flatMap((m) =>
-    [...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]),
-  );
-  expect(locales.length, "从 i18n 里解析不出 LOCALES").toBeGreaterThanOrEqual(2);
-  for (const locale of locales) for (const suffix of suffixes) out.push(stripLocale(`/${locale}${suffix}`));
-  const shareBlock = /const SHARE_PATHS = \[([\s\S]*?)\];/.exec(specSrc);
+  expect(LOCALES.length, "从 i18n 里解析不出 LOCALES").toBeGreaterThanOrEqual(2);
+  for (const locale of LOCALES) for (const suffix of suffixes) out.push(stripLocale(`/${locale}${suffix}`, LOCALES));
+  const shareBlock = /const SHARE_PATHS = \[([\s\S]*?)\];/.exec(blankComments(specSrc));
   expect(shareBlock, `${MOBILE_SPEC} 里找不到 const SHARE_PATHS = [...]`).toBeTruthy();
   // 载荷由编码器现生成，这里只取模板首段做形状比对，不比对 base64
   // 具体路径要保留完整段数：SHARE_PATHS 里每条都是 `/share/{kind}/{载荷}` 三段，
@@ -93,21 +80,16 @@ function specRoutes() {
 
 /** spec 里显式认领的「结构上盖不到」的模板 */
 function declaredDynamic() {
-  const block = /const DYNAMIC_TEMPLATE_COVERAGE = \[([\s\S]*?)\];/.exec(specSrc);
+  const dynamic = readRouteLiterals(specSrc, "DYNAMIC_TEMPLATE_COVERAGE");
   expect(
-    block,
+    dynamic,
     `${MOBILE_SPEC} 里找不到 const DYNAMIC_TEMPLATE_COVERAGE = [...]：无法由「× LOCALES」表达的页面必须显式认领`,
   ).toBeTruthy();
-  return [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  return dynamic;
 }
 
-/** 模板段匹配：字面段逐字相同，`[x]` 段允许任何具体值 */
-function matches(template, concrete) {
-  const want = template.split("/").filter(Boolean);
-  const have = concrete.split("/").filter(Boolean);
-  if (have.length !== want.length) return false;
-  return want.every((seg, i) => seg.startsWith("[") || seg === have[i]);
-}
+// 模板段匹配用共享尺子；这里只留一个本文件内的短别名
+const matches = templateMatches;
 
 describe("320px 覆盖面的清单由源码树说了算", () => {
   const script = scriptRoutes();
@@ -122,8 +104,9 @@ describe("320px 覆盖面的清单由源码树说了算", () => {
   });
 
   it("两份清单的并集覆盖每一个页面模板（新增页面不许漏）", () => {
-    const missing = TEMPLATES.filter(
-      (t) => !covered.some((c) => matches(t, c)) && !dynamic.includes(t),
+    // 用共享尺子算漏页，再把「显式认领」的那几份扣掉
+    const missing = diffTemplateCoverage({ templates: TEMPLATES, routes: covered }).missing.filter(
+      (t) => !dynamic.includes(t),
     );
     expect(
       missing,
@@ -147,14 +130,14 @@ describe("320px 覆盖面的清单由源码树说了算", () => {
   });
 
   it("清单里不许留着已经没有 page.tsx 的路由（不许只长不消）", () => {
-    const stale = covered.filter((c) => !TEMPLATES.some((t) => matches(t, c)));
+    const { stale } = diffTemplateCoverage({ templates: TEMPLATES, routes: covered });
     expect(stale, `两份清单点名了没有对应 page.tsx 的路径：${stale.join(", ")}`).toEqual([]);
   });
 
   it("正向对照：把一条真实认领的模板从清单里删掉，上一条判据就会红（自证）", () => {
     // 自证的是「陈旧」那条腿的探测器：造一个不存在的模板，必须被它抓出来
     const fake = [...covered, "/does-not-exist-anywhere"];
-    const stale = fake.filter((c) => !TEMPLATES.some((t) => matches(t, c)));
+    const { stale } = diffTemplateCoverage({ templates: TEMPLATES, routes: fake });
     expect(stale, "探测器抓不出假路径，上面那条「不许只长不消」是空转").toEqual([
       "/does-not-exist-anywhere",
     ]);
