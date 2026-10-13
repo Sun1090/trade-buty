@@ -14,8 +14,16 @@ const h = vi.hoisted(() => {
     unsubscribe: vi.fn(),
     rawReturn: null as string | null,
     normalized: "/zh/path" as string | null,
+    // R16.334：这一页现在先问 `hasSupabaseEnv()` 再碰客户端。既有六条测的是「云端已配置」
+    // 那条路，所以默认给 true——否则它们会全部走进降级分支，而「四秒超时」那条
+    // 会以错误的理由通过（守卫直接置 error，超时逻辑根本没跑）。
+    cloudConfigured: true,
   };
 });
+
+vi.mock("@/lib/supabase/env", () => ({
+  hasSupabaseEnv: () => h.cloudConfigured,
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => h.router,
@@ -53,6 +61,7 @@ beforeEach(() => {
   h.unsubscribe.mockClear();
   h.rawReturn = null;
   h.normalized = "/zh/path";
+  h.cloudConfigured = true;
 });
 
 afterEach(() => {
@@ -131,5 +140,21 @@ describe("AuthCallbackClient", () => {
     });
     expect(h.push).not.toHaveBeenCalled();
     expect(h.unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * R16.334：部署没配 Supabase env 时，这一页要显示自己写好的「登录失败」，
+   * 而不是让 effect 抛出、把整页变成错误页。CI 的 `e2e` job 正是这种环境
+   * （带 env 的是 `auth-e2e`），所以这条以前只在 CI 红。
+   */
+  it("degrades to the page's own error state when the cloud is not configured", async () => {
+    h.cloudConfigured = false;
+    render(<AuthCallbackClient dict={dict} locale="zh" />);
+    await flush();
+    expect(screen.getByText("登录链接已失效")).toBeInTheDocument();
+    // 关键判据：没配云端时**一个订阅都不该挂上**，也不该有跳转
+    expect(h.state.listeners).toEqual([]);
+    expect(h.push).not.toHaveBeenCalled();
+    expect(h.unsubscribe).not.toHaveBeenCalled();
   });
 });
