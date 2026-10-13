@@ -75,16 +75,18 @@ test("静置首页就会发生的联系，文案不许写成「仅在你主动�
 
   // 反向禁令 + 正向明写，逐语言各测一遍：把两种语言的形状混在一份文案上判，
   // 那条 en 禁令在 zh 页面上永远「通过」，是装饰而不是判据（本轮自己踩到后修）
+  // 「自动」与「不需要你点」必须**同时**在场且成对出现：只写前者（或只写后者）的文案
+  // 读起来仍然像在替一次静默的跨源联系打掩护，所以这里不用 `|` 放宽成二选一。
   const rules = [
     {
       locale: "zh" as const,
       forbidden: /仅在你主动使用对应功能时才被调用/,
-      required: /自动发生|不需要你点/,
+      required: /自动发生[\s\S]*不需要你点/,
     },
     {
       locale: "en" as const,
       forbidden: /each service is contacted only when you use/i,
-      required: /automatic|without you doing anything/i,
+      required: /automatic[\s\S]*without you doing anything/i,
     },
   ];
   for (const { locale, forbidden, required } of rules) {
