@@ -43,7 +43,7 @@ const ROUTES = [
    * 判据住在 `scripts/runtime-health-coverage-claims.test.mjs`：页面清单由 `src/app` 下的
    * `page.tsx` 说了算，不由这份数组说了算。
    *
-   * 补进来的时候先跑过一遍：**没有红出新缺陷**（38 条全绿）。所以这一笔是补主人，不是修 bug。
+   * 补进来的时候先跑过一遍：**没有红出新缺陷**（登记时 R16.333 实测）。所以这一笔是补主人，不是修 bug。
    * `/knowledge/[chapter]` 是章节页，与课文页是两个模板——只量课文页不算量过章节页。
    */
   "/zh/about",
