@@ -4,10 +4,10 @@
  * 病灶不是笔误，是三处实测：
  * 1. `study-time.ts` 里同一个上限被夹**两次**（累加处、`readLedger` 读旧台账时）。
  *    两道闸互为备份，所以任何一道单独失效都不可观察——把任一处改成 `12 * 3600`，
- *    本模块 12 条用例全绿。
+ *    当时本模块 12 条用例全绿（R16.320 修复前；条数会随用例增删变，别当现状读）。
  * 2. `replay-trainer.tsx` 存档前自己夹一次，`replay-time-trend.ts` 聚合时再夹一次，
  *    后者的注释写着「与 study-time 防呆一致」。把 trainer 那处改成 `12 * 3600`，
- *    四个相关文件（trainer / trend / duration-claims / study-time）**71 条全绿**。
+ *    那四个相关文件（trainer / trend / duration-claims / study-time）**当时 71 条全绿**。
  * 3. 全仓没有任何测试断言过这两个上限之间的关系。
  *
  * R16.322 把同一族病再挖一层，量出**两处新的**：
@@ -17,7 +17,7 @@
  *    只有 `quiz.test.tsx` 那一条红（它钉的是数值，不是「这个数有主人」）。
  * 5. 「1 题记 1 分钟」这条政策长在两处（`review-client.tsx` 与 `ai-quiz.tsx`），
  *    都写 `addStudyTime("quiz", 60)`。实测把 `ai-quiz.tsx` 那处改成 120，
- *    **该文件 14 条全绿**——复习页那两处有 `review-client.test.tsx` 钉着，AI 变体题那一处零覆盖。
+ *    **该文件当时全部照绿**——复习页那两处有 `review-client.test.tsx` 钉着，AI 变体题那一处零覆盖。
  *
  * 于是 `study-caps.ts` 现在有四个名字：`DAILY_SOURCE_CAP_SEC` / `REPLAY_ROUND_CAP_SEC` /
  * `QUIZ_SESSION_CAP_SEC` / `REVIEW_CREDIT_SEC`。最后一个是**计价**不是夹子，
