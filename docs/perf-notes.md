@@ -386,3 +386,49 @@ CI 每组偏高 +0.9~+2.3KB**（剔掉含 `/changelog` 的 `static-info`，那�
 （350.2 → 350.1），判据红的是这两组、其余 13 组逐字绿。上一节那句「重录只是把红推迟到下一笔提交」
 本轮再验证一次：新表里 `chart` 距退位界 **2 字节**、`knowledge-lesson` 距进位界 **9 字节**、`review`
 距退位界 **12 字节**、`path` 13 字节。R16.306「不给容差」仍然成立，本轮没动判据。
+
+### 复测（2026-10-13，R16.326 给「回放时长比台账大」补上界面解释之后，本地干净构建现读重算）
+
+上一张（同日 R16.322）保留原样当历史。今天的读数（最大 total / 预算 / 最大路由）：
+
+| 分组 | 今天最大 total | 预算 | 最大路由 |
+|---|---:|---:|---|
+| home | 281.3 KB | 360 KB | `zh` |
+| path | 282.1 KB | 365 KB | `zh/path` |
+| knowledge-chapter | 267.2 KB | 370 KB | `zh/knowledge/markets-instruments` |
+| knowledge-lesson | 350.1 KB | 357 KB | `zh/knowledge/technical-analysis/drawing-tools` |
+| search | 249.6 KB | 335 KB | `zh/search` |
+| review | 284.3 KB | 350 KB | `zh/review` |
+| bookmarks | 244.8 KB | 335 KB | `zh/bookmarks` |
+| stats | 303.6 KB | 370 KB | `zh/stats` |
+| ai | 252.2 KB | 350 KB | `zh/ai` |
+| chart | 302.3 KB | 390 KB | `zh/chart` |
+| replay | 318.5 KB | 400 KB | `zh/replay` |
+| privacy | 254.2 KB | 340 KB | `zh/privacy` |
+| glossary | 250.9 KB | 340 KB | `zh/glossary` |
+| static-info | 247.4 KB | 340 KB | `zh/about` |
+| auth | 311.3 KB | 340 KB | `zh/auth` |
+
+- 记录环境指纹：`4dbfa3ca2225`（与上一张同一套 deflate 行为，所以这张表仍然逐字判得动）。
+
+**归因不用另建 A/B 树**：本轮改的三个文件（`replay-time-trend.ts` 多一个 summary 字段、
+`i18n-stats.ts` 多两句文案、`stats-client.tsx` 多一个条件渲染）全部只进 `stats` 那一组，
+实测也确实是**只有 `stats` 变、其余 14 组字节逐字未动**（288024 / 288832 / 273620 / 358545 /
+255574 / 291083 / 250644 / 258251 / 309505 / 326148 / 260275 / 256931 / 253348 / 318804，
+与上一张逐项相同）。
+
+| 分组 | 上一张的字节 → 今天的字节 | Δ | 显示值 | 退位需 / 进位需 |
+|---|---|---:|---|---|
+| stats | 310648 → 310854 | **+206** | **303.4 → 303.6** | 19 B / 84 B |
+
+**这是 R16.321 落地之后第三次由判据自己喊出来的重录，仍然红在第一趟链**。与上一张同方向
+（上一张 `stats` +11 未跨界，这次 +206 连跨两档）。**本轮最该记的一条不是字节数**：R16.323
+那轮「只改注释」时实测表逐字节未变，当时留下的推断是「碰 `study-caps.ts` 一定会动表」——
+本轮没碰 `study-caps.ts` 的实现（只改了它的文件头注释），表照样红，动的正是被 import 进
+`stats` chunk 的那三个文件。也就是说那条推断仍然只是推断：**注释不动产物、代码动产物**，
+而「动了哪些文件」要由这张表说，不由注释说。
+
+新表里离档界最近的仍是 `chart`（距退位界 **2 字节**）、`knowledge-lesson`（距进位界 **9 字节**）、
+`review`（距退位界 **12 字节**）、`path` 13 字节，**本轮把 `stats` 也送进了这一群：退位需 19 B**。
+余量由 `.gate-logs/margins-r79.mjs` 现算（它 import 判据自己的 `groupMaxima`，不读这张表）。
+R16.306「不给容差」仍然成立，判据与预算都没动。
