@@ -78,4 +78,29 @@ describe("回放时长那块不说「只有旧记录缺时长」", () => {
       ROUND_TO_SECONDS,
     );
   });
+
+  /**
+   * R16.326：这块的时长只夹单轮，「台账学习时长」另有当日封顶。实测（同一批 3 轮 × 4 小时）
+   * 这块 12h、台账 8h——**部分大于整体**。这句解释必须说清「两处夹的不是同一件事」，
+   * 并且不许把锅推给台账（用户第一反应是「台账漏记了」）。
+   */
+  it("「比台账大」那句解释点名两处夹的是不同东西，且不指控台账漏记", () => {
+    // 禁令：把差异说成台账出错
+    const BLAMES_LEDGER = /台账[^。]{0,12}(漏|少记|丢了|不准|错)|ledger (misses|is wrong|undercounts)/i;
+    // 必须出现的两头：这块按每轮相加 / 台账另有每日封顶
+    const MENTIONS_PER_ROUND = /每(一)?轮|各自相加|each round|per round|adds up/i;
+    const MENTIONS_DAILY_CAP = /每(日|天)|daily|per day/i;
+    for (const locale of ["zh", "en"] as const) {
+      const text = STATS_DICTS[locale].replayOverDailyCap;
+      expect(text, `${locale} 这句没说出「每轮相加」这一侧`).toMatch(MENTIONS_PER_ROUND);
+      expect(text, `${locale} 这句没说出「台账另有每日封顶」那一侧`).toMatch(MENTIONS_DAILY_CAP);
+      expect(
+        BLAMES_LEDGER.test(text),
+        `${locale} 这句又把差异说成台账的错：${text}`,
+      ).toBe(false);
+    }
+    // 两种语言都得提到对面那张卡的名字，否则用户不知道「比谁大」
+    expect(STATS_DICTS.zh.replayOverDailyCap).toContain(STATS_DICTS.zh.totalStudyTime.slice(0, 6));
+    expect(STATS_DICTS.en.replayOverDailyCap.toLowerCase()).toContain("study time");
+  });
 });
