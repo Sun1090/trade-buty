@@ -48,7 +48,7 @@ BASE / M1 删 ROUTES 里课文页那条 → 红在「覆盖」/ M2 塞一条没�
 
 - **部署仍被 Vercel Hobby 档 24h 构建配额挡着**：`97ee920`（#431 合并）的 Vercel status = `Deployment rate limited — retry in 24 hours.`，最后一次成功部署仍是 `380c58e`（0.7.29 内容）→ **v0.7.30 至今没上线**，`/zh/changelog` 读不到 0.7.30。按 `docs/release-checklist.md` §5 不空跑重试；配额恢复后需复跑 `ops:smoke-prod` 确认那条探针转绿。
 - 风险：静态推导（深 4 层 import）会随重构漂移，但漂移方向是「候选变多」→ 观测面变大，不会静默漏判；真正的漏判形状是「跨源模块改名到扫不到的目录」，由 `EXT_MODULES >= 2` 那条地板兜。
-- 回滚：`git revert` 这三笔即可；无迁移、无数据变更、无渲染逻辑改动。
+- 回滚：`git revert` 本轮那三笔工作提交即可（台账那一笔只动文档，不必一起退）；无迁移、无数据变更、无渲染逻辑改动。
 
 ### 下一项
 
