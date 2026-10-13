@@ -48,7 +48,7 @@
 | 新章节 dry-run 冒烟（CI 内联，R10.16 / Q1.7） | `node scripts/dry-run-new-chapter.mjs --draft` 预检契约，并输出索引/sitemap/测验挂载/路径分组四项上线核对 | 按脚本报错补结构；按 checklist 决策固定题和 STAGES 分组 |
 | `npm run check:quiz-mounts` | AST 核验 quizzes.ts 全部挂载的 chapter/docSlug 与最少题数（R6.3） | 修正 chapterNum、docSlug、重复键或题量 |
 | `npm run check:quiz-coverage` | 固定题库覆盖率：27 章 × 每章至少 3 道（R6.4） | 补固定题库或 kb-titles 缺失元数据 |
-| `npm run check:links` | 死链：扫描构建产物 HTML 与构建输出交叉验证（需先 build） | 修正站内错误链接 |
+| `npm run check:links` | 死链与锚点：扫描构建产物 HTML 与构建输出交叉验证，路由/资产/同页与跨页锚点缺失一律 exit 1（需先 build） | 修正站内错误链接 |
 | `npm run check:sitemap` | 构建产物 sitemap 收录全部 zh 课程（R6.2，需先 build） | 检查 lib/content 宽松渲染是否误跳过 |
 | `npm run check:seo-surface` | 可索引表面发布复核：sitemap / robots.txt / 页面 robots meta 三者一致（R13.17，需先 build） | 修正 `src/lib/seo-surface.json` 声明或页面 metadata；详见 `docs/seo-surface.md` |
 | `npm run check:search-index` | 搜索索引与构建产物一致：新文档必须进索引（R10.9，需先 build） | 检查 generate-search-index 是否漏同步 |
