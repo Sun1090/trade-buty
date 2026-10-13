@@ -98,6 +98,58 @@ async function dismissOnboarding(page: Page) {
   await expect(tour).toBeHidden();
 }
 
+/**
+ * 「溢出时是谁撑宽的」——**只此一份**，页面判据与自证用例共用。
+ *
+ * 探针踩出来的：先前我在 `expectNoPageOverflow` 和自证用例里各抄了一份同样的挑选逻辑，
+ * 变异只命中第一份，自证那条腿就此空转（`.gate-logs/detector-fixture-r83.mjs` 同一对坑）。
+ * 这正是 R16.329 的病灶本身：逻辑没有主人，抄两份就有一份会烂掉。
+ *
+ * 两个坑都要防：
+ * ① 只看盒子的 `getBoundingClientRect()` 会点名被 `overflow-hidden` 裁掉的装饰元素
+ *    （它 rect 越界却撑不宽页面，报出来与 `scrollWidth` 自相矛盾）→ 祖先链上有裁剪的排除。
+ * ② inline 文本溢出**不改变元素自己的 rect**（真凶的 rect 仍在视口内）→ 必须同时看
+ *    元素自身的 `scrollWidth > clientWidth`，只看几何就结构上看不见这类溢出。
+ *
+ * 作为自包含函数交给 `page.evaluate`（Playwright 序列化其源码，不引用外部绑定）。
+ */
+function findOverflowCulprits(): {
+  id: string | null;
+  tag: string;
+  cls: string;
+  right: number;
+  inner: string | null;
+  text: string;
+}[] {
+  const edge = window.innerWidth + 1;
+  const clipped = (el: Element) => {
+    for (let a = el.parentElement; a; a = a.parentElement) {
+      const o = getComputedStyle(a).overflowX;
+      if (o === "hidden" || o === "clip" || o === "auto" || o === "scroll") return true;
+    }
+    return false;
+  };
+  // 两种越界都要看：盒子本身越界，或盒子里的内容（inline 溢出）越出自己的盒子
+  const over = (el: Element) =>
+    el.getBoundingClientRect().right > edge || el.scrollWidth > el.clientWidth + 1;
+  const rows = Array.from(document.querySelectorAll("body *"))
+    .filter(over)
+    .map((el) => ({
+      id: el.id || null,
+      tag: el.tagName.toLowerCase(),
+      cls: (el.getAttribute("class") ?? "").slice(0, 60),
+      right: Math.round(el.getBoundingClientRect().right),
+      clipped: clipped(el),
+      inner: el.scrollWidth > el.clientWidth + 1 ? `${el.scrollWidth}>${el.clientWidth}` : null,
+      // 有没有更深的子元素也越界：外层容器必然跟着撑宽，报它没有信息量
+      deeper: Array.from(el.children).some(over),
+      text: (el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 60),
+    }));
+  const live = rows.filter((row) => !row.clipped);
+  const leaf = live.filter((row) => !row.deeper);
+  return (leaf.length > 0 ? leaf : live.length > 0 ? live : rows).slice(0, 6);
+}
+
 async function expectNoPageOverflow(page: Page, path: string) {
   const res = await page.goto(path);
   // 先钉住「这真的是一页」：清单里混进死路径时，404 页不溢出，用例会在假覆盖上全绿。
@@ -111,42 +163,15 @@ async function expectNoPageOverflow(page: Page, path: string) {
   // 与仓库原文两处都可能不同），只报一个数字的判据红在 CI 上时无从下手，只能靠猜。
   // 故仅在**已判定溢出**时才现读——通过的那一趟零开销，不做全量 DOM 扫描。
   //
-  // 第一版只按「几何越界 + 没有更深的越界子元素」挑，结果点名了一个 `right: 367` 的
-  // 装饰光晕：它祖先带 `overflow-hidden`，压根撑不宽页面，而 `scrollWidth` 只有 354——
-  // 读数自相矛盾就是探测器挑错了人。现在按**能不能真的撑宽**筛：祖先链上有裁剪的先排除。
+  // 探测器踩过的两个坑，都有夹具作证（`.gate-logs/detector-fixture-r83.mjs`）：
+  // ① 第一版只看盒子的 `getBoundingClientRect()`，于是点名了一个 `right: 367` 的装饰光晕——
+  //    它祖先带 `overflow-hidden`，压根撑不宽页面，而 `scrollWidth` 只有 354：读数自相矛盾
+  //    就是挑错了人。所以祖先链上有裁剪的要排除。
+  // ② 排除之后夹具里**一个都不剩**：真凶是一段不可断行的长 token，而 inline 文本溢出
+  //    **不会改变元素自己的 rect**（它的 rect 仍是 304）。所以必须同时看元素自身的
+  //    `scrollWidth > clientWidth`——只看盒子几何，这类溢出结构上就看不见。
   const overflowing = widths.scroll > 320;
-  const culprits = overflowing
-    ? await page.evaluate(() => {
-        const edge = window.innerWidth + 1;
-        // 祖先把溢出裁掉了，就不可能是它撑宽了页面
-        const clipped = (el: Element) => {
-          for (let a = el.parentElement; a; a = a.parentElement) {
-            const o = getComputedStyle(a).overflowX;
-            if (o === "hidden" || o === "clip" || o === "auto" || o === "scroll") return true;
-          }
-          return false;
-        };
-        const rows = Array.from(document.querySelectorAll("body *"))
-          .filter((el) => el.getBoundingClientRect().right > edge)
-          .map((el) => {
-            const r = el.getBoundingClientRect();
-            return {
-              tag: el.tagName.toLowerCase(),
-              cls: (el.getAttribute("class") ?? "").slice(0, 60),
-              right: Math.round(r.right),
-              clipped: clipped(el),
-              // 有没有更深的子元素也越界：外层容器必然跟着撑宽，报它没有信息量
-              deeper: Array.from(el.children).some(
-                (c) => c.getBoundingClientRect().right > edge
-              ),
-              text: (el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 60),
-            };
-          });
-        const live = rows.filter((row) => !row.clipped);
-        const leaf = live.filter((row) => !row.deeper);
-        return (leaf.length > 0 ? leaf : live.length > 0 ? live : rows).slice(0, 6);
-      })
-    : [];
+  const culprits = overflowing ? await page.evaluate(findOverflowCulprits) : [];
   expect(
     widths.scroll,
     `${path}: page scrollWidth ${widths.scroll} > clientWidth ${widths.client}（320px 视口横向溢出）` +
@@ -157,6 +182,32 @@ async function expectNoPageOverflow(page: Page, path: string) {
 
 test.describe("R13.7 320px 核心路径不横向溢出", () => {
   test.use({ viewport: { width: 320, height: 568 } });
+
+  /**
+   * 上面那套「溢出时点名元凶」的探测器本身也要有判据：它挑错人时，红在 CI 上仍然只能靠猜。
+   * 夹具（`.gate-logs/detector-fixture-r83.mjs`）量出两个坑——被 `overflow-hidden` 裁掉的
+   * 装饰元素会顶掉真凶；而 inline 文本溢出**不改变元素自己的 rect**，只看几何就一个都抓不到。
+   * 这里在同一份逻辑上跑一次真浏览器：两种越界都要抓到、被裁的那个不许报。
+   */
+  test("溢出探测器认得出真凶、不误报被裁剪的装饰元素（自证）", async ({ page }) => {
+    await page.setContent(`<!doctype html><html><head><meta charset=utf-8><style>
+      *,*::before,*::after{box-sizing:border-box}html,body{margin:0;padding:0}
+      .page{padding:0 16px}
+      .card{position:relative;overflow:hidden;border:1px solid #888;padding:24px}
+      .glow{position:absolute;right:-64px;top:-80px;width:192px;height:192px;background:#0f0}
+      p{font-size:14px}
+    </style></head><body><div class="page">
+      <div class="card"><div class="glow"></div><p>正文</p></div>
+      <p id="real">${"A".repeat(120)}</p>
+    </div></body></html>`);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+      "夹具本身没造出溢出，下面所有比对都是空转",
+    ).toBeGreaterThan(320);
+    const picked = (await page.evaluate(findOverflowCulprits)).map((row) => row.id);
+    // 只点名那个真把内容撑出盒子的段落；被祖先裁掉的 .glow 不许出现
+    expect(picked, `探测器点名了 ${JSON.stringify(picked)}，应当只有 real`).toEqual(["real"]);
+  });
 
   test("清单覆盖每一种语言，且没有退回只量 zh", () => {
     // 这一条是上面那组用例的前提：清单塌回单语时，20 条会变成 10 条并且全绿，
