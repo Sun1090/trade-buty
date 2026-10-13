@@ -4,7 +4,7 @@
 
 ## 2026-10-13 · 第八十一轮（R16.327）：隐私页「每项服务仅在你主动使用时才调用」对首页行情条是假话——零点击就跨源，此前没有任何判据看得见
 
-- 里程碑 / 版本：AGENTS.md in-scope「隐私与三方服务文档事实订正」一轮；R16.327 新增并关账，未改产品版本（当前 v0.7.30，用户可见变化只有隐私政策那一节的两种语言）。分支 `fix/privacy-third-party-auto-poll`（自合并后的 `main` 顶点 `d23f916`），四笔：`5b0f87b`（fix(privacy)）文案改写成两种说法 + 新 spec 两条判据、`0e147c7`（test(privacy)）正向明写那条不许用「或」放宽、`b4d42f6`（docs(roadmap)）R16.327 关账、`23bac76` + `80e878b`（docs(perf)）重录实测表并订正重录序号。
+- 里程碑 / 版本：AGENTS.md in-scope「隐私与三方服务文档事实订正」一轮；R16.327 新增并关账，未改产品版本（当前 v0.7.30，用户可见变化只有隐私政策那一节的两种语言）。分支 `fix/privacy-third-party-auto-poll`（自合并后的 `main` 顶点 `d23f916`），六笔：`5b0f87b`（fix(privacy)）文案改写成两种说法 + 新 spec 两条判据、`0e147c7`（test(privacy)）正向明写那条不许用「或」放宽、`b4d42f6`（docs(roadmap)）R16.327 关账、`23bac76` + `80e878b`（docs(perf)）重录实测表并订正重录序号、`34632a8`（fix(privacy)）行情那句改成正面列举（被已有禁令当场抓住，见下）。
 - 承上一轮：v0.7.30 已由 #430 发布（tag 落地），发布台账由 #431 落地。
 
 ### 病灶：一句写在隐私政策里的「仅在你主动使用时」，被一次零点击实测推翻
@@ -34,14 +34,22 @@ BASE 绿 / M1 zh 删掉 `api.binance.com` 点名 → 红在① / M2 en 删同一
 ### 当场自纠的两处落笔错
 
 - 往实测表写「`privacy` 顶掉 `chart` 成为全表最贴档界」——`.gate-logs/margins-r79.mjs` 现算是 `chart` 2 B / `privacy` 5 B，**最紧的仍是 `chart`**，本轮那组排第二。落笔前没重算，同一笔里改掉。
-- 上一版把 R16.326 那次重录写成「R16.321 落地之后**第三次**」，而它前面只有 R16.322 一次（中间 R16.323–325 三笔都逐字节没动产物）→ 序号订正为第二次，本轮这次为第三次。**序号也是抄数**，这是本仓第 N 次为同一件事记账。
+- 上一版把 R16.326 那次重录写成「R16.321 落地之后**第三次**」，而它前面只有 R16.322 一次（中间 R16.323–325 三笔都逐字节没动产物）→ 序号订正为第二次，本轮这次为第三次。**序号也是抄数**，这是本仓又一笔为「抄数」记的账（本轮已记两处：档位余量、重录序号）。
+
+### 已有禁令当场抓住我新写的一句，而它顺带暴露了我自己口径不一致
+
+新写的那句「These requests carry no account information」被 `src/app/[locale]/faq/data-kinds-claims.test.tsx` 判红——那条禁令管的是**无条件**的「不带账户 / carry no account」式说法（AI 那两类记录登录后确实带账户 id，旧文案两句话互相拆台）。它按「±60 字内要有『未登录 / logged out』限定」放行，而我这句讲的是币安行情请求、与登录态无关，套不上那个限定。
+
+**没有改禁令、也没有为它加豁免**：把那句改成正面列举（「这类请求由页面自己发出、不含任何用户身份：币安看到的是你的 IP 地址和你请求了哪些交易对」），信息量不减、且不必躲任何正则。**本轮更该记的一条不是这句本身，而是它暴露的形状**：中文那句我写的是「不带任何账户信息」，**不在** `ANON_CLAIM_RE` 里（它只列了「不带账户 / 不含账户 / 不关联账户」三种紧写法），于是**同一个断言在两种语言里一个被抓、一个静默通过**——禁令的射程按字面短语枚举，我恰好踩在边界两侧。这类「中英各自是否被同一条判据覆盖」的差，与本轮判据①第一版只读 `/zh/privacy` 是同一件事的两个方向。
+
+**我自己的一次流程错，形态是老的、位置是新的**：第一次跑 `/tmp/verify_r71.sh` 时把输出接了 `| tail -50`，于是 `test:coverage FAILED` 那一行**被截掉了**，只看到 `check:report-freshness` 与 `check:bundle` 两处红，就把 `fail=1` 归因给它们、当场去重录表。真正跑第二趟（重定向到文件再 grep 关键行）才看见 `data-kinds-claims` 那条红。**「不要接管道」这条规矩管的是退出码，同一族毛病也管截断的输出**：只看尾巴等于只看最后一次失败，而 `fail=1` 是个聚合量。落笔前该先把整份日志的关键行抓干净。
 
 ### 验证
 
 - `e2e/privacy-third-party.spec.ts` 2/2 绿；`scripts/e2e-suite.test.mjs` 认下这份新 spec 已登记进 `npm run e2e`；`e2e-wait-hygiene`（新 spec 不含语句层动作，不进宿主名单）与 `privacy-endpoints` 合跑 27 条绿。
 - 报告认账：新增 spec 文件牵动 `check:scan-counts`（`comment-path-source-files` 384→385、`secrets-listed-files` 848→849），已重算入库；`check:test-clock-hygiene` 354 个测试文件不变（新的是 e2e spec，不是 vitest 文件）。
 - `check:bundle` 由判据自己喊出重录（表 254.2 / 实测 254.8），补 2026-10-13 第三张表后逐字一致（15 组 · 指纹 `4dbfa3ca2225`）；其余 14 组字节逐字未动。
-- 全量链 `fail=0`（`test:coverage` 355 文件 / 3785 条、lint / typecheck / build / 40+ 门禁全 0、`git status` 干净）。
+- 全量链 `fail=0`（`test:coverage` 355 文件 / 3785 条、lint / typecheck / build / 40+ 门禁全 0、`git status` 干净）；`data-kinds-claims` 12 条与 `privacy-endpoints` 合跑 39 条绿；改文案后重录判据：`check:bundle` 逐字绿（未跨 0.1 KB 档界）、`e2e/privacy-third-party.spec.ts` 2/2 绿、探针 7 条腿重跑仍 **BAD=0**。
 
 ### 风险 / 回滚
 
