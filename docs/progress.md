@@ -4,16 +4,16 @@
 
 ## 2026-10-13 · 第八十三轮（R16.329）：两条 320px 门禁各拿一份手抄清单，并集仍有 10 份 `page.tsx` 一处都没量过——最刺眼的是我上一轮刚改过文案的 `/privacy`
 
-- 里程碑 / 版本：AGENTS.md in-scope「C 端体验与 a11y」+「内容契约/门禁收敛」交汇处；R16.329 新增并关账，未改产品版本（当前 v0.7.30，用户可见行为零变化）。分支 `test/mobile-coverage-source-of-truth`（自合并后的 `main` 顶点 `15b74e7`），三笔：`e79451e`（test(mobile)）CORE_SUFFIXES +10 条 / SHARE_PATHS 3 条 / 认领声明 + 新门禁 6 条、`b416c5c`（chore(reports)）两份台账认账 + R16.267 行号漂移、`226efb3`（docs(roadmap)）R16.329 关账。
+- 里程碑 / 版本：AGENTS.md in-scope「C 端体验与 a11y」+「内容契约/门禁收敛」交汇处；R16.329 新增并关账，未改产品版本（当前 v0.7.30）。**本轮有一处用户可见变化**：`/zh|en/changelog` 的 commit 列表在遇到含 40 位 SHA 的 subject 时不再把整页顶宽（此前是整页横向滚动）。分支 `test/mobile-coverage-source-of-truth`（自合并后的 `main` 顶点 `15b74e7`），PR #434，工作提交：`e79451e`（test(mobile)）CORE_SUFFIXES +10 条 / SHARE_PATHS 3 条 / 认领声明 + 新门禁 6 条、`b416c5c`（chore(reports)）台账认账 + R16.267 行号漂移、`226efb3`（docs(roadmap)）R16.329 关账、`ff5b208`（docs）本轮台账、`952de55` / `41e0305` / `782e4ba`（test(mobile)）溢出探测器三改（点名元凶 → 排除被裁剪元素 → 抽成一份实现并加自证用例）、`62dbbe3`（fix(changelog)）那一处真实溢出的修法、`b811070`（docs(roadmap)）补记 + perf-notes 重录 + scan-counts 认账。
 - 承上一轮：#433（R16.328 跨源判据清单主人）已 rebase 合并（`15b74e7`），本地分支已删、`ops:work-audit` 判绿。
 
 ### 病灶：没有任何东西知道源码树里一共有多少页
 
 `scripts/check-mobile.mjs` 的 `ROUTES`（14 条，元素级）与 `e2e/mobile-overflow.spec.ts` 的 `CORE_SUFFIXES × LOCALES`（20 条，页级溢出）各自独立生长，两份合起来仍有 10 份 `page.tsx` 从没被量过：about / auth / auth/callback / bookmarks / calendar / changelog / faq / privacy / share 落地页 / terms。本轮最刺眼的一条是 `/privacy`：R16.327 我把那一节从一句改写成三句（含 `api.binance.com` 这种不可断行长 token），**改完之后没有任何东西在 320px 下看过这一页**——我改了一页自己量不到的界面。病根与 R16.315 / R16.317 / R16.328 同一条：**清单没有主人**，而这次的靶子还是我上一轮刚立的规矩的适用范围。
 
-### 先量真相，再改判据（不发现 bug 这件事本轮明写）
+### 先量真相，再改判据（那句「不发现 bug」后来被自己证伪，见下一节）
 
-- `.gate-logs/mobile-measure-r83.mjs`（真 Chromium 320px）：那 10 个模板 × zh/en 共 20 条**全部 HTTP 200、溢出 0px** → 扩清单不发现 bug，它补的是真实覆盖面。
+- `.gate-logs/mobile-measure-r83.mjs`（真 Chromium 320px）：那 10 个模板 × zh/en 共 20 条**全部 HTTP 200、溢出 0px**，据此写下「扩清单不发现 bug」——**这句当场被自己证伪**：清单扩上去之后 CI 红在 `/zh|en/changelog`（354px 溢出），是一个真实缺陷。
 - `.gate-logs/mobile-measure2-r83.mjs`：`/zh/knowledge/spot` 200 0px；`/zh/auth/callback` 200 0px；**假载荷的 `/share/quiz/abc` 全 404** → 分享落地页必须用编码器现生成载荷，抄一串 base64 就是一条测 404 的假覆盖。
 - `.gate-logs/handcopied-lists-r83.mjs`（459 份门禁/测试文件普查）：除本族两条外还有 5 处字面量清单待评估——`AUDIT_ALLOWLIST`(6) / `ROUTES`(4, ai-server-errors-claims) / `PAGE_PATHS`(4, prod-smoke) / `SINGLE_LANGUAGE_FILES`(3) / `SLUGS`(3, 夹具可忽略)。**登记给下一轮**。
 
@@ -33,6 +33,20 @@ M1 删 `/privacy` → 红在「覆盖」/ M2 CORE_SUFFIXES 清空 → 红在地�
 
 往 spec 上面插 86 行 → R16.267 台账点名的行号整体漂移，`e2e-wait-hygiene` 那条「行号必须回得去尺子现读集合」当场咬住（`114/115/137/143/166` → `200/201/223/229/252`，处数 5 不变）。这正是「台账写的行号是抄的」那一族的解药，本轮由它自己报出来。
 
+### 清单扩上去之后真的红出一个缺陷，而且它只在 CI 存在（本条最该记的账）
+
+PR #434 的 CI 红在 `/zh/changelog`、`/en/changelog`：`scrollWidth 354 > 320`。本地那 20 条读数全绿。两轮证伪才定位——① 本地注入 CI 同款 merge subject 并重建：仍 320（注入生效，HTML 里恰好一条），当时据此判「CI 的 git 状态导致溢出」不成立；② 本地禁用字体（模拟 Linux 缺字形）：仍 320。**两次「本地复现不出来」都不是因为缺陷不存在，而是因为探测器还没修对**。
+
+真正的障碍是探测器挑错了人：第一版只看 `getBoundingClientRect()`，CI 点名一个 `right: 367` 的装饰光晕——它祖先带 `overflow-hidden`，压根撑不宽页面，而 `scrollWidth` 只有 354：**读数自相矛盾就是挑错人的信号**。夹具（`.gate-logs/detector-fixture-r83.mjs`）量出第二个坑——inline 文本溢出**不改变元素自己的 rect**（真凶 rect 只有 304），只看几何就结构上看不见这类溢出。补上「元素自身 `scrollWidth > clientWidth`」并排除被裁剪的元素之后，CI 报出真凶：`p.font-mono`，`inner: 320>270`，text = `Merge 782e4ba5900f11665b387694b602a1bdbe6c3c82 into 15b74e7f`——**GitHub 的 merge subject 里那个 40 位完整 SHA**，`font-mono` 下宽约 320px，正文可用宽只有 270px。本地复现（注入同一条 subject）读到 370px，形状一致。
+
+**判据的形状因此改了**：不能依赖「恰好有一条长 subject」（本地永远没有），改成在真页面上**现造最坏载荷**来量。修法是给那一行加 `break-words`——这一页渲染的是仓库原文，长 token 是常态不是意外。
+
+**探针 M2 撤掉我顺手给「文档链接行」加的同一颗牙 → 仍然全绿**：真实数据里最长的 `docs/v0.7.2-release-review.md` 按 CSS 断行规则最长不可断片段只有 8 字符。于是把那一处样式连同我为它编的判据载荷一起撤掉——**「顺手多修一处」在这里等于多一处没有主人、也没有证据的东西**。
+
+**探测器逻辑一度被抄成两份**（页面判据 + 自证用例各一份），变异只命中第一份、自证那条腿就此空转——**正是本轮病灶的镜像**。抽成 `findOverflowCulprits()` 一份共用后 4 条腿 BAD=0（`.gate-logs/probe-detector-r83.mjs`）。
+
+**代价清单**：① `check:bundle` 红在第一趟链——一颗工具类落进**共享 CSS**，15 组里 12 组各 +9 字节，把 `knowledge-lesson` 推过进位界（350.1 → 350.2），已重录 `docs/perf-notes.md`；它现在距退位界只剩 **1 字节**（全表最紧），下一笔无关改动就会再红一次。② R16.267 那条「行号必须回得去现读集合」的比对本轮**咬了六次**——每一次都是我改了 spec 没先跑全量链就推 CI，白烧 5 趟 Actions。教训落成动作：**改 `e2e/*.spec.ts` 之后，推之前必跑 `npx vitest run scripts/e2e-wait-hygiene.test.mjs`**。
+
 ### 验证
 
 - `mobile-coverage-claims` 6 条绿；`e2e/mobile-overflow.spec.ts -g "无页级横向滚动"` **43 passed**（原 20）；`typecheck` 0；`eslint` 0（新增一条 spec 内自证用例，顺手消掉认领声明的未使用告警）。
@@ -43,9 +57,9 @@ M1 删 `/privacy` → 红在「覆盖」/ M2 CORE_SUFFIXES 清空 → 红在地�
 ### 阻塞 / 风险 / 回滚
 
 - **部署仍被 Vercel Hobby 档 24h 构建配额挡着**：最后一次成功部署仍是 `380c58e`（0.7.29 内容）→ v0.7.30 至今没上线，`/zh/changelog` 读不到 0.7.30。按 `docs/release-checklist.md` §5 不空跑重试；配额恢复后复跑 `ops:smoke-prod`（不带管道）确认转绿。
-- 风险：模板扫描只认 `page.tsx` 形状，若日后引入 route group（`(marketing)/`）或并行 `(locale)` 段，归一化要重新对齐——方向是「解析不出模板就红在地板」，不会静默漏判。
+- 风险：`knowledge-lesson` 的产物读数现在距退位界只剩 **1 字节**（全表最紧），下一笔无关改动就会把 `check:bundle` 弄红、又要重录一次 perf-notes；模板扫描只认 `page.tsx` 形状，若日后引入 route group（`(marketing)/`）或并行 `(locale)` 段，归一化要重新对齐——方向是「解析不出模板就红在地板」，不会静默漏判。
 - 已知边界（登记，不顺手补）：这条门禁管「有没有被量到」，不管「量得够不够」；分享落地页只量了 3 种 kind 各一条，新增第四种靠「认领必须兑现」那条红来提醒，不是自动盖到。
-- 回滚：`git revert` 这三笔即可；无迁移、无数据变更、无渲染逻辑改动。
+- 回滚：`git revert` 工作提交即可（探测器那三笔与 `62dbbe3` 可单独回滚）；无迁移、无数据变更、无渲染逻辑改动（除那一处 className）。回滚 `62dbbe3` 会把 changelog 那处真实溢出还回去。
 
 ### 下一项
 
