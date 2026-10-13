@@ -164,4 +164,27 @@ describe("content 宽容模式", () => {
     expect(content.getAdjacentChapters("zh", "beta").prev?.slug).toBe("alpha");
     expect(content.getAdjacentDocs("zh", "alpha", "no-such-doc")).toEqual({ prev: null, next: null });
   });
+
+  /**
+   * R16.331：上面那几条量的都是「章节存在」前提下的降级，**章节目录本身不存在**这一条
+   * 从没被量过——而它是 URL 上最容易出现的形状（旧链接、拼错、搜索引擎抓到的杂交路径）。
+   * 当时 `getDocMetas` 里的 `readdirSync` 直接抛 ENOENT，把课文页那句本来写好的
+   * `notFound()` 抢在前面，生产上表现为 500（`/zh/knowledge/nonexistent-chapter/nonexistent-lesson`）。
+   * 这条判据钉的是契约本身：告警 + 空清单，调用方才能降级。
+   */
+  it("章节目录不存在时告警并返回空清单，绝不抛错", async () => {
+    const content = await loadContentModule();
+    // 抛错就是回归：这一句本身即判据，不需要额外的 expect 装饰
+    expect(() => content.getDocMetas("zh", "no-such-chapter")).not.toThrow();
+    expect(content.getDocMetas("zh", "no-such-chapter")).toEqual([]);
+    expect(content.getDoc("zh", "no-such-chapter", "no-such-lesson")).toBeNull();
+    expect(warnings.join("\n")).toContain(
+      `${WARN} 篇章目录不存在，返回空课文清单（宽容模式）: zh/no-such-chapter`
+    );
+    // 章节级邻居同样不许抛：未知章节的前后邻居是空，不是异常
+    expect(content.getAdjacentDocs("zh", "no-such-chapter", "no-such-lesson")).toEqual({
+      prev: null,
+      next: null,
+    });
+  });
 });
