@@ -15,6 +15,7 @@ import { quizScorePct } from "@/lib/quiz-score";
 import {
   normalizeShareSegment,
   resolveShareLanding,
+  classifyShareLanding,
   isShareKind,
   summarizeForMeta,
   kindToLocale,
@@ -114,6 +115,67 @@ describe("resolveShareLanding", () => {
 
   it("乱写的段 → null", () => {
     expect(resolveShareLanding("quiz", "garbage-no-prefix")).toBeNull();
+  });
+
+});
+
+/**
+ * R16.332：`resolveShareLanding` 把两种失败压成同一个 null，页面因此只能一律
+ * `notFound()`——于是字典里那句「链接无效——分享链接已损坏或版本不匹配」（中英齐全）
+ * 和 `ShareCardPreview` 的三处 invalid 分支全都不可达。`classifyShareLanding` 负责
+ * 把两者分开，这条判据钉的就是**分开的那一刀切在哪里**：
+ * kind 不认识 = 真·错路由；kind 认识但载荷解不开 = 用户的链接坏了。
+ */
+describe("classifyShareLanding 把两种失败分开（R16.332）", () => {
+  const quizSegment = encodeQuiz({
+    chapterTitle: "01 · 入门",
+    score: 8,
+    total: 10,
+    percent: 80,
+    locale: "zh",
+  });
+
+  it("kind 合法 + 载荷解不开 → broken-payload，并给出该 kind 的标题与文案", () => {
+    for (const kind of ["quiz", "replay", "streak"] as const) {
+      const r = classifyShareLanding(kind, "Zm9vYmFy");
+      expect(r.status, `${kind} 的坏载荷不该被当成错路由`).toBe("broken-payload");
+      if (r.status !== "broken-payload") continue;
+      expect(r.kind).toBe(kind);
+      expect(r.description).toMatch(/链接无效|Invalid link/);
+      expect(r.title).toBeTruthy();
+    }
+  });
+
+  it("kind 与载荷类型不符 → 同样是 broken-payload（用户的链接坏了，不是路由错了）", () => {
+    const r = classifyShareLanding("streak", quizSegment);
+    expect(r.status).toBe("broken-payload");
+  });
+
+  it("kind 本身不认识 → unknown-kind，不许伪装成「链接坏了」", () => {
+    expect(classifyShareLanding("garbage", "v1|x").status).toBe("unknown-kind");
+    expect(classifyShareLanding("garbage", quizSegment).status).toBe("unknown-kind");
+  });
+
+  it("载荷合法 → ok，且与 resolveShareLanding 同源（一处实现，不各解各的）", () => {
+    const ok = classifyShareLanding("quiz", quizSegment);
+    expect(ok.status).toBe("ok");
+    if (ok.status !== "ok") return;
+    expect(ok.path).toBe(quizSegment);
+    expect(ok.locale).toBe("zh");
+    expect(resolveShareLanding("quiz", quizSegment)).toEqual({
+      kind: ok.kind,
+      path: ok.path,
+      locale: ok.locale,
+      title: ok.title,
+      description: ok.description,
+    });
+  });
+
+  it("broken-payload 的 locale 回落不依赖载荷（载荷本来就解不开）", () => {
+    const r = classifyShareLanding("streak", "");
+    expect(r.status).toBe("broken-payload");
+    if (r.status !== "broken-payload") return;
+    expect(["zh", "en"]).toContain(r.locale);
   });
 });
 
