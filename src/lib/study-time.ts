@@ -52,8 +52,14 @@ function readLedger(): Ledger {
  * 于累加处夹一次、`readLedger` 读旧台账时再夹一次。两道闸互为备份，所以任何一道单独失效都
  * 不可观察（实测把任一处改成 12h，本模块 12 条用例全绿）——上限本身住在
  * `study-caps.ts`，那边有用例钉住「两处夹点必须同一个主人」。
- * 单次调用没有上限——旧注释里的「单次 ≤4h」在代码里不存在：一次报多少就加多少，
- * 直到当日那一源被上面那道闸压到上限（回放的 elapsed 就是一整轮的墙钟时间）。
+ *
+ * **本函数自己不夹单次调用**，但单次调用并非没有上限：上限长在**调用点**，一共三处
+ * （`quiz.tsx` 的 `QUIZ_SESSION_CAP_SEC`、`replay-trainer.tsx` 的 `REPLAY_ROUND_CAP_SEC`、
+ * 复习那两处的 `REVIEW_CREDIT_SEC`），全部住在 `study-caps.ts`。
+ * 这里曾经写着「单次调用没有上限……旧注释里的『单次 ≤4h』在代码里不存在」——**那句是错的**
+ * （`148389d` 只翻了本文件，没看调用点；`quiz.tsx` 那个 `4 * 3600` 从 R4.2 起就在那儿）。
+ * 阅读那一源（`reading-time-tracker.tsx` 每 5 秒喂 5 秒）确实没有单次闸，
+ * 所以「一次报多少就加多少，直到当日那一源被上面那道闸压到上限」只对 read 成立。
  */
 export function addStudyTime(source: StudySource, seconds: number, day: string = localDateStr()): void {
   if (!Number.isFinite(seconds) || seconds <= 0) return;

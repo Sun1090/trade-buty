@@ -2,6 +2,8 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { AiQuiz } from "./ai-quiz";
+import { getTodayStudySeconds } from "@/lib/study-time";
+import { REVIEW_CREDIT_SEC } from "@/lib/study-caps";
 import { SERVER_ERRORS } from "@/lib/ai/server-errors";
 
 // jsdom 环境无 localStorage，用 Map mock（同 daily-goal.test.ts 惯例）
@@ -301,6 +303,30 @@ describe("AiQuiz 入口、错误态与多题流程", () => {
     await waitFor(() =>
       expect(fetchMock.mock.calls.filter(([u]) => u === "/api/ai/feedback")).toHaveLength(2),
     );
+  });
+
+  /**
+   * R16.322：这一处 `addStudyTime("quiz", …)` 以前**零覆盖**。
+   * 实测把它改成 120 秒，本文件 14 条全绿——「1 题记 1 分钟」这条政策在复习页
+   * 有 `review-client.test.tsx` 钉着，在 AI 变体题这一处却没人看。
+   * 判据走**真实台账**（本文件不 mock `study-time`），所以它量的是「用户答完一道题，
+   * 账上多了多少」，不是「两个常数是否相等」。
+   */
+  it("答一道变体题，学习台账按复习记分加一次", async () => {
+    store.set("tb-wrong", JSON.stringify({
+      "getting-started:2": { chapterNum: "getting-started", questionIdx: 2, picked: 1, at: 1, srsStage: 1, srsDue: "2020-01-01" },
+    }));
+    vi.stubGlobal("fetch", setup());
+    render(<AiQuiz wrongItems={wrongItems} dict={dict} />);
+    await generateQuestions();
+    expect(getTodayStudySeconds().quiz, "答第一题之前账上不该有测验时长").toBe(0);
+
+    fireEvent.click(screen.getByText("限制单笔亏损"));
+    expect(getTodayStudySeconds().quiz, "一道变体题记进台账的秒数不再是复习记分那个数").toBe(REVIEW_CREDIT_SEC);
+
+    // 幂等：同一题再点一次不重复记分（`pick` 开头那道 `picked !== null` 短路）
+    fireEvent.click(screen.getByText("预测走势"));
+    expect(getTodayStudySeconds().quiz, "重复作答被记了两次").toBe(REVIEW_CREDIT_SEC);
   });
 
   it("服务端回非 2xx 时同样不算举报成功", async () => {

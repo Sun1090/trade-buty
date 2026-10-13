@@ -6,6 +6,7 @@ import type { ChapterQuiz, QuizQuestion } from "@/lib/quiz-types";
 import { readWrong, resolveWrong, clearAllWrong, applySrsResult, pruneOrphanWrong, type WrongEntry } from "@/lib/wrongbook";
 import { effectiveSrs, isSrsDue, isSrsOverdue, daysUntilDue, type SrsState } from "@/lib/srs";
 import { addStudyTime } from "@/lib/study-time";
+import { REVIEW_CREDIT_SEC } from "@/lib/study-caps";
 import { localDateStr } from "@/lib/date-utils";
 import { AiQuiz } from "@/components/ai-quiz";
 import { getDict } from "@/lib/i18n";
@@ -127,9 +128,9 @@ export function ReviewClient({
   // 导出的统计里 overdue 却是另一个数。
   const overdueCount = items.filter((x) => x.overdue).length;
 
-  /** R5.8：复习应答计入每日目标（1 题记 1 分钟，与台账 quiz 源合并） */
+  /** R5.8：复习应答计入每日目标（1 题记 `REVIEW_CREDIT_SEC`，与台账 quiz 源合并） */
   function creditReview() {
-    addStudyTime("quiz", 60);
+    addStudyTime("quiz", REVIEW_CREDIT_SEC);
   }
 
   /** R5.5：标记掌握了 → SRS 推进/掌握 */

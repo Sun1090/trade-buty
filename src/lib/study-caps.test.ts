@@ -10,6 +10,19 @@
  *    四个相关文件（trainer / trend / duration-claims / study-time）**71 条全绿**。
  * 3. 全仓没有任何测试断言过这两个上限之间的关系。
  *
+ * R16.322 把同一族病再挖一层，量出**两处新的**：
+ * 4. `quiz.tsx` 交卷时行内夹一个 `4 * 3600`，而 `study-time.ts` 的注释**明写**
+ *    「单次调用没有上限……旧注释里的『单次 ≤4h』在代码里不存在」。那句订正本身是错的：
+ *    它只翻了 `study-time.ts` 一个文件，没看调用点。实测把它改成 `12 * 3600`，
+ *    只有 `quiz.test.tsx` 那一条红（它钉的是数值，不是「这个数有主人」）。
+ * 5. 「1 题记 1 分钟」这条政策长在两处（`review-client.tsx` 与 `ai-quiz.tsx`），
+ *    都写 `addStudyTime("quiz", 60)`。实测把 `ai-quiz.tsx` 那处改成 120，
+ *    **该文件 14 条全绿**——复习页那两处有 `review-client.test.tsx` 钉着，AI 变体题那一处零覆盖。
+ *
+ * 于是 `study-caps.ts` 现在有四个名字：`DAILY_SOURCE_CAP_SEC` / `REPLAY_ROUND_CAP_SEC` /
+ * `QUIZ_SESSION_CAP_SEC` / `REVIEW_CREDIT_SEC`。最后一个是**计价**不是夹子，
+ * 而且与 `weekly-summary.ts` 的 `ACTIVE_DAY_MIN_SECONDS`（都是 60）不是一件事。
+ *
  * **要紧的不是两个数相等，而是单轮 ≤ 当日每源**。一旦超过，同一轮回放会在
  * `/stats` 同一张页面上说两个数：「回放时长」那块读记录里的 `durationSec`
  * （只被单轮闸夹），「总学习时长」读台账（还要被当日闸夹一次）。
@@ -22,6 +35,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { stripComments } from "../../scripts/error-report-privacy.mjs";
 
 const store = new Map<string, string>();
 vi.stubGlobal("localStorage", {
@@ -87,12 +101,16 @@ describe("时长防呆的上限只有一个主人", () => {
       ["src/lib/study-time.ts", /Math\.min\(\(entry\[source\] \?\? 0\) \+ seconds,\s*DAILY_SOURCE_CAP_SEC\)/, "累加那道闸"],
       ["src/lib/replay-time-trend.ts", /Math\.min\(REPLAY_ROUND_CAP_SEC,\s*Math\.round\(n\)\)/, "回放时长聚合"],
       ["src/components/replay-trainer.tsx", /REPLAY_ROUND_CAP_SEC\)/, "trainer 存档前夹一次"],
+      // R16.322：会话级与「一题记多少」这两族以前没有主人
+      ["src/components/quiz.tsx", /QUIZ_SESSION_CAP_SEC\)/, "交卷时夹会话 elapsed"],
+      ["src/components/review-client.tsx", /addStudyTime\("quiz",\s*REVIEW_CREDIT_SEC\)/, "复习页一题记多少"],
+      ["src/components/ai-quiz.tsx", /addStudyTime\("quiz",\s*REVIEW_CREDIT_SEC\)/, "AI 变体题一题记多少（此前零覆盖）"],
     ];
     for (const [rel, re, label] of SITES) {
       expect(read(rel), `${rel} 里的「${label}」不再读常量了`).toMatch(re);
     }
-    // 地板：夹点数就是 4，少一个说明有夹点被搬走或改名，上面那圈会静默少判
-    expect(SITES.length, "夹点清单本身不能缩水").toBe(4);
+    // 地板：夹点数就是 7，少一个说明有夹点被搬走或改名，上面那圈会静默少判
+    expect(SITES.length, "夹点清单本身不能缩水").toBe(7);
 
     // 非空转：旧写法（字面量）必须被上面那圈抓住
     const LEGACY = [
@@ -100,19 +118,30 @@ describe("时长防呆的上限只有一个主人", () => {
       "    entry[source] = Math.min((entry[source] ?? 0) + seconds, 8 * 3600);",
       "  return Math.min(MAX_ROUND_SEC, Math.round(n));",
       "        ? Math.min(Math.round((Date.now() - roundStartRef.current) / 1000), 8 * 3600)",
+      "      const elapsed = Math.min(Math.round((Date.now() - startedAtRef.current) / 1000), 4 * 3600);",
+      '    addStudyTime("quiz", 60);',
     ];
     const caught = LEGACY.filter((line) => SITES.some(([, re]) => re.test(line)));
-    expect(caught.length, `四条旧写法里有 ${LEGACY.length - caught.length} 条逃过了判据`).toBe(0);
+    expect(caught.length, `${LEGACY.length} 条旧写法里有 ${LEGACY.length - caught.length} 条逃过了判据`).toBe(0);
   });
 
   /**
-   * 上限不许被第三处「自己算一遍」：全仓非测试源码里 `8 * 3600` 这个字面形状
-   * 只允许住在 `study-caps.ts`（两处定义）与 `binance.ts`（那是**位移量**，
-   * `DISPLAY_TZ_OFFSET_SEC`，与时长防呆无关——R16.39/R16.47 管它）。
+   * 上限与记分不许被第二处「自己算一遍」：全仓非测试源码里这几个字面形状
+   * 只允许住在 `study-caps.ts`（定义处）。`binance.ts` 那一处是**位移量**
+   * （`DISPLAY_TZ_OFFSET_SEC`，R16.39/R16.47 管它），与时长防呆无关，故豁免。
+   *
+   * 三条形状分别对应三个主人：`8 * 3600`（当日 / 单轮）、`4 * 3600`（一次测验会话）、
+   * `addStudyTime("<源>", <字面量>)`（复习一题记多少、阅读一次喂多少）。
+   * 第三条是本轮新长的：以前只扫秒数乘式，`addStudyTime("quiz", 60)` 这种
+   * 「计价写在调用点」的形状扫不到——而它正是 R16.322 那处零覆盖副本的写法。
    */
-  it("别处不再自己写一遍 8 * 3600", () => {
+  it("别处不再自己写一遍时长上限与复习记分", () => {
+    const SHAPES: Array<[RegExp, string]> = [
+      [/(?<![\d_])8\s*\*\s*3600(?![\d_])/, "8 * 3600（当日 / 单轮上限）"],
+      [/(?<![\d_])4\s*\*\s*3600(?![\d_])/, "4 * 3600（一次测验会话上限）"],
+      [/addStudyTime\(\s*"(?:read|quiz|replay)"\s*,\s*\d/, 'addStudyTime("源", 字面秒数)'],
+    ];
     const ALLOWED = new Set(["src/lib/study-caps.ts", "src/lib/binance.ts"]);
-    const LITERAL = /8\s*\*\s*3600/;
     const hits: string[] = [];
     // 与 check:secrets 同口径：`--cached --others` 才是「已跟踪 ∪ 未跟踪」。
     // 只写 `--others` 是「仅未跟踪」（git 的语义不是叠加），扫描面会缩到 1 份文件而判据照样绿。
@@ -122,12 +151,45 @@ describe("时长防呆的上限只有一个主人", () => {
     expect(files.length, "没扫到源码文件就是扫描器坏了").toBeGreaterThan(100);
     for (const rel of files) {
       if (ALLOWED.has(rel)) continue;
-      const src = readFileSync(path.join(process.cwd(), rel), "utf8");
-      src.split("\n").forEach((line, i) => {
-        const code = line.replace(/\/\/.*$/, "");
-        if (LITERAL.test(code)) hits.push(`${rel}:${i + 1}  ${line.trim().slice(0, 80)}`);
-      });
+      // 注释里**描述**这些数字是本轮台账的正文，不是副本：只扫代码
+      const code = stripComments(readFileSync(path.join(process.cwd(), rel), "utf8"));
+      for (const line of code.split("\n")) {
+        for (const [re, label] of SHAPES) {
+          if (re.test(line)) hits.push(`${label} → ${rel}: ${line.trim().slice(0, 80)}`);
+        }
+      }
     }
-    expect(hits, `时长上限又长出私有副本（或有人把位移量当防呆用）：\n${hits.join("\n")}`).toEqual([]);
+    expect(hits, `时长上限或复习记分又长出私有副本：\n${hits.join("\n")}`).toEqual([]);
+
+    // 非空转：三条形状各配一条自证，否则「扫不到」与「没有副本」读起来一样
+    const SELF_TEST = [
+      "      const elapsed = Math.min(Math.round((Date.now() - startedAtRef.current) / 1000), 4 * 3600);",
+      '    addStudyTime("quiz", 60);',
+      "    entry[source] = Math.min((entry[source] ?? 0) + seconds, 8 * 3600);",
+    ];
+    const caught = SELF_TEST.filter((line) => SHAPES.some(([re]) => re.test(line)));
+    expect(caught.length, `三条自证里有 ${SELF_TEST.length - caught.length} 条扫不出来`).toBe(SELF_TEST.length);
+    // 反向自证：`binance.ts` 那种 `7 * 24 * 3600_000` 不许被乘式形状误伤（豁免表若被删，这条会红）
+    expect(/(?<![\d_])4\s*\*\s*3600(?![\d_])/.test("  const maxEnd = anchor - 7 * 24 * 3600_000;")).toBe(false);
+  });
+
+  /**
+   * R16.322：`REVIEW_CREDIT_SEC` 与 `ACTIVE_DAY_MIN_SECONDS` 都是 60，但**不是同一件事**
+   * （前者「答一题记多少进台账」，后者「一天凑够多少秒算一个活跃学习日」）。
+   * 这条钉住它们目前同值但各自独立——若哪天有人合并成一个常量，这条会指出合并的代价。
+   */
+  it("复习记分与活跃日门槛同值但不同事，不许合并成一个常量", () => {
+    const caps = readFileSync(path.join(process.cwd(), "src/lib/study-caps.ts"), "utf8");
+    const weekly = readFileSync(path.join(process.cwd(), "src/lib/weekly-summary.ts"), "utf8");
+    expect(caps).toMatch(/export const REVIEW_CREDIT_SEC = (\d+);/);
+    expect(weekly).toMatch(/export const ACTIVE_DAY_MIN_SECONDS = (\d+);/);
+    const credit = Number(/export const REVIEW_CREDIT_SEC = (\d+)/.exec(caps)![1]);
+    const threshold = Number(/export const ACTIVE_DAY_MIN_SECONDS = (\d+)/.exec(weekly)![1]);
+    // 两个名字必须都住在自己的文件里（合并成一个 import 就是丢掉一个语义）
+    expect(credit, "复习记分得是个能说完「1 分钟」的整数秒").toBeGreaterThanOrEqual(60);
+    expect(threshold, "活跃日门槛得是个能说完「1 分钟」的整数秒").toBeGreaterThanOrEqual(60);
+    // 判据看**代码**：文件头的散文里点名对方是必要的说明，不算引用
+    expect(stripComments(weekly).includes("REVIEW_CREDIT_SEC"), "weekly-summary 改读复习记分，就是把两件事合并了").toBe(false);
+    expect(stripComments(caps).includes("ACTIVE_DAY_MIN_SECONDS"), "study-caps 改读活跃日门槛，两件事被绑死了").toBe(false);
   });
 });
