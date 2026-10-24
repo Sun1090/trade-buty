@@ -2,6 +2,21 @@
 
 ---
 
+## 2026-10-25 · 第九十二轮（自主执行）：R16.336 的实测证据补齐——顺带挖出一个重放陷阱：mirror URL 掺入对两道门禁都不可见
+
+- 里程碑 / 版本：v0.7.33 已上线（生产确认），main 从 `fa39b3d` 抬到 `158d0b2`（两笔 docs）。巡检轮，无产品代码改动。
+- 状态：0 open PR / 0 dependabot alert / 0 open issue、push CI 全绿、`audit:prod` 0 漏洞、work-audit 三零；kline-buty 上游仍零 `docs/knowledge` 改动（不动指针）；生产 `/zh/changelog` 读到 0.7.33、`/zh/nope` 仍 404（R16.331 无回归）。
+- **本轮的产出是给 R16.336 拍板补证据（`283144d` + `158d0b2`，rebase 后 SHA；PR #455 合并），不选边**：
+  1. 「npm 11 语义变化」缺口填上：`--ignore-scripts` 自 11.0.0 覆盖 `prepare`；**11.18.0（2026-06-29）起新增 `install-scripts` 审批提示**（本机 11.19.1 重生成当场出现，`fsevents` 等 2 包脚本待批——CI 若升 11 需重读钩子面）；Node 22.23.4 自带 npm **10.9.9**（与钉版 10.9.4 同 major，路③/②的契约自洽），Node 24 才带 11。
+  2. **新发现（重放陷阱，机制直接证到）**：`--package-lock-only` 从不重新解析既有条目——npm 11 删掉的 14 条嵌套条目用**无 `--registry` 旗标**的钉版加回时，恰好只有这 14 条按本机 `~/.npmrc` 写成 mirror URL，其余逐字节原样；而两道门禁（键集合差集 + 逐字节）对此都不可见（任何机器重新生成都不会重写既有条目）。当前 lockfile 混合出处实测：npmmirror **877** 条 vs npmjs.org **98** 条。含义：路②自动化重放必须固定 `--registry=https://registry.npmjs.org`；`integrity` 逐条钉死，风险面是 tarball 出处不是内容校验。
+  3. 「Vercel 构建镜像 npm 版本」缺口本轮**没拿到权威读数**（文档页抓不到正文），如实留白。
+- 一次自己的操作错误（如实记）：验证实验时习惯性 `git stash -q` 撞出了**他人遗留的 stash**（`WIP on codex/ai-plan-chapter-titles`，该分支已不存在），pop 产生两个冲突文件——按「不删他人数据」原则把冲突文件 `restore --source=HEAD` 恢复、**旧 stash 原位保留未动**，工作树复净。教训：干净树上跑实验不该带 stash；`git stash pop` 会连带 pop 队列里别人的东西。随后逐行核对：该 stash 基于 main 里已有的 `f6140b1`，146 行改动全部被后续合并提交覆盖（`1ed5408`→`860b084` 的演进把其中那两处旧断言形状收紧成了 `promptHasSlugAsWord` 词边界口径）——是陈旧未清理，不是悬空工作，work-audit 判零正确；保留不删。
+- 验证：`check:docs` / `doc-anchor-claims` / `roadmap-open-reference-claims`（60 条）本地绿；PR #455 CI / db-tests / auth-e2e / CodeQL / Vercel 全绿。回滚：revert 两笔 docs 即可。
+- 下一项：R16.336 与其余拍板项仍等维护者选边；复查 kline-buty 上游是否出现 `docs/knowledge` 内容变更。
+- 更新时间：2026-10-25（Asia/Shanghai）。
+
+---
+
 ## 2026-10-24 · v0.7.33 发布（第九十一轮，RELEASE_FREEZE 完成）
 
 - 里程碑 / 版本：**v0.7.32 → v0.7.33**（patch）。判级依据（§0 逐笔只看类型）：`v0.7.32..main` 十二笔 = `fix` 5、`chore` 2、`docs` 5，**无新增产品能力**。发布内容正是第八十八轮预告「留给下一次 release」的那批：next 16.4.3（三条 critical：Image Optimization SVG RCE、Server Actions DoS、`use cache` typed arrays RCE）+ 5 条 HIGH 传递依赖补丁 + 9 项 minor/patch bump + R16.335（`.env.local` 解析改走 `process.loadEnvFile`）。用户可见变化**零**（框架安全升级与构建脚本，界面与功能不动），发布说明明写「这一轮没有界面与功能变化」——第三条 highlights 是给「这版升级了什么」的答案，不是凑数（对照 v0.7.32 那轮「漏一条真实用户可见修复就是假话」，这次反向防的是「把没有的写成有」）。
