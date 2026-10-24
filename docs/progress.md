@@ -5,8 +5,11 @@
 ## 2026-10-24 · v0.7.33 发布（第九十一轮，RELEASE_FREEZE 完成）
 
 - 里程碑 / 版本：**v0.7.32 → v0.7.33**（patch）。判级依据（§0 逐笔只看类型）：`v0.7.32..main` 十二笔 = `fix` 5、`chore` 2、`docs` 5，**无新增产品能力**。发布内容正是第八十八轮预告「留给下一次 release」的那批：next 16.4.3（三条 critical：Image Optimization SVG RCE、Server Actions DoS、`use cache` typed arrays RCE）+ 5 条 HIGH 传递依赖补丁 + 9 项 minor/patch bump + R16.335（`.env.local` 解析改走 `process.loadEnvFile`）。用户可见变化**零**（框架安全升级与构建脚本，界面与功能不动），发布说明明写「这一轮没有界面与功能变化」——第三条 highlights 是给「这版升级了什么」的答案，不是凑数（对照 v0.7.32 那轮「漏一条真实用户可见修复就是假话」，这次反向防的是「把没有的写成有」）。
-- 分支 / commit：`chore/release-v0.7.33`，发布提交 `ef3fa00`（`chore(release): ship v0.7.33`：release-notes.json v0.7.33 条目 → `changelog:generate` + `check:changelog` 37 条一致；`package.json` 0.7.33；lockfile 由钉版 `npx npm@10.9.4 install --package-lock-only` 重算，`check:lockfile-repro` 982 条目无差异——**这是 R16.336 拍板项落地前最后一次人工服从钉版**）。tag 待合并后补打。
+- 分支 / commit：`chore/release-v0.7.33` → **PR #453 rebase 合并**（main `818c011`，两笔：`44158af` ship、`818c011` 台账——rebase 改写了合并前 SHA `ef3fa00`，以合并后为准）。tag **`v0.7.33` → `818c011`**，`check:release-tag` 不再打印待办（37 条 tag 全落地）。发布内容：release-notes.json v0.7.33 条目 → `changelog:generate` + `check:changelog` 37 条一致；`package.json` 0.7.33；lockfile 由钉版 `npx npm@10.9.4 install --package-lock-only` 重算，`check:lockfile-repro` 982 条目无差异——**这是 R16.336 拍板项落地前最后一次人工服从钉版**。
 - 验证（§3 顺序全链，`fail=0`）：`test:coverage` **361 文件** 全绿，覆盖率 **95.12 / 90.81**（上轮 95.06/90.76，只升未降，阈值未动）；`lint --max-warnings=0` / `typecheck` / `build` / `check:mobile` / seo-surface / search-index / structured-data / risk-warning / kb 三台账 / title-terminology / description 两检 / glossary / test-clock-hygiene / dead-copy / faq-candidates 全 `exit=0`；`check:scan-counts` 先于 `check:report-freshness`（R16.224 顺序），**commit 之后取读数**（R16.331 新规矩），认账 0 红；`check:constitution` / `check:docs`（版本号已绑定 0.7.33）/ `check:release-tag`（正确打印待办不判失败）绿。`db:test` 第一次红在**环境**：Docker daemon 没在跑（门禁拒绝无 Docker 降级），启动 OrbStack 后复跑全绿（迁移 + RLS 44 + 同步 34 + generation 8 断言 + 0008/0009 回滚重放）。`e2e` **244 passed / 1 skipped**。`git status` 干净（无纯日期 diff）。
+- 部署与冒烟：main push 自动触发生产构建，**没有被配额挡住**——`/zh/changelog` 合并后约 1 分钟读到 0.7.33（连续第四轮记配额账后第一次直接绿）。`ops:smoke-prod` 9/10，唯一红仍是 `POST /api/ai/chat` 502：护栏路径正常 → 站内代码无问题，且这次部署探针绿排除了「停在旧构建」假设，确认是外部上游（`BLOCKED_EXTERNAL`，需维护者核 AI_API_URL/KEY/配额/出口网络）。
+- 风险 / 回滚：无数据库迁移（`git diff --name-only v0.7.32 v0.7.33` 只有 5 份发布文件）。回滚 = `git revert 818c011 44158af` 后重部署，或 Vercel 切回 v0.7.32 构建止血；next 16.4.3 是 critical 修复，**止血后不可让线上长期停在回滚态**。
+- 下一项：重新检查仓库继续；等维护者对 R16.336 及拍板项选边。
 - 更新时间：2026-10-24（Asia/Shanghai）。
 
 ---
