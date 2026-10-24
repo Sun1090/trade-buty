@@ -2,6 +2,17 @@
 
 ---
 
+## 2026-10-24 · 第八十九轮（自主执行，收尾轮）：dependabot alert #10 判「无需动作」+ R16.336 把 npm 工具链漂移登记为拍板项
+
+- 里程碑 / 版本：无发布（当前 v0.7.32），main @ `cebd0de`，CI / CodeQL 全绿。纯文档与排查，无代码改动。
+- **dependabot alert #10（sprintf-js，moderate）判「无需动作」**：GHSA-hp3w-g68c-fv3c（CVE-2026-97058）已于 **2026-10-22 被 GitHub 撤回**——撤回理由是「应用有责任恰当处理异常」（原描述：精度说明符无上界导致 toFixed 抛未捕获 RangeError），且该包**没有任何补丁版本**（1.1.3 之后无发版，affected ≤1.1.3）。本仓两处引入（`@lhci/utils`→js-yaml 3 链、`gray-matter`→js-yaml 3 链）都是 dev 树构建工具，格式串不接受外部输入，无暴露面。等 GitHub 同步撤回状态后 alert 自动消除，不补白名单条目。
+- **R16.336（roadmap 新增，`- [ ]` 需拍板）**：Dependabot（npm 11）与 CI 钉的 npm 10.9.4 的 lockfile 漂移连续咬掉 #445 / #447 / #448 三个 PR，每两周人肉重放不可持续。条目写明证据链、成因（npm 11 重排 root devDependencies + 删 14 条 puppeteer-core 嵌套 optional-peer 条目）、三条路（①整体升 npm 11 一次迁移；②CI 自动化重放需额外 token 权限与防循环护栏；③维持现状）与解除条件（契约测试 `ci-workflow.test.mjs` 与 `lockfile-repro-lib` 的 major 比对先改）。选边留给维护者。
+- 验证：PR #450（CLEAN 后 rebase 合并）CI / db-tests / auth-e2e / CodeQL 全绿；`check:docs` 0 红。回滚只需 revert `cebd0de`。
+- 下一项：等维护者对 R16.336 选边；下一次 release 把 next 16.4.3 与 9 项 bump 写进发布说明。
+- 更新时间：2026-10-24（Asia/Shanghai）。
+
+---
+
 ## 2026-10-24 · 第八十八轮（自主执行）：生产积压清零 + Next.js critical 漏洞当天闭环 + Dependabot lockfile 工具链漂移重放
 
 - 里程碑 / 版本：v0.7.32 确认上线（生产 `/zh/changelog` 读到 v0.7.32）；main 抬到 `728f17b`（含 next 16.4.3），CI / CodeQL / Vercel 生产部署全绿。**未发新版本**——next 安全修复与 9 项依赖 bump 按发布清单判级留给下一次 release。
