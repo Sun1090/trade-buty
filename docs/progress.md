@@ -2,6 +2,15 @@
 
 ---
 
+## 2026-10-24 · v0.7.33 发布（第九十一轮，RELEASE_FREEZE 完成）
+
+- 里程碑 / 版本：**v0.7.32 → v0.7.33**（patch）。判级依据（§0 逐笔只看类型）：`v0.7.32..main` 十二笔 = `fix` 5、`chore` 2、`docs` 5，**无新增产品能力**。发布内容正是第八十八轮预告「留给下一次 release」的那批：next 16.4.3（三条 critical：Image Optimization SVG RCE、Server Actions DoS、`use cache` typed arrays RCE）+ 5 条 HIGH 传递依赖补丁 + 9 项 minor/patch bump + R16.335（`.env.local` 解析改走 `process.loadEnvFile`）。用户可见变化**零**（框架安全升级与构建脚本，界面与功能不动），发布说明明写「这一轮没有界面与功能变化」——第三条 highlights 是给「这版升级了什么」的答案，不是凑数（对照 v0.7.32 那轮「漏一条真实用户可见修复就是假话」，这次反向防的是「把没有的写成有」）。
+- 分支 / commit：`chore/release-v0.7.33`，发布提交 `ef3fa00`（`chore(release): ship v0.7.33`：release-notes.json v0.7.33 条目 → `changelog:generate` + `check:changelog` 37 条一致；`package.json` 0.7.33；lockfile 由钉版 `npx npm@10.9.4 install --package-lock-only` 重算，`check:lockfile-repro` 982 条目无差异——**这是 R16.336 拍板项落地前最后一次人工服从钉版**）。tag 待合并后补打。
+- 验证（§3 顺序全链，`fail=0`）：`test:coverage` **361 文件** 全绿，覆盖率 **95.12 / 90.81**（上轮 95.06/90.76，只升未降，阈值未动）；`lint --max-warnings=0` / `typecheck` / `build` / `check:mobile` / seo-surface / search-index / structured-data / risk-warning / kb 三台账 / title-terminology / description 两检 / glossary / test-clock-hygiene / dead-copy / faq-candidates 全 `exit=0`；`check:scan-counts` 先于 `check:report-freshness`（R16.224 顺序），**commit 之后取读数**（R16.331 新规矩），认账 0 红；`check:constitution` / `check:docs`（版本号已绑定 0.7.33）/ `check:release-tag`（正确打印待办不判失败）绿。`db:test` 第一次红在**环境**：Docker daemon 没在跑（门禁拒绝无 Docker 降级），启动 OrbStack 后复跑全绿（迁移 + RLS 44 + 同步 34 + generation 8 断言 + 0008/0009 回滚重放）。`e2e` **244 passed / 1 skipped**。`git status` 干净（无纯日期 diff）。
+- 更新时间：2026-10-24（Asia/Shanghai）。
+
+---
+
 ## 2026-10-24 · 第九十轮（自主执行，巡检轮）：alert #10 确认自动消除、kline-buty 上游更新不含内容改动（不动 submodule 指针）、全量健康巡检通过
 
 - 里程碑 / 版本：无发布（当前 v0.7.32），main @ `22703fb`，CI 全绿。纯巡检，无代码改动。
