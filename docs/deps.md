@@ -146,6 +146,7 @@ npx --yes npm@10.9.4 ci --registry=https://registry.npmjs.org
 - `npm run check:lockfile-repro`（`scripts/check-lockfile-reproducibility.mjs`）用钉住的 npm 10.9.4 重新生成一份 `package-lock.json`，与仓库里已提交的那份逐条目比较；有差异即失败并打印「运行中的 npm / CI 期望的 npm / 新增与消失的条目 / 修复命令」。脚本无论成功失败都从备份恢复 `package-lock.json`，不会把工作树留在被改写状态。
 - CI 在 `npm ci` 之后立即跑 `npm run check:lockfile-repro`；`setup-node` 把 `package-lock.json` 作为 npm cache key，避免不同工具链写入同一 npm 缓存。Dependabot 再次用 npm 11 提交 lockfile 时会在 40 秒内以可读原因红灯，而不是让下游 `npm ci` 报 `Missing: <pkg> from lock file`。
 - 纯计算部分放在 `scripts/lockfile-repro-lib.mjs`，由 `scripts/lockfile-repro-lib.test.mjs` 覆盖（含 2026-09-13 实测的 14 条 `puppeteer-core` 嵌套条目回归 fixture）；工作流契约由 `scripts/ci-workflow.test.mjs` 锁定（钉版必须精确指向 npm 10.9.4、CI 必须实跑、且晚于 `npm ci`）。
+- **tarball 出处判据（2026-10-25 新增，同一条命令里顺带执行）**：带 `resolved` 的条目必须指向 `https://registry.npmjs.org/`，其余一律红。为什么形状复现之外还需要它——`--package-lock-only` 对已存在的条目从不重新解析，在带 mirror npmrc（`~/.npmrc` 指 npmmirror）的机器上做工具链重放时，只有当次新增/变更的条目会被写成 mirror URL，其余逐字节原样；此后再没有任何一次重新生成会碰这些行，键集合差集与逐字节复现两道比对对它全是静默的（R16.336 的 2026-10-25 补记给了机制与实验）。同轮把 lockfile 里 877 条历史 mirror 出处归一化回官方 registry（纯 host 替换、integrity 逐条未动，归一后用例「仓库里真实的 package-lock.json 必须零违规」读的是工作树，所以先归一后加判据的顺序不可反）。日后若真要引入非 registry 来源（git/file 依赖），须改 `OFFICIAL_REGISTRY_PREFIX` 处显式认领，不许静默放行。
 
 ### 顺带修复
 
