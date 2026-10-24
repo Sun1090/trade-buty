@@ -2,6 +2,24 @@
 
 ---
 
+## 2026-10-25 · 第九十三轮（自主执行）：把上一轮的发现变成牙齿——877 条 mirror 出处归一化回官方 registry，并在 `check:lockfile-repro` 里加上唯一看得见掺入的那道判据
+
+- 里程碑 / 版本：AGENTS.md in-scope「内容质量 / 契约 / 合规门禁收敛」延伸（供应链出处卫生）；未改产品版本（当前 v0.7.33，用户可见行为零变化）。分支 `fix/lockfile-provenance-gate`（自 `main @ 3faed3a`），工作提交 `87010d7`。
+- 巡检基线：main push CI 全绿、0 open PR / alert / issue；kline-buty 上游 `docs/knowledge` 仍零改动（不动指针）；生产在 v0.7.33。
+- **做了什么**（R16.336 补记证到的机制的直接处置，不碰 npm 版本之争、对三条路都成立）：
+  1. **归一化**：`package-lock.json` 里 877 条 `resolved` 从 `registry.npmmirror.com` 改回 `registry.npmjs.org`——纯 host 替换，**integrity 逐字未动**（982 条目全带 sha512，内容校验不依赖 URL）。归一后 `check:lockfile-repro` 的钉版重生成无差异：证明既有条目确实「不重新解析」，改动不会被下一次重生成悄悄还回去。
+  2. **新判据**（加进同一条命令，不新开 CI 步骤）：`lockfile-repro-lib` 加纯函数 `findForeignResolvedUrls` + `formatProvenanceReport`，检查脚本在复现比对之后核「带 `resolved` 的条目必须指官方 registry」。为什么必须是独立一道：掺入对键集合差集与逐字节复现**两道都静默**（`--package-lock-only` 从不重新解析既有条目，掺进去的行此后再不出现在任何一次 diff 里）。
+  3. **顺序是被判据逼出来的**：新用例里有一条读**真实的 package-lock.json**（「仓库里必须零违规」），所以必须先归一、后加判据——反过来第一天就红。这条顺序写进了 docs/deps.md。
+- **变异实验**（新判据自证，R16.330 一族规矩）：字节级掺 1 条 mirror URL（sed 单行替换，其余逐字节原样）→ 复现腿**没拦住**（它只比新增/消失的键，不比 URL）——这本身就是上一轮机制预测的现场复演；出处判据单独红、exit=1、点名条目并给处方（钉版 + `--registry` 旗标的重生成命令）。还原后复现腿重新转绿（982 无差异）。
+- **一处实验操作教训（如实记）**：第一次变异用了 `json.dump` 重写整个文件（876 行格式噪声），复现腿先红在逐字节比对、把出处判据挡在后面——**实验没做出结论**；重做时改用单行 sed 保字节，才拿到「复现静默、出处单独红」这条干净读数。教训：**做变异前先数 diff 行数**，被格式噪声污染的实验读不出判据的分工。
+- 豁免口径写进注释与 deps.md：本仓全部来自公开 npm、无 git/file 依赖，所以判据是「非官方前缀一律红」；日后真引入别的来源要在 `OFFICIAL_REGISTRY_PREFIX` 处显式认领，不许静默放行。
+- 验证（§3 顺序，`fail=0`）：`test` / `test:coverage` **361 文件 / 3833 条**，覆盖率 **95.12 / 90.76 / 95.14 / 96.94**（阈值 94/89/94/96，未调）；lint（`--max-warnings=0`）/ typecheck / build 全 0；mobile / seo-surface / search-index / structured-data / risk-warning / **bundle 直接绿**（未动页面与共享 CSS）/ kb 三台账 / title-terminology / description 两检 / glossary / test-clock-hygiene / dead-copy / faq-candidates / audit-all 全绿；`check:scan-counts` 基线 8 处无变化、`check:report-freshness` 18 份漂移 0（**commit 之后取读数**）；comment-paths 388 份 172 条引用全绿；`db:test` 全绿；`e2e` **244 passed / 1 skipped**。ci-workflow 契约测试 44 条无感（未动工作流）。
+- 阻塞 / 风险 / 回滚：无迁移、无配置、无产品代码。**风险一条**：若维护者的构建机器 npmrc 仍指 mirror 且 `npm ci` 按 `resolved` 取包，归一化后官方 registry 的可达性要成立（CI 在 GitHub runner 上直连官方，实测 `db-tests`/`ci` 会当场验证）；`integrity` 钉死内容，最坏情形是取包失败而非取到不同内容。回滚 = revert `87010d7` 一笔（出处判据与归一化同笔——判据红在旧 lockfile 上无意义，二者本来就必须同序）。
+- 下一项：重新检查仓库继续；R16.336 与其余拍板项仍等维护者选边。
+- 更新时间：2026-10-25（Asia/Shanghai）。
+
+---
+
 ## 2026-10-25 · 第九十二轮（自主执行）：R16.336 的实测证据补齐——顺带挖出一个重放陷阱：mirror URL 掺入对两道门禁都不可见
 
 - 里程碑 / 版本：v0.7.33 已上线（生产确认），main 从 `fa39b3d` 抬到 `158d0b2`（两笔 docs）。巡检轮，无产品代码改动。
