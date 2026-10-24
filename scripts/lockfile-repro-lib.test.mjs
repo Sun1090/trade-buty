@@ -3,8 +3,11 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
   DEPS_DRIFT_SECTION,
+  OFFICIAL_REGISTRY_PREFIX,
   diffLockPackages,
+  findForeignResolvedUrls,
   formatDriftReport,
+  formatProvenanceReport,
   isNpmVersionAllowed,
   lockPackageKeys,
   npmMajorOf,
@@ -185,5 +188,53 @@ describe("formatDriftReport", () => {
     expect(report).toContain("（无）");
     expect(report).toContain("未声明");
     expect(report).toContain("<CI 的 npm 版本>");
+  });
+});
+
+describe("findForeignResolvedUrls / formatProvenanceReport（tarball 出处判据）", () => {
+  it("官方 registry 前缀不报；mirror 一律点名", () => {
+    const lock = {
+      packages: {
+        "node_modules/a": { resolved: OFFICIAL_REGISTRY_PREFIX + "a/-/a-1.0.0.tgz" },
+        "node_modules/b": { resolved: "https://registry.npmmirror.com/b/-/b-1.0.0.tgz" },
+      },
+    };
+    const found = findForeignResolvedUrls(lock);
+    expect(found).toEqual([["node_modules/b", "https://registry.npmmirror.com/b/-/b-1.0.0.tgz"]]);
+  });
+
+  it("没有 resolved 字段的条目豁免（空 key 的根条目就是这种形状）", () => {
+    const lock = { packages: { "": { name: "trade-buty" }, "node_modules/c": {} } };
+    expect(findForeignResolvedUrls(lock)).toEqual([]);
+  });
+
+  it("输出按键稳定排序，前 20 条截断由报告侧负责", () => {
+    const lock = {
+      packages: Object.fromEntries(
+        ["z", "m", "a"].map((n) => [`node_modules/${n}`, { resolved: `https://evil.example/${n}` }]),
+      ),
+    };
+    expect(findForeignResolvedUrls(lock).map(([key]) => key)).toEqual([
+      "node_modules/a",
+      "node_modules/m",
+      "node_modules/z",
+    ]);
+  });
+
+  it("仓库里真实的 package-lock.json 必须零违规（这条读文件，不是只测纯函数）", () => {
+    const lock = JSON.parse(readFileSync(path.join(process.cwd(), "package-lock.json"), "utf8"));
+    const foreign = findForeignResolvedUrls(lock);
+    expect(foreign.map(([key]) => key)).toEqual([]);
+  });
+
+  it("失败文案点名条目、给出钉版 + 官方 registry 的处方，并指向 deps.md 那一节", () => {
+    const pin = parseNpmPin({ devEngines: { packageManager: { name: "npm", version: "10.9.4" } } });
+    const report = formatProvenanceReport({
+      foreign: [["node_modules/b", "https://registry.npmmirror.com/b/-/b-1.0.0.tgz"]],
+      pin,
+    });
+    expect(report).toContain("node_modules/b");
+    expect(report).toContain("npx --yes npm@10.9.4 install --package-lock-only --registry=https://registry.npmjs.org");
+    expect(report).toContain("「" + DEPS_DRIFT_SECTION + "」");
   });
 });

@@ -18,7 +18,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { diffLockPackages, formatDriftReport, parseNpmPin } from "./lockfile-repro-lib.mjs";
+import { diffLockPackages, findForeignResolvedUrls, formatDriftReport, formatProvenanceReport, parseNpmPin } from "./lockfile-repro-lib.mjs";
 
 const root = process.cwd();
 const lockPath = path.join(root, "package-lock.json");
@@ -120,6 +120,13 @@ if (!unchanged || added.length > 0 || removed.length > 0) {
   );
 }
 
+// 出处判据：复现比对看不见 mirror 掺入（--package-lock-only 从不重新解析既有条目），
+// 这一道是唯一能看见它的位置。理由与机制见 lockfile-repro-lib 的 OFFICIAL_REGISTRY_PREFIX。
+const foreign = findForeignResolvedUrls(beforeLock);
+if (foreign.length > 0) {
+  fail(formatProvenanceReport({ foreign, pin }));
+}
+
 console.log(
-  `✅ package-lock.json 可用 npm ${npmSpec} 逐条目复现（${Object.keys(beforeLock.packages ?? {}).length} 个包条目，无差异）。`,
+  `✅ package-lock.json 可用 npm ${npmSpec} 逐条目复现（${Object.keys(beforeLock.packages ?? {}).length} 个包条目，无差异；tarball 出处全部为官方 registry）。`,
 );

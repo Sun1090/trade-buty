@@ -101,9 +101,52 @@ export function formatDriftReport({ runningNpm, pin, added = [], removed = [], r
     "",
     "这意味着生成这份 lockfile 的 npm 主版本和当前 npm 主版本不是同一个。",
     "修复：用 CI 的 npm 主版本重新生成，并把退出码写进 PR：",
-    `  npx --yes npm@${pin?.exact ?? "<CI 的 npm 版本>"} install --package-lock-only --registry=https://registry.npmjs.org`,
+    `  npx --yes npm@${pin?.exact ?? "<CI 的 npm 版本>"} install --package-lock-only --registry=${OFFICIAL_REGISTRY_PREFIX.slice(0, -1)}`,
     "  git add package-lock.json",
     "详见 docs/deps.md「" + DEPS_DRIFT_SECTION + "」。",
   ];
   return lines.filter((line) => line !== null).join("\n");
+}
+
+/**
+ * `package-lock.json` 里唯一合法的 tarball 出处（2026-10-25 巡检定下的口径）。
+ *
+ * 为什么形状复现之外的两道比对看不见 mirror 掺入（R16.336 补记实测）：
+ * `--package-lock-only` 对**已存在的条目从不重新解析**，只有新增/变更条目按当次运行的
+ * registry 写 `resolved`。在带 mirror npmrc 的机器上重放一次，掺进去的 mirror URL
+ * 此后再不出现在任何一次重新生成的 diff 里——键集合差集不比 URL，逐字节比对各机器都
+ * 「复现成功」。本仓全部来自公开 npm、无 git/file 依赖，所以判据是「带 `resolved` 的
+ * 条目必须是指向官方 registry 的前缀」；日后若真要引入别的来源，须改这里显式认领，
+ * 不许静默放行。
+ */
+export const OFFICIAL_REGISTRY_PREFIX = "https://registry.npmjs.org/";
+
+/** 列出 `resolved` 出处不是官方 registry 的条目：`[键, resolved]`，按键稳定排序。 */
+export function findForeignResolvedUrls(lock) {
+  return Object.entries(lock?.packages ?? {})
+    .filter(
+      ([, entry]) =>
+        typeof entry?.resolved === "string" &&
+        !entry.resolved.startsWith(OFFICIAL_REGISTRY_PREFIX),
+    )
+    .map(([key, entry]) => [key, entry.resolved])
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+}
+
+/** 出处违规的失败文案：点名条目并给处方（钉版 + 官方 registry 重新生成）。 */
+export function formatProvenanceReport({ foreign, pin }) {
+  const lines = [
+    `❌ package-lock.json 含 ${foreign.length} 条非官方 registry 的 tarball 出处（resolved）。`,
+    "",
+    "前 20 条：",
+    ...foreign.slice(0, 20).map(([key, url]) => `  - ${key} → ${url}`),
+    "",
+    "机制：--package-lock-only 从不重新解析既有条目，mirror 掺入对形状差集与逐字节复现",
+    "两道比对都是静默的，只有这道出处判据看得见（docs/roadmap.md R16.336 的 2026-10-25 补记）。",
+    "修复：用 CI 的钉版 npm 并显式指定官方 registry 重新生成：",
+    `  npx --yes npm@${pin?.exact ?? "<CI 的 npm 版本>"} install --package-lock-only --registry=${OFFICIAL_REGISTRY_PREFIX.slice(0, -1)}`,
+    "  git add package-lock.json",
+    "详见 docs/deps.md「" + DEPS_DRIFT_SECTION + "」。",
+  ];
+  return lines.join("\n");
 }
