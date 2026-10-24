@@ -5,6 +5,24 @@
 > 站点内的「更新日志」页面（`/[locale]/changelog`）与本文件共用同一份数据（`src/data/release-notes.json`）。
 > v0.3 及更早的里程碑记录在 [docs/roadmap.md](docs/roadmap.md)。
 
+## [0.7.33] - 2026-10-24
+
+**Next.js 三条 critical 漏洞当天闭环；自建部署不再被带引号的环境变量崩掉 / Three critical Next.js vulnerabilities closed the same day; self-hosted deploys stop crashing on quoted environment variables**
+
+### 中文
+
+- Next.js 从 16.4.0 升到 16.4.3，关闭三条 critical 级安全漏洞：Image Optimization 的未认证 SVG 远程代码执行、Server Actions 拒绝服务、以及 use cache 类型化数组的远程代码执行（GHSA-2464-fhr4-w9xw / GHSA-p3m5-59mp-jv5r / GHSA-673q-mjm6-r5xr）。这三条是披露当天由生产依赖审计门禁红出来的——修复版在 package.json 精确钉版之外，所以它不会被一次例行升级顺手带上。同一批还逐条打了 5 条 HIGH 级传递依赖补丁（全部走修法、不写白名单豁免），并带上 react、supabase-js、vitest、js-yaml、jsdom、Playwright 等 9 项 minor/patch 更新
+- 自建部署的构建脚本修好一个真会崩的坑：读 `.env.local` 的两个脚本各自写了个小解析器，不剥引号，而 `npx vercel deploy` 会把值带字面双引号写进那个文件——脚本当场崩。现在统一改走 Node 内置的 `process.loadEnvFile`，怎么写都不再崩。生产部署不受影响，受益的是自建实例与自己跑脚本的人
+- 这一轮没有任何界面与功能变化：上一条是框架侧安全升级，中间两条是构建脚本与依赖台账。写在这里是为了让「这一版升级了什么」有据可查，而不是凑数
+
+### English
+
+- Next.js moved from 16.4.0 to 16.4.3, closing three critical security vulnerabilities: unauthenticated SVG remote code execution in Image Optimization, a Server Actions denial-of-service, and a typed-array remote code execution in `use cache` (GHSA-2464-fhr4-w9xw / GHSA-p3m5-59mp-jv5r / GHSA-673q-mjm6-r5xr). Continuous integration's production-dependency audit caught all three the day they were disclosed — the fixed versions sit outside `package.json`'s exact pins, so a routine upgrade would never have picked them up. The same batch patches 5 HIGH-severity transitive dependencies one at a time (fixed rather than whitelisted, per repo policy) and carries minor/patch updates for react, supabase-js, vitest, js-yaml, jsdom, Playwright and others
+- Build scripts for self-hosted deployments no longer crash on a real edge case: two scripts each hand-rolled a `.env.local` parser that left quotes in place, and `npx vercel deploy` writes values with literal double quotes into that file — crashing them on the spot. Both now use Node's built-in `process.loadEnvFile`, so the file can be written any way without breaking the scripts. Production was unaffected; the beneficiaries are self-hosted instances and anyone running the scripts locally
+- There is no interface or feature change in this release: the first item is a framework security upgrade, the second is build scripts and dependency bookkeeping. It is written down here so "what did this version change" has an answer instead of padding
+
+参考：[docs/progress.md](docs/progress.md) · [docs/deps.md](docs/deps.md)
+
 ## [0.7.32] - 2026-10-14
 
 **分享链接坏了终于说「链接无效」；没配云端的登录回调页不再变成整站错误页 / A broken share link finally says "link invalid"; the login callback page stops turning into a site-wide error when the cloud isn't configured**
