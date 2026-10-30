@@ -11,7 +11,7 @@
 - 验证：新门禁 7 条 + 既有 labels 15 条绿；全量 `test:coverage` **362 文件 / 3840 条**，覆盖率 **95.12 / 90.72 / 95.15 / 96.95**（阈值 94/89/94/96 未动；branches 比上轮 90.81 低 0.09——新门禁自身的分支有一半在变异腿里才算得到，如实记）；lint / typecheck / build 全 0；mobile（14 页 320px）与 CI 上 40+ 门禁逐条跑全 0；台账重算 `secrets-listed-files` 858→859（新增测试文件），`comment-path-refs` 172 无变化，`check:scan-counts` / `check:report-freshness` 复跑绿。
 - 阻塞 / 风险 / 回滚：无迁移、无配置、无产品代码；第一层扫描逻辑一字未动（两个新桶的文件本来就在射程内且全绿）。已知边界（登记不顺手补）：门禁管「归属有没有主人」，不管 `LOCALE_FREE_SURFACES` 那张 OG 卡的品牌行该中英并列还是跟随载荷语言——那是 R16.52，仍待拍板；`RENDERER_KINDS` 是 Next 特殊文件名的认领清单，Next 新增一种形状时要在那里登记（清单本身有注释说明）。回滚 = revert 本笔。
 - **一次本可避免的 CI 红（如实记）**：首趟 PR 的 `ci` 红在「报告新鲜度核对」——新增测试文件牵动的第三份台账 `docs/test-clock-hygiene.md`（360→361 个测试文件）我没重算就推了。台账里「改 `e2e` 之后推之前必跑 `e2e-wait-hygiene`」的教训同族：**新增测试文件时，随它重算的台账不止 scan-counts 一份**。补算 `check:test-clock-hygiene` 重写报告并随本笔提交，`check:report-freshness` 漂移归 0。
-- 下一项：开 PR 等 `ci` / `db-tests` / `auth-e2e` / CodeQL 绿后 rebase 合并；随后重新检查仓库继续——R16.336 与其余拍板项（R16.41 / R16.52 等）仍等维护者选边。
+- 下一项：PR #461 已合并（CI / db-tests / auth-e2e / CodeQL / Vercel 全绿，rebase 合入 main @ b75e55d），本地 main 已快进、远程主题分支已删；巡检上游 kline-buty 4 个新提交（#321–#325，全在 e2e/src）——`docs/knowledge` 零变化，不动子模块指针。R16.336 与其余拍板项（R16.41 / R16.52 等）仍等维护者选边。
 - 更新时间：2026-10-30（Asia/Shanghai）。
 
 ---
