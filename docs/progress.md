@@ -2,6 +2,19 @@
 
 ---
 
+## 2026-10-25 · 第九十四轮（自主执行）：把唯一开着的红灯（Dependabot #458）按先例重放——钉版 npm 10.9.4 重生成 lockfile，`npm ci` 由红转绿
+
+- 里程碑 / 版本：AGENTS.md in-scope「依赖 / 供应链卫生」；未改产品版本（当前 v0.7.33，用户可见行为零变化）。分支 `fix/dep-bump-remark-cjk-friendly`（自 `main @ 7860015`），提交：`6c4a0af`（仅 `package-lock.json`），本台账与 work-audit / roadmap / deps 记录同 PR。PR #459。
+- 巡检基线：main push CI 全绿、0 dependabot alert、0 issue；唯一开着的 PR 是 #458，`ci` 与 `auth-e2e` 双红。
+- **做了什么**：#458 是 Dependabot 的单条 patch bump（`remark-cjk-friendly` 2.3.2 → 2.3.3），只改 lockfile 且由 npm 11 生成，删掉 14 条 `puppeteer-core` 嵌套 optional-peer 条目 → CI 的 `npm ci` 报 `Missing: proxy-agent@8.0.2 …`（与 R16.336 登记的 #445 / #447 / #448 同一成因，第四次复发）。`maintainerCanModify=false`，仓库侧改不动它的 lockfile。按 #352 / #448 先例在最新 main 上用 `npx npm@10.9.4 install remark-cjk-friendly@2.3.3 --package-lock-only --registry=官方` 重放：`remark-cjk-friendly` 2.3.3 / `mdast-util-to-markdown-cjk-friendly` 1.0.1 / `mdast-util-to-markdown` **2.2.1**（钉版解析，npm 11 当时解到 2.2.0），14 条嵌套条目保留、出处全部官方 registry；`package.json` 范围仍 `^2.3.1`（与 Dependabot 一致，2.3.3 在其内）。#458 关闭，去向登记进 `docs/work-audit-ack.json`（#458 → #459）。
+- 我自己的错（一处，如实记）：第一版只跑 `npm@10.9.4 install --package-lock-only`（无版本参数）——它对当前 lockfile 判「up to date in 471ms」，什么都没改；`--no-save` 版同样不动 lockfile。必须先显式 `install remark-cjk-friendly@2.3.3` 才让 npm 重解析该子树的版本。**「命令退出 0」不等于「它把要改的改了」**——这次是靠 `git diff --stat` 为空才看出来，不是靠退出码。
+- 验证（顺序）：`npx npm@10.9.4 ci` **exit 0**（added 874 packages；这正是 #458 红掉的那一步）→ `npm run check:lockfile-repro` 982 条目无差异、出处全官方 → `npm run lint` / `npm run typecheck` exit 0 → `npm test` **361 文件 / 3833 条**全绿 → `npm run build` **474 页**、`git status` 除 `package-lock.json` 外无改动（prebuild 未产生跟踪产物漂移）。
+- 阻塞 / 风险 / 回滚：无迁移、无配置、无产品代码。风险一条同 R16.336：这次仍是「人肉重放」，未解决系统性工具链漂移，R16.336 去留仍等维护者拍板。回滚 = revert `6c4a0af`（lockfile 回到 npm 10 复现的旧形状）。
+- 下一项：等 #459 的 `ci` + `db-tests` + `auth-e2e` + CodeQL 绿后 rebase 合并；随后重新检查仓库继续，R16.336 与其余拍板项仍等维护者选边。
+- 更新时间：2026-10-25（Asia/Shanghai）。
+
+---
+
 ## 2026-10-25 · 第九十三轮（自主执行）：把上一轮的发现变成牙齿——877 条 mirror 出处归一化回官方 registry，并在 `check:lockfile-repro` 里加上唯一看得见掺入的那道判据
 
 - 里程碑 / 版本：AGENTS.md in-scope「内容质量 / 契约 / 合规门禁收敛」延伸（供应链出处卫生）；未改产品版本（当前 v0.7.33，用户可见行为零变化）。分支 `fix/lockfile-provenance-gate`（自 `main @ 3faed3a`），工作提交 `87010d7`。
