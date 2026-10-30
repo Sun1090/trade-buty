@@ -82,6 +82,11 @@
 - `npm outdated` 当日剩余落后项：只剩 `eslint` 9.39.5 → 10.12.0 与 `typescript` 6.0.3 → 7.0.2 两个 major，**仍延期**，依据与 2026-10-09 相同。**至此常规 minor/patch 落后项清零**。
 - v0.7.29 已发布（patch）：AI 学习计划两处、复习页变体题说明、依赖十项刷新、文档手抄数字登记制。生产冒烟 9/10（唯一失败仍是既有 AI 上游 502，`BLOCKED_EXTERNAL`）。
 
+### 2026-10-30
+
+- **开着的 Dependabot alert #11（qs，medium，dev 作用域）当天闭合**：`GHSA-6pq8-jhm2-2vcw` / `CVE-2026-110816`——`qs.stringify` 在 `arrayFormat: 'comma'` 下遇到带不可调用 own `toString` 的数组元素会抛未捕获 TypeError（DoS），修版 `6.16.1`（vulnerable `>=6.7.0 <=6.16.0`）。本仓 `overrides.qs` 原钉在 `6.16.0`，改到 `6.16.1`，lockfile 由 `npx --yes npm@10.9.4 install --package-lock-only --registry=https://registry.npmjs.org` 重生成（只动 `qs` 条目，出处官方）。`npm audit --audit-level=moderate` 由命中转为 `found 0 vulnerabilities`；`audit:all` / `audit:prod` 0 红；`check:lockfile-repro` 982 条目无差异；`npm ci` exit 0、361 文件 3833 条 test、build 474 页全绿。这条不进 `audit:all` 的阻断射程（它只拦 high / critical），所以没有「等门禁变红才修」，而是按「有补丁就修」处理。
+- 同日另一条：Dependabot #458（`remark-cjk-friendly` 2.3.2→2.3.3）因 npm 11 lockfile 漂移红，按 #352 先例重放为 #459（详见「lockfile 工具链漂移」一节的 2026-10-25 第四次复发记录）。
+
 ## 审查流程
 
 1. PR 中说明：解决什么问题、为什么内置/已有依赖不行、体积影响（`npm run check:bundle`）
