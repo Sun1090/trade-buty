@@ -152,6 +152,10 @@
     {
       "number": 445,
       "reason": "非丢失而是换了载体：本 PR（10 项 bump）CI 红在 npm ci lockfile 失同步——Dependabot 用 npm 11 生成锁定文件而本仓 CI 钉 npm 10.9.4，npm 11 的格式 npm ci 不认；Dependabot 的 @dependabot recreate 未生效，自行关闭后重开为 #447（同一批 bump 的最新版）。#447 又红在同一成因，已按 #352 先例重放为 PR #448（同一批 9 项版本 + 1 项被 #446 抢先覆盖的 next 升级不再需要，lockfile 用钉版 npm 重新生成，check:lockfile-repro / audit / 全量 test / build 全绿）。去向链即 #447 → #448。"
+    },
+    {
+      "number": 458,
+      "reason": "非丢失而是换了载体（与 #344 / #414 / #447 同一成因）：#458 只改 package-lock.json 且由 npm 11 生成，删掉 14 条 puppeteer-core 嵌套 optional-peer 条目，CI 的 npm 10.9.4 `npm ci` 报 `Missing: proxy-agent@8.0.2 from lock file`；该 PR 的 maintainerCanModify 为 false，仓库侧改不动它的 lockfile。同型 bump 已按 #352 先例在最新 main 上用 `npx npm@10.9.4 install remark-cjk-friendly@2.3.3 --package-lock-only --registry=官方` 重放为 PR #459（remark-cjk-friendly 2.3.3 / mdast-util-to-markdown-cjk-friendly 1.0.1 / mdast-util-to-markdown 2.2.1，14 条嵌套条目保留、出处全部官方；`npm ci` exit 0、check:lockfile-repro 982 条目无差异、361 文件 3833 条 test、build 474 页全绿）。本 PR 关闭，去向即 #459。"
     }
   ]
 }
