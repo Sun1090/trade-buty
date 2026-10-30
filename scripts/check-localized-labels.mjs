@@ -51,8 +51,11 @@ const CJK_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 
 /**
  * 拿不到 locale 的表面，逐条写明归属：
- * - 分享卡的降级图：payload 解码失败时访客语言无从判定（正常的三张卡都按 `p.locale` 出文案，
- *   课程页的 OG 卡也已在 R16.51 改按 locale），要不要把这一张的品牌行改成中英并列见 R16.52。
+ * - 分享卡的降级图：三张正常卡都按载荷里的 `p.locale` 出文案（**问过语言**，见
+ *   `SELF_LOCALIZED_SURFACES` 的说明），只有 payload 解码失败时访客语言才无从判定，
+ *   那张品牌卡写死了中文——要不要改成中英并列见 R16.52（待拍板）。它留在「免第一层」
+ *   清单里的真实理由是这条待拍板的品牌行，不是整个文件拿不到 locale；
+ *   第一层若照扫，第一个报的就是那行裸中文。
  *
  * R16.295 从这份清单里移走了根级 `not-found.tsx` / `error.tsx`，**不是因为它们拿到了 locale**
  * （还是 `DEFAULT_LOCALE`，三条路与代价仍然开着，见 R16.41），而是因为这两页原先的毛病
@@ -79,6 +82,29 @@ export const LOCALE_FREE_SURFACES = [
 export const SINGLE_LANGUAGE_FILES = [
   ["src", "app", "not-found.tsx"].join(sep),
   ["src", "app", "error.tsx"].join(sep),
+];
+
+/**
+ * R16.337：`[locale]` 之外的路由级渲染文件必须被恰一个清单认领（覆盖面门禁
+ * `localized-surface-claims.test.mjs` 现读 `src/app` 核对，源码树是唯一主人）。
+ * 除上面两份既有清单外还有两桶：
+ *
+ * - `SELF_LOCALIZED_SURFACES`：文件自己解出语言（根 layout 的 init 脚本从
+ *   `location.pathname` 推 `<html lang>`，分享落地页从载荷解出 `getDict(locale)`）——
+ *   它**问过语言**，第一层照扫不豁免。这正是 R16.330 说的「粗谓词推不出来」：
+ *   「不在 `[locale]` 树下」不等于「拿不到 locale」，把粗谓词当判据会反咬 `error.tsx`。
+ * - `TEXT_FREE_SURFACES`：渲染零用户可见文字（骨架屏 / 品牌图标）。这一桶不是免检的
+ *   委婉说法——门禁机器复核「真的没有文字」，有人往里加一句界面字，认领就成了假话，
+ *   该做的是重新归类，不是改清单让句子溜过去。
+ */
+export const SELF_LOCALIZED_SURFACES = [
+  ["src", "app", "layout.tsx"].join(sep),
+  ["src", "app", "share", "[kind]", "[path]", "page.tsx"].join(sep),
+];
+
+export const TEXT_FREE_SURFACES = [
+  ["src", "app", "loading.tsx"].join(sep),
+  ["src", "app", "icon.tsx"].join(sep),
 ];
 
 function isLocaleFree(relativePath) {
@@ -153,12 +179,38 @@ export function findMixedLanguageFiles() {
 }
 
 /** 去掉块注释与行注释，避免注释里的示例被当成界面文案 */
-function withoutComments(source) {
-  return source
+function withoutComments(source) {  return source
     .replace(/\/\*[\s\S]*?\*\//g, " ")
     .split("\n")
     .filter((line) => !line.trimStart().startsWith("//"))
     .join("\n");
+}
+
+/**
+ * R16.337：给覆盖面门禁的机器复核助手。
+ *
+ * `TEXT_FREE_SURFACES` 认领的是「渲染零用户可见文字」，这句认领必须能被机器核对，
+ * 否则就是「免检」的委婉说法——文件里加一句 `<span>Loading…</span>` 之后认领还在、
+ * 检查照旧绿，句子就溜过去了。两个助手都只认**去注释后**的源码（icon.tsx 的注释里有
+ * 中文说明，那是给人看的，不是印在页面上的）：
+ * - `jsxTextNodes`：`>…<` 之间的裸文字，`TEXT_FREE` 认领要求其中没有任何带字母的条目
+ *   （拉丁与中日韩都算——「零文字」不区分语言）；
+ * - `cjkStringLiterals`：字符串字面量里的中日韩文字，`TEXT_FREE` 认领要求为零——
+ *   渲染不出文字的文件没有理由揣着一句写死的中文。
+ */
+export function jsxTextNodes(source) {
+  return [...withoutComments(source).matchAll(TEXT_NODE_RE)]
+    .map((match) => match[1].replace(/<[^<>]*>/g, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+export function cjkStringLiterals(source) {
+  const hits = [];
+  for (const lit of withoutComments(source).matchAll(STRING_LITERAL_RE)) {
+    const value = lit[1] ?? lit[2] ?? lit[3] ?? "";
+    if (CJK_RE.test(value)) hits.push(value);
+  }
+  return hits;
 }
 
 /**

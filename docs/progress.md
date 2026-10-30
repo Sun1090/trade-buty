@@ -2,6 +2,19 @@
 
 ---
 
+## 2026-10-30 · 第九十六轮（自主执行）：收 R16.330 交接项——`[locale]` 之外 7 份渲染文件只有 3 份被认领，OG 卡混搭注入 exit=0；改四桶显式认领 + 覆盖面门禁
+
+- 里程碑 / 版本：AGENTS.md in-scope「内容质量 / 契约 / 合规门禁收敛」；未改产品版本（v0.7.33，用户可见行为零变化）。分支 `fix/localized-surface-claims`（自 `main @ 7458a80`）。
+- 巡检基线：main 与 origin 同步、工作树干净；roadmap 上唯一开着的是 R16.336（需维护者拍板，跳过）；可执行交接项为 R16.330 登记的 `SINGLE_LANGUAGE_FILES`（「下一轮要么先定谓词要么改成显式认领」）。
+- **做了什么**：① 证伪实验先行——往 `LOCALE_FREE_SURFACES` 那张 OG 分享卡的品牌行注入「中文 + Free neutral trading education」→ `check:localized-labels` **exit=0 全绿**：第一层跳过它、第二层不点名它。现读候选 7 份（根 `error` / `layout` / `loading` / `not-found` / `icon` + share 的 `page` / `opengraph-image`），四份清单只提到 3 份；清单外新增文件（`global-error.tsx` 这类）同样无人喊。② 选「显式认领」而不是定谓词（R16.330 的原话：粗谓词会反咬 `error.tsx`）——`check-localized-labels.mjs` 新增 `SELF_LOCALIZED_SURFACES`（layout、分享页：自己解出语言，第一层照扫）与 `TEXT_FREE_SURFACES`（loading、icon：零可见文字），并修正 OG 图那条注释的诚实度（它**问过语言**，留在免检清单的真实理由是 R16.52 待拍板的品牌行）。③ 新门禁 `scripts/localized-surface-claims.test.mjs`（7 条）：候选由 `src/app` 现读（复用 `page-template-coverage-lib.walkFiles`，不抄第二份走树），四桶并集覆盖每个候选、恰一份认领、死条目红、双重认领红、候选地板 ≥5、枚举器自证（根级 / 嵌套 / 动态段三种形状各点名一条）；`TEXT_FREE` 认领由导出的 `jsxTextNodes` / `cjkStringLiterals` 机器复核——「零文字」必须可验，否则就是免检的委婉说法。
+- **探针 9 条腿 BAD=0**（`.gate-logs/probe-r85.mjs`）：BASE / M1 摘 not-found 认领红在覆盖 / M2 摘 loading 认领同 / M3 塞死文件红在只长不消 / M4 双重认领红 / M5 把 layout 谎认成零文字红在机器复核（metadata 里写死的中文当场被点名）/ M6 走树漏嵌套红在枚举器自证 / M7 谓词改 `(?!)` 红在自证谓词 / M8 无关改动不红。**探针自己的归因器第一版就坏了**：vitest 非零退出时 `execFileSync` 抛错、`e.stdout` 是空，reds 变成字符串当场炸——归因器坏了会被读成判据坏了，改成 catch 里同时收 stdout+stderr。
+- 验证：新门禁 7 条 + 既有 labels 15 条绿；全量 `test:coverage` **362 文件 / 3840 条**，覆盖率 **95.12 / 90.72 / 95.15 / 96.95**（阈值 94/89/94/96 未动；branches 比上轮 90.81 低 0.09——新门禁自身的分支有一半在变异腿里才算得到，如实记）；lint / typecheck / build 全 0；mobile（14 页 320px）与 CI 上 40+ 门禁逐条跑全 0；台账重算 `secrets-listed-files` 858→859（新增测试文件），`comment-path-refs` 172 无变化，`check:scan-counts` / `check:report-freshness` 复跑绿。
+- 阻塞 / 风险 / 回滚：无迁移、无配置、无产品代码；第一层扫描逻辑一字未动（两个新桶的文件本来就在射程内且全绿）。已知边界（登记不顺手补）：门禁管「归属有没有主人」，不管 `LOCALE_FREE_SURFACES` 那张 OG 卡的品牌行该中英并列还是跟随载荷语言——那是 R16.52，仍待拍板；`RENDERER_KINDS` 是 Next 特殊文件名的认领清单，Next 新增一种形状时要在那里登记（清单本身有注释说明）。回滚 = revert 本笔。
+- 下一项：开 PR 等 `ci` / `db-tests` / `auth-e2e` / CodeQL 绿后 rebase 合并；随后重新检查仓库继续——R16.336 与其余拍板项（R16.41 / R16.52 等）仍等维护者选边。
+- 更新时间：2026-10-30（Asia/Shanghai）。
+
+---
+
 ## 2026-10-30 · 第九十五轮（自主执行）：开着的 Dependabot alert #11（qs medium DoS）当天闭合——override 6.16.0→6.16.1
 
 - 里程碑 / 版本：AGENTS.md in-scope「依赖 / 供应链卫生」；未改产品版本（v0.7.33，用户可见行为零变化）。分支 `fix/qs-advisory-6.16.1`（自 `main @ 52de338`），提交 `9102e8f`（`package.json` + `package-lock.json`），本台账与 deps.md 记录同 PR。
