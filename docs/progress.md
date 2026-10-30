@@ -2,6 +2,19 @@
 
 ---
 
+## 2026-10-30 · 第九十五轮（自主执行）：开着的 Dependabot alert #11（qs medium DoS）当天闭合——override 6.16.0→6.16.1
+
+- 里程碑 / 版本：AGENTS.md in-scope「依赖 / 供应链卫生」；未改产品版本（v0.7.33，用户可见行为零变化）。分支 `fix/qs-advisory-6.16.1`（自 `main @ 52de338`），提交 `9102e8f`（`package.json` + `package-lock.json`），本台账与 deps.md 记录同 PR。
+- 巡检基线：上一轮 #459 合并、main push CI 绿、0 开 PR / 0 开 issue；scheduled Dependabot 更新跑完后新开 alert #11。
+- **做了什么**：Dependabot alert #11 = `GHSA-6pq8-jhm2-2vcw` / `CVE-2026-110816`（`qs`，medium，dev 作用域）：`qs.stringify` 在 `arrayFormat:'comma'` 下遇到带不可调用 own `toString` 的数组元素会抛未捕获 TypeError（DoS），修版 `6.16.1`（vulnerable `>=6.7.0 <=6.16.0`）。本仓 `overrides.qs` 原钉 `6.16.0`，改为 `6.16.1`；lockfile 用钉版 `npx npm@10.9.4 install --package-lock-only --registry=官方` 重生成，只动 `qs` 一条、出处官方。
+- 为什么不是「等门禁变红才修」：`audit:all` 只拦 high / critical，这条 medium 落在它射程之外——门禁不会因为它变红，但补丁在手、又只是纯 dev 传递依赖的 patch，按「有补丁就修」处理，而不是白名单。
+- 验证：`npm audit --audit-level=moderate` → **found 0 vulnerabilities**（此前命中 qs）；`npm ci`（钉版）exit 0；`check:lockfile-repro` 982 条目无差异、出处全官方；`lint` / `typecheck` exit 0；`audit:all`（除既有 1 条 high 白名单外无 high/critical）/ `audit:prod` 0 红；`npm test` **361 文件 / 3833 条**全绿；`npm run build` **474 页**，`git status` 只 `package.json` + `package-lock.json`。
+- 阻塞 / 风险 / 回滚：无迁移、无配置、无产品代码；`qs` 仅 dev 树（lhci / express 链），patch 级、无 API 变化。风险一条：override 是全局钉版，日后若上游需要更高 `qs` 要同步抬这里（与既有 overrides 同型）。回滚 = revert `9102e8f`。
+- 下一项：等本条 PR 的 `ci` / `db-tests` / `auth-e2e` / CodeQL 绿后 rebase 合并；随后重新检查仓库继续，R16.336 与其余拍板项仍等维护者选边。
+- 更新时间：2026-10-30（Asia/Shanghai）。
+
+---
+
 ## 2026-10-25 · 第九十四轮（自主执行）：把唯一开着的红灯（Dependabot #458）按先例重放——钉版 npm 10.9.4 重生成 lockfile，`npm ci` 由红转绿
 
 - 里程碑 / 版本：AGENTS.md in-scope「依赖 / 供应链卫生」；未改产品版本（当前 v0.7.33，用户可见行为零变化）。分支 `fix/dep-bump-remark-cjk-friendly`（自 `main @ 7860015`），提交：`6c4a0af`（仅 `package-lock.json`），本台账与 work-audit / roadmap / deps 记录同 PR。PR #459。
